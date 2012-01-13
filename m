@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757657Ab2AMKkz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 05:40:55 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46848 "EHLO comal.ext.ti.com"
+	id S1757843Ab2AMKtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 05:49:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15972 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751804Ab2AMKky convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 05:40:54 -0500
-From: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
-To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RFC: usb: musb: Adding CPPI4.1 DMA driver under drivers/dma
-Thread-Topic: usb: musb: Adding CPPI4.1 DMA driver under drivers/dma
-Thread-Index: AQHM0bzZ3HvTVi65q0q5jVepkBzZG5YKErvg
-Date: Fri, 13 Jan 2012 10:40:50 +0000
-Message-ID: <47CEF8C4B26E8C44B22B028A650E0EA9317A6B8B@DBDE01.ent.ti.com>
-References: <201201120753.00667.oneukum@suse.de>
- <Pine.LNX.4.44L0.1201121037340.1384-100000@iolanthe.rowland.org>
- <20120112215014.GC5735@xanatos> <20120112215459.GA1161@kroah.com>
- <20120112222947.GD5735@xanatos> <20120112223513.GA2925@kroah.com>
- <20120113061144.GA30569@suse.cz>
-In-Reply-To: <20120113061144.GA30569@suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751804Ab2AMKtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 05:49:12 -0500
+Date: Fri, 13 Jan 2012 16:18:45 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Davidlohr Bueso <dave@gnu.org>,
+        Jacek Galowicz <jacek@galowicz.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Stratos Psomadakis <psomas@cslab.ece.ntua.gr>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PULL] virtio and lguest
+Message-ID: <20120113104845.GC9506@amit.redhat.com>
+References: <87lipd4hqx.fsf@rustcorp.com.au>
+ <CA+55aFyOy4bWUq6PH3ThM2CXOFwi75FE8HGOJ8DNZjFWw9rq6A@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyOy4bWUq6PH3ThM2CXOFwi75FE8HGOJ8DNZjFWw9rq6A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-CPPI4.1 (Communication Port Programming Interface) is a TI specific DMA
-controller used in multiple TI platform such as AM33x, DA8x, AM35x, TI81x.
-The DMA engine is mainly used by musb controller on above platform.
+On (Thu) 12 Jan 2012 [16:29:14], Linus Torvalds wrote:
+> On Wed, Jan 11, 2012 at 9:22 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >
+> > Amit Shah (12):
+> >      virtio: pci: switch to new PM API
+> 
+> Hmm. Afaik, this is broken, or at least not complete.
+> 
+> Sure, it switches to the new PM API, but it still does the PCI ops itself.
+> 
+> It should not need to - the PCI layer will do the power state and
+> standard PCI device state saving. And setting the PCI_D3hot state when
+> shared interrupts can still happen at suspend time is just a bad idea.
 
-Earlier version of the driver was submitted by Sergei Shtylyov at [1] but
-was not merged due to disagreement on the location of driver in kernel.
-Refer the discussions at [1] for more details.
+The idea behind this patchset is to get S4 working properly.  There's
+no change to the way S3 was/is being done, and the state-setting is
+done only in the S3 PM callbacks.
 
-[1] http://marc.info/?l=linux-usb&m=125087318308323
+> So I think you're doing extra work and introducing bugs by doing so -
+> the default PCI bus operations should already do all you do, just do
 
-The new implementation of the CPPI4.1 DMA slave driver will be in the
-drivers/dma folder, complying to dmaengine framework.
-It would involve changes in existing musb driver also for which current
-plan is to maintain the compatibility of non-CPPI4.1 DMA in musb driver. 
+For S4, we need some driver-specific (not just virtio-specific) work
+to be done on the freeze/restore callbacks...
 
-The task is planned to be spitted into below subtasks.
+> it better. And then you can use the SIMPLE_DEV_PM_OPS() to build the
+> dev_pm_ops structure and get all the normal cases right automatically.
 
-(1) Post RFC on the API details, changes envisaged in musb driver and other
-challenges
+... and we also have separate stuff to be done in thaw/restore/freeze
+callbacks for different drivers.  So using the *_PM_OPS() macros
+wouldn't have worked.
 
-(2) Implement and post RFC for the CPPI4.1 DMA driver and changes needed in
-musb driver.
+> I don't know if there is any particularly good example of this, but
+> you can see some of the network drivers for examples of this. Notice
+> how they don't need to worry about PCI power states etc at all, they
+> just need to worry about the actual chip suspend/resume (and for a
+> network driver, you'd do the netif_device_detach/netif_device_attach
+> etc)
 
-Let me know if you have any thoughts/comments on this.
+I think your concern is with the way S3 is being done, and I volunteer
+to look at improving the situation there.  Might take a while, though.
 
-Regards,
-Ajay
-
+		Amit
