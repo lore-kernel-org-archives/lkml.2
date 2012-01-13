@@ -1,180 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab2AMPuN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:50:13 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:43560 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab2AMPuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:50:08 -0500
-Date: Fri, 13 Jan 2012 16:50:01 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
-Message-ID: <20120113155001.GB1653@cmpxchg.org>
-References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
- <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
- <20120113120406.GC17060@tiehlicka.suse.cz>
+	id S932359Ab2AMPwo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:52:44 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:40901 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932140Ab2AMPwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 10:52:42 -0500
+Date: Fri, 13 Jan 2012 09:52:37 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Avi Kivity <avi@redhat.com>,
+        linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH] Fix panic in __d_lookup with high dentry hashtable counts
+Message-ID: <20120113155237.GA25103@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120113120406.GC17060@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 01:04:06PM +0100, Michal Hocko wrote:
-> On Tue 10-01-12 16:02:52, Johannes Weiner wrote:
-> > Right now, memcg soft limits are implemented by having a sorted tree
-> > of memcgs that are in excess of their limits.  Under global memory
-> > pressure, kswapd first reclaims from the biggest excessor and then
-> > proceeds to do regular global reclaim.  The result of this is that
-> > pages are reclaimed from all memcgs, but more scanning happens against
-> > those above their soft limit.
-> > 
-> > With global reclaim doing memcg-aware hierarchical reclaim by default,
-> > this is a lot easier to implement: everytime a memcg is reclaimed
-> > from, scan more aggressively (per tradition with a priority of 0) if
-> > it's above its soft limit.  With the same end result of scanning
-> > everybody, but soft limit excessors a bit more.
-> > 
-> > Advantages:
-> > 
-> >   o smoother reclaim: soft limit reclaim is a separate stage before
-> >     global reclaim, whose result is not communicated down the line and
-> >     so overreclaim of the groups in excess is very likely.  After this
-> >     patch, soft limit reclaim is fully integrated into regular reclaim
-> >     and each memcg is considered exactly once per cycle.
-> > 
-> >   o true hierarchy support: soft limits are only considered when
-> >     kswapd does global reclaim, but after this patch, targetted
-> >     reclaim of a memcg will mind the soft limit settings of its child
-> >     groups.
-> 
-> Yes it makes sense. At first I was thinking that soft limit should be
-> considered only under global mem. pressure (at least documentation says
-> so) but now it makes sense.
-> We can push on over-soft limit groups more because they told us they
-> could sacrifice something...  Anyway documentation needs an update as
-> well.
+When the number of dentry cache hash table entries gets too high
+(2147483648 entries), use of a signed integer in the initialization
+loop prevents the dentry_hashtable from getting initialized, resulting
+in a panic in __d_lookup.  Fixing this in dcache_init and a few other
+spots for consistency.
 
-You are right, I'll look into it.
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ fs/dcache.c    |    8 ++++----
+ fs/inode.c     |    8 ++++----
+ kernel/pid.c   |    4 ++--
+ net/ipv4/tcp.c |    3 ++-
+ 4 files changed, 12 insertions(+), 11 deletions(-)
 
-> But we have to be little bit careful here. I am still quite confuses how
-> we should handle hierarchies vs. subtrees. See bellow.
-
-> > @@ -1318,6 +1123,36 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
-> >  	return margin >> PAGE_SHIFT;
-> >  }
-> >  
-> > +/**
-> > + * mem_cgroup_over_softlimit
-> > + * @root: hierarchy root
-> > + * @memcg: child of @root to test
-> > + *
-> > + * Returns %true if @memcg exceeds its own soft limit or contributes
-> > + * to the soft limit excess of one of its parents up to and including
-> > + * @root.
-> > + */
-> > +bool mem_cgroup_over_softlimit(struct mem_cgroup *root,
-> > +			       struct mem_cgroup *memcg)
-> > +{
-> > +	if (mem_cgroup_disabled())
-> > +		return false;
-> > +
-> > +	if (!root)
-> > +		root = root_mem_cgroup;
-> > +
-> > +	for (; memcg; memcg = parent_mem_cgroup(memcg)) {
-> > +		/* root_mem_cgroup does not have a soft limit */
-> > +		if (memcg == root_mem_cgroup)
-> > +			break;
-> > +		if (res_counter_soft_limit_excess(&memcg->res))
-> > +			return true;
-> > +		if (memcg == root)
-> > +			break;
-> > +	}
-> > +	return false;
-> > +}
-> 
-> Well, this might be little bit tricky. We do not check whether memcg and
-> root are in a hierarchy (in terms of use_hierarchy) relation. 
-> 
-> If we are under global reclaim then we iterate over all memcgs and so
-> there is no guarantee that there is a hierarchical relation between the
-> given memcg and its parent. While, on the other hand, if we are doing
-> memcg reclaim then we have this guarantee.
-> 
-> Why should we punish a group (subtree) which is perfectly under its soft
-> limit just because some other subtree contributes to the common parent's
-> usage and makes it over its limit?
-> Should we check memcg->use_hierarchy here?
-
-We do, actually.  parent_mem_cgroup() checks the res_counter parent,
-which is only set when ->use_hierarchy is also set.  The loop should
-never walk upwards outside of a hierarchy.
-
-And yes, if you have this:
-
-        A
-       / \
-      B   C
-
-and configured a soft limit for A, you asked for both B and C to be
-responsible when this limit is exceeded, that's not new behaviour.
-
-> Does it even makes sense to setup soft limit on a parent group without
-> hierarchies?
-> Well I have to admit that hierarchies makes me headache.
-
-There is no parent without a hierarchy.  It is insofar pretty
-confusing that you can actually create a directory hierarchy that does
-not reflect a memcg hierarchy:
-
-	# pwd
-	/sys/fs/cgroup/memory/foo/bar
-	# cat memory.usage_in_bytes 
-	450560
-	# cat ../memory.usage_in_bytes 
-	0
-
-there is no accounting/limiting/whatever parent-child relationship
-between foo and bar.
-
-> > @@ -2121,8 +2121,16 @@ static void shrink_zone(int priority, struct zone *zone,
-> >  			.mem_cgroup = memcg,
-> >  			.zone = zone,
-> >  		};
-> > +		int epriority = priority;
-> > +		/*
-> > +		 * Put more pressure on hierarchies that exceed their
-> > +		 * soft limit, to push them back harder than their
-> > +		 * well-behaving siblings.
-> > +		 */
-> > +		if (mem_cgroup_over_softlimit(root, memcg))
-> > +			epriority = 0;
-> 
-> This sounds too aggressive to me. Shouldn't we just double the pressure
-> or something like that?
-
-That's the historical value.  When I tried priority - 1, it was not
-aggressive enough.
-
-> Previously we always had nr_to_reclaim == SWAP_CLUSTER_MAX when we did
-> memcg reclaim but this is not the case now. For the kswapd we have
-> nr_to_reclaim == ULONG_MAX so we will not break out of the reclaim early
-> and we have to scan a lot.
-> Direct reclaim (shrink or hard limit) shouldn't be affected here.
-
-It took me a while: we had SWAP_CLUSTER_MAX in _soft limit reclaim_,
-which means that even with priority 0 we would bail after reclaiming
-SWAP_CLUSTER_MAX from each lru of a zone.  But it's now happening with
-kswapd's own scan_control, so the overreclaim protection is gone.
-
-That is indeed a change in behaviour I haven't noticed, good catch!
-
-I will look into it.
+Index: linux/fs/dcache.c
+===================================================================
+--- linux.orig/fs/dcache.c
++++ linux/fs/dcache.c
+@@ -2968,7 +2968,7 @@ __setup("dhash_entries=", set_dhash_entr
+ 
+ static void __init dcache_init_early(void)
+ {
+-	int loop;
++	long loop;
+ 
+ 	/* If hashes are distributed across NUMA nodes, defer
+ 	 * hash allocation until vmalloc space is available.
+@@ -2986,13 +2986,13 @@ static void __init dcache_init_early(voi
+ 					&d_hash_mask,
+ 					0);
+ 
+-	for (loop = 0; loop < (1 << d_hash_shift); loop++)
++	for (loop = 0; loop < (1L << d_hash_shift); loop++)
+ 		INIT_HLIST_BL_HEAD(dentry_hashtable + loop);
+ }
+ 
+ static void __init dcache_init(void)
+ {
+-	int loop;
++	long loop;
+ 
+ 	/* 
+ 	 * A constructor could be added for stable state like the lists,
+@@ -3016,7 +3016,7 @@ static void __init dcache_init(void)
+ 					&d_hash_mask,
+ 					0);
+ 
+-	for (loop = 0; loop < (1 << d_hash_shift); loop++)
++	for (loop = 0; loop < (1L << d_hash_shift); loop++)
+ 		INIT_HLIST_BL_HEAD(dentry_hashtable + loop);
+ }
+ 
+Index: linux/fs/inode.c
+===================================================================
+--- linux.orig/fs/inode.c
++++ linux/fs/inode.c
+@@ -1654,7 +1654,7 @@ __setup("ihash_entries=", set_ihash_entr
+  */
+ void __init inode_init_early(void)
+ {
+-	int loop;
++	long loop;
+ 
+ 	/* If hashes are distributed across NUMA nodes, defer
+ 	 * hash allocation until vmalloc space is available.
+@@ -1672,13 +1672,13 @@ void __init inode_init_early(void)
+ 					&i_hash_mask,
+ 					0);
+ 
+-	for (loop = 0; loop < (1 << i_hash_shift); loop++)
++	for (loop = 0; loop < (1L << i_hash_shift); loop++)
+ 		INIT_HLIST_HEAD(&inode_hashtable[loop]);
+ }
+ 
+ void __init inode_init(void)
+ {
+-	int loop;
++	long loop;
+ 
+ 	/* inode slab cache */
+ 	inode_cachep = kmem_cache_create("inode_cache",
+@@ -1702,7 +1702,7 @@ void __init inode_init(void)
+ 					&i_hash_mask,
+ 					0);
+ 
+-	for (loop = 0; loop < (1 << i_hash_shift); loop++)
++	for (loop = 0; loop < (1L << i_hash_shift); loop++)
+ 		INIT_HLIST_HEAD(&inode_hashtable[loop]);
+ }
+ 
+Index: linux/kernel/pid.c
+===================================================================
+--- linux.orig/kernel/pid.c
++++ linux/kernel/pid.c
+@@ -543,12 +543,12 @@ struct pid *find_ge_pid(int nr, struct p
+  */
+ void __init pidhash_init(void)
+ {
+-	int i, pidhash_size;
++	long i, pidhash_size;
+ 
+ 	pid_hash = alloc_large_system_hash("PID", sizeof(*pid_hash), 0, 18,
+ 					   HASH_EARLY | HASH_SMALL,
+ 					   &pidhash_shift, NULL, 4096);
+-	pidhash_size = 1 << pidhash_shift;
++	pidhash_size = 1L << pidhash_shift;
+ 
+ 	for (i = 0; i < pidhash_size; i++)
+ 		INIT_HLIST_HEAD(&pid_hash[i]);
+Index: linux/net/ipv4/tcp.c
+===================================================================
+--- linux.orig/net/ipv4/tcp.c
++++ linux/net/ipv4/tcp.c
+@@ -3220,7 +3220,8 @@ void __init tcp_init(void)
+ {
+ 	struct sk_buff *skb = NULL;
+ 	unsigned long limit;
+-	int i, max_share, cnt;
++	long i;
++	int max_share, cnt;
+ 	unsigned long jiffy = jiffies;
+ 
+ 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
