@@ -1,61 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758944Ab2AMTt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 14:49:58 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43774 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab2AMTt4 (ORCPT
+	id S1758986Ab2AMTuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 14:50:17 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49927 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758973Ab2AMTuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 14:49:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACsJy8BmFgssTAh=1U7JgBsGG-tSaWXQzZeODND3icXY3QUxug@mail.gmail.com>
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
- <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
- <20120110184530.GE7164@opensource.wolfsonmicro.com> <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
- <20120110222711.GK7164@opensource.wolfsonmicro.com> <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
- <20120111184026.GA23952@windriver.com> <7vaa5rzaax.fsf_-_@alter.siamese.dyndns.org>
- <CACsJy8BmFgssTAh=1U7JgBsGG-tSaWXQzZeODND3icXY3QUxug@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Jan 2012 11:49:34 -0800
-X-Google-Sender-Auth: jnLFKSvZBggjDLhAE5PAoAWZBhY
-Message-ID: <CA+55aFxw_-0h1FDmPRVif3LM03Qh3-6haA7=KYbae8pSFbpW2w@mail.gmail.com>
-Subject: Re: [PATCH] merge: Make merge strategy message follow the diffstat
-To: Nguyen Thai Ngoc Duy <pclouds@gmail.com>
-Cc: Junio C Hamano <gitster@pobox.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Git Mailing List <git@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jan 2012 14:50:10 -0500
+Message-ID: <1326484191.4416.16.camel@work-vm>
+Subject: Re: Unexpected clocksource overflow in nsec conversion
+From: John Stultz <john.stultz@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org
+Date: Fri, 13 Jan 2012 11:49:51 -0800
+In-Reply-To: <20120113162132.GH4176@mudshark.cambridge.arm.com>
+References: <20120113162132.GH4176@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12011319-5518-0000-0000-000001858D60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 11:27 AM, Nguyen Thai Ngoc Duy
-<pclouds@gmail.com> wrote:
->
-> Still, diffstat from a fetch/pull is sometimes too verbose. It'd be
-> better if we have something that fit in one screen (dirstat or maybe
-> just a first few lines from diffstat then ellipsis) then refer users
-> to "git diff --stat HEAD@{1}" for more detail stat.
+On Fri, 2012-01-13 at 16:21 +0000, Will Deacon wrote:
+> Hi Thomas, John,
+> 
+> I'm having some problems with sched_clock where I experience unexpected
+> overflow due to clocksource->mult being set too high for the width of my
+> clocksource.
+> 
+> My clocksource parameters are:
+> 
+> 	Frequency:	100Mhz
+> 	Width:		56 bits (i.e. mask of (1 << 56) - 1)
+> 
+> 	[ following calculated by clocks_calc_mult_shift ]
+> 	Shift:		24
+> 	Mult:		0x0a000000 (167772160)
 
-Yeah, I've wanted that. Show the beginning, the end, and the summary
-line of the diffstat would be lovely.
 
-It would be lovely in "git commit" too. Not just
+Sigh. Yea. In the past, occasional sched_clock rollovers weren't an
+issue, the idea was it was an potentially unreliable clock, but really
+fast, and any errors would be fleeting. But over time sched_clock's
+requirement have grown.
 
-    Modified: filename
+I think you probably need to split the sched clock mult/shift pair from
+the clocksource, as they really have different requirements.  The
+clocksource needs to have a larger shift value, so we can make fine
+grained adjustments to keep accurate time, where as sched_clock should
+have a low shift value to avoid frequent overflows.
 
-but a diffstat that shows now many lines.
+Even so, the sched clock code doesn't do any sort of periodic
+accumulation, so overflows either at the counter level or at the
+multiply level when the counter gets large enough (see recent 208 day
+bugs on x86) will crop up eventually.
 
-And what I've *really* wanted is to actually see the diff itself if it
-is small. So some kind of "dynamic summary": for one-liners (or
-ten-liners), show the whole diff. For medium-sized changes, show the
-whole diffstat. And for really big changes, show an outline and the
-"768 files changed, 179851 lines added, 7630 lines removed" stats.
+The hard part is that the locking required to do periodic accumulation
+goes contrary to what sched_clock is all about.
 
-IOW, whatever fits in, say, 50 lines or less.
 
-That would be absolutely lovely if somebody were to do it.
+> The reason for the huge multiplier seems to be this code in
+> __clocksource_updatefreq_scale:
+> 
+> 
+> void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+> {
+> 	u64 sec;
+> 
+> 	/*
+> 	 * Calc the maximum number of seconds which we can run before
+> 	 * wrapping around. For clocksources which have a mask > 32bit
+> 	 * we need to limit the max sleep time to have a good
+> 	 * conversion precision. 10 minutes is still a reasonable
+> 	 * amount. That results in a shift value of 24 for a
+> 	 * clocksource with mask >= 40bit and f >= 4GHz. That maps to
+> 	 * ~ 0.06ppm granularity for NTP. We apply the same 12.5%
+> 	 * margin as we do in clocksource_max_deferment()
+> 	 */
+> 	sec = (cs->mask - (cs->mask >> 3));
+> 	do_div(sec, freq);
+> 	do_div(sec, scale);
+> 	if (!sec)
+> 		sec = 1;
+> 	else if (sec > 600 && cs->mask > UINT_MAX)
+> 		sec = 600;
+> 
+> 
+> where we truncate the maximum period to 10 minutes in order to improve
+> the precision. Since we don't update cs->mask, doesn't this leave us in
+> a situation where the clocksource can overflow in the ns domain without
+> overflowing in terms of ticks? I can certainly trigger this situation
+> with my counter, which results in negative exec_runtimes for tasks, leading
+> to nasty scheduling issues. When the clocksource passes from 0x199997b3cd
+> to 0x1999a6e97c, the time (ns) unexpectedly wraps from 0xffffed0602 to
+> 0x851ed8.
+> 
+> So, should we update the clocksource mask when forcing the maximum period
+> to 600 seconds, or am I missing something?
 
-                  Linus
+No. The logic about is really focused around timekeeping requirements,
+not sched_clock. With timekeeping we periodicially accumulate time,
+creating a new cycle_last base from which we generate cycle deltas with.
+This keeps the cycle portion that is multiplied small.
+
+Again, sched_clock doesn't accumulate, so when the counter gets large
+enough, the multiply can overflow. On x86 we've split the multiply to
+avoid this for now, but this doesn't help on other architectures where
+the counter overflows.
+
+So this area definitely needs work, and unfortunately I've not had much
+time to work on it.
+
+For a short-term solution, you can maybe look at enabling
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK and setting sched_clock_stable to 0.
+This will probably be necessary on any arch using clocksources logic for
+sched_clock.
+
+thanks
+-john
+
