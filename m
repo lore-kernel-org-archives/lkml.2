@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab2AMCrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 21:47:10 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36620 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab2AMCrF (ORCPT
+	id S1757247Ab2AMDKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 22:10:19 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:29514 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab2AMDKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 21:47:05 -0500
-X-AuditID: b753bd60-99661ba00000359c-5f-4f0f9b268e57
-X-AuditID: b753bd60-99661ba00000359c-5f-4f0f9b268e57
-Message-ID: <4F0F9B1C.3050206@hitachi.com>
-Date: Fri, 13 Jan 2012 11:46:52 +0900
-From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Thu, 12 Jan 2012 22:10:13 -0500
+X-SpamScore: 3
+X-BigFish: VS3(zcb8kzzz1202hzzz2dhc1ahc1bh87h2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Richard Zhao <richard.zhao@linaro.org>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+CC: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
+        <kernel@pengutronix.de>, <eric.miao@linaro.org>, <patches@linaro.org>
+Subject: [PATCH v2 0/6] imx-sdma: patches when I enable imx6q sabrelite audio
+Date: Fri, 13 Jan 2012 11:09:55 +0800
+Message-ID: <1326424201-20056-1-git-send-email-richard.zhao@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Ben Myers <bpm@sgi.com>, Alex Elder <aelder@sgi.com>,
-        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, xfs-masters@oss.sgi.com,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH] xfs: show uuid when mount fails due to duplicate
- uuid
-References: <20120112024720.3952.73517.stgit@ltc219.sdl.hitachi.co.jp> <20120112161410.GA3810@infradead.org>
-In-Reply-To: <20120112161410.GA3810@infradead.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+[PATCH v2 1/6] dma/imx-sdma: let sdma_run_channel call
+[PATCH v2 2/6] dma/imx-sdma: use readl_relaxed/writel_relaxed and
+[PATCH v2 3/6] dma/imx-sdma: call sdma_set_channel_priority after
+[PATCH v2 4/6] dma/imx-sdma: move clk_enable out of
+[PATCH v2 5/6] dma/imx-sdma: use num_events to validate event_id0
+[PATCH v2 6/6] dma/imx-sdma: convernt to use bit ops
 
-Thank you for your comment.
+Thanks
+Richard
 
-(2012/01/13 1:14), Christoph Hellwig wrote:
-> On Thu, Jan 12, 2012 at 11:47:20AM +0900, Mitsuo Hayasaka wrote:
->> When a system tries to mount a filesystem (FS) using UUID, the xfs
->> returns -EINVAL and shows a message if a FS with the same UUID has
->> been already mounted. It is useful to output the duplicate UUID
->> with it.
-> 
-> Looks good to me,
-> 
-> 
-> Reviewed-by: Christoph Hellwig <hch@lst.de>
-> 
->> -	xfs_warn(mp, "Filesystem has duplicate UUID - can't mount");
->> +	xfs_warn(mp,
->> +		"Filesystem has duplicate UUID - can't mount: uuid = %pU",
->> +		uuid);
-> 
-> Maybe we could write this a bit nicer as:
-> 
-> 	xfs_warn(mp, "Filesystem has duplicate UUID %p - can't mount", uuid);
-> 
-
-It looks nice.
-I will send the revised patch soon.
-
-Thanks.
