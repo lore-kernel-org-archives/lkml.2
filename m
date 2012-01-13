@@ -1,94 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab2AMP7l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:59:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60664 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758403Ab2AMP7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:59:37 -0500
-Date: Fri, 13 Jan 2012 16:20:10 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20120113152010.GA19215@redhat.com>
-References: <20111221192413.GF13529@google.com> <20111221200422.GJ17668@somewhere> <20111222153004.GA30522@redhat.com> <20120104193614.GF9511@google.com> <20120106152356.GA23995@redhat.com> <20120106182535.GJ9511@google.com> <20120111160730.GA24556@redhat.com> <20120112003102.GB9511@google.com> <20120112170728.GA25717@redhat.com> <20120112175725.GD9511@google.com>
+	id S1758296Ab2AMQDp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 11:03:45 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:42676 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752891Ab2AMQDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 11:03:43 -0500
+Date: Fri, 13 Jan 2012 11:03:43 -0500 (EST)
+From: Ramon de C Valle <rcvalle@redhat.com>
+Reply-To: Ramon de C Valle <rcvalle@redhat.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] New PT_GNU_COMPAT segment header extension
+Message-ID: <5f78dd16-43bf-4097-892b-cb640a63c34a@zmail15.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <8df1c5ab-200b-4baf-b755-c590d73025a1@zmail15.collab.prod.int.phx2.redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120112175725.GD9511@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Originating-IP: [10.11.11.172]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12, Mandeep Singh Baines wrote:
->
-> Oleg Nesterov (oleg@redhat.com) wrote:
-> >
-> > Still can't understand... Lets look at this trivial example again.
-> >
-> > We start from the main thread M, it is ->group_leader. There is
-> > another thread T in this thread group. We are doing
-> >
-> > 	OLD = M;
-> >
-> > 	t = M;
-> > 	do {
-> > 		do_smth(t);
-> > 	}
-> > 	while (t->group_leader == OLD && ((t = next_thread(t)) != M);
-> >
-> > The first iteration does do_smth(M).
-> >
-> > T calls de_thread() and, in particular, it does M->group_leader = T
-> > (see "leader->group_leader = tsk" in de_thread).
-> >
-> > after that t->group_leader == OLD fails. t == M, its group_leader == T.
-> > do_smth(T) won't be called.
-> >
-> > No?
-> >
->
-> I think we can handle this by removing the assignment. So in de_thread():
->
-> -		leader->group_leader = tsk;
 
-Ah, so that was you plan. I was confused by the 3rd argument, why
-it is needed?
 
-Yes, I thought about this too. Suppose we remove this assignment,
-then we can simply do
+> > Hi,
+> > 
+> > This is a brief example of the behavior of the system I use for
+> > some
+> > time
+> > already. For an ELF binary with the PT_GNU_STACK segment header and
+> > the PF_X
+> > flag not set (i.e. the default), the following are its currently
+> > virtual
+> > memory mappings and their access permissions:
+> > 
+> > [rcvalle@Fedora-15-i386 ~]$ cat /proc/2253/maps
+> > 004e2000-004e3000 r-xp 00000000 00:00 0          [vdso]
+> > 08048000-08049000 r-xp 00000000 fd:02 926785
+> >     /home/rcvalle/a.out
+> > 08049000-0804a000 rw-p 00000000 fd:02 926785
+> >     /home/rcvalle/a.out
+> > 495c9000-495e8000 r-xp 00000000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495e8000-495e9000 r--p 0001f000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495e9000-495ea000 rw-p 00020000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495ec000-49774000 r-xp 00000000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49774000-49776000 r--p 00188000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49776000-49777000 rw-p 0018a000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49777000-4977a000 rw-p 00000000 00:00 0
+> > b780c000-b780d000 rw-p 00000000 00:00 0
+> > b7824000-b7825000 rw-p 00000000 00:00 0
+> > bfdc3000-bfde4000 rw-p 00000000 00:00 0          [stack]
+> > [rcvalle@Fedora-15-i386 ~]$
+> > 
+> > The following are its currently virtual memory mappings and their
+> > access
+> > permissions with the PT_GNU_STACK segment header and the PF_X flag
+> > unset:
+> 
+> s/unset/set
+> 
+> > 
+> > [rcvalle@Fedora-15-i386 ~]$ cat /proc/2257/maps
+> > 00dcc000-00dcd000 r-xp 00000000 00:00 0          [vdso]
+> > 08048000-08049000 r-xp 00000000 fd:02 926825
+> >     /home/rcvalle/a.out
+> > 08049000-0804a000 rw-p 00000000 fd:02 926825
+> >     /home/rcvalle/a.out
+> > 495c9000-495e8000 r-xp 00000000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495e8000-495e9000 r--p 0001f000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495e9000-495ea000 rw-p 00020000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495ec000-49774000 r-xp 00000000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49774000-49776000 r--p 00188000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49776000-49777000 rw-p 0018a000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49777000-4977a000 rw-p 00000000 00:00 0
+> > b7711000-b7712000 rw-p 00000000 00:00 0
+> > b7729000-b772a000 rw-p 00000000 00:00 0
+> > bfca7000-bfcc8000 rwxp 00000000 00:00 0          [stack]
+> > [rcvalle@Fedora-15-i386 ~]$
+> > 
+> > The following are its currently virtual memory mappings and their
+> > access
+> > permissions with the PT_GNU_COMPAT segment header and the PF_X flag
+> > set:
+> > 
+> > [rcvalle@Fedora-15-i386 ~]$ cat /proc/2349/maps
+> > 00850000-00851000 r-xp 00000000 00:00 0          [vdso]
+> > 00d29000-00d2a000 rwxp 00000000 00:00 0
+> > 00fd2000-00fd3000 rwxp 00000000 00:00 0
+> > 08048000-08049000 r-xp 00000000 fd:02 926785
+> >     /home/rcvalle/a.out
+> > 08049000-0804a000 rwxp 00000000 fd:02 926785
+> >     /home/rcvalle/a.out
+> > 495c9000-495e8000 r-xp 00000000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495e8000-495e9000 r-xp 0001f000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495e9000-495ea000 rwxp 00020000 fd:01 1971790    /lib/ld-2.13.90.so
+> > 495ec000-49774000 r-xp 00000000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49774000-49776000 r-xp 00188000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49776000-49777000 rwxp 0018a000 fd:01 1971791
+> >    /lib/libc-2.13.90.so
+> > 49777000-4977a000 rwxp 00000000 00:00 0
+> > bfd2b000-bfd4c000 rwxp 00000000 00:00 0          [stack]
+> > [rcvalle@Fedora-15-i386 ~]$
+> > 
+> > Notice the difference between its currently virtual memory mappings
+> > and
+> > their access permissions with the PT_GNU_STACK segment header and
+> > the
+> > PF_X
+> > flag unset and their access permissions with the PT_GNU_COMPAT
+> > segment
+> > header and the PF_X flag set. The latter is the current behavior of
+> > the
+> > Linux kernel for any ELF binary with the PT_GNU_STACK segment
+> > header
+> > and the
+> > PF_X flag unset (i.e. all its virtual memory mappings are
+> 
+> s/unset/set
+> 
+> > executable).
+> 
+> One of the various scenarios an attacker can take advantage of this
+> behavior
+> to exploit a vulnerability is if, for example, a buffer overflow
+> occurs
+> within the data segment of a such loaded ELF binary (e.g the recent
+> telnetd
+> vulnerability) .
+> 
+> In addition, if you use a non-GNU toolchain that does not support the
+> PT_GNU_STACK segment header extension, or does not create this
+> segment with
+> the PF_X flag unset by default. Upon loading the resulting compiled
+> binaries, you will end up with the third aforementioned layout (i.e.
+> all
+> virtual memory mappings executable)--this completely disregards the
+> ABI.
+> 
+> It is also important to note some embedded Linux distributions may
+> use
+> non-GNU or custom toolchains that either does not support the
+> PT_GNU_STACK
+> segment header extension, does not create this segment with the PF_X
+> flag
+> unset by default, or use binaries with some segment headers stripped
+> out.
+> 
+> In other words, in the absence of the PT_GNU_STACK segment header or
+> with
+> the PT_GNU_STACK segment header with the PF_X flag set, you will end
+> up with
+> all virtual memory mappings executable.
 
-	#define while_each_thread(g, t) \
-		while (t->group_leader == g->group_leader && (t = next_thread(t)) != g)
+For better illustrating the current behavior of the kernel without these
+patches. Try to load an ELF binary with only the stack executable by setting
+the PF_X flag within the PT_GNU_STACK segment header, or just stripping out
+the PT_GNU_STACK segment header entirely, and see what happens.
 
-with the same effect. (to remind, currently I ignore the barriers/etc).
+> 
+> 
+> > 
+> > Any comments about these patches would be greatly appreciated.
+> > 
+> > Thanks,
+> > 
+> > 
+> > --
+> > Ramon de C Valle / Red Hat Security Response Team
+> > 
+> 
+> --
+> Ramon de C Valle / Red Hat Security Response Team
+> 
 
-But this can _only_ help if we start at the group leader!
-
-May be we should enforce this rule (for the lockless case), I dunno...
-In that case I'd prefer to add the new while_each_thread_rcu() helper.
-But! in this case we do not need to change de_thread(), we can simply do
-
-	#define while_each_thread_rcu(t) \
-		while (({ t = next_thread(t); !thread_group_leader(t); }))
-
-The definition above was one of the possibilities I considered, but
-I wasn't able to convince myself this is the best option.
-
-See? Or do you think I missed something?
-
-Just in case... note that while_each_thread_rcu() doesn't use 'g'
-at all. May be it makes sense to keep the old "t != g &&", but this
-is minor.
-
-Oleg.
-
+-- 
+Ramon de C Valle / Red Hat Security Response Team
