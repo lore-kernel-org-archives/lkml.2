@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab2AMTM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 14:12:28 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:60997 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab2AMTMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 14:12:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=O2YoUm9EmwTR3gRZSX4UfbgVjo0lQRKY
-	m/BTQ5vUfyOoC/pU1DevlxuAdlZ/GS5mZwDKY6XJknMrFlfmM2TICZeU+4XYjM9c
-	EnwJhH71/lfH8ekAhbcTobCxNS6fQcKQfuN3LZw6VBYaK8Bz2U8XANeyJbw0FVRA
-	/YaVKx+4pCM=
-From: Junio C Hamano <gitster@pobox.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, <linux-kernel@vger.kernel.org>,
-        Git Mailing List <git@vger.kernel.org>
-Subject: Re: [PATCH] merge: Make merge strategy message follow the diffstat
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
- <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
- <20120110184530.GE7164@opensource.wolfsonmicro.com>
- <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
- <20120110222711.GK7164@opensource.wolfsonmicro.com>
- <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
- <20120111184026.GA23952@windriver.com>
-Date: Fri, 13 Jan 2012 11:12:22 -0800
-In-Reply-To: <20120111184026.GA23952@windriver.com> (Paul Gortmaker's message
- of "Wed, 11 Jan 2012 13:40:27 -0500")
-Message-ID: <7vaa5rzaax.fsf_-_@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1758892Ab2AMTNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 14:13:04 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51648 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab2AMTNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 14:13:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 865735AC-3E1A-11E1-9DDB-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+In-Reply-To: <CALCETrX_nA4MtjDCKdfwJBOO6QEyzk_6nbr5Ou6QqkXcq2rTPQ@mail.gmail.com>
+References: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net>
+ <20120113164547.GA22061@redhat.com> <20120113182422.28e648fb@pyramind.ukuu.org.uk>
+ <CALCETrX_nA4MtjDCKdfwJBOO6QEyzk_6nbr5Ou6QqkXcq2rTPQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jan 2012 11:12:37 -0800
+X-Google-Sender-Auth: P6A3afl6033_uin_8CbmcUrvZww
+Message-ID: <CA+55aFyCKAY97zK=4u-AHvQyh2U1ryYybQEmgaRR+kc-d2fLhA@mail.gmail.com>
+Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
+ granting privs
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Gortmaker <paul.gortmaker@windriver.com> writes:
-
-> By moving the message after the diffstat, there is a better chance that
-> people will be aware they've done a pointless merge commit.
+On Fri, Jan 13, 2012 at 11:00 AM, Andy Lutomirski <luto@amacapital.net> wrote:
 >
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Changing it to fail the exec when a transition would occur will make
+> seccomp considerably less useful to selinux users -- the presence of
+> MAC policy on a program (regardless of what that policy is) will make
+> it unusable inside a sandbox.
 
-I think the goal of the change may be worthy, but a few points:
+I don't agree. I think that's exactly what we want sandboxing for, to
+avoid any kind of subtle security issues.
 
- - What does "automsg" mean? Is "auto" in contrast to "manual"? Even
-   better, wouldn't it be far simpler to just use
+And in 99.99% of all sandboxes, you would never ever want to execute
+something with a different MAC policy on it. In fact, most of the
+whole point of the sandboxing tends to be to make sure that the user
+stays inside the exact *small* environment that was provided just for
+that thing.
 
-	if (msg && verbosity >= 0)
-		printf("%s\n", msg);
+So I bet the google chrome people are not at all interested in
+"running random binaries", and might want execve() very much for
+"running some specific binaries that we ship with or install from the
+browser".
 
-   and get rid of this mysteriously named variable altogether?
+So I really think that the *only* valid model is the "fail the execve
+on any changes", not the "mnt-nosuid" approach of trying to run things
+with the wrong permissions and get perhaps odd results. And I think it
+works even - and perhaps *especially* - in models like selinux or
+apparmor that do have a lot of "implicit MAC knowledge" on specific
+binaries.
 
- - Wouldn't it make more sense to move "No merge message -- not updating
-   HEAD" also to the end?
-
- - After applying this patch, does the tests still pass?
-
-Thanks.
-
+                    Linus
