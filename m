@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab2AMNhH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 08:37:07 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4583 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905Ab2AMNhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 08:37:05 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4F103379.2050904@broadcom.com>
-Date: Fri, 13 Jan 2012 14:36:57 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124
- Thunderbird/8.0
+	id S932169Ab2AMNjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 08:39:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41262 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab2AMNjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 08:39:44 -0500
+Date: Fri, 13 Jan 2012 21:50:38 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [RFC v2 4/9] of: add clock providers
+Message-ID: <20120113135036.GC17029@S2101-09.ap.freescale.net>
+References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
+ <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
 MIME-Version: 1.0
-To: "Nico Schottelius" <nico-linux-20120113@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>, b43-dev@lists.infradead.org,
-        netdev@vger.kernel.org
-Subject: Re: brcmsmac: 3.2.0-06100: no device shown (and hangs in
- 3.2.0-rc7)
-References: <20120113124559.GA2260@schottelius.org>
-In-Reply-To: <20120113124559.GA2260@schottelius.org>
-X-Enigmail-Version: 1.4a1pre
-OpenPGP: id=B5E1A116
-X-WSS-ID: 630EEA153DS15340970-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 01:45 PM, Nico Schottelius wrote:
-> Hello,
-> 
-> with 3.2.0-06100-ge343a89 brcmsmac does not get autoloaded anymore
-> from udev. Loading it manually returns in dmesg:
-> 
-> --------------------------------------------------------------------------------
-> [  247.495705] bcma: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800,
-> rev 0x22, class 0x0)
-> [  247.495749] bcma: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812,
-> rev 0x17, class 0x0)
-> [  247.495832] bcma: Core 2 found: PCIe (manuf 0x4BF, id 0x820, rev
-> 0x0F, class 0x0)
-> [  247.560553] bcma: Unsupported SPROM revision: 255
-> [  247.560563] bcma: No SPROM available
-> [  247.560852] bcma: Bus registered
-> [  247.611789] brcmsmac bcma0:0: mfg 4bf core 812 rev 23 class 0 irq 17
-> [  247.634051] ieee80211 phy0: wl0: brcms_b_attach: si_attach failed
-> [  247.634062] ieee80211 phy0: wl0: brcms_b_attach: failed with err 11
-> [  247.634069] ieee80211 phy0: wl0: brcms_c_attach: failed with err 11
-> [  247.634111] ieee80211 phy0: brcmsmac: attach() failed with code 11
-> [  247.634128] brcmsmac: brcms_bcma_probe: brcms_attach failed!
-> --------------------------------------------------------------------------------
-> 
-> And ip does not show any device:
-> 
-> --------------------------------------------------------------------------------
-> [13:37] brief:~% ip l
-> 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN 
->     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-> --------------------------------------------------------------------------------
-> 
-> With 3.2.0-rc7 the device works, until it begins to hang. As reported
-> many times before.  As I've switched the environment, it is very good
-> probable that an AP on channel 13 is in range.
-> 
-> Attached both dmesg/lsmod/configs.
-> 
-> Cheers,
-> 
-> Nico
-> 
+On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
+> +==Clock providers==
+> +
+> +Required properties:
+> +#clock-cells:	   Number of cells in a clock specifier; typically will be
+> +		   set to 1
 
-Could this be on your MacBook Air? If so, Linus has flagged and solved
-this issue (see thread "brcm80211 breakage" on netdev mailer).
+Shouldn't it be 0 typically, which means it represents only one clock
+in the node?
 
-Gr. AvS
-
+-- 
+Regards,
+Shawn
