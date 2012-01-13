@@ -1,69 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab2AMBRx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:17:53 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37470 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756312Ab2AMBRw (ORCPT
+	id S1756815Ab2AMBT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 20:19:27 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:37272 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756312Ab2AMBTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:17:52 -0500
+	Thu, 12 Jan 2012 20:19:25 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6587"; a="154565178"
+Message-ID: <4F0F869B.1090906@codeaurora.org>
+Date: Thu, 12 Jan 2012 17:19:23 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7F8aYPDQ1xTFjOxWgoZfrtGNFVgMe2Ld61_=D+YY427qA@mail.gmail.com>
-References: <1326411506-16894-1-git-send-email-wad@chromium.org>
- <CA+55aFz4mJU2E2BPzZyVQ52V_ytg_8fyAH+BV_uYHVXBM2wqDw@mail.gmail.com>
- <CAObL_7FErN5CHmfSehJYcM0_Lz-WTywG7cHe2jZyQbf-GkOQjg@mail.gmail.com>
- <CA+55aFzzRNHfSo-1DyzsAwYvj1Da-vyhMQP-OdrA-rWywsebcg@mail.gmail.com> <CAObL_7F8aYPDQ1xTFjOxWgoZfrtGNFVgMe2Ld61_=D+YY427qA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 Jan 2012 17:17:31 -0800
-X-Google-Sender-Auth: GfMrP_gSIG1Rln01NxLNz86yk9o
-Message-ID: <CA+55aFxSgYFp1psum3amgqqsT-rrvGd1T8BXJSA-mgd1EdHrwg@mail.gmail.com>
-Subject: Re: [PATCH PLACEHOLDER 1/3] fs/exec: "always_unprivileged" patch
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rob Herring <robherring2@gmail.com>
+CC: "Turquette, Mike" <mturquette@ti.com>, andrew@lunn.ch,
+        linaro-dev@lists.linaro.org, eric.miao@linaro.org,
+        grant.likely@secretlab.ca, amit.kucheria@linaro.org,
+        jeremy.kerr@canonical.com, linux@arm.linux.org.uk, sboyd@quicinc.com,
+        magnus.damm@gmail.com, dsaxena@linaro.org,
+        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org,
+        patches@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-omap@vger.kernel.org, richard.zhao@linaro.org,
+        shawn.guo@freescale.com, paul@pwsan.com, linus.walleij@stericsson.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Colin Cross <ccross@google.com>,
+        Richard Zhao <richard.zhao@freescale.com>, skannan@quicinc.com
+Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
+References: <1323834838-2206-1-git-send-email-mturquette@linaro.org> <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos> <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com> <20120104021541.GI2414@b20223-02.ap.freescale.net> <4F0462FF.1000308@gmail.com> <CAJOA=zPw7UuhE4R3SsBeyzQ2_iN29Zv-ExaUTTFCah+GoFSfNQ@mail.gmail.com> <4F0506D0.30109@gmail.com> <CAJOA=zPgwiOSoyZK1SpzZVZfTOmwruTR=WO+gRdVZrZVzNuPSA@mail.gmail.com> <4F0F7507.3080501@codeaurora.org> <4F0F7F6E.1020905@gmail.com>
+In-Reply-To: <4F0F7F6E.1020905@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 5:11 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+On 01/12/2012 04:48 PM, Rob Herring wrote:
+> On 01/12/2012 06:04 PM, Saravana Kannan wrote:
+>> On 01/04/2012 08:07 PM, Turquette, Mike wrote:
+>>> On Wed, Jan 4, 2012 at 6:11 PM, Rob Herring<robherring2@gmail.com>
+>>> wrote:
+>>>> On 01/04/2012 07:01 PM, Turquette, Mike wrote:
+>>>>> On Wed, Jan 4, 2012 at 6:32 AM, Rob Herring<robherring2@gmail.com>
+>>>>> wrote:
+>>>>>> On 01/03/2012 08:15 PM, Richard Zhao wrote:
+>>>>>>> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
+>>>>>>>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas
+>>>>>>>> Gleixner<tglx@linutronix.de>   wrote:
+>>>>>>>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
+>>>>>>
+>>>>>> snip
+>>>>>>
+>>>>>>>>>> +/**
+>>>>>>>>>> + * clk_init - initialize the data structures in a struct clk
+>>>>>>>>>> + * @dev: device initializing this clk, placeholder for now
+>>>>>>>>>> + * @clk: clk being initialized
+>>>>>>>>>> + *
+>>>>>>>>>> + * Initializes the lists in struct clk, queries the hardware
+>>>>>>>>>> for the
+>>>>>>>>>> + * parent and rate and sets them both.  Adds the clk to the
+>>>>>>>>>> sysfs tree
+>>>>>>>>>> + * topology.
+>>>>>>>>>> + *
+>>>>>>>>>> + * Caller must populate clk->name and clk->flags before calling
+>>>>>>>>>
+>>>>>>>>> I'm not too happy about this construct. That leaves struct clk
+>>>>>>>>> and its
+>>>>>>>>> members exposed to the world instead of making it a real opaque
+>>>>>>>>> cookie. I know from my own painful experience, that this will
+>>>>>>>>> lead to
+>>>>>>>>> random fiddling in that data structure in drivers and arch code
+>>>>>>>>> just
+>>>>>>>>> because the core code has a shortcoming.
+>>>>>>>>>
+>>>>>>>>> Why can't we make struct clk a real cookie and confine the data
+>>>>>>>>> structure to the core code ?
+>>>>>>>>>
+>>>>>>>>> That would change the init call to something like:
+>>>>>>>>>
+>>>>>>>>> struct clk *clk_init(struct device *dev, const struct clk_hw *hw,
+>>>>>>>>>                       struct clk *parent)
+>>>>>>>>>
+>>>>>>>>> And have:
+>>>>>>>>> struct clk_hw {
+>>>>>>>>>         struct clk_hw_ops *ops;
+>>>>>>>>>         const char        *name;
+>>>>>>>>>         unsigned long     flags;
+>>>>>>>>> };
+>>>>>>>>>
+>>>>>>>>> Implementers can do:
+>>>>>>>>> struct my_clk_hw {
+>>>>>>>>>         struct clk_hw    hw;
+>>>>>>>>>         mydata;
+>>>>>>>>> };
+>>>>>>>>>
+>>>>>>>>> And then change the clk ops callbacks to take struct clk_hw * as an
+>>>>>>>>> argument.
+>>>>>>> We have to define static clocks before we adopt DT binding.
+>>>>>>> If clk is opaque and allocate memory in clk core, it'll make hard
+>>>>>>> to define static clocks. And register/init will pass a long parameter
+>>>>>>> list.
+>>>>>>
+>>>>>> DT is not a prerequisite for having dynamically created clocks. You
+>>>>>> can
+>>>>>> make clock init dynamic without DT.
+>>>>>
+>>>>> Agreed.
+>>>>>
+>>>>>> What data goes in struct clk vs. struct clk_hw could change over time.
+>>>>>> So perhaps we can start with some data in clk_hw and plan to move
+>>>>>> it to
+>>>>>> struct clk later. Even if almost everything ends up in clk_hw
+>>>>>> initially,
+>>>>>> at least the structure is in place to have common, core-only data
+>>>>>> separate from platform data.
+>>>>>
+>>>>> What is the point of this?
+>>>>
+>>>> To have a way forward. It would be nice to have a clk infrastructure
+>>>> before I retire...
+>>>
+>>> Haha, agreed.
+>>>
+>>>>
+>>>>> The original clk_hw was defined simply as:
+>>>>>
+>>>>> struct clk_hw {
+>>>>>           struct clk *clk;
+>>>>> };
+>>>>>
+>>>>> It's only purpose in life was as a handle for navigation between the
+>>>>> opaque struct clk and the hardware-specific struct my_clk_hw.  struct
+>>>>> clk_hw is defined in clk.h and everyone can see it.  If we're suddenly
+>>>>> OK putting clk data in this structure then why bother with an opaque
+>>>>> struct clk at all?
+>>>>>
+>>>>>> What is the actual data you need to be static and accessible to the
+>>>>>> platform code? A ptr to parent clk is the main thing I've seen for
+>>>>>> static initialization. So make the parent ptr be struct clk_hw* and
+>>>>>> allow the platforms to access.
+>>>>>
+>>>>> To answer your question on what data we're trying to expose: platform
+>>>>> code commonly needs the parent pointer and the clk rate (and by
+>>>>> extension, the rate of the parent).  For debug/error prints it is also
+>>>>> nice to have the clk name.  Generic clk flags are also conceivably
+>>>>> something that platform code might want.
+>>>>
+>>>> I agree with the need to have the parent and flags from a static init
+>>>> perspective. There's not really a good reason the others can't be
+>>>> accessed thru accessors though.
+>>>>
+>>>>> I'd like to spin the question around: if we're OK exposing some stuff
+>>>>> (in your example above, the parent pointer), then what clk data are
+>>>>> you trying to hide?
+>>>>
+>>>> Well, everything from drivers which the current clk implementations do
+>>>> hide. Catching abuse in with drivers coming in from all different trees
+>>>> and lists will be impossible.
+>>>>
+>>>> For platform code it is more fuzzy. I don't think platform code should
+>>>> be allowed to muck with prepare/enable counts for example.
+>>>
+>>> So there is a clear dichotomy: drivers shouldn't be exposed to any of
+>>> it and platform code should be exposed to some of it.
+>>>
+>>> How about a drivers/clk/clk-private.h which will define struct clk and
+>>> must only be included by clk drivers in drivers/clk/*?
+>>>
+>>> This establishes a bright line between those things which are allowed
+>>> to know the details of struct clk and those that are not: namely that
+>>> clk drivers in drivers/clk/ may use '#include "clk-private.h"'.
+>>> Obviously struct clk is opaque to the rest of the kernel (in the same
+>>> way it has been prior to the common clk patches) and there is no need
+>>> for struct clk_hw anymore.  Also helper functions are no longer needed
+>>> for clock driver code, which I think *is* a manageable set of code to
+>>> review.  Also clk drivers must live in drivers/clk/ for this to work
+>>> (without a big ugly path in someone's #include directive somewhere).
+>>
+>> While the original clk_hw suggestion was well intentioned, it just
+>> forces too many unnecessary dereferences and indirection. It also
+>> prevents static init of some fields as others have mentioned. Overall,
+>> it made the MSM clock code a mess when I tried to convert it to the
+>> common clock framework during Linaro Connect Q4 2011.
+>>
+>> The current off-tree MSM clock code uses a very similar approach to what
+>> the original patches that Jeremy sent out did. When Mike sent out the
+>> patches that removed clk_hw, the MSM code was much clearer and easier to
+>> convert to the common clock framework.
+>>
+>> The clk-private.h suggestion by Mike is reasonable seems like a good
+>> compromise. It support the idea of not letting the world peek into the
+>> clock struct (I want this too) while letting the clock driver use the
+>> struct without jumping through hoops. It has my vote (not the whole
+>> patch series, but the idea of having clk driver/framework specific stuff
+>> in clk-private.h). I really hope we move ahead with this.
+>>
 >
-> What if you're a daemon that needs something like CAP_NET_BIND but
-> also wants to be able to run other helpers without CAP_NET_BIND?
->
-> (Also, preventing dropping of privileges will probably make a patch
-> more complicted -- I'll have to find and update all the places that
-> allow dropping privileges.)
+> I'm fine with this approach. We're certainly no worse off as platforms
+> today have full access. However, it not me that has to be convinced.
 
-Hey, if it actually makes it more complicated to say "don't change
-privileges", then I guess my argument that it should be simpler is
-wrong.
+Sorry for not being clear. My previous mail was a general comment to the 
+community and not directed specifically at you Rob.
 
-That said, the thing you bring up is *not* the actual use-case for the
-suggestion. The use-case is a "run untrusted code". So the use-case
-would be to set the flag after you've dropped CAP_NET_BIND, and
-*before* you actually run the other helpers. You clearly must have a
-fork() or something like that there, since you want to keep the
-NET_BIND in the original daemon.
+> My suggestion was to build into the data structures at least the option
+> to have core only and core+platform data. Maybe the core only part is
+> mostly empty at first. This at least shows some intent to hide some of
+> the data. Which fields give you pain not having access to them? So far
+> this mainly seems to be parent and rate.
 
-So I don't t think your example is actually the expected situation.
-The obvious approach for your example is
- - run deamon with CAP_NET_BIND
- - per connection, fork, drop privileges in child, then set
-"restricted" flag, and run the untrusted code.
+It's been a while, but if I'm not mistaken, it was messy to statically 
+initialize the parent field and to tie up the clock specific struct 
+(say, clk_fixed) to the generic clock struct (clk) without having to 
+define each of them separately.
 
-(where the restricted mode setting may well obviously also do other
-things - like limit allowed system calls etc)
+With the clk-private.h approach, I could do something like this:
 
-                      Linus
+static struct fixed_clk cxo_clk = {
+	.reg = 0x12345678
+         .c = {
+                .dbg_name = "cxo_clk",
+                .ops = &clk_ops_cxo,
+                CLK_INIT(cxo_clk.c),
+        },
+}
+
+And without it, it would look something like:
+
+struct clk _cxo_clk;
+
+static struct msm_fixed_clk cxo_clk = {
+	.reg = 0x12345678
+	.c.clk = &_cxo_clk,
+};
+
+struct clk _cxo_clk = {
+        .name = "cxo_clk",
+        .ops = &clk_ops_cxo,
+        .hw = &cxo_clk.c
+};
+
+As you can see, I now have to give a name for a struct that I don't 
+really care about after init and pollute the name space. It's also 
+clumsy since both the structs try to reference each other and I have to 
+use forward declaration for every single clock I try to statically 
+initialize.
+
+I will also need to do several pointer derefs instead of using 
+container_of(), etc which is more efficient and less confusing than 
+multiple levels of pointer deref.
+
+Thanks,
+Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
