@@ -1,206 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab2AMAsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 19:48:55 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58813 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755510Ab2AMAsu (ORCPT
+	id S1756755Ab2AMAuD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 19:50:03 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:45114 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756690Ab2AMAuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 19:48:50 -0500
-Message-ID: <4F0F7F6E.1020905@gmail.com>
-Date: Thu, 12 Jan 2012 18:48:46 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: "Turquette, Mike" <mturquette@ti.com>, andrew@lunn.ch,
-        linaro-dev@lists.linaro.org, eric.miao@linaro.org,
-        grant.likely@secretlab.ca, amit.kucheria@linaro.org,
-        jeremy.kerr@canonical.com, linux@arm.linux.org.uk, sboyd@quicinc.com,
-        magnus.damm@gmail.com, dsaxena@linaro.org,
-        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org,
-        patches@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-omap@vger.kernel.org, richard.zhao@linaro.org,
-        shawn.guo@freescale.com, paul@pwsan.com, linus.walleij@stericsson.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Colin Cross <ccross@google.com>,
-        Richard Zhao <richard.zhao@freescale.com>, skannan@quicinc.com
-Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org> <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos> <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com> <20120104021541.GI2414@b20223-02.ap.freescale.net> <4F0462FF.1000308@gmail.com> <CAJOA=zPw7UuhE4R3SsBeyzQ2_iN29Zv-ExaUTTFCah+GoFSfNQ@mail.gmail.com> <4F0506D0.30109@gmail.com> <CAJOA=zPgwiOSoyZK1SpzZVZfTOmwruTR=WO+gRdVZrZVzNuPSA@mail.gmail.com> <4F0F7507.3080501@codeaurora.org>
-In-Reply-To: <4F0F7507.3080501@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jan 2012 19:50:01 -0500
+Date: Fri, 13 Jan 2012 11:49:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: linux-next: manual merge of the arm-current tree with Linus' tree
+Message-Id: <20120113114951.7b7f131514437454e5682aa8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__13_Jan_2012_11_49_51_+1100_.JWQvWMDaYkmYrkL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2012 06:04 PM, Saravana Kannan wrote:
-> On 01/04/2012 08:07 PM, Turquette, Mike wrote:
->> On Wed, Jan 4, 2012 at 6:11 PM, Rob Herring<robherring2@gmail.com> 
->> wrote:
->>> On 01/04/2012 07:01 PM, Turquette, Mike wrote:
->>>> On Wed, Jan 4, 2012 at 6:32 AM, Rob Herring<robherring2@gmail.com> 
->>>> wrote:
->>>>> On 01/03/2012 08:15 PM, Richard Zhao wrote:
->>>>>> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
->>>>>>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas
->>>>>>> Gleixner<tglx@linutronix.de>  wrote:
->>>>>>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
->>>>>
->>>>> snip
->>>>>
->>>>>>>>> +/**
->>>>>>>>> + * clk_init - initialize the data structures in a struct clk
->>>>>>>>> + * @dev: device initializing this clk, placeholder for now
->>>>>>>>> + * @clk: clk being initialized
->>>>>>>>> + *
->>>>>>>>> + * Initializes the lists in struct clk, queries the hardware
->>>>>>>>> for the
->>>>>>>>> + * parent and rate and sets them both.  Adds the clk to the
->>>>>>>>> sysfs tree
->>>>>>>>> + * topology.
->>>>>>>>> + *
->>>>>>>>> + * Caller must populate clk->name and clk->flags before calling
->>>>>>>>
->>>>>>>> I'm not too happy about this construct. That leaves struct clk
->>>>>>>> and its
->>>>>>>> members exposed to the world instead of making it a real opaque
->>>>>>>> cookie. I know from my own painful experience, that this will
->>>>>>>> lead to
->>>>>>>> random fiddling in that data structure in drivers and arch code
->>>>>>>> just
->>>>>>>> because the core code has a shortcoming.
->>>>>>>>
->>>>>>>> Why can't we make struct clk a real cookie and confine the data
->>>>>>>> structure to the core code ?
->>>>>>>>
->>>>>>>> That would change the init call to something like:
->>>>>>>>
->>>>>>>> struct clk *clk_init(struct device *dev, const struct clk_hw *hw,
->>>>>>>>                      struct clk *parent)
->>>>>>>>
->>>>>>>> And have:
->>>>>>>> struct clk_hw {
->>>>>>>>        struct clk_hw_ops *ops;
->>>>>>>>        const char        *name;
->>>>>>>>        unsigned long     flags;
->>>>>>>> };
->>>>>>>>
->>>>>>>> Implementers can do:
->>>>>>>> struct my_clk_hw {
->>>>>>>>        struct clk_hw    hw;
->>>>>>>>        mydata;
->>>>>>>> };
->>>>>>>>
->>>>>>>> And then change the clk ops callbacks to take struct clk_hw * as an
->>>>>>>> argument.
->>>>>> We have to define static clocks before we adopt DT binding.
->>>>>> If clk is opaque and allocate memory in clk core, it'll make hard
->>>>>> to define static clocks. And register/init will pass a long parameter
->>>>>> list.
->>>>>
->>>>> DT is not a prerequisite for having dynamically created clocks. You
->>>>> can
->>>>> make clock init dynamic without DT.
->>>>
->>>> Agreed.
->>>>
->>>>> What data goes in struct clk vs. struct clk_hw could change over time.
->>>>> So perhaps we can start with some data in clk_hw and plan to move
->>>>> it to
->>>>> struct clk later. Even if almost everything ends up in clk_hw
->>>>> initially,
->>>>> at least the structure is in place to have common, core-only data
->>>>> separate from platform data.
->>>>
->>>> What is the point of this?
->>>
->>> To have a way forward. It would be nice to have a clk infrastructure
->>> before I retire...
->>
->> Haha, agreed.
->>
->>>
->>>> The original clk_hw was defined simply as:
->>>>
->>>> struct clk_hw {
->>>>          struct clk *clk;
->>>> };
->>>>
->>>> It's only purpose in life was as a handle for navigation between the
->>>> opaque struct clk and the hardware-specific struct my_clk_hw.  struct
->>>> clk_hw is defined in clk.h and everyone can see it.  If we're suddenly
->>>> OK putting clk data in this structure then why bother with an opaque
->>>> struct clk at all?
->>>>
->>>>> What is the actual data you need to be static and accessible to the
->>>>> platform code? A ptr to parent clk is the main thing I've seen for
->>>>> static initialization. So make the parent ptr be struct clk_hw* and
->>>>> allow the platforms to access.
->>>>
->>>> To answer your question on what data we're trying to expose: platform
->>>> code commonly needs the parent pointer and the clk rate (and by
->>>> extension, the rate of the parent).  For debug/error prints it is also
->>>> nice to have the clk name.  Generic clk flags are also conceivably
->>>> something that platform code might want.
->>>
->>> I agree with the need to have the parent and flags from a static init
->>> perspective. There's not really a good reason the others can't be
->>> accessed thru accessors though.
->>>
->>>> I'd like to spin the question around: if we're OK exposing some stuff
->>>> (in your example above, the parent pointer), then what clk data are
->>>> you trying to hide?
->>>
->>> Well, everything from drivers which the current clk implementations do
->>> hide. Catching abuse in with drivers coming in from all different trees
->>> and lists will be impossible.
->>>
->>> For platform code it is more fuzzy. I don't think platform code should
->>> be allowed to muck with prepare/enable counts for example.
->>
->> So there is a clear dichotomy: drivers shouldn't be exposed to any of
->> it and platform code should be exposed to some of it.
->>
->> How about a drivers/clk/clk-private.h which will define struct clk and
->> must only be included by clk drivers in drivers/clk/*?
->>
->> This establishes a bright line between those things which are allowed
->> to know the details of struct clk and those that are not: namely that
->> clk drivers in drivers/clk/ may use '#include "clk-private.h"'.
->> Obviously struct clk is opaque to the rest of the kernel (in the same
->> way it has been prior to the common clk patches) and there is no need
->> for struct clk_hw anymore.  Also helper functions are no longer needed
->> for clock driver code, which I think *is* a manageable set of code to
->> review.  Also clk drivers must live in drivers/clk/ for this to work
->> (without a big ugly path in someone's #include directive somewhere).
-> 
-> While the original clk_hw suggestion was well intentioned, it just
-> forces too many unnecessary dereferences and indirection. It also
-> prevents static init of some fields as others have mentioned. Overall,
-> it made the MSM clock code a mess when I tried to convert it to the
-> common clock framework during Linaro Connect Q4 2011.
-> 
-> The current off-tree MSM clock code uses a very similar approach to what
-> the original patches that Jeremy sent out did. When Mike sent out the
-> patches that removed clk_hw, the MSM code was much clearer and easier to
-> convert to the common clock framework.
-> 
-> The clk-private.h suggestion by Mike is reasonable seems like a good
-> compromise. It support the idea of not letting the world peek into the
-> clock struct (I want this too) while letting the clock driver use the
-> struct without jumping through hoops. It has my vote (not the whole
-> patch series, but the idea of having clk driver/framework specific stuff
-> in clk-private.h). I really hope we move ahead with this.
-> 
+--Signature=_Fri__13_Jan_2012_11_49_51_+1100_.JWQvWMDaYkmYrkL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm fine with this approach. We're certainly no worse off as platforms
-today have full access. However, it not me that has to be convinced.
+Hi Russell,
 
-My suggestion was to build into the data structures at least the option
-to have core only and core+platform data. Maybe the core only part is
-mostly empty at first. This at least shows some intent to hide some of
-the data. Which fields give you pain not having access to them? So far
-this mainly seems to be parent and rate.
+Today's linux-next merge of the arm-current tree got a conflict in
+arch/arm/mach-exynos/common.c between (I think) commit 237c78beb8a9
+("Merge branch 'depends/rmk/for-linus' into samsung/dt") from Linus' tree
+and commit 588ac27d3419 ("ARM: 7273/1: EXYNOS: Fix build error which was
+from common.c and old cpu.c") from the arm-current tree.
 
-Rob
+So this arm-current fi is superceded by the merge above that is now in
+Linus' tree.
+
+I fixed it up by ignoring the arm-current version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__13_Jan_2012_11_49_51_+1100_.JWQvWMDaYkmYrkL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPD3+vAAoJEECxmPOUX5FEEl8P/jcffwKGEEpabEMkKUYXyb5w
+H+JKVEm2AmPEo7fiqBqyg52ILWYhKPi7KGJFPvLa8m0J83nESs7iDieBk5rwrrT8
+IBpKV9XUSUdFw9QmnJ2RnrhwoFor/4JFdoAyXRBewOgpbDyvkqL769izDa+wXUNT
+fEKMCkCcKv2g3ncn7rSRuEQLJ3/GPObQ/IvexihUhHblxahqcACXhAvxWjH3wR7K
+h7es1a0BxhEmMavRcJEH/yW3jJhy0k1U776OPWINIyI1jcXjLMvmDctnIdlgoYHy
+D//5MRyEsx9tvgy7y/13FCbTbhUnCeIX8Kixq6MEgwTkTcZe+uf4vwFwRZXm2H+o
+0qTHHkvIid2G8Vh1s4FVxbnGF+Ea4DTQ7XZuC9kmwbmm5wq/EGkIM9qzLfVa5hWf
+tRopOlAUpL5ofTGWsXQpbdSapDhi+8yLtgytCpal+zt+7AHAqYzndF7mHV7aWiGL
+LV0A0tTAyt3D6vkX9ZdKezb/rY75nD4z+bwoOSnKBFWytqGsKYiK8MqOeiYPJee3
+qvCp19TjBkzdXWQMlpsKnrlrGnkTUNK81SagDHA28Nm7h8HMY16qpqZeifLM6RI5
+i0j87UvScbROXulk7cQqUzmrqM5VdVnTwOqi9xu/GBa7jhPdLIlihfgco+bizel/
+v+7WquZh8Bbjhj1YjCen
+=zI5O
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__13_Jan_2012_11_49_51_+1100_.JWQvWMDaYkmYrkL--
