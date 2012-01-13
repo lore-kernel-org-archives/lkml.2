@@ -1,56 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab2AMJBG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 04:01:06 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63238 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab2AMJBB (ORCPT
+	id S1756210Ab2AMJDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 04:03:25 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:44094
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752049Ab2AMJDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 04:01:01 -0500
-Message-ID: <1326445253.12667.1.camel@phoenix>
-Subject: [PATCH] backlight: Return proper error in l4f00242t03_probe if
- regulator_get fails
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 13 Jan 2012 17:00:53 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 13 Jan 2012 04:03:15 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zz13e6Kc8kzz1202hzz8275ch8275bhz2dhc1ahc1bh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Qiang Liu <qiang.liu@freescale.com>
+To: <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
+CC: Qiang Liu <b32616@freescale.com>, Qiang Liu <qiang.liu@freescale.net>
+Subject: [PATCH][SDK v1.2] sata: I/O load balancing
+Date: Fri, 13 Jan 2012 16:21:57 +0800
+Message-ID: <1326442917-26562-1-git-send-email-qiang.liu@freescale.com>
+X-Mailer: git-send-email 1.6.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+From: Qiang Liu <b32616@freescale.com>
+
+Reduce interrupt singnals through reset Interrupt Coalescing Control Reg.
+Increase the threshold value of interrupt and timer will reduce the number
+of complete interrupt sharply. Improve the system performance effectively.
+
+Signed-off-by: Qiang Liu <qiang.liu@freescale.net>
 ---
- drivers/video/backlight/l4f00242t03.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Description:
+  1. sata-fsl interrupt will be raised 130 thousand times when write 8G file
+(dd if=/dev/zero of=/dev/sda2 bs=128K count=65536);
+  2. most of interrupts raised because of only 1-4 commands completed;
+  3. only 30 thousand times will be raised after set max interrupt threshold,
+more interrupts are coalesced as the description of ICC;
 
-diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
-index fae421a..6022b67 100644
---- a/drivers/video/backlight/l4f00242t03.c
-+++ b/drivers/video/backlight/l4f00242t03.c
-@@ -190,6 +190,7 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
- 
- 	priv->io_reg = regulator_get(&spi->dev, "vdd");
- 	if (IS_ERR(priv->io_reg)) {
-+		ret = PTR_ERR(priv->io_reg);
- 		dev_err(&spi->dev, "%s: Unable to get the IO regulator\n",
- 		       __func__);
- 		goto err3;
-@@ -197,6 +198,7 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
- 
- 	priv->core_reg = regulator_get(&spi->dev, "vcore");
- 	if (IS_ERR(priv->core_reg)) {
-+		ret = PTR_ERR(priv->core_reg);
- 		dev_err(&spi->dev, "%s: Unable to get the core regulator\n",
- 		       __func__);
- 		goto err4;
--- 
-1.7.5.4
+Performance Improvement:
+  use top command,
+  [root@p2020ds root]# dd if=/dev/zero of=/dev/sda2 bs=128K count=65536 &
+  [root@p2020ds root]# top
 
+   CPU %  |  dd   |  flush-8:0 | softirq
+  ---------------------------------------
+   before | 20-22 |    17-19   |    7
+  ---------------------------------------
+   after  | 18-21 |    15-16   |    5
+  ---------------------------------------
+
+ drivers/ata/sata_fsl.c |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/ata/sata_fsl.c b/drivers/ata/sata_fsl.c
+index 3547000..93f8b00 100644
+--- a/drivers/ata/sata_fsl.c
++++ b/drivers/ata/sata_fsl.c
+@@ -6,7 +6,7 @@
+  * Author: Ashish Kalra <ashish.kalra@freescale.com>
+  * Li Yang <leoli@freescale.com>
+  *
+- * Copyright (c) 2006-2007, 2011 Freescale Semiconductor, Inc.
++ * Copyright (c) 2006-2007, 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute  it and/or modify it
+  * under  the terms of  the GNU General  Public License as published by the
+@@ -162,6 +162,16 @@ enum {
+ };
+
+ /*
++ * Interrupt Coalescing Control Register bitdefs
++ */
++enum {
++	ICC_MIN_INT_THRESHOLD_COUNT = (1 << 24),
++	ICC_MAX_INT_THRESHOLD_COUNT = (((1 << 4) - 1) << 24),
++	ICC_MIN_INT_THRESHOLD_TIMER = 1,
++	ICC_MAX_INT_THRESHOLD_TIMER = ((1 << 18) - 1),
++};
++
++/*
+  * SATA Superset Registers
+  */
+ enum {
+@@ -460,6 +470,13 @@ static unsigned int sata_fsl_qc_issue(struct ata_queued_cmd *qc)
+ 	/* Simply queue command to the controller/device */
+ 	iowrite32(1 << tag, CQ + hcr_base);
+
++	/*
++	 * reset the number of command complete bits which will cause the
++	 * interrupt to be signaled
++	 */
++	iowrite32(ICC_MAX_INT_THRESHOLD_COUNT | ICC_MAX_INT_THRESHOLD_TIMER,
++			ICC + hcr_base);
++
+ 	VPRINTK("xx_qc_issue called, tag=%d, CQ=0x%x, CA=0x%x\n",
+ 		tag, ioread32(CQ + hcr_base), ioread32(CA + hcr_base));
+
+--
+1.6.4
 
 
