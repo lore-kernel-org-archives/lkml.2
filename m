@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab2AMPIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:08:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42186 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab2AMPIu (ORCPT
+	id S1758269Ab2AMPMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:12:16 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56661 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab2AMPMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:08:50 -0500
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: patches@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: [PATCH] mmc: change mmc_delay() to use usleep_range()
-Date: Fri, 13 Jan 2012 19:09:30 +0400
-Message-Id: <1326467370-21026-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: git-send-email 1.7.7.5
+	Fri, 13 Jan 2012 10:12:15 -0500
+Date: Fri, 13 Jan 2012 19:12:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Emelyanov <xemul@parallels.com>,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] sysctl: Make kernel.ns_last_pid control being
+ CHECKPOINT_RESTORE dependent
+Message-ID: <20120113151210.GN28196@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the usleep_range() to simplify mmc_delay() and give some more
-accuracy to it - but with an exception of mmc_card_sleepawake():
-since sleep/awake timeout varies in a wide range, different
-delay methods should be used.
+For those who doesn't need C/R functionality there is no need
+to control last pid, ie the pid for the next fork() call.
 
-Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/mmc/core/core.h    |    8 ++------
- drivers/mmc/core/mmc_ops.c |   12 +++++++++---
- 2 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
-index 14664f1..a77851e 100644
---- a/drivers/mmc/core/core.h
-+++ b/drivers/mmc/core/core.h
-@@ -47,12 +47,8 @@ void mmc_power_off(struct mmc_host *host);
- 
- static inline void mmc_delay(unsigned int ms)
- {
--	if (ms < 1000 / HZ) {
--		cond_resched();
--		mdelay(ms);
--	} else {
--		msleep(ms);
--	}
-+	unsigned long us = ms * USEC_PER_MSEC;
-+	usleep_range(us, us + 1000);
+Since there only two places where CONFIG_ is needed, I think
+plain #ifdef better than some helper function with bare body
+and unconditional call.
+
+ kernel/pid_namespace.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.git/kernel/pid_namespace.c
+===================================================================
+--- linux-2.6.git.orig/kernel/pid_namespace.c
++++ linux-2.6.git/kernel/pid_namespace.c
+@@ -191,6 +191,7 @@ void zap_pid_ns_processes(struct pid_nam
+ 	return;
  }
  
- void mmc_rescan(struct work_struct *work);
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index 4d41fa9..38d53ac 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -82,9 +82,15 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
- 	 * SEND_STATUS command to poll the status because that command (and most
- 	 * others) is invalid while the card sleeps.
- 	 */
--	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
--		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
++#ifdef CONFIG_CHECKPOINT_RESTORE
+ static int pid_ns_ctl_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+@@ -218,13 +219,16 @@ static struct ctl_table pid_ns_ctl_table
+ 	},
+ 	{ }
+ };
 -
-+	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY)) {
-+		/* JEDEC MMCA 4.41 specifies the timeout value is in 200ns..838.86ms
-+		   range. Round it up to 1us and use an appropriate delay method. */
-+		unsigned long us = DIV_ROUND_UP(card->ext_csd.sa_timeout, 10);
-+		if (us < 10)
-+			udelay(us);
-+		else
-+			usleep_range(us, us + 100);
-+	}
- 	if (!sleep)
- 		err = mmc_select_card(card);
+ static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
++#endif /* CONFIG_CHECKPOINT_RESTORE */
  
--- 
-1.7.7.5
-
+ static __init int pid_namespaces_init(void)
+ {
+ 	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
++
++#ifdef CONFIG_CHECKPOINT_RESTORE
+ 	register_sysctl_paths(kern_path, pid_ns_ctl_table);
++#endif
+ 	return 0;
+ }
+ 
