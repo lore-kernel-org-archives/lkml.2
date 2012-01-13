@@ -1,190 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab2AMAEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 19:04:43 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:56733 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755318Ab2AMAEk (ORCPT
+	id S1756260Ab2AMAJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 19:09:39 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:40126 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756128Ab2AMAJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 19:04:40 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6587"; a="154549923"
-Message-ID: <4F0F7507.3080501@codeaurora.org>
-Date: Thu, 12 Jan 2012 16:04:23 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Thu, 12 Jan 2012 19:09:36 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAPV0D095LbVq/2dsb2JhbABDrQ6BBoFyAQEEAScTHCMFCwgDDgouFCUDIRMbh1+3IROLJ2MElQ2SUQ
+Date: Fri, 13 Jan 2012 11:09:32 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
+        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 0/4] Fix filesystem freezing
+Message-ID: <20120113000932.GD2806@dastard>
+References: <1326331253-6497-1-git-send-email-jack@suse.cz>
+ <20120112024841.GB2806@dastard>
+ <20120112113031.GA8778@quack.suse.cz>
 MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Rob Herring <robherring2@gmail.com>, andrew@lunn.ch,
-        linaro-dev@lists.linaro.org, eric.miao@linaro.org,
-        grant.likely@secretlab.ca, amit.kucheria@linaro.org,
-        jeremy.kerr@canonical.com, linux@arm.linux.org.uk, sboyd@quicinc.com,
-        magnus.damm@gmail.com, dsaxena@linaro.org,
-        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org,
-        patches@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-omap@vger.kernel.org, richard.zhao@linaro.org,
-        shawn.guo@freescale.com, paul@pwsan.com, linus.walleij@stericsson.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Colin Cross <ccross@google.com>,
-        Richard Zhao <richard.zhao@freescale.com>, skannan@quicinc.com
-Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org> <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos> <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com> <20120104021541.GI2414@b20223-02.ap.freescale.net> <4F0462FF.1000308@gmail.com> <CAJOA=zPw7UuhE4R3SsBeyzQ2_iN29Zv-ExaUTTFCah+GoFSfNQ@mail.gmail.com> <4F0506D0.30109@gmail.com> <CAJOA=zPgwiOSoyZK1SpzZVZfTOmwruTR=WO+gRdVZrZVzNuPSA@mail.gmail.com>
-In-Reply-To: <CAJOA=zPgwiOSoyZK1SpzZVZfTOmwruTR=WO+gRdVZrZVzNuPSA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120112113031.GA8778@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2012 08:07 PM, Turquette, Mike wrote:
-> On Wed, Jan 4, 2012 at 6:11 PM, Rob Herring<robherring2@gmail.com>  wrote:
->> On 01/04/2012 07:01 PM, Turquette, Mike wrote:
->>> On Wed, Jan 4, 2012 at 6:32 AM, Rob Herring<robherring2@gmail.com>  wrote:
->>>> On 01/03/2012 08:15 PM, Richard Zhao wrote:
->>>>> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
->>>>>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas Gleixner<tglx@linutronix.de>  wrote:
->>>>>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
->>>>
->>>> snip
->>>>
->>>>>>>> +/**
->>>>>>>> + * clk_init - initialize the data structures in a struct clk
->>>>>>>> + * @dev: device initializing this clk, placeholder for now
->>>>>>>> + * @clk: clk being initialized
->>>>>>>> + *
->>>>>>>> + * Initializes the lists in struct clk, queries the hardware for the
->>>>>>>> + * parent and rate and sets them both.  Adds the clk to the sysfs tree
->>>>>>>> + * topology.
->>>>>>>> + *
->>>>>>>> + * Caller must populate clk->name and clk->flags before calling
->>>>>>>
->>>>>>> I'm not too happy about this construct. That leaves struct clk and its
->>>>>>> members exposed to the world instead of making it a real opaque
->>>>>>> cookie. I know from my own painful experience, that this will lead to
->>>>>>> random fiddling in that data structure in drivers and arch code just
->>>>>>> because the core code has a shortcoming.
->>>>>>>
->>>>>>> Why can't we make struct clk a real cookie and confine the data
->>>>>>> structure to the core code ?
->>>>>>>
->>>>>>> That would change the init call to something like:
->>>>>>>
->>>>>>> struct clk *clk_init(struct device *dev, const struct clk_hw *hw,
->>>>>>>                      struct clk *parent)
->>>>>>>
->>>>>>> And have:
->>>>>>> struct clk_hw {
->>>>>>>        struct clk_hw_ops *ops;
->>>>>>>        const char        *name;
->>>>>>>        unsigned long     flags;
->>>>>>> };
->>>>>>>
->>>>>>> Implementers can do:
->>>>>>> struct my_clk_hw {
->>>>>>>        struct clk_hw    hw;
->>>>>>>        mydata;
->>>>>>> };
->>>>>>>
->>>>>>> And then change the clk ops callbacks to take struct clk_hw * as an
->>>>>>> argument.
->>>>> We have to define static clocks before we adopt DT binding.
->>>>> If clk is opaque and allocate memory in clk core, it'll make hard
->>>>> to define static clocks. And register/init will pass a long parameter
->>>>> list.
->>>>
->>>> DT is not a prerequisite for having dynamically created clocks. You can
->>>> make clock init dynamic without DT.
->>>
->>> Agreed.
->>>
->>>> What data goes in struct clk vs. struct clk_hw could change over time.
->>>> So perhaps we can start with some data in clk_hw and plan to move it to
->>>> struct clk later. Even if almost everything ends up in clk_hw initially,
->>>> at least the structure is in place to have common, core-only data
->>>> separate from platform data.
->>>
->>> What is the point of this?
->>
->> To have a way forward. It would be nice to have a clk infrastructure
->> before I retire...
->
-> Haha, agreed.
->
->>
->>> The original clk_hw was defined simply as:
->>>
->>> struct clk_hw {
->>>          struct clk *clk;
->>> };
->>>
->>> It's only purpose in life was as a handle for navigation between the
->>> opaque struct clk and the hardware-specific struct my_clk_hw.  struct
->>> clk_hw is defined in clk.h and everyone can see it.  If we're suddenly
->>> OK putting clk data in this structure then why bother with an opaque
->>> struct clk at all?
->>>
->>>> What is the actual data you need to be static and accessible to the
->>>> platform code? A ptr to parent clk is the main thing I've seen for
->>>> static initialization. So make the parent ptr be struct clk_hw* and
->>>> allow the platforms to access.
->>>
->>> To answer your question on what data we're trying to expose: platform
->>> code commonly needs the parent pointer and the clk rate (and by
->>> extension, the rate of the parent).  For debug/error prints it is also
->>> nice to have the clk name.  Generic clk flags are also conceivably
->>> something that platform code might want.
->>
->> I agree with the need to have the parent and flags from a static init
->> perspective. There's not really a good reason the others can't be
->> accessed thru accessors though.
->>
->>> I'd like to spin the question around: if we're OK exposing some stuff
->>> (in your example above, the parent pointer), then what clk data are
->>> you trying to hide?
->>
->> Well, everything from drivers which the current clk implementations do
->> hide. Catching abuse in with drivers coming in from all different trees
->> and lists will be impossible.
->>
->> For platform code it is more fuzzy. I don't think platform code should
->> be allowed to muck with prepare/enable counts for example.
->
-> So there is a clear dichotomy: drivers shouldn't be exposed to any of
-> it and platform code should be exposed to some of it.
->
-> How about a drivers/clk/clk-private.h which will define struct clk and
-> must only be included by clk drivers in drivers/clk/*?
->
-> This establishes a bright line between those things which are allowed
-> to know the details of struct clk and those that are not: namely that
-> clk drivers in drivers/clk/ may use '#include "clk-private.h"'.
-> Obviously struct clk is opaque to the rest of the kernel (in the same
-> way it has been prior to the common clk patches) and there is no need
-> for struct clk_hw anymore.  Also helper functions are no longer needed
-> for clock driver code, which I think *is* a manageable set of code to
-> review.  Also clk drivers must live in drivers/clk/ for this to work
-> (without a big ugly path in someone's #include directive somewhere).
+On Thu, Jan 12, 2012 at 12:30:31PM +0100, Jan Kara wrote:
+> On Thu 12-01-12 13:48:41, Dave Chinner wrote:
+> > On Thu, Jan 12, 2012 at 02:20:49AM +0100, Jan Kara wrote:
+> > > 
+> > >   Hello,
+> > > 
+> > >   filesystem freezing is currently racy and thus we can end up with dirty data
+> > > on frozen filesystem (see changelog of the first patch for detailed race
+> > > description and proposed fix). This patch series aims at fixing this.
+> > 
+> > It only fixes the dirty data race (i.e. SB_FREEZE_WRITE). The same
+> > race conditions exist for SB_FREEZE_TRANS on XFS, and so need the
+> > same fix. That race has had one previous attempt at fixing it in
+> > XFS but that's not possible:
+> > 
+> > b2ce397 Revert "xfs: fix filesystsem freeze race in xfs_trans_alloc"
+> > 7a249cf xfs: fix filesystsem freeze race in xfs_trans_alloc
+> > 
+> > It was looking at that problem earlier today that lead to the
+> > solution Eric proposed. Essentially the method in these patches
+> > needs to replace the xfs specifc m_active_trans counter and delay
+> > during ->fs_freeze to prevent that race condition....
+>   OK, I see. I just checked ext4 to make sure and ext4 seems to get this
+> right. Looking into Christoph's original patch it shouldn't be hard to fix
+> it. Instead of:
+>         atomic_inc(&mp->m_active_trans);
+>  
+>         if (wait_for_freeze)
+>               xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+> 
+> we just need to do a bit more elaborate
+> 
+> retry:
+>         if (wait_for_freeze)
+>               xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+>         atomic_inc(&mp->m_active_trans);
+> 	if (wait_for_freeze && mp->m_super->s_frozen >= SB_FREEZE_TRANS) {
+>         	atomic_dec(&mp->m_active_trans);
+> 		goto retry;
+> 	}
+> 
+> Or does XFS support nested transactions (i.e. a thread already holding a
+> running transaction can call into xfs_trans_alloc() again)?
+> That would make things more complicated...
 
-While the original clk_hw suggestion was well intentioned, it just 
-forces too many unnecessary dereferences and indirection. It also 
-prevents static init of some fields as others have mentioned. Overall, 
-it made the MSM clock code a mess when I tried to convert it to the 
-common clock framework during Linaro Connect Q4 2011.
+You're still missing the point - that this isn't an XFS specific
+problem or that the write problem is a ext4 specific problem. The
+problem is that these are freeze state transition problems -
+something that can affect every filesystem because the freeze code
+is generic.  Quite frankly, I'm not interested in having a generic
+solution for SB_FREEZE_WRITE and a custom, per filesystem solution
+for SB_FREEZE_TRANS when the solution is exactly the same.
 
-The current off-tree MSM clock code uses a very similar approach to what 
-the original patches that Jeremy sent out did. When Mike sent out the 
-patches that removed clk_hw, the MSM code was much clearer and easier to 
-convert to the common clock framework.
+> Using sb_start_write() instead of m_active_trans won't be that easy because
+> it can create A-A deadlocks (e.g. we do sb_start_write in
+> block_page_mkwrite() and then xfs_get_blocks() decides to start a
+> transaction and calls sb_start_write() again which might block if
+> filesystem freezing started in the mean time).
 
-The clk-private.h suggestion by Mike is reasonable seems like a good 
-compromise. It support the idea of not letting the world peek into the 
-clock struct (I want this too) while letting the clock driver use the 
-struct without jumping through hoops. It has my vote (not the whole 
-patch series, but the idea of having clk driver/framework specific stuff 
-in clk-private.h). I really hope we move ahead with this.
+So, like Eric said in his first email, it's not a "write start/end"
+interface that is needed, the interface has to work with different
+freeze levels (e.g "sb_freeze_ref(sb, level)/sb_freeze_drop(sb,
+level)").  Sure, internally it would have to map to two counters and
+different level checks, but it solves the same problem for all
+levels of freeze for all filesystems.
 
-Thanks,
-Saravana
+Let's fix this freeze problem once and for all in the generic code,
+and not have to keep coming back to it to add more functioanlity for
+different situations the most recent fix didn't handle for random
+filesystem X....
+
+> So it's up to XFS maintainers to decide what's best but I'd take
+> Christoph's patch with above fixup. I guess I'll put it in this series and
+> see what people say.
+
+Eric and I have already discussed and agreed to replacing the XFS
+sepcific code with the fixed VFS level API where other XFS
+developers including the "XFS Maintainers" (*) can see. Nobody has
+objected so I doubt there's any problem with doing so.
+
+Besides, anything that replaces custom XFS code with a better
+generic solution is pretty much guaranteed to be done. And given
+that this is not an XFS specifc problem and it needs be fixed at
+the VFS level.....
+
+Cheers,
+
+Dave.
+
+[*] keep in mind that "XFS Maintainer" is just a figurehead who
+maintains the tree that is sent to Linus, not the person with final
+say over what changes are made. That decision is made by the
+reviewers of the code...
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Dave Chinner
+david@fromorbit.com
