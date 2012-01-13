@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab2AMCR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 21:17:27 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54220 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757101Ab2AMCRY convert rfc822-to-8bit (ORCPT
+	id S1757217Ab2AMCUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 21:20:40 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63096 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755494Ab2AMCUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 21:17:24 -0500
+	Thu, 12 Jan 2012 21:20:37 -0500
+Date: Thu, 12 Jan 2012 19:20:34 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, sfr@canb.auug.org.au,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 13/14] irq_domain: Remove 'new' irq_domain in favour of the
+ ppc one
+Message-ID: <20120113022034.GA25999@ponder.secretlab.ca>
+References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
+ <1326313337-24603-14-git-send-email-grant.likely@secretlab.ca>
+ <4F0DFC0F.2090005@gmail.com>
+ <CACxGe6vVSO0cTgPurr6jFoo9QF_W02UaABOFYadCTQGU9dcwmg@mail.gmail.com>
+ <4F0F7B60.5040701@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1324964554-9719-1-git-send-email-ming.m.lin@intel.com>
-References: <1324964554-9719-1-git-send-email-ming.m.lin@intel.com>
-Date: Fri, 13 Jan 2012 10:17:23 +0800
-X-Google-Sender-Auth: Zy1PGGkvKOjGQk-JQQIOoRz6t1s
-Message-ID: <CAF1ivSbwO+D1Z4A=A7wPunDOOkZxthRAn_TEX_osyJozdZNFcg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] ahci controller runtime PM support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F0F7B60.5040701@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 1:42 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> Hi all,
->
-> Here is the v2 patches to add ahci controller runtime PM support.
-> Applied on top of linux-next tree.
->
-> Thanks for any comments.
+On Thu, Jan 12, 2012 at 06:31:28PM -0600, Rob Herring wrote:
+> Adding lakml...
+> 
+> On 01/11/2012 03:27 PM, Grant Likely wrote:
+> > On Wed, Jan 11, 2012 at 2:15 PM, Rob Herring <robherring2@gmail.com> wrote:
+> >> Grant,
+> >>
+> >> On 01/11/2012 02:22 PM, Grant Likely wrote:
+> >>> This patch removes the simplistic implementation of irq_domains and enables
+> >>> the powerpc infrastructure for all irq_domain users.  The powerpc
+> >>> infrastructure includes support for complex mappings between Linux and
+> >>> hardware irq numbers, and can manage allocation of irq_descs.
+> >>>
+> >>> This patch also converts the few users of irq_domain_add()/irq_domain_del()
+> >>> to call irq_domain_add_legacy() instead.
+> >>
+> >> So what is the non-legacy way? Legacy implies we don't want to do it
+> >> that way. I guess until we remove all non-DT platforms with GIC we are
+> >> stuck with legacy. That seems like it could be a ways out until we get
+> >> there.
+> > 
+> > Non-legacy is letting the irq_domain manage the irq_desc allocations.
+> > Some of the controllers will be easy to convert, some will be more
+> > difficult.  The primary thing that really blocks getting away from the
+> > legacy method is anything that expects hardcoded #defined irq numbers.
+> >  The goal is to convert all users over to the linear revmap method.
+> > 
+> 
+> So I gave this a spin on highbank. I ran into a couple problems.
+> 
+> I had to revert "irqdesc: Consolidate irq reservation logic" which is in
+> your branch, but not this series. irq_alloc_desc_from was returning -EEXIST.
 
-Any comment?
+Gah, I flubbed that patch too.  Try this on top of it:
 
-Thanks,
-Lin Ming
+---
 
->
-> v2:
-> - add ahci hibernate callbacks
->
-> v1:
-> https://lkml.org/lkml/2011/12/15/198
->
-> Lin Ming (3):
->      ahci: port legacy pm interface to struct dev_pm_ops
->      ahci: add runtime PM callbacks
->      ata: runtime suspend port if no device attached
->
->  drivers/ata/ahci.c        |   71 +++++++++++++++++++++++++++++++++++++++-----
->  drivers/ata/libata-core.c |   21 ++++++++++++-
->  2 files changed, 83 insertions(+), 9 deletions(-)
->
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 8a9e2ec..11feb2f 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -375,6 +375,9 @@ __irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt)
+ 	}
+ 
+ 	bitmap_set(allocated_irqs, start, cnt);
++	mutex_unlock(&sparse_irq_lock);
++	return start;
++
+ err:
+ 	mutex_unlock(&sparse_irq_lock);
+ 	return ret;
+@@ -408,7 +411,8 @@ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
+  */
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt)
+ {
+-	return __irq_reserve_irqs(from, from, cnt);
++	int start = __irq_reserve_irqs(from, from, cnt);
++	return start < 0 ? start : 0;
+ }
+ 
+ /**
