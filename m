@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab2AMOmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 09:42:42 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57318 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab2AMOmi (ORCPT
+	id S932200Ab2AMOrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 09:47:36 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34772 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758041Ab2AMOrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 09:42:38 -0500
-Date: Fri, 13 Jan 2012 22:53:24 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: "Turquette, Mike" <mturquette@ti.com>, Rob Herring <robherring2@gmail.com>,
-        andrew@lunn.ch, linaro-dev@lists.linaro.org, eric.miao@linaro.org,
-        grant.likely@secretlab.ca, amit.kucheria@linaro.org,
-        jeremy.kerr@canonical.com, linux@arm.linux.org.uk, sboyd@quicinc.com,
-        magnus.damm@gmail.com, dsaxena@linaro.org,
-        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org,
-        patches@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-omap@vger.kernel.org, richard.zhao@linaro.org,
-        shawn.guo@freescale.com, paul@pwsan.com, linus.walleij@stericsson.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Colin Cross <ccross@google.com>,
-        Richard Zhao <richard.zhao@freescale.com>, skannan@quicinc.com
-Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
-Message-ID: <20120113145321.GB1810@S2101-09.ap.freescale.net>
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
- <1323834838-2206-4-git-send-email-mturquette@linaro.org>
- <alpine.LFD.2.02.1112141007550.3020@ionos>
- <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com>
- <20120104021541.GI2414@b20223-02.ap.freescale.net>
- <4F0462FF.1000308@gmail.com>
- <CAJOA=zPw7UuhE4R3SsBeyzQ2_iN29Zv-ExaUTTFCah+GoFSfNQ@mail.gmail.com>
- <4F0506D0.30109@gmail.com>
- <CAJOA=zPgwiOSoyZK1SpzZVZfTOmwruTR=WO+gRdVZrZVzNuPSA@mail.gmail.com>
- <4F0F7507.3080501@codeaurora.org>
+	Fri, 13 Jan 2012 09:47:35 -0500
+Date: Fri, 13 Jan 2012 15:47:31 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu,
+        robert.richter@amd.com
+Subject: [PATCH] perf: fix broken perf inject -b
+Message-ID: <20120113144731.GA5458@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F0F7507.3080501@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 04:04:23PM -0800, Saravana Kannan wrote:
-> While the original clk_hw suggestion was well intentioned, it just
-> forces too many unnecessary dereferences and indirection. It also
-> prevents static init of some fields as others have mentioned.
-> Overall, it made the MSM clock code a mess when I tried to convert
-> it to the common clock framework during Linaro Connect Q4 2011.
-> 
-> The current off-tree MSM clock code uses a very similar approach to
-> what the original patches that Jeremy sent out did. When Mike sent
-> out the patches that removed clk_hw, the MSM code was much clearer
-> and easier to convert to the common clock framework.
-> 
-I share the same feeling with migrating imx6 clock support to v2 and
-v3 of this series.  (v2 uses clk_hw, and v3 removes clk_hw.)
 
--- 
-Regards,
-Shawn
+perf inject -b was broken. It would not inject any build_ids
+into the stream. Furthermore, it would strip samples from the
+stream.
+
+The reason was a missing initialization of the event attribute
+structures. The perf_tool.tool.attr() callback was pointing to
+a simple repipe. But there was no initialization of internal data
+structures to keep track of events and event ids. That later caused
+event id lookups to fail, and samples would get dropped.
+
+The patch simply adds back the call to perf_event__process_attr()
+to initialize the evlist structure. Build_ids are again injected.
+The PID is also inject for PERF_RECORD_HEADER_BUILD_ID.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 09c1061..f38f370 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -60,6 +60,11 @@ static int perf_event__repipe_tracing_data_synth(union perf_event *event,
+ static int perf_event__repipe_attr(union perf_event *event,
+ 				   struct perf_evlist **pevlist __used)
+ {
++	int ret;
++	ret = perf_event__process_attr(event, pevlist);
++	if (ret)
++		return ret;
++
+ 	return perf_event__repipe_synth(NULL, event, NULL);
+ }
+ 
+@@ -173,6 +178,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+ 		       event->header.type);
+ 		goto repipe;
+ 	}
++	machine->pid = event->ip.pid;
+ 
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+ 			      event->ip.ip, &al);
