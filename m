@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab2AMVIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 16:08:34 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56949 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab2AMVIa (ORCPT
+	id S1759201Ab2AMVNN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 16:13:13 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:50580 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814Ab2AMVNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 16:08:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F1099CA.7090209@linux.vnet.ibm.com>
-References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
- <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFwcOgEbnYhs7z+jc-Jq+fWxV3vfSRdfLXBEUC_40BRK0w@mail.gmail.com>
- <4F1099CA.7090209@linux.vnet.ibm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Jan 2012 13:08:08 -0800
-X-Google-Sender-Auth: xoOS8zEYir9eH33x4-3FA0xrrA4
-Message-ID: <CA+55aFw9SkNPoMmad6sOAsY-jtJtes12pBFGr9sipGadS8+VJg@mail.gmail.com>
-Subject: Re: x86/mce: machine check warning during poweroff
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jan 2012 16:13:12 -0500
+Date: Fri, 13 Jan 2012 13:12:48 -0800 (PST)
+Message-Id: <20120113.131248.447541680022014759.davem@davemloft.net>
+To: cascardo@linux.vnet.ibm.com
+Cc: roland@purestorage.com, venkat.x.venkatsubra@oracle.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
+Subject: Re: [PATCH] rds_rdma: don't assume infiniband device is PCI
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120113185258.GB3904@oc1711230544.ibm.com>
+References: <20120113181706.GA3904@oc1711230544.ibm.com>
+	<20120113.102518.924916400773191073.davem@davemloft.net>
+	<20120113185258.GB3904@oc1711230544.ibm.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Jan 2012 13:13:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 12:53 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
->
-> Wait a minute, did you mention "second attempt"? I think I have something
-> interesting..
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Date: Fri, 13 Jan 2012 16:52:58 -0200
 
-Yes, I think you're hitting the exact same thing.
+> On Fri, Jan 13, 2012 at 10:25:18AM -0800, David Miller wrote:
+>> From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+>> Date: Fri, 13 Jan 2012 16:17:06 -0200
+>> 
+>> > Is this going through your tree? In patchwork, its state is "Not
+>> > Applicable".
+>> 
+>> There was an active RDS maintainer, though I haven't seen patches
+>> from that person in a while.
+>> 
+> 
+> Hi, David.
+> 
+> Venkat is the current RDS maintainer and he has Acked the patch.
 
-I *think* that what is going on is that we free some data structure
-too early, and we didn't use to free them before. I tried to see if I
-could catch it with slab and list debugging, but I didn't see
-anything, and the machine I used for suspend/resume had other issues
-too (wireless network - which is the *only* network on that machine -
-hung on resume), so I ended up punting and just disabling MCE to
-concentrate on those issues.
-
-On eof the differences between sysdev and 'struct device' is that
-sysdev doesn't bother refcounting parents etc. So there could have
-been some refcount problem that was never relevant with the old sysdev
-code. I dunno.
-
-The wireless issues got resolved for me, and I haven't gotten back to
-MCE yet. I was *really* hoping that somebody else could figure it out,
-since I'm not the only one seeing it..
-
-                    Linus
+Not according to patchwork.  I don't see him reply at all to the
+patch posting and give his explicit "Acked-by: "
