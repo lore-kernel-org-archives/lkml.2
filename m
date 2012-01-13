@@ -1,152 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758579Ab2AMRet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 12:34:49 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40283 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab2AMRer convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 12:34:47 -0500
+	id S932594Ab2AMRjU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 12:39:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41736 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751230Ab2AMRjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 12:39:17 -0500
+Date: Fri, 13 Jan 2012 18:31:53 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using
+	BPF
+Message-ID: <20120113173153.GA24273@redhat.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org> <1326302710-9427-2-git-send-email-wad@chromium.org> <20120112162231.GA23960@redhat.com> <CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com> <20120112172315.GA26295@redhat.com> <CABqD9hZg4sKiVMS-g5ed7-HKOaiUb06y05TL=QkfBkm9kVmquA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <m162ggqa8x.fsf@fess.ebiederm.org>
-References: <1326405521-2736-1-git-send-email-venki@google.com>
-	<m14nw0wnjh.fsf@fess.ebiederm.org>
-	<CABeCy1YjRjUBSqZndAZ9N6P9NM7=J6JOCQ11PkQZSr2c3Ud0cg@mail.gmail.com>
-	<m162ggqa8x.fsf@fess.ebiederm.org>
-Date: Fri, 13 Jan 2012 09:34:46 -0800
-Message-ID: <CABeCy1bTKTPn-VUorC0rVmvrhDomDX3QcQdHapwxqsJvE6D5uw@mail.gmail.com>
-Subject: Re: [PATCH] Kexec reboot and stale/inconsistent system state
-From: Venki Pallipadi <venki@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABqD9hZg4sKiVMS-g5ed7-HKOaiUb06y05TL=QkfBkm9kVmquA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 12:26 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Venki Pallipadi <venki@google.com> writes:
+On 01/12, Will Drewry wrote:
 >
->> On Thu, Jan 12, 2012 at 2:42 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> Venkatesh Pallipadi <venki@google.com> writes:
->>>
->>>> Of course, kexec reboots has a lot of advantantages. There is one
->>>> blind spot though, in the way we handle shutdown of the old kernel in kexec.
->>>> The problem: there are drivers in the kernel that change
->>>> system state either during init or during normal operation. During a
->>>> hardware reboot these system states would get reset to default.
->>>> But, with kexec reboot this system state can stay persistent with the
->>>> new kernel and can lead to some inconsistencies.
->>>>
->>>> More concrete x86 example:
->>>> * Kernel_v0 has a driver which sets a particular MSR.
->>>> * Kernel_v1 has a different version of the driver which does not touch the
->>>> MSR and assumes it to be at BIOS init state.
->>>> * Now we have a kexec reboot from Kernel_v0 to Kernel_v1 and the MSR will
->>>> stay set leading to potential inconsistent state.
->>>>
->>>> One such driver I was looking at is drivers/idle/intel_idle.c, which sets
->>>> the MSR during init and forgets about it. There are other drivers which can
->>>> potentially have similar problems - like MTRR, etc. There can be other
->>>> state in the system like chipset state and device state etc, though
->>>> I expect most of it won't be a problem based on the way drivers init.
->>>>
->>>> Seemingly simple solution is to do the needed cleanup in driver's module_exit
->>>> code path. That is not enough as module_exit for all builtin drivers are
->>>> all discarded.
->>>>
->>>> What if we retain all the module_exits in CONFIG_KEXEC case and do a
->>>> cleanup before launching a new kernel. This should work, but most of the
->>>> module_exit code assumes that they will be only called when corresponding
->>>> init is successful. I couldn't find a clean and easy way of associating
->>>> module's init function with its exit function and to save the result of
->>>> init.
->>>>
->>>> Alternate quick solution is to create a new module interface to register
->>>> kexec cleanup function as in the patch below. But, this is not generic enough
->>>> yet and does not handle the case where we have done the cleanup and kexec
->>>> fails after that and we have to do some setup again to run with old
->>>> kernel.
->>>>
->>>> Before spending more time on this, just wanted to run this RFC along to see:
->>>> * How big/serious this problem really is?
->>>> * Has this been looked at before and any other potential solution for
->>>> this?
->>>
->>> Use the drivers shutdown method.  The shutdown method is called
->>> at reboot and at normal kexec.  If you care about the kexec on panic
->>> case you need to write a paranoid driver initialization routine.
->>>
->>> Hmm.  Looking a little closer the intel idle driver is a weird thing.
->>> I am not seeing any operations structures.  There are kobjects so
->>> the intel idle driver might be properly hooked into the device tree.
->>> If the intel idle driver isn't properly hooked into the device
->>> tree you should be able to hook into the reboot notifier instead
->>> of implementing a device shutdown method.  Although for a lot
->>> of reasons implementing the standard device shutdown method is
->>> preferred.
->>>
->>
->> Yes. Doing in device shutdown is much cleaner. I need to figure out
->> how to hook that into intel_idle.
->>
->> One other problem case I see is in mtrr. 'cat <something> >
->> /proc/mtrr' gets carried over after a kexec reboot.
->> So, we need some change to restore the boot time state there.
+> On Thu, Jan 12, 2012 at 11:23 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 01/12, Will Drewry wrote:
+> >>
+> >> On Thu, Jan 12, 2012 at 10:22 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> >> +      */
+> >> >> +     regs = seccomp_get_regs(regs_tmp, &regs_size);
+> >> >
+> >> > Stupid question. I am sure you know what are you doing ;) and I know
+> >> > nothing about !x86 arches.
+> >> >
+> >> > But could you explain why it is designed to use user_regs_struct ?
+> >> > Why we can't simply use task_pt_regs() and avoid the (costly) regsets?
+> >>
+> >> So on x86 32, it would work since user_regs_struct == task_pt_regs
+> >> (iirc), but on x86-64
+> >> and others, that's not true.
+> >
+> > Yes sure, I meant that userpace should use pt_regs too.
+> >
+> >> If it would be appropriate to expose pt_regs to userspace, then I'd
+> >> happily do so :)
+> >
+> > Ah, so that was the reason. But it is already exported? At least I see
+> > the "#ifndef __KERNEL__" definition in arch/x86/include/asm/ptrace.h.
+> >
+> > Once again, I am not arguing, just trying to understand. And I do not
+> > know if this definition is part of abi.
 >
-> Assuming userspace changes /proc/mtrr and userspace calls reboot
-> that instance looks like a userspace problem.
->
-> Any time I have changed /proc/mtrr the change has happened because the
-> BIOS got it wrong and I needed to fix those values.
->
-> The other usecase for changning /proc/mtrr is to make video
-> frame-buffers write-combining, and with PAT support in the kernel
-> using /proc/mtrr for that should now be obsolete.
->
-> So in practice if not in theory I think we should be good.
+> I don't either :/  My original idea was to operate on task_pt_regs(current),
+> but I noticed that PTRACE_GETREGS/SETREGS only uses the
+> user_regs_struct. So I went that route.
 
-Agree. This should be fine in normal operation. I was thinking more in
-terms of inconsistency between BIOS reboot and kexec reboot in case of
-a crash (where needed cleanup may not happen) and also in case of
-userspace and driver bugs (which likely does mtrr_add and mtrr_del
-only in driver_exit path instead of shutdown). There are quite a few
-users of mtrr_add in drivers for example. No idea how many of it are
-still in use.
+Well, I don't know where user_regs_struct come from initially. But
+probably it is needed to allow to access the "artificial" things like
+fs_base. Or perhaps this struct mimics the layout in the coredump.
 
->
->> Do you guys see any other place where we will need similar special
->> handling for kexec reboots?
->
-> The rule is every driver needs to put the device back in a state where
-> the drivers init/probe routine can get the device out of that state.
-> Frequently people when the care chose to fix kdump.
->
-> Perhaps I am dense but I don't get the impression that you have
-> uncovered any new kinds of issues.  My impression is that you have
-> found another case where kexec isn't on the top of the list of the
-> driver developer and so a bug is found on the kexec path.
->
+> I'd love for pt_regs to be fair game to cut down on the copying!
 
-Sorry, if I came across as saying this is a big problem. This is more
-of a niggle with drivers and kexec. kexec being relatively new and
-driver writes assuming reboot implies clean hardware state.
-The thing I am more concerned about is that I found these particular
-issues by accident, as I happen to be looking at the code with kexec
-at the back of my mind. I am wondering what is the best way to
-proactively look for other drivers in the kernel that may have similar
-problems, instead of looking at them when we see some weird
-manifestation of the problem. For MSRs its probably easy to audit all
-wrmsrs or to dump all the readable ones on regular boot and kexec boot
-and compare them. But no idea about any other areas if any and a
-systematic way to identify them...
+Me too. I see no point in using user_regs_struct.
 
-Thanks,
-Venki
+Oleg.
+
