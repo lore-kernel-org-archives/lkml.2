@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab2AMFmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 00:42:10 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51002 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab2AMFmI (ORCPT
+	id S1752156Ab2AMFxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 00:53:06 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42215 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab2AMFxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 00:42:08 -0500
+	Fri, 13 Jan 2012 00:53:02 -0500
+X-AuditID: b753bd60-a0885ba000000655-74-4f0fc6ba916c
+X-AuditID: b753bd60-a0885ba000000655-74-4f0fc6ba916c
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [PATCH] xfs: show uuid when mount fails due to duplicate uuid
+To: Ben Myers <bpm@sgi.com>, Alex Elder <aelder@sgi.com>,
+        Christoph Hellwig <hch@lst.de>
+Cc: xfs-masters@oss.sgi.com, xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Date: Fri, 13 Jan 2012 14:58:39 +0900
+Message-ID: <20120113055839.12919.98763.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <1326402935-31002-1-git-send-email-taysom@chromium.org>
-References: <1326402935-31002-1-git-send-email-taysom@chromium.org>
-Date: Fri, 13 Jan 2012 00:42:07 -0500
-Message-ID: <CA+5PVA7Yffs3-qdq6pSqDKLLngU7kBsdE92e31NnAM0=wrwp4w@mail.gmail.com>
-Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
-From: Josh Boyer <jwboyer@gmail.com>
-To: Paul Taysom <taysom@chromium.org>
-Cc: Paul Taysom <taysom@google.com>, Mandeep Baines <msb@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Greg KH <greg@kroah.com>,
-        Jens Axboe <axboe@kernel.dk>, Theodore Tso <tytso@google.com>,
-        Andrew Morton <akpm@google.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 4:15 PM, Paul Taysom <taysom@chromium.org> wrote:
-> From: Paul Taysom <taysom@google.com>
->
-> A USB stick with a ext file system on it, would occasionally crash
-> when the stick was pulled.
->
-> The problem was a timer was being set on the Backing Device Interface,
-> bdi, after the USB device had been removed and the bdi had been
-> unregistered. The bdi would then be later reinitialized by zeroing
-> the timer without removing from the timer from the timer queue.
-> This would eventually result in a kernel crash (NULL ptr dereference).
+When a system tries to mount a filesystem (FS) using UUID, the xfs
+returns -EINVAL and shows a message if a FS with the same UUID has
+been already mounted. It is useful to output the duplicate UUID
+with it.
 
-What backtrace did you see when it crashed?  There have been a number of
-reports where sd_revalidate_disk is at the top of the backtrace and this sounds
-like it might be related.
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>
+---
 
-josh
+ fs/xfs/xfs_mount.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/xfs/xfs_mount.c b/fs/xfs/xfs_mount.c
+index d06afbc..e07f852 100644
+--- a/fs/xfs/xfs_mount.c
++++ b/fs/xfs/xfs_mount.c
+@@ -158,7 +158,7 @@ xfs_uuid_mount(
+ 
+  out_duplicate:
+ 	mutex_unlock(&xfs_uuid_table_mutex);
+-	xfs_warn(mp, "Filesystem has duplicate UUID - can't mount");
++	xfs_warn(mp, "Filesystem has duplicate UUID %pU - can't mount", uuid);
+ 	return XFS_ERROR(EINVAL);
+ }
+ 
+
