@@ -1,121 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab2ANEvz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 23:51:55 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:22384 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab2ANEvy (ORCPT
+	id S1750808Ab2ANFCL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 00:02:11 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:43337 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab2ANFCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 23:51:54 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6588"; a="152680562"
-Message-ID: <4F1109E7.9040902@codeaurora.org>
-Date: Fri, 13 Jan 2012 20:51:51 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>, andrew@lunn.ch,
-        linaro-dev@lists.linaro.org, eric.miao@linaro.org,
-        grant.likely@secretlab.ca, Colin Cross <ccross@google.com>,
-        jeremy.kerr@canonical.com, sboyd@quicinc.com, magnus.damm@gmail.com,
-        dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
-        arnd.bergmann@linaro.org, patches@linaro.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        richard.zhao@linaro.org, shawn.guo@freescale.com, paul@pwsan.com,
-        linus.walleij@stericsson.com, broonie@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
-        skannan@quicinc.com
-Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org> <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos> <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com> <20111217110433.GC14547@n2100.arm.linux.org.uk> <4F11021A.8070407@codeaurora.org> <CAJOA=zNtKvvek5LPsDYUie8KLcTBB0F4GxWhzn2g8=YxpCcMPQ@mail.gmail.com>
-In-Reply-To: <CAJOA=zNtKvvek5LPsDYUie8KLcTBB0F4GxWhzn2g8=YxpCcMPQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Jan 2012 00:02:09 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+Subject: Re: [PATCH] nohz: fix race allowing use of stale jiffies when waking
+To: Eric Dumazet <eric.dumazet@gmail.com>
+From: Milton Miller <miltonm@bga.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Message-ID: <nohz-jiffies-race-reply1@mdm.bga.com>
+In-Reply-To: <1326361755.2950.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <nohz-jiffies-update64-race@mdm.bga.com>
+ <1326361755.2950.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Date: Fri, 13 Jan 2012 23:02:06 -0600
+X-Originating-IP: 71.22.127.106
+X-HeloNotChecked: Helo response was not checked before commands sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 08:39 PM, Turquette, Mike wrote:
-> On Fri, Jan 13, 2012 at 8:18 PM, Saravana Kannan<skannan@codeaurora.org>  wrote:
->> On 12/17/2011 03:04 AM, Russell King - ARM Linux wrote:
->>>
->>> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
->>>>
->>>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas Gleixner<tglx@linutronix.de>
->>>>   wrote:
->>>>>
->>>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
->>>>>>
->>>>>> +void __clk_unprepare(struct clk *clk)
->>>>>> +{
->>>>>> +     if (!clk)
->>>>>> +             return;
->>>>>> +
->>>>>> +     if (WARN_ON(clk->prepare_count == 0))
->>>>>> +             return;
->>>>>> +
->>>>>> +     if (--clk->prepare_count>    0)
->>>>>> +             return;
->>>>>> +
->>>>>> +     WARN_ON(clk->enable_count>    0);
->>>>>
->>>>>
->>>>> So this leaves the clock enable count set. I'm a bit wary about
->>>>> that. Shouldn't it either return (including bumping the prepare_count
->>>>> again) or call clk_disable() ?
->>>
->>>
->>> No it should not.
->>>
->>>> I've hit this in my port of OMAP.  It comes from this simple situation:
->>>>
->>>> driver 1 (adapted for clk_prepare/clk_unprepare):
->>>> clk_prepare(clk);
->>>> clk_enable(clk);
->>>>
->>>> ...
->>>>
->>>> driver2 (not adapted for clk_prepare/clk_unprepare):
->>>> clk_enable(clk);
->>>
->>>
->>> So this is basically buggy.  Look, it's quite simple.  Convert _all_
->>> your drivers to clk_prepare/clk_unprepare _before_ you start switching
->>> your platform to use these new functions.  You can do that _today_
->>> without exception.
->>>
->>> We must refuse to merge _any_ user which does this the old way - and
->>> we should have been doing this since my commit was merged into mainline
->>> to allow drivers to be converted.
->>>
->>> And stop trying to think of ways around this inside clk_prepare/
->>> clk_unprepare/clk_enable/clk_disable.  You can't do it.  Just fix _all_
->>> the drivers.  Now.  Before you start implementing
->>> clk_prepare/clk_unprepare.
->>
->>
->> I agree with Russell's suggestion. This is what I'm trying to do with the
->> MSM platform. Not sure if I'm too optimistic, but as of today, I'm still
->> optimistic I can push the MSM driver devs to get this done before we enable
->> real prepare/unprepare support.
->
-> Just to reach closure on this topic: I don't plan to change
-> __clk_unprepare in the next version of the patches.  The warnings are
-> doing a fine job of catching code which has yet to be properly
-> converted to use clk_(un)prepare.
+On Thu, 12 Jan 2012 about 10:49:15 +0100 Eric Dumazet wrote:
+> Le jeudi 12 janvier 2012 à 02:55 -0600, Milton Miller a écrit :
+> > When waking up from nohz mode, all cpus call tick_do_update_jiffies64
+> > regardless of tick_do_timer_cpu as it could be no cpu was assigned.
+> > 
+> > At the start of the function there is a quick lockless check to
+> > determine if jiffies is current.  The check uses last_jiffies_update,
+> > which is used to calculate when to perform the next increment.
+> > Unfortunately it is updated when how many jiffies to advance the
+> > clock is calculated, before the call to do_timer which actually
+> > updates jiffies.  A second cpu waking up could use the (potentially
+> > very) stale jiffies value during this window.
+> > 
+> > This patch changes the check to be against tick_next_period, which
+> > is updated after the call to do_timer completes.  It compares the
+> > result of subtraction to zero, but this is safe as ktime_sub returns
+> > ktime_t which is s64, as signed type.
+> > 
+> > I found this race while trying to track down reports of network adapter
+> > hangs on a large system.  I suspected premature false detection so
+> > I added logging when the locked region determined a multiple jiffie
+> > update would be required.  I noticed that it happened frequently when
+> > tick_do_timer_cpu was NONE (-1), and realized the large update was
+> > when all cpus were previously in nohz.  I then thought about what
+> > would happen if multiple cpus woke up near close to each other in
+> > time and decided the stale jiffies would be used.  (I later found at
+> > least part of the hung adapter reports were due to faulty detection
+> > logic that has since changed upstream.)
+> > 
+> > Signed-off-by: Milton Miller <miltonm@bga.com>
+> > Cc: stable@vger.kernel.org
+> > --- 
+> > Patch was generated and tested against 2.6.36; I verified it applies
+> > with offset -1 line to next-20120111.
+> > 
+> > Index: src/kernel/time/tick-sched.c
+> > ===================================================================
+> > --- src.orig/kernel/time/tick-sched.c	2011-10-13 17:42:16.000000000 -0500
+> > +++ src/kernel/time/tick-sched.c	2011-10-13 17:45:31.000000000 -0500
+> > @@ -52,8 +52,8 @@ static void tick_do_update_jiffies64(kti
+> >  	/*
+> >  	 * Do a quick check without holding xtime_lock:
+> >  	 */
+> > -	delta = ktime_sub(now, last_jiffies_update);
+> > -	if (delta.tv64 < tick_period.tv64)
+> > +	delta = ktime_sub(now, tick_next_period);
+> > +	if (delta.tv64 < 0)
+> >  		return;
+> >  
+> 
+> Given ktime_t on 32bit arches is not an atomic type, I wonder how safe
+> is this anyway...
+> 
 
-To be fair, I also have to improve the stub clk_prepare/unprepare to 
-maintain ref counts and do refcount checking before I plan to cut off to 
-the real prepare/unprepare implementations. So, I'm guessing Mike is 
-just trying to partly add that support in this patch series.
+Ok I admit I hadn't thought about it, and initially I was going to
+think of something involving comparing the two timestamps, and
+waiting if next_period <= next_jiffies_update (with approprate
+subtract and compare).
 
-My goal is to have MSM converted fully before switching to this. So, 
-this code that we are debating about won't directly impact MSM. For that 
-reason, I won't be trying to hold off the more important common clock 
-framework due to unconventional error handling.
+But then I thought some more and comparing the timestamp after the
+update is safe:
 
-Thanks,
-Saravana
+case 1) We see neither half.   We compare now to old value, and
+decide to take the lock and check again.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+case 2) We see the new value.  We compare and decide we don't need
+to take the lock.  Big win.
+
+case 3) We see the the lower part is updated to a smaller
+value but the upper part is still the old value.  The time
+for update seems to be in the past and we wait take thee lock
+and check again.
+
+case 4) We see a partial update.  The upper half is a new larger
+value but the lower half is the old, higher value.   In this case we
+think the jiffy will be valid further into the future than we think
+it should be and skip waiting for the lock.  This state is usually
+quite transitory and we just got done updating jiffies, so its not
+likely that jiffies should actually need an update.
+
+I use weasel words here because there is a window where the update
+has been half performed and the cpu doing the update stalls (eg
+gets time sliced out by its hypervisor).  In this small window
+we could continue to use the updated jiffies beyond its expiration
+time instead of waiting for the updating cpu to finsih storing the
+new expiration time and release the lock.
+
+There are a couple additional points to consider in this scenerio.
+One is that the cpu still has xtime lock so any attempt to read a
+high precision time will stall.  The second is if the cpu updating
+the jiffies is stalled by the hypervisor, then it is not unique to
+when it is waking from nohz and is likely happing when it owns
+timer duty, so time will be subject to bunching and jumping jiffies
+on a regular baasis.  About the most we could do is detect it, either
+by taking periodic helath checks of jiffie by other cpus or noticing
+that our tick update is constantly behind.
+
+So I think the updated racy check is fine, but will expand on the
+racy check comment why it is safe if that is desired.
+
+milton
