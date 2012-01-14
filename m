@@ -1,121 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab2ANRm7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 12:42:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6683 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755928Ab2ANRm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 12:42:58 -0500
-Date: Sat, 14 Jan 2012 18:36:48 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20120114173648.GA32543@redhat.com>
-References: <20111222153004.GA30522@redhat.com> <20120104193614.GF9511@google.com> <20120106152356.GA23995@redhat.com> <20120106182535.GJ9511@google.com> <20120111160730.GA24556@redhat.com> <20120112003102.GB9511@google.com> <20120112170728.GA25717@redhat.com> <20120112175725.GD9511@google.com> <20120113152010.GA19215@redhat.com> <20120113182750.GD18166@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120113182750.GD18166@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756016Ab2ANRpE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 12:45:04 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34686 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755928Ab2ANRpD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 12:45:03 -0500
+Date: Sat, 14 Jan 2012 18:44:45 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Alex Rio <scasbyte@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 1/2] hwmon: (w83627ehf) Replace deprecated 
+ strict_strto*
+Message-ID: <20120114184445.3871e019@endymion.delvare>
+In-Reply-To: <20120114172538.GD29012@ericsson.com>
+References: <CAPbJ=B=Z=FRiuR0Cb5uQhtNxWoARr59iFocnd0VRzNfSKXLp_w@mail.gmail.com>
+	<20120114172538.GD29012@ericsson.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13, Mandeep Singh Baines wrote:
->
-> Oleg Nesterov (oleg@redhat.com) wrote:
->
-> > Yes, I thought about this too. Suppose we remove this assignment,
-> > then we can simply do
-> >
-> > 	#define while_each_thread(g, t) \
-> > 		while (t->group_leader == g->group_leader && (t = next_thread(t)) != g)
-> >
-> > with the same effect. (to remind, currently I ignore the barriers/etc).
-> >
->
-> Nice! I think this works.
->
-> > But this can _only_ help if we start at the group leader!
->
-> But I don't think this solution requires we start at the group leader.
->
-> My thinking:
->
-> Case 1: g is the exec thread
-> ...
-> Case 2: g is the group leader
-> ...
-> Case 3: g is some other thread
->
-> In this case, g MUST be current
+On Sat, 14 Jan 2012 09:25:38 -0800, Guenter Roeck wrote:
+> On Fri, Jan 13, 2012 at 08:39:41PM -0500, Alex Rio wrote:
+> > Replaces deprecated function strict_strto* to kstrto*. In the future
+> > the strict_strto could disappear so the replacement was done.
+> > I'm not sure if this is being done for all the files in a single
+> > patch, anyway I'm including it here just in case.
+> > Checkpatch.pl now leaves 5 "errors", they are mostly
+> > assignments inside if's statements, taking them out does not
+> > significantly increases readability.
+> > 
+> > Signed-off-by: Alex Rio <scasbyte@gmail.com>
+> 
+> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> 
+> Jean, do you want to take this one ? Otherwise, I'll add it to my pending list
+> for the next -rc.
 
-Why? This is not true. But I guess this doesn't matter, I think I am
-starting to understand why our discussion was a bit confusing.
+Err, I'm confused... Aren't these changes already upstream?
 
-The problem is _not_ exec/de_thread by itself. The problem is that
-while_each_thread(g, t) can race with removing 'g' from the list.
-IOW, list_for_each_rcu-like things assume that the head of the list
-is "stable" but this is not true.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=drivers/hwmon/w83627ehf.c;h=0e0af0445222c4346af8fef879831831e49caffa;hp=93f5fc7d60596c3ab27c23c5794fccd4a53a40a5;hb=179c4fdb565dd2157e5dfe89318b74868e3b523d;hpb=24edc0a71badc13a9574b060e6a22e78339ac7a4
 
-And note that de_thread() does not matter in this sense, only
-__unhash_process()->list_del_rcu(&p->thread_group) does matter.
-
-Now. If 'g' is the group leader, we should only worry about exec,
-otherwise it can't disappear before other threads.
-
-But if it is not the group leader, it can simply exit and
-while_each_thread(g, t) can never stop by the same reason.
-
-And we can't detect this case. OK, OK, we can, let me remind
-about http://marc.info/?l=linux-kernel&m=127714242731448 and the
-whole discussion. But this makes while_each_thread() more complex
-and this doesn't fork for zap_threads-like users which must not
-miss the "interesing" threads.
-
-Finally. If we restrict the lockless while_each_thread() so that
-is starts at the group leader, then we can rely on de_thread()
-which changes the leadership and try to detect this case.
-
-See?
-
-> > May be we should enforce this rule (for the lockless case), I dunno...
-> > In that case I'd prefer to add the new while_each_thread_rcu() helper.
-> > But! in this case we do not need to change de_thread(), we can simply do
-> >
-> > 	#define while_each_thread_rcu(t) \
-> > 		while (({ t = next_thread(t); !thread_group_leader(t); }))
-> >
->
-> Won't this terminate just before visiting the exec thread?
-
-Sure. But this is fine for zap_threads() or current_is_single_threaded(),
-the execing thread already has another ->mm. Just we shouldn't hang
-forever if we race with exec (we start at the group leader).
-
-And I hope this is fine in general (to remind, in the lockless case).
-If we race with exec we see either the old or the new leader with the
-same pid/signal/etc (at least).
-
-Hmm. On a second thought, perhaps I thought to much about zap_threads(),
-perhaps it would be better to find all threads we can...
-
-I dunno. But I am starting to like the ->group_leader more. Hmm, and
-with thread_group_leader() check we should ensure we do not visit the
-old leader twice.
-
-Thanks Mandeep.
-
-I'll try to recheck my thinking once again, what do you think? Anything
-else we could miss?
-
-Oleg.
-
+-- 
+Jean Delvare
