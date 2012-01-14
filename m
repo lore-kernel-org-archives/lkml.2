@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab2ANJWp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 04:22:45 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57779 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752140Ab2ANJWn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 04:22:43 -0500
+	id S1753976Ab2ANLNc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 06:13:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45813 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752Ab2ANLNb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 06:13:31 -0500
+Message-ID: <4F116350.6090704@gmail.com>
+Date: Sat, 14 Jan 2012 19:13:20 +0800
+From: Li Yu <raise.sail@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20120113141019.1fc1439e.akpm@linux-foundation.org>
-References: <1326442521.5482.1.camel@phoenix> <20120113141019.1fc1439e.akpm@linux-foundation.org>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Sat, 14 Jan 2012 17:22:20 +0800
-Message-ID: <CAF+7xW=qATBpVy-wG6+Joq+LB19TmM6qJUxoOV0U7R8omLVrxw@mail.gmail.com>
-Subject: Re: [PATCH] backlight: Fix the logic to set bits in adp8860_bl and
- adp8870_bl drivers
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        device-drivers-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+CC: davidel@xmailserver.org
+Subject: The thundering herd like problem when multi epolls on one fd
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
->> index 66bc74d..378276c 100644
->> --- a/drivers/video/backlight/adp8860_bl.c
->> +++ b/drivers/video/backlight/adp8860_bl.c
->> @@ -146,7 +146,7 @@ static int adp8860_set_bits(struct i2c_client *client, int reg, uint8_t bit_mask
->>
->>       ret = adp8860_read(client, reg, &reg_val);
->>
->> -     if (!ret && ((reg_val & bit_mask) == 0)) {
->> +     if (!ret && ((reg_val & bit_mask) != bit_mask)) {
->>               reg_val |= bit_mask;
->>               ret = adp8860_write(client, reg, reg_val);
->>       }
->> diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
->> index 6c68a68..6735059 100644
->> --- a/drivers/video/backlight/adp8870_bl.c
->> +++ b/drivers/video/backlight/adp8870_bl.c
->> @@ -160,7 +160,7 @@ static int adp8870_set_bits(struct i2c_client *client, int reg, uint8_t bit_mask
->>
->>       ret = adp8870_read(client, reg, &reg_val);
->>
->> -     if (!ret && ((reg_val & bit_mask) == 0)) {
->> +     if (!ret && ((reg_val & bit_mask) != bit_mask)) {
->>               reg_val |= bit_mask;
->>               ret = adp8870_write(client, reg, reg_val);
->>       }
->
-> This patch is applicable to 3.2.x, but I don't know whether to route it
-> to -stable becasue you didn't tell me what effect the patch has :(
->
+Hi, 
 
-It's because I don't have this hardware.
-I just found the bug while reading the code.
+	My buddy reported a thundering herd problem about using epoll 
+on TCP listen sockets. He said their usage like below:
 
-I was thinking I should CC stable, but since the code is there for a long time
-and I don't know any complains of the bug. So I didn't CC stable.
+	1. sk = new tcp_listen_socket();
+	2. create many child processes or threads.
+	3. in new created processes (threads), use epoll API on listen
+sk to provide HTTP service.
 
-Michael, do you see any user-visible effects of the bug?
+	Such using pattern means we have multi wait queues when 
+accepting one socket, and it is not exclusive waking up, so we get a 
+thundering herd like problem. And, so I heard many popular applications
+can use such pattern, which includes nginx, lighttpd, haproxy at least.
+So should we change this waking up behavior to exclusive too ? 
 
-Thanks,
-Axel
+	Below is a simple patch (tested and works) for epoll() to do it,
+of course, we also should fix select() and poll() syscalls if it is right.
+
+	Thanks.
+
+Yu	
+
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 828e750..a3d6ab4 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -898,7 +899,7 @@ static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
+                init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
+                pwq->whead = whead;
+                pwq->base = epi;
+-               add_wait_queue(whead, &pwq->wait);
++               add_wait_queue_exclusive(whead, &pwq->wait);
+                list_add_tail(&pwq->llink, &epi->pwqlist);
+                epi->nwait++;
+        } else {
