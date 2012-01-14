@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab2ANXfo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 18:35:44 -0500
-Received: from nautica.notk.org ([91.121.71.147]:53082 "EHLO nautica.notk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032Ab2ANXfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 18:35:43 -0500
-X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Jan 2012 18:35:43 EST
-From: Dominique Martinet <asmadeus@codewreck.org>
-To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dominique Martinet <asmadeus@codewreck.org>
-Subject: [PATCH] fs/ubifs: fix dbg_{jnlk,tnck,mntk} not defined in debug.h if debug is disabled
-Date: Sun, 15 Jan 2012 00:28:03 +0100
-Message-Id: <1326583683-17066-1-git-send-email-asmadeus@codewreck.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1753369Ab2ANXgt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 18:36:49 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46809 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab2ANXgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 18:36:48 -0500
+Date: Sat, 14 Jan 2012 23:36:26 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-arm-kernel@lists.infradead.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH] ARM: Fix regression caused by ARCH_NR_GPIOS removal
+Message-ID: <20120114233626.GA11769@n2100.arm.linux.org.uk>
+References: <201201150033.25885.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201201150033.25885.rjw@sisk.pl>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- fs/ubifs/debug.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+On Sun, Jan 15, 2012 at 12:33:25AM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Commit 3dea19e826da3dd43b3dc308aca299c0b7263c6b (ARM: 7244/1:
+> mach-shmobile: Use CONFIG_ARCH_NR_GPIO) removed ARCH_NR_GPIOS
+> and introduced ARCH_NR_GPIO instead without changing the users
+> of that symbol.  As a result, the kernels including that commit
+> don't boot on my test-bed Mackerel board.
+> 
+> Fix the problem by defining ARCH_NR_GPIOS again.
 
-diff --git a/fs/ubifs/debug.h b/fs/ubifs/debug.h
-index 307ab1d..741dfa5 100644
---- a/fs/ubifs/debug.h
-+++ b/fs/ubifs/debug.h
-@@ -350,10 +350,13 @@ void dbg_debugfs_exit_fs(struct ubifs_info *c);
- #define dbg_msg(fmt, ...)   ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_gen(fmt, ...)   ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_jnl(fmt, ...)   ubifs_dbg_msg(fmt, ##__VA_ARGS__)
-+#define dbg_jnlk(key, fmt, ...) ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_tnc(fmt, ...)   ubifs_dbg_msg(fmt, ##__VA_ARGS__)
-+#define dbg_tnck(key, fmt, ...) ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_lp(fmt, ...)    ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_find(fmt, ...)  ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_mnt(fmt, ...)   ubifs_dbg_msg(fmt, ##__VA_ARGS__)
-+#define dbg_mntk(key, fmt, ...) ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_io(fmt, ...)    ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_cmt(fmt, ...)   ubifs_dbg_msg(fmt, ##__VA_ARGS__)
- #define dbg_budg(fmt, ...)  ubifs_dbg_msg(fmt, ##__VA_ARGS__)
--- 
-1.7.3.2
+I'm aware of it, and have:
 
+commit ca95023e7521729d3ace6fb3b9c53281c510a18c
+Author: Stephen Warren <swarren@nvidia.com>
+Date:   Thu Jan 5 21:36:27 2012 +0100
+
+    ARM: 7271/1: Fix typo in conversion of ARCH_NR_GPIOS to Kconfig
+    
+    Commit 44986ab "ARM: 7240/1: Make ARCH_NR_GPIO a Kconfig variable"
+    spelled ARCH_NR_GPIOS as ARCH_NR_GPIO, hence making the change
+    ineffective. This change fixes that.
+    
+    Signed-off-by: Stephen Warren <swarren@nvidia.com>
+    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+
+already queued up.
