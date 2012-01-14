@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab2ANEjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 23:39:31 -0500
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:55479 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754388Ab2ANEj3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 23:39:29 -0500
+	id S1754750Ab2ANEvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 23:51:55 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:22384 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab2ANEvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 23:51:54 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6588"; a="152680562"
+Message-ID: <4F1109E7.9040902@codeaurora.org>
+Date: Fri, 13 Jan 2012 20:51:51 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <4F11021A.8070407@codeaurora.org>
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
- <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos>
- <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com>
- <20111217110433.GC14547@n2100.arm.linux.org.uk> <4F11021A.8070407@codeaurora.org>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Fri, 13 Jan 2012 20:39:07 -0800
-Message-ID: <CAJOA=zNtKvvek5LPsDYUie8KLcTBB0F4GxWhzn2g8=YxpCcMPQ@mail.gmail.com>
-Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, andrew@lunn.ch,
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>, andrew@lunn.ch,
         linaro-dev@lists.linaro.org, eric.miao@linaro.org,
         grant.likely@secretlab.ca, Colin Cross <ccross@google.com>,
         jeremy.kerr@canonical.com, sboyd@quicinc.com, magnus.damm@gmail.com,
@@ -29,87 +25,97 @@ Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, andrew@lunn.ch,
         linus.walleij@stericsson.com, broonie@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
         skannan@quicinc.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
+References: <1323834838-2206-1-git-send-email-mturquette@linaro.org> <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos> <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com> <20111217110433.GC14547@n2100.arm.linux.org.uk> <4F11021A.8070407@codeaurora.org> <CAJOA=zNtKvvek5LPsDYUie8KLcTBB0F4GxWhzn2g8=YxpCcMPQ@mail.gmail.com>
+In-Reply-To: <CAJOA=zNtKvvek5LPsDYUie8KLcTBB0F4GxWhzn2g8=YxpCcMPQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 8:18 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
-> On 12/17/2011 03:04 AM, Russell King - ARM Linux wrote:
->>
->> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
+On 01/13/2012 08:39 PM, Turquette, Mike wrote:
+> On Fri, Jan 13, 2012 at 8:18 PM, Saravana Kannan<skannan@codeaurora.org>  wrote:
+>> On 12/17/2011 03:04 AM, Russell King - ARM Linux wrote:
 >>>
->>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas Gleixner<tglx@linutronix.de>
->>>  wrote:
+>>> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
 >>>>
->>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
+>>>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas Gleixner<tglx@linutronix.de>
+>>>>   wrote:
 >>>>>
->>>>> +void __clk_unprepare(struct clk *clk)
->>>>> +{
->>>>> +     if (!clk)
->>>>> +             return;
->>>>> +
->>>>> +     if (WARN_ON(clk->prepare_count == 0))
->>>>> +             return;
->>>>> +
->>>>> +     if (--clk->prepare_count>  0)
->>>>> +             return;
->>>>> +
->>>>> +     WARN_ON(clk->enable_count>  0);
+>>>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
+>>>>>>
+>>>>>> +void __clk_unprepare(struct clk *clk)
+>>>>>> +{
+>>>>>> +     if (!clk)
+>>>>>> +             return;
+>>>>>> +
+>>>>>> +     if (WARN_ON(clk->prepare_count == 0))
+>>>>>> +             return;
+>>>>>> +
+>>>>>> +     if (--clk->prepare_count>    0)
+>>>>>> +             return;
+>>>>>> +
+>>>>>> +     WARN_ON(clk->enable_count>    0);
+>>>>>
+>>>>>
+>>>>> So this leaves the clock enable count set. I'm a bit wary about
+>>>>> that. Shouldn't it either return (including bumping the prepare_count
+>>>>> again) or call clk_disable() ?
+>>>
+>>>
+>>> No it should not.
+>>>
+>>>> I've hit this in my port of OMAP.  It comes from this simple situation:
 >>>>
+>>>> driver 1 (adapted for clk_prepare/clk_unprepare):
+>>>> clk_prepare(clk);
+>>>> clk_enable(clk);
 >>>>
->>>> So this leaves the clock enable count set. I'm a bit wary about
->>>> that. Shouldn't it either return (including bumping the prepare_count
->>>> again) or call clk_disable() ?
->>
->>
->> No it should not.
->>
->>> I've hit this in my port of OMAP.  It comes from this simple situation:
+>>>> ...
+>>>>
+>>>> driver2 (not adapted for clk_prepare/clk_unprepare):
+>>>> clk_enable(clk);
 >>>
->>> driver 1 (adapted for clk_prepare/clk_unprepare):
->>> clk_prepare(clk);
->>> clk_enable(clk);
 >>>
->>> ...
+>>> So this is basically buggy.  Look, it's quite simple.  Convert _all_
+>>> your drivers to clk_prepare/clk_unprepare _before_ you start switching
+>>> your platform to use these new functions.  You can do that _today_
+>>> without exception.
 >>>
->>> driver2 (not adapted for clk_prepare/clk_unprepare):
->>> clk_enable(clk);
+>>> We must refuse to merge _any_ user which does this the old way - and
+>>> we should have been doing this since my commit was merged into mainline
+>>> to allow drivers to be converted.
+>>>
+>>> And stop trying to think of ways around this inside clk_prepare/
+>>> clk_unprepare/clk_enable/clk_disable.  You can't do it.  Just fix _all_
+>>> the drivers.  Now.  Before you start implementing
+>>> clk_prepare/clk_unprepare.
 >>
 >>
->> So this is basically buggy.  Look, it's quite simple.  Convert _all_
->> your drivers to clk_prepare/clk_unprepare _before_ you start switching
->> your platform to use these new functions.  You can do that _today_
->> without exception.
->>
->> We must refuse to merge _any_ user which does this the old way - and
->> we should have been doing this since my commit was merged into mainline
->> to allow drivers to be converted.
->>
->> And stop trying to think of ways around this inside clk_prepare/
->> clk_unprepare/clk_enable/clk_disable.  You can't do it.  Just fix _all_
->> the drivers.  Now.  Before you start implementing
->> clk_prepare/clk_unprepare.
+>> I agree with Russell's suggestion. This is what I'm trying to do with the
+>> MSM platform. Not sure if I'm too optimistic, but as of today, I'm still
+>> optimistic I can push the MSM driver devs to get this done before we enable
+>> real prepare/unprepare support.
 >
->
-> I agree with Russell's suggestion. This is what I'm trying to do with the
-> MSM platform. Not sure if I'm too optimistic, but as of today, I'm still
-> optimistic I can push the MSM driver devs to get this done before we enable
-> real prepare/unprepare support.
+> Just to reach closure on this topic: I don't plan to change
+> __clk_unprepare in the next version of the patches.  The warnings are
+> doing a fine job of catching code which has yet to be properly
+> converted to use clk_(un)prepare.
 
-Just to reach closure on this topic: I don't plan to change
-__clk_unprepare in the next version of the patches.  The warnings are
-doing a fine job of catching code which has yet to be properly
-converted to use clk_(un)prepare.
+To be fair, I also have to improve the stub clk_prepare/unprepare to 
+maintain ref counts and do refcount checking before I plan to cut off to 
+the real prepare/unprepare implementations. So, I'm guessing Mike is 
+just trying to partly add that support in this patch series.
 
-Mike
+My goal is to have MSM converted fully before switching to this. So, 
+this code that we are debating about won't directly impact MSM. For that 
+reason, I won't be trying to hold off the more important common clock 
+framework due to unconventional error handling.
 
->
->
-> Thanks,
-> Saravana
->
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks,
+Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
