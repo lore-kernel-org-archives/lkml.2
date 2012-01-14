@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab2ANUTM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 15:19:12 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:34850 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207Ab2ANUTK (ORCPT
+	id S1756649Ab2ANUTT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 15:19:19 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60671 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756616Ab2ANUTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 15:19:10 -0500
-Date: Sat, 14 Jan 2012 21:18:56 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Alex Rio <scasbyte@gmail.com>
-Cc: guenter.roeck@ericsson.com, linux-kernel@vger.kernel.org,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: Re: [RFC][PATCH 2/2] hwmon: (w83627ehf) Add GPIO port 3
- functionality
-Message-ID: <20120114211856.7e1b816d@endymion.delvare>
-In-Reply-To: <CAPbJ=B=_Xubsni7R00kSotDQ9AE9jmhmyRV0gPkXGqAPGrNaXg@mail.gmail.com>
-References: <CAPbJ=B=_Xubsni7R00kSotDQ9AE9jmhmyRV0gPkXGqAPGrNaXg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 14 Jan 2012 15:19:16 -0500
+Message-ID: <4F11E33F.1000502@lwfinger.net>
+Date: Sat, 14 Jan 2012 14:19:11 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+MIME-Version: 1.0
+To: John W Linville <linville@tuxdriver.com>
+CC: chaoming_li@realsil.com.cn, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: [PATCH V2] rtl8192cu: Fix WARNING on suspend/resume
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012 19:39:56 -0600, Alex Rio wrote:
-> The w83627ehf chip has 5 GPIO ports, currently none of them is supported.
-> This patch adds the GPIO port 3 driver with the following functions:
-> set/get pin values, direction_in/out, set_debounce.
-> The values are also available to the userspace (if requiered)
-> in the path /sys/class/gpio by using the export/unexport functions.
-> Please look at the REVISIT comment, this is the main reason of the RFC,
-> suggestions will be highly appreciated.
-> 
-> Signed-off-by: Alex Rio <scasbyte@gmail.com>
-> ---
->  drivers/hwmon/w83627ehf.c |  188 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 188 insertions(+), 0 deletions(-)
+John,
 
-This is calling for a MFD driver for these chips. This was proposed in
-the past, BTW, but never followed up:
-http://lists.lm-sensors.org/pipermail/lm-sensors/2010-February/027795.html
+Please drop the patch with this subject. I think I can do a better job than this.
 
-Putting everything in the current driver is not going to be accepted.
-It certainly looks pleasant because it's a more simple approach, but
-the result would be a complex and unmaintainable driver.
+Larry
 
--- 
-Jean Delvare
+Commit message:
+
+=============================================
+A recent LKML thread 
+(http://lkml.indiana.edu/hypermail/linux/kernel/1112.3/00965.html)
+discusses warnings that occur during a suspend/resume cycle. The driver
+attempts to read the firmware file before userspace is ready, leading to the
+following warning:
+
+WARNING: at drivers/base/firmware_class.c:537 _request_firmware+0x3f6/0x420()
+
+For rtl8192cu, the problem is fixed by storing the firmware in a global buffer
+rather than one allocated per device. The usage count is increased when
+suspending and decreased when resuming. This way, the firmware is retained
+through a suspend/resume cycle, and does not have to be reread.
+
+This patch should fix the bug reported in
+https://bugzilla.redhat.com/show_bug.cgi?id=771002.
+
+Note: This patch also touches rtl8192ce as the "firmware" loaded message
+is now printed in the wrong place.
+
+Reported-by: Mohammed Arafa <bugzilla@in-egypt.net>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stable <stable@vger.kernel.org>
+---
+
+V2 - revised to avoid warning noted by Daniel Halperin.
+---
+
+
