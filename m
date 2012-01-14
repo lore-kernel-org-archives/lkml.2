@@ -1,109 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab2ANACT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 19:02:19 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55116 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab2ANACS (ORCPT
+	id S932984Ab2ANAGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 19:06:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45725 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab2ANAGE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 19:02:18 -0500
-Date: Sat, 14 Jan 2012 00:01:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org
-Subject: [BUG] vmstat reports no interrupts
-Message-ID: <20120114000101.GL1068@n2100.arm.linux.org.uk>
+	Fri, 13 Jan 2012 19:06:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4F10BDF7.8030306@linux.vnet.ibm.com>
+References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
+ <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
+ <4F10BDF7.8030306@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jan 2012 16:05:42 -0800
+X-Google-Sender-Auth: VFk1cZ7_9fN20K8KqOREZ5Agdm4
+Message-ID: <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running a recent kernel, I'm seeing no interrupt activity being reported
-by vmstat on my platforms.  Investigating, it seems to be caused by
-this patch merged during the current merge window:
+On Fri, Jan 13, 2012 at 3:27 PM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>
+> # echo 1 > /sys/devices/system/cpu/cpu1/online
+>
+> [   75.476772] Booting Node 0 Processor 1 APIC 0x2
+> [   75.481495] smpboot cpu 1: start_ip = 97000
+> [   75.492927] Calibrating delay loop (skipped) already calibrated this CPU
+> [   75.508449] NMI watchdog enabled, takes one hw-pmu counter.
+> [   75.515402] general protection fault: 0000 [#1] SMP
+> [   75.518940]
+> [   75.518940] Pid: 6631, comm: bash Tainted: G        W    3.2.0-debugkernel-0.0.0.28.36b5ec9-default #4 IBM IBM System x -[7870C4Q]-/68Y8033
+> [   75.518940] RIP: 0010:[<ffffffff81270779>]  [<ffffffff81270779>] kobject_get+0x19/0x60
+> [   75.518940] RSP: 0018:ffff8808c6cc7c18  EFLAGS: 00010206
+> [   75.518940] RAX: 0000000000000000 RBX: 6b6b6b6b6b6b6b7b RCX: 0000000000000006
+> [   75.518940] RDX: ffffffff81e98ae0 RSI: ffff8808ccc93080 RDI: 6b6b6b6b6b6b6b7b
 
-commit 3292beb340c76884427faa1f5d6085719477d889
-Author: Glauber Costa <glommer@parallels.com>
-Date:   Mon Nov 28 14:45:17 2011 -0200
+The magic is the %rdi value. The instruction that oopses is
 
-    sched/accounting: Change cpustat fields to an array
+    mov    0x38(%rdi),%eax
 
-    This patch changes fields in cpustat from a structure, to an
-    u64 array. Math gets easier, and the code is more flexible.
+and "rdi" is 0x10 + the magic 6b6b6b.. pattern. Which is obviously
+'poison_free'.
 
-    Signed-off-by: Glauber Costa <glommer@parallels.com>
-    Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-    Cc: Linus Torvalds <torvalds@linux-foundation.org>
-    Cc: Andrew Morton <akpm@linux-foundation.org>
-    Cc: Paul Tuner <pjt@google.com>
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Link: http://lkml.kernel.org/r/1322498719-2255-2-git-send-email-glommer@parallels.com
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+And the 0x10 is because get_device() does
 
-This patch modifies show_stat() thusly:
+    return dev ? to_dev(kobject_get(&dev->kobj)) : NULL;
 
-        u64 sum = 0;
+and I bet "kobj" is at offset 16 in the device structure. So we had a
+pointer to a "struct device", but it was loaded from memory that was
+free'd, turning the kobject pointer into that 0x6b6b6b6b6b6b6b7b
 
-        for_each_possible_cpu(i) {
-...
--               sum += kstat_cpu_irqs_sum(i);
--               sum += arch_irq_stat_cpu(i);
+So somebody got a pointer from free'd memory. That somebody seems to
+be 'klist_devices_get()' that got it from a 'struct klist_node', so I
+think we have free'd something from the klist_devices list in the bus.
+But I dunno. Odd. I would have expected us to hit that invalid pointer
+long before if the klist entry was bogus.
 
-where 'sum' is the first value displayed on /proc/stat's intr line.
-However, this file still contains:
+I'm not seeign anything obvious in mce.c. But the fact that it's that
+magic per_cpu allocation makes me nervous. It uses that magic
+"mce_device_initialized" bit array etc, and ti clearly must have
+worked before, but it equally clearly does *not* work now.
 
-#ifndef arch_irq_stat_cpu
-#define arch_irq_stat_cpu(cpu) 0
-#endif
-#ifndef arch_irq_stat
-#define arch_irq_stat() 0
-#endif
-#ifndef arch_idle_time
-#define arch_idle_time(cpu) 0
-#endif
+Looking more at it, I think that maybe something keeps the mce_device
+around (refcounts that didn't use to exist before?) so when we
+unregister it, it is still in use. And then when we re-register it
+when we bring it up, we do that
 
-at the top, and otherwise doesn't reference arch_irq_stat_cpu() anymore.
+    memset(&dev->kobj, 0, sizeof(struct kobject));
 
-Although x86 (and only x86) implements arch_irq_stat(), this doesn't
-return the total number of interrupts on the system.  Therefore, I
-conclude that the same bug that I'm seeing on ARM should be visible on
-every other arch, including x86.
+on the device that is in use. I dunno. It's all scary. Somebody who
+knows the MCE layer should look at it.
 
-I think this commit wasn't meant to delete these.  The patch below
-restores vmstat's original behaviour for me.  Please confirm this fix
-and submit upstream.
-
-8<====
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-proc: fix /proc/stat intr sum
-
-Commit 3292beb340c7688 (sched/accounting: Change cpustat fields to an array)
-deleted the code which provides us with the sum of all interrupts in
-the system, causing vmstat to report zero interrupts occuring in the
-system.  Fix this by restoring the code.
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk> [on ARM]
----
- fs/proc/stat.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index d76ca6a..121f77c 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -77,6 +77,8 @@ static int show_stat(struct seq_file *p, void *v)
- 		steal += kcpustat_cpu(i).cpustat[CPUTIME_STEAL];
- 		guest += kcpustat_cpu(i).cpustat[CPUTIME_GUEST];
- 		guest_nice += kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE];
-+		sum += kstat_cpu_irqs_sum(i);
-+		sum += arch_irq_stat_cpu(i);
- 
- 		for (j = 0; j < NR_SOFTIRQS; j++) {
- 			unsigned int softirq_stat = kstat_softirqs_cpu(j, i);
-
+                   Linus
