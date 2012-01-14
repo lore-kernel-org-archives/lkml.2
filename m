@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2ANHqI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 02:46:08 -0500
-Received: from claw.goop.org ([74.207.240.146]:41717 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab2ANHqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 02:46:07 -0500
-Message-ID: <4F1132B3.3000909@goop.org>
-Date: Sat, 14 Jan 2012 18:45:55 +1100
-From: Jeremy Fitzhardinge <jeremy@goop.org>
+	id S1752827Ab2ANHyG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 02:54:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38330 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab2ANHyE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 02:54:04 -0500
+Message-ID: <4F113493.3030701@gmail.com>
+Date: Sat, 14 Jan 2012 15:53:55 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] HID
-References: <alpine.LNX.2.00.1201052218200.24984@pobox.suse.cz> <4F098C29.9010101@goop.org> <alpine.LNX.2.00.1201081739360.24984@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1201081739360.24984@pobox.suse.cz>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Feng Ye <f_ye@yahoo.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: How to wait for threaded irq handler to finish, as in work queue
+ flush/cancel?
+References: <1326519475.54455.YahooMailNeo@web112702.mail.gq1.yahoo.com> <1326519648.92006.YahooMailNeo@web112707.mail.gq1.yahoo.com>
+In-Reply-To: <1326519648.92006.YahooMailNeo@web112707.mail.gq1.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2012 03:45 AM, Jiri Kosina wrote:
+On 01/14/2012 01:40 PM, Feng Ye wrote:
+> Hello there,
 >
-> which is based on the power supply scope changes in the battery.git tree; I'm not quite
-> sure how to sequence that into mainline.
-> I will look into it.
+>
+> I have a question regarding how to cancel threaded irq handler in a driver's suspend function.
+> If it's NOT threaded irq, normally you have a work queue, and in the suspend function, you call either cancel_work_sync() or flush_work(), these function will WAIT for the work queue to finish if it's in the middle of something.
+> However if you use threaded irq, then you don't need a work queue, then in the suspend function, I don't know if there's a simple function that can be used to cancel and wait the thread to finish?
+>
+>
 
-The power changes are in now, so you could try pushing them as a late push.
+Hi,
 
-(Linus: I had some changes that depended on both the HID and
-power_supply subsystems, so they needed to wait until you'd pulled both.)
+Isn't free_irq() what you want?
 
-Thanks,
-    J
+/**
+  *      free_irq - free an interrupt allocated with request_irq
+  *      @irq: Interrupt line to free
+  *      @dev_id: Device identity to free
+  *
+  *      Remove an interrupt handler. The handler is removed and if the
+  *      interrupt line is no longer in use by any driver it is disabled.
+  *      On a shared IRQ the caller must ensure the interrupt is disabled
+  *      on the card it drives before calling this function. The function
+  *      does not return until any executing interrupts for this IRQ
+  *      have completed.
+  *
+  *      This function must not be called from interrupt context.
+  */
+
