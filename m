@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab2ANOGv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 09:06:51 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:32825 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab2ANOGu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 09:06:50 -0500
+	id S1754840Ab2ANOUc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 09:20:32 -0500
+Received: from void.printf.net ([89.145.121.20]:45364 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248Ab2ANOUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 09:20:31 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Steven Liu <lingjiujianke@gmail.com>
+Cc: linux-mmc@vger.kernel.org, liuqi@thundersoft.com, qinjian@thundersoft.com,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] mmc: fix deadlock from mmc core when suspend the device
+References: <CADxeRw=_Qx+dcZHJZnq1tAStvsuCWrsARgyxP=aKC0WfLWHZLw@mail.gmail.com>
+Date: Sat, 14 Jan 2012 09:19:44 -0500
+In-Reply-To: <CADxeRw=_Qx+dcZHJZnq1tAStvsuCWrsARgyxP=aKC0WfLWHZLw@mail.gmail.com>
+	(Steven Liu's message of "Sat, 14 Jan 2012 13:05:08 +0800")
+Message-ID: <m2r4z28iyn.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120113163558.a662e7c5.akpm@linux-foundation.org>
-References: <1325951797.860.10.camel@mop> <124669.1325952830@turing-police.cc.vt.edu>
- <20120109150701.GB1777@redhat.com> <20120113163558.a662e7c5.akpm@linux-foundation.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sat, 14 Jan 2012 14:59:03 +0100
-Message-ID: <CAPXgP116b7GTzjTczXWq_v8bjATXuogJs7PU7oSY-5CimU4umQ@mail.gmail.com>
-Subject: Re: [PATCH] prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple
- process supervision
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 14, 2012 at 01:35, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Mon, 9 Jan 2012 16:07:01 +0100
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
->> > > +         /* find the first ancestor marked as child_subreaper */
->> > > +         for (reaper = father->real_parent;
->> > > +              reaper != &init_task;
->> > > +              reaper = reaper->real_parent) {
->> >
->> > I admit being insufficiently caffienated - does this DTRT in a PID namespace? That
->> > &init_task looks fishy to me...
->>
->> Probably this needs a comment. Initially I was confused too.
->>
->> Note that the code below checks same_thread_group(reaper, pid_ns->child_reaper),
->> this is what we need to DTRT in a PID namespace. However we still need the
->> check above, see http://marc.info/?l=linux-kernel&m=131385460420380
->
-> In light of Kay's haughty silence, I did this:
->
-> --- a/kernel/exit.c~prctl-add-pr_setget_child_subreaper-to-allow-simple-process-supervision-fix-fix
-> +++ a/kernel/exit.c
-> @@ -724,7 +724,13 @@ static struct task_struct *find_new_reap
->        } else if (father->signal->has_child_subreaper) {
->                struct task_struct *reaper;
->
-> -               /* find the first ancestor marked as child_subreaper */
-> +               /*
-> +                * Find the first ancestor marked as child_subreaper.
-> +                * Note that the code below checks same_thread_group(reaper,
-> +                * pid_ns->child_reaper).  This is what we need to DTRT in a
-> +                * PID namespace. However we still need the check above, see
-> +                * http://marc.info/?l=linux-kernel&m=131385460420380
-> +                */
->                for (reaper = father->real_parent;
->                     reaper != &init_task;
->                     reaper = reaper->real_parent) {
+Hi,
 
-Oleg and I got nowhere really, discussing if we should switch the
-check in the for() parameters and the one inside the loop; so we just
-decided to keep it the way it is, and did not reply any further. It
-wasn't that we didn't care, we just couldn't decide. Sorry for that.
+On Sat, Jan 14 2012, Steven Liu wrote:
+> Hi Chris Ball & Greg KH,
+>
+> This patch can fix the mmc deadlock when suspen the mmc devices.
+>
+> when mmc_pm_notify to do the host->bus_ops->remove, there is deadlock,
+> because it was locked at mmc_claim_host, so it modify the mmc_claim_host
+> after the host->bus_ops->remove.
+> the problem can reproduce at lots of the emmc/sd devices when create
+> multi partitions,and I have tested this modify at lots of the platform.
+>
+> Can this patch fixed?
+>
+> Signed-off-by: LiuQi <liuqi@thundersoft.com>
+> Signed-off-by: Jack Qin <qinjian@thundersoft.com>
+>
+> ---
+>  drivers/mmc/core/core.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 950b97d..e68a0e8 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -2431,11 +2431,10 @@ int mmc_pm_notify(struct notifier_block *notify_block,
+>                 if (!host->bus_ops || host->bus_ops->suspend)
+>                         break;
+>
+> -               mmc_claim_host(host);
+> -
+>                 if (host->bus_ops->remove)
+>                         host->bus_ops->remove(host);
+>
+> +               mmc_claim_host(host);
+>                 mmc_detach_bus(host);
+>                 mmc_power_off(host);
+>                 mmc_release_host(host);
 
-The comment indeed sounds good to have. Thanks for adding this.
+Another version of this patch has already gone to Linus, for 3.3-rc1.
 
-Kay
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
