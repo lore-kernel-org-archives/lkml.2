@@ -1,297 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab2ANBkA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 20:40:00 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:48074 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356Ab2ANBj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 20:39:57 -0500
+	id S1754401Ab2ANCB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 21:01:27 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:60627 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752143Ab2ANCBZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 21:01:25 -0500
 MIME-Version: 1.0
-Date: Fri, 13 Jan 2012 19:39:56 -0600
-Message-ID: <CAPbJ=B=_Xubsni7R00kSotDQ9AE9jmhmyRV0gPkXGqAPGrNaXg@mail.gmail.com>
-Subject: [RFC][PATCH 2/2] hwmon: (w83627ehf) Add GPIO port 3 functionality
-From: Alex Rio <scasbyte@gmail.com>
-To: khali@linux-fr.org, guenter.roeck@ericsson.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+Date: Sat, 14 Jan 2012 00:01:25 -0200
+X-Google-Sender-Auth: l9pfmoWxxV-Fj-xtbkFvSWJ8K90
+Message-ID: <CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The w83627ehf chip has 5 GPIO ports, currently none of them is supported.
-This patch adds the GPIO port 3 driver with the following functions:
-set/get pin values, direction_in/out, set_debounce.
-The values are also available to the userspace (if requiered)
-in the path /sys/class/gpio by using the export/unexport functions.
-Please look at the REVISIT comment, this is the main reason of the RFC,
-suggestions will be highly appreciated.
+Hi, Yinghai.
 
-Signed-off-by: Alex Rio <scasbyte@gmail.com>
----
- drivers/hwmon/w83627ehf.c |  188 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 188 insertions(+), 0 deletions(-)
+On Fri, Jan 13, 2012 at 15:29, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Jan 13, 2012 at 3:59 AM, Rogério Brito <rbrito@ime.usp.br> wrote:
+>> If it applies (and newer kernels don't have things which your patch needs),
+>> I will keep working with Linus's v3.2 tag.
+>
+> No problem, I will put that patch into for-pci2 for your conveniences.
 
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index 0e0af04..3c6ea1a 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -60,6 +60,7 @@
- #include <linux/mutex.h>
- #include <linux/acpi.h>
- #include <linux/io.h>
-+#include <linux/gpio.h>
- #include "lm75.h"
+Thanks. That's definitely easier for me. I'm grabbing it to compile
+and will report in a moment.
 
- enum kinds {
-@@ -88,6 +89,10 @@ module_param(fan_debounce, ushort, 0);
- MODULE_PARM_DESC(fan_debounce, "Enable debouncing for fan RPM signal");
+>> When I compiled from your branch for-pci2 from linux-yinghai.git (without
+>> any extra patches), it *did* boot, but noticed one thing weird: using htop
+>> and in single user mode, it reported 100% of CPU in use. With regular top, a
+>> more fine grained output revealed that no processes were using the CPU, but
+>> that almost all of the time was spent in kernel mode.
+>>
+>> Anyway, as you asked, I put the log of what I see at
+>>
+>>    http://www.ime.usp.br/~rbrito/linux/clevo/2012-01-13-0951-yanghai-for-pci2-branch/
+>
+> [    0.165615] pci 0000:05:07.0: CardBus bridge to [bus 06-09]
+> [    0.165682] pci 0000:05:07.0:   bridge window [io  0x0001-0x0000]
+> [    0.165751] pci 0000:05:07.0:   bridge window [io  0x0001-0x0000]
+> [    0.165821] pci 0000:05:07.0:   bridge window [mem
+> 0x00000001-0x00000000 pref]
+> [    0.165904] pci 0000:05:07.0:   bridge window [mem 0x00000001-0x00000000]
+> [    0.165975] pci 0000:00:10.0: PCI bridge to [bus 05-06]
+> [    0.166043] pci 0000:00:10.0:   bridge window [mem 0xb3200000-0xb32fffff]
+> [    0.166259] pci 0000:00:10.0: setting latency timer to 64
+> [    0.166329] pci 0000:05:07.0: device not available (can't reserve
+> [io  0x0001-0x0000])
+> [    0.166412] pci 0000:05:07.0: Error enabling bridge (-22), continuing
+>
+> We have some problems with handling cardbus bridge as optional resources.
+>
+> will produce some patches and update for-pci2 branch for your test.
 
- #define DRVNAME "w83627ehf"
-+#define GPIO_NAME "w83627ehf-gpio"
-+#define GPIO_IOSIZE		4
-+
-+static DEFINE_SPINLOCK(sio_lock);
+OK. Will try that as soon as my download completes.
 
- /*
-  * Super-I/O constants and functions
-@@ -115,6 +120,7 @@ MODULE_PARM_DESC(fan_debounce, "Enable debouncing
-for fan RPM signal");
- #define SIO_NCT6776_ID		0xc330
- #define SIO_ID_MASK		0xFFF0
 
-+
- static inline void
- superio_outb(int ioreg, int reg, int val)
- {
-@@ -202,6 +208,31 @@ static const u16 W83627EHF_REG_TEMP_CONFIG[] = {
-0, 0x152, 0x252, 0 };
- #define W83627EHF_REG_ALARM2		0x45A
- #define W83627EHF_REG_ALARM3		0x45B
+Thanks again,
 
-+/* Register to configure both SPI and GPIO functionality */
-+#define W83627EHF_SPI_GPIO_CONF		0x2A
-+/* Multifunction configure register (some GPIO, VID, UART) */
-+#define W83627EHF_MULTIFUNCT_1		0x2C
-+
-+/* GPIO logical devices and other stuff */
-+#define W83627EHF_GPIO_2TO5		0x09 /* LD for GPIO2~5 */
-+#define W83627EHF_GPIO6			0x07 /* LD for GPIO6 */
-+#define W83627EHF_GPIO_DEFAULT_DATA	0xFF /* All 1s initially */
-+#define W83627EHF_GPIO_DEFAULT_DIR	0xFF /* Initially all inputs */
-+#define W83627EHF_GPIO_DEFAULT_TYPE	0xFF /* Initially debouncer enabled */
-+
-+/* Logical device 9 registers */
-+#define W83627EHF_LD9_GPIO_2TO5_ENA	0x30 /* GPIO2~5 enable register */
-+#define W83627EHF_LD9_GPIO3_DATA	0xF1
-+#define W83627EHF_LD9_GPIO3_DIR		0xF0
-+#define W83627EHF_LD9_GPIO3_TYPE	0xFE
-+
-+/* GPIO enable bits */
-+#define W83627EHF_ENABLE_GPIO2		0x00 /* Not used */
-+#define W83627EHF_ENABLE_GPIO3		0x02 /* Only GPIO 3 is implemented */
-+#define W83627EHF_ENABLE_GPIO4		0x04 /* Not used */
-+#define W83627EHF_ENABLE_GPIO5		0x08 /* Not used */
-+#define W83627EHF_ENABLE_GPIO6		0x08 /* Not used */
-+
- #define W83627EHF_REG_CASEOPEN_DET	0x42 /* SMI STATUS #2 */
- #define W83627EHF_REG_CASEOPEN_CLR	0x46 /* SMI MASK #3 */
-
-@@ -501,6 +532,13 @@ struct w83627ehf_sio_data {
- 	enum kinds kind;
- };
-
-+/* REVISIT!: This is a global variable for sioreg.
-+ * How could a function like gpio_get be able to access
-+ * sioreg from w83627ehf_sio_data?
-+ * Maybe we can make the sioreg global?
-+ */
-+int global_sioaddr;
-+
- /*
-  * On older chips, only registers 0x50-0x5f are banked.
-  * On more recent chips, all registers are banked.
-@@ -2505,6 +2543,108 @@ static struct platform_driver w83627ehf_driver = {
- 	.remove		= __devexit_p(w83627ehf_remove),
- };
-
-+static int w83627e_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
-+{
-+	u8 reg_val, result;
-+
-+	spin_lock(&sio_lock);
-+	superio_enter(global_sioaddr);
-+	superio_select(global_sioaddr, W83627EHF_GPIO_2TO5);
-+	/* get pin value */
-+	reg_val = superio_inb(global_sioaddr, W83627EHF_LD9_GPIO3_DATA);
-+	result = (reg_val >> gpio_num) & 0x1;
-+	superio_exit(global_sioaddr);
-+	spin_unlock(&sio_lock);
-+
-+	return result;
-+}
-+
-+static int w83627e_gpio_direction_in(struct gpio_chip *gc, unsigned gpio_num)
-+{
-+	u8 reg_val;
-+
-+	spin_lock(&sio_lock);
-+	superio_enter(global_sioaddr);
-+	superio_select(global_sioaddr, W83627EHF_GPIO_2TO5);
-+	/* set direction in */
-+	reg_val = superio_inb(global_sioaddr, W83627EHF_LD9_GPIO3_DIR);
-+	superio_outb(global_sioaddr, W83627EHF_LD9_GPIO3_DIR,
-+		     (1 << gpio_num) | reg_val);
-+	superio_exit(global_sioaddr);
-+	spin_unlock(&sio_lock);
-+
-+	return 0;
-+}
-+
-+static void w83627e_gpio_set(struct gpio_chip *gc,
-+				unsigned gpio_num, int val)
-+{
-+	u8 reg_val;
-+
-+	spin_lock(&sio_lock);
-+	superio_enter(global_sioaddr);
-+	superio_select(global_sioaddr, W83627EHF_GPIO_2TO5);
-+	/* gpio set */
-+	reg_val = superio_inb(global_sioaddr, W83627EHF_LD9_GPIO3_DATA);
-+	superio_outb(global_sioaddr, W83627EHF_LD9_GPIO3_DATA, val ?
-+				(1 << gpio_num) | reg_val :
-+				~(1 << gpio_num) & reg_val);
-+	superio_exit(global_sioaddr);
-+	spin_unlock(&sio_lock);
-+}
-+
-+static int w83627e_gpio_direction_out(struct gpio_chip *gc,
-+					unsigned gpio_num, int val)
-+{
-+	u8 reg_val;
-+
-+	spin_lock(&sio_lock);
-+	superio_enter(global_sioaddr);
-+	superio_select(global_sioaddr, W83627EHF_GPIO_2TO5);
-+	/* set direction out */
-+	reg_val = superio_inb(global_sioaddr,
-+			      W83627EHF_LD9_GPIO3_DIR);
-+	superio_outb(global_sioaddr, W83627EHF_LD9_GPIO3_DIR,
-+		     ~(1 << gpio_num) & reg_val);
-+	reg_val = superio_inb(global_sioaddr, W83627EHF_LD9_GPIO3_DIR);
-+	superio_exit(global_sioaddr);
-+	spin_unlock(&sio_lock);
-+
-+	return 0;
-+}
-+
-+/* Debounce only available for GP30, 31 and 35 */
-+static int w83627e_gpio_set_debounce(struct gpio_chip *gc,
-+				unsigned gpio_num, unsigned deb_val)
-+{
-+	u8 reg_val;
-+
-+	spin_lock(&sio_lock);
-+	superio_enter(global_sioaddr);
-+	superio_select(global_sioaddr, W83627EHF_GPIO_2TO5);
-+	/* set debounce */
-+	reg_val = superio_inb(global_sioaddr, W83627EHF_LD9_GPIO3_TYPE);
-+	if (gpio_num == 0 || gpio_num == 1 || gpio_num == 5) {
-+		superio_outb(global_sioaddr, W83627EHF_LD9_GPIO3_TYPE,
-+				deb_val ? ~(1 << gpio_num) & reg_val :
-+				(1 << gpio_num) | reg_val);
-+	}
-+	superio_exit(global_sioaddr);
-+	spin_unlock(&sio_lock);
-+
-+	return 0;
-+}
-+
-+static struct gpio_chip w83627e_gpio_chip = {
-+	.label			= GPIO_NAME,
-+	.owner			= THIS_MODULE,
-+	.get			= w83627e_gpio_get,
-+	.direction_input	= w83627e_gpio_direction_in,
-+	.set			= w83627e_gpio_set,
-+	.direction_output	= w83627e_gpio_direction_out,
-+	.set_debounce		= w83627e_gpio_set_debounce,
-+};
-+
- /* w83627ehf_find() looks for a '627 in the Super-I/O config space */
- static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
- 				 struct w83627ehf_sio_data *sio_data)
-@@ -2521,6 +2661,8 @@ static int __init w83627ehf_find(int sioaddr,
-unsigned short *addr,
-
- 	u16 val;
- 	const char *sio_name;
-+	u8 reg_temp;
-+	int err;
-
- 	superio_enter(sioaddr);
-
-@@ -2592,11 +2734,51 @@ static int __init w83627ehf_find(int sioaddr,
-unsigned short *addr,
- 		superio_outb(sioaddr, SIO_REG_ENABLE, val | 0x01);
- 	}
-
-+	/* Enable GPIO port 3 and write default values */
-+	pr_info("Enabling GPIO3");
-+
-+	/* Enable share port 3 pins */
-+	reg_temp = superio_inb(sioaddr,
-+			W83627EHF_SPI_GPIO_CONF);
-+	reg_temp = reg_temp & 0xFD;
-+	superio_outb(sioaddr, W83627EHF_SPI_GPIO_CONF,
-+			reg_temp);
-+	reg_temp = superio_inb(sioaddr,
-+			W83627EHF_MULTIFUNCT_1);
-+	reg_temp = reg_temp & 0x1F;
-+	superio_outb(sioaddr, W83627EHF_MULTIFUNCT_1,
-+			reg_temp);
-+
-+	/* Select logical device 9 */
-+	superio_select(sioaddr, W83627EHF_GPIO_2TO5);
-+	/* All low */
-+	superio_outb(sioaddr, W83627EHF_LD9_GPIO3_DATA,
-+			W83627EHF_GPIO_DEFAULT_DATA);
-+	/* All outputs intially */
-+	superio_outb(sioaddr, W83627EHF_LD9_GPIO3_DIR,
-+			W83627EHF_GPIO_DEFAULT_DIR);
-+
-+	superio_outb(sioaddr, W83627EHF_LD9_GPIO_2TO5_ENA,
-+			0x03);
-+
-+	w83627e_gpio_chip.base = -1;
-+	w83627e_gpio_chip.ngpio = 8;
-+
-+	err = gpiochip_add(&w83627e_gpio_chip);
-+	if (err < 0)
-+		goto gpiochip_add_err;
-+
-+	pr_info("GPIO chip added");
- 	superio_exit(sioaddr);
- 	pr_info("Found %s chip at %#x\n", sio_name, *addr);
- 	sio_data->sioreg = sioaddr;
-+	global_sioaddr = sioaddr;
-
- 	return 0;
-+
-+gpiochip_add_err:
-+	pr_info("Error adding GPIO chip");
-+	return err;
- }
-
- /* when Super-I/O functions move to a separate file, the Super-I/O
-@@ -2674,6 +2856,12 @@ exit:
-
- static void __exit sensors_w83627ehf_exit(void)
- {
-+	int ret;
-+
-+	ret = gpiochip_remove(&w83627e_gpio_chip);
-+	WARN(ret, "%s(): sensors_w83627ehf_exit() failed, ret=%d\n",
-+		__func__, ret);
-+
- 	platform_device_unregister(pdev);
- 	platform_driver_unregister(&w83627ehf_driver);
+-- 
+Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
+http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
+DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
