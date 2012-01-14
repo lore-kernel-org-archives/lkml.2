@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab2ANUL3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 15:11:29 -0500
-Received: from ganesha.gnumonks.org ([213.95.27.120]:43957 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab2ANUKn (ORCPT
+	id S1756598Ab2ANUTM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 15:19:12 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34850 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756207Ab2ANUTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 15:10:43 -0500
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        lrg@ti.com
-Cc: Sangbeom Kim <sbkim73@samsung.com>
-Subject: [PATCH] regulator: Add S5M8767 configuration
-Date: Fri, 13 Jan 2012 10:13:13 +0900
-Message-Id: <1326417193-13509-1-git-send-email-sbkim73@samsung.com>
-X-Mailer: git-send-email 1.7.1
+	Sat, 14 Jan 2012 15:19:10 -0500
+Date: Sat, 14 Jan 2012 21:18:56 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Alex Rio <scasbyte@gmail.com>
+Cc: guenter.roeck@ericsson.com, linux-kernel@vger.kernel.org,
+        Rodolfo Giometti <giometti@linux.it>
+Subject: Re: [RFC][PATCH 2/2] hwmon: (w83627ehf) Add GPIO port 3
+ functionality
+Message-ID: <20120114211856.7e1b816d@endymion.delvare>
+In-Reply-To: <CAPbJ=B=_Xubsni7R00kSotDQ9AE9jmhmyRV0gPkXGqAPGrNaXg@mail.gmail.com>
+References: <CAPbJ=B=_Xubsni7R00kSotDQ9AE9jmhmyRV0gPkXGqAPGrNaXg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add Samsung S5M8767A pmic configuration.
+On Fri, 13 Jan 2012 19:39:56 -0600, Alex Rio wrote:
+> The w83627ehf chip has 5 GPIO ports, currently none of them is supported.
+> This patch adds the GPIO port 3 driver with the following functions:
+> set/get pin values, direction_in/out, set_debounce.
+> The values are also available to the userspace (if requiered)
+> in the path /sys/class/gpio by using the export/unexport functions.
+> Please look at the REVISIT comment, this is the main reason of the RFC,
+> suggestions will be highly appreciated.
+> 
+> Signed-off-by: Alex Rio <scasbyte@gmail.com>
+> ---
+>  drivers/hwmon/w83627ehf.c |  188 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 188 insertions(+), 0 deletions(-)
 
-Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
----
-MFD_S5M_CORE is merged with for-next branch on Samuel's MFD tree
----
- drivers/regulator/Kconfig  |    8 ++++++++
- drivers/regulator/Makefile |    2 ++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+This is calling for a MFD driver for these chips. This was proposed in
+the past, BTW, but never followed up:
+http://lists.lm-sensors.org/pipermail/lm-sensors/2010-February/027795.html
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 5451ba6..3d4d4de 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -135,6 +135,14 @@ config REGULATOR_MAX8998
- 	  via I2C bus. The provided regulator is suitable for S3C6410
- 	  and S5PC1XX chips to control VCC_CORE and VCC_USIM voltages.
- 
-+config REGULATOR_S5M8767
-+	tristate "Samsung S5M8767A voltage regulator"
-+	depends on MFD_S5M_CORE
-+	help
-+	 This driver supports a Samsung S5M8767A voltage output regulator
-+	 via I2C bus. S5M8767A have 9 Bucks and 28 LDOs output and
-+	 supports DVS mode with 8bits of output voltage control.
-+
- config REGULATOR_TWL4030
- 	bool "TI TWL4030/TWL5030/TWL6030/TPS659x0 PMIC"
- 	depends on TWL4030_CORE
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 0a4f7ad..1c4a0e3 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -47,5 +47,7 @@ obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
- obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
- obj-$(CONFIG_REGULATOR_TPS62360) += tps62360-regulator.o
- obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
-+obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
-+
- 
- ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
+Putting everything in the current driver is not going to be accepted.
+It certainly looks pleasant because it's a more simple approach, but
+the result would be a complex and unmaintainable driver.
+
 -- 
-1.7.1
-
+Jean Delvare
