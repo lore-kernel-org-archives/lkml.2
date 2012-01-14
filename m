@@ -1,135 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab2ANRgy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 12:36:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65338 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938Ab2ANRgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 12:36:52 -0500
-Date: Sat, 14 Jan 2012 09:36:37 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Nicolas Pitre <nico@fluxnic.net>
-cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
-        moussaba@micron.com, David Rientjes <rientjes@google.com>,
+	id S1756006Ab2ANRm7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 12:42:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6683 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755928Ab2ANRm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 12:42:58 -0500
+Date: Sat, 14 Jan 2012 18:36:48 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [RFC PATCH] proc: clear_refs: do not clear reserved pages
-In-Reply-To: <alpine.LFD.2.02.1201131748380.2722@xanadu.home>
-Message-ID: <alpine.LSU.2.00.1201140901260.2381@eggly.anvils>
-References: <1326467587-22218-1-git-send-email-will.deacon@arm.com> <alpine.LFD.2.02.1201131748380.2722@xanadu.home>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20120114173648.GA32543@redhat.com>
+References: <20111222153004.GA30522@redhat.com> <20120104193614.GF9511@google.com> <20120106152356.GA23995@redhat.com> <20120106182535.GJ9511@google.com> <20120111160730.GA24556@redhat.com> <20120112003102.GB9511@google.com> <20120112170728.GA25717@redhat.com> <20120112175725.GD9511@google.com> <20120113152010.GA19215@redhat.com> <20120113182750.GD18166@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120113182750.GD18166@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012, Nicolas Pitre wrote:
-> On Fri, 13 Jan 2012, Will Deacon wrote:
-> 
-> > /proc/pid/clear_refs is used to clear the Referenced and YOUNG bits for
-> > pages and corresponding page table entries of the task with PID pid,
-> > which includes any special mappings inserted into the page tables in
-> > order to provide things like vDSOs and user helper functions.
-> > 
-> > On ARM this causes a problem because the vectors page is mapped as a
-> > global mapping and since ec706dab ("ARM: add a vma entry for the user
-> > accessible vector page"), a VMA is also inserted into each task for this
-> > page to aid unwinding through signals and syscall restarts. Since the
-> > vectors page is required for handling faults, clearing the YOUNG bit
-> > (and subsequently writing a faulting pte) means that we lose the vectors
-> > page *globally* and cannot fault it back in. This results in a system
-> > deadlock on the next exception.
-> > 
-> > This patch avoids clearing the aforementioned bits for reserved pages,
-> > therefore leaving the vectors page intact on ARM. Since reserved pages
-> > are not candidates for swap, this change should not have any impact on
-> > the usefulness of clear_refs.
-> > 
-> > Cc: David Rientjes <rientjes@google.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Nicolas Pitre <nico@fluxnic.net>
-> > Reported-by: Moussa Ba <moussaba@micron.com>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> 
-> Given Andrew's answer, this should be fine wrt Russell's concern.
-> 
-> Acked-by: Nicolas Pitre <nico@linaro.org>
+On 01/13, Mandeep Singh Baines wrote:
+>
+> Oleg Nesterov (oleg@redhat.com) wrote:
+>
+> > Yes, I thought about this too. Suppose we remove this assignment,
+> > then we can simply do
+> >
+> > 	#define while_each_thread(g, t) \
+> > 		while (t->group_leader == g->group_leader && (t = next_thread(t)) != g)
+> >
+> > with the same effect. (to remind, currently I ignore the barriers/etc).
+> >
+>
+> Nice! I think this works.
+>
+> > But this can _only_ help if we start at the group leader!
+>
+> But I don't think this solution requires we start at the group leader.
+>
+> My thinking:
+>
+> Case 1: g is the exec thread
+> ...
+> Case 2: g is the group leader
+> ...
+> Case 3: g is some other thread
+>
+> In this case, g MUST be current
 
-Yes, it should be okay as an urgent fix for -stable.
-But going forward, I doubt it's the right answer: comments below.
+Why? This is not true. But I guess this doesn't matter, I think I am
+starting to understand why our discussion was a bit confusing.
 
-> 
-> > An aside: if you want to see this problem in action, just run:
-> > 
-> > $ echo 1 > /proc/self/clear_refs
-> > 
-> > on an ARM platform (as any user) and watch your system hang. I think this
-> > has been the case since 2.6.37, so I'll CC stable once people are happy
-> > with the fix.
-> > 
-> >  fs/proc/task_mmu.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > index e418c5a..7dcd2a2 100644
-> > --- a/fs/proc/task_mmu.c
-> > +++ b/fs/proc/task_mmu.c
-> > @@ -518,6 +518,9 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+The problem is _not_ exec/de_thread by itself. The problem is that
+while_each_thread(g, t) can race with removing 'g' from the list.
+IOW, list_for_each_rcu-like things assume that the head of the list
+is "stable" but this is not true.
 
-What got me worried was the line just above the context shown below:
-    		page = vm_normal_page(vma, addr, ptent);
-> >  		if (!page)
-> >  			continue;
+And note that de_thread() does not matter in this sense, only
+__unhash_process()->list_del_rcu(&p->thread_group) does matter.
 
-This is not a normal page, and it's worrying that vm_normal_page() did
-not catch it: I wonder how many other places that could be a problem
-(but I have not actually identified any).
+Now. If 'g' is the group leader, we should only worry about exec,
+otherwise it can't disappear before other threads.
 
-vm_normal_page() doesn't catch it because at the time it was written,
-we thought we were on the point of removing both PageReserved and
-VM_RESERVED (both of whose meanings are imprecise), and there was no
-need for it to check either of them.  But nobody found time to do the
-final (not entirely trivial) cleanup, removing the definitions.
+But if it is not the group leader, it can simply exit and
+while_each_thread(g, t) can never stop by the same reason.
 
-Maybe ec706dab added a need for it to check one of those; though you
-can understand my reluctance to spread PageReserved any further than
-it goes already.  I was looking for VM_ flags which might serve you
-better, when I thought...
+And we can't detect this case. OK, OK, we can, let me remind
+about http://marc.info/?l=linux-kernel&m=127714242731448 and the
+whole discussion. But this makes while_each_thread() more complex
+and this doesn't fork for zap_threads-like users which must not
+miss the "interesing" threads.
 
-This is a horrible hack vma, which is very liable to introduce bugs
-of this nature, because not many people are at all aware of it.
-But we've had a horrible hack vma for years, the gate_vma (see
-mm/memory.c), and that seems to share many characteristics with your
-vectors page (most notably, being in kernel not user address space).
+Finally. If we restrict the lockless while_each_thread() so that
+is starts at the group leader, then we can rely on de_thread()
+which changes the leadership and try to detect this case.
 
-Please, going forward, can you delete your vectors page code, and
-use the gate_vma for it?  Extending it a little if it somehow does
-not satsify your need.  Or else can you please explain (ec706dab
-does not) why the gate_vma does not suit you.
+See?
 
-I'm not saying the horrible hack gate_vma mechanism is any safer
-than yours (the latest bug in it was fixed all of 13 days ago).
-But I am saying that one horrible hack is safer than two.
+> > May be we should enforce this rule (for the lockless case), I dunno...
+> > In that case I'd prefer to add the new while_each_thread_rcu() helper.
+> > But! in this case we do not need to change de_thread(), we can simply do
+> >
+> > 	#define while_each_thread_rcu(t) \
+> > 		while (({ t = next_thread(t); !thread_group_leader(t); }))
+> >
+>
+> Won't this terminate just before visiting the exec thread?
 
-> >  
-> > +		if (PageReserved(page))
-> > +			continue;
+Sure. But this is fine for zap_threads() or current_is_single_threaded(),
+the execing thread already has another ->mm. Just we shouldn't hang
+forever if we race with exec (we start at the group leader).
 
-Let's note in passing that this does change the "behaviour" of clear_refs
-on the ZERO_PAGE; but it doesn't make any functional difference, we just
-need to be aware of it, in case someone tries examining /proc/pid/smaps
-after /proc/pid/clear_refs, and complains that some pages are left marked
-referenced which were cleared before.  Doesn't make a real difference.
+And I hope this is fine in general (to remind, in the lockless case).
+If we race with exec we see either the old or the new leader with the
+same pid/signal/etc (at least).
 
-> > +
-> >  		/* Clear accessed and referenced bits. */
-> >  		ptep_test_and_clear_young(vma, addr, pte);
-> >  		ClearPageReferenced(page);
-> > -- 
-> > 1.7.4.1
+Hmm. On a second thought, perhaps I thought to much about zap_threads(),
+perhaps it would be better to find all threads we can...
 
-Hugh
+I dunno. But I am starting to like the ->group_leader more. Hmm, and
+with thread_group_leader() check we should ensure we do not visit the
+old leader twice.
+
+Thanks Mandeep.
+
+I'll try to recheck my thinking once again, what do you think? Anything
+else we could miss?
+
+Oleg.
+
