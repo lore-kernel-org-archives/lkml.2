@@ -1,37 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757956Ab2ANWQD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 17:16:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55322 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755739Ab2ANWQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 17:16:00 -0500
-Message-ID: <4F11FEA4.3050502@suse.cz>
-Date: Sat, 14 Jan 2012 23:16:04 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Julia Lawall <julia@diku.dk>, kernel-janitors@vger.kernel.org,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org, Artem@mgw2.diku.dk, Bityutskiy@suse.de
-Subject: Re: [PATCH] scripts/coccinelle: improve the coverage of some semantic
- patches
-References: <1326562543-8448-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1326562543-8448-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758175Ab2ANWQL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 17:16:11 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43874 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab2ANWQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 17:16:07 -0500
+Message-ID: <1326579362.5287.45.camel@edumazet-laptop>
+Subject: Re: recvmsg sleeping from invalid context
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dave Jones <davej@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, glommer@parallels.com
+Date: Sat, 14 Jan 2012 23:16:02 +0100
+In-Reply-To: <20120114214334.GA28423@redhat.com>
+References: <20120113182401.GA25885@redhat.com>
+	 <20120113.102712.600185688659703015.davem@davemloft.net>
+	 <20120114214334.GA28423@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.1.2012 18:35, Julia Lawall wrote:
-> diff --git a/var/linuxes/linux-next/scripts/coccinelle/locks/call_kern.cocci b/var/julia/linuxcopy/scripts/coccinelle/locks/call_kern.cocci
-> index 00af534..8f10b49 100644
-> --- a/var/linuxes/linux-next/scripts/coccinelle/locks/call_kern.cocci
-> +++ b/var/julia/linuxcopy/scripts/coccinelle/locks/call_kern.cocci
+Le samedi 14 janvier 2012 à 16:43 -0500, Dave Jones a écrit :
+> On Fri, Jan 13, 2012 at 10:27:12AM -0800, David Miller wrote:
+>  > From: Dave Jones <davej@redhat.com>
+>  > Date: Fri, 13 Jan 2012 13:24:01 -0500
+>  > 
+>  > > getting a ton of these on the latest head (099469502f62fbe0d7e4f0b83a2f22538367f734)
+>  > > 
+>  > > BUG: sleeping function called from invalid context at mm/memory.c:3905
+>  > > in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
+>  > > INFO: lockdep is turned off.
+>  > > Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
+>  > > Call Trace:
+>  > >  [<ffffffff81099415>] __might_sleep+0x145/0x200
+>  > >  [<ffffffff811752a4>] might_fault+0x34/0xb0
+>  > >  [<ffffffff81551555>] ? sock_def_readable+0x25/0x1a0
+>  > >  [<ffffffff8155c387>] put_cmsg+0x77/0x120
+>  > >  [<ffffffff8159379c>] netlink_recvmsg+0x35c/0x480
+>  > >  [<ffffffff8155201a>] ? sock_update_classid+0x9a/0x260
+>  > >  [<ffffffff81552052>] ? sock_update_classid+0xd2/0x260
+>  > >  [<ffffffff81549fbd>] sock_recvmsg+0x11d/0x140
+>  > >  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
+>  > >  [<ffffffff8117530c>] ? might_fault+0x9c/0xb0
+>  > >  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
+>  > >  [<ffffffff8154b1b3>] __sys_recvmsg+0x153/0x2d0
+>  > >  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+>  > >  [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
+>  > >  [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
+>  > >  [<ffffffff811bc43b>] ? fget_light+0xfb/0x470
+>  > >  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+>  > >  [<ffffffff8154e2e9>] sys_recvmsg+0x49/0x90
+>  > >  [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
+>  > 
+>  > Sigh, I suspect the new socket memcg code, which I didn't want to
+>  > even apply in the first place. :-/
+>  > 
+>  > Glauber, please fix this.
+> 
+> How new is 'new' ?
+> 
+> interestingly, I now started getting these in 3.1.9 where I never noticed them before.
+> 
+> 
+> BUG: sleeping function called from invalid context at mm/memory.c:3905
+> in_atomic(): 1, irqs_disabled(): 0, pid: 962, name: NetworkManager
+> 1 lock held by NetworkManager/962:
+>  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff815f610d>] inet6_dump_fib+0x3d/0x3d0
+> Pid: 962, comm: NetworkManager Not tainted 3.1.9-1.fc16.x86_64.debug #1
+> Call Trace:
+>  [<ffffffff8105fbd0>] __might_sleep+0xf0/0x120
+>  [<ffffffff81160f68>] might_fault+0x38/0xb0
+>  [<ffffffff81519070>] ? sock_def_error_report+0x120/0x120
+>  [<ffffffff81523877>] put_cmsg+0x77/0x120
+>  [<ffffffff815587ec>] netlink_recvmsg+0x35c/0x480
+>  [<ffffffff81518d2e>] ? sock_update_classid+0x8e/0x190
+>  [<ffffffff81518d68>] ? sock_update_classid+0xc8/0x190
+>  [<ffffffff815122ad>] sock_recvmsg+0x11d/0x140
+>  [<ffffffff81160f8c>] ? might_fault+0x5c/0xb0
+>  [<ffffffff81160fd5>] ? might_fault+0xa5/0xb0
+>  [<ffffffff81160f8c>] ? might_fault+0x5c/0xb0
+>  [<ffffffff81513373>] __sys_recvmsg+0x153/0x2d0
+>  [<ffffffff810a8f28>] ? sched_clock_cpu+0xa8/0x110
+>  [<ffffffff810b6bfd>] ? trace_hardirqs_off+0xd/0x10
+>  [<ffffffff810a8fff>] ? local_clock+0x6f/0x80
+>  [<ffffffff810b74a5>] ? lock_release_holdtime.part.9+0x15/0x1a0
+>  [<ffffffff811a4bef>] ? fget_light+0xcf/0x3b0
+>  [<ffffffff811a4c07>] ? fget_light+0xe7/0x3b0
+>  [<ffffffff811a4b68>] ? fget_light+0x48/0x3b0
+>  [<ffffffff81516359>] sys_recvmsg+0x49/0x90
+>  [<ffffffff81669dc2>] system_call_fastpath+0x16/0x1b
+> 
 
-Please submit a patch that applies to the kernel git, thanks.
+I dont understand this trace.
 
-Michal
+inet6_dump_fib() does indeed an rcu_read_lock(), but pair it by
+rcu_read_unlock().
+
+fib6_dump_table() is called with rcu_read_lock(), but certainly cannot
+end calling pu_cmsg().
+
+
+
