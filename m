@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab2ANPVS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 10:21:18 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48939 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851Ab2ANPVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 10:21:16 -0500
-Message-ID: <1326554573.14299.4.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 3/15] drivers/mtd/onenand/samsung.c: add missing iounmap
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>, kernel-janitors@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+	id S1755185Ab2ANPeN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 10:34:13 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755034Ab2ANPeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 10:34:11 -0500
+Message-ID: <4F11A06A.3040703@nod.at>
+Date: Sat, 14 Jan 2012 16:34:02 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Date: Sat, 14 Jan 2012 17:22:53 +0200
-In-Reply-To: <1326362117-29371-3-git-send-email-Julia.Lawall@lip6.fr>
-References: <1326362117-29371-3-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-T9C2Iw53NBO31oPSPIx5"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
+Subject: Re: [PATCH] ubi: Use UBI_LAYOUT_VOLUME_{TYPE, ALIGN}
+References: <1326214623-15938-1-git-send-email-richard@nod.at> <1326553866.14299.0.camel@sauron.fi.intel.com>
+In-Reply-To: <1326553866.14299.0.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigE781820EAD50F4F34660D366"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-T9C2Iw53NBO31oPSPIx5
-Content-Type: text/plain; charset="UTF-8"
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigE781820EAD50F4F34660D366
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2012-01-12 at 10:55 +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+Am 14.01.2012 16:11, schrieb Artem Bityutskiy:
+> On Tue, 2012-01-10 at 17:57 +0100, Richard Weinberger wrote:
+>> UBI_LAYOUT_VOLUME_TYPE and UBI_LAYOUT_VOLUME_ALIGN are currently
+>> defined but not used.
+>> Use them at least once. 8-)
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
 >=20
-> Add missing iounmap in error handling code, in a case where the function
-> already preforms iounmap on some other execution path.
+> Hi Richard,
 >=20
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
+> This will break backward compatibility - older and current kernels whic=
+h
+> do not have this patch will error out when the find a volume without a
+> name. The right way to do this would be to change the UBI format
+> version, but you would need a really strong reason for this.
+>=20
 
-Pushed to l2-mtd.git, thanks!
+Sorry, this comment makes absolutely no sense.
 
---=20
-Best Regards,
-Artem Bityutskiy
+Did you mean my other patch?
+But still, the other patch also does *not* allow volumes without names.
 
---=-T9C2Iw53NBO31oPSPIx5
+Confused,
+//richard
+
+
+--------------enigE781820EAD50F4F34660D366
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAABAgAGBQJPEZ3NAAoJECmIfjd9wqK0WDAQAM+B9KNeDj1a8+yUPuSTcm54
-zLKKSwk6IoIHjVLEY+phkQTyhsnmCF8aZEo7wFwJ1x1TITILx474DpG7xOhj+VS2
-aE0Kkjuzmgx5pimqdIORo61EL101Ym8lBB73G9KPtyqX8wqMcvAwAd7/Q1bumqXv
-8BoufXR7sI0V37uQPZii39kiz8/2ZDP69fI2M3syOymZcBT2/FFG5/Dcyoxn1Mw3
-krz6U2P/SF6rjYXcbXXnO+VLjQkM4P0y3r9j3AJdeX6D6OnpUeYW+aBJnUFMEBuv
-wh63uB0ZZnKEMon2WbIRpPqitUFOibbQZ/g2Gc+8AxvmO+YaX3M8ZKjwtinQG3Dm
-SFMTNM28ZBWnvmZjMehnMs7rIjJ1E7ufdvLg1glcIyY8iCpZN13tlCZtMyLoJMzD
-WivgI/DlZxRodVFM8uIHcmTlqEDOD1eSHiPf1uKrWuIFZgbDR5jO1x3/l8jjvMyg
-sU1MnZ0VcXORNi8zRA01Shcy0lOD+PhPcHSHPNbQrSkMDLsqDOIX/FaFki7UbC8Z
-DvnhIRv4KCC73iL6cy87ZuJwe7SHyQ1uPyzQX6PxHYyoLJMhh08QuSZCEyY+pi33
-NKg3gojsh+JxQLgH5hdtytdvKPOzcWn3q+MPZfpQEqpSWke7tQlIK+LjUf8FD1WW
-rYNiphyBakDc89Wz+8yb
-=uOYz
+iQEcBAEBAgAGBQJPEaBuAAoJEN9758yqZn9eH4UH/ju+IQ8oBuYVmcBrWB15D5Qa
+a6PSDdrFLY9l88ZHEu6MaEaPslltY+uiVniCpYCfu9YhHUsfNbMUqBWmDeyVZoFm
+Lr3NasTsp5e7A74QstLeWaKYgK+Amjje/mbf4LA04QxwtBcOxdM48vB+eYs8H4mw
+T3R8HPdQpfnDnndJbxCAq0HU+3cPZyotpZa2Hiv2ZueWU0qvumWoepGlXaLXcBpO
+rNHRtoZqvK2KRn9gkb0tSlSM4p6xjpF0vbgBXT2KMtCdIxw1L+2VSZDaCR0yswce
+PPrZZ7W4gNf6ODHdnGGLhIST+zMjfoFe1/fUud15U9pJf/AKSaHTLUCu23w/dnQ=
+=7HuU
 -----END PGP SIGNATURE-----
 
---=-T9C2Iw53NBO31oPSPIx5--
-
+--------------enigE781820EAD50F4F34660D366--
