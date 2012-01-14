@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab2ANDlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 22:41:45 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52152 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab2ANDln (ORCPT
+	id S1754718Ab2ANESh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 23:18:37 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:1770 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab2ANESg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 22:41:43 -0500
+	Fri, 13 Jan 2012 23:18:36 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6588"; a="154991170"
+Message-ID: <4F11021A.8070407@codeaurora.org>
+Date: Fri, 13 Jan 2012 20:18:34 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <4F10F3EF.8000908@linux.vnet.ibm.com>
-References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
- <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
- <4F10BDF7.8030306@linux.vnet.ibm.com> <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
- <4F10EB5B.5060804@linux.vnet.ibm.com> <CA+55aFxK5XCh6NCbo9AMvsarS9_A+s0QqV6=vC2O4dgg3vg=Aw@mail.gmail.com>
- <4F10F117.40006@linux.vnet.ibm.com> <CA+55aFwWU8ieuV_EsA6nHwjV9iOgy04DEScngDKQ92wNGfPZ-Q@mail.gmail.com>
- <4F10F3EF.8000908@linux.vnet.ibm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Jan 2012 19:41:22 -0800
-X-Google-Sender-Auth: zBCD6qrUPM9GgTh49dZj8dTLBSY
-Message-ID: <CA+55aFwdfBQ+cx+YqrgjjBACr8uJ=FYcKqz6PWn1yZanqtcqZg@mail.gmail.com>
-Subject: Re: x86/mce: machine check warning during poweroff
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "Turquette, Mike" <mturquette@ti.com>, andrew@lunn.ch,
+        linaro-dev@lists.linaro.org, eric.miao@linaro.org,
+        grant.likely@secretlab.ca, Colin Cross <ccross@google.com>,
+        jeremy.kerr@canonical.com, sboyd@quicinc.com, magnus.damm@gmail.com,
+        dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
+        arnd.bergmann@linaro.org, patches@linaro.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        richard.zhao@linaro.org, shawn.guo@freescale.com, paul@pwsan.com,
+        linus.walleij@stericsson.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
+        skannan@quicinc.com
+Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
+References: <1323834838-2206-1-git-send-email-mturquette@linaro.org> <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos> <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com> <20111217110433.GC14547@n2100.arm.linux.org.uk>
+In-Reply-To: <20111217110433.GC14547@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 7:18 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+On 12/17/2011 03:04 AM, Russell King - ARM Linux wrote:
+> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
+>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas Gleixner<tglx@linutronix.de>  wrote:
+>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
+>>>> +void __clk_unprepare(struct clk *clk)
+>>>> +{
+>>>> +     if (!clk)
+>>>> +             return;
+>>>> +
+>>>> +     if (WARN_ON(clk->prepare_count == 0))
+>>>> +             return;
+>>>> +
+>>>> +     if (--clk->prepare_count>  0)
+>>>> +             return;
+>>>> +
+>>>> +     WARN_ON(clk->enable_count>  0);
+>>>
+>>> So this leaves the clock enable count set. I'm a bit wary about
+>>> that. Shouldn't it either return (including bumping the prepare_count
+>>> again) or call clk_disable() ?
 >
-> By the way, in my excitement, while sending the patch I forgot to give
-> credits to the problem reporters with a "Reported-by". Hope that gets
-> resolved.
+> No it should not.
+>
+>> I've hit this in my port of OMAP.  It comes from this simple situation:
+>>
+>> driver 1 (adapted for clk_prepare/clk_unprepare):
+>> clk_prepare(clk);
+>> clk_enable(clk);
+>>
+>> ...
+>>
+>> driver2 (not adapted for clk_prepare/clk_unprepare):
+>> clk_enable(clk);
+>
+> So this is basically buggy.  Look, it's quite simple.  Convert _all_
+> your drivers to clk_prepare/clk_unprepare _before_ you start switching
+> your platform to use these new functions.  You can do that _today_
+> without exception.
+>
+> We must refuse to merge _any_ user which does this the old way - and
+> we should have been doing this since my commit was merged into mainline
+> to allow drivers to be converted.
+>
+> And stop trying to think of ways around this inside clk_prepare/
+> clk_unprepare/clk_enable/clk_disable.  You can't do it.  Just fix _all_
+> the drivers.  Now.  Before you start implementing clk_prepare/clk_unprepare.
 
-.. and in my excitement to get it fixed, I committed and pushed it out
-without thinking about it either.
+I agree with Russell's suggestion. This is what I'm trying to do with 
+the MSM platform. Not sure if I'm too optimistic, but as of today, I'm 
+still optimistic I can push the MSM driver devs to get this done before 
+we enable real prepare/unprepare support.
 
-So no, reporters didn't get any glory this time.
+Thanks,
+Saravana
 
-Sucks to be them,
-
-                 Linus
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
