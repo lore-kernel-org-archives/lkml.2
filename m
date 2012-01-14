@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab2ANNUx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 08:20:53 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65420 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab2ANNUw (ORCPT
+	id S1754793Ab2ANNbi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 08:31:38 -0500
+Received: from mail2.shareable.org ([80.68.89.115]:33479 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753798Ab2ANNbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 08:20:52 -0500
-Message-ID: <1326547247.5287.19.camel@edumazet-laptop>
-Subject: Re: The thundering herd like problem when multi epolls on one fd
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Li Yu <raise.sail@gmail.com>
-Cc: linux-kernel@vger.kernel.org, davidel@xmailserver.org
-Date: Sat, 14 Jan 2012 14:20:47 +0100
-In-Reply-To: <4F116350.6090704@gmail.com>
-References: <4F116350.6090704@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Sat, 14 Jan 2012 08:31:34 -0500
+Date: Sat, 14 Jan 2012 13:30:53 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH PLACEHOLDER 1/3] fs/exec: "always_unprivileged" patch
+Message-ID: <20120114133053.GY7180@jl-vm1.vm.bytemark.co.uk>
+References: <1326411506-16894-1-git-send-email-wad@chromium.org>
+ <CA+55aFz4mJU2E2BPzZyVQ52V_ytg_8fyAH+BV_uYHVXBM2wqDw@mail.gmail.com>
+ <CAObL_7FErN5CHmfSehJYcM0_Lz-WTywG7cHe2jZyQbf-GkOQjg@mail.gmail.com>
+ <CA+55aFzzRNHfSo-1DyzsAwYvj1Da-vyhMQP-OdrA-rWywsebcg@mail.gmail.com>
+ <CAObL_7F8aYPDQ1xTFjOxWgoZfrtGNFVgMe2Ld61_=D+YY427qA@mail.gmail.com>
+ <CA+55aFxSgYFp1psum3amgqqsT-rrvGd1T8BXJSA-mgd1EdHrwg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxSgYFp1psum3amgqqsT-rrvGd1T8BXJSA-mgd1EdHrwg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 14 janvier 2012 à 19:13 +0800, Li Yu a écrit :
-> Hi, 
+Linus Torvalds wrote:
+> On Thu, Jan 12, 2012 at 5:11 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> >
+> > What if you're a daemon that needs something like CAP_NET_BIND but
+> > also wants to be able to run other helpers without CAP_NET_BIND?
+> >
+> > (Also, preventing dropping of privileges will probably make a patch
+> > more complicted -- I'll have to find and update all the places that
+> > allow dropping privileges.)
 > 
-> 	My buddy reported a thundering herd problem about using epoll 
-> on TCP listen sockets. He said their usage like below:
+> Hey, if it actually makes it more complicated to say "don't change
+> privileges", then I guess my argument that it should be simpler is
+> wrong.
 > 
-> 	1. sk = new tcp_listen_socket();
-> 	2. create many child processes or threads.
-> 	3. in new created processes (threads), use epoll API on listen
-> sk to provide HTTP service.
-> 
-> 	Such using pattern means we have multi wait queues when 
-> accepting one socket, and it is not exclusive waking up, so we get a 
-> thundering herd like problem. And, so I heard many popular applications
-> can use such pattern, which includes nginx, lighttpd, haproxy at least.
+> That said, the thing you bring up is *not* the actual use-case for the
+> suggestion. The use-case is a "run untrusted code". So the use-case
+> would be to set the flag after you've dropped CAP_NET_BIND, and
+> *before* you actually run the other helpers. You clearly must have a
+> fork() or something like that there, since you want to keep the
+> NET_BIND in the original daemon.
 
-It is not very scalable. But we really lack a fanout mechanism to allow
-better paralelism on accept(), its not a poll() vs select() vs epoll()
-problem per se, but a generic problem.
+Well suppose you don't trust the daemon either.  It might be running
+in a network namespace where it's safe for untrusted code to bind to
+low ports.
 
-> So should we change this waking up behavior to exclusive too ? 
-> 
+Or maybe you just need to let it bind willy-nilly among a restricted
+subset of low ports - which of course you would like to restrict with
+the seccomp filter.
 
-Certainly not.
+(This can't happen right now because the filter can only look at
+arguments, not memory pointed to - so it can't look at the port
+number.  Can it even see when sys_bind is called on archs like x86
+that use sys_socketcall?!)
 
-> 	Below is a simple patch (tested and works) for epoll() to do it,
-> of course, we also should fix select() and poll() syscalls if it is right.
-> 
-> 	Thanks.
-> 
-> Yu	
-> 
-> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> index 828e750..a3d6ab4 100644
-> --- a/fs/eventpoll.c
-> +++ b/fs/eventpoll.c
-> @@ -898,7 +899,7 @@ static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
->                 init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
->                 pwq->whead = whead;
->                 pwq->base = epi;
-> -               add_wait_queue(whead, &pwq->wait);
-> +               add_wait_queue_exclusive(whead, &pwq->wait);
->                 list_add_tail(&pwq->llink, &epi->pwqlist);
->                 epi->nwait++;
->         } else {
-> --
+Anyway the principle is there - CAP_NET_BIND doesn't necessarily mean
+the daemon code is trusted.
 
-
-What happens if the awaken thread does not consume the event, and prefer
-to exit ?
-
-If several threads are doing select()/poll()/epoll() on a shared fd,
-they _all_ must be notified the fd is ready, as manpages claim.
-
-Doing otherwise would require the prior consent of the user, using a
-special flag for example, and documentation.
-
-
+-- Jamie
