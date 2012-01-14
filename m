@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab2ANU32 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 15:29:28 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:38141 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756625Ab2ANU31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 15:29:27 -0500
-Message-ID: <1326572965.6300.103.camel@joe2Laptop>
-Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of
- failing probe
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: dvhart@linux.intel.com, linux-kernel@vger.kernel.org,
-        arjan@linux.intel.com, alan@linux.intel.com, tomoya.rohm@gmail.com,
-        jeffrey.t.kirsher@intel.com, paul.gortmaker@windriver.com,
-        jdmason@kudzu.us, netdev@vger.kernel.org
-Date: Sat, 14 Jan 2012 12:29:25 -0800
-In-Reply-To: <20120114.115604.2101782124431552110.davem@davemloft.net>
-References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com>
-	 <20120114.001430.787918662083526597.davem@davemloft.net>
-	 <4F11A533.4040406@linux.intel.com>
-	 <20120114.115604.2101782124431552110.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932148Ab2ANUbR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 15:31:17 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:12707
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756647Ab2ANUbQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 15:31:16 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371I542M1432Nzz1202hzz8275bhz2fhc1ahc1bh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>
+Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Index: AQHM0W763o2pXZK11UadxuudCK0AbpYMmkCA//+5EwA=
+Date: Sat, 14 Jan 2012 20:31:18 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B6F0307@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1326402943-14031-1-git-send-email-kys@microsoft.com>
+ <20120114164228.GB9682@infradead.org>
+In-Reply-To: <20120114164228.GB9682@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-01-14 at 11:56 -0800, David Miller wrote:
-> From: Darren Hart <dvhart@linux.intel.com>
-> Date: Sat, 14 Jan 2012 07:54:27 -0800
-> > In any case, with existing hardware out there that is unusable with the
-> > current pch_gbe driver, can we consider this workaround for inclusion?
-> I fear that people are just going to add this random MAC stuff way too
-> easily, it's a spreading disease.
-> Ship functional hardware instead.
+Thanks Christoph. Would you be taking this driver out of staging or should I ask Greg. James had indicated that
+he had turned the driver over to you for reviewing.
 
-Good advice, but that's _hard_.
+Regards,
 
-Working systems are nearly always some combination
-of hardware/firmware/software defect workarounds.
+K. Y
 
-Anyway, perhaps setting random_ether_addr like this
-should be in some generic routine with a standardized
-"avoid buying bad hardware" output logging message.
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Saturday, January 14, 2012 11:42 AM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com
+> Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
+> staging area
+> 
+> The driver looks good to go to me, thanks for quickly addressing the
+> comments.
+> 
+> Reviewed-by: Christoph Hellwig <hch@lst.de>
 
 
