@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab2ANDYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 22:24:09 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62007 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2ANDYI convert rfc822-to-8bit (ORCPT
+	id S1754574Ab2ANDZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 22:25:36 -0500
+Received: from hades.mikemestnik.net ([184.106.158.151]:49856 "EHLO
+	hades.mikemestnik.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab2ANDZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 22:24:08 -0500
+	Fri, 13 Jan 2012 22:25:34 -0500
+X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jan 2012 22:25:34 EST
+Message-ID: <4F10F3AE.3030801@mikemestnik.net>
+Date: Fri, 13 Jan 2012 21:17:02 -0600
+From: Mike Mestnik <cheako@mikemestnik.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20111223 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <4F104A51.2000701@ah.jp.nec.com>
-References: <1326396898-5579-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1326396898-5579-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<CAJd=RBB6azf9nin5tjqTtHakxy896rCxr6ErK4p2KDrke_goEA@mail.gmail.com>
-	<4F104A51.2000701@ah.jp.nec.com>
-Date: Sat, 14 Jan 2012 11:24:06 +0800
-Message-ID: <CAJd=RBB2GMRQNUH+2z7R5Fy6OKKtid9wn2mTFORvtefo+wUaOQ@mail.gmail.com>
-Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
-From: Hillf Danton <dhillf@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+Subject: Chronic resource starvation.
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 11:14 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> Hi Hillf,
->
-> (1/13/2012 7:04), Hillf Danton wrote:
-> [...]
->>> +/*
->>> + * Returns 1 if a given pmd is mapping a thp and stable (not under splitting.)
->>> + * Returns 0 otherwise. Note that if it returns 1, this routine returns without
->>> + * unlocking page table locks. So callers must unlock them.
->>> + */
->>> +int pmd_trans_huge_stable(pmd_t *pmd, struct vm_area_struct *vma)
->>> +{
->>> +       VM_BUG_ON(!rwsem_is_locked(&vma->vm_mm->mmap_sem));
->>> +
->>> +       if (!pmd_trans_huge(*pmd))
->>> +               return 0;
->>> +
->>> +       spin_lock(&vma->vm_mm->page_table_lock);
->>> +       if (likely(pmd_trans_huge(*pmd))) {
->>> +               if (pmd_trans_splitting(*pmd)) {
->>> +                       spin_unlock(&vma->vm_mm->page_table_lock);
->>> +                       wait_split_huge_page(vma->anon_vma, pmd);
->>> +                       return 0;
->>> +               } else {
->>
->>                             spin_unlock(&vma->vm_mm->page_table_lock);     yes?
->
-> No. Unlocking is supposed to be done by the caller as commented.
->
-Thanks for correcting /Hillf
+I've dealt with applications taking extended time off for a number of
+years.  I typically attribute it to applications being overly zealous
+about eating memory as most every application tends to do these days.  I
+had always figured that there a likely plenty of ppl complaining and I
+didn't want to get the boiler plat answer that resources are cheap.
+
+I refuse to buy into the idea that Z computers can get an additional Y
+resource to run application X, when instead application X could be
+engineered once and for all.  This ideology is not sustainable and
+eventually will crash upon it's self.  I call this Z * Y < X.  The
+application source becomes the single location where every computers
+resources can be increased at the cost of much less then to adjust the
+running environment of every location that the code may run.
+
+Here is a 84MB video that demonstrates the issue.
+http://j.mp/wavbCO
+http://bitly.com/wavbCO+
+
+You can see at the start an application that should update regularly is
+frozen and that moving windows and even focus is difficult.  The system
+does recover, but after far too long.
+
+I'll welcome any further testing as I'm sure it's needed.  Keep in mind
+that I can't reproduce this reliably, but it does happen, so it will
+take time to collect any amount of data...  A gkrellm plugin that
+illustrates the test is the most perfered, killing two birds with one
+stone as it will help with this case and many many future cases.  If
+it's important wouldn't your test already be part of a tool like gkrellm?
+
