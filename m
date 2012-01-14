@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab2ANWaE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 17:30:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56638 "EHLO mx2.suse.de"
+	id S1758196Ab2ANWga (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 17:36:30 -0500
+Received: from mga03.intel.com ([143.182.124.21]:60086 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751504Ab2ANWaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 17:30:01 -0500
-Message-ID: <4F1201E4.9050000@suse.cz>
-Date: Sat, 14 Jan 2012 23:29:56 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1755836Ab2ANWg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 17:36:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95897993"
+Message-ID: <4F120357.3020808@linux.intel.com>
+Date: Sat, 14 Jan 2012 14:36:07 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Jon Loeliger <jdl@jdl.com>, David Gibson <david@gibson.dropbear.id.au>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH V2] dtc: Implement -d option to write out a dependency
- file
-References: <1326241672-9168-1-git-send-email-swarren@nvidia.com>
-In-Reply-To: <1326241672-9168-1-git-send-email-swarren@nvidia.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, alan@linux.intel.com, tomoya.rohm@gmail.com,
+        jeffrey.t.kirsher@intel.com, paul.gortmaker@windriver.com,
+        jdmason@kudzu.us, netdev@vger.kernel.org
+Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing
+ probe
+References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com> <20120114.001430.787918662083526597.davem@davemloft.net> <4F11A533.4040406@linux.intel.com> <20120114.115604.2101782124431552110.davem@davemloft.net> <20120114214658.4ddfec30@pyramind.ukuu.org.uk>
+In-Reply-To: <20120114214658.4ddfec30@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.1.2012 01:27, Stephen Warren wrote:
-> This will allow callers to rebuild .dtb files when any of the /include/d
-> .dtsi files are modified, not just the top-level .dts file.
+
+
+On 01/14/2012 01:46 PM, Alan Cox wrote:
+>> I fear that people are just going to add this random MAC stuff way too
+>> easily, it's a spreading disease.
+>>
+>> Ship functional hardware instead.
 > 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Michal, this patch is a dependency for the kbuild changes that use it;
-> http://www.spinics.net/lists/linux-kbuild/msg05883.html
-> I think it makes sense to apply both this patch, and that patch, to the
-> kbuild tree. Do you agree?
-
-Sure.
-
-
-> v2: Replace fputs/fputc with fprintf
+> See "choir, preaching to the".
 > 
-> This patch has been blessed for application to upstream dtc. Here, I'm
-> simply applying the same thing to the code in the Linux kernel tree,
-> resolving some conflicts. See:
-> http://lists.ozlabs.org/pipermail/devicetree-discuss/2012-January/011172.html
+> The stuff is out there and it's not Darren's fault !
+> 
+> Alan
 
-I see it has been applied in the meantime, great. I'll apply this one
-and the kbuild patch to kbuild.git#kbuild.
 
-Michal
+So perhaps I should provide some more context into why I'm sending these
+patches. The following hardware is currently available and the existing
+Linux support is confined to a Timesys Fedora-Based pre-installed image
+which requires user intervention to write a MAC using an old, not
+upstreamed, modified ioh_gbe_mac driver.
+
+The board documentation is available here:
+http://www.inforcecomputing.com/SYS940X_ECX.html
+
+In particular, see:
+http://www.inforcecomputing.com/proddls/SYS940X-01_UserGuide_001329.pdf
+and:
+http://www.inforcecomputing.com/proddls/BLDK2_Kern_2.6.29-10_and_2.6.29-12_for_SYS940X-1_1304.pdf
+
+I felt this patch made this hardware more accessible by allowing it to
+work with current kernels without ugly userspace hacks. It is also
+following precedent set by existing drivers.
+
+So while I completely agree with the sentiment "Ship functional
+hardware", this wasn't a product I was involved with, I'm just trying to
+make a bad situation better. As Alan alludes to above, I do actually
+spend a good deal of time trying to improve hardware to avoid this kind
+of thing (it's an amazingly difficult task).
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
