@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab2ANP5X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 10:57:23 -0500
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:35819 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755060Ab2ANP5V (ORCPT
+	id S1755262Ab2ANQE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 11:04:59 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64816 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab2ANQE4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 10:57:21 -0500
-Date: Sat, 14 Jan 2012 16:57:13 +0100
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Li Yu <raise.sail@gmail.com>, linux-kernel@vger.kernel.org,
-        davidel@xmailserver.org
-Subject: Re: The thundering herd like problem when multi epolls on one fd
-Message-ID: <20120114155713.GA2966@hell>
-References: <4F116350.6090704@gmail.com>
- <1326547247.5287.19.camel@edumazet-laptop>
+	Sat, 14 Jan 2012 11:04:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326547247.5287.19.camel@edumazet-laptop>
-X-Key-Id: 98350C22
-X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
-X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <300903415.833492.1326554271998.JavaMail.root@zmail13.collab.prod.int.phx2.redhat.com>
+References: <300903415.833492.1326554271998.JavaMail.root@zmail13.collab.prod.int.phx2.redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 14 Jan 2012 08:04:34 -0800
+Message-ID: <CALCETrX8OOmCGFnOdFdxHRh=9vYROGg=qcK+c2G30FVbQhC4jQ@mail.gmail.com>
+Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
+ granting privs
+To: Eric Paris <eparis@redhat.com>
+Cc: jamie@shareable.org, torvalds@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, oleg@redhat.com, wad@chromium.org,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eric Dumazet | 2012-01-14 14:20:47 [+0100]:
+On Sat, Jan 14, 2012 at 7:17 AM, Eric Paris <eparis@redhat.com> wrote:
+> -----Original Message-----
+> From: Jamie Lokier [jamie@shareable.org]
 
->What happens if the awaken thread does not consume the event, and prefer
->to exit ?
+> Andy Lutomirski wrote:
 >
->If several threads are doing select()/poll()/epoll() on a shared fd,
->they _all_ must be notified the fd is ready, as manpages claim.
+>> Is the current exec_no_trans check enough for you?  With my patch,
+>> selinux can already block the execve if it wants.  (The policy is the
+>> same as it would be if a program explicitly asked to run the new
+>> executable with an unchanged security context.)  I'd be happy to fail
+>> the exec in AppArmor, and then maybe AppArmor will change its mind
+>> if/when users get annoyed :)
+>
+> Does SELinux block if userspace does exec entirely in userspace using
+> mmap() and not execve()?  If not, why is execve() allowed to be different?
+>
+> Yes, we do (or can, and usually do in policy)
 >
 
-And if it is intended? Signaled via a new epoll_ctl() epoll_event flag? E.g.
-EPOLLEXCLUSIVE
+By blocking open, read, mmap, or mprotect?  And, more to the point, why?
 
->Doing otherwise would require the prior consent of the user, using a
->special flag for example, and documentation.
+I've always found it weird/annoying that selinux blocks things that
+can neither be used to gain privilege nor to DoS the system.
+Certainly a fully confined selinux program can emulate the execution
+of anything it can read -- it just might be slow.
 
-Oops, yes. A fanout like mechanism _may be_ superior, but I think tests will
-show some improvements anyway.
-
-Hagen
+--Andy
