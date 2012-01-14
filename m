@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab2ANXgt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 18:36:49 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46809 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab2ANXgs (ORCPT
+	id S1753539Ab2ANXnZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 18:43:25 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60945 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab2ANXnX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 18:36:48 -0500
-Date: Sat, 14 Jan 2012 23:36:26 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-arm-kernel@lists.infradead.org, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH] ARM: Fix regression caused by ARCH_NR_GPIOS removal
-Message-ID: <20120114233626.GA11769@n2100.arm.linux.org.uk>
-References: <201201150033.25885.rjw@sisk.pl>
+	Sat, 14 Jan 2012 18:43:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201201150033.25885.rjw@sisk.pl>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1326380489-9044-3-git-send-email-pbonzini@redhat.com>
+References: <1326380489-9044-1-git-send-email-pbonzini@redhat.com> <1326380489-9044-3-git-send-email-pbonzini@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 14 Jan 2012 15:43:01 -0800
+X-Google-Sender-Auth: F20sEHVAfeRxltPtfAgkZC21TAI
+Message-ID: <CA+55aFxuEzfAOL=pH1m7KQxdO1yzz=nGb2fU80AbysFd3J4Dvg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] block: fail SCSI passthrough ioctls on partition devices
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 15, 2012 at 12:33:25AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Commit 3dea19e826da3dd43b3dc308aca299c0b7263c6b (ARM: 7244/1:
-> mach-shmobile: Use CONFIG_ARCH_NR_GPIO) removed ARCH_NR_GPIOS
-> and introduced ARCH_NR_GPIO instead without changing the users
-> of that symbol.  As a result, the kernels including that commit
-> don't boot on my test-bed Mackerel board.
-> 
-> Fix the problem by defining ARCH_NR_GPIOS again.
+On Thu, Jan 12, 2012 at 7:01 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> +       case CDROM_GET_CAPABILITY:
+> +               /* Keep this until we remove the printk below.  udev sends it
+> +                * and we do not want to spam dmesg about it.   CD-ROMs do
+> +                * not have partitions, so we get here only for disks.
+> +                */
+> +               return -ENOIOCTLCMD;
 
-I'm aware of it, and have:
+Looks like CDROMMULTISESSION is another of these.
 
-commit ca95023e7521729d3ace6fb3b9c53281c510a18c
-Author: Stephen Warren <swarren@nvidia.com>
-Date:   Thu Jan 5 21:36:27 2012 +0100
+I get two of these:
 
-    ARM: 7271/1: Fix typo in conversion of ARCH_NR_GPIOS to Kconfig
-    
-    Commit 44986ab "ARM: 7240/1: Make ARCH_NR_GPIO a Kconfig variable"
-    spelled ARCH_NR_GPIOS as ARCH_NR_GPIO, hence making the change
-    ineffective. This change fixes that.
-    
-    Signed-off-by: Stephen Warren <swarren@nvidia.com>
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+   mount: sending ioctl 5310 to a partition!
 
-already queued up.
+with Fedora 14 whenever a USB stick is inserted (I changed your patch
+to also print the name of the program). Let's see if anything else
+pops up.
+
+Anyway, with the changes to print out warnings and still allow it for
+root, this all looked safe and nice, so they are in my tree now. I
+only noticed after applying them that you hadn't marked them with 'cc:
+stable@kernel.org', so we should probably point Greg at them. They are
+commits
+
+  577ebb374c78 block: add and use scsi_blk_cmd_ioctl
+  0bfc96cb7722 block: fail SCSI passthrough ioctls on partition devices
+  ec8013beddd7 dm: do not forward ioctls from logical volumes to the
+underlying device
+
+in my tree now.
+
+                      Linus
