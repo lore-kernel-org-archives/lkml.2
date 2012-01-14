@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750902Ab2ANFVZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 00:21:25 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:39953 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab2ANFVX (ORCPT
+	id S1751123Ab2ANF1W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 00:27:22 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49264 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab2ANF1V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 00:21:23 -0500
+	Sat, 14 Jan 2012 00:27:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120109003255.GA6598@havoc.gtf.org>
-References: <20120109003255.GA6598@havoc.gtf.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Jan 2012 21:21:01 -0800
-X-Google-Sender-Auth: pYUAMVqLBezXWEzvqH-Cw6WJ_CA
-Message-ID: <CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
-Subject: Re: [git patches] libata updates for 3.3
-To: Jeff Garzik <jeff@garzik.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120113153950.7426eee2.akpm@linux-foundation.org>
+References: <CAJd=RBBF=K5hHvEwb6uwZJwS4=jHKBCNYBTJq-pSbJ9j_ZaiaA@mail.gmail.com>
+	<20111222163604.GB14983@tiehlicka.suse.cz>
+	<CAJd=RBBY0sKdtdx9d8KXTchjaN6au0_hvMfE2+9JkdhvJe7eAw@mail.gmail.com>
+	<20120104151632.05e6b3b0.akpm@linux-foundation.org>
+	<CAJd=RBDOn22=CAFcEx9try8onsaHsweny_B1ZvnGJO-0h7eZAQ@mail.gmail.com>
+	<20120113153950.7426eee2.akpm@linux-foundation.org>
+Date: Sat, 14 Jan 2012 13:27:19 +0800
+Message-ID: <CAJd=RBCz_UHDXVpeoOQM5u9oPySPyAn0vnUYgkJAUqib8EUZtA@mail.gmail.com>
+Subject: Re: [PATCH] mm: hugetlb: undo change to page mapcount in fault handler
+From: Hillf Danton <dhillf@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 8, 2012 at 4:32 PM, Jeff Garzik <jeff@garzik.org> wrote:
+On Sat, Jan 14, 2012 at 7:39 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 11 Jan 2012 20:06:30 +0800
+> Hillf Danton <dhillf@gmail.com> wrote:
 >
-> Summary (very little excitement at all this time):
+>> On Thu, Jan 5, 2012 at 7:16 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> > On Fri, 23 Dec 2011 21:00:41 +0800
+>> > Hillf Danton <dhillf@gmail.com> wrote:
+>> >
+>> >> Page mapcount should be updated only if we are sure that the page ends
+>> >> up in the page table otherwise we would leak if we couldn't COW due to
+>> >> reservations or if idx is out of bounds.
+>> >
+>> > It would be much nicer if we could run vma_needs_reservation() before
+>> > even looking up or allocating the page.
+>> >
+>> > And afaict the interface is set up to do that: you run
+>> > vma_needs_reservation() before allocating the page and then
+>> > vma_commit_reservation() afterwards.
+>> >
+>> > But hugetlb_no_page() and hugetlb_fault() appear to have forgotten to
+>> > run vma_commit_reservation() altogether. __Why isn't this as busted as
+>> > it appears to be?
+>>
+>> Hi Andrew
+>>
+>> IIUC the two operations, vma_{needs, commit}_reservation, are folded in
+>> alloc_huge_page(), need to break the pair?
 >
-> 0) Will play around with git signed tags with the next update.
+> Looking at it again, it appears that the vma_needs_reservation() calls
+> are used to predict whether a subsequent COW attempt is going to fail.
 >
-> 1) PM improvements, including runtime suspend/resume work
+> If that's correct then things aren't as bad as I first thought.
+> However I suspect the code in hugetlb_no_page() is a bit racy: the
+> vma_needs_reservation() call should happen after we've taken
+> page_table_lock.  As things stand, another thread could sneak in there
+> and steal the reservation which this thread thought was safe.
+>
+> What do you think?
+>
 
-Hmm. I don't know if this comes from the PM improvements or even this
-particular pull, but links that aren't connected are *really* slow.
+Hi Andrew
 
-Annoyingly so.
+The case of no page, in the fault path, is handled after acquiring
+hugetlb_instantiation_mutex, and on ohter hand, kmalloc is called
+if new region required, so no race to check reservation needed but
+after spinning page_table_lock.
 
-My Macbook Air that I finally can resume reliably again used to come
-back almost immediately from resume. No longer. And the reason seems
-to be this:
-
- [  243.306149] ata_piix 0000:00:1f.2: setting latency timer to 64
- [  243.306180] bcma: Found rev 6 PMU (capabilities 0x108C2606)
- [  246.579648] ata1.01: failed to resume link (SControl 0)
- [  246.735472] ata1.00: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
- [  246.735485] ata1.01: SATA link down (SStatus 0 SControl 0)
- [  246.743632] ata1.00: ACPI cmd ef/03:46:00:00:00:a0 (SET FEATURES)
-filtered out
- [  246.744353] ata1.00: configured for UDMA/100
- [  246.744537] sd 0:0:0:0: [sda] Starting disk
- [  247.769806] ata2.00: failed to resume link (SControl 0)
- [  248.796207] ata2.01: failed to resume link (SControl 0)
- [  248.807665] ata2.00: SATA link down (SStatus 4 SControl 0)
- [  248.807681] ata2.01: SATA link down (SStatus 0 SControl 0)
- [  248.808338] PM: resume of devices complete after 5511.027 msecs
- [  248.882074] PM: Finishing wakeup.
-
-Notice the basically five-second timeout all basically for "failed to
-resume link: for things that didn't have anything connected to them
-anyway.
-
-This is a bog-standard Intel controller, there's nothing odd there.
-
-I'm pretty sure this used to be much faster, but I haven't bisected
-any of it (and with all the problems I had with resume both due to
-wireless and MCE, I really wouldn't want to even try).
-
-Taking 5.5 seconds to come back from suspend-to-ram really is too
-long. Not *all* of it is the SATA part, but a lot of it is.
-
-For ATA suspend/resume, could we perhaps only resume the ports that
-*used* to have something on them? And then, if somebody has plugged
-something into the others, not consider that a resume thing at all,
-but a hotplug thing that happens *after* the resume?
-
-If it takes five seconds to notice new hardware after a resume, nobody
-cares. But the disk we had before obviously needs to get resumed.. But
-it does seem like it's the "no link" part that takes long.
-
-Hmm? Or any other ideas?
-
-         Linus
+Thanks
+Hillf
