@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab2ANP4I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 10:56:08 -0500
-Received: from mga03.intel.com ([143.182.124.21]:32885 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755164Ab2ANP4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 10:56:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="95820326"
-Message-ID: <4F11A533.4040406@linux.intel.com>
-Date: Sat, 14 Jan 2012 07:54:27 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1755255Ab2ANP5X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 10:57:23 -0500
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:35819 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755060Ab2ANP5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 10:57:21 -0500
+Date: Sat, 14 Jan 2012 16:57:13 +0100
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Li Yu <raise.sail@gmail.com>, linux-kernel@vger.kernel.org,
+        davidel@xmailserver.org
+Subject: Re: The thundering herd like problem when multi epolls on one fd
+Message-ID: <20120114155713.GA2966@hell>
+References: <4F116350.6090704@gmail.com>
+ <1326547247.5287.19.camel@edumazet-laptop>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, arjan@linux.intel.com, alan@linux.intel.com,
-        tomoya.rohm@gmail.com, jeffrey.t.kirsher@intel.com,
-        paul.gortmaker@windriver.com, jdmason@kudzu.us, netdev@vger.kernel.org
-Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing
- probe
-References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com> <20120114.001430.787918662083526597.davem@davemloft.net>
-In-Reply-To: <20120114.001430.787918662083526597.davem@davemloft.net>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326547247.5287.19.camel@edumazet-laptop>
+X-Key-Id: 98350C22
+X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
+X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Eric Dumazet | 2012-01-14 14:20:47 [+0100]:
 
+>What happens if the awaken thread does not consume the event, and prefer
+>to exit ?
+>
+>If several threads are doing select()/poll()/epoll() on a shared fd,
+>they _all_ must be notified the fd is ready, as manpages claim.
+>
 
-On 01/14/2012 12:14 AM, David Miller wrote:
-> From: Darren Hart <dvhart@linux.intel.com>
-> Date: Fri, 13 Jan 2012 22:44:55 -0800
-> 
->> If the MAC is invalid or not implemented, use a randomly generated one rather
->> than failing the probe. Store the generated addr in a new sw_mac array in the
->> pch_gbe_mac_info structure. Take care to allow for assigning the MAC via
->> ifconfig by reusing sw_addr to store an assigned mac if probe populated it with
->> a random one (otherwise the assignment would rely on the ROM and the reset would
->> fail to write a valid MAC to the rx filter).
->>
->> Tested on two platforms, one with a valid MAC, the other without a MAC. The
->> real MAC is used if present, a randomly generated one otherwise. Both are
->> capable of changing the MAC with ifconfig. They successfully get an IP over
->> DHCP and pass a simple ping and login over ssh test.
->>
->> This does not make any attempt to address a missing or invalid MAC for the
->> pch_phub driver.
->>
->> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> 
-> I don't want to see code like this added if it's "just in case."
+And if it is intended? Signaled via a new epoll_ctl() epoll_event flag? E.g.
+EPOLLEXCLUSIVE
 
-I don't disagree, unfortunately it is not "just in case". The Inforce
-Goldstein QSeven Module on the Portwell PQ7-C100XL carrier board are
-already available and do not implement the MAC EEPROM in hardware.
+>Doing otherwise would require the prior consent of the user, using a
+>special flag for example, and documentation.
 
-> 
-> Please correct any hardware that hasn't shipped yet or is alpha/beta
-> hardware in testing, so that we don't need stuff like this.
+Oops, yes. A fanout like mechanism _may be_ superior, but I think tests will
+show some improvements anyway.
 
-I saw that the use of random_ether_addr is fairly prevalent, and
-attempted a roughly similar sort of approach to others I had seen. Do
-you consider all of those to be "necessary evils" or are there
-legitimate situations for its use?
-
-In any case, with existing hardware out there that is unusable with the
-current pch_gbe driver, can we consider this workaround for inclusion?
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Hagen
