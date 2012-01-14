@@ -1,86 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab2ANQaT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 11:30:19 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43795 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab2ANQaN (ORCPT
+	id S1755587Ab2ANQbQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 11:31:16 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43406 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab2ANQbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 11:30:13 -0500
-Message-ID: <1326558605.19951.7.camel@lappy>
-Subject: Hung task when calling clone() due to netfilter/slab
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Dave Jones <davej@redhat.com>, davem <davem@davemloft.net>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        netfilter-devel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Sat, 14 Jan 2012 18:30:05 +0200
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
+	Sat, 14 Jan 2012 11:31:14 -0500
+Subject: [PATCH v2] kvm: remove dependence on delay-accounting
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Sat, 14 Jan 2012 20:30:51 +0400
+Message-ID: <20120114163051.23946.25895.stgit@zurg>
+In-Reply-To: <20120114162413.15761.7341.stgit@zurg>
+References: <20120114162413.15761.7341.stgit@zurg>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+KVM selects delay-accounting only to get sched-info for steal-time accounting.
+Meanwhile delay-accounting can be disabled by boot option. This is ridiculous.
 
-I've stumbled on the following oops when testing the trinity fuzzer using KVM tool, running on the latest -next kernel:
+This patch adds internal boolean option CONFIG_TASK_SCHED_INFO to enable only
+task->sched_info and its collecting inside scheduler.
 
-[ 3960.845373] INFO: task trinity:31661 blocked for more than 120 seconds.
-[ 3960.846757] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3960.850245] trinity         D ffff880008e89610  4952 31661   2197 0x00000004
-[ 3960.855032]  ffff880008e39830 0000000000000086 ffff880008e39fd8 ffff880008e89610
-[ 3960.859289]  00000000001d3980 ffff880008e39fd8 ffff880008e38000 00000000001d3980
-[ 3960.862723]  00000000001d3980 00000000001d3980 ffff880008e39fd8 00000000001d3980
-[ 3960.866083] Call Trace:
-[ 3960.867332]  [<ffffffff825830ea>] schedule+0x3a/0x50
-[ 3960.869477]  [<ffffffff82581285>] schedule_timeout+0x245/0x2c0
-[ 3960.871996]  [<ffffffff811023ee>] ? mark_held_locks+0x6e/0x130
-[ 3960.875599]  [<ffffffff810ffb62>] ? lock_release_holdtime+0xb2/0x160
-[ 3960.879156]  [<ffffffff8258450b>] ? _raw_spin_unlock_irq+0x2b/0x70
-[ 3960.881682]  [<ffffffff810de041>] ? get_parent_ip+0x11/0x50
-[ 3960.883907]  [<ffffffff82583880>] wait_for_common+0x120/0x170
-[ 3960.886190]  [<ffffffff810dc930>] ? try_to_wake_up+0x320/0x320
-[ 3960.888570]  [<ffffffff82583978>] wait_for_completion+0x18/0x20
-[ 3960.890968]  [<ffffffff810c5595>] call_usermodehelper_exec+0x1b5/0x1d0
-[ 3960.893583]  [<ffffffff825837a4>] ? wait_for_common+0x44/0x170
-[ 3960.895907]  [<ffffffff8182aa58>] kobject_uevent_env+0x4e8/0x580
-[ 3960.898310]  [<ffffffff8182aafb>] kobject_uevent+0xb/0x10
-[ 3960.900577]  [<ffffffff811b59a1>] sysfs_slab_add+0xb1/0x210
-[ 3960.902830]  [<ffffffff811b74db>] kmem_cache_create+0xcb/0x2f0
-[ 3960.905704]  [<ffffffff8216c72d>] nf_conntrack_init+0x9d/0x380
-[ 3960.908797]  [<ffffffff8216d11f>] nf_conntrack_net_init+0xf/0x1a0
-[ 3960.911065]  [<ffffffff821195a2>] ops_init+0x42/0x180
-[ 3960.913192]  [<ffffffff8211974b>] setup_net+0x6b/0x100
-[ 3960.915308]  [<ffffffff82119ba6>] copy_net_ns+0x86/0x110
-[ 3960.917534]  [<ffffffff810d4049>] create_new_namespaces+0xd9/0x190
-[ 3960.920048]  [<ffffffff810d4224>] copy_namespaces+0x84/0xc0
-[ 3960.922326]  [<ffffffff810aa471>] copy_process+0xa21/0x1480
-[ 3960.924328]  [<ffffffff810d3d9e>] ? up_read+0x1e/0x40
-[ 3960.925327]  [<ffffffff810aaf83>] do_fork+0x73/0x340
-[ 3960.926273]  [<ffffffff811026dd>] ? trace_hardirqs_on+0xd/0x10
-[ 3960.927372]  [<ffffffff82581ea9>] ? mutex_unlock+0x9/0x10
-[ 3960.928422]  [<ffffffff812c4d13>] ? ext4_sync_file+0xa3/0x340
-[ 3960.929487]  [<ffffffff8258525d>] ? retint_swapgs+0x13/0x1b
-[ 3960.930520]  [<ffffffff810554b3>] sys_clone+0x23/0x30
-[ 3960.931475]  [<ffffffff82585ec3>] stub_clone+0x13/0x20
-[ 3960.932490]  [<ffffffff82585b39>] ? system_call_fastpath+0x16/0x1b
-[ 3960.933655] 2 locks held by trinity/31661:
-[ 3960.934413]  #0:  (net_mutex){+.+.+.}, at: [<ffffffff82119b9e>] copy_net_ns+0x7e/0x110
-[ 3960.936057]  #1:  (slub_lock){+.+.+.}, at: [<ffffffff811b7451>] kmem_cache_create+0x41/0x2f0
-[ 3960.937810] Kernel panic - not syncing: hung_task: blocked tasks
+v2:
+* stupid misprint fixed
 
-I had two trinity processes running, and both were stuck at clone() syscalls:
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ arch/x86/kvm/Kconfig  |    5 +----
+ include/linux/sched.h |    6 ++----
+ init/Kconfig          |    7 +++++++
+ kernel/sched/core.c   |    2 +-
+ kernel/sched/stats.h  |    4 ++--
+ lib/Kconfig.debug     |    1 +
+ 6 files changed, 14 insertions(+), 11 deletions(-)
 
-clone(clone_flags=0xcc2820ff, newsp=0xf3f270[page_0xff], parent_tid=0xf3f270[page_0xff], child_tid=0x400000, regs=0xf41290[page_allocs])
-clone(clone_flags=0x45706000, newsp=0xf3f270[page_0xff], parent_tid=0x7f9bf26f0000, child_tid=0xf3f270[page_0xff], regs=0xf41290[page_allocs])
-
-This is the second time I got this oops, and both times it originated with clone calling up to the netfilter connection tracker code, so I don't think that it's coincidental that thats the origin.
-
--- 
-
-Sasha.
+diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+index 1a7fe86..e3952e8 100644
+--- a/arch/x86/kvm/Kconfig
++++ b/arch/x86/kvm/Kconfig
+@@ -22,8 +22,6 @@ config KVM
+ 	depends on HAVE_KVM
+ 	# for device assignment:
+ 	depends on PCI
+-	# for TASKSTATS/TASK_DELAY_ACCT:
+-	depends on NET
+ 	select PREEMPT_NOTIFIERS
+ 	select MMU_NOTIFIER
+ 	select ANON_INODES
+@@ -33,8 +31,7 @@ config KVM
+ 	select KVM_ASYNC_PF
+ 	select USER_RETURN_NOTIFIER
+ 	select KVM_MMIO
+-	select TASKSTATS
+-	select TASK_DELAY_ACCT
++	select TASK_SCHED_INFO
+ 	select PERF_EVENTS
+ 	---help---
+ 	  Support hosting fully virtualized guest machines using hardware
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 868cb83..dd5bf78 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -734,7 +734,6 @@ extern struct user_struct root_user;
+ 
+ struct backing_dev_info;
+ 
+-#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+ struct sched_info {
+ 	/* cumulative counters */
+ 	unsigned long pcount;	      /* # of times run on this cpu */
+@@ -744,7 +743,6 @@ struct sched_info {
+ 	unsigned long long last_arrival,/* when we last ran on a cpu */
+ 			   last_queued;	/* when we were last queued to run */
+ };
+-#endif /* defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT) */
+ 
+ #ifdef CONFIG_TASK_DELAY_ACCT
+ struct task_delay_info {
+@@ -782,7 +780,7 @@ struct task_delay_info {
+ 
+ static inline int sched_info_on(void)
+ {
+-#ifdef CONFIG_SCHEDSTATS
++#if IS_ENABLED(CONFIG_SCHEDSTATS) || IS_ENABLED(CONFIG_KVM)
+ 	return 1;
+ #elif defined(CONFIG_TASK_DELAY_ACCT)
+ 	extern int delayacct_on;
+@@ -1285,7 +1283,7 @@ struct task_struct {
+ 	struct rt_mutex *rcu_boost_mutex;
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ 
+-#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
++#ifdef CONFIG_TASK_SCHED_INFO
+ 	struct sched_info sched_info;
+ #endif
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index 6ac2236..ee0dd4b 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -318,6 +318,7 @@ config TASKSTATS
+ config TASK_DELAY_ACCT
+ 	bool "Enable per-task delay accounting (EXPERIMENTAL)"
+ 	depends on TASKSTATS
++	select TASK_SCHED_INFO
+ 	help
+ 	  Collect information on time spent by a task waiting for system
+ 	  resources like cpu, synchronous block I/O completion and swapping
+@@ -860,6 +861,12 @@ config SCHED_AUTOGROUP
+ 	  desktop applications.  Task group autogeneration is currently based
+ 	  upon task session.
+ 
++#
++# collect per-task scheduler statistics
++#
++config TASK_SCHED_INFO
++	bool
++
+ config MM_OWNER
+ 	bool
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index fd7b25e..bf5616d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1758,7 +1758,7 @@ void sched_fork(struct task_struct *p)
+ 	set_task_cpu(p, cpu);
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 
+-#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
++#ifdef CONFIG_TASK_SCHED_INFO
+ 	if (likely(sched_info_on()))
+ 		memset(&p->sched_info, 0, sizeof(p->sched_info));
+ #endif
+diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
+index 2ef90a5..2322b86 100644
+--- a/kernel/sched/stats.h
++++ b/kernel/sched/stats.h
+@@ -47,7 +47,7 @@ rq_sched_info_depart(struct rq *rq, unsigned long long delta)
+ # define schedstat_set(var, val)	do { } while (0)
+ #endif
+ 
+-#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
++#ifdef CONFIG_TASK_SCHED_INFO
+ static inline void sched_info_reset_dequeued(struct task_struct *t)
+ {
+ 	t->sched_info.last_queued = 0;
+@@ -153,7 +153,7 @@ sched_info_switch(struct task_struct *prev, struct task_struct *next)
+ #define sched_info_reset_dequeued(t)	do { } while (0)
+ #define sched_info_dequeued(t)			do { } while (0)
+ #define sched_info_switch(t, next)		do { } while (0)
+-#endif /* CONFIG_SCHEDSTATS || CONFIG_TASK_DELAY_ACCT */
++#endif /* CONFIG_TASK_SCHED_INFO */
+ 
+ /*
+  * The following are functions that support scheduler-internal time accounting.
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 82928f5..f2e9ee3 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -290,6 +290,7 @@ config SCHED_DEBUG
+ config SCHEDSTATS
+ 	bool "Collect scheduler statistics"
+ 	depends on DEBUG_KERNEL && PROC_FS
++	select TASK_SCHED_INFO
+ 	help
+ 	  If you say Y here, additional code will be inserted into the
+ 	  scheduler and related routines to collect statistics about
 
