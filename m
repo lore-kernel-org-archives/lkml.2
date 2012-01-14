@@ -1,98 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab2AOCqa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 21:46:30 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4049 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab2AOCq2 (ORCPT
+	id S1754980Ab2AOCyO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 21:54:14 -0500
+Received: from imta-35.everyone.net ([216.200.145.35]:49719 "EHLO
+	imta-38.everyone.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753517Ab2AOCyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 21:46:28 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6589"; a="155116616"
-Message-ID: <4F123E02.2070401@codeaurora.org>
-Date: Sat, 14 Jan 2012 18:46:26 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Sat, 14 Jan 2012 21:54:13 -0500
+X-Greylist: delayed 12482 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Jan 2012 21:54:13 EST
+X-Eon-Dm: dm0213
+X-Eon-Sig: AQORUaJPEg2zRR13UwIAAAMc,3d8313b8aa9dc72938ffbacba9328c05
+X-Originating-Ip: 97.66.216.165
+Reply-To: <mrjames0000@live.com>
+From: "J. Sellers" <sar1@copper.net>
+Subject: Happy New Year
+Date: Sat, 14 Jan 2012 17:20:18 -0600
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: mm-commits@vger.kernel.org, tglx@linutronix.de,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: + debugobjects-fix-selftest-for-static-warnings.patch added to
- -mm tree
-References: <20111215213549.09360200057@hpza10.eem.corp.google.com>
-In-Reply-To: <20111215213549.09360200057@hpza10.eem.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20120114152019.D87F3FC9@dm0213.mta.everyone.net>
+To: undisclosed-recipients:;
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
+ definitions=2012-01-14_03:2012-01-13,2012-01-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=6 spamscore=6 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1012030000 definitions=main-1201140294
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/11 13:35, akpm@linux-foundation.org wrote:
-> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
->
-> ------------------------------------------------------
-> From: Stephen Boyd <sboyd@codeaurora.org>
-> Subject: debugobjects: Fix selftest for static warnings
->
-> debugobjects is now printing a warning when a fixup for a NOTAVAILABLE
-> object is run.  This causes the selftest to fail like:
->
-> [    0.000000] ODEBUG: selftest warnings failed 4 != 5
->
-> We could just increase the number of warnings that the selftest is
-> expecting to see because that is actually what has changed.  But, it turns
-> out that fixup_activate() was written with inverted logic and thus a fixup
-> for a static object returned 1 indicating the object had been fixed, and 0
-> otherwise.  Fix the logic to be correct and update the counts to reflect
-> that nothing needed fixing for a static object.
->
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Reported-By: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
+Happy New Year,
 
-Can this be picked up or merged into 3.3-rc1? Linus' tree has a broken
-selftest without this change.
+We waited to hear from you last year but i guess you were unable to come up with the ($1,600.00) transfer fees in other to release your $500k Lottery winning.At this point I'm willing to assist you with the $1,600.00 transfer fees, YES; you dont have to pay for the charges anymore  from your pocket as I will have my associate overnight you a Certified check of $1,900.00 for you to cash and transfer $1,600.00 to our payment processing center in other to transfer the $500,000.00 win this week to your nominated account. You will compensate us with 10% after you have received your transfer. Provide your details below if we have a done deal.
 
->  lib/debugobjects.c |   14 +++-----------
->  1 file changed, 3 insertions(+), 11 deletions(-)
->
-> diff -puN lib/debugobjects.c~debugobjects-fix-selftest-for-static-warnings lib/debugobjects.c
-> --- a/lib/debugobjects.c~debugobjects-fix-selftest-for-static-warnings
-> +++ a/lib/debugobjects.c
-> @@ -818,17 +818,9 @@ static int __init fixup_activate(void *a
->  		if (obj->static_init == 1) {
->  			debug_object_init(obj, &descr_type_test);
->  			debug_object_activate(obj, &descr_type_test);
-> -			/*
-> -			 * Real code should return 0 here ! This is
-> -			 * not a fixup of some bad behaviour. We
-> -			 * merily call the debug_init function to keep
-> -			 * track of the object.
-> -			 */
-> -			return 1;
-> -		} else {
-> -			/* Real code needs to emit a warning here */
-> +			return 0;
->  		}
-> -		return 0;
-> +		return 1;
->  
->  	case ODEBUG_STATE_ACTIVE:
->  		debug_object_deactivate(obj, &descr_type_test);
-> @@ -967,7 +959,7 @@ static void __init debug_objects_selftes
->  
->  	obj.static_init = 1;
->  	debug_object_activate(&obj, &descr_type_test);
-> -	if (check_results(&obj, ODEBUG_STATE_ACTIVE, ++fixups, warnings))
-> +	if (check_results(&obj, ODEBUG_STATE_ACTIVE, fixups, warnings))
->  		goto out;
->  	debug_object_init(&obj, &descr_type_test);
->  	if (check_results(&obj, ODEBUG_STATE_INIT, ++fixups, ++warnings))
-> _
+1, Full Name  :
+2, Physical Mailing Address :
+3, City :
+4, State :
+5, Zip-Code  :
+6, Home/Cell # :
+7, Bank Name :
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Please use reference number 250-153 for our mutual convenience
 
+Sincerely,
+James Sellers
+Welfare officer,
+World Bank Creditors
+559-478-1045
