@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175Ab2ANWQL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 17:16:11 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43874 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab2ANWQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 17:16:07 -0500
-Message-ID: <1326579362.5287.45.camel@edumazet-laptop>
-Subject: Re: recvmsg sleeping from invalid context
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Dave Jones <davej@redhat.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, glommer@parallels.com
-Date: Sat, 14 Jan 2012 23:16:02 +0100
-In-Reply-To: <20120114214334.GA28423@redhat.com>
-References: <20120113182401.GA25885@redhat.com>
-	 <20120113.102712.600185688659703015.davem@davemloft.net>
-	 <20120114214334.GA28423@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1758044Ab2ANWaE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 17:30:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56638 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751504Ab2ANWaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 17:30:01 -0500
+Message-ID: <4F1201E4.9050000@suse.cz>
+Date: Sat, 14 Jan 2012 23:29:56 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Jon Loeliger <jdl@jdl.com>, David Gibson <david@gibson.dropbear.id.au>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH V2] dtc: Implement -d option to write out a dependency
+ file
+References: <1326241672-9168-1-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1326241672-9168-1-git-send-email-swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 14 janvier 2012 à 16:43 -0500, Dave Jones a écrit :
-> On Fri, Jan 13, 2012 at 10:27:12AM -0800, David Miller wrote:
->  > From: Dave Jones <davej@redhat.com>
->  > Date: Fri, 13 Jan 2012 13:24:01 -0500
->  > 
->  > > getting a ton of these on the latest head (099469502f62fbe0d7e4f0b83a2f22538367f734)
->  > > 
->  > > BUG: sleeping function called from invalid context at mm/memory.c:3905
->  > > in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
->  > > INFO: lockdep is turned off.
->  > > Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
->  > > Call Trace:
->  > >  [<ffffffff81099415>] __might_sleep+0x145/0x200
->  > >  [<ffffffff811752a4>] might_fault+0x34/0xb0
->  > >  [<ffffffff81551555>] ? sock_def_readable+0x25/0x1a0
->  > >  [<ffffffff8155c387>] put_cmsg+0x77/0x120
->  > >  [<ffffffff8159379c>] netlink_recvmsg+0x35c/0x480
->  > >  [<ffffffff8155201a>] ? sock_update_classid+0x9a/0x260
->  > >  [<ffffffff81552052>] ? sock_update_classid+0xd2/0x260
->  > >  [<ffffffff81549fbd>] sock_recvmsg+0x11d/0x140
->  > >  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
->  > >  [<ffffffff8117530c>] ? might_fault+0x9c/0xb0
->  > >  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
->  > >  [<ffffffff8154b1b3>] __sys_recvmsg+0x153/0x2d0
->  > >  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
->  > >  [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
->  > >  [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
->  > >  [<ffffffff811bc43b>] ? fget_light+0xfb/0x470
->  > >  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
->  > >  [<ffffffff8154e2e9>] sys_recvmsg+0x49/0x90
->  > >  [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
->  > 
->  > Sigh, I suspect the new socket memcg code, which I didn't want to
->  > even apply in the first place. :-/
->  > 
->  > Glauber, please fix this.
+On 11.1.2012 01:27, Stephen Warren wrote:
+> This will allow callers to rebuild .dtb files when any of the /include/d
+> .dtsi files are modified, not just the top-level .dts file.
 > 
-> How new is 'new' ?
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Michal, this patch is a dependency for the kbuild changes that use it;
+> http://www.spinics.net/lists/linux-kbuild/msg05883.html
+> I think it makes sense to apply both this patch, and that patch, to the
+> kbuild tree. Do you agree?
+
+Sure.
+
+
+> v2: Replace fputs/fputc with fprintf
 > 
-> interestingly, I now started getting these in 3.1.9 where I never noticed them before.
-> 
-> 
-> BUG: sleeping function called from invalid context at mm/memory.c:3905
-> in_atomic(): 1, irqs_disabled(): 0, pid: 962, name: NetworkManager
-> 1 lock held by NetworkManager/962:
->  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff815f610d>] inet6_dump_fib+0x3d/0x3d0
-> Pid: 962, comm: NetworkManager Not tainted 3.1.9-1.fc16.x86_64.debug #1
-> Call Trace:
->  [<ffffffff8105fbd0>] __might_sleep+0xf0/0x120
->  [<ffffffff81160f68>] might_fault+0x38/0xb0
->  [<ffffffff81519070>] ? sock_def_error_report+0x120/0x120
->  [<ffffffff81523877>] put_cmsg+0x77/0x120
->  [<ffffffff815587ec>] netlink_recvmsg+0x35c/0x480
->  [<ffffffff81518d2e>] ? sock_update_classid+0x8e/0x190
->  [<ffffffff81518d68>] ? sock_update_classid+0xc8/0x190
->  [<ffffffff815122ad>] sock_recvmsg+0x11d/0x140
->  [<ffffffff81160f8c>] ? might_fault+0x5c/0xb0
->  [<ffffffff81160fd5>] ? might_fault+0xa5/0xb0
->  [<ffffffff81160f8c>] ? might_fault+0x5c/0xb0
->  [<ffffffff81513373>] __sys_recvmsg+0x153/0x2d0
->  [<ffffffff810a8f28>] ? sched_clock_cpu+0xa8/0x110
->  [<ffffffff810b6bfd>] ? trace_hardirqs_off+0xd/0x10
->  [<ffffffff810a8fff>] ? local_clock+0x6f/0x80
->  [<ffffffff810b74a5>] ? lock_release_holdtime.part.9+0x15/0x1a0
->  [<ffffffff811a4bef>] ? fget_light+0xcf/0x3b0
->  [<ffffffff811a4c07>] ? fget_light+0xe7/0x3b0
->  [<ffffffff811a4b68>] ? fget_light+0x48/0x3b0
->  [<ffffffff81516359>] sys_recvmsg+0x49/0x90
->  [<ffffffff81669dc2>] system_call_fastpath+0x16/0x1b
-> 
+> This patch has been blessed for application to upstream dtc. Here, I'm
+> simply applying the same thing to the code in the Linux kernel tree,
+> resolving some conflicts. See:
+> http://lists.ozlabs.org/pipermail/devicetree-discuss/2012-January/011172.html
 
-I dont understand this trace.
+I see it has been applied in the meantime, great. I'll apply this one
+and the kbuild patch to kbuild.git#kbuild.
 
-inet6_dump_fib() does indeed an rcu_read_lock(), but pair it by
-rcu_read_unlock().
-
-fib6_dump_table() is called with rcu_read_lock(), but certainly cannot
-end calling pu_cmsg().
-
-
-
+Michal
