@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab2ANUVP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 15:21:15 -0500
-Received: from hades.mikemestnik.net ([184.106.158.151]:37723 "EHLO
-	hades.mikemestnik.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756564Ab2ANUVN (ORCPT
+	id S1756660Ab2ANUXU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 15:23:20 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63920 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756564Ab2ANUXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 15:21:13 -0500
-Message-ID: <4F11E3B8.6090007@mikemestnik.net>
-Date: Sat, 14 Jan 2012 14:21:12 -0600
-From: Mike Mestnik <cheako@mikemestnik.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20111223 Thunderbird/10.0
+	Sat, 14 Jan 2012 15:23:18 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Chronic resource starvation.
-References: <4F10F3AE.3030801@mikemestnik.net>
-In-Reply-To: <4F10F3AE.3030801@mikemestnik.net>
-X-Enigmail-Version: 1.3.4
+In-Reply-To: <20120114133053.GY7180@jl-vm1.vm.bytemark.co.uk>
+References: <1326411506-16894-1-git-send-email-wad@chromium.org>
+ <CA+55aFz4mJU2E2BPzZyVQ52V_ytg_8fyAH+BV_uYHVXBM2wqDw@mail.gmail.com>
+ <CAObL_7FErN5CHmfSehJYcM0_Lz-WTywG7cHe2jZyQbf-GkOQjg@mail.gmail.com>
+ <CA+55aFzzRNHfSo-1DyzsAwYvj1Da-vyhMQP-OdrA-rWywsebcg@mail.gmail.com>
+ <CAObL_7F8aYPDQ1xTFjOxWgoZfrtGNFVgMe2Ld61_=D+YY427qA@mail.gmail.com>
+ <CA+55aFxSgYFp1psum3amgqqsT-rrvGd1T8BXJSA-mgd1EdHrwg@mail.gmail.com> <20120114133053.GY7180@jl-vm1.vm.bytemark.co.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 14 Jan 2012 12:22:55 -0800
+X-Google-Sender-Auth: 9NrDqoimPjiN3ATuIQY16UuPr4s
+Message-ID: <CA+55aFwZ-=s3S9wmRSfW8-tbcJct+GWedQi8Dc8RW75NaqB10A@mail.gmail.com>
+Subject: Re: [PATCH PLACEHOLDER 1/3] fs/exec: "always_unprivileged" patch
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/12 21:17, Mike Mestnik wrote:
-> I've dealt with applications taking extended time off for a number of
-> years.  I typically attribute it to applications being overly zealous
-> about eating memory as most every application tends to do these days.  I
-> had always figured that there a likely plenty of ppl complaining and I
-> didn't want to get the boiler plat answer that resources are cheap.
+On Sat, Jan 14, 2012 at 5:30 AM, Jamie Lokier <jamie@shareable.org> wrote:
 >
-> I refuse to buy into the idea that Z computers can get an additional Y
-> resource to run application X, when instead application X could be
-> engineered once and for all.  This ideology is not sustainable and
-> eventually will crash upon it's self.  I call this Z * Y < X.  The
-> application source becomes the single location where every computers
-> resources can be increased at the cost of much less then to adjust the
-> running environment of every location that the code may run.
->
-> Here is a 84MB video that demonstrates the issue.
-> http://j.mp/wavbCO
-> http://bitly.com/wavbCO+
-I'm glad to see a number of you have clicked on this link.
+> Anyway the principle is there - CAP_NET_BIND doesn't necessarily mean
+> the daemon code is trusted.
 
-Does this behavior look normal or is it just my system?  If it is normal
-how difficult would it be to make corrections and would those
-corrections likely be kernel or application related?
-> You can see at the start an application that should update regularly is
-> frozen and that moving windows and even focus is difficult.  The system
-> does recover, but after far too long.
->
-> I'll welcome any further testing as I'm sure it's needed.  Keep in mind
-> that I can't reproduce this reliably, but it does happen, so it will
-> take time to collect any amount of data...  A gkrellm plugin that
-> illustrates the test is the most perfered, killing two birds with one
-> stone as it will help with this case and many many future cases.  If
-> it's important wouldn't your test already be part of a tool like gkrellm?
->
+I really think all these arguments are *COMPLETELY* missing the point.
 
+You don't have to use the new flag if you don't want to. Just let it go.
+
+The point of the flag is to not allow security changes. It's that
+easy. If you want something else, don't use it.
+
+Because even "dropping capabilities" is quite often the wrong thing to
+do. To one person it's "dropping capabilities", to another it is "no
+longer running with the capabilities I need".
+
+We've had security bugs that were *due* to dropped capabilities -
+people dropped one capability but not another, and fooled code into
+doing things they weren't expecting it to do. So quite frankly, I
+believe that from a security standpoint it's a hell of a lot safer to
+just keep the rules really simple.
+
+Think of the "restrict" bit as "my universe will now run with this
+*known* set of permissions".
+
+And if you don't like it, don't use it. It really is that simple. But
+don't make the model more complicated. Don't confuse it with "but but
+capabilites" crap. The point of the patch is that it makes all of that
+go away. There are no capabilities. There only is what you can do.
+
+And yes, I really seriously do believe that is both safer and simpler
+than some model that says "you can drop stuff", and then you have to
+start making up rules for what "dropping" means.
+
+Does "dropping" mean allowing setuid(geteuid()) for example? That *is*
+dropping the uid in a _POSIX_SAVED_IDS environment. And I'm saying
+that no, we should not even allow that. It's simply all too "subtle".
+
+(I don't think Andrew's patch actually touched any of those paths, but
+I didn't check)
+
+                      Linus
