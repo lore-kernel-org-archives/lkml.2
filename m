@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2ANVP6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 16:15:58 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15130 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab2ANVP5 (ORCPT
+	id S1756379Ab2ANVZL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 16:25:11 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51649 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab2ANVZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 16:15:57 -0500
-Date: Sat, 14 Jan 2012 22:15:55 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: dri-devel@lists.freedesktop.org,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        Dave Airlie <airlied@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@linux.intel.com>, David Airlie <airlied@linux.ie>,
-        Eric Anholt <eric@anholt.net>, Jesse Barnes <jesse.barnes@intel.com>
-Subject: [PATCH] intel, gma500, lvds: Fix use after free and mem leak in
- psb_intel_lvds_init()
-In-Reply-To: <alpine.LNX.2.00.1201142156220.11547@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1201142211370.11547@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201142056190.11547@swampdragon.chaosbits.net> <alpine.LNX.2.00.1201142156220.11547@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 14 Jan 2012 16:25:10 -0500
+Message-ID: <4F11F271.402@mvista.com>
+Date: Sun, 15 Jan 2012 01:24:01 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: balbi@ti.com
+CC: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: usb: musb: Adding CPPI4.1 DMA driver under drivers/dma
+References: <201201120753.00667.oneukum@suse.de> <Pine.LNX.4.44L0.1201121037340.1384-100000@iolanthe.rowland.org> <20120112215014.GC5735@xanatos> <20120112215459.GA1161@kroah.com> <20120112222947.GD5735@xanatos> <20120112223513.GA2925@kroah.com> <20120113061144.GA30569@suse.cz> <47CEF8C4B26E8C44B22B028A650E0EA9317A6B8B@DBDE01.ent.ti.com> <4F1096E9.4020501@mvista.com> <20120113201010.GJ3133@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20120113201010.GJ3133@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In psb_intel_lvds_init(), if we fail to allocate memory for
-'psb_intel_connector' we free the memory we previously allocated for
-'psb_intel_encoder', but we then proceed to use that free'd pointer
-when we do 'psb_intel_encoder->dev_priv = lvds_priv;'.
+Hello.
 
-We may also leak the memory we allocated for 'psb_intel_encoder' if we 
-'goto failed_connector;' and the variable goes out of scope.
+On 14-01-2012 0:10, Felipe Balbi wrote:
 
-While I was there anyway, I also removed the pointless 'if
-(psb_intel_connector)' before freeing it at the 'failed_connector:'
-label - kfree() deals gracefully with NULL pointers, so it is not
-needed.
+>>> CPPI4.1 (Communication Port Programming Interface) is a TI specific DMA
+>>> controller used in multiple TI platform such as AM33x, DA8x, AM35x, TI81x.
+>>> The DMA engine is mainly used by musb controller on above platform.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/gpu/drm/gma500/psb_intel_lvds.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+>>     There are (at least out of tree) platforms using CPPI 4.1 for Ethernet.
 
-diff --git a/drivers/gpu/drm/gma500/psb_intel_lvds.c b/drivers/gpu/drm/gma500/psb_intel_lvds.c
-index a25e4ca..0a43758 100644
---- a/drivers/gpu/drm/gma500/psb_intel_lvds.c
-+++ b/drivers/gpu/drm/gma500/psb_intel_lvds.c
-@@ -713,7 +713,6 @@ void psb_intel_lvds_init(struct drm_device *dev,
- 
- 	psb_intel_encoder =
- 			kzalloc(sizeof(struct psb_intel_encoder), GFP_KERNEL);
--
- 	if (!psb_intel_encoder) {
- 		dev_err(dev->dev, "psb_intel_encoder allocation error\n");
- 		return;
-@@ -721,10 +720,9 @@ void psb_intel_lvds_init(struct drm_device *dev,
- 
- 	psb_intel_connector =
- 		kzalloc(sizeof(struct psb_intel_connector), GFP_KERNEL);
--
- 	if (!psb_intel_connector) {
--		kfree(psb_intel_encoder);
- 		dev_err(dev->dev, "psb_intel_connector allocation error\n");
-+		goto failed_encoder;
- 	}
- 
- 	lvds_priv = kzalloc(sizeof(struct psb_intel_lvds_priv), GFP_KERNEL);
-@@ -862,7 +860,8 @@ failed_blc_i2c:
- 	drm_encoder_cleanup(encoder);
- 	drm_connector_cleanup(connector);
- failed_connector:
--	if (psb_intel_connector)
--		kfree(psb_intel_connector);
-+	kfree(psb_intel_connector);
-+failed_encoder:
-+	kfree(psb_intel_encoder);
- }
- 
--- 
-1.7.8.3
+> if they are out of tree, I'm sorry but we don't care about them. If they
+> are in tree, then that needs to be sorted out on the same patchset.
 
+    I'm not sure if Puma-5 is the only one using CPPI 4.1 for Etherhet, and 
+not some new platfroms introduced just now like AM33x/TI81x.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+>>> It would involve changes in existing musb driver also for which current
+>>> plan is to maintain the compatibility of non-CPPI4.1 DMA in musb driver.
 
+>>     I didn't quite understand this part...
+
+> how come ? What he's saying is that while moving cppi-dma.c to
+
+    How come we are taling of cppi-dma.c at all? It's CPPI 3.0 driver having 
+nothing in common with CPPI 4.1.
+
+> drivers/dma he will not move all the other dma engines (Inventra, OMAP,
+> TUSB-over-GPMC, etc).
+
+>>> The task is planned to be spitted into below subtasks.
+
+>>> (1) Post RFC on the API details, changes envisaged in musb driver and other
+>>> challenges
+
+>>     First of all, I foresee changes in drivers/dma/ to cope with the
+>> entity in CPPI 4.1 called the queue manager (there's also buffer
+>> manager but it wasn't implemented on DA8xx, so I didn't design any
+>> API for it).
+
+> that's why the kernel is open source, right ? If we need to improve the
+> framework so that it understands other types of DMAs, so be it.
+
+    I just foresee difficulties here.
+
+WBR, Sergei
