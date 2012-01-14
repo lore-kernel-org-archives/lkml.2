@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab2ANQaH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 11:30:07 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:55041 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755164Ab2ANQaE (ORCPT
+	id S1755561Ab2ANQaT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 11:30:19 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43795 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755164Ab2ANQaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 11:30:04 -0500
-Date: Sat, 14 Jan 2012 11:30:03 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Greg KH <gregkh@suse.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, Kay Sievers <kay.sievers@vrfy.org>,
-        <gouders@et.bocholt.fh-gelsenkirchen.de>,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, <prasad@linux.vnet.ibm.com>,
-        <justinmattock@gmail.com>, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Subject: Re: x86/mce: machine check warning during poweroff
-In-Reply-To: <20120114144938.GA32033@suse.de>
-Message-ID: <Pine.LNX.4.44L0.1201141121300.7598-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 14 Jan 2012 11:30:13 -0500
+Message-ID: <1326558605.19951.7.camel@lappy>
+Subject: Hung task when calling clone() due to netfilter/slab
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Dave Jones <davej@redhat.com>, davem <davem@davemloft.net>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        netfilter-devel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Date: Sat, 14 Jan 2012 18:30:05 +0200
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Jan 2012, Greg KH wrote:
+Hi All,
 
-> On Fri, Jan 13, 2012 at 06:53:04PM -0800, Linus Torvalds wrote:
-> > On Fri, Jan 13, 2012 at 6:41 PM, Srivatsa S. Bhat
-> > <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> > >
-> > > YES!! Finally I have a fix for this whole MCE thing! :-)
-> > 
-> > Goodie.
-> > 
-> > > The patch below works perfectly for me - I tested multiple CPU hotplug
-> > > operations as well as multiple pm_test runs at core level. Please let me
-> > > know if this solves the suspend issue as well..
-> > 
-> > Ok, I'll try, and I bet it does.
-> > 
-> > HOWEVER.
-> > 
-> > I'd be a whole lot happier knowing exactly which field in "struct
-> > device" that needed to be NULL before it gets registered.
-> > 
-> > I don't like how
-> > 
-> >   device_register() + device_create_file(dev)..
-> > 
-> > is not sufficiently undone by
-> > 
-> >  .. device_remove_file(dev) +  device_unregister()
-> > 
-> > so that it can't be repeated. Exactly *what* state is stale and
-> > re-used incorrectly if you do that device_register() a second time.
-> > 
-> > It smells like a misfeature of the device core handling.
-> 
-> It has to do with the fact that this is a "static" device that is being
-> reused.  Normally it would be cleaned up properly in the release
-> function, but as there isn't one, some fields are being left in a bad
-> state.
+I've stumbled on the following oops when testing the trinity fuzzer using KVM tool, running on the latest -next kernel:
 
-That's exactly right.  In general, device structures should never be
-reused.  Apart from the reinitialization issues, in the general case
-you have the problem that the references to the previous incarnation
-may not all have been dropped.  Now, perhaps in the MCE case you _do_
-know that they're all gone (I can't tell), but relying on it is
-dangerous.
+[ 3960.845373] INFO: task trinity:31661 blocked for more than 120 seconds.
+[ 3960.846757] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 3960.850245] trinity         D ffff880008e89610  4952 31661   2197 0x00000004
+[ 3960.855032]  ffff880008e39830 0000000000000086 ffff880008e39fd8 ffff880008e89610
+[ 3960.859289]  00000000001d3980 ffff880008e39fd8 ffff880008e38000 00000000001d3980
+[ 3960.862723]  00000000001d3980 00000000001d3980 ffff880008e39fd8 00000000001d3980
+[ 3960.866083] Call Trace:
+[ 3960.867332]  [<ffffffff825830ea>] schedule+0x3a/0x50
+[ 3960.869477]  [<ffffffff82581285>] schedule_timeout+0x245/0x2c0
+[ 3960.871996]  [<ffffffff811023ee>] ? mark_held_locks+0x6e/0x130
+[ 3960.875599]  [<ffffffff810ffb62>] ? lock_release_holdtime+0xb2/0x160
+[ 3960.879156]  [<ffffffff8258450b>] ? _raw_spin_unlock_irq+0x2b/0x70
+[ 3960.881682]  [<ffffffff810de041>] ? get_parent_ip+0x11/0x50
+[ 3960.883907]  [<ffffffff82583880>] wait_for_common+0x120/0x170
+[ 3960.886190]  [<ffffffff810dc930>] ? try_to_wake_up+0x320/0x320
+[ 3960.888570]  [<ffffffff82583978>] wait_for_completion+0x18/0x20
+[ 3960.890968]  [<ffffffff810c5595>] call_usermodehelper_exec+0x1b5/0x1d0
+[ 3960.893583]  [<ffffffff825837a4>] ? wait_for_common+0x44/0x170
+[ 3960.895907]  [<ffffffff8182aa58>] kobject_uevent_env+0x4e8/0x580
+[ 3960.898310]  [<ffffffff8182aafb>] kobject_uevent+0xb/0x10
+[ 3960.900577]  [<ffffffff811b59a1>] sysfs_slab_add+0xb1/0x210
+[ 3960.902830]  [<ffffffff811b74db>] kmem_cache_create+0xcb/0x2f0
+[ 3960.905704]  [<ffffffff8216c72d>] nf_conntrack_init+0x9d/0x380
+[ 3960.908797]  [<ffffffff8216d11f>] nf_conntrack_net_init+0xf/0x1a0
+[ 3960.911065]  [<ffffffff821195a2>] ops_init+0x42/0x180
+[ 3960.913192]  [<ffffffff8211974b>] setup_net+0x6b/0x100
+[ 3960.915308]  [<ffffffff82119ba6>] copy_net_ns+0x86/0x110
+[ 3960.917534]  [<ffffffff810d4049>] create_new_namespaces+0xd9/0x190
+[ 3960.920048]  [<ffffffff810d4224>] copy_namespaces+0x84/0xc0
+[ 3960.922326]  [<ffffffff810aa471>] copy_process+0xa21/0x1480
+[ 3960.924328]  [<ffffffff810d3d9e>] ? up_read+0x1e/0x40
+[ 3960.925327]  [<ffffffff810aaf83>] do_fork+0x73/0x340
+[ 3960.926273]  [<ffffffff811026dd>] ? trace_hardirqs_on+0xd/0x10
+[ 3960.927372]  [<ffffffff82581ea9>] ? mutex_unlock+0x9/0x10
+[ 3960.928422]  [<ffffffff812c4d13>] ? ext4_sync_file+0xa3/0x340
+[ 3960.929487]  [<ffffffff8258525d>] ? retint_swapgs+0x13/0x1b
+[ 3960.930520]  [<ffffffff810554b3>] sys_clone+0x23/0x30
+[ 3960.931475]  [<ffffffff82585ec3>] stub_clone+0x13/0x20
+[ 3960.932490]  [<ffffffff82585b39>] ? system_call_fastpath+0x16/0x1b
+[ 3960.933655] 2 locks held by trinity/31661:
+[ 3960.934413]  #0:  (net_mutex){+.+.+.}, at: [<ffffffff82119b9e>] copy_net_ns+0x7e/0x110
+[ 3960.936057]  #1:  (slub_lock){+.+.+.}, at: [<ffffffff811b7451>] kmem_cache_create+0x41/0x2f0
+[ 3960.937810] Kernel panic - not syncing: hung_task: blocked tasks
 
-The driver core isn't designed to handle device structures that get
-unregistered and then spring back to life; callers are supposed to
-allocate a fresh new structure instead.  (We had to solve this very
-same problem in the USB subsystem a number of years ago; figuring it
-all out was tricky even back then.)  And this is true regardless of
-whether the original structure was allocated dynamically or not.
+I had two trinity processes running, and both were stuck at clone() syscalls:
 
-Alan Stern
+clone(clone_flags=0xcc2820ff, newsp=0xf3f270[page_0xff], parent_tid=0xf3f270[page_0xff], child_tid=0x400000, regs=0xf41290[page_allocs])
+clone(clone_flags=0x45706000, newsp=0xf3f270[page_0xff], parent_tid=0x7f9bf26f0000, child_tid=0xf3f270[page_0xff], regs=0xf41290[page_allocs])
+
+This is the second time I got this oops, and both times it originated with clone calling up to the netfilter connection tracker code, so I don't think that it's coincidental that thats the origin.
+
+-- 
+
+Sasha.
 
