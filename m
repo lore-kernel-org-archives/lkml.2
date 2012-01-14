@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab2ANPUB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 10:20:01 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:44669 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2ANPT6 (ORCPT
+	id S1755110Ab2ANPUK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 10:20:10 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39529 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755059Ab2ANPUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 10:19:58 -0500
-To: luto@amacapital.net, jamie@shareable.org
-From: Eric Paris <eparis@redhat.com>
-Cc: torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk, oleg@redhat.com,
-        wad@chromium.org, linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net
-Date: Sat, 14 Jan 2012 10:17:52 -0500 (EST)
-X-Mailer: TouchDown
-X-Mailer: Zimbra 7.1.2_GA_3268 (MobileSync - TouchDown(MSRPC)/7.1.00012/)
-MIME-Version: 1.0
-Subject: =?utf-8?B?UmU6IFtQQVRDSF0gQWRkIFBSX3tHRVQsU0VUfV9OT19ORVdfUFJJVlMgdG8gcHJldmVudCBleGVj?=
- =?utf-8?B?dmUgZnJvbSBncmFudGluZyBwcml2cw==?=
-Content-Type: multipart/mixed;boundary="__1326554283773TOUCHDOWN_BOUNDARY__"
-Message-ID: <300903415.833492.1326554271998.JavaMail.root@zmail13.collab.prod.int.phx2.redhat.com>
+	Sat, 14 Jan 2012 10:20:04 -0500
+Message-ID: <1326554397.3293.13.camel@dabdike.airangel.com>
+Subject: Re: [GIT PULL] target: Updates for v3.3-rc1 (round 1)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@kernel.org>, J?rn Engel <joern@purestorage.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Sat, 14 Jan 2012 15:19:57 +0000
+In-Reply-To: <20120111104940.GA5394@infradead.org>
+References: <1326221809.14089.23.camel@haakon2.linux-iscsi.org>
+	 <CAO+b5-qs3fE8yZaKQ+kzpsSsX1PyXE09wBzxnUi55GZ5j4TJKg@mail.gmail.com>
+	 <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
+	 <1326225067.3264.51.camel@dabdike.int.hansenpartnership.com>
+	 <20120111104940.GA5394@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---__1326554283773TOUCHDOWN_BOUNDARY__
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2012-01-11 at 05:49 -0500, Christoph Hellwig wrote:
+> On Tue, Jan 10, 2012 at 01:51:07PM -0600, James Bottomley wrote:
+> > > The changes since the Nov 4 RFC are listed in the patch commit log:
+> > > 
+> > > ib_srpt: Make compilation with BUG=n proceed`
+> > > ib_srpt: Use new target_core_fabric.h include
+> > > ib_srpt: Check hex2bin() return code to silence build warning
+> > > 
+> > > These are all very minor and did not warrant another full RFC posting.
+> > 
+> > They might not warrant a full RFC reposting, but individually they
+> > should have been posted to the list, so Bart is right.
+> 
+> At least 2 and 3 list, just not as global patches against the
+> target tree, not ib_srpt specificly:
+> 
+> 2 is from: [PATCH] target: header reshuffle, part2
+> 3 is from: [PATCH 5/5] target: check hex2bin result
+> 
+> Not sure about 1.
+> 
+> I'm really getting tired of this bickering. It's a brand new driver and
+> doesn't have to be perfect.  While Bart generally has technically good
+> points there's really no reason to put his remaining fixups in after
+> the driver has been merged and available to a wieder audience.
 
------Original Message-----=0D=0AFrom: Jamie Lokier [jamie@shareable.org]=0D=0A=
-Received: Saturday, 14 Jan 2012, 8:56am=0D=0ATo: Andy Lutomirski [luto@amaca=
-pital.net]=0D=0ACC: Linus Torvalds [torvalds@linux-foundation.org]; Alan Cox=
- [alan@lxorguk.ukuu.org.uk]; Oleg Nesterov [oleg@redhat.com]; Will Drewry [w=
-ad@chromium.org]; linux-kernel@vger.kernel.org, keescook@chromium.org, john.=
-johansen@canonical.com, serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.co=
-m, pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org, segoon@openwall.co=
-m, rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com, avi@redhat=
-.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu, mingo@e=
-lte.hu, akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com, =
-amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.d=
-e, dhowells@redhat.com, daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.or=
-g, linux-security-module@vger.kernel.org, olofj@chromium.org, mhalcrow@googl=
-e.com, dlaor@redhat.com, corbet@lwn.net=0D=0ASubject: Re: [PATCH] Add PR_{GE=
-T,SET}_NO_NEW_PRIVS to prevent execve from granting privs=0D=0A=0D=0AAndy Lu=
-tomirski wrote:=0D=0A=0D=0A> Is the current exec_no_trans check enough for y=
-ou?  With my patch,=0D=0A> selinux can already block the execve if it wants.=
-  (The policy is the=0D=0A> same as it would be if a program explicitly aske=
-d to run the new=0D=0A> executable with an unchanged security context.)  I'd=
- be happy to fail=0D=0A> the exec in AppArmor, and then maybe AppArmor will =
-change its mind=0D=0A> if/when users get annoyed :)=0D=0A=0D=0ADoes SELinux =
-block if userspace does exec entirely in userspace using=0D=0Ammap() and not=
- execve()?  If not, why is execve() allowed to be different?=0D=0A=0D=0AYes,=
- we do (or can, and usually do in policy)=0D=0A
+Absolutely.  I was just reminding about git best practises, not NAKing a
+pull.  Putting this in the kernel and sorting out the rough edges later
+is fine by me ... just make sure the rough edges go over the list ...
 
---__1326554283773TOUCHDOWN_BOUNDARY__--
+James
+
+
