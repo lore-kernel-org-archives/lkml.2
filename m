@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab2ANN4U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 08:56:20 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:57585 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab2ANN4S (ORCPT
+	id S1754813Ab2ANOGv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 09:06:51 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:32825 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab2ANOGu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 08:56:18 -0500
-Date: Sat, 14 Jan 2012 13:55:49 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net
-Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
- granting privs
-Message-ID: <20120114135549.GZ7180@jl-vm1.vm.bytemark.co.uk>
-References: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net>
- <20120113164547.GA22061@redhat.com>
- <20120113182422.28e648fb@pyramind.ukuu.org.uk>
- <CALCETrX_nA4MtjDCKdfwJBOO6QEyzk_6nbr5Ou6QqkXcq2rTPQ@mail.gmail.com>
- <CA+55aFyCKAY97zK=4u-AHvQyh2U1ryYybQEmgaRR+kc-d2fLhA@mail.gmail.com>
- <CALCETrWOdEnTLhjdgjSc0d=8j4q3JeRz1g_wYR9_uwJP=iimcw@mail.gmail.com>
+	Sat, 14 Jan 2012 09:06:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWOdEnTLhjdgjSc0d=8j4q3JeRz1g_wYR9_uwJP=iimcw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120113163558.a662e7c5.akpm@linux-foundation.org>
+References: <1325951797.860.10.camel@mop> <124669.1325952830@turing-police.cc.vt.edu>
+ <20120109150701.GB1777@redhat.com> <20120113163558.a662e7c5.akpm@linux-foundation.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Sat, 14 Jan 2012 14:59:03 +0100
+Message-ID: <CAPXgP116b7GTzjTczXWq_v8bjATXuogJs7PU7oSY-5CimU4umQ@mail.gmail.com>
+Subject: Re: [PATCH] prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple
+ process supervision
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <lennart@poettering.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski wrote:
-> > So I bet the google chrome people are not at all interested in
-> > "running random binaries", and might want execve() very much for
-> > "running some specific binaries that we ship with or install from the
-> > browser".
-> 
-> I want to be able to run "magic_seccomp_sandbox gv somefile.ps".  And
-> I want that to still work even if my distro gets fancy and uses
-> selinux policy to prevent gv from accessing the network (which would
-> not be an unreasonable thing to do).  The chromium project already has
-> a little seccomp wrapper that can (sort of) do this.
+On Sat, Jan 14, 2012 at 01:35, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Mon, 9 Jan 2012 16:07:01 +0100
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+>> > > +         /* find the first ancestor marked as child_subreaper */
+>> > > +         for (reaper = father->real_parent;
+>> > > +              reaper != &init_task;
+>> > > +              reaper = reaper->real_parent) {
+>> >
+>> > I admit being insufficiently caffienated - does this DTRT in a PID namespace? That
+>> > &init_task looks fishy to me...
+>>
+>> Probably this needs a comment. Initially I was confused too.
+>>
+>> Note that the code below checks same_thread_group(reaper, pid_ns->child_reaper),
+>> this is what we need to DTRT in a PID namespace. However we still need the
+>> check above, see http://marc.info/?l=linux-kernel&m=131385460420380
+>
+> In light of Kay's haughty silence, I did this:
+>
+> --- a/kernel/exit.c~prctl-add-pr_setget_child_subreaper-to-allow-simple-process-supervision-fix-fix
+> +++ a/kernel/exit.c
+> @@ -724,7 +724,13 @@ static struct task_struct *find_new_reap
+>        } else if (father->signal->has_child_subreaper) {
+>                struct task_struct *reaper;
+>
+> -               /* find the first ancestor marked as child_subreaper */
+> +               /*
+> +                * Find the first ancestor marked as child_subreaper.
+> +                * Note that the code below checks same_thread_group(reaper,
+> +                * pid_ns->child_reaper).  This is what we need to DTRT in a
+> +                * PID namespace. However we still need the check above, see
+> +                * http://marc.info/?l=linux-kernel&m=131385460420380
+> +                */
+>                for (reaper = father->real_parent;
+>                     reaper != &init_task;
+>                     reaper = reaper->real_parent) {
 
-Chrome also comes with NaCL.  They *are* "running random binaries",
-but they use code analysis to check the code first.  Maybe because
-seccomp wasn't good enough ;-)
+Oleg and I got nowhere really, discussing if we should switch the
+check in the for() parameters and the one inside the loop; so we just
+decided to keep it the way it is, and did not reply any further. It
+wasn't that we didn't care, we just couldn't decide. Sorry for that.
 
-> > So I really think that the *only* valid model is the "fail the execve
-> > on any changes", not the "mnt-nosuid" approach of trying to run things
-> > with the wrong permissions and get perhaps odd results. And I think it
-> > works even - and perhaps *especially* - in models like selinux or
-> > apparmor that do have a lot of "implicit MAC knowledge" on specific
-> > binaries.
-> 
-> Is the current exec_no_trans check enough for you?  With my patch,
-> selinux can already block the execve if it wants.  (The policy is the
-> same as it would be if a program explicitly asked to run the new
-> executable with an unchanged security context.)  I'd be happy to fail
-> the exec in AppArmor, and then maybe AppArmor will change its mind
-> if/when users get annoyed :)
+The comment indeed sounds good to have. Thanks for adding this.
 
-Does SELinux block if userspace does exec entirely in userspace using
-mmap() and not execve()?  If not, why is execve() allowed to be different?
-
--- Jamie
+Kay
