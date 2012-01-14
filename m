@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759538Ab2ANApm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 19:45:42 -0500
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:56522
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753988Ab2ANApk (ORCPT
+	id S1757962Ab2ANA7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 19:59:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41682 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab2ANA7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 19:45:40 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q0E0j1Dp008601
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx\@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: Re: x86/mce: machine check warning during poweroff
-In-Reply-To: <CA+55aFwcOgEbnYhs7z+jc-Jq+fWxV3vfSRdfLXBEUC_40BRK0w@mail.gmail.com>
-	(Linus Torvalds's message of "Fri, 13 Jan 2012 12:37:53 -0800")
-References: <20120111000051.GA28874@dztty>
-	<CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
-	<4F10929E.8070007@linux.vnet.ibm.com>
-	<CA+55aFwcOgEbnYhs7z+jc-Jq+fWxV3vfSRdfLXBEUC_40BRK0w@mail.gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Sat, 14 Jan 2012 01:44:59 +0100
-Message-ID: <gir4z3cdtg.fsf@mx10.gouders.net>
+	Fri, 13 Jan 2012 19:59:37 -0500
+Date: Sat, 14 Jan 2012 09:10:33 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Dong Aisheng <dongas86@gmail.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Message-ID: <20120114011029.GC1810@S2101-09.ap.freescale.net>
+References: <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
+ <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC605788508AC65@039-SN2MPN1-013.039d.mgd.msft.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE3A76A@HQMAIL01.nvidia.com>
+ <CAA+hA=RCmctmQJU4-k7YhzQDMi8KuyisBqOFhuMd3RV4_E=gCA@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17801D1FAB@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Sat, 14 Jan 2012 01:45:04 +0100 (CET)
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D1FAB@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Fri, Jan 13, 2012 at 10:33:21AM -0800, Stephen Warren wrote:
+> So of_device_alloc(), which is called by of_platform_populate() for each
+> device, already parses basic DT content such as reg and interrupts, and
+> converts them to Linux resources. I'd consider parsing any pinmux properties
+> and registering them with the pinctrl subsystem to be of a similar nature,
+> so adding some code to of_device_alloc() that calls a core pinmux function
+> to parse the DT node seems reasonable to me.
+> 
+I hardly believe that device tree maintainers would agree here.
+Grant, Rob?
 
-> On Fri, Jan 13, 2012 at 12:22 PM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> However, it is to be noted that, technically this warning (machinecheck1
->> not having a release() function) is not all that new. Just that people
->> didn't probably notice it earlier (reason explained below).
->
-> .. but there really is some semantic issue going on here. I'm not the
-> only one for whom suspend/resume simply does not work with MCE
-> enabled, and that "not work" coincides with the switch-over from
-> sysdev to struct device.
->
-> I suspect it is some subtle difference in sysdev_unregister() vs
-> device_unregister(). The message change is just a symptom of the fact
-> that we go through different paths.
->
-> For me MCE hangs only on the *second* suspend, but it sounds like
-> others see it on the first one.
-
-Yes, my laptop hangs on the first suspend.
-Another effect of the problem is that the laptop's clock is extremely
-off after a forced reboot.
-
-Dirk
+-- 
+Regards,
+Shawn
