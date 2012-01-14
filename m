@@ -1,110 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515Ab2ANHJw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 02:09:52 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43029 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751817Ab2ANHJv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 02:09:51 -0500
+	id S1752785Ab2ANHqI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 02:46:08 -0500
+Received: from claw.goop.org ([74.207.240.146]:41717 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752407Ab2ANHqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 02:46:07 -0500
+Message-ID: <4F1132B3.3000909@goop.org>
+Date: Sat, 14 Jan 2012 18:45:55 +1100
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
-References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-	<20120108221342.GA7058@ime.usp.br>
-	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
-	<20120109112207.7f993845@jbarnes-desktop>
-	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
-	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
-	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
-	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
-	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
-	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
-	<20120113115946.GA10615@ime.usp.br>
-	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
-	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
-Date: Sat, 14 Jan 2012 05:09:50 -0200
-X-Google-Sender-Auth: OGXs2GJw2JNTmDM0pVg3CIb-JFU
-Message-ID: <CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] HID
+References: <alpine.LNX.2.00.1201052218200.24984@pobox.suse.cz> <4F098C29.9010101@goop.org> <alpine.LNX.2.00.1201081739360.24984@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1201081739360.24984@pobox.suse.cz>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Yinghai and other people,
-
-On Sat, Jan 14, 2012 at 00:01, Rogério Brito <rbrito@ime.usp.br> wrote:
-> On Fri, Jan 13, 2012 at 15:29, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Fri, Jan 13, 2012 at 3:59 AM, Rogério Brito <rbrito@ime.usp.br> wrote:
->>> If it applies (and newer kernels don't have things which your patch needs),
->>> I will keep working with Linus's v3.2 tag.
->>
->> No problem, I will put that patch into for-pci2 for your conveniences.
+On 01/09/2012 03:45 AM, Jiri Kosina wrote:
 >
-> Thanks. That's definitely easier for me. I'm grabbing it to compile
-> and will report in a moment.
+> which is based on the power supply scope changes in the battery.git tree; I'm not quite
+> sure how to sequence that into mainline.
+> I will look into it.
 
-Just to clarify, my "definitely easier for me" means "I know what to
-do (or, at least, I'm closer this way not doing wrong things)".
+The power changes are in now, so you could try pushing them as a late push.
 
->>> When I compiled from your branch for-pci2 from linux-yinghai.git (without
->>> any extra patches), it *did* boot, but noticed one thing weird: using htop
->>> and in single user mode, it reported 100% of CPU in use. With regular top, a
->>> more fine grained output revealed that no processes were using the CPU, but
->>> that almost all of the time was spent in kernel mode.
->>>
->>> Anyway, as you asked, I put the log of what I see at
->>>
->>>    http://www.ime.usp.br/~rbrito/linux/clevo/2012-01-13-0951-yanghai-for-pci2-branch/
->>
->> [    0.165615] pci 0000:05:07.0: CardBus bridge to [bus 06-09]
->> [    0.165682] pci 0000:05:07.0:   bridge window [io  0x0001-0x0000]
->> [    0.165751] pci 0000:05:07.0:   bridge window [io  0x0001-0x0000]
->> [    0.165821] pci 0000:05:07.0:   bridge window [mem
->> 0x00000001-0x00000000 pref]
->> [    0.165904] pci 0000:05:07.0:   bridge window [mem 0x00000001-0x00000000]
->> [    0.165975] pci 0000:00:10.0: PCI bridge to [bus 05-06]
->> [    0.166043] pci 0000:00:10.0:   bridge window [mem 0xb3200000-0xb32fffff]
->> [    0.166259] pci 0000:00:10.0: setting latency timer to 64
->> [    0.166329] pci 0000:05:07.0: device not available (can't reserve
->> [io  0x0001-0x0000])
->> [    0.166412] pci 0000:05:07.0: Error enabling bridge (-22), continuing
->>
->> We have some problems with handling cardbus bridge as optional resources.
->>
->> will produce some patches and update for-pci2 branch for your test.
->
-> OK. Will try that as soon as my download completes.
-
-Just for the record, I have grabbed your for-pci2 branch with HEAD
-being 5db4211 and this is what I get:
-
-    http://www.ime.usp.br/~rbrito/linux/clevo/boot-yinghai-for-pci2-g5db4211.m4v
-
-A warning, though is that there were some options regarding PCI buses
-which I did not know exactly how to answer. I can post my config here
-if you are interested in that. Well, actually, I can give you ssh
-access to this notebook if you want to hack on it. Just let me know
-what times you (or anyone else) are online and I will try to arrange
-everything.
-
-Any guidance is welcome.
-
+(Linus: I had some changes that depended on both the HID and
+power_supply subsystems, so they needed to wait until you'd pulled both.)
 
 Thanks,
-
--- 
-Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
-http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
-DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
+    J
