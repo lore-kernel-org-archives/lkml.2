@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab2ANVnn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 16:43:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54976 "EHLO mx1.redhat.com"
+	id S932341Ab2ANVpE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 16:45:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53371 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756894Ab2ANVnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 16:43:41 -0500
-Date: Sat, 14 Jan 2012 16:43:34 -0500
-From: Dave Jones <davej@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        glommer@parallels.com
-Subject: Re: recvmsg sleeping from invalid context
-Message-ID: <20120114214334.GA28423@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, glommer@parallels.com
-References: <20120113182401.GA25885@redhat.com>
- <20120113.102712.600185688659703015.davem@davemloft.net>
+	id S1756894Ab2ANVpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 16:45:02 -0500
+Message-ID: <4F11F761.70406@suse.cz>
+Date: Sat, 14 Jan 2012 22:45:05 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120113.102712.600185688659703015.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] scripts/coccinelle: semantic patches related to devm_
+ functions
+References: <1325004092-28162-1-git-send-email-julia.lawall@lip6.fr>
+In-Reply-To: <1325004092-28162-1-git-send-email-julia.lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 10:27:12AM -0800, David Miller wrote:
- > From: Dave Jones <davej@redhat.com>
- > Date: Fri, 13 Jan 2012 13:24:01 -0500
- > 
- > > getting a ton of these on the latest head (099469502f62fbe0d7e4f0b83a2f22538367f734)
- > > 
- > > BUG: sleeping function called from invalid context at mm/memory.c:3905
- > > in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
- > > INFO: lockdep is turned off.
- > > Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
- > > Call Trace:
- > >  [<ffffffff81099415>] __might_sleep+0x145/0x200
- > >  [<ffffffff811752a4>] might_fault+0x34/0xb0
- > >  [<ffffffff81551555>] ? sock_def_readable+0x25/0x1a0
- > >  [<ffffffff8155c387>] put_cmsg+0x77/0x120
- > >  [<ffffffff8159379c>] netlink_recvmsg+0x35c/0x480
- > >  [<ffffffff8155201a>] ? sock_update_classid+0x9a/0x260
- > >  [<ffffffff81552052>] ? sock_update_classid+0xd2/0x260
- > >  [<ffffffff81549fbd>] sock_recvmsg+0x11d/0x140
- > >  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
- > >  [<ffffffff8117530c>] ? might_fault+0x9c/0xb0
- > >  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
- > >  [<ffffffff8154b1b3>] __sys_recvmsg+0x153/0x2d0
- > >  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
- > >  [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
- > >  [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
- > >  [<ffffffff811bc43b>] ? fget_light+0xfb/0x470
- > >  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
- > >  [<ffffffff8154e2e9>] sys_recvmsg+0x49/0x90
- > >  [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
- > 
- > Sigh, I suspect the new socket memcg code, which I didn't want to
- > even apply in the first place. :-/
- > 
- > Glauber, please fix this.
+On 27.12.2011 17:41, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> devm_ functions allocate memory that is to remain allocated until the
+> device is detached.  This patch checks for opportunities for using the
+> function devm_request_and_ioremap.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-How new is 'new' ?
+Applied both patches to kbuild.git#misc. BTW, Please use different
+subject lines for different patches next time, so that patches can be
+referred to by their subject. I changed these two to "coccinelle:
+semantic patches related to devm_ functions (part 1)" and "... (part 2)"
+due to lack of better ideas.
 
-interestingly, I now started getting these in 3.1.9 where I never noticed them before.
-
-
-BUG: sleeping function called from invalid context at mm/memory.c:3905
-in_atomic(): 1, irqs_disabled(): 0, pid: 962, name: NetworkManager
-1 lock held by NetworkManager/962:
- #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff815f610d>] inet6_dump_fib+0x3d/0x3d0
-Pid: 962, comm: NetworkManager Not tainted 3.1.9-1.fc16.x86_64.debug #1
-Call Trace:
- [<ffffffff8105fbd0>] __might_sleep+0xf0/0x120
- [<ffffffff81160f68>] might_fault+0x38/0xb0
- [<ffffffff81519070>] ? sock_def_error_report+0x120/0x120
- [<ffffffff81523877>] put_cmsg+0x77/0x120
- [<ffffffff815587ec>] netlink_recvmsg+0x35c/0x480
- [<ffffffff81518d2e>] ? sock_update_classid+0x8e/0x190
- [<ffffffff81518d68>] ? sock_update_classid+0xc8/0x190
- [<ffffffff815122ad>] sock_recvmsg+0x11d/0x140
- [<ffffffff81160f8c>] ? might_fault+0x5c/0xb0
- [<ffffffff81160fd5>] ? might_fault+0xa5/0xb0
- [<ffffffff81160f8c>] ? might_fault+0x5c/0xb0
- [<ffffffff81513373>] __sys_recvmsg+0x153/0x2d0
- [<ffffffff810a8f28>] ? sched_clock_cpu+0xa8/0x110
- [<ffffffff810b6bfd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff810a8fff>] ? local_clock+0x6f/0x80
- [<ffffffff810b74a5>] ? lock_release_holdtime.part.9+0x15/0x1a0
- [<ffffffff811a4bef>] ? fget_light+0xcf/0x3b0
- [<ffffffff811a4c07>] ? fget_light+0xe7/0x3b0
- [<ffffffff811a4b68>] ? fget_light+0x48/0x3b0
- [<ffffffff81516359>] sys_recvmsg+0x49/0x90
- [<ffffffff81669dc2>] system_call_fastpath+0x16/0x1b
-
+Michal
