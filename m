@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab2ANVpE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 16:45:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53371 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756894Ab2ANVpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 16:45:02 -0500
-Message-ID: <4F11F761.70406@suse.cz>
-Date: Sat, 14 Jan 2012 22:45:05 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] scripts/coccinelle: semantic patches related to devm_
- functions
-References: <1325004092-28162-1-git-send-email-julia.lawall@lip6.fr>
-In-Reply-To: <1325004092-28162-1-git-send-email-julia.lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932551Ab2ANVpz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 16:45:55 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54750 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab2ANVpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jan 2012 16:45:54 -0500
+Date: Sat, 14 Jan 2012 21:46:58 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: dvhart@linux.intel.com, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, alan@linux.intel.com, tomoya.rohm@gmail.com,
+        jeffrey.t.kirsher@intel.com, paul.gortmaker@windriver.com,
+        jdmason@kudzu.us, netdev@vger.kernel.org
+Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of
+ failing probe
+Message-ID: <20120114214658.4ddfec30@pyramind.ukuu.org.uk>
+In-Reply-To: <20120114.115604.2101782124431552110.davem@davemloft.net>
+References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com>
+	<20120114.001430.787918662083526597.davem@davemloft.net>
+	<4F11A533.4040406@linux.intel.com>
+	<20120114.115604.2101782124431552110.davem@davemloft.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.12.2011 17:41, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> I fear that people are just going to add this random MAC stuff way too
+> easily, it's a spreading disease.
 > 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> devm_ functions allocate memory that is to remain allocated until the
-> device is detached.  This patch checks for opportunities for using the
-> function devm_request_and_ioremap.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> Ship functional hardware instead.
 
-Applied both patches to kbuild.git#misc. BTW, Please use different
-subject lines for different patches next time, so that patches can be
-referred to by their subject. I changed these two to "coccinelle:
-semantic patches related to devm_ functions (part 1)" and "... (part 2)"
-due to lack of better ideas.
+See "choir, preaching to the".
 
-Michal
+The stuff is out there and it's not Darren's fault !
+
+Alan
