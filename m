@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750905Ab2ANFPb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 00:15:31 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49963 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab2ANFPa (ORCPT
+	id S1750902Ab2ANFVZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 00:21:25 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:39953 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab2ANFVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 00:15:30 -0500
+	Sat, 14 Jan 2012 00:21:23 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwWU8ieuV_EsA6nHwjV9iOgy04DEScngDKQ92wNGfPZ-Q@mail.gmail.com>
-References: <20120111000051.GA28874@dztty>
-	<CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
-	<4F10929E.8070007@linux.vnet.ibm.com>
-	<CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
-	<4F10BDF7.8030306@linux.vnet.ibm.com>
-	<CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
-	<4F10EB5B.5060804@linux.vnet.ibm.com>
-	<CA+55aFxK5XCh6NCbo9AMvsarS9_A+s0QqV6=vC2O4dgg3vg=Aw@mail.gmail.com>
-	<4F10F117.40006@linux.vnet.ibm.com>
-	<CA+55aFwWU8ieuV_EsA6nHwjV9iOgy04DEScngDKQ92wNGfPZ-Q@mail.gmail.com>
-Date: Fri, 13 Jan 2012 21:15:29 -0800
-X-Google-Sender-Auth: 5T8E0Z7OxH3lwquaHM7molHVXZw
-Message-ID: <CA+8MBbJ7wvzPtW8g0qd4R74tYs-tujCRCvjhue3gah_prtsLLg@mail.gmail.com>
-Subject: Re: x86/mce: machine check warning during poweroff
-From: Tony Luck <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
+In-Reply-To: <20120109003255.GA6598@havoc.gtf.org>
+References: <20120109003255.GA6598@havoc.gtf.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jan 2012 21:21:01 -0800
+X-Google-Sender-Auth: pYUAMVqLBezXWEzvqH-Cw6WJ_CA
+Message-ID: <CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
+Subject: Re: [git patches] libata updates for 3.3
+To: Jeff Garzik <jeff@garzik.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 7:10 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Fair enough. The many layers of clever indirection are really really
-> nasty to follow, I agree.
+On Sun, Jan 8, 2012 at 4:32 PM, Jeff Garzik <jeff@garzik.org> wrote:
+>
+> Summary (very little excitement at all this time):
+>
+> 0) Will play around with git signed tags with the next update.
+>
+> 1) PM improvements, including runtime suspend/resume work
 
-You could cheat and bisect (not git bisect, numerical bisect). We know that:
+Hmm. I don't know if this comes from the PM improvements or even this
+particular pull, but links that aren't connected are *really* slow.
 
-      memset(&dev->kobj, 0, sizeof(struct kobject));
+Annoyingly so.
 
-is not enough. And that:
+My Macbook Air that I finally can resume reliably again used to come
+back almost immediately from resume. No longer. And the reason seems
+to be this:
 
-      memset(dev, 0, sizeof(struct device));
+ [  243.306149] ata_piix 0000:00:1f.2: setting latency timer to 64
+ [  243.306180] bcma: Found rev 6 PMU (capabilities 0x108C2606)
+ [  246.579648] ata1.01: failed to resume link (SControl 0)
+ [  246.735472] ata1.00: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+ [  246.735485] ata1.01: SATA link down (SStatus 0 SControl 0)
+ [  246.743632] ata1.00: ACPI cmd ef/03:46:00:00:00:a0 (SET FEATURES)
+filtered out
+ [  246.744353] ata1.00: configured for UDMA/100
+ [  246.744537] sd 0:0:0:0: [sda] Starting disk
+ [  247.769806] ata2.00: failed to resume link (SControl 0)
+ [  248.796207] ata2.01: failed to resume link (SControl 0)
+ [  248.807665] ata2.00: SATA link down (SStatus 4 SControl 0)
+ [  248.807681] ata2.01: SATA link down (SStatus 0 SControl 0)
+ [  248.808338] PM: resume of devices complete after 5511.027 msecs
+ [  248.882074] PM: Finishing wakeup.
 
-works. The kobject is near the beginning of struct device. So try clearing
-all the other bits from start of struct device up to "kobj" ... if that doesn't
-help, then play with clearing various sized chunks after. Should be able to
-zoom in on the culprit field ... then go look at the code.
+Notice the basically five-second timeout all basically for "failed to
+resume link: for things that didn't have anything connected to them
+anyway.
 
--Tony
+This is a bog-standard Intel controller, there's nothing odd there.
+
+I'm pretty sure this used to be much faster, but I haven't bisected
+any of it (and with all the problems I had with resume both due to
+wireless and MCE, I really wouldn't want to even try).
+
+Taking 5.5 seconds to come back from suspend-to-ram really is too
+long. Not *all* of it is the SATA part, but a lot of it is.
+
+For ATA suspend/resume, could we perhaps only resume the ports that
+*used* to have something on them? And then, if somebody has plugged
+something into the others, not consider that a resume thing at all,
+but a hotplug thing that happens *after* the resume?
+
+If it takes five seconds to notice new hardware after a resume, nobody
+cares. But the disk we had before obviously needs to get resumed.. But
+it does seem like it's the "no link" part that takes long.
+
+Hmm? Or any other ideas?
+
+         Linus
