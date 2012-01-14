@@ -1,68 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab2ANEba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 23:31:30 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56020 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158Ab2ANEbL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 23:31:11 -0500
+	id S1754755Ab2ANEjb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 23:39:31 -0500
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:55479 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754388Ab2ANEj3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 23:39:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAJSP0QWhkgot=42NVW7ra7MBJt1pDSo11mT+jcuiBLoeuaPHCA@mail.gmail.com>
-References: <CAFgQCTtQfVXrgS-eP0-58T+Qx4fHJ6nB6qHXKSEsHDTc2zC2nA@mail.gmail.com>
-	<CAJSP0QW1S87WD2pHZ0xUxTvxpOAxsB-LyOD4skxxziwUCWtkkQ@mail.gmail.com>
-	<CAFgQCTvtkSxXq_v6X6VW+k83rDHBiHC0HwupXBg+fSMJ-VdoSA@mail.gmail.com>
-	<CAJSP0QWhkgot=42NVW7ra7MBJt1pDSo11mT+jcuiBLoeuaPHCA@mail.gmail.com>
-Date: Sat, 14 Jan 2012 12:31:10 +0800
-Message-ID: <CAFgQCTvKMoFUwG273EN0XfUBOidDMfDqETY=XvY5rb6nD1KPvw@mail.gmail.com>
-Subject: Re: Could anybody give some description about the implement of
- hyercall in kvm?
-From: Liu ping fan <kernelfans@gmail.com>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4F11021A.8070407@codeaurora.org>
+References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
+ <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos>
+ <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com>
+ <20111217110433.GC14547@n2100.arm.linux.org.uk> <4F11021A.8070407@codeaurora.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Fri, 13 Jan 2012 20:39:07 -0800
+Message-ID: <CAJOA=zNtKvvek5LPsDYUie8KLcTBB0F4GxWhzn2g8=YxpCcMPQ@mail.gmail.com>
+Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, andrew@lunn.ch,
+        linaro-dev@lists.linaro.org, eric.miao@linaro.org,
+        grant.likely@secretlab.ca, Colin Cross <ccross@google.com>,
+        jeremy.kerr@canonical.com, sboyd@quicinc.com, magnus.damm@gmail.com,
+        dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
+        arnd.bergmann@linaro.org, patches@linaro.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        richard.zhao@linaro.org, shawn.guo@freescale.com, paul@pwsan.com,
+        linus.walleij@stericsson.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
+        skannan@quicinc.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 6:11 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
-> On Fri, Jan 13, 2012 at 7:45 AM, Liu ping fan <kernelfans@gmail.com> wrote:
->> On Thu, Jan 12, 2012 at 5:21 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
->>> On Thu, Jan 12, 2012 at 4:38 AM, Liu ping fan <kernelfans@gmail.com> wrote:
->>>> Could anybody give some description about the implement of hyercall in
->>>> kvm? Or give some links about it?
+On Fri, Jan 13, 2012 at 8:18 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 12/17/2011 03:04 AM, Russell King - ARM Linux wrote:
+>>
+>> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
 >>>
->>> Try git grep hypercall arch/x86/kvm.
+>>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas Gleixner<tglx@linutronix.de>
+>>>  wrote:
+>>>>
+>>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
+>>>>>
+>>>>> +void __clk_unprepare(struct clk *clk)
+>>>>> +{
+>>>>> +     if (!clk)
+>>>>> +             return;
+>>>>> +
+>>>>> +     if (WARN_ON(clk->prepare_count == 0))
+>>>>> +             return;
+>>>>> +
+>>>>> +     if (--clk->prepare_count>  0)
+>>>>> +             return;
+>>>>> +
+>>>>> +     WARN_ON(clk->enable_count>  0);
+>>>>
+>>>>
+>>>> So this leaves the clock enable count set. I'm a bit wary about
+>>>> that. Shouldn't it either return (including bumping the prepare_count
+>>>> again) or call clk_disable() ?
+>>
+>>
+>> No it should not.
+>>
+>>> I've hit this in my port of OMAP.  It comes from this simple situation:
 >>>
->>> Take a look at arch/x86/kvm/x86.c kvm_set_msr_common() and
->>> kvm_emulate_hypercall(). Â Some of the KVM time-keeping, minimal HyperV
->>> support, and async page faults live there. Â Also see
->>> arch/x86/include/asm/kvm_para.h.
+>>> driver 1 (adapted for clk_prepare/clk_unprepare):
+>>> clk_prepare(clk);
+>>> clk_enable(clk);
 >>>
->>> Hypercalls are architecture-specific so if you are interested in ppc
->>> or s390, check those arch directories.
+>>> ...
 >>>
->> Thanks, but when I tried to start from the macro "____PVOP_VCALL", but
->> lost in it. If there is some document like the hypercall in Xen, this
->> will be appreciated. (And I guest Hypercall in kvm is the same as Xen
->> which is very similar to syscall, right?)
+>>> driver2 (not adapted for clk_prepare/clk_unprepare):
+>>> clk_enable(clk);
+>>
+>>
+>> So this is basically buggy.  Look, it's quite simple.  Convert _all_
+>> your drivers to clk_prepare/clk_unprepare _before_ you start switching
+>> your platform to use these new functions.  You can do that _today_
+>> without exception.
+>>
+>> We must refuse to merge _any_ user which does this the old way - and
+>> we should have been doing this since my commit was merged into mainline
+>> to allow drivers to be converted.
+>>
+>> And stop trying to think of ways around this inside clk_prepare/
+>> clk_unprepare/clk_enable/clk_disable.  You can't do it.  Just fix _all_
+>> the drivers.  Now.  Before you start implementing
+>> clk_prepare/clk_unprepare.
 >
-> You can read about paravirt_ops to understand why that layer of
-> indirection is present:
-> http://lwn.net/Articles/194543/
 >
-> But that macro is not the actual hypercall instructions, just a
-> mechanism for runtime-patching the kernel depending on whether it's
-> running on bare metal, KVM, Xen, etc.
->
-> What you really should look at if you're interested in specific
-> paravirt features that you are interested in. Â For example,
-> arch/x86/kernel/kvmclock.c implements a paravirt clock using
-> "paravirt" Model Specific Registers and a shared memory region as the
-> guest<->host interface. Â So I guess you could say KVM paravirt uses
-> several mechanisms for host<->guest interaction.
->
-Ok, thank you very much. You give a great help
+> I agree with Russell's suggestion. This is what I'm trying to do with the
+> MSM platform. Not sure if I'm too optimistic, but as of today, I'm still
+> optimistic I can push the MSM driver devs to get this done before we enable
+> real prepare/unprepare support.
 
-ping fan
+Just to reach closure on this topic: I don't plan to change
+__clk_unprepare in the next version of the patches.  The warnings are
+doing a fine job of catching code which has yet to be properly
+converted to use clk_(un)prepare.
+
+Mike
+
+>
+>
+> Thanks,
+> Saravana
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
