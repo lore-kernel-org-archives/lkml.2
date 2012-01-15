@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab2AOCyO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 21:54:14 -0500
-Received: from imta-35.everyone.net ([216.200.145.35]:49719 "EHLO
-	imta-38.everyone.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753517Ab2AOCyN (ORCPT
+	id S1755258Ab2AOCyq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 21:54:46 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62041 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755058Ab2AOCye convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 21:54:13 -0500
-X-Greylist: delayed 12482 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Jan 2012 21:54:13 EST
-X-Eon-Dm: dm0213
-X-Eon-Sig: AQORUaJPEg2zRR13UwIAAAMc,3d8313b8aa9dc72938ffbacba9328c05
-X-Originating-Ip: 97.66.216.165
-Reply-To: <mrjames0000@live.com>
-From: "J. Sellers" <sar1@copper.net>
-Subject: Happy New Year
-Date: Sat, 14 Jan 2012 17:20:18 -0600
+	Sat, 14 Jan 2012 21:54:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20120114152019.D87F3FC9@dm0213.mta.everyone.net>
-To: undisclosed-recipients:;
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2012-01-14_03:2012-01-13,2012-01-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=6 spamscore=6 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1012030000 definitions=main-1201140294
+In-Reply-To: <alpine.LRH.2.00.1201151322240.1430@tundra.namei.org>
+References: <alpine.LRH.2.00.1201151322240.1430@tundra.namei.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 14 Jan 2012 18:54:12 -0800
+X-Google-Sender-Auth: BqElVdXYy-q35fYTxFtRsH3bnq0
+Message-ID: <CA+55aFwZxQkjmB6Gw7+MCY7DmyJtXjz+D6aGA7kA0X4q+qNd-g@mail.gmail.com>
+Subject: Re: [GIT] Security updates for 3.3: SELinux
+To: James Morris <jmorris@namei.org>
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Happy New Year,
+On Sat, Jan 14, 2012 at 6:25 PM, James Morris <jmorris@namei.org> wrote:
+>
+>  git://selinuxproject.org/~jmorris/linux-security for-linus
 
-We waited to hear from you last year but i guess you were unable to come up with the ($1,600.00) transfer fees in other to release your $500k Lottery winning.At this point I'm willing to assist you with the $1,600.00 transfer fees, YES; you dont have to pay for the charges anymore  from your pocket as I will have my associate overnight you a Certified check of $1,900.00 for you to cash and transfer $1,600.00 to our payment processing center in other to transfer the $500,000.00 win this week to your nominated account. You will compensate us with 10% after you have received your transfer. Provide your details below if we have a done deal.
+Ugh. I dislike how you had an "evil merge" with no explanation about
+*why* it was there. I just see the merge, and wonder what was going
+on.
 
-1, Full Name  :
-2, Physical Mailing Address :
-3, City :
-4, State :
-5, Zip-Code  :
-6, Home/Cell # :
-7, Bank Name :
+So I removed the merge, and tried it myself to see what the conflicts
+were and what was going on. Because that's exactly the kind of thing I
+do want to know about.
 
-Please use reference number 250-153 for our mutual convenience
+Please, if you do merges like this, please explain them. At the *very*
+least, explain them in the merge message itself if you do them
+yourself, but I actually prefer that you not do the merge at all, and
+instead explain what is going on so that I can see it and react to it.
 
-Sincerely,
-James Sellers
-Welfare officer,
-World Bank Creditors
-559-478-1045
+Now, if it's a trivial merge, it needs no explanation (although I also
+prefer that it not be done, so that I can see even those), but
+something like this where you actually need to resolve a semantic
+conflict that doesn't cause any real physical conflict at all I really
+prefer to be explained.
+
+                         Linus
