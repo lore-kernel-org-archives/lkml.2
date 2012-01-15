@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab2AOVgq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 16:36:46 -0500
-Received: from cc-smtpout2.netcologne.de ([89.1.8.212]:46888 "EHLO
-	cc-smtpout2.netcologne.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465Ab2AOVgp (ORCPT
+	id S1752548Ab2AOVh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 16:37:59 -0500
+Received: from mailout-eu.gmx.com ([213.165.64.42]:53630 "HELO
+	mailout-eu.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752465Ab2AOVh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 16:36:45 -0500
-Date: Sun, 15 Jan 2012 22:30:05 +0100
-From: Kurt Garloff <kurt@garloff.de>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: stable@vger.kernel.org, Len Brown <lenb@kernel.org>
-Subject: [PATCH 0/3] ACPI SRAT: Disregard reserved PXM bits
-Message-ID: <20120115213005.GT12380@tpkurt2.garloff.de>
-Mail-Followup-To: Kurt Garloff <kurt@garloff.de>,
-	linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-	stable@vger.kernel.org, Len Brown <lenb@kernel.org>
+	Sun, 15 Jan 2012 16:37:58 -0500
+X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Jan 2012 16:37:57 EST
+X-Authenticated: #50610217
+X-Provags-ID: V01U2FsdGVkX1/hrox7aVvhtuv/9HfHDkQl0YteXx6CIFSDPd45Eh
+	wXBN2Sq8T9Tf8e
+From: Martin Nyhus <martin.nyhus@gmx.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+Subject: [next] Null pointer dereference in nouveau_vm_map_sg
+Date: Sun, 15 Jan 2012 22:31:08 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.41.4-1.fc15.x86_64; KDE/4.6.5; x86_64; ; )
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xr11uZXTBybZk4CB"
-Content-Disposition: inline
-X-Operating-System: Linux 2.6.32.46-0.3-default x86_64
-X-PGP-Info: on http://www.garloff.de/kurt/mykeys.pgp
-X-PGP-Key: 1024D/1C98774E
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201152231.08561.martin.nyhus@gmx.com>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In some cases mem will be null in nouveau_vm_map_sg, resulting in a crash
+at drivers/gpu/drm/nouveau/nouveau_vm.c:84. It seems to be easy enough to
+reproduce, so I can test patches if needed.
 
---xr11uZXTBybZk4CB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-this has been submitted thrice already -- and while it found a bit of
-friendly feedback, it has not been merged. It should be IMVHO, and I
-hope this time the right eyes see this flying by ...
-I should mention that it fixes a real problem (wrong affinities reported
-in sysfs and thus userspace high-perf compute code taking wrong
-decisions) and that this has been part of SUSE enterprise kernels since=20
-a few years now.
-It should also go right into stable IMVHO.
-
-Original description to follow ...
+	Martin
 
 
-ACPI specification says that the OS must disregard reserved bits.
-The x86_64 SRAT parser does not discard the upper 24 bits of the
-proximity_domain (pxm) in the acpi_srat_mem_affinity entries for
-SRAT v1 tables. (v2 has 32 bits wide fields, v1 only 8 bits.)
-This can lead to problems with poor BIOS implementations that failed
-to set reserved bytes to zero. (The ACPI spec is a bit vague here
-unfortunately.)
 
-This was also inconsistent: On x86-64 (srat_64.c), the=20
-_cpu_affinity does only use the low 8 bits of pxm, while the
-full 32 bits of _mem_affinity are consumed.
-In srat_32.c (x86), only 8bits are used (which is OK, a 32bit system
-with >256 PXMs does not seem reasonable at all).
-On ia64, the support of more than 8 bits was consistent between
-mem and cpu affinity entries, however it was dependent on "sn2"=20
-platform.
-
-The patch series has the following goals:
-* Make the kernel support consistently 8bits or 32bits for the
-  proximity domain
-* Make this dependent on the SRAT version; v1 =3D> 8bits, v2 =3D> 32bits.
-
-Overview over the patches:
-- [1/3] Store the SRAT table version value in acpi_srat_revision=20
-- [2/3] x86-64: Discard the upper 24 bits in mem_affinity if rev <=3D 1
-        and use upper 24bits in cpu_affinity if rev >=3D 2
-- [3/3] ia64: Also use upper 8/24bits if rev >=3D 2 (but leave logic to
-        enable on sn2 as well -- I don't know if sn2 reports v1 or v2
-        SRAT) Also add two __init decls in ia64 pxm accessors.
-
-Patch is against current git.
-
-Note: If you respond to this mail, please keep me in Cc -- I'm not
-subscribed to LKML these days.
-
-Cheers,
---=20
-Kurt Garloff <kurt@garloff.de>  [Koeln/Greven]
-
-
---xr11uZXTBybZk4CB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-
-iD8DBQFPE0VdxmLh6hyYd04RAkoxAJ9ZtQwFcjDW8swwfuaAJ0KFA2yBUwCgrrZ4
-Lo2UgdwS6bGhRLyMOuvDBYA=
-=LLnV
------END PGP SIGNATURE-----
-
---xr11uZXTBybZk4CB--
+[  216.546584] BUG: unable to handle kernel NULL pointer dereference at 00000000000000d0
+[  216.546613] IP: [<ffffffff814a87ec>] nouveau_vm_map_sg+0x2c/0x130
+[  216.546631] PGD 5b155067 PUD 5ab71067 PMD 0 
+[  216.546647] Oops: 0000 [#1] SMP 
+[  216.546659] CPU 1 
+[  216.546664] Modules linked in: tun iwl4965 iwlegacy mac80211 cfg80211 tg3 psmouse rtc_cmos evdev ehci_hcd uhci_hcd usbcore usb_common [last unloaded: scsi_wait_scan]
+[  216.546721] 
+[  216.546727] Pid: 3327, comm: Xorg Not tainted 3.2.0-next-20120113 #56 Dell Inc. XPS M1330                       /0PU073
+[  216.546749] RIP: 0010:[<ffffffff814a87ec>]  [<ffffffff814a87ec>] nouveau_vm_map_sg+0x2c/0x130
+[  216.546770] RSP: 0018:ffff88005b0c9858  EFLAGS: 00010246
+[  216.546780] RAX: ffff88005bf84620 RBX: ffff88005ab08d20 RCX: 0000000000000000
+[  216.546791] RDX: 0000000000000001 RSI: 0000000000000000 RDI: 0000000000000000
+[  216.546802] RBP: ffff88005b0c98a8 R08: 0000000000000000 R09: 0000000000000000
+[  216.546813] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000004000
+[  216.546823] R13: ffff88005bf84dc8 R14: ffff88007838c000 R15: 0000000000000000
+[  216.546835] FS:  00007f5f728a8880(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
+[  216.546848] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  216.546857] CR2: 00000000000000d0 CR3: 000000006c1bb000 CR4: 00000000000006e0
+[  216.546869] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  216.546880] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  216.546892] Process Xorg (pid: 3327, threadinfo ffff88005b0c8000, task ffff8800655da180)
+[  216.546904] Stack:
+[  216.546909]  ffff88005b0c9960 ffff880037180368 0000000000000000 0000000000000000
+[  216.546930]  ffff88005b0c98d8 ffff88005bf84dc8 ffff88005b0c9960 ffff88007838c240
+[  216.546949]  ffff88007838c000 0000000000000000 ffff88005b0c98d8 ffffffff81481bdf
+[  216.546969] Call Trace:
+[  216.546979]  [<ffffffff81481bdf>] nouveau_bo_move_ntfy+0x7f/0xb0
+[  216.546991]  [<ffffffff81470614>] ttm_bo_handle_move_mem+0x204/0x3d0
+[  216.547003]  [<ffffffff8147099d>] ttm_bo_evict+0x1bd/0x2a0
+[  216.547015]  [<ffffffff81460de7>] ? drm_mm_kmalloc+0x37/0xd0
+[  216.547027]  [<ffffffff81470bf1>] ttm_mem_evict_first+0x171/0x230
+[  216.547039]  [<ffffffff814714ed>] ttm_bo_mem_space+0x30d/0x420
+[  216.547056]  [<ffffffff814716e8>] ttm_bo_move_buffer+0xe8/0x160
+[  216.547069]  [<ffffffff8108df2b>] ? __lock_release+0x6b/0xe0
+[  216.547080]  [<ffffffff81460de7>] ? drm_mm_kmalloc+0x37/0xd0
+[  216.547091]  [<ffffffff81471847>] ttm_bo_validate+0xe7/0xf0
+[  216.547102]  [<ffffffff81471a24>] ttm_bo_init+0x1d4/0x2a0
+[  216.547113]  [<ffffffff81482481>] ? nouveau_bo_new+0x51/0x1c0
+[  216.547124]  [<ffffffff8148258c>] nouveau_bo_new+0x15c/0x1c0
+[  216.547135]  [<ffffffff81481eb0>] ? nouveau_ttm_tt_create+0x80/0x80
+[  216.547148]  [<ffffffff81338bba>] ? avc_has_perm_noaudit+0xfa/0x290
+[  216.547160]  [<ffffffff81485cf3>] nouveau_gem_new+0x53/0x120
+[  216.548008]  [<ffffffff8108df81>] ? __lock_release+0xc1/0xe0
+[  216.548008]  [<ffffffff81112a97>] ? might_fault+0x57/0xb0
+[  216.548008]  [<ffffffff81485e29>] nouveau_gem_ioctl_new+0x69/0x170
+[  216.548008]  [<ffffffff81112a97>] ? might_fault+0x57/0xb0
+[  216.548008]  [<ffffffff814553e4>] drm_ioctl+0x444/0x510
+[  216.548008]  [<ffffffff81485dc0>] ? nouveau_gem_new+0x120/0x120
+[  216.548008]  [<ffffffff81150b17>] do_vfs_ioctl+0x87/0x330
+[  216.548008]  [<ffffffff8133b528>] ? selinux_file_ioctl+0x68/0x140
+[  216.548008]  [<ffffffff81150e51>] sys_ioctl+0x91/0xa0
+[  216.555939]  [<ffffffff817c1722>] system_call_fastpath+0x16/0x1b
+[  216.555939] Code: 48 89 e5 41 57 49 89 cf 41 56 41 55 49 89 fd 41 54 49 89 d4 ba 01 00 00 00 53 41 89 d3 48 83 ec 28 48 8b 47 20 48 8b 5f 18 31 ff <4c> 8b b1 d0 00 00 00 0f b6 48 30 44 8b 48 34 8b 83 20 01 00 00 
+[  216.555939] RIP  [<ffffffff814a87ec>] nouveau_vm_map_sg+0x2c/0x130
+[  216.555939]  RSP <ffff88005b0c9858>
+[  216.555939] CR2: 00000000000000d0
+[  216.581301] ---[ end trace 0d910003d5fb1cd8 ]---
