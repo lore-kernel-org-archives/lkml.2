@@ -1,95 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab2AOVh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 16:37:59 -0500
-Received: from mailout-eu.gmx.com ([213.165.64.42]:53630 "HELO
-	mailout-eu.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752465Ab2AOVh6 (ORCPT
+	id S1752592Ab2AOViK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 16:38:10 -0500
+Received: from cc-smtpout2.netcologne.de ([89.1.8.212]:47011 "EHLO
+	cc-smtpout2.netcologne.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab2AOViG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 16:37:58 -0500
-X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Jan 2012 16:37:57 EST
-X-Authenticated: #50610217
-X-Provags-ID: V01U2FsdGVkX1/hrox7aVvhtuv/9HfHDkQl0YteXx6CIFSDPd45Eh
-	wXBN2Sq8T9Tf8e
-From: Martin Nyhus <martin.nyhus@gmx.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Subject: [next] Null pointer dereference in nouveau_vm_map_sg
-Date: Sun, 15 Jan 2012 22:31:08 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.41.4-1.fc15.x86_64; KDE/4.6.5; x86_64; ; )
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+	Sun, 15 Jan 2012 16:38:06 -0500
+Date: Sun, 15 Jan 2012 22:37:59 +0100
+From: Kurt Garloff <kurt@garloff.de>
+To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Cc: stable@vger.kernel.org, lenb@kernel.org
+Subject: [PATCH 3/3]: Consider SRAT rev on ia64
+Message-ID: <20120115213759.GW12380@tpkurt2.garloff.de>
+Mail-Followup-To: Kurt Garloff <kurt@garloff.de>,
+	linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+	stable@vger.kernel.org, lenb@kernel.org
+References: <20120115213005.GT12380@tpkurt2.garloff.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201152231.08561.martin.nyhus@gmx.com>
-X-Y-GMX-Trusted: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ca0e2zgpnh8/XhnM"
+Content-Disposition: inline
+In-Reply-To: <20120115213005.GT12380@tpkurt2.garloff.de>
+X-Operating-System: Linux 2.6.32.46-0.3-default x86_64
+X-PGP-Info: on http://www.garloff.de/kurt/mykeys.pgp
+X-PGP-Key: 1024D/1C98774E
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases mem will be null in nouveau_vm_map_sg, resulting in a crash
-at drivers/gpu/drm/nouveau/nouveau_vm.c:84. It seems to be easy enough to
-reproduce, so I can test patches if needed.
 
-	Martin
-
+--Ca0e2zgpnh8/XhnM
+Content-Type: multipart/mixed; boundary="KzTpGdFWKkiGyjCs"
+Content-Disposition: inline
 
 
-[  216.546584] BUG: unable to handle kernel NULL pointer dereference at 00000000000000d0
-[  216.546613] IP: [<ffffffff814a87ec>] nouveau_vm_map_sg+0x2c/0x130
-[  216.546631] PGD 5b155067 PUD 5ab71067 PMD 0 
-[  216.546647] Oops: 0000 [#1] SMP 
-[  216.546659] CPU 1 
-[  216.546664] Modules linked in: tun iwl4965 iwlegacy mac80211 cfg80211 tg3 psmouse rtc_cmos evdev ehci_hcd uhci_hcd usbcore usb_common [last unloaded: scsi_wait_scan]
-[  216.546721] 
-[  216.546727] Pid: 3327, comm: Xorg Not tainted 3.2.0-next-20120113 #56 Dell Inc. XPS M1330                       /0PU073
-[  216.546749] RIP: 0010:[<ffffffff814a87ec>]  [<ffffffff814a87ec>] nouveau_vm_map_sg+0x2c/0x130
-[  216.546770] RSP: 0018:ffff88005b0c9858  EFLAGS: 00010246
-[  216.546780] RAX: ffff88005bf84620 RBX: ffff88005ab08d20 RCX: 0000000000000000
-[  216.546791] RDX: 0000000000000001 RSI: 0000000000000000 RDI: 0000000000000000
-[  216.546802] RBP: ffff88005b0c98a8 R08: 0000000000000000 R09: 0000000000000000
-[  216.546813] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000004000
-[  216.546823] R13: ffff88005bf84dc8 R14: ffff88007838c000 R15: 0000000000000000
-[  216.546835] FS:  00007f5f728a8880(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
-[  216.546848] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  216.546857] CR2: 00000000000000d0 CR3: 000000006c1bb000 CR4: 00000000000006e0
-[  216.546869] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  216.546880] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  216.546892] Process Xorg (pid: 3327, threadinfo ffff88005b0c8000, task ffff8800655da180)
-[  216.546904] Stack:
-[  216.546909]  ffff88005b0c9960 ffff880037180368 0000000000000000 0000000000000000
-[  216.546930]  ffff88005b0c98d8 ffff88005bf84dc8 ffff88005b0c9960 ffff88007838c240
-[  216.546949]  ffff88007838c000 0000000000000000 ffff88005b0c98d8 ffffffff81481bdf
-[  216.546969] Call Trace:
-[  216.546979]  [<ffffffff81481bdf>] nouveau_bo_move_ntfy+0x7f/0xb0
-[  216.546991]  [<ffffffff81470614>] ttm_bo_handle_move_mem+0x204/0x3d0
-[  216.547003]  [<ffffffff8147099d>] ttm_bo_evict+0x1bd/0x2a0
-[  216.547015]  [<ffffffff81460de7>] ? drm_mm_kmalloc+0x37/0xd0
-[  216.547027]  [<ffffffff81470bf1>] ttm_mem_evict_first+0x171/0x230
-[  216.547039]  [<ffffffff814714ed>] ttm_bo_mem_space+0x30d/0x420
-[  216.547056]  [<ffffffff814716e8>] ttm_bo_move_buffer+0xe8/0x160
-[  216.547069]  [<ffffffff8108df2b>] ? __lock_release+0x6b/0xe0
-[  216.547080]  [<ffffffff81460de7>] ? drm_mm_kmalloc+0x37/0xd0
-[  216.547091]  [<ffffffff81471847>] ttm_bo_validate+0xe7/0xf0
-[  216.547102]  [<ffffffff81471a24>] ttm_bo_init+0x1d4/0x2a0
-[  216.547113]  [<ffffffff81482481>] ? nouveau_bo_new+0x51/0x1c0
-[  216.547124]  [<ffffffff8148258c>] nouveau_bo_new+0x15c/0x1c0
-[  216.547135]  [<ffffffff81481eb0>] ? nouveau_ttm_tt_create+0x80/0x80
-[  216.547148]  [<ffffffff81338bba>] ? avc_has_perm_noaudit+0xfa/0x290
-[  216.547160]  [<ffffffff81485cf3>] nouveau_gem_new+0x53/0x120
-[  216.548008]  [<ffffffff8108df81>] ? __lock_release+0xc1/0xe0
-[  216.548008]  [<ffffffff81112a97>] ? might_fault+0x57/0xb0
-[  216.548008]  [<ffffffff81485e29>] nouveau_gem_ioctl_new+0x69/0x170
-[  216.548008]  [<ffffffff81112a97>] ? might_fault+0x57/0xb0
-[  216.548008]  [<ffffffff814553e4>] drm_ioctl+0x444/0x510
-[  216.548008]  [<ffffffff81485dc0>] ? nouveau_gem_new+0x120/0x120
-[  216.548008]  [<ffffffff81150b17>] do_vfs_ioctl+0x87/0x330
-[  216.548008]  [<ffffffff8133b528>] ? selinux_file_ioctl+0x68/0x140
-[  216.548008]  [<ffffffff81150e51>] sys_ioctl+0x91/0xa0
-[  216.555939]  [<ffffffff817c1722>] system_call_fastpath+0x16/0x1b
-[  216.555939] Code: 48 89 e5 41 57 49 89 cf 41 56 41 55 49 89 fd 41 54 49 89 d4 ba 01 00 00 00 53 41 89 d3 48 83 ec 28 48 8b 47 20 48 8b 5f 18 31 ff <4c> 8b b1 d0 00 00 00 0f b6 48 30 44 8b 48 34 8b 83 20 01 00 00 
-[  216.555939] RIP  [<ffffffff814a87ec>] nouveau_vm_map_sg+0x2c/0x130
-[  216.555939]  RSP <ffff88005b0c9858>
-[  216.555939] CR2: 00000000000000d0
-[  216.581301] ---[ end trace 0d910003d5fb1cd8 ]---
+--KzTpGdFWKkiGyjCs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+ia64 did handle the PXM fields almost consistently, but depending on=20
+sgi's sn2 platform. This patch leaves the sn2 logic in, but does also
+use 16/32 bits for PXM if the SRAT has rev 2 or higher.
+
+This is patch 3/3.
+--=20
+Kurt Garloff <kurt@garloff.de>  [Koeln/Greven]
+
+
+--KzTpGdFWKkiGyjCs
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="acpi_srat-pxm-rev-ia64.patch"
+Content-Transfer-Encoding: quoted-printable
+
+=46rom: Kurt Garloff <kurt@garloff.de>
+Subject: Use SRAT table rev to use 8bit or 16/32bit PXM fields (ia64)
+References: bnc#503038
+
+In SRAT v1, we had 8bit proximity domain (PXM) fields; SRAT v2 provides
+32bits for these. The new fields were reserved before.
+According to the ACPI spec, the OS must disregrard reserved fields.
+
+ia64 did handle the PXM fields almost consistently, but depending on=20
+sgi's sn2 platform. This patch leaves the sn2 logic in, but does also
+use 16/32 bits for PXM if the SRAT has rev 2 or higher.
+
+The patch also adds __init to the two pxm accessor functions, as they
+access __initdata now and are called from an __init function only anyway.
+
+Note that the code only uses 16 bits for the PXM field in the processor
+proximity field; the patch does not address this as 16 bits are more than
+enough.
+
+This is patch 3/3.
+
+Signed-off-by: Kurt Garloff <kurt@garloff.de>
+
+---
+ arch/ia64/kernel/acpi.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+Index: linux-2.6.git/arch/ia64/kernel/acpi.c
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+--- linux-2.6.git.orig/arch/ia64/kernel/acpi.c
++++ linux-2.6.git/arch/ia64/kernel/acpi.c
+@@ -428,24 +428,26 @@ static u32 __devinitdata pxm_flag[PXM_FL
+ #define pxm_bit_test(bit)	(test_bit(bit,(void *)pxm_flag))
+ static struct acpi_table_slit __initdata *slit_table;
+ cpumask_t early_cpu_possible_map =3D CPU_MASK_NONE;
+=20
+-static int get_processor_proximity_domain(struct acpi_srat_cpu_affinity *p=
+a)
++static int __init
++get_processor_proximity_domain(struct acpi_srat_cpu_affinity *pa)
+ {
+ 	int pxm;
+=20
+ 	pxm =3D pa->proximity_domain_lo;
+-	if (ia64_platform_is("sn2"))
++	if (ia64_platform_is("sn2") || acpi_srat_revision >=3D 2)
+ 		pxm +=3D pa->proximity_domain_hi[0] << 8;
+ 	return pxm;
+ }
+=20
+-static int get_memory_proximity_domain(struct acpi_srat_mem_affinity *ma)
++static int __init
++get_memory_proximity_domain(struct acpi_srat_mem_affinity *ma)
+ {
+ 	int pxm;
+=20
+ 	pxm =3D ma->proximity_domain;
+-	if (!ia64_platform_is("sn2"))
++	if (!ia64_platform_is("sn2") && acpi_srat_revision <=3D 1)
+ 		pxm &=3D 0xff;
+=20
+ 	return pxm;
+ }
+
+--KzTpGdFWKkiGyjCs--
+
+--Ca0e2zgpnh8/XhnM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iD8DBQFPE0c3xmLh6hyYd04RAmL4AJwIa4CFlg1Ewh9PzxiHQOJlBsg37gCfTTi3
+uVyDUqTDGC4yoqZdvWy6jF0=
+=KtDT
+-----END PGP SIGNATURE-----
+
+--Ca0e2zgpnh8/XhnM--
