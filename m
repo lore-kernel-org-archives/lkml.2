@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121Ab2AOMCv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 07:02:51 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38656 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab2AOMCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 07:02:50 -0500
-From: xiyou.wangcong@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [Patch] x86: add arch/x86/tools/insn_sanity to .gitignore
-Date: Sun, 15 Jan 2012 20:02:17 +0800
-Message-Id: <1326628937-27609-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.7.7.5
+	id S1751167Ab2AOMEK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 07:04:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34702 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761Ab2AOMEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 07:04:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] ARM: Fix regression caused by ARCH_NR_GPIOS removal
+Date: Sun, 15 Jan 2012 13:07:36 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+References: <201201150033.25885.rjw@sisk.pl> <20120114233626.GA11769@n2100.arm.linux.org.uk>
+In-Reply-To: <20120114233626.GA11769@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201151307.36813.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After compiling kernel, I got:
+On Sunday, January 15, 2012, Russell King - ARM Linux wrote:
+> On Sun, Jan 15, 2012 at 12:33:25AM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > Commit 3dea19e826da3dd43b3dc308aca299c0b7263c6b (ARM: 7244/1:
+> > mach-shmobile: Use CONFIG_ARCH_NR_GPIO) removed ARCH_NR_GPIOS
+> > and introduced ARCH_NR_GPIO instead without changing the users
+> > of that symbol.  As a result, the kernels including that commit
+> > don't boot on my test-bed Mackerel board.
+> > 
+> > Fix the problem by defining ARCH_NR_GPIOS again.
+> 
+> I'm aware of it, and have:
+> 
+> commit ca95023e7521729d3ace6fb3b9c53281c510a18c
+> Author: Stephen Warren <swarren@nvidia.com>
+> Date:   Thu Jan 5 21:36:27 2012 +0100
+> 
+>     ARM: 7271/1: Fix typo in conversion of ARCH_NR_GPIOS to Kconfig
+>     
+>     Commit 44986ab "ARM: 7240/1: Make ARCH_NR_GPIO a Kconfig variable"
+>     spelled ARCH_NR_GPIOS as ARCH_NR_GPIO, hence making the change
+>     ineffective. This change fixes that.
+>     
+>     Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>     Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> 
+> already queued up.
 
-	% git status
-	# On branch master
-	# Untracked files:
-	#   (use "git add <file>..." to include in what will be committed)
-	#
-	#	arch/x86/tools/insn_sanity
-	nothing added to commit but untracked files present (use "git add" to track)
+Cool, thanks!
 
-it should be added to .gitignore.
-
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-
----
-diff --git a/arch/x86/.gitignore b/arch/x86/.gitignore
-index 0280790..7cab8c0 100644
---- a/arch/x86/.gitignore
-+++ b/arch/x86/.gitignore
-@@ -1,3 +1,4 @@
- boot/compressed/vmlinux
- tools/test_get_len
-+tools/insn_sanity
- 
+Rafael
