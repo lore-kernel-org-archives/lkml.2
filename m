@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348Ab2AOPmm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 10:42:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42875 "EHLO
+	id S1751338Ab2AOPu6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 10:50:58 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57172 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab2AOPmk (ORCPT
+	with ESMTP id S1750933Ab2AOPu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 10:42:40 -0500
-Date: Sun, 15 Jan 2012 21:11:07 +0530
-From: Rabin Vincent <rabin@rab.in>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Chanho Min <chanho0207@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/backing-dev.c: fix crash when USB/SCSI device is
- detached
-Message-ID: <20120115153838.GA4279@debian>
-References: <CAOAMb1AUHV6mHwkUbX4+0wfOJpnMuVj_vr9jvb=h-Q4+6HKFzg@mail.gmail.com>
- <CAH+eYFB8xBPLJdN+jfqpESsqjkxdeRQD7oyfU8qHewzfmbqHow@mail.gmail.com>
- <20120115125853.GA9234@localhost>
+	Sun, 15 Jan 2012 10:50:56 -0500
+Message-ID: <4F12F5DD.3030904@gmail.com>
+Date: Sun, 15 Jan 2012 07:50:53 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120115125853.GA9234@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev@kernel.org, linux-wireless@vger.kernel.org
+Subject: ath9k timeouts with the current Mainline
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 15, 2012 at 08:58:53PM +0800, Wu Fengguang wrote:
-> On Sun, Jan 15, 2012 at 03:58:43PM +0530, Rabin Vincent wrote:
-> > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> > index 71034f4..a39ad70 100644
-> > --- a/mm/backing-dev.c
-> > +++ b/mm/backing-dev.c
-> > @@ -318,7 +318,7 @@ static void wakeup_timer_fn(unsigned long data)
-> >  	if (bdi->wb.task) {
-> >  		trace_writeback_wake_thread(bdi);
-> >  		wake_up_process(bdi->wb.task);
-> > -	} else {
-> > +	} else if (bdi->dev) {
-> >  		/*
-> >  		 * When bdi tasks are inactive for long time, they are killed.
-> >  		 * In this case we have to wake-up the forker thread which
-> > @@ -584,6 +584,8 @@ EXPORT_SYMBOL(bdi_register_dev);
-> >   */
-> >  static void bdi_wb_shutdown(struct backing_dev_info *bdi)
-> >  {
-> > +	struct task_struct *task = NULL;
-> 
-> NULL not necessary?
+not sure if the Internet provider just sucks, or I am hitting a wireless 
+issue. basically my connection times out after a few mins of being 
+up.(streaming radio is not solid).
 
-Will fix.
+dmesg shows:
 
-Also, I notice another problem here.  bdi->dev should be made NULL before the
-device is unregistered, not after:
+[ 3322.827549] wlan1: authenticate with d8:c7:c8:a2:0f:40 (try 1)
+[ 3322.831778] wlan1: d8:c7:c8:a2:0f:40 denied authentication (status 17)
+[ 3386.310128] wlan1: authenticate with d8:c7:c8:a2:0d:80 (try 1)
+[ 3386.312010] wlan1: d8:c7:c8:a2:0d:80 denied authentication (status 17)
+[ 3389.481771] wlan1: direct probe to 00:18:0a:02:19:c3 (try 1/3)
+[ 3389.681095] wlan1: direct probe to 00:18:0a:02:19:c3 (try 2/3)
+[ 3389.881094] wlan1: direct probe to 00:18:0a:02:19:c3 (try 3/3)
+[ 3390.081092] wlan1: direct probe to 00:18:0a:02:19:c3 timed out
+[ 3458.618065] wlan1: direct probe to d8:c7:c8:a2:0d:80 (try 1/3)
+[ 3458.818079] wlan1: direct probe to d8:c7:c8:a2:0d:80 (try 2/3)
+[ 3459.018080] wlan1: direct probe to d8:c7:c8:a2:0d:80 (try 3/3)
+[ 3459.218058] wlan1: direct probe to d8:c7:c8:a2:0d:80 timed out
+[ 3466.518579] wlan1: direct probe to d8:c7:c8:a2:0d:80 (try 1/3)
+[ 3466.718111] wlan1: direct probe to d8:c7:c8:a2:0d:80 (try 2/3)
+[ 3466.918074] wlan1: direct probe to d8:c7:c8:a2:0d:80 (try 3/3)
+[ 3467.118077] wlan1: direct probe to d8:c7:c8:a2:0d:80 timed out
+[ 3474.424860] wlan1: authenticate with d8:c7:c8:a2:0d:80 (try 1)
+[ 3474.449681] wlan1: authenticated
+[ 3474.457133] wlan1: associate with d8:c7:c8:a2:0d:80 (try 1)
+[ 3474.471059] wlan1: RX AssocResp from d8:c7:c8:a2:0d:80 (capab=0x421 
+status=0 aid=13)
+[ 3474.471067] wlan1: associated
+[ 3474.471075] wlan1: moving STA d8:c7:c8:a2:0d:80 to state 1
+[ 3474.471080] wlan1: moving STA d8:c7:c8:a2:0d:80 to state 2
+[ 3474.473809] wlan1: moving STA d8:c7:c8:a2:0d:80 to state 3
+[ 3484.546077] wlan1: no IPv6 routers present
 
-		if (!bdi_cap_flush_forker(bdi))
-			bdi_wb_shutdown(bdi);
-		bdi_debug_unregister(bdi);
-		device_unregister(bdi->dev);
-		bdi->dev = NULL;
 
+card is:
+03:00.0 Network controller: Atheros Communications Inc. AR5008 Wireless 
+Network Adapter (rev 01)
+
+has anybody else seen/experienced anything like this?
+
+Justin P. Mattock
