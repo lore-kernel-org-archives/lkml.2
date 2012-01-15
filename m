@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab2AOOpZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 09:45:25 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60219 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab2AOOpX convert rfc822-to-8bit (ORCPT
+	id S1753445Ab2AOPC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 10:02:27 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44670 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab2AOPCZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 09:45:23 -0500
+	Sun, 15 Jan 2012 10:02:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <CANudz+uoY8pxCVEeKFhorfb0nqsD+re_Ai-6Ruz2b3ExtJChSA@mail.gmail.com>
-References: <CANudz+um5XG2Qua6a1O7ENnBeYcfiG5mOyyA6-=ctccXMYEFhg@mail.gmail.com>
-	<CANudz+uoY8pxCVEeKFhorfb0nqsD+re_Ai-6Ruz2b3ExtJChSA@mail.gmail.com>
-Date: Sun, 15 Jan 2012 22:45:23 +0800
-Message-ID: <CANudz+s9wTjWbTYyN292x1Ksh6POh63n-_P+6LX18gQhHmxULQ@mail.gmail.com>
-Subject: Re: Kernel coredump about kblockd deadlock
-From: loody <miloody@gmail.com>
-To: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4F12A2E4.6050304@redhat.com>
+References: <1326566048-6756-1-git-send-email-namit@cs.technion.ac.il>
+	<4F12A2E4.6050304@redhat.com>
+Date: Sun, 15 Jan 2012 17:02:23 +0200
+X-Google-Sender-Auth: x71kIsAK4EoHOSwWVNWFJxEo-Hs
+Message-ID: <CAKLkAJ75xb=py0DxP6B6777z0muuyneoua-aBTuH9KnU-u5u+Q@mail.gmail.com>
+Subject: Re: [PATCH] KVM: Fix MOVSX emulation
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi all:
-2012/1/15 loody <miloody@gmail.com>:
-> Dear all:
-> I use kernel 2.6.35.13 and cpu for mips
-> When I plug in/out usb stick for several times I got following warning
-> messages as I append at the end of mail.
->
-> is it possible correlate to below issue
-> http://thread.gmane.org/gmane.linux.kernel/1177383/focus=69879
-I want to reproduce the issue of the thread above in my platform.
-But I have no idea about:
-1  dm-multipath
-2. dm-round-robin
+Ok. I will include MOVSXD as well in the future patch.
 
-are they additional module I need to download or it already include
-kernel source?
-if the later, which config I shout select?
-
-Appreciate your help,
-
->
->
-> INFO: task kblockd/0:10 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> kblockd/0        D [87016a78] 802d1e48     0    10 0x00100000      2
->          11       9      (kernel thread)
-> Stack : 00000001 80107148 8562ed80 800e9098 00000001 00000001 7fffffff 00000000
->        00000000 7fffffff 87053d38 ffffffff 87053d38 87053d28 872ff00c 802d1e48
->        00000001 00000009 00000102 80071c80 00005965 0056addf 00005965 00000001
->        00000000 00000000 7fffffff 80020c64 00000000 00000002 00000000 00000000
->        7fffffff 802d1ca8 00000000 80024538 00000004 0000000a 00000001 87016a78
->        ...
-> Call Trace:
-> [<802d1764>] schedule+0x648/0x70c from[<802d1e48>] schedule_timeout+0x30/0x324
-> [<802d1e48>] schedule_timeout+0x30/0x324 from[<802d1ca8>]
-> wait_for_common+0xf8/0x1c0
-> [<802d1ca8>] wait_for_common+0xf8/0x1c0 from[<80044400>]
-> __cancel_work_timer+0x188/0x210
-> [<80044400>] __cancel_work_timer+0x188/0x210 from[<801a48c4>]
-> blk_cleanup_queue+0x18/0x6c
-> [<801a48c4>] blk_cleanup_queue+0x18/0x6c from[<802098f4>]
-> scsi_device_dev_release_usercontext+0x174/0x1e4
-> [<802098f4>] scsi_device_dev_release_usercontext+0x174/0x1e4
-> from[<80043aa8>] execute_in_process_context+0x30/0x5c
-> [<80043aa8>] execute_in_process_context+0x30/0x5c from[<801eeda8>]
-> device_release+0x54/0x90
-> [<801eeda8>] device_release+0x54/0x90 from[<801b0180>] kobject_release+0x70/0xa8
-> [<801b0180>] kobject_release+0x70/0xa8 from[<801b17bc>] kref_put+0x80/0x98
-> [<801b17bc>] kref_put+0x80/0x98 from[<80203c04>] scsi_request_fn+0x51c/0x61c
-> [<80203c04>] scsi_request_fn+0x51c/0x61c from[<801a482c>]
-> generic_unplug_device+0x38/0x7c
-> [<801a482c>] generic_unplug_device+0x38/0x7c from[<80043e90>]
-> worker_thread+0x1ec/0x2d4
-> [<80043e90>] worker_thread+0x1ec/0x2d4 from[<800482c4>] kthread+0x7c/0x84
-> [<800482c4>] kthread+0x7c/0x84 from[<80007818>] kernel_thread_helper+0x10/0x18
->
-> -------------------------------------------------------------------------------------
-> hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
-> hub 1-0:1.0: port 1, status 0000, change 0001, 12 Mb/s
-> usb 1-1: USB disconnect, address 35
-> usb 1-1: unregistering device
-> usb 1-1: unregistering interface 1-1:1.0
-> usb 1-1: usb_disable_device nuking all URBs
-> hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x0
-> hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
-> ehci-ehci ehci-ehci.0: GetStatus port 1 status 000803 sig=j CSC CONNECT
-> hub 1-0:1.0: port 1, status 0401, change 0001, 480 Mb/s
-> hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x401
-> ehci-ehci ehci-ehci.0: port 1 high speed
-> ehci-ehci ehci-ehci.0: GetStatus port 1 status 00000d sig=se0 PEC PE CONNECT
-> usb 1-1: new high speed USB device using ehci-ehci and address 36
-> ehci-ehci ehci-ehci.0: port 1 high speed
-> ehci-ehci ehci-ehci.0: GetStatus port 1 status 00000d sig=se0 PEC PE CONNECT
-> usb 1-1: default language 0x0409
-> usb 1-1: udev 36, busnum 1, minor = 35
-
--- 
 Regards,
+Nadav
+
+On Sun, Jan 15, 2012 at 11:56 AM, Avi Kivity <avi@redhat.com> wrote:
+> On 01/14/2012 08:34 PM, Nadav Amit wrote:
+>> The destination register of MOVSX should be decoded similarily to MOVZX.
+>>
+>> Signed-off-by: Nadav Amit <nadav.amit@gmail.com>
+>> ---
+>>  arch/x86/kvm/emulate.c |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+>> index 05a562b..7644a83 100644
+>> --- a/arch/x86/kvm/emulate.c
+>> +++ b/arch/x86/kvm/emulate.c
+>> @@ -3553,7 +3553,8 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+>>       case OpReg:
+>>               decode_register_operand(ctxt, op,
+>>                        op == &ctxt->dst &&
+>> -                      ctxt->twobyte && (ctxt->b == 0xb6 || ctxt->b == 0xb7));
+>> +                      ctxt->twobyte && ((ctxt->b & 0xfe) == 0xb6 ||
+>> +                             (ctxt->b & 0xfe) == 0xbe));
+>>               break;
+>>       case OpImmUByte:
+>>               rc = decode_imm(ctxt, op, 1, false);
+>
+> Please post a unit test for this.  See
+> git://git.kernel.org/pub/scm/virt/kvm/kvm-unit-tests.git x86/emulate.c.
+>
+> --
+> error compiling committee.c: too many arguments to function
+>
