@@ -1,165 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab2AOPIJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 10:08:09 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47624 "EHLO
+	id S1751058Ab2AOPON (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 10:14:13 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47799 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752653Ab2AOPIH (ORCPT
+	by vger.kernel.org with ESMTP id S1750732Ab2AOPOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 10:08:07 -0500
-Date: Sun, 15 Jan 2012 15:07:07 +0000
+	Sun, 15 Jan 2012 10:14:12 -0500
+Date: Sun, 15 Jan 2012 15:14:03 +0000
 From: Will Deacon <will.deacon@arm.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "moussaba@micron.com" <moussaba@micron.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [RFC PATCH] proc: clear_refs: do not clear reserved pages
-Message-ID: <20120115150706.GA7474@mudshark.cambridge.arm.com>
-References: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
- <alpine.LFD.2.02.1201131748380.2722@xanadu.home>
- <alpine.LSU.2.00.1201140901260.2381@eggly.anvils>
+To: John Stultz <john.stultz@linaro.org>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Unexpected clocksource overflow in nsec conversion
+Message-ID: <20120115151403.GB7474@mudshark.cambridge.arm.com>
+References: <20120113162132.GH4176@mudshark.cambridge.arm.com>
+ <1326484191.4416.16.camel@work-vm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1201140901260.2381@eggly.anvils>
+In-Reply-To: <1326484191.4416.16.camel@work-vm>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-
-Thanks for the explanation.
-
-On Sat, Jan 14, 2012 at 05:36:37PM +0000, Hugh Dickins wrote:
-> On Fri, 13 Jan 2012, Nicolas Pitre wrote:
-> > Given Andrew's answer, this should be fine wrt Russell's concern.
+On Fri, Jan 13, 2012 at 07:49:51PM +0000, John Stultz wrote:
+> On Fri, 2012-01-13 at 16:21 +0000, Will Deacon wrote:
+> > I'm having some problems with sched_clock where I experience unexpected
+> > overflow due to clocksource->mult being set too high for the width of my
+> > clocksource.
 > > 
-> > Acked-by: Nicolas Pitre <nico@linaro.org>
+> > My clocksource parameters are:
+> > 
+> > 	Frequency:	100Mhz
+> > 	Width:		56 bits (i.e. mask of (1 << 56) - 1)
+> > 
+> > 	[ following calculated by clocks_calc_mult_shift ]
+> > 	Shift:		24
+> > 	Mult:		0x0a000000 (167772160)
 > 
-> Yes, it should be okay as an urgent fix for -stable.
-> But going forward, I doubt it's the right answer: comments below.
-
-Ok great, getting this into -stable ASAP would be much appreciated. Can
-somebody pick it up please?
-
-> Please, going forward, can you delete your vectors page code, and
-> use the gate_vma for it?  Extending it a little if it somehow does
-> not satsify your need.  Or else can you please explain (ec706dab
-> does not) why the gate_vma does not suit you.
 > 
-> I'm not saying the horrible hack gate_vma mechanism is any safer
-> than yours (the latest bug in it was fixed all of 13 days ago).
-> But I am saying that one horrible hack is safer than two.
+> Sigh. Yea. In the past, occasional sched_clock rollovers weren't an
+> issue, the idea was it was an potentially unreliable clock, but really
+> fast, and any errors would be fleeting. But over time sched_clock's
+> requirement have grown.
+> 
+> I think you probably need to split the sched clock mult/shift pair from
+> the clocksource, as they really have different requirements.  The
+> clocksource needs to have a larger shift value, so we can make fine
+> grained adjustments to keep accurate time, where as sched_clock should
+> have a low shift value to avoid frequent overflows.
 
-Something like what I've got below seems to do the trick, and clear_refs
-also seems to behave when it's presented with the gate_vma. If Russell is
-happy with the approach, we can move to the gate_vma in the future.
+Ah, ok then. The hardware counter I'm using is guaranteed not to roll over
+within 40 years, so I'm happy to ignore hardware overflow at the moment. So
+if I avoid using clocksource_cyc2ns from sched_clock then I can also avoid
+the large multiplier.
 
-Thanks,
+> > So, should we update the clocksource mask when forcing the maximum period
+> > to 600 seconds, or am I missing something?
+> 
+> No. The logic about is really focused around timekeeping requirements,
+> not sched_clock. With timekeeping we periodicially accumulate time,
+> creating a new cycle_last base from which we generate cycle deltas with.
+> This keeps the cycle portion that is multiplied small.
+
+Right - as long as the timekeeping stuff only uses periods of up to 10
+minutes then we're safe (rather than looking at the clocksource mask,
+for example).
+
+> Again, sched_clock doesn't accumulate, so when the counter gets large
+> enough, the multiply can overflow. On x86 we've split the multiply to
+> avoid this for now, but this doesn't help on other architectures where
+> the counter overflows.
+
+Given that the CPU I'm working with has hardware integer division, I guess I
+could just return ticks * (NSEC_PER_SEC / freq) in my sched clock and forget
+about the scaling maths?
+
+Cheers,
 
 Will
-
-
-    ARM: vectors: use gate_vma for vectors user mapping
-    
-    The current user mapping for the vectors page is inserted as a `horrible
-    hack vma' into each task via arch_setup_additional_pages. This causes
-    problems with the MM subsystem and vm_normal_page, as described here:
-    
-    https://lkml.org/lkml/2012/1/14/55
-    
-    Following the suggestion from Hugh in the above thread, this patch uses
-    the gate_vma for the vectors user mapping, therefore consolidating
-    the horrible hack VMAs into one.
-    
-    Signed-off-by: Will Deacon <will.deacon@arm.com>
-
-diff --git a/arch/arm/include/asm/elf.h b/arch/arm/include/asm/elf.h
-index 0e9ce8d..38050b1 100644
---- a/arch/arm/include/asm/elf.h
-+++ b/arch/arm/include/asm/elf.h
-@@ -130,8 +130,4 @@ struct mm_struct;
- extern unsigned long arch_randomize_brk(struct mm_struct *mm);
- #define arch_randomize_brk arch_randomize_brk
- 
--extern int vectors_user_mapping(void);
--#define arch_setup_additional_pages(bprm, uses_interp) vectors_user_mapping()
--#define ARCH_HAS_SETUP_ADDITIONAL_PAGES
--
- #endif
-diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
-index ca94653..e851aa3 100644
---- a/arch/arm/include/asm/page.h
-+++ b/arch/arm/include/asm/page.h
-@@ -151,6 +151,8 @@ extern void __cpu_copy_user_highpage(struct page *to, struct page *from,
- #define clear_page(page)	memset((void *)(page), 0, PAGE_SIZE)
- extern void copy_page(void *to, const void *from);
- 
-+#define __HAVE_ARCH_GATE_AREA 1
-+
- #include <asm/pgtable-2level-types.h>
- 
- #endif /* CONFIG_MMU */
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 3d0c6fb..c13b8f6 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -493,22 +493,40 @@ unsigned long arch_randomize_brk(struct mm_struct *mm)
- #ifdef CONFIG_MMU
- /*
-  * The vectors page is always readable from user space for the
-- * atomic helpers and the signal restart code.  Let's declare a mapping
-- * for it so it is visible through ptrace and /proc/<pid>/mem.
-+ * atomic helpers and the signal restart code. Insert it into the
-+ * gate_vma so that it is visible through ptrace and /proc/<pid>/mem.
-  */
-+static struct vm_area_struct gate_vma;
- 
--int vectors_user_mapping(void)
-+static int __init gate_vma_init(void)
- {
--	struct mm_struct *mm = current->mm;
--	return install_special_mapping(mm, 0xffff0000, PAGE_SIZE,
--				       VM_READ | VM_EXEC |
--				       VM_MAYREAD | VM_MAYEXEC |
--				       VM_ALWAYSDUMP | VM_RESERVED,
--				       NULL);
-+	gate_vma.vm_start	= 0xffff0000;
-+	gate_vma.vm_end		= 0xffff0000 + PAGE_SIZE;
-+	gate_vma.vm_page_prot	= PAGE_READONLY_EXEC;
-+	gate_vma.vm_flags	= VM_READ | VM_EXEC |
-+				  VM_MAYREAD | VM_MAYEXEC |
-+				  VM_ALWAYSDUMP;
-+	return 0;
-+}
-+arch_initcall(gate_vma_init);
-+
-+struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
-+{
-+	return &gate_vma;
-+}
-+
-+int in_gate_area(struct mm_struct *mm, unsigned long addr)
-+{
-+	return (addr >= gate_vma.vm_start) && (addr < gate_vma.vm_end);
-+}
-+
-+int in_gate_area_no_mm(unsigned long addr)
-+{
-+	return in_gate_area(NULL, addr);
- }
- 
- const char *arch_vma_name(struct vm_area_struct *vma)
- {
--	return (vma->vm_start == 0xffff0000) ? "[vectors]" : NULL;
-+	return (vma == &gate_vma) ? "[vectors]" : NULL;
- }
- #endif
-
