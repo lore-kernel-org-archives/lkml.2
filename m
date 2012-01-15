@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab2AORHx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 12:07:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:20210 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408Ab2AORHw convert rfc822-to-8bit (ORCPT
+	id S1751636Ab2AORZO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 12:25:14 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:61161 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab2AORZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 12:07:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="98767725"
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: javier Martin <javier.martin@vista-silicon.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: RE: [PATCH] fix starting of transfers in i.MX dma drivers
-Thread-Topic: [PATCH] fix starting of transfers in i.MX dma drivers
-Thread-Index: AQHMzrGw3WB1Qq2zkUSZqsw+djRl35YIUPOAgAVhVCA=
-Date: Sun, 15 Jan 2012 17:07:48 +0000
-Message-ID: <8D3F6266AEB6384E807C6FFC6FE195E39895F7@BGSMSX101.gar.corp.intel.com>
-References: <1326101570-3716-1-git-send-email-s.hauer@pengutronix.de>
- <CACKLOr0SuB2noPLjTjfRRCx1Q8v3Uf9D_WLgNMNiv02AbKVFHg@mail.gmail.com>
-In-Reply-To: <CACKLOr0SuB2noPLjTjfRRCx1Q8v3Uf9D_WLgNMNiv02AbKVFHg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 15 Jan 2012 12:25:12 -0500
+Message-ID: <1326648305.5287.78.camel@edumazet-laptop>
+Subject: Re: Hung task when calling clone() due to netfilter/slab
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, davem <davem@davemloft.net>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Date: Sun, 15 Jan 2012 18:25:05 +0100
+In-Reply-To: <1326632384.11711.3.camel@lappy>
+References: <1326558605.19951.7.camel@lappy>
+	 <1326561043.5287.24.camel@edumazet-laptop> <1326632384.11711.3.camel@lappy>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le dimanche 15 janvier 2012 à 14:59 +0200, Sasha Levin a écrit :
+> On Sat, 2012-01-14 at 18:10 +0100, Eric Dumazet wrote:
+> > Apparently SLUB calls sysfs_slab_add() from kmem_cache_create() while
+> > still holding slub_lock.
+> > 
+> > So if the task launched needs to "cat /proc/slabinfo" or anything
+> > needing slub_lock, its a deadlock.
 > 
-> Hi,
-> Vinod, are you OK with Sascha's patches?
-> I'm just waiting to resend memcpy support when they are merged.
-I am back from my vacation, with a huge amount of emails/patches to catch
-up, and am travelling this week. Would prefer you to send these next
-week, anyways all of these are late for current merge cycle...
+> I've made the following patch to test it, It doesn't look like it's
+> the correct solution, but it verifies that the problem is there (it
+> works well with the patch).
+> 
+> ---------------
+> 
+> From cc4874b491b8e5d9d1ea5bf2032413efdbddced8 Mon Sep 17 00:00:00 2001
+> From: Sasha Levin <levinsasha928@gmail.com>
+> Date: Sun, 15 Jan 2012 14:55:03 +0200
+> Subject: [PATCH] slab: Fix hang when creating sysfs entries
+> 
+> This patch fixes the hang which happens when we create a sysfs entry and call
+> back to userspace. If the usermode helper tries to do anything which involves
+> slub_lock we will hang since slub_lock is already held.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  mm/slub.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 4907563..6948327 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -5283,7 +5283,9 @@ static int sysfs_slab_add(struct kmem_cache *s)
+>  		kobject_put(&s->kobj);
+>  		return err;
+>  	}
+> +	up_write(&slub_lock);
+>  	kobject_uevent(&s->kobj, KOBJ_ADD);
+> +	down_write(&slub_lock);
+>  	if (!unmergeable) {
+>  		/* Setup first alias */
+>  		sysfs_slab_alias(s, s->name);
+> -- 
+> 1.7.8.3
+> 
+> 
 
---
-~Vinod
+Oh well, that cannot be right. Dont send official patches if you already
+know "it's not the correct solution", we already know where is the
+problem.
+
+It's _never_ right to release a lock for a short time without any
+additional checks. [ If it was right, the lock would be not needed ]
+
+As soon as the slub_lock is released, another thread can come and find
+the new kmem_cache.
+
+For example, it can destroy it, and your thread is going to access s
+while it was already freed.
+
+	sysfs_slab_alias(s, s->name); // crash
+
+
 
