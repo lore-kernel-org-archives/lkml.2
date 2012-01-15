@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab2AOKdj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 05:33:39 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57534
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751935Ab2AOKdg (ORCPT
+	id S1752499Ab2AOKiJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 05:38:09 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55273 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab2AOKiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 05:33:36 -0500
-Date: Sun, 15 Jan 2012 05:33:31 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
+	Sun, 15 Jan 2012 05:38:07 -0500
+Date: Sun, 15 Jan 2012 11:38:04 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Block drivers for 3.3-rc
-Message-ID: <20120115103331.GA31956@infradead.org>
-References: <4F12A1CC.50105@kernel.dk>
+        James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [GIT] Security subsystem updates for 3.3
+Message-ID: <20120115103804.GB6698@atrey.karlin.mff.cuni.cz>
+References: <alpine.LRH.2.00.1201091252220.18816@tundra.namei.org>
+ <CA+55aFwD2-bhd32L1SsjPQrpwOBhBdxTUaOj=oXN24vPwc+Wsg@mail.gmail.com>
+ <alpine.LRH.2.00.1201111834570.2966@tundra.namei.org>
+ <CA+55aFxecGt54RG3EX+LTQQx6ZXzYLOMRdgRmXTRDaD54JAVGg@mail.gmail.com>
+ <CALLzPKaSmpKot=bgm7qQ8a7J4-sxXLsMPrHz6Pe0SyzWpZp-yQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <4F12A1CC.50105@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALLzPKaSmpKot=bgm7qQ8a7J4-sxXLsMPrHz6Pe0SyzWpZp-yQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 15, 2012 at 10:52:12AM +0100, Jens Axboe wrote:
-> Hi Linus,
+> On Wed, Jan 11, 2012 at 4:51 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Tue, Jan 10, 2012 at 11:35 PM, James Morris <jmorris@namei.org> wrote:
+> >>> And "DIGSIG" is really a horrible config name. Did somebody run out of
+> >>> letters suddenly? Is there some global letter shortage that I haven't
+> >>> been told of and that we should do something about?
+> >>
+> >> Any objections to DIGITAL_SIGNATURE_API ?
+> >
+> > Sounds much better. Slightly more typing, but CONFIG_DIGSIG really
+> > didn't tell me anything and sounded like some odd new device to me.
+> >
+> >                          Linus
 > 
-> Please see below for the 3.3-rc1 block driver pull request.
-> 
-> Essentially two different categories here:
-> 
-> - Adds the driver for the Micron RealSSD P320 pci-express flash card.
+> Would just DIGITAL_SIGNATURE be enough?
 
-The REQ_FUA and REQ_FLUSH handling in it is still completely broken,
-with no attempt to fix it since it last came up.
+Actually, "CONFIG_SIGNATURE" should be enough.
 
-So a pretty clear NAK on that driver from me.
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
