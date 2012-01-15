@@ -1,120 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab2AOSNm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 13:13:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4887 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760Ab2AOSNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 13:13:41 -0500
-Date: Sun, 15 Jan 2012 19:07:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children
-	entry v5
-Message-ID: <20120115180721.GA23810@redhat.com>
-References: <20111228121407.GL27266@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111228121407.GL27266@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751921Ab2AOSWd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 13:22:33 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:40611 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750850Ab2AOSWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 13:22:31 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/+/2RDk4v++4DUGvGFt+SryiZqRzUe8h5+lkwrlW
+	B3U7POvCgqJCzo
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 1/4] staging/xgifb: Remove unsupported mode LCD_320x480
+Date: Sun, 15 Jan 2012 19:22:10 +0100
+Message-Id: <1326651733-9242-2-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1326651733-9242-1-git-send-email-peterhuewe@gmx.de>
+References: <1326651733-9242-1-git-send-email-peterhuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28, Cyrill Gorcunov wrote:
->
-> When we do checkpoint of a task we need to know the list of children
-> the task has but there is no easy way to make a reverse parent->children
-> chain from an arbitrary <pid> (while a parent pid is provided in "PPid"
-> field of /proc/<pid>/status).
+This patch removes the probed mode LCD_320x480 which isn't supported
+anyway since this mode falls through to the default (=invalid) mode in the
+XGIfb_validate_mode function (see line 529 ff. for details).
 
-Looks correct at first glance... But I'll try to recheck. I guess you need
-to resend anyway, I bet nobody can recall this patch ;)
+By removing this assignment, we can use the LCD_TYPEs from the sis
+driver without modifications.
 
-However I do not understand the ptrace_may_access() check at all.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/xgifb/XGI_main_26.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-> +static struct pid *
-> +get_children_pid(struct proc_pid_children_iter *iter, struct pid *pid_prev, loff_t pos)
-> +{
-> +	struct task_struct *start, *task;
-> +	struct pid *pid = NULL;
-> +
-> +	read_lock(&tasklist_lock);
-> +
-> +	start = pid_task(iter->pid_start, PIDTYPE_PID);
-> +	if (!start)
-> +		goto out;
-> +
-> +	/*
-> +	 * Lets try to continue searching this would speed
-> +	 * search significantly.
-> +	 */
-> +	if (pid_prev) {
-> +		task = pid_task(pid_prev, PIDTYPE_PID);
-> +		if (task && task->real_parent == start &&
-> +		    !(list_empty(&task->sibling))) {
-> +			/*
-> +			 * OK, ltes try the fastpath, we might
-> +			 * miss some freshly created children
-> +			 * here, but it was never promised to be
-> +			 * accurate.
-> +			 *
-> +			 * Also note if we have not enough rights
-> +			 * to access the next children pid we simply
-> +			 * fall into slow-search version.
-> +			 */
-
-Why we should try the slow-search path if ptrace_may_access() fails?
-
-> +			if (!list_is_last(&task->sibling, &start->children)) {
-> +				task = list_first_entry(&task->sibling,
-> +							struct task_struct, sibling);
-> +				if (ptrace_may_access(task, PTRACE_MODE_READ)) {
-> +					pid = get_pid(task_pid(task));
-> +					goto out;
-> +				}
-> +			} else
-> +				goto out;
-> +		}
-> +	}
-
-Well, this is cosmetic, but imho
-
-			if (list_is_last(...))
-				goto out;
-
-			task = list_first_entry(...);
-			...
-
-looks better.
-
-
-> +	list_for_each_entry(task, &start->children, sibling) {
-> +		if (pos-- == 0) {
-> +			if (ptrace_may_access(task, PTRACE_MODE_READ)) {
-> +				pid = get_pid(task_pid(task));
-> +				goto out;
-> +			} else {
-> +				/* Maybe we success with the next children */
-> +				pos++;
-
-Again. I simply can't understand what ptrace_may_access() actually
-means. Why do we use the possible child, not parent?
-
-IOW. I have no idea if we really need any security check at all.
-You can find the children pids without this patch anyway via.
-grep PPid /proc/*/status.
-
-But if you want ptrace_may_access/whatever, you should check
-ptrace_may_access(start), no?
-
-Oleg.
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 2502c49..c27dbf8 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -2118,10 +2118,13 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+ 			reg &= 0x0f;
+ 			hw_info->ulCRT2LCDType = XGI310paneltype[reg];
+ 
+-		} else {
++		}
++		#if 0
++		  else {
+ 			/* TW: FSTN/DSTN */
+ 			hw_info->ulCRT2LCDType = LCD_320x480;
+-		}
++		}	/* maybe we re-add this later on */
++		#endif
+ 	}
+ 
+ 	if ((hw_info->ujVBChipID == VB_CHIP_302B) ||
+-- 
+1.7.3.4
 
