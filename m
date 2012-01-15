@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2AOLgZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 06:36:25 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:35964 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab2AOLgY (ORCPT
+	id S1752950Ab2AOLhE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 06:37:04 -0500
+Received: from relay01.digicable.hu ([92.249.128.189]:46660 "EHLO
+	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab2AOLhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 06:36:24 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Neil Zhang <zhangwm@marvell.com>, Chao Xie <chao.xie@marvell.com>,
-        Felipe Balbi <balbi@ti.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] usb: mv-otg - Fix build if CONFIG_USB is not set
-Date: Sun, 15 Jan 2012 12:36:16 +0100
-Message-Id: <1326627376-12883-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 15 Jan 2012 06:37:03 -0500
+Message-ID: <4F12BA1F.5020304@freemail.hu>
+Date: Sun, 15 Jan 2012 12:35:59 +0100
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Resolve the abbreviation PCI BAR
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Original: 188.143.94.24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ERROR: "usb_remove_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
-ERROR: "usb_add_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
+From: Márton Németh <nm127@freemail.hu>
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
---
-Inpired by drivers/usb/otg/msm_otg.c. Is this correct?
+Resolve the PCI BAR abbreviation as Base Address Registers
+in documentation in order not to be confused with the placeholder
+names foo and bar.
 
- drivers/usb/otg/mv_otg.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Signed-off-by: Márton Németh <nm127@freemail.hu>
+---
+ lib/pci_iomap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/otg/mv_otg.c b/drivers/usb/otg/mv_otg.c
-index db0d4fc..b5fbe14 100644
---- a/drivers/usb/otg/mv_otg.c
-+++ b/drivers/usb/otg/mv_otg.c
-@@ -202,6 +202,7 @@ static void mv_otg_init_irq(struct mv_otg *mvotg)
- 
- static void mv_otg_start_host(struct mv_otg *mvotg, int on)
- {
-+#ifdef CONFIG_USB
- 	struct otg_transceiver *otg = &mvotg->otg;
- 	struct usb_hcd *hcd;
- 
-@@ -216,6 +217,7 @@ static void mv_otg_start_host(struct mv_otg *mvotg, int on)
- 		usb_add_hcd(hcd, hcd->irq, IRQF_SHARED);
- 	else
- 		usb_remove_hcd(hcd);
-+#endif /* CONFIG_USB */
- }
- 
- static void mv_otg_start_periphrals(struct mv_otg *mvotg, int on)
+diff --git a/lib/pci_iomap.c b/lib/pci_iomap.c
+index 4b0fdc2..1c92272 100644
+--- a/lib/pci_iomap.c
++++ b/lib/pci_iomap.c
+@@ -12,7 +12,7 @@
+ /**
+  * pci_iomap - create a virtual mapping cookie for a PCI BAR
+  * @dev: PCI device that owns the BAR
+- * @bar: BAR number
++ * @bar: BAR (Base Address Registers) index, zero based
+  * @maxlen: length of the memory to map
+  *
+  * Using this function you will get a __iomem address to your device BAR.
 -- 
-1.7.0.4
+1.7.2.5
 
