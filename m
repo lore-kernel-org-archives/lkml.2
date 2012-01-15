@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab2AODZz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 22:25:55 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:51207 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab2AODZy (ORCPT
+	id S1755237Ab2AODg4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 22:36:56 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:46257 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753517Ab2AODgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 22:25:54 -0500
-From: Xi Wang <xi.wang@gmail.com>
-To: Sage Weil <sage@newdream.net>
-Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>
-Subject: [PATCH RESEND] ceph: fix length validation in parse_reply_info()
-Date: Sat, 14 Jan 2012 22:20:59 -0500
-Message-Id: <1326597659-3892-1-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sat, 14 Jan 2012 22:36:54 -0500
+Date: Sat, 14 Jan 2012 22:36:53 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Greg KH <gregkh@suse.de>
+cc: Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, Kay Sievers <kay.sievers@vrfy.org>,
+        <gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, <prasad@linux.vnet.ibm.com>,
+        <justinmattock@gmail.com>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+In-Reply-To: <20120115023404.GA4268@suse.de>
+Message-ID: <Pine.LNX.4.44L0.1201142233400.14635-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"len" is read from network and thus needs validation.  Otherwise, given
-a bogus "len" value, p+len could be an out-of-bounds pointer, which is
-used in further parsing.
+On Sat, 14 Jan 2012, Greg KH wrote:
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
----
- fs/ceph/mds_client.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> On Sat, Jan 14, 2012 at 06:05:24PM -0800, Tony Luck wrote:
+> > On Sat, Jan 14, 2012 at 8:30 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > > The driver core isn't designed to handle device structures that get
+> > > unregistered and then spring back to life; callers are supposed to
+> > > allocate a fresh new structure instead.
+> > 
+> > Does every caller use "kzalloc()" for this fresh new structure (or even
+> > for the original registration) rather than "kmalloc()"?
+> 
+> They better, as that's what they are required to do :)
+> 
+> The kernel would be crashing with slab debugging enabled, if it wasn't
+> so today.
 
-diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-index 23ab6a3..3cc9b0b 100644
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -262,6 +262,7 @@ static int parse_reply_info(struct ceph_msg *msg,
- 	/* trace */
- 	ceph_decode_32_safe(&p, end, len, bad);
- 	if (len > 0) {
-+		ceph_decode_need(&p, end, len, bad);
- 		err = parse_reply_info_trace(&p, p+len, info, features);
- 		if (err < 0)
- 			goto out_bad;
-@@ -270,6 +271,7 @@ static int parse_reply_info(struct ceph_msg *msg,
- 	/* extra */
- 	ceph_decode_32_safe(&p, end, len, bad);
- 	if (len > 0) {
-+		ceph_decode_need(&p, end, len, bad);
- 		err = parse_reply_info_extra(&p, p+len, info, features);
- 		if (err < 0)
- 			goto out_bad;
--- 
-1.7.5.4
+These are both important restrictions on the use of the driver core,
+and they don't seem to be explained anywhere in the kernel source.  
+Would you like to receive a documentation patch?
+
+Alan Stern
 
