@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab2AOKiJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 05:38:09 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55273 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab2AOKiH (ORCPT
+	id S1752616Ab2AOKwR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 05:52:17 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54849 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752230Ab2AOKwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 05:38:07 -0500
-Date: Sun, 15 Jan 2012 11:38:04 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: Re: [GIT] Security subsystem updates for 3.3
-Message-ID: <20120115103804.GB6698@atrey.karlin.mff.cuni.cz>
-References: <alpine.LRH.2.00.1201091252220.18816@tundra.namei.org>
- <CA+55aFwD2-bhd32L1SsjPQrpwOBhBdxTUaOj=oXN24vPwc+Wsg@mail.gmail.com>
- <alpine.LRH.2.00.1201111834570.2966@tundra.namei.org>
- <CA+55aFxecGt54RG3EX+LTQQx6ZXzYLOMRdgRmXTRDaD54JAVGg@mail.gmail.com>
- <CALLzPKaSmpKot=bgm7qQ8a7J4-sxXLsMPrHz6Pe0SyzWpZp-yQ@mail.gmail.com>
+	Sun, 15 Jan 2012 05:52:15 -0500
+Date: Sun, 15 Jan 2012 12:52:03 +0200
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blutetooth: Remove bogus inline for l2cap_chan_connect()
+Message-ID: <20120115105203.GA12584@x220.P-661HNU-F1>
+Mail-Followup-To: Geert Uytterhoeven <geert@linux-m68k.org>,
+	"Gustavo F. Padovan" <padovan@profusion.mobi>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	"David S. Miller" <davem@davemloft.net>,
+	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1326622076-957-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALLzPKaSmpKot=bgm7qQ8a7J4-sxXLsMPrHz6Pe0SyzWpZp-yQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1326622076-957-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Jan 11, 2012 at 4:51 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Tue, Jan 10, 2012 at 11:35 PM, James Morris <jmorris@namei.org> wrote:
-> >>> And "DIGSIG" is really a horrible config name. Did somebody run out of
-> >>> letters suddenly? Is there some global letter shortage that I haven't
-> >>> been told of and that we should do something about?
-> >>
-> >> Any objections to DIGITAL_SIGNATURE_API ?
-> >
-> > Sounds much better. Slightly more typing, but CONFIG_DIGSIG really
-> > didn't tell me anything and sounded like some odd new device to me.
-> >
-> >                          Linus
+Hi Geert,
+
+On Sun, Jan 15, 2012, Geert Uytterhoeven wrote:
+> commit 03a001948166d966d0d580cddb8ae3a23f8b795b ("Bluetooth: invert locking
+> order in connect path") marked l2cap_chan_connect() inline for both the
+> prototype in include/net/bluetooth/l2cap.h and the implementation in
+> net/bluetooth/l2cap_core.c.
 > 
-> Would just DIGITAL_SIGNATURE be enough?
+> As the former doesn't contain an implementation, net/bluetooth/l2cap_sock.c
+> now fails to build, e.g. for m68k allmodconfig:
+> 
+>     net/bluetooth/l2cap_sock.c: In function â€˜l2cap_sock_connectâ€™:
+>     include/net/bluetooth/l2cap.h:838: sorry, unimplemented: inlining failed in call to â€˜l2cap_chan_connectâ€™: function body not available
+>     net/bluetooth/l2cap_sock.c:126: sorry, unimplemented: called from here
+>     make[1]: *** [net/bluetooth/l2cap_sock.o] Error 1
+> 
+> As l2cap_chan_connect() is not that small and also called from
+> net/bluetooth/l2cap_sock.c, I removed both inline keywords.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> --
+> As I can't seem to find anyone else getting this, I guess it's only
+> triggered by some versions of gcc. Mine is
+> 
+> gcc version 4.1.2 20061115 (prerelease) (Ubuntu 4.1.1-21)
+> ---
+>  include/net/bluetooth/l2cap.h |    2 +-
+>  net/bluetooth/l2cap_core.c    |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 
-Actually, "CONFIG_SIGNATURE" should be enough.
+This was already reported[1] earlier this month and a patch[2] was also
+created for it which right now resides in my bluetooth-next tree[3].
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Johan
+
+[1] http://www.spinics.net/lists/linux-bluetooth/msg19851.html
+[2] http://www.spinics.net/lists/linux-bluetooth/msg20009.html
+[3] http://git.kernel.org/?p=linux/kernel/git/jh/bluetooth-next.git;a=commitdiff;h=cd555072d0b0738c8a107776fe91902da686f94d
