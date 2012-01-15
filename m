@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab2AOLhE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 06:37:04 -0500
-Received: from relay01.digicable.hu ([92.249.128.189]:46660 "EHLO
-	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab2AOLhD (ORCPT
+	id S1753054Ab2AOL4U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 06:56:20 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:64417 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928Ab2AOL4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 06:37:03 -0500
-Message-ID: <4F12BA1F.5020304@freemail.hu>
-Date: Sun, 15 Jan 2012 12:35:59 +0100
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Sun, 15 Jan 2012 06:56:19 -0500
+From: bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org, cjb@laptop.org
+Subject: Need pci rescan in order to get my mmc reader
+Date: Sun, 15 Jan 2012 12:55:40 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Resolve the abbreviation PCI BAR
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 188.143.94.24
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201151255.41252.roucaries.bastien@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Márton Németh <nm127@freemail.hu>
+I am hit by the same bug than here
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/703180
 
-Resolve the PCI BAR abbreviation as Base Address Registers
-in documentation in order not to be confused with the placeholder
-names foo and bar.
+I order to get my mmc reader functionnal I need to put a mmc card and do a pci rescan manualy.
 
-Signed-off-by: Márton Németh <nm127@freemail.hu>
----
- lib/pci_iomap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+What could be done  ?
 
-diff --git a/lib/pci_iomap.c b/lib/pci_iomap.c
-index 4b0fdc2..1c92272 100644
---- a/lib/pci_iomap.c
-+++ b/lib/pci_iomap.c
-@@ -12,7 +12,7 @@
- /**
-  * pci_iomap - create a virtual mapping cookie for a PCI BAR
-  * @dev: PCI device that owns the BAR
-- * @bar: BAR number
-+ * @bar: BAR (Base Address Registers) index, zero based
-  * @maxlen: length of the memory to map
-  *
-  * Using this function you will get a __iomem address to your device BAR.
--- 
-1.7.2.5
+What do you need in order to help ?
+
+Thanks
+
+Bastien
+
 
