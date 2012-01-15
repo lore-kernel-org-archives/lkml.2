@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab2AOSbw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 13:31:52 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49611 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2AOSbv (ORCPT
+	id S1751924Ab2AOSde (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 13:33:34 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22578 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2AOSdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 13:31:51 -0500
-Date: Sun, 15 Jan 2012 22:31:45 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
- v5
-Message-ID: <20120115183145.GH3186@moon>
-References: <20111228121407.GL27266@moon>
- <20120115180721.GA23810@redhat.com>
+	Sun, 15 Jan 2012 13:33:32 -0500
+Date: Sun, 15 Jan 2012 19:33:30 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Grover <agrover@redhat.com>,
+        Dan Carpenter <error27@gmail.com>, Roland Dreier <roland@kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH] target, iscsi: Fix up a few assignments
+Message-ID: <alpine.LNX.2.00.1201151929400.13069@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120115180721.GA23810@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 15, 2012 at 07:07:21PM +0100, Oleg Nesterov wrote:
-> On 12/28, Cyrill Gorcunov wrote:
-> >
-> > When we do checkpoint of a task we need to know the list of children
-> > the task has but there is no easy way to make a reverse parent->children
-> > chain from an arbitrary <pid> (while a parent pid is provided in "PPid"
-> > field of /proc/<pid>/status).
-> 
-> Looks correct at first glance... But I'll try to recheck. I guess you need
-> to resend anyway, I bet nobody can recall this patch ;)
-> 
+A statement such as
+  struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
+has undefined behaviour since there are two assignments to 'na', strictly 
+speaking (the order in which side-effects from the assignments take place 
+is undefined since there's no intervening sequence point), and it looks 
+unintentional in any case.
 
-Sure ;)
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/target/iscsi/iscsi_target_erl1.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> However I do not understand the ptrace_may_access() check at all.
-> 
-...
+ compile tested only.
 
-> Well, this is cosmetic, but imho
-> 
-> 			if (list_is_last(...))
-> 				goto out;
-> 
-> 			task = list_first_entry(...);
-> 			...
-> 
-> looks better.
-> 
+diff --git a/drivers/target/iscsi/iscsi_target_erl1.c b/drivers/target/iscsi/iscsi_target_erl1.c
+index 101b1be..af18cb8 100644
+--- a/drivers/target/iscsi/iscsi_target_erl1.c
++++ b/drivers/target/iscsi/iscsi_target_erl1.c
+@@ -1238,7 +1238,7 @@ void iscsit_mod_dataout_timer(struct iscsi_cmd *cmd)
+ {
+ 	struct iscsi_conn *conn = cmd->conn;
+ 	struct iscsi_session *sess = conn->sess;
+-	struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
++	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
+ 
+ 	spin_lock_bh(&cmd->dataout_timeout_lock);
+ 	if (!(cmd->dataout_timer_flags & ISCSI_TF_RUNNING)) {
+@@ -1261,7 +1261,7 @@ void iscsit_start_dataout_timer(
+ 	struct iscsi_conn *conn)
+ {
+ 	struct iscsi_session *sess = conn->sess;
+-	struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
++	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
+ 
+ 	if (cmd->dataout_timer_flags & ISCSI_TF_RUNNING)
+ 		return;
+-- 
+1.7.8.3
 
-ok
 
-> 
-> > +	list_for_each_entry(task, &start->children, sibling) {
-> > +		if (pos-- == 0) {
-> > +			if (ptrace_may_access(task, PTRACE_MODE_READ)) {
-> > +				pid = get_pid(task_pid(task));
-> > +				goto out;
-> > +			} else {
-> > +				/* Maybe we success with the next children */
-> > +				pos++;
-> 
-> Again. I simply can't understand what ptrace_may_access() actually
-> means. Why do we use the possible child, not parent?
-> 
-> IOW. I have no idea if we really need any security check at all.
-> You can find the children pids without this patch anyway via.
-> grep PPid /proc/*/status.
-> 
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-OK, I see. I am actually not sure which behaviour should be there.
-What should we do if say we have a task with a number of children,
-which changed permissions of own and some of children. Look what I mean.
-
-We have say tid A, which has children B C D, and when we read
-/proc/pid/task/tid/children we should see "B C D" here. But
-what if say A started with roots rights, then changed own permission
-so everyone could read this /proc/pid/task/<A>/children, but
-left C with root permissions only. So should we list C here?
-Or such scenario is impossible at all?
-
-> But if you want ptrace_may_access/whatever, you should check
-> ptrace_may_access(start), no?
-> 
-
-	Cyrill
