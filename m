@@ -1,121 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab2AOUdI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 15:33:08 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:36773 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751950Ab2AOUdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 15:33:07 -0500
-Message-ID: <1326659586.6164.18.camel@joe2Laptop>
-Subject: Re: [PATCH] Bluetooth: bfusb: Fixed some coding style issues
-From: Joe Perches <joe@perches.com>
-To: mahendra singh meena <mahendra.devel@gmail.com>
-Cc: marcel@holtmann.org, padovan@profusion.mobi,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 15 Jan 2012 12:33:06 -0800
-In-Reply-To: <4F132D37.7030405@gmail.com>
-References: <4F132D37.7030405@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752317Ab2AOUdo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 15:33:44 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44248 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab2AOUdn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 15:33:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F12A025.2090207@kernel.dk>
+References: <4F12A025.2090207@kernel.dk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 15 Jan 2012 12:33:20 -0800
+X-Google-Sender-Auth: Yz9vOD7_798VGPR793kTwv2wvOs
+Message-ID: <CA+55aFxyiMXg0BHrZ0LJtCeE+u+pNSM1n=zDbW5-7CtZnh2O=Q@mail.gmail.com>
+Subject: Re: [GIT PULL] Block IO bits for 3.3-rc
+To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-16 at 01:17 +0530, mahendra singh meena wrote:
-> Fixed some coding style issues shown by scripts/checkpatch.pl
-[]
-> diff --git a/drivers/bluetooth/bfusb.c b/drivers/bluetooth/bfusb.c
-[]
-> @@ -127,11 +127,13 @@ static int bfusb_send_bulk(struct bfusb_data *data, struct sk_buff *skb)
->  {
->  	struct bfusb_data_scb *scb = (void *) skb->cb;
->  	struct urb *urb = bfusb_get_completed(data);
-> +	struct urb *urb_chk = urb;
->  	int err, pipe;
-> 
->  	BT_DBG("bfusb %p skb %p len %d", data, skb, skb->len);
-> +	urb = usb_alloc_urb(0, GFP_ATOMIC);
-> 
-> -	if (!urb && !(urb = usb_alloc_urb(0, GFP_ATOMIC)))
-> +	if (!urb_chk && !urb)
+On Sun, Jan 15, 2012 at 1:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>
+> See below for the initial 3.3-rc1 git pull request in the block IO area.
+> Not too much queued up for this round, mostly some code churn to improve
+> some of the existing functionality.
+>
+> It has the following changes:
+>
+> - The big io context cleanup from Tejun.
 
-Broken patch.
+Ok. This got some conflicts that I think I got right, but I'd really
+like Tejun to check it out. There were changes mainly to things he had
+removed, and I think all the changes were made irrelevant by his
+cleanups, but...
 
-You are now always calling usb_alloc_urb and
-overwriting the original urb that is returned
-from bfusb_get_completed().
+Tejun?
 
-Not everything that checkpatch flags needs to be
-modified.
+                        Linus
 
-The original is better than even a correct
-proposed patch because it's more readable and it
-uses fewer variables.
-
-If you _really_ want to avoid checkpatch warnings,
-then don't use the additional automatic.
-
-	if (!urb) {
-		urb = usb_alloc_urb(0, GFP_ATOMIC);
-		if (!urb)
-			return -ENOMEM;
-	}
-
-> @@ -145,7 +147,7 @@ static int bfusb_send_bulk(struct bfusb_data *data, struct sk_buff *skb)
-> 
->  	err = usb_submit_urb(urb, GFP_ATOMIC);
->  	if (err) {
-> -		BT_ERR("%s bulk tx submit failed urb %p err %d",
-> +		BT_ERR("%s bulk tx submit failed urb %p err %d",
-
-? What does checkpatch complain about this?
-
->  					data->hdev->name, urb, err);
->  		skb_unlink(skb, &data->pending_q);
->  		usb_free_urb(urb);
-> @@ -214,11 +216,13 @@ static int bfusb_rx_submit(struct bfusb_data *data, struct urb *urb)
->  {
->  	struct bfusb_data_scb *scb;
->  	struct sk_buff *skb;
-> +	struct urb *urb_chk = urb;
->  	int err, pipe, size = HCI_MAX_FRAME_SIZE + 32;
-> 
->  	BT_DBG("bfusb %p urb %p", data, urb);
-> +	urb = usb_alloc_urb(0, GFP_ATOMIC);
-> 
-> -	if (!urb && !(urb = usb_alloc_urb(0, GFP_ATOMIC)))
-> +	if (!urb && !urb_chk)
->  		return -ENOMEM;
-
-Same broken change.
-
-> @@ -283,30 +288,37 @@ static inline int bfusb_recv_block(struct bfusb_data *data, int hdr, unsigned ch
->  		switch (pkt_type) {
->  		case HCI_EVENT_PKT:
->  			if (len >= HCI_EVENT_HDR_SIZE) {
-> -				struct hci_event_hdr *hdr = (struct hci_event_hdr *) buf;
-> +				struct hci_event_hdr *hdr;
-> +				hdr = (struct hci_event_hdr *) buf;
-
-It'd probably be better to change the type of "buf" to void *
-and avoid all the casts.
-
-> @@ -514,12 +528,14 @@ static int bfusb_send_frame(struct sk_buff *skb)
->  	while (count) {
->  		size = min_t(uint, count, BFUSB_MAX_BLOCK_SIZE);
-> 
-> -		buf[0] = 0xc1 | ((sent == 0) ? 0x04 : 0) | ((count == size) ? 0x08 : 0);
-> +		buf[0] = 0xc1 | ((sent == 0) ? 0x04 : 0) |
-> +						((count == size) ? 0x08 : 0);
-
-When wrapping just for 80 columns, please try to use
-alignments that are a bit more readable and perhaps
-remove unnecessary parentheses like:
-
-		buf[0] = 0xc1 |
-			 (sent == 0 ? 0x04 : 0) |
-			 (count == size ? 0x08 : 0);
-
-
+>
+> - Remove duplicated block plug in mpage_readpages(). read_pages()
+>  already does the plugging, and it's the only call path to
+>  mpage_readpages().
+>
+> - ioctl to query rotational nature of a device from Martin.
+>
+> - Getting rid of the bio integrity macros, use proper functions instead.
+>
+> - Recursive merging was added and then disabled, it's suspected to be
+>  our cause for empty cfqq crashes. It'll be re-enabled once we get to
+>  the bottom of this.
+>
+>
+> Please pull!
+>
+>
+>  git://git.kernel.dk/linux-block.git for-3.3/core
+>
+>
+> Jens Axboe (2):
+>      block: ioc_cgroup_changed() needs to be exported
+>      Revert "block: recursive merge requests"
+>
+> Martin K. Petersen (3):
+>      block: Introduce blk_set_stacking_limits function
+>      block: Add BLKROTATIONAL ioctl
+>      block: Stop using macro stubs for the bio data integrity calls
+>
+> Namjae Jeon (1):
+>      fs: remove unneeded plug in mpage_readpages()
+>
+> Shaohua Li (2):
+>      block, cfq: fix empty queue crash caused by request merge
+>      block: recursive merge requests
+>
+> Stephen Rothwell (1):
+>      blockdev: convert some macros to static inlines
+>
+> Tejun Heo (28):
+>      block, sx8: kill blk_insert_request()
+>      block: add blk_queue_dead()`
+>      block: fix drain_all condition in blk_drain_queue()
+>      block: add missing blk_queue_dead() checks
+>      block, cfq: move cfqd->cic_index to q->id
+>      block: misc ioc cleanups
+>      block: make ioc get/put interface more conventional and fix race on alloction
+>      block: misc updates to blk_get_queue()
+>      block, cfq: misc updates to cfq_io_context
+>      block, cfq: move ioc ioprio/cgroup changed handling to cic
+>      block, cfq: fix race condition in cic creation path and tighten locking
+>      block, cfq: fix cic lookup locking
+>      block, cfq: unlink cfq_io_context's immediately
+>      block, cfq: remove delayed unlink
+>      block, cfq: kill ioc_gone
+>      block, cfq: kill cic->key
+>      block, cfq: replace current_io_context() with create_io_context()
+>      block: reorder elevator switch sequence
+>      block: remove elevator_queue->ops
+>      block, cfq: reorganize cfq_io_context into generic and cfq specific parts
+>      block, cfq: move cfqd->icq_list to request_queue and add request->elv.icq
+>      block, cfq: move io_cq lookup to blk-ioc.c
+>      block, cfq: move icq cache management to block core
+>      block, cfq: move io_cq exit/release to blk-ioc.c
+>      block, cfq: restructure io_cq creation path for io_context interface cleanup
+>      block, cfq: move icq creation and rq->elv.icq association to block core
+>      block: an exiting task should be allowed to create io_context
+>      block: remove WARN_ON_ONCE() in exit_io_context()
+>
+>  block/blk-cgroup.c        |   11 +-
+>  block/blk-core.c          |  203 +++++++++------
+>  block/blk-exec.c          |    8 +-
+>  block/blk-ioc.c           |  485 +++++++++++++++++++++++++++++------
+>  block/blk-settings.c      |   32 ++-
+>  block/blk-sysfs.c         |   12 +-
+>  block/blk-throttle.c      |    4 +-
+>  block/blk.h               |   58 ++++-
+>  block/bsg.c               |    4 +-
+>  block/cfq-iosched.c       |  619 +++++++++------------------------------------
+>  block/compat_ioctl.c      |    3 +
+>  block/deadline-iosched.c  |    4 +-
+>  block/elevator.c          |  217 ++++++++--------
+>  block/genhd.c             |    2 +-
+>  block/ioctl.c             |    2 +
+>  block/noop-iosched.c      |    4 +-
+>  drivers/block/sx8.c       |   12 +-
+>  drivers/md/dm-table.c     |    6 +-
+>  drivers/md/md.c           |    1 +
+>  drivers/scsi/scsi_scan.c  |    2 +-
+>  fs/ioprio.c               |   24 +--
+>  fs/mpage.c                |    4 -
+>  include/linux/bio.h       |   66 ++++-
+>  include/linux/blkdev.h    |  101 ++++++--
+>  include/linux/elevator.h  |   41 ++--
+>  include/linux/fs.h        |    1 +
+>  include/linux/iocontext.h |  136 +++++++---
+>  kernel/fork.c             |    8 +-
+>  28 files changed, 1133 insertions(+), 937 deletions(-)
+>
+> --
+> Jens Axboe
+>
