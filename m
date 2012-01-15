@@ -1,110 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab2AOPHV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 10:07:21 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53183 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab2AOPHT (ORCPT
+	id S1753522Ab2AOPIJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 10:08:09 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47624 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752653Ab2AOPIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 10:07:19 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: loody <miloody@gmail.com>
-Subject: Re: Kernel coredump about kblockd deadlock
-Date: Sun, 15 Jan 2012 16:07:16 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>
-References: <CANudz+um5XG2Qua6a1O7ENnBeYcfiG5mOyyA6-=ctccXMYEFhg@mail.gmail.com> <201201140129.34399.marek.vasut@gmail.com> <CANudz+txP0tQQTjtxP99AqcnJcQadHdFEHVuoPXLYfKXB0EgAA@mail.gmail.com>
-In-Reply-To: <CANudz+txP0tQQTjtxP99AqcnJcQadHdFEHVuoPXLYfKXB0EgAA@mail.gmail.com>
+	Sun, 15 Jan 2012 10:08:07 -0500
+Date: Sun, 15 Jan 2012 15:07:07 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "moussaba@micron.com" <moussaba@micron.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [RFC PATCH] proc: clear_refs: do not clear reserved pages
+Message-ID: <20120115150706.GA7474@mudshark.cambridge.arm.com>
+References: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
+ <alpine.LFD.2.02.1201131748380.2722@xanadu.home>
+ <alpine.LSU.2.00.1201140901260.2381@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201151607.16792.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1201140901260.2381@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> hi Marek:
-> 
-> 2012/1/14 Marek Vasut <marek.vasut@gmail.com>:
-> >> Dear all:
-> >> I use kernel 2.6.35.13 and cpu for mips
-> > 
-> > Does this happen with anything less ancient ?
-> 
-> Sorry for my broken English, your "less ancient" mean?
+Hi Hugh,
 
-ALWAYS keep the MLs in CC. Less ancient == less old. Don't you have a 
-dictionary?
-> 
-> Thanks for your reply.
-> 
-> > M
+Thanks for the explanation.
+
+On Sat, Jan 14, 2012 at 05:36:37PM +0000, Hugh Dickins wrote:
+> On Fri, 13 Jan 2012, Nicolas Pitre wrote:
+> > Given Andrew's answer, this should be fine wrt Russell's concern.
 > > 
-> >> When I plug in/out usb stick for several times I got following warning
-> >> messages as I append at the end of mail.
-> >> 
-> >> is it possible correlate to below issue
-> >> http://thread.gmane.org/gmane.linux.kernel/1177383/focus=69879
-> >> Thanks for your help,
-> >> 
-> >> 
-> >> INFO: task kblockd/0:10 blocked for more than 120 seconds.
-> >> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
-> >> message. kblockd/0        D [87016a78] 802d1e48     0    10 0x00100000
-> >>      2 11       9      (kernel thread)
-> >> Stack : 00000001 80107148 8562ed80 800e9098 00000001 00000001 7fffffff
-> >> 00000000 00000000 7fffffff 87053d38 ffffffff 87053d38 87053d28 872ff00c
-> >> 802d1e48 00000001 00000009 00000102 80071c80 00005965 0056addf 00005965
-> >> 00000001 00000000 00000000 7fffffff 80020c64 00000000 00000002 00000000
-> >> 00000000 7fffffff 802d1ca8 00000000 80024538 00000004 0000000a 00000001
-> >> 87016a78 ...
-> >> Call Trace:
-> >> [<802d1764>] schedule+0x648/0x70c from[<802d1e48>]
-> >> schedule_timeout+0x30/0x324 [<802d1e48>] schedule_timeout+0x30/0x324
-> >> from[<802d1ca8>]
-> >> wait_for_common+0xf8/0x1c0
-> >> [<802d1ca8>] wait_for_common+0xf8/0x1c0 from[<80044400>]
-> >> __cancel_work_timer+0x188/0x210
-> >> [<80044400>] __cancel_work_timer+0x188/0x210 from[<801a48c4>]
-> >> blk_cleanup_queue+0x18/0x6c
-> >> [<801a48c4>] blk_cleanup_queue+0x18/0x6c from[<802098f4>]
-> >> scsi_device_dev_release_usercontext+0x174/0x1e4
-> >> [<802098f4>] scsi_device_dev_release_usercontext+0x174/0x1e4
-> >> from[<80043aa8>] execute_in_process_context+0x30/0x5c
-> >> [<80043aa8>] execute_in_process_context+0x30/0x5c from[<801eeda8>]
-> >> device_release+0x54/0x90
-> >> [<801eeda8>] device_release+0x54/0x90 from[<801b0180>]
-> >> kobject_release+0x70/0xa8 [<801b0180>] kobject_release+0x70/0xa8
-> >> from[<801b17bc>] kref_put+0x80/0x98 [<801b17bc>] kref_put+0x80/0x98
-> >> from[<80203c04>] scsi_request_fn+0x51c/0x61c [<80203c04>]
-> >> scsi_request_fn+0x51c/0x61c from[<801a482c>]
-> >> generic_unplug_device+0x38/0x7c
-> >> [<801a482c>] generic_unplug_device+0x38/0x7c from[<80043e90>]
-> >> worker_thread+0x1ec/0x2d4
-> >> [<80043e90>] worker_thread+0x1ec/0x2d4 from[<800482c4>]
-> >> kthread+0x7c/0x84 [<800482c4>] kthread+0x7c/0x84 from[<80007818>]
-> >> kernel_thread_helper+0x10/0x18
-> >> 
-> >> ------------------------------------------------------------------------
-> >> --- ---------- hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
-> >> hub 1-0:1.0: port 1, status 0000, change 0001, 12 Mb/s
-> >> usb 1-1: USB disconnect, address 35
-> >> usb 1-1: unregistering device
-> >> usb 1-1: unregistering interface 1-1:1.0
-> >> usb 1-1: usb_disable_device nuking all URBs
-> >> hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x0
-> >> hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
-> >> ehci-ehci ehci-ehci.0: GetStatus port 1 status 000803 sig=j CSC CONNECT
-> >> hub 1-0:1.0: port 1, status 0401, change 0001, 480 Mb/s
-> >> hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x401
-> >> ehci-ehci ehci-ehci.0: port 1 high speed
-> >> ehci-ehci ehci-ehci.0: GetStatus port 1 status 00000d sig=se0 PEC PE
-> >> CONNECT usb 1-1: new high speed USB device using ehci-ehci and address
-> >> 36 ehci-ehci ehci-ehci.0: port 1 high speed
-> >> ehci-ehci ehci-ehci.0: GetStatus port 1 status 00000d sig=se0 PEC PE
-> >> CONNECT usb 1-1: default language 0x0409
-> >> usb 1-1: udev 36, busnum 1, minor = 35
-> >> ....
-> >> .....
+> > Acked-by: Nicolas Pitre <nico@linaro.org>
+> 
+> Yes, it should be okay as an urgent fix for -stable.
+> But going forward, I doubt it's the right answer: comments below.
+
+Ok great, getting this into -stable ASAP would be much appreciated. Can
+somebody pick it up please?
+
+> Please, going forward, can you delete your vectors page code, and
+> use the gate_vma for it?  Extending it a little if it somehow does
+> not satsify your need.  Or else can you please explain (ec706dab
+> does not) why the gate_vma does not suit you.
+> 
+> I'm not saying the horrible hack gate_vma mechanism is any safer
+> than yours (the latest bug in it was fixed all of 13 days ago).
+> But I am saying that one horrible hack is safer than two.
+
+Something like what I've got below seems to do the trick, and clear_refs
+also seems to behave when it's presented with the gate_vma. If Russell is
+happy with the approach, we can move to the gate_vma in the future.
+
+Thanks,
+
+Will
+
+
+    ARM: vectors: use gate_vma for vectors user mapping
+    
+    The current user mapping for the vectors page is inserted as a `horrible
+    hack vma' into each task via arch_setup_additional_pages. This causes
+    problems with the MM subsystem and vm_normal_page, as described here:
+    
+    https://lkml.org/lkml/2012/1/14/55
+    
+    Following the suggestion from Hugh in the above thread, this patch uses
+    the gate_vma for the vectors user mapping, therefore consolidating
+    the horrible hack VMAs into one.
+    
+    Signed-off-by: Will Deacon <will.deacon@arm.com>
+
+diff --git a/arch/arm/include/asm/elf.h b/arch/arm/include/asm/elf.h
+index 0e9ce8d..38050b1 100644
+--- a/arch/arm/include/asm/elf.h
++++ b/arch/arm/include/asm/elf.h
+@@ -130,8 +130,4 @@ struct mm_struct;
+ extern unsigned long arch_randomize_brk(struct mm_struct *mm);
+ #define arch_randomize_brk arch_randomize_brk
+ 
+-extern int vectors_user_mapping(void);
+-#define arch_setup_additional_pages(bprm, uses_interp) vectors_user_mapping()
+-#define ARCH_HAS_SETUP_ADDITIONAL_PAGES
+-
+ #endif
+diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+index ca94653..e851aa3 100644
+--- a/arch/arm/include/asm/page.h
++++ b/arch/arm/include/asm/page.h
+@@ -151,6 +151,8 @@ extern void __cpu_copy_user_highpage(struct page *to, struct page *from,
+ #define clear_page(page)	memset((void *)(page), 0, PAGE_SIZE)
+ extern void copy_page(void *to, const void *from);
+ 
++#define __HAVE_ARCH_GATE_AREA 1
++
+ #include <asm/pgtable-2level-types.h>
+ 
+ #endif /* CONFIG_MMU */
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 3d0c6fb..c13b8f6 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -493,22 +493,40 @@ unsigned long arch_randomize_brk(struct mm_struct *mm)
+ #ifdef CONFIG_MMU
+ /*
+  * The vectors page is always readable from user space for the
+- * atomic helpers and the signal restart code.  Let's declare a mapping
+- * for it so it is visible through ptrace and /proc/<pid>/mem.
++ * atomic helpers and the signal restart code. Insert it into the
++ * gate_vma so that it is visible through ptrace and /proc/<pid>/mem.
+  */
++static struct vm_area_struct gate_vma;
+ 
+-int vectors_user_mapping(void)
++static int __init gate_vma_init(void)
+ {
+-	struct mm_struct *mm = current->mm;
+-	return install_special_mapping(mm, 0xffff0000, PAGE_SIZE,
+-				       VM_READ | VM_EXEC |
+-				       VM_MAYREAD | VM_MAYEXEC |
+-				       VM_ALWAYSDUMP | VM_RESERVED,
+-				       NULL);
++	gate_vma.vm_start	= 0xffff0000;
++	gate_vma.vm_end		= 0xffff0000 + PAGE_SIZE;
++	gate_vma.vm_page_prot	= PAGE_READONLY_EXEC;
++	gate_vma.vm_flags	= VM_READ | VM_EXEC |
++				  VM_MAYREAD | VM_MAYEXEC |
++				  VM_ALWAYSDUMP;
++	return 0;
++}
++arch_initcall(gate_vma_init);
++
++struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
++{
++	return &gate_vma;
++}
++
++int in_gate_area(struct mm_struct *mm, unsigned long addr)
++{
++	return (addr >= gate_vma.vm_start) && (addr < gate_vma.vm_end);
++}
++
++int in_gate_area_no_mm(unsigned long addr)
++{
++	return in_gate_area(NULL, addr);
+ }
+ 
+ const char *arch_vma_name(struct vm_area_struct *vma)
+ {
+-	return (vma->vm_start == 0xffff0000) ? "[vectors]" : NULL;
++	return (vma == &gate_vma) ? "[vectors]" : NULL;
+ }
+ #endif
+
