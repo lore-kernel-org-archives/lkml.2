@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab2AOVgR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 16:36:17 -0500
-Received: from cc-smtpout1.netcologne.de ([89.1.8.211]:46009 "EHLO
-	cc-smtpout1.netcologne.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab2AOVgQ (ORCPT
+	id S1752535Ab2AOVgq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 16:36:46 -0500
+Received: from cc-smtpout2.netcologne.de ([89.1.8.212]:46888 "EHLO
+	cc-smtpout2.netcologne.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab2AOVgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 16:36:16 -0500
-X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Jan 2012 16:36:15 EST
-Date: Sun, 15 Jan 2012 22:36:10 +0100
+	Sun, 15 Jan 2012 16:36:45 -0500
+Date: Sun, 15 Jan 2012 22:30:05 +0100
 From: Kurt Garloff <kurt@garloff.de>
 To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
 Cc: stable@vger.kernel.org, Len Brown <lenb@kernel.org>
-Subject: [PATCH 2/3]: x86-64: Handle SRAT v1 and v2 consistently
-Message-ID: <20120115213610.GV12380@tpkurt2.garloff.de>
+Subject: [PATCH 0/3] ACPI SRAT: Disregard reserved PXM bits
+Message-ID: <20120115213005.GT12380@tpkurt2.garloff.de>
 Mail-Followup-To: Kurt Garloff <kurt@garloff.de>,
 	linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
 	stable@vger.kernel.org, Len Brown <lenb@kernel.org>
-References: <20120115213005.GT12380@tpkurt2.garloff.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pqZtgxSH0iQu6R78"
+	protocol="application/pgp-signature"; boundary="xr11uZXTBybZk4CB"
 Content-Disposition: inline
-In-Reply-To: <20120115213005.GT12380@tpkurt2.garloff.de>
 X-Operating-System: Linux 2.6.32.46-0.3-default x86_64
 X-PGP-Info: on http://www.garloff.de/kurt/mykeys.pgp
 X-PGP-Key: 1024D/1C98774E
@@ -32,94 +29,74 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---pqZtgxSH0iQu6R78
-Content-Type: multipart/mixed; boundary="5Y5y2FX8vnqwSxRu"
-Content-Disposition: inline
-
-
---5Y5y2FX8vnqwSxRu
+--xr11uZXTBybZk4CB
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-x86-64 was rather inconsistent prior to this patch; it used 8 bits=20
-for the pxm field in cpu_affinity, but 32 bits in mem_affinity.
-This patch makes it consistent: Either use 8 bits consistently (SRAT
-rev 1 or lower) or 32 bits (SRAT rev 2 or higher).
+this has been submitted thrice already -- and while it found a bit of
+friendly feedback, it has not been merged. It should be IMVHO, and I
+hope this time the right eyes see this flying by ...
+I should mention that it fixes a real problem (wrong affinities reported
+in sysfs and thus userspace high-perf compute code taking wrong
+decisions) and that this has been part of SUSE enterprise kernels since=20
+a few years now.
+It should also go right into stable IMVHO.
 
-This is patch 2/3.
+Original description to follow ...
+
+
+ACPI specification says that the OS must disregard reserved bits.
+The x86_64 SRAT parser does not discard the upper 24 bits of the
+proximity_domain (pxm) in the acpi_srat_mem_affinity entries for
+SRAT v1 tables. (v2 has 32 bits wide fields, v1 only 8 bits.)
+This can lead to problems with poor BIOS implementations that failed
+to set reserved bytes to zero. (The ACPI spec is a bit vague here
+unfortunately.)
+
+This was also inconsistent: On x86-64 (srat_64.c), the=20
+_cpu_affinity does only use the low 8 bits of pxm, while the
+full 32 bits of _mem_affinity are consumed.
+In srat_32.c (x86), only 8bits are used (which is OK, a 32bit system
+with >256 PXMs does not seem reasonable at all).
+On ia64, the support of more than 8 bits was consistent between
+mem and cpu affinity entries, however it was dependent on "sn2"=20
+platform.
+
+The patch series has the following goals:
+* Make the kernel support consistently 8bits or 32bits for the
+  proximity domain
+* Make this dependent on the SRAT version; v1 =3D> 8bits, v2 =3D> 32bits.
+
+Overview over the patches:
+- [1/3] Store the SRAT table version value in acpi_srat_revision=20
+- [2/3] x86-64: Discard the upper 24 bits in mem_affinity if rev <=3D 1
+        and use upper 24bits in cpu_affinity if rev >=3D 2
+- [3/3] ia64: Also use upper 8/24bits if rev >=3D 2 (but leave logic to
+        enable on sn2 as well -- I don't know if sn2 reports v1 or v2
+        SRAT) Also add two __init decls in ia64 pxm accessors.
+
+Patch is against current git.
+
+Note: If you respond to this mail, please keep me in Cc -- I'm not
+subscribed to LKML these days.
+
+Cheers,
 --=20
 Kurt Garloff <kurt@garloff.de>  [Koeln/Greven]
 
 
---5Y5y2FX8vnqwSxRu
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="acpi_srat-pxm-rev-x86-64.patch"
-Content-Transfer-Encoding: quoted-printable
-
-=46rom: Kurt Garloff <kurt@garloff.de>
-Subject: Use SRAT table rev to use 8bit or 32bit PXM fields (x86/x86-64)
-References: bnc#503038
-
-In SRAT v1, we had 8bit proximity domain (PXM) fields; SRAT v2 provides
-32bits for these. The new fields were reserved before.
-According to the ACPI spec, the OS must disregrard reserved fields.
-
-x86/x86-64 was rather inconsistent prior to this patch; it used 8 bits=20
-for the pxm field in cpu_affinity, but 32 bits in mem_affinity.
-This patch makes it consistent: Either use 8 bits consistently (SRAT
-rev 1 or lower) or 32 bits (SRAT rev 2 or higher).
-
-This is patch 2/3.
-
-Signed-off-by: Kurt Garloff <kurt@garloff.de>
-
----
- arch/x86/mm/srat.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-Index: linux-2.6.git/arch/x86/mm/srat.c
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
---- linux-2.6.git.orig/arch/x86/mm/srat.c
-+++ linux-2.6.git/arch/x86/mm/srat.c
-@@ -108,8 +108,10 @@ acpi_numa_processor_affinity_init(struct
- 	}
- 	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) =3D=3D 0)
- 		return;
- 	pxm =3D pa->proximity_domain_lo;
-+	if (acpi_srat_revision >=3D 2)
-+		pxm |=3D *((unsigned int*)pa->proximity_domain_hi) << 8;
- 	node =3D setup_node(pxm);
- 	if (node < 0) {
- 		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
- 		bad_srat();
-@@ -159,8 +161,10 @@ acpi_numa_memory_affinity_init(struct ac
- 		return;
- 	start =3D ma->base_address;
- 	end =3D start + ma->length;
- 	pxm =3D ma->proximity_domain;
-+	if (acpi_srat_revision <=3D 1)
-+		pxm &=3D 0xff;
- 	node =3D setup_node(pxm);
- 	if (node < 0) {
- 		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
- 		bad_srat();
-
---5Y5y2FX8vnqwSxRu--
-
---pqZtgxSH0iQu6R78
+--xr11uZXTBybZk4CB
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.15 (GNU/Linux)
 
-iD8DBQFPE0bKxmLh6hyYd04RAkoNAKCSRp7gcofek5wDDsV4iZqDO9UX7wCeMUuE
-AkFNf1MZRZ1IlbQlEK16++A=
-=g/EG
+iD8DBQFPE0VdxmLh6hyYd04RAkoxAJ9ZtQwFcjDW8swwfuaAJ0KFA2yBUwCgrrZ4
+Lo2UgdwS6bGhRLyMOuvDBYA=
+=LLnV
 -----END PGP SIGNATURE-----
 
---pqZtgxSH0iQu6R78--
+--xr11uZXTBybZk4CB--
