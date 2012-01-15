@@ -1,96 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab2AOOlK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 09:41:10 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33487 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab2AOOlH (ORCPT
+	id S1753445Ab2AOOpZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 09:45:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60219 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab2AOOpX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 09:41:07 -0500
-Message-ID: <4F12E57E.3090805@garzik.org>
-Date: Sun, 15 Jan 2012 09:41:02 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Sun, 15 Jan 2012 09:45:23 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [git patches] libata updates for 3.3
-References: <20120109003255.GA6598@havoc.gtf.org> <CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
-In-Reply-To: <CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CANudz+uoY8pxCVEeKFhorfb0nqsD+re_Ai-6Ruz2b3ExtJChSA@mail.gmail.com>
+References: <CANudz+um5XG2Qua6a1O7ENnBeYcfiG5mOyyA6-=ctccXMYEFhg@mail.gmail.com>
+	<CANudz+uoY8pxCVEeKFhorfb0nqsD+re_Ai-6Ruz2b3ExtJChSA@mail.gmail.com>
+Date: Sun, 15 Jan 2012 22:45:23 +0800
+Message-ID: <CANudz+s9wTjWbTYyN292x1Ksh6POh63n-_P+6LX18gQhHmxULQ@mail.gmail.com>
+Subject: Re: Kernel coredump about kblockd deadlock
+From: loody <miloody@gmail.com>
+To: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2012 12:21 AM, Linus Torvalds wrote:
-> On Sun, Jan 8, 2012 at 4:32 PM, Jeff Garzik<jeff@garzik.org>  wrote:
->>
->> Summary (very little excitement at all this time):
->>
->> 0) Will play around with git signed tags with the next update.
->>
->> 1) PM improvements, including runtime suspend/resume work
+hi all:
+2012/1/15 loody <miloody@gmail.com>:
+> Dear all:
+> I use kernel 2.6.35.13 and cpu for mips
+> When I plug in/out usb stick for several times I got following warning
+> messages as I append at the end of mail.
 >
-> Hmm. I don't know if this comes from the PM improvements or even this
-> particular pull, but links that aren't connected are *really* slow.
->
-> Annoyingly so.
->
-> My Macbook Air that I finally can resume reliably again used to come
-> back almost immediately from resume. No longer. And the reason seems
-> to be this:
->
->   [  243.306149] ata_piix 0000:00:1f.2: setting latency timer to 64
->   [  243.306180] bcma: Found rev 6 PMU (capabilities 0x108C2606)
->   [  246.579648] ata1.01: failed to resume link (SControl 0)
->   [  246.735472] ata1.00: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->   [  246.735485] ata1.01: SATA link down (SStatus 0 SControl 0)
->   [  246.743632] ata1.00: ACPI cmd ef/03:46:00:00:00:a0 (SET FEATURES)
-> filtered out
->   [  246.744353] ata1.00: configured for UDMA/100
->   [  246.744537] sd 0:0:0:0: [sda] Starting disk
->   [  247.769806] ata2.00: failed to resume link (SControl 0)
->   [  248.796207] ata2.01: failed to resume link (SControl 0)
->   [  248.807665] ata2.00: SATA link down (SStatus 4 SControl 0)
->   [  248.807681] ata2.01: SATA link down (SStatus 0 SControl 0)
->   [  248.808338] PM: resume of devices complete after 5511.027 msecs
->   [  248.882074] PM: Finishing wakeup.
->
-> Notice the basically five-second timeout all basically for "failed to
-> resume link: for things that didn't have anything connected to them
-> anyway.
->
-> This is a bog-standard Intel controller, there's nothing odd there.
->
-> I'm pretty sure this used to be much faster, but I haven't bisected
-> any of it (and with all the problems I had with resume both due to
-> wireless and MCE, I really wouldn't want to even try).
->
-> Taking 5.5 seconds to come back from suspend-to-ram really is too
-> long. Not *all* of it is the SATA part, but a lot of it is.
->
-> For ATA suspend/resume, could we perhaps only resume the ports that
-> *used* to have something on them? And then, if somebody has plugged
-> something into the others, not consider that a resume thing at all,
-> but a hotplug thing that happens *after* the resume?
->
-> If it takes five seconds to notice new hardware after a resume, nobody
-> cares. But the disk we had before obviously needs to get resumed.. But
-> it does seem like it's the "no link" part that takes long.
+> is it possible correlate to below issue
+> http://thread.gmane.org/gmane.linux.kernel/1177383/focus=69879
+I want to reproduce the issue of the thread above in my platform.
+But I have no idea about:
+1  dm-multipath
+2. dm-round-robin
 
-We definitely notice new hardware after a resume, but you're right -- it 
-should not take that long to work through ports that are empty.
+are they additional module I need to download or it already include
+kernel source?
+if the later, which config I shout select?
 
-Will take a look tomorrow (kid->doctor+relatives today, uff) at the most 
-recent PM push; my quick testing did not show any problems, but 
-suspend/resume varies widely across hardware platforms.  I think I might 
-even have a MacBook I can test.  Apple platforms test to be weird too...  ;)
+Appreciate your help,
 
-	Jeff
+>
+>
+> INFO: task kblockd/0:10 blocked for more than 120 seconds.
+> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> kblockd/0        D [87016a78] 802d1e48     0    10 0x00100000      2
+>          11       9      (kernel thread)
+> Stack : 00000001 80107148 8562ed80 800e9098 00000001 00000001 7fffffff 00000000
+>        00000000 7fffffff 87053d38 ffffffff 87053d38 87053d28 872ff00c 802d1e48
+>        00000001 00000009 00000102 80071c80 00005965 0056addf 00005965 00000001
+>        00000000 00000000 7fffffff 80020c64 00000000 00000002 00000000 00000000
+>        7fffffff 802d1ca8 00000000 80024538 00000004 0000000a 00000001 87016a78
+>        ...
+> Call Trace:
+> [<802d1764>] schedule+0x648/0x70c from[<802d1e48>] schedule_timeout+0x30/0x324
+> [<802d1e48>] schedule_timeout+0x30/0x324 from[<802d1ca8>]
+> wait_for_common+0xf8/0x1c0
+> [<802d1ca8>] wait_for_common+0xf8/0x1c0 from[<80044400>]
+> __cancel_work_timer+0x188/0x210
+> [<80044400>] __cancel_work_timer+0x188/0x210 from[<801a48c4>]
+> blk_cleanup_queue+0x18/0x6c
+> [<801a48c4>] blk_cleanup_queue+0x18/0x6c from[<802098f4>]
+> scsi_device_dev_release_usercontext+0x174/0x1e4
+> [<802098f4>] scsi_device_dev_release_usercontext+0x174/0x1e4
+> from[<80043aa8>] execute_in_process_context+0x30/0x5c
+> [<80043aa8>] execute_in_process_context+0x30/0x5c from[<801eeda8>]
+> device_release+0x54/0x90
+> [<801eeda8>] device_release+0x54/0x90 from[<801b0180>] kobject_release+0x70/0xa8
+> [<801b0180>] kobject_release+0x70/0xa8 from[<801b17bc>] kref_put+0x80/0x98
+> [<801b17bc>] kref_put+0x80/0x98 from[<80203c04>] scsi_request_fn+0x51c/0x61c
+> [<80203c04>] scsi_request_fn+0x51c/0x61c from[<801a482c>]
+> generic_unplug_device+0x38/0x7c
+> [<801a482c>] generic_unplug_device+0x38/0x7c from[<80043e90>]
+> worker_thread+0x1ec/0x2d4
+> [<80043e90>] worker_thread+0x1ec/0x2d4 from[<800482c4>] kthread+0x7c/0x84
+> [<800482c4>] kthread+0x7c/0x84 from[<80007818>] kernel_thread_helper+0x10/0x18
+>
+> -------------------------------------------------------------------------------------
+> hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
+> hub 1-0:1.0: port 1, status 0000, change 0001, 12 Mb/s
+> usb 1-1: USB disconnect, address 35
+> usb 1-1: unregistering device
+> usb 1-1: unregistering interface 1-1:1.0
+> usb 1-1: usb_disable_device nuking all URBs
+> hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x0
+> hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
+> ehci-ehci ehci-ehci.0: GetStatus port 1 status 000803 sig=j CSC CONNECT
+> hub 1-0:1.0: port 1, status 0401, change 0001, 480 Mb/s
+> hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x401
+> ehci-ehci ehci-ehci.0: port 1 high speed
+> ehci-ehci ehci-ehci.0: GetStatus port 1 status 00000d sig=se0 PEC PE CONNECT
+> usb 1-1: new high speed USB device using ehci-ehci and address 36
+> ehci-ehci ehci-ehci.0: port 1 high speed
+> ehci-ehci ehci-ehci.0: GetStatus port 1 status 00000d sig=se0 PEC PE CONNECT
+> usb 1-1: default language 0x0409
+> usb 1-1: udev 36, busnum 1, minor = 35
 
-
-
-
-
+-- 
+Regards,
