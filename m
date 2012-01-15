@@ -1,52 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab2AOAHU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 19:07:20 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:55148 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab2AOAHT (ORCPT
+	id S1752158Ab2AOATA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 19:19:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49842 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab2AOAS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 19:07:19 -0500
-Date: Sun, 15 Jan 2012 01:09:20 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>
-Subject: Re: [PATCH] gpu, drm, sis: Don't return uninitialized variable from
- sis_driver_load()
-Message-ID: <20120115000920.GA5750@phenom.ffwll.local>
-Mail-Followup-To: Jesper Juhl <jj@chaosbits.net>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	Arjan van de Ven <arjan@linux.intel.com>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	Dave Airlie <airlied@redhat.com>, David Airlie <airlied@linux.ie>
-References: <alpine.LNX.2.00.1201142117400.11547@swampdragon.chaosbits.net>
+	Sat, 14 Jan 2012 19:18:59 -0500
+Date: Sat, 14 Jan 2012 16:18:43 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 1/2] SHM_UNLOCK: fix long unpreemptible section
+In-Reply-To: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils>
+Message-ID: <alpine.LSU.2.00.1201141615440.1338@eggly.anvils>
+References: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1201142117400.11547@swampdragon.chaosbits.net>
-X-Operating-System: Linux phenom 3.2.0-rc6+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 14, 2012 at 09:20:37PM +0100, Jesper Juhl wrote:
-> In sis_driver_load(), the only use of 'ret' is as the return value
-> from the function, unfortunately it is never initialized, so the
-> function just returns garbage when it succeeds.
-> To fix that, remove the variable and just return 0 directly on success.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+scan_mapping_unevictable_pages() is used to make SysV SHM_LOCKed pages
+evictable again once the shared memory is unlocked.  It does this with
+pagevec_lookup()s across the whole object (which might occupy most of
+memory), and takes 300ms to unlock 7GB here.  A cond_resched() every
+PAGEVEC_SIZE pages would be good.
 
-Woot, not one of mine!
+However, KOSAKI-san points out that this is called under shmem.c's
+info->lock, and it's also under shm.c's shm_lock(), both spinlocks.
+There is no strong reason for that: we need to take these pages off
+the unevictable list soonish, but those locks are not required for it.
 
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+So move the call to scan_mapping_unevictable_pages() from shmem.c's
+unlock handling up to shm.c's unlock handling.  Remove the recently
+added barrier, not needed now we have spin_unlock() before the scan.
+
+Use get_file(), with subsequent fput(), to make sure we have a
+reference to mapping throughout scan_mapping_unevictable_pages():
+that's something that was previously guaranteed by the shm_lock().
+
+Remove shmctl's lru_add_drain_all(): we don't fault in pages at
+SHM_LOCK time, and we lazily discover them to be Unevictable later,
+so it serves no purpose for SHM_LOCK; and serves no purpose for
+SHM_UNLOCK, since pages still on pagevec are not marked Unevictable.
+
+The original code avoided redundant rescans by checking VM_LOCKED
+flag at its level: now avoid them by checking shp's SHM_LOCKED.
+
+The original code called scan_mapping_unevictable_pages() on a
+locked area at shm_destroy() time: perhaps we once had accounting
+cross-checks which required that, but not now, so skip the overhead
+and just let inode eviction deal with them.
+
+Put check_move_unevictable_page() and scan_mapping_unevictable_pages()
+under CONFIG_SHMEM (with stub for the TINY case when ramfs is used),
+more as comment than to save space; comment them used for SHM_UNLOCK.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: stable@vger.kernel.org [back to 2.6.32 but will need respins]
+---
+Resend in the hope that it can get into 3.3.
+
+ ipc/shm.c   |   37 ++++++++++++++++++++++---------------
+ mm/shmem.c  |    7 -------
+ mm/vmscan.c |   12 +++++++++++-
+ 3 files changed, 33 insertions(+), 23 deletions(-)
+
+--- mmotm.orig/ipc/shm.c	2012-01-06 10:04:54.000000000 -0800
++++ mmotm/ipc/shm.c	2012-01-06 10:06:13.937943603 -0800
+@@ -870,9 +870,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
+ 	case SHM_LOCK:
+ 	case SHM_UNLOCK:
+ 	{
+-		struct file *uninitialized_var(shm_file);
+-
+-		lru_add_drain_all();  /* drain pagevecs to lru lists */
++		struct file *shm_file;
+ 
+ 		shp = shm_lock_check(ns, shmid);
+ 		if (IS_ERR(shp)) {
+@@ -895,22 +893,31 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
+ 		err = security_shm_shmctl(shp, cmd);
+ 		if (err)
+ 			goto out_unlock;
+-		
+-		if(cmd==SHM_LOCK) {
++
++		shm_file = shp->shm_file;
++		if (is_file_hugepages(shm_file))
++			goto out_unlock;
++
++		if (cmd == SHM_LOCK) {
+ 			struct user_struct *user = current_user();
+-			if (!is_file_hugepages(shp->shm_file)) {
+-				err = shmem_lock(shp->shm_file, 1, user);
+-				if (!err && !(shp->shm_perm.mode & SHM_LOCKED)){
+-					shp->shm_perm.mode |= SHM_LOCKED;
+-					shp->mlock_user = user;
+-				}
++			err = shmem_lock(shm_file, 1, user);
++			if (!err && !(shp->shm_perm.mode & SHM_LOCKED)) {
++				shp->shm_perm.mode |= SHM_LOCKED;
++				shp->mlock_user = user;
+ 			}
+-		} else if (!is_file_hugepages(shp->shm_file)) {
+-			shmem_lock(shp->shm_file, 0, shp->mlock_user);
+-			shp->shm_perm.mode &= ~SHM_LOCKED;
+-			shp->mlock_user = NULL;
++			goto out_unlock;
+ 		}
++
++		/* SHM_UNLOCK */
++		if (!(shp->shm_perm.mode & SHM_LOCKED))
++			goto out_unlock;
++		shmem_lock(shm_file, 0, shp->mlock_user);
++		shp->shm_perm.mode &= ~SHM_LOCKED;
++		shp->mlock_user = NULL;
++		get_file(shm_file);
+ 		shm_unlock(shp);
++		scan_mapping_unevictable_pages(shm_file->f_mapping);
++		fput(shm_file);
+ 		goto out;
+ 	}
+ 	case IPC_RMID:
+--- mmotm.orig/mm/shmem.c	2012-01-06 10:05:00.000000000 -0800
++++ mmotm/mm/shmem.c	2012-01-06 10:08:05.505947516 -0800
+@@ -1068,13 +1068,6 @@ int shmem_lock(struct file *file, int lo
+ 		user_shm_unlock(inode->i_size, user);
+ 		info->flags &= ~VM_LOCKED;
+ 		mapping_clear_unevictable(file->f_mapping);
+-		/*
+-		 * Ensure that a racing putback_lru_page() can see
+-		 * the pages of this mapping are evictable when we
+-		 * skip them due to !PageLRU during the scan.
+-		 */
+-		smp_mb__after_clear_bit();
+-		scan_mapping_unevictable_pages(file->f_mapping);
+ 	}
+ 	retval = 0;
+ 
+--- mmotm.orig/mm/vmscan.c	2012-01-06 10:04:54.000000000 -0800
++++ mmotm/mm/vmscan.c	2012-01-06 10:06:13.941943604 -0800
+@@ -3499,6 +3499,7 @@ int page_evictable(struct page *page, st
+ 	return 1;
+ }
+ 
++#ifdef CONFIG_SHMEM
+ /**
+  * check_move_unevictable_page - check page for evictability and move to appropriate zone lru list
+  * @page: page to check evictability and move to appropriate lru list
+@@ -3509,6 +3510,8 @@ int page_evictable(struct page *page, st
+  *
+  * Restrictions: zone->lru_lock must be held, page must be on LRU and must
+  * have PageUnevictable set.
++ *
++ * This function is only used for SysV IPC SHM_UNLOCK.
+  */
+ static void check_move_unevictable_page(struct page *page, struct zone *zone)
+ {
+@@ -3545,6 +3548,8 @@ retry:
+  *
+  * Scan all pages in mapping.  Check unevictable pages for
+  * evictability and move them to the appropriate zone lru list.
++ *
++ * This function is only used for SysV IPC SHM_UNLOCK.
+  */
+ void scan_mapping_unevictable_pages(struct address_space *mapping)
+ {
+@@ -3590,9 +3595,14 @@ void scan_mapping_unevictable_pages(stru
+ 		pagevec_release(&pvec);
+ 
+ 		count_vm_events(UNEVICTABLE_PGSCANNED, pg_scanned);
++		cond_resched();
+ 	}
+-
+ }
++#else
++void scan_mapping_unevictable_pages(struct address_space *mapping)
++{
++}
++#endif /* CONFIG_SHMEM */
+ 
+ static void warn_scan_unevictable_pages(void)
+ {
