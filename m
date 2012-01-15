@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2AOWJc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 17:09:32 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58721 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab2AOWJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 17:09:31 -0500
-Message-ID: <1326665367.5287.97.camel@edumazet-laptop>
-Subject: Re: Why the number of /proc/interrupts doesn't change when nic is
- under heavy workload?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Yuehai Xu <yuehaixu@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, yhxu@wayne.edu
-Date: Sun, 15 Jan 2012 23:09:27 +0100
-In-Reply-To: <CAEc1PS0doeaH59621ia7n2GT=WgRSsCit_EzGrCV93QH95XZqw@mail.gmail.com>
-References: <CAEc1PS0doeaH59621ia7n2GT=WgRSsCit_EzGrCV93QH95XZqw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1752643Ab2AOWY1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 17:24:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34104 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130Ab2AOWY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 17:24:26 -0500
+Date: Sun, 15 Jan 2012 17:24:20 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com
+Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
+Message-ID: <20120115222420.GA3174@redhat.com>
+References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120104065337.230911609@sli10-conroe.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 15 janvier 2012 à 15:53 -0500, Yuehai Xu a écrit :
-> Hi All,
+On Wed, Jan 04, 2012 at 02:53:37PM +0800, Shaohua Li wrote:
+> An IOPS based I/O scheduler
 > 
-> My nic of server is Intel Corporation 80003ES2LAN Gigabit Ethernet
-> Controller, the driver is e1000e, and my Linux version is 3.1.4. I
-> have a Memcached server running on this 8 core box, the weird thing is
-> that when my server is under heavy workload, the number of
-> /proc/interrupts doesn't change at all. Below are some details:
-> =======
-> cat /proc/interrupts | grep eth0
-> 68:     330887     330861     331432     330544     330346     330227
->    330830     330575   PCI-MSI-edge      eth0
-> =======
-> cat /proc/irq/68/smp_affinity
-> ff
+> Flash based storage has some different characteristics against rotate disk.
+> 1. no I/O seek.
+> 2. read and write I/O cost usually is much different.
+> 3. Time which a request takes depends on request size.
+> 4. High throughput and IOPS, low latency.
 > 
-> I know when network is under heavy load, NAPI will disable nic
-> interrupt and poll ring buffer in nic. My question is, when is nic
-> interrupt enabled again? It seems that it will never be enabled if the
-> heavy workload doesn't stop, simply because the number showed by
-> /proc/interrupts doesn't change at all. In my case, one of core is
-> saturated by ksoftirqd, because lots of softirqs are pending to that
-> core. I just want to distribute these softirqs to other cores. Even
-> RPS is enabled, that core is still occupied by ksoftirq, nearly 100%.
+> CFQ iosched does well for rotate disk, for example fair dispatching, idle
+> for sequential read. It also has optimization for flash based storage (for
+> item 1 above), but overall it's not designed for flash based storage. It's
+> a slice based algorithm. Since flash based storage request cost is very
+> low, and drive has big queue_depth is quite popular now which makes
+> dispatching cost even lower, CFQ's slice accounting (jiffy based)
+> doesn't work well. CFQ doesn't consider above item 2 & 3.
 > 
-> I dive into the codes and find these statements:
-> __napi_schedule ==>
->    local_irq_save(flags);
->    ____napi_schedule(&__get_cpu_var(softnet_data), n);
->    local_irq_restore(flags);
-> 
-> here "local_irq_save" actually invokes "cli" which disable interrupt
-> for the local core, is this the one that used in NAPI to disable nic
-> interrupt? Personally I don't think it is because it just disables
-> local cpu.
-> 
-> I also find "enable_irq/disable_irq/e1000_irq_enable/e1000_irq_disable"
-> under drivers/net/e1000e, are these used in NAPI to disable nic
-> interrupt, but I fail to get any clue that they are used in the code
-> path of NAPI?
+> FIOPS (Fair IOPS) ioscheduler is trying to fix the gaps. It's IOPS based, so
+> only targets for drive without I/O seek. It's quite similar like CFQ, but
+> the dispatch decision is made according to IOPS instead of slice.
 
-This is done in the device driver itself, not in generic NAPI code.
+Hi Shaohua,
 
-When NAPI poll() get less packets than the budget, it re-enables chip
-interrupts.
+What problem are you trying to fix. If you just want to do provide
+fairness in terms of IOPS instead of time, then I think existing code
+should be easily modifiable instead of writing a new IO scheduler
+altogether. It is just like switching the mode either based on tunable
+or based on disk type. 
 
+If slice_idle is zero, we already have some code to effectively do 
+accounting in terms of IOPS. This is primarily for group level. We should
+be able to extend it to queue level.
 
-> 
-> My current situation is that, almost 60% of time of other 7 cores are
-> idle, while only one core which is occupied by ksoftirq is 100% busy.
-> 
+These are implementation details. I think what I am not able to understand
+that what is the problem and what are you going to gain by doing
+accounting in terms of IOPS.
 
-You could post some info, like "cat /proc/net/softnet_stat"
+Also, for flash based storage, isn't noop or deadline a good choice of
+scheduler. Why do we want to come up with something which is CFQ like.
+For this fast device any idling will kill the performance and if you
+don't idle, then I think practically most of the workload will almost
+become round robin kind of serving.
 
-If you use RPS on a very high workload, on a mono queue NIC, best is to
-stick for example cpu0 for the packet dispatching, and other cpus for
-IP/UDP handling.
-
-echo 01 >/proc/irq/68/smp_affinity
-echo fe >/sys/class/net/eth0/queues/rx-0/rps_cpus
-
-Please keep in mind that if your memcache uses a single UDP socket, you
-probably hit a lot of contention on the socket spinlock and various
-counters. So maybe it would be better to _reduce_ number of cpus
-handling network load to reduce false sharing.
-
-echo 0e >/sys/class/net/eth0/queues/rx-0/rps_cpus
-
-Really, if you have a single UDP queue, best would be to not use RPS and
-only have :
-
-echo 01 >/proc/irq/68/smp_affinity
-
-Then you could post the result of "perf top -C 0" so that we can spot
-obvious problems on the hot path for this particular cpu.
-
-
-
+Thanks
+Vivek
