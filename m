@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab2AOVME (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 16:12:04 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24090 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab2AOVMC (ORCPT
+	id S1751715Ab2AOVYJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 16:24:09 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:61634 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2AOVYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 16:12:02 -0500
-Date: Sun, 15 Jan 2012 22:12:01 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH][Trivial] Fix up version number reference in
- include/trace/events/power.h
-In-Reply-To: <1326661784.7642.140.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LNX.2.00.1201152210300.13389@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201152146570.13389@swampdragon.chaosbits.net> <1326661784.7642.140.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 15 Jan 2012 16:24:08 -0500
+Message-ID: <4F1343F1.7090003@yahoo.co.uk>
+Date: Sun, 15 Jan 2012 21:24:01 +0000
+From: Sam Tygier <samtygier@yahoo.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-kernel@vger.kernel.org
+Subject: panic in 3.2.x
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:b+r88+a6TLwoKiNh2jltiFba3hMDrAH4sGM+gm64CXc
+ f5lCp+7ss+vexTerALcGFRk/wNQykZxP+J8LT4tRJKDxdiSEAm
+ aTMT7VdErCAuRxTxQO4K8VlYqZrHz7nXI0CFoM2fadOGwFKrZF
+ LBe8dfyXd6fpH3HAaVqOmirnvrHfDnUZoTvpG24wLXEYSvYK2p
+ oMms8D0j95uxIQnN1XeCcUi7H2M1cCRinPfScN+uBxsOFSIZcG
+ 4jyLd3lTmDwvLCJalXU3zcFXG0LXvDl8+G7avWX6bp6h80mh3G
+ NaD1+nJDbql0HB/kPtHFDZlPZ9/4mkLFsN02yD6OV8lRjgrvA=
+ =
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Jan 2012, Steven Rostedt wrote:
+I have built a 3.2.0 kernel using the fedora kernel-3.2.0-2.fc17.src.rpm, and a 3.2.1 using kernel-3.2.1-4.fc17.src.rpm. With either of these I get several panics per day on a Lenovo S12 (intel version), but only if I have an SD card in the built in card reader. I am not really sure how to trigger them, but they are frequent enough that I could probably get more info if instructed.
 
-> On Sun, 2012-01-15 at 21:48 +0100, Jesper Juhl wrote:
-> > What was originally going to be 2.6.41 became 3.1 .
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  include/trace/events/power.h |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-> > index 1bcc2a8..b262699 100644
-> > --- a/include/trace/events/power.h
-> > +++ b/include/trace/events/power.h
-> > @@ -65,7 +65,7 @@ TRACE_EVENT(machine_suspend,
-> >  	TP_printk("state=%lu", (unsigned long)__entry->state)
-> >  );
-> >  
-> > -/* This code will be removed after deprecation time exceeded (2.6.41) */
-> > +/* This code will be removed after deprecation time exceeded (3.1) */
-> 
-> Shouldn't the real fix be to remove this code? What's the use of
-> changing the version number that this code will be removed from, when
-> the change won't get in until after the version that this code should
-> have been removed?
-> 
-> This is like updating 2014 calendars to say the world will end in 2012.
-> 
-Heh, yeah, in a way you are right. But we have lots of code in the kernel 
-that says it will be removed at <some date in the past>, so I just figured 
-that if this code ends up hanging around it should at least display the 
-correct version number for when it /should/ have been removed.
-The actual removal I'll leave up to others.
+I have not had any panics with 3.1.x kernels
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+The panics are all different, and I can't spot anything particular in common. Here is a bit of one:
 
+EIP: [<c091de99>] __schedule+0x379/0x8b0 SS ESP: 0060:f400bea0
+CR2: 000000000c043777a
+Kernel panic - not syncing: Fatal exception in interupt
+Pid: 0, comm: swapper/0 Tainted: G      D     3.2.0-2.fc16.i686 #1
+Call Trace:
+  [<c09174a6>] ? printk+0x2d/0x2f
+  [<c0917371>] panic+0x5c/0x164
+...
+
+And some photos.
+http://www.hep.manchester.ac.uk/u/sam/pub/32_panic/20120110_004.jpg
+http://www.hep.manchester.ac.uk/u/sam/pub/32_panic/20120110_005.jpg
+http://www.hep.manchester.ac.uk/u/sam/pub/32_panic/20120115_001.jpg
+
+other info:
+http://www.hep.manchester.ac.uk/u/sam/pub/32_panic/lshw.txt
+http://www.hep.manchester.ac.uk/u/sam/pub/32_panic/dmesg.txt
+
+I boot with nolapic_timer to avoid freezes.
+
+Let me know if there is any other info I can give.
+
+Sam
