@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab2AOJTp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 04:19:45 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:59308 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751340Ab2AOJTl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 04:19:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120114184854.GA23282@redhat.com>
-References: <1326456812.18165.0.camel@sauron.fi.intel.com>
-	<20120114184854.GA23282@redhat.com>
-Date: Sun, 15 Jan 2012 11:19:40 +0200
-Message-ID: <CAJL_dMsugowERsv8qHuaWZB3yEstqrB3d+So-ive-EGRoi4OMg@mail.gmail.com>
-Subject: Re: [PULL REQUEST] More UBI/UBIFS changes for 3.3
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Dave Jones <davej@redhat.com>,
-        "Bityutskiy, Artem" <artem.bityutskiy@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1751707Ab2AOJV5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 04:21:57 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:33369 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751340Ab2AOJVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 04:21:53 -0500
+Message-ID: <1326619310.6164.2.camel@joe2Laptop>
+Subject: Re: [PATCH 3/8] brcm80211: Add and use brcmX_dbg_dump_hex
+From: Joe Perches <joe@perches.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Brett Rudley <brudley@broadcom.com>,
+        Henry Ptasinski <henryp@broadcom.com>,
+        Roland Vossen <rvossen@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Kan Yan <kanyan@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Sun, 15 Jan 2012 01:21:50 -0800
+In-Reply-To: <4F1299C4.7020902@broadcom.com>
+References: <cover.1326616556.git.joe@perches.com>
+	 <289e8a2dcdbb03315ba41788a358f5afc4bacb1b.1326616556.git.joe@perches.com>
+	 <4F1299C4.7020902@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 14, 2012 at 8:48 PM, Dave Jones <davej@redhat.com> wrote:
+On Sun, 2012-01-15 at 10:17 +0100, Arend van Spriel wrote:
+> On 01/15/2012 09:38 AM, Joe Perches wrote:
+> 
+> > +#ifdef DEBUG
+> > +extern __printf(3, 4)
+> 
+> Just curious if I can learn something here. What does the __printf(3, 4) do?
 
-> This introduced a compile failure if CONFIG_UBIFS_FS_DEBUG is unset.
->
-> fs/ubifs/journal.c: In function ‘ubifs_jnl_write_data’:
-> fs/ubifs/journal.c:700:2: error: implicit declaration of function ‘dbg_jnlk’ [-Werror=implicit-function-declaration]
+It's a #define for gcc __attribute__((format (printf, ...)))
+It makes gcc validate the printf format and arguments.
 
-And now it is in Linus tree.
+http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html
 
 
-  CC [M]  fs/ubifs/journal.o
-fs/ubifs/journal.c: In function ‘ubifs_jnl_write_data’:
-fs/ubifs/journal.c:700:2: error: implicit declaration of function
-‘dbg_jnlk’ [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-
-make[3]: *** [fs/ubifs/journal.o] Error 1
-make[2]: *** [fs/ubifs] Error 2
-make[1]: *** [fs] Error 2
