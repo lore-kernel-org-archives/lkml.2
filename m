@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab2AOTfF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 14:35:05 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:36664 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751778Ab2AOTfD (ORCPT
+	id S1752127Ab2AOTgt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 14:36:49 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:23147 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab2AOTgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 14:35:03 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18IeVta3tMI1Xvw3sU3uWJHsEECCAFBpu9K5Quw4X
-	/rauqMIIUzyztU
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 1/4 v2] staging/xgifb: Remove unsupported mode LCD_320x480
-Date: Sun, 15 Jan 2012 20:34:52 +0100
-Message-Id: <1326656092-21961-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1326651733-9242-2-git-send-email-peterhuewe@gmx.de>
-References: <1326651733-9242-2-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	Sun, 15 Jan 2012 14:36:48 -0500
+Date: Sun, 15 Jan 2012 20:36:46 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: dm-devel@redhat.com
+cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>
+Subject: [PATCH] drivers/md/dm-ioctl.c::target_message(): don't leak 'argv'
+ mem
+Message-ID: <alpine.LNX.2.00.1201152034410.13389@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the probed mode LCD_320x480 which isn't supported
-anyway since this mode falls through to the default (=invalid) mode in
-the
-XGIfb_validate_mode function (see line 529 ff. for details. the
-commented out code for this mode is also removed).
+If, after allocating memory for 'argv' via dm_split_args(...), we take
+the true branch of 'if (!argc)', we'll jump to the 'out:' label and
+neglect to free the memory we allocated. We should instead jump to the
+'out_argv:' label in that case as far as I can tell.
 
-By removing this assignment, we can use the LCD_TYPEs from the sis
-driver without modifications.
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
-Thanks Dan.
+ drivers/md/dm-ioctl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- drivers/staging/xgifb/XGI_main_26.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+ Compile tested only.
 
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 2502c49..e618aa6 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -526,12 +526,6 @@ static int XGIfb_validate_mode(struct xgifb_video_info *xgifb_info, int myindex)
- 			xres = 1600;
- 			yres = 1200;
- 			break;
--		/* case LCD_320x480: */ /* TW: FSTN */
--			/*
--			xres =  320;
--			yres =  480;
--			break;
--			*/
- 		default:
- 			xres = 0;
- 			yres = 0;
-@@ -2117,10 +2111,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 			reg = xgifb_reg_get(XGICR, IND_XGI_LCD_PANEL);
- 			reg &= 0x0f;
- 			hw_info->ulCRT2LCDType = XGI310paneltype[reg];
--
--		} else {
--			/* TW: FSTN/DSTN */
--			hw_info->ulCRT2LCDType = LCD_320x480;
- 		}
+diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+index 31c2dc2..1ce84ed 100644
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1437,7 +1437,7 @@ static int target_message(struct dm_ioctl *param, size_t param_size)
+ 
+ 	if (!argc) {
+ 		DMWARN("Empty message received.");
+-		goto out;
++		goto out_argv;
  	}
  
+ 	table = dm_get_live_table(md);
 -- 
-1.7.3.4
+1.7.8.3
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
