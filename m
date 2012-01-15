@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab2AOSde (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 13:33:34 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22578 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2AOSdc (ORCPT
+	id S1751960Ab2AOSh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 13:37:28 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37795 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab2AOSh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 13:33:32 -0500
-Date: Sun, 15 Jan 2012 19:33:30 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andy Grover <agrover@redhat.com>,
-        Dan Carpenter <error27@gmail.com>, Roland Dreier <roland@kernel.org>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] target, iscsi: Fix up a few assignments
-Message-ID: <alpine.LNX.2.00.1201151929400.13069@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 15 Jan 2012 13:37:27 -0500
+Date: Sun, 15 Jan 2012 19:37:26 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Ted Ts'o" <tytso@mit.edu>, Vincent Pelletier <plr.vincent@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: ext4 bug ? "Intel 320 SSD write performance ??? contd."
+Message-ID: <20120115183726.GA20506@atrey.karlin.mff.cuni.cz>
+References: <CAF78GY1_HwP2QZsMLqHeJechjps44Jq2o1VDSFC0TriXB1riPQ@mail.gmail.com>
+ <20111031210951.GK16825@thunk.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111031210951.GK16825@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A statement such as
-  struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
-has undefined behaviour since there are two assignments to 'na', strictly 
-speaking (the order in which side-effects from the assignments take place 
-is undefined since there's no intervening sequence point), and it looks 
-unintentional in any case.
+Hi!
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/target/iscsi/iscsi_target_erl1.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> > Reading this blog post[1], I thought the "2nd iteration" results could be
+> > considered a bug in mkfs.ext4 (and possibly any mkfs implementation):
+> > shouldn't mkfs run [FI]TRIM on its target before creating filesystem
+> > structure ?
+> 
+> It's not enabled by default, because there are crappy SSD's out there
+> where use of the TRIM command will turn them into bricks.  (No, it's
+> not the Intel X-25 drives that I'm worried about.)
+> 
+> So I (and the distributions) don't want to make it the default, since
+> if you buy crap drives and then mke2fs turns them into bricks, who are
+> you likely to blame?  The crap SSD manufacturer?  Yourself for trying
+> to buy SSD's on the cheap?  Or the program that issued the TRIM
+> command?
 
- compile tested only.
+Kernel for allowing userspace damage the hardware?
 
-diff --git a/drivers/target/iscsi/iscsi_target_erl1.c b/drivers/target/iscsi/iscsi_target_erl1.c
-index 101b1be..af18cb8 100644
---- a/drivers/target/iscsi/iscsi_target_erl1.c
-+++ b/drivers/target/iscsi/iscsi_target_erl1.c
-@@ -1238,7 +1238,7 @@ void iscsit_mod_dataout_timer(struct iscsi_cmd *cmd)
- {
- 	struct iscsi_conn *conn = cmd->conn;
- 	struct iscsi_session *sess = conn->sess;
--	struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
-+	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
- 
- 	spin_lock_bh(&cmd->dataout_timeout_lock);
- 	if (!(cmd->dataout_timer_flags & ISCSI_TF_RUNNING)) {
-@@ -1261,7 +1261,7 @@ void iscsit_start_dataout_timer(
- 	struct iscsi_conn *conn)
- {
- 	struct iscsi_session *sess = conn->sess;
--	struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
-+	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
- 
- 	if (cmd->dataout_timer_flags & ISCSI_TF_RUNNING)
- 		return;
+If there are known-bad drives, we should blacklist them, and kernel
+should -EPERM on attempts to trim.
+
+If it is too widespread, we  should probably create a whitelist...
+									Pavel
 -- 
-1.7.8.3
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
