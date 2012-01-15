@@ -1,359 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab2AOAVI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jan 2012 19:21:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59767 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab2AOAVG (ORCPT
+	id S1754041Ab2AOAyp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jan 2012 19:54:45 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:33785 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752131Ab2AOAym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jan 2012 19:21:06 -0500
-Date: Sat, 14 Jan 2012 16:20:58 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 2/2] SHM_UNLOCK: fix Unevictable pages stranded after swap
-In-Reply-To: <alpine.LSU.2.00.1201061310340.12082@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1201141619050.1338@eggly.anvils>
-References: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils> <alpine.LSU.2.00.1201061310340.12082@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sat, 14 Jan 2012 19:54:42 -0500
+Message-ID: <4F12316E.6050204@xenotime.net>
+Date: Sat, 14 Jan 2012 17:52:46 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Will Drewry <wad@chromium.org>
+CC: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH v3 3/3] Documentation: prctl/seccomp_filter
+References: <1326411506-16894-1-git-send-email-wad@chromium.org> <1326411506-16894-3-git-send-email-wad@chromium.org>
+In-Reply-To: <1326411506-16894-3-git-send-email-wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit cc39c6a9bbde "mm: account skipped entries to avoid looping in
-find_get_pages" correctly fixed an infinite loop; but left a problem
-that find_get_pages() on shmem would return 0 (appearing to callers
-to mean end of tree) when it meets a run of nr_pages swap entries.
+On 01/12/2012 03:38 PM, Will Drewry wrote:
+> Documents how system call filtering using Berkeley Packet
+> Filter programs works and how it may be used.
+> Includes an example for x86 (32-bit).
+> 
+> v3: - call out BPF <-> Berkeley Packet Filter (rdunlap@xenotime.net)
+>     - document use of tentative always-unprivileged
+>     - guard sample compilation for i386 and x86_64
+> v2: - move code to samples (corbet@lwn.net)
+> 
+> Signed-off-by: Will Drewry <wad@chromium.org>
+> ---
+>  Documentation/prctl/seccomp_filter.txt |   94 ++++++++++++++++++++++++++++++++
+>  samples/Makefile                       |    2 +-
+>  samples/seccomp/Makefile               |   18 ++++++
+>  samples/seccomp/bpf-example.c          |   74 +++++++++++++++++++++++++
+>  4 files changed, 187 insertions(+), 1 deletions(-)
+>  create mode 100644 Documentation/prctl/seccomp_filter.txt
+>  create mode 100644 samples/seccomp/Makefile
+>  create mode 100644 samples/seccomp/bpf-example.c
+> 
+> diff --git a/Documentation/prctl/seccomp_filter.txt b/Documentation/prctl/seccomp_filter.txt
+> new file mode 100644
+> index 0000000..2db8b89
+> --- /dev/null
+> +++ b/Documentation/prctl/seccomp_filter.txt
+> @@ -0,0 +1,94 @@
+> +		Seccomp filtering
+> +		=================
+> +
+> +Introduction
+> +------------
+> +
+> +A large number of system calls are exposed to every userland process
+> +with many of them going unused for the entire lifetime of the process.
+> +As system calls change and mature, bugs are found and eradicated.  A
+> +certain subset of userland applications benefit by having a reduced set
+> +of available system calls.  The resulting set reduces the total kernel
+> +surface exposed to the application.  System call filtering is meant for
+> +use with those applications.
+> +
+> +Seccomp filtering provides a means for a process to specify a filter
+> +for incoming system calls.  The filter is expressed as a Berkeley Packet
+> +Filter (BPF) program, as with socket filters, except that the data
+> +operated on is the current user_regs_struct.  This allows for expressive
+> +filtering of system calls using the pre-existing system call ABI and
+> +using a filter program language with a long history of being exposed to
+> +userland.  Additionally, BPF makes it impossible for users of seccomp to
+> +fall prey to time-of-check-time-of-use (TOCTOU) attacks that are common
+> +in system call interposition frameworks because the evaluated data is
+> +solely register state just after system call entry.
+> +
+> +What it isn't
+> +-------------
+> +
+> +System call filtering isn't a sandbox.  It provides a clearly defined
+> +mechanism for minimizing the exposed kernel surface.  Beyond that,
+> +policy for logical behavior and information flow should be managed with
+> +a combinations of other system hardening techniques and, potentially, a
 
-The only uses of find_get_pages() on shmem are via pagevec_lookup(),
-called from invalidate_mapping_pages(), and from shmctl SHM_UNLOCK's
-scan_mapping_unevictable_pages().  The first is already commented,
-and not worth worrying about; but the second can leave pages on the
-Unevictable list after an unusual sequence of swapping and locking.
+     combination                                                         an
 
-Fix that by using shmem_find_get_pages_and_swap() (then ignoring
-the swap) instead of pagevec_lookup().
+> +LSM of your choosing.  Expressive, dynamic filters provide further options down
+> +this path (avoiding pathological sizes or selecting which of the multiplexed
+> +system calls in socketcall() is allowed, for instance) which could be
+> +construed, incorrectly, as a more complete sandboxing solution.
+> +
+> +Usage
+> +-----
+> +
+> +An additional seccomp mode is added, but they are not directly set by the
+> +consuming process.  The new mode, '2', is only available if
+> +CONFIG_SECCOMP_FILTER is set and enabled using prctl with the
+> +PR_ATTACH_SECCOMP_FILTER argument.
+> +
+> +Interacting with seccomp filters is done using one prctl(2) call.
+> +
+> +PR_ATTACH_SECCOMP_FILTER:
+> +	Allows the specification of a new filter using a BPF program.
+> +	The BPF program will be executed over a user_regs_struct data
+> +	reflecting system call time except with the system call number
+> +	resident in orig_[register].  To allow a system call, the size
+> +	of the data must be returned.  At present, all other return values
+> +	result in the system call being blocked, but it is recommended to
+> +	return 0 in those cases.  This will allow for future custom return
+> +	values to be introduced, if ever desired.
+> +
+> +	Usage:
+> +		prctl(PR_ATTACH_SECCOMP_FILTER, prog);
+> +
+> +	The 'prog' argument is a pointer to a struct sock_fprog which will
+> +	contain the filter program.  If the program is invalid, the call
+> +	will return -1 and set errno to -EINVAL.
 
-But I don't want to contaminate vmscan.c with shmem internals, nor
-shmem.c with LRU locking.  So move scan_mapping_unevictable_pages()
-into shmem.c, renaming it shmem_unlock_mapping(); and rename
-check_move_unevictable_page() to check_move_unevictable_pages(),
-looping down an array of pages, oftentimes under the same lock.
+	                                EINVAL.
+(I think)
 
-Leave out the "rotate unevictable list" block: that's a leftover
-from when this was used for /proc/sys/vm/scan_unevictable_pages,
-whose flawed handling involved looking at pages at tail of LRU.
+> +
+> +	The struct user_regs_struct the @prog will see is based on the
+> +	personality of the task at the time of this prctl call.  Additionally,
+> +	is_compat_task is also tracked for the @prog.  This means that once set
+> +	the calling task will have all of its system calls blocked if it
+> +	switches its system call ABI (via personality or other means).
+> +
+> +	If fork/clone and execve are allowed by @prog, any child processes will
+> +	be constrained to the same filters and syscal call ABI as the parent.
 
-Was there significance to the sequence first ClearPageUnevictable,
-then test page_evictable, then SetPageUnevictable here?  I think
-not, we're under LRU lock, and have no barriers between those.
+	                                       syscall
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: stable@vger.kernel.org [back to 3.1 but will need respins]
----
-Resend in the hope that it can get into 3.3.
+> +
+> +	When called from an unprivileged process (lacking CAP_SYS_ADMIN), the
+> +	"always_unprivileged" bit is enabled for the process.
+> +
+> +	Additionally, if prctl(2) is allowed by the attached filter,
+> +	additional filters may be layered on which will increase evaluation
+> +	time, but allow for further decreasing the attack surface during
+> +	execution of a process.
+> +
+> +The above call returns 0 on success and non-zero on error.
+> +
+> +Example
+> +-------
+> +
+> +samples/seccomp-bpf-example.c shows an example process that allows read from stdin,
 
- include/linux/shmem_fs.h |    1 
- include/linux/swap.h     |    2 
- ipc/shm.c                |    2 
- mm/shmem.c               |   46 +++++++++++--
- mm/vmscan.c              |  128 +++++++++++--------------------------
- 5 files changed, 83 insertions(+), 96 deletions(-)
+   samples/seccomp/bpf-example.c
 
---- mmotm.orig/include/linux/shmem_fs.h	2012-01-06 09:55:50.901928800 -0800
-+++ mmotm/include/linux/shmem_fs.h	2012-01-06 10:10:15.645949349 -0800
-@@ -48,6 +48,7 @@ extern struct file *shmem_file_setup(con
- 					loff_t size, unsigned long flags);
- extern int shmem_zero_setup(struct vm_area_struct *);
- extern int shmem_lock(struct file *file, int lock, struct user_struct *user);
-+extern void shmem_unlock_mapping(struct address_space *mapping);
- extern struct page *shmem_read_mapping_page_gfp(struct address_space *mapping,
- 					pgoff_t index, gfp_t gfp_mask);
- extern void shmem_truncate_range(struct inode *inode, loff_t start, loff_t end);
---- mmotm.orig/include/linux/swap.h	2012-01-06 09:55:50.901928800 -0800
-+++ mmotm/include/linux/swap.h	2012-01-06 10:10:15.645949349 -0800
-@@ -279,7 +279,7 @@ static inline int zone_reclaim(struct zo
- #endif
- 
- extern int page_evictable(struct page *page, struct vm_area_struct *vma);
--extern void scan_mapping_unevictable_pages(struct address_space *);
-+extern void check_move_unevictable_pages(struct page **, int nr_pages);
- 
- extern unsigned long scan_unevictable_pages;
- extern int scan_unevictable_handler(struct ctl_table *, int,
---- mmotm.orig/ipc/shm.c	2012-01-06 10:06:13.937943603 -0800
-+++ mmotm/ipc/shm.c	2012-01-06 10:10:15.649949348 -0800
-@@ -916,7 +916,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 		shp->mlock_user = NULL;
- 		get_file(shm_file);
- 		shm_unlock(shp);
--		scan_mapping_unevictable_pages(shm_file->f_mapping);
-+		shmem_unlock_mapping(shm_file->f_mapping);
- 		fput(shm_file);
- 		goto out;
- 	}
---- mmotm.orig/mm/shmem.c	2012-01-06 10:08:05.505947516 -0800
-+++ mmotm/mm/shmem.c	2012-01-06 10:10:15.649949348 -0800
-@@ -379,7 +379,7 @@ static int shmem_free_swap(struct addres
- /*
-  * Pagevec may contain swap entries, so shuffle up pages before releasing.
-  */
--static void shmem_pagevec_release(struct pagevec *pvec)
-+static void shmem_deswap_pagevec(struct pagevec *pvec)
- {
- 	int i, j;
- 
-@@ -389,7 +389,36 @@ static void shmem_pagevec_release(struct
- 			pvec->pages[j++] = page;
- 	}
- 	pvec->nr = j;
--	pagevec_release(pvec);
-+}
-+
-+/*
-+ * SysV IPC SHM_UNLOCK restore Unevictable pages to their evictable lists.
-+ */
-+void shmem_unlock_mapping(struct address_space *mapping)
-+{
-+	struct pagevec pvec;
-+	pgoff_t indices[PAGEVEC_SIZE];
-+	pgoff_t index = 0;
-+
-+	pagevec_init(&pvec, 0);
-+	/*
-+	 * Minor point, but we might as well stop if someone else SHM_LOCKs it.
-+	 */
-+	while (!mapping_unevictable(mapping)) {
-+		/*
-+		 * Avoid pagevec_lookup(): find_get_pages() returns 0 as if it
-+		 * has finished, if it hits a row of PAGEVEC_SIZE swap entries.
-+		 */
-+		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
-+					PAGEVEC_SIZE, pvec.pages, indices);
-+		if (!pvec.nr)
-+			break;
-+		index = indices[pvec.nr - 1] + 1;
-+		shmem_deswap_pagevec(&pvec);
-+		check_move_unevictable_pages(pvec.pages, pvec.nr);
-+		pagevec_release(&pvec);
-+		cond_resched();
-+	}
- }
- 
- /*
-@@ -440,7 +469,8 @@ void shmem_truncate_range(struct inode *
- 			}
- 			unlock_page(page);
- 		}
--		shmem_pagevec_release(&pvec);
-+		shmem_deswap_pagevec(&pvec);
-+		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		cond_resched();
- 		index++;
-@@ -470,7 +500,8 @@ void shmem_truncate_range(struct inode *
- 			continue;
- 		}
- 		if (index == start && indices[0] > end) {
--			shmem_pagevec_release(&pvec);
-+			shmem_deswap_pagevec(&pvec);
-+			pagevec_release(&pvec);
- 			break;
- 		}
- 		mem_cgroup_uncharge_start();
-@@ -494,7 +525,8 @@ void shmem_truncate_range(struct inode *
- 			}
- 			unlock_page(page);
- 		}
--		shmem_pagevec_release(&pvec);
-+		shmem_deswap_pagevec(&pvec);
-+		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		index++;
- 	}
-@@ -2439,6 +2471,10 @@ int shmem_lock(struct file *file, int lo
- 	return 0;
- }
- 
-+void shmem_unlock_mapping(struct address_space *mapping)
-+{
-+}
-+
- void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
- {
- 	truncate_inode_pages_range(inode->i_mapping, lstart, lend);
---- mmotm.orig/mm/vmscan.c	2012-01-06 10:06:13.941943604 -0800
-+++ mmotm/mm/vmscan.c	2012-01-06 10:10:15.649949348 -0800
-@@ -26,7 +26,6 @@
- #include <linux/buffer_head.h>	/* for try_to_release_page(),
- 					buffer_heads_over_limit */
- #include <linux/mm_inline.h>
--#include <linux/pagevec.h>
- #include <linux/backing-dev.h>
- #include <linux/rmap.h>
- #include <linux/topology.h>
-@@ -661,7 +660,7 @@ redo:
- 		 * When racing with an mlock or AS_UNEVICTABLE clearing
- 		 * (page is unlocked) make sure that if the other thread
- 		 * does not observe our setting of PG_lru and fails
--		 * isolation/check_move_unevictable_page,
-+		 * isolation/check_move_unevictable_pages,
- 		 * we see PG_mlocked/AS_UNEVICTABLE cleared below and move
- 		 * the page back to the evictable list.
- 		 *
-@@ -3501,107 +3500,58 @@ int page_evictable(struct page *page, st
- 
- #ifdef CONFIG_SHMEM
- /**
-- * check_move_unevictable_page - check page for evictability and move to appropriate zone lru list
-- * @page: page to check evictability and move to appropriate lru list
-- * @zone: zone page is in
-+ * check_move_unevictable_pages - check pages for evictability and move to appropriate zone lru list
-+ * @pages:	array of pages to check
-+ * @nr_pages:	number of pages to check
-  *
-- * Checks a page for evictability and moves the page to the appropriate
-- * zone lru list.
-- *
-- * Restrictions: zone->lru_lock must be held, page must be on LRU and must
-- * have PageUnevictable set.
-+ * Checks pages for evictability and moves them to the appropriate lru list.
-  *
-  * This function is only used for SysV IPC SHM_UNLOCK.
-  */
--static void check_move_unevictable_page(struct page *page, struct zone *zone)
-+void check_move_unevictable_pages(struct page **pages, int nr_pages)
- {
- 	struct lruvec *lruvec;
-+	struct zone *zone = NULL;
-+	int pgscanned = 0;
-+	int pgrescued = 0;
-+	int i;
- 
--	VM_BUG_ON(PageActive(page));
--retry:
--	ClearPageUnevictable(page);
--	if (page_evictable(page, NULL)) {
--		enum lru_list l = page_lru_base_type(page);
--
--		__dec_zone_state(zone, NR_UNEVICTABLE);
--		lruvec = mem_cgroup_lru_move_lists(zone, page,
--						   LRU_UNEVICTABLE, l);
--		list_move(&page->lru, &lruvec->lists[l]);
--		__inc_zone_state(zone, NR_INACTIVE_ANON + l);
--		__count_vm_event(UNEVICTABLE_PGRESCUED);
--	} else {
--		/*
--		 * rotate unevictable list
--		 */
--		SetPageUnevictable(page);
--		lruvec = mem_cgroup_lru_move_lists(zone, page, LRU_UNEVICTABLE,
--						   LRU_UNEVICTABLE);
--		list_move(&page->lru, &lruvec->lists[LRU_UNEVICTABLE]);
--		if (page_evictable(page, NULL))
--			goto retry;
--	}
--}
--
--/**
-- * scan_mapping_unevictable_pages - scan an address space for evictable pages
-- * @mapping: struct address_space to scan for evictable pages
-- *
-- * Scan all pages in mapping.  Check unevictable pages for
-- * evictability and move them to the appropriate zone lru list.
-- *
-- * This function is only used for SysV IPC SHM_UNLOCK.
-- */
--void scan_mapping_unevictable_pages(struct address_space *mapping)
--{
--	pgoff_t next = 0;
--	pgoff_t end   = (i_size_read(mapping->host) + PAGE_CACHE_SIZE - 1) >>
--			 PAGE_CACHE_SHIFT;
--	struct zone *zone;
--	struct pagevec pvec;
-+	for (i = 0; i < nr_pages; i++) {
-+		struct page *page = pages[i];
-+		struct zone *pagezone;
-+
-+		pgscanned++;
-+		pagezone = page_zone(page);
-+		if (pagezone != zone) {
-+			if (zone)
-+				spin_unlock_irq(&zone->lru_lock);
-+			zone = pagezone;
-+			spin_lock_irq(&zone->lru_lock);
-+		}
- 
--	if (mapping->nrpages == 0)
--		return;
-+		if (!PageLRU(page) || !PageUnevictable(page))
-+			continue;
- 
--	pagevec_init(&pvec, 0);
--	while (next < end &&
--		pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)) {
--		int i;
--		int pg_scanned = 0;
--
--		zone = NULL;
--
--		for (i = 0; i < pagevec_count(&pvec); i++) {
--			struct page *page = pvec.pages[i];
--			pgoff_t page_index = page->index;
--			struct zone *pagezone = page_zone(page);
--
--			pg_scanned++;
--			if (page_index > next)
--				next = page_index;
--			next++;
--
--			if (pagezone != zone) {
--				if (zone)
--					spin_unlock_irq(&zone->lru_lock);
--				zone = pagezone;
--				spin_lock_irq(&zone->lru_lock);
--			}
-+		if (page_evictable(page, NULL)) {
-+			enum lru_list lru = page_lru_base_type(page);
- 
--			if (PageLRU(page) && PageUnevictable(page))
--				check_move_unevictable_page(page, zone);
-+			VM_BUG_ON(PageActive(page));
-+			ClearPageUnevictable(page);
-+			__dec_zone_state(zone, NR_UNEVICTABLE);
-+			lruvec = mem_cgroup_lru_move_lists(zone, page,
-+						LRU_UNEVICTABLE, lru);
-+			list_move(&page->lru, &lruvec->lists[lru]);
-+			__inc_zone_state(zone, NR_INACTIVE_ANON + lru);
-+			pgrescued++;
- 		}
--		if (zone)
--			spin_unlock_irq(&zone->lru_lock);
--		pagevec_release(&pvec);
-+	}
- 
--		count_vm_events(UNEVICTABLE_PGSCANNED, pg_scanned);
--		cond_resched();
-+	if (zone) {
-+		__count_vm_events(UNEVICTABLE_PGRESCUED, pgrescued);
-+		__count_vm_events(UNEVICTABLE_PGSCANNED, pgscanned);
-+		spin_unlock_irq(&zone->lru_lock);
- 	}
- }
--#else
--void scan_mapping_unevictable_pages(struct address_space *mapping)
--{
--}
- #endif /* CONFIG_SHMEM */
- 
- static void warn_scan_unevictable_pages(void)
+> +write to stdout/err, exit and signal returns for 32-bit x86.
+
+                  /stderr,
+
+> +
+> +Adding architecture support
+> +-----------------------
+> +
+> +Any platform with seccomp support will support seccomp filters
+> +as long as CONFIG_SECCOMP_FILTER is enabled.
+
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
