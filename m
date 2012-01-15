@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab2AOSWb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 13:22:31 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:40628 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751183Ab2AOSWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 13:22:30 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18H1tpRv5gH+mhE6twB5FbsZCHEFE5ivxDH1N42aA
-	8vN3PlDL4sOhX/
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: staging/xgifb: Use sis headers and remove duplicated structs and defines
-Date: Sun, 15 Jan 2012 19:22:09 +0100
-Message-Id: <1326651733-9242-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	id S1751821Ab2AOSan (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 13:30:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35879 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751451Ab2AOSam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 13:30:42 -0500
+Date: Sun, 15 Jan 2012 19:24:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
+Message-ID: <20120115182441.GA24694@redhat.com>
+References: <20120110174509.GA30802@redhat.com> <20120113182015.GA3902@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120113182015.GA3902@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the xgifb driver used the sis driver as a template for development,
-a lot of defines and structs were redefined with only slightly different names.
-This patchset tries to remove some of these duplicates by including the sis headers
-and replacing any xgi struct/define by its identical twin from the sis headers.
+On 01/13, Oleg Nesterov wrote:
+>
+> Hello,
 
-The patches should not change any behavior of the driver, with the possible
-exception of patch [PATCH 1/4] staging/xgifb: Remove unsupported mode LCD_320x480
+ping ;)
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-
-git diff --stat origin
-drivers/staging/xgifb/XGI_main.h    |   78 ++++------------------------
-drivers/staging/xgifb/XGI_main_26.c |   95 ++++++++++++++++++-----------------
-drivers/staging/xgifb/XGIfb.h       |    2 +-
-drivers/staging/xgifb/vb_init.c     |    2 +-
-drivers/staging/xgifb/vb_setmode.c  |   22 ++++----
-drivers/staging/xgifb/vb_struct.h   |   79 +++--------------------------
-drivers/staging/xgifb/vb_table.h    |   10 ++--
-drivers/staging/xgifb/vgatypes.h    |    9 +++
-8 files changed, 94 insertions(+), 203 deletions(-)
-
-
+> Please pull from
+>
+> 	git://github.com/utrace/linux sigtrace
+>
+>
+> Another (4th) attempt to push these simple changes, now in the form
+> of a pull request (yes, github, I still can't restore my korg account).
+>
+> 2/2 looks like a bugfix to me, but 1/2 changes the output from
+> trace_signal_generate() and removes trace_signal_overflow_fail.
+> In essence the change is:
+>
+> 	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
+> 	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
+>
+> where
+> 	- grp=0/1 means private or shared
+>
+> 	- res is enum {
+> 			TRACE_SIGNAL_DELIVERED,
+> 			TRACE_SIGNAL_IGNORED,
+> 			TRACE_SIGNAL_ALREADY_PENDING,
+> 			TRACE_SIGNAL_OVERFLOW_FAIL,
+> 			TRACE_SIGNAL_LOSE_INFO,
+> 		};
+>
+> Obviously this is the user visible change. But personally I do
+> agree with Seiji who requested this feature. Currently
+> trace_signal_generate() just records the fact that __send_signal()
+> was called, you can't know whether the signal was actually sent
+> or not.
+>
+> Steven Rostedt says:
+>
+> 	Adding more to a tracepoint is never an issue, even without a library to
+> 	parse the data correctly (which we still need in the distros). Thus this
+> 	change should have no issues.
+>
+>
+>
+> Oleg Nesterov (2):
+>       tracing: let trace_signal_generate() report more info, kill overflow_fail/lose_info
+>       tracing: send_sigqueue() needs trace_signal_generate() too
+>
+>  include/trace/events/signal.h |   85 +++++++++++------------------------------
+>  kernel/signal.c               |   28 +++++++++----
+>  2 files changed, 41 insertions(+), 72 deletions(-)
 
