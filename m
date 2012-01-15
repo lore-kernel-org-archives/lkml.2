@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab2AOSan (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 13:30:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751451Ab2AOSam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 13:30:42 -0500
-Date: Sun, 15 Jan 2012 19:24:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
-Message-ID: <20120115182441.GA24694@redhat.com>
-References: <20120110174509.GA30802@redhat.com> <20120113182015.GA3902@redhat.com>
+	id S1751867Ab2AOSbw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 13:31:52 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49611 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2AOSbv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 13:31:51 -0500
+Date: Sun, 15 Jan 2012 22:31:45 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
+ v5
+Message-ID: <20120115183145.GH3186@moon>
+References: <20111228121407.GL27266@moon>
+ <20120115180721.GA23810@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120113182015.GA3902@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120115180721.GA23810@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13, Oleg Nesterov wrote:
->
-> Hello,
+On Sun, Jan 15, 2012 at 07:07:21PM +0100, Oleg Nesterov wrote:
+> On 12/28, Cyrill Gorcunov wrote:
+> >
+> > When we do checkpoint of a task we need to know the list of children
+> > the task has but there is no easy way to make a reverse parent->children
+> > chain from an arbitrary <pid> (while a parent pid is provided in "PPid"
+> > field of /proc/<pid>/status).
+> 
+> Looks correct at first glance... But I'll try to recheck. I guess you need
+> to resend anyway, I bet nobody can recall this patch ;)
+> 
 
-ping ;)
+Sure ;)
 
-> Please pull from
->
-> 	git://github.com/utrace/linux sigtrace
->
->
-> Another (4th) attempt to push these simple changes, now in the form
-> of a pull request (yes, github, I still can't restore my korg account).
->
-> 2/2 looks like a bugfix to me, but 1/2 changes the output from
-> trace_signal_generate() and removes trace_signal_overflow_fail.
-> In essence the change is:
->
-> 	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
-> 	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
->
-> where
-> 	- grp=0/1 means private or shared
->
-> 	- res is enum {
-> 			TRACE_SIGNAL_DELIVERED,
-> 			TRACE_SIGNAL_IGNORED,
-> 			TRACE_SIGNAL_ALREADY_PENDING,
-> 			TRACE_SIGNAL_OVERFLOW_FAIL,
-> 			TRACE_SIGNAL_LOSE_INFO,
-> 		};
->
-> Obviously this is the user visible change. But personally I do
-> agree with Seiji who requested this feature. Currently
-> trace_signal_generate() just records the fact that __send_signal()
-> was called, you can't know whether the signal was actually sent
-> or not.
->
-> Steven Rostedt says:
->
-> 	Adding more to a tracepoint is never an issue, even without a library to
-> 	parse the data correctly (which we still need in the distros). Thus this
-> 	change should have no issues.
->
->
->
-> Oleg Nesterov (2):
->       tracing: let trace_signal_generate() report more info, kill overflow_fail/lose_info
->       tracing: send_sigqueue() needs trace_signal_generate() too
->
->  include/trace/events/signal.h |   85 +++++++++++------------------------------
->  kernel/signal.c               |   28 +++++++++----
->  2 files changed, 41 insertions(+), 72 deletions(-)
+> However I do not understand the ptrace_may_access() check at all.
+> 
+...
 
+> Well, this is cosmetic, but imho
+> 
+> 			if (list_is_last(...))
+> 				goto out;
+> 
+> 			task = list_first_entry(...);
+> 			...
+> 
+> looks better.
+> 
+
+ok
+
+> 
+> > +	list_for_each_entry(task, &start->children, sibling) {
+> > +		if (pos-- == 0) {
+> > +			if (ptrace_may_access(task, PTRACE_MODE_READ)) {
+> > +				pid = get_pid(task_pid(task));
+> > +				goto out;
+> > +			} else {
+> > +				/* Maybe we success with the next children */
+> > +				pos++;
+> 
+> Again. I simply can't understand what ptrace_may_access() actually
+> means. Why do we use the possible child, not parent?
+> 
+> IOW. I have no idea if we really need any security check at all.
+> You can find the children pids without this patch anyway via.
+> grep PPid /proc/*/status.
+> 
+
+OK, I see. I am actually not sure which behaviour should be there.
+What should we do if say we have a task with a number of children,
+which changed permissions of own and some of children. Look what I mean.
+
+We have say tid A, which has children B C D, and when we read
+/proc/pid/task/tid/children we should see "B C D" here. But
+what if say A started with roots rights, then changed own permission
+so everyone could read this /proc/pid/task/<A>/children, but
+left C with root permissions only. So should we list C here?
+Or such scenario is impossible at all?
+
+> But if you want ptrace_may_access/whatever, you should check
+> ptrace_may_access(start), no?
+> 
+
+	Cyrill
