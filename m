@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448Ab2APF2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 00:28:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50914 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728Ab2APF2b convert rfc822-to-8bit (ORCPT
+	id S1751409Ab2APFnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 00:43:33 -0500
+Received: from hades.mikemestnik.net ([184.106.158.151]:33910 "EHLO
+	hades.mikemestnik.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab2APFnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 00:28:31 -0500
+	Mon, 16 Jan 2012 00:43:32 -0500
+Message-ID: <4F13B902.1090503@mikemestnik.net>
+Date: Sun, 15 Jan 2012 23:43:30 -0600
+From: Mike Mestnik <cheako@mikemestnik.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20111223 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <20120116025331.GA16516@localhost>
-References: <CAOAMb1AUHV6mHwkUbX4+0wfOJpnMuVj_vr9jvb=h-Q4+6HKFzg@mail.gmail.com>
-	<CAH+eYFB8xBPLJdN+jfqpESsqjkxdeRQD7oyfU8qHewzfmbqHow@mail.gmail.com>
-	<20120115125853.GA9234@localhost>
-	<20120115153838.GA4279@debian>
-	<20120116025331.GA16516@localhost>
-Date: Mon, 16 Jan 2012 14:28:30 +0900
-Message-ID: <CAOAMb1Av0w8ip+YyMm82_U3n3zt8DDrofOmvKR+_5ikDMcbYmQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/backing-dev.c: fix crash when USB/SCSI device is detached
-From: Chanho Min <chanho0207@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Rabin Vincent <rabin@rab.in>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mike Galbraith <efault@gmx.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Chronic resource starvation.
+References: <4F10F3AE.3030801@mikemestnik.net>  <4F11E3B8.6090007@mikemestnik.net>  <1326629295.6352.14.camel@marge.simson.net>  <4F1322A6.7090009@mikemestnik.net> <1326681574.6446.25.camel@marge.simson.net>
+In-Reply-To: <1326681574.6446.25.camel@marge.simson.net>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 11:53 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> On Sun, Jan 15, 2012 at 09:11:07PM +0530, Rabin Vincent wrote:
->> On Sun, Jan 15, 2012 at 08:58:53PM +0800, Wu Fengguang wrote:
->> > On Sun, Jan 15, 2012 at 03:58:43PM +0530, Rabin Vincent wrote:
->> > > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
->> > > index 71034f4..a39ad70 100644
->> > > --- a/mm/backing-dev.c
->> > > +++ b/mm/backing-dev.c
->> > > @@ -318,7 +318,7 @@ static void wakeup_timer_fn(unsigned long data)
->> > >   if (bdi->wb.task) {
->> > >           trace_writeback_wake_thread(bdi);
->> > >           wake_up_process(bdi->wb.task);
->> > > - } else {
->> > > + } else if (bdi->dev) {
->> > >           /*
->> > >            * When bdi tasks are inactive for long time, they are killed.
->> > >            * In this case we have to wake-up the forker thread which
->> > > @@ -584,6 +584,8 @@ EXPORT_SYMBOL(bdi_register_dev);
->> > >   */
->> > >  static void bdi_wb_shutdown(struct backing_dev_info *bdi)
->> > >  {
->> > > + struct task_struct *task = NULL;
+On 01/15/12 20:39, Mike Galbraith wrote:
+> On Sun, 2012-01-15 at 13:01 -0600, Mike Mestnik wrote:
+>> On 01/15/12 06:08, Mike Galbraith wrote:
+>>>> Does this behavior look normal or is it just my system?  If it is normal
+>>>> how difficult would it be to make corrections and would those
+>>>> corrections likely be kernel or application related?
+>>> That "Backup complete" makes me suspect a classic case of IO-itis.  If
+>>> bits of your GUI were pushed out or ram (or weren't previously used),
+>>> and live on a disk you're beating hell out of, you get to experience
+>>> horrid interactivity while those missing bits are being retrieved.
+>> Thank you for the reply!
+>>
+>> That's DVDShrink, copies from optical drive(slow) to disk(fast-ish?).
+>> http://www.dvdshrink.info/
+>>
+>> That wouldn't explain why the monitor(gkrellm) stopped updating, every
+>> part of that is pooling like top would.  Gkrellm indicates disk activity
+>> and it shows the backup complete on sr1 and a backup in progress on sr0,
+>> however neither of these operations rate on Disk or sda.
+> No, dvdshrink wouldn't do enough IO to matter much.  Heavy IO can (or
+> could) cause symptoms like your video though, all of it.  I used to be
+> able to trigger loss of GUI control for 30 minutes at a time.  All it
+> took was something poking fdatasync after a large streaming IO had been
+> running for a while.
+Ahhh, as I had suspected I'm not the only one.
 
-Thanks, I fully understand.
-In addition, Would not bdi_wakeup_flusher also be fixed?
+Does fdatasync still cause this problem?  I'm sure there must be
+some way to 'group' applications together that should be allowed to
+avoid this effect and even insert IO requests during the operation if
+given a high enough priority.
+>
+> Another IO thing that can cause horrible interactivity is IO error
+> recovery.  That can (or again, could) make a box lurch like hell.  If
+> that were the cause, you'd have kernel gripes in dmesg output.
+Sure, this happens as a 'feature' of commercial DVDs and some times on
+accident:
 
->From dc7d4e86911c0a7ea35043485b04e8a09aa74ffd Mon Sep 17 00:00:00 2001
-From: Chanho Min <chanho.min@lge.com>
-Date: Mon, 16 Jan 2012 14:14:48 +0900
-Subject: [PATCH] backing-dev: add for 'fix wakeup timer races with
-bdi_unregister()'
+[5636213.987232] sr 4:0:0:0: [sr0] Device not ready
+[5636213.987235] sr 4:0:0:0: [sr0]  Result: hostbyte=DID_OK
+driverbyte=DRIVER_SENSE
+[5636213.987238] sr 4:0:0:0: [sr0]  Sense Key : Not Ready [current]
+[5636213.987240] sr 4:0:0:0: [sr0]  Add. Sense: Medium not present -
+tray closed
+[5636213.987243] sr 4:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 00 00 00
+00 08 00
+[5636213.987248] end_request: I/O error, dev sr0, sector 0
+[5636213.987251] Buffer I/O error on device sr0, logical block 0
+[5636213.987253] Buffer I/O error on device sr0, logical block 1
+[5636213.987260] Buffer I/O error on device sr0, logical block 2
+[5636213.987261] Buffer I/O error on device sr0, logical block 3
+[5636213.987263] Buffer I/O error on device sr0, logical block 4
+[5636213.987265] Buffer I/O error on device sr0, logical block 5
+[5636213.987266] Buffer I/O error on device sr0, logical block 6
+[5636213.987267] Buffer I/O error on device sr0, logical block 7
+[5636213.997003] sr 4:0:0:0: [sr0] Device not ready
+[5636213.997005] sr 4:0:0:0: [sr0]  Result: hostbyte=DID_OK
+driverbyte=DRIVER_SENSE
+[5636213.997007] sr 4:0:0:0: [sr0]  Sense Key : Not Ready [current]
+[5636213.997010] sr 4:0:0:0: [sr0]  Add. Sense: Medium not present -
+tray closed
+[5636213.997012] sr 4:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 00 00 00
+00 02 00
+[5636213.997016] end_request: I/O error, dev sr0, sector 0
+[5636213.997018] Buffer I/O error on device sr0, logical block 0
 
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- fs/fs-writeback.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index f855916..ee40833 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -97,7 +97,7 @@ static void bdi_wakeup_flusher(struct backing_dev_info *bdi)
- {
-        if (bdi->wb.task) {
-                wake_up_process(bdi->wb.task);
--       } else {
-+       } else if (bdi->dev) {
-                /*
-                 * The bdi thread isn't there, wake up the forker thread which
-                 * will create and run it.
--- 
-1.7.0.4
+> 	-Mike
+>
+
