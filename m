@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2APSs4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:48:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42922 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756284Ab2APSsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:48:53 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:18 2012
-Message-Id: <20120116184518.205969311@clark.kroah.org>
-User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:56 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Herrmann <dh.herrmann@googlemail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [29/48] HID: wiimote: Select INPUT_FF_MEMLESS
-In-Reply-To: <20120116184527.GA11972@kroah.com>
+	id S1756454Ab2APS4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:56:23 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57517 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756351Ab2APS4R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:56:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120116160136.GC16431@quack.suse.cz>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
+ <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com> <20120116160136.GC16431@quack.suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 16 Jan 2012 10:55:55 -0800
+X-Google-Sender-Auth: yCFrz_MEQ2WOEzQl33hbcyuM1Yg
+Message-ID: <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jan 16, 2012 at 8:01 AM, Jan Kara <jack@suse.cz> wrote:
+>
+>  Hum, let me understand this. I understand the meaning of buffer_uptodate
+> bit as "the buffer has at least as new content as what is on disk". Now
+> when storage cannot write the block under the buffer, the contents of the
+> buffer is still "at least as new as what is (was) on disk".
 
-------------------
+No.
 
-From: David Herrmann <dh.herrmann@googlemail.com>
+Stop making crap up.
 
-commit ef6f41157f3864d9bf42671b2ed66062dcafb72e upstream.
+If the write fails, the buffer contents have *nothing* to do with what
+is on disk.
 
-We depend on memless force-feedback support, therefore correctly select the
-related config options.
+You don't know what the disk contents are.
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+So clearly the buffer cannot be up-to-date.
 
----
- drivers/hid/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Now, feel free to use *other* arguments for why we shouldn't clear the
+up-to-date bit, but using the disk contents as one is pure and utter
+garbage. And it is *obviously* pure and utter garbage.
 
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -583,6 +583,7 @@ config HID_WACOM_POWER_SUPPLY
- 	bool "Wacom Bluetooth devices power supply status support"
- 	depends on HID_WACOM
- 	select POWER_SUPPLY
-+	select INPUT_FF_MEMLESS
- 	---help---
- 	  Say Y here if you want to enable power supply status monitoring for
- 	  Wacom Bluetooth devices.
-
-
+                   Linus
