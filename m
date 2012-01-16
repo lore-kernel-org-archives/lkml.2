@@ -1,136 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab2APQEB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 11:04:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42473 "EHLO mx1.redhat.com"
+	id S1755376Ab2APQG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:06:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32915 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524Ab2APQD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 11:03:59 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] KEYS: Add missing smp_rmb() primitives to the keyring search
- code
-To: jmorris@namei.org
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Mon, 16 Jan 2012 16:03:49 +0000
-Message-ID: <20120116160349.10775.92195.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753372Ab2APQGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 11:06:24 -0500
+From: Ludwig Nussel <ludwig.nussel@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
+        Greg Kroah-Hartman <gregkh@suse.de> (supporter:DRIVER CORE, KOBJ...)
+Subject: [PATCH] debugfs: add mode, uid and gid options
+Date: Mon, 16 Jan 2012 17:06:21 +0100
+Message-Id: <1326729981-6605-1-git-send-email-ludwig.nussel@suse.de>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing smp_rmb() primitives to the keyring search code.
+Cautious admins may want to restrict access to debugfs. Currently a
+manual chown/chmod e.g. in an init script is needed to achieve that.
+Distributions that want to make the mount options configurable need
+to add extra config files. By allowing to set the root inode's uid,
+gid and mode via mount options no such hacks are needed anymore.
+Instead configuration becomes straight forward via fstab.
 
-When keyring payloads are appended to without replacement (thus using up spare
-slots in the key pointer array), an smp_wmb() is issued between the pointer
-assignment and the increment of the key count (nkeys).
-
-There should be corresponding read barriers between the read of nkeys and
-dereferences of keys[n] when n is dependent on the value of nkeys.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
 ---
+ fs/debugfs/inode.c |  149 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 148 insertions(+), 1 deletions(-)
 
- security/keys/gc.c      |    4 +++-
- security/keys/keyring.c |   22 +++++++++++++++-------
- 2 files changed, 18 insertions(+), 8 deletions(-)
-
-diff --git a/security/keys/gc.c b/security/keys/gc.c
-index bf4d8da..a42b455 100644
---- a/security/keys/gc.c
-+++ b/security/keys/gc.c
-@@ -145,7 +145,9 @@ static void key_gc_keyring(struct key *keyring, time_t limit)
- 	if (!klist)
- 		goto unlock_dont_gc;
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index f3a257d..b48f34a 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -23,9 +23,13 @@
+ #include <linux/debugfs.h>
+ #include <linux/fsnotify.h>
+ #include <linux/string.h>
++#include <linux/seq_file.h>
++#include <linux/parser.h>
+ #include <linux/magic.h>
+ #include <linux/slab.h>
  
--	for (loop = klist->nkeys - 1; loop >= 0; loop--) {
-+	loop = klist->nkeys;
-+	smp_rmb();
-+	for (loop--; loop >= 0; loop--) {
- 		key = klist->keys[loop];
- 		if (test_bit(KEY_FLAG_DEAD, &key->flags) ||
- 		    (key->expiry > 0 && key->expiry <= limit))
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 37a7f3b..d605f75 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -319,7 +319,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
- 	struct key *keyring, *key;
- 	key_ref_t key_ref;
- 	long err;
--	int sp, kix;
-+	int sp, nkeys, kix;
++#define DEBUGFS_DEFAULT_MODE	0755
++
+ static struct vfsmount *debugfs_mount;
+ static int debugfs_mount_count;
+ static bool debugfs_registered;
+@@ -125,11 +129,154 @@ static inline int debugfs_positive(struct dentry *dentry)
+ 	return dentry->d_inode && !d_unhashed(dentry);
+ }
  
- 	keyring = key_ref_to_ptr(keyring_ref);
- 	possessed = is_key_possessed(keyring_ref);
-@@ -380,7 +380,9 @@ descend:
- 		goto not_this_keyring;
++struct debugfs_mount_opts {
++	uid_t uid;
++	gid_t gid;
++	umode_t mode;
++};
++
++enum {
++	Opt_uid,
++	Opt_gid,
++	Opt_mode,
++	Opt_err
++};
++
++static const match_table_t tokens = {
++	{Opt_uid, "uid=%u"},
++	{Opt_gid, "gid=%u"},
++	{Opt_mode, "mode=%o"},
++	{Opt_err, NULL}
++};
++
++struct debugfs_fs_info {
++	struct debugfs_mount_opts mount_opts;
++};
++
++static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
++{
++	substring_t args[MAX_OPT_ARGS];
++	int option;
++	int token;
++	char *p;
++
++	opts->mode = DEBUGFS_DEFAULT_MODE;
++
++	while ((p = strsep(&data, ",")) != NULL) {
++		if (!*p)
++			continue;
++
++		token = match_token(p, tokens, args);
++		switch (token) {
++		case Opt_uid:
++			if (match_int(&args[0], &option))
++				return -EINVAL;
++			opts->uid = option;
++			break;
++		case Opt_gid:
++			if (match_octal(&args[0], &option))
++				return -EINVAL;
++			opts->gid = option;
++			break;
++		case Opt_mode:
++			if (match_octal(&args[0], &option))
++				return -EINVAL;
++			opts->mode = option & S_IALLUGO;
++			break;
++		/*
++		 * We might like to report bad mount options here;
++		 * but traditionally debugfs has ignored all mount options
++		 */
++		}
++	}
++
++	return 0;
++}
++
++static int debugfs_apply_options(struct super_block *sb)
++{
++	struct debugfs_fs_info *fsi = sb->s_fs_info;
++	struct inode *inode = sb->s_root->d_inode;
++	struct debugfs_mount_opts *opts = &fsi->mount_opts;
++
++	inode->i_mode &= ~S_IALLUGO;
++	inode->i_mode |= opts->mode;
++
++	inode->i_uid = opts->uid;
++	inode->i_gid = opts->gid;
++
++	return 0;
++}
++
++static int debugfs_remount(struct super_block *sb, int *flags, char *data)
++{
++	int err;
++	struct debugfs_fs_info *fsi = sb->s_fs_info;
++
++	err = debugfs_parse_options(data, &fsi->mount_opts);
++	if (err)
++		goto fail;
++
++	debugfs_apply_options(sb);
++
++fail:
++	return err;
++}
++
++static int debugfs_show_options(struct seq_file *m, struct vfsmount *mnt)
++{
++	struct debugfs_fs_info *fsi = mnt->mnt_sb->s_fs_info;
++	struct debugfs_mount_opts *opts = &fsi->mount_opts;
++
++	if (opts->uid != 0)
++		seq_printf(m, ",uid=%u", opts->uid);
++	if (opts->gid != 0)
++		seq_printf(m, ",gid=%u", opts->gid);
++	if (opts->mode != DEBUGFS_DEFAULT_MODE)
++		seq_printf(m, ",mode=%o", opts->mode);
++
++	return 0;
++}
++
++static const struct super_operations debugfs_super_operations = {
++	.statfs		= simple_statfs,
++	.remount_fs	= debugfs_remount,
++	.show_options	= debugfs_show_options,
++};
++
+ static int debug_fill_super(struct super_block *sb, void *data, int silent)
+ {
+ 	static struct tree_descr debug_files[] = {{""}};
++	struct debugfs_fs_info *fsi;
++	int err;
++
++	save_mount_options(sb, data);
++
++	fsi = kzalloc(sizeof(struct debugfs_fs_info), GFP_KERNEL);
++	sb->s_fs_info = fsi;
++	if (!fsi) {
++		err = -ENOMEM;
++		goto fail;
++	}
++
++	err = debugfs_parse_options(data, &fsi->mount_opts);
++	if (err)
++		goto fail;
++
++	err  =  simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
++	if (err)
++		goto fail;
++
++	sb->s_op = &debugfs_super_operations;
++
++	debugfs_apply_options(sb);
++
++	return 0;
  
- 	/* iterate through the keys in this keyring first */
--	for (kix = 0; kix < keylist->nkeys; kix++) {
-+	nkeys = keylist->nkeys;
-+	smp_rmb();
-+	for (kix = 0; kix < nkeys; kix++) {
- 		key = keylist->keys[kix];
- 		kflags = key->flags;
+-	return simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
++fail:
++	kfree(fsi);
++	sb->s_fs_info = NULL;
++	return err;
+ }
  
-@@ -421,7 +423,9 @@ descend:
- 	/* search through the keyrings nested in this one */
- 	kix = 0;
- ascend:
--	for (; kix < keylist->nkeys; kix++) {
-+	nkeys = keylist->nkeys;
-+	smp_rmb();
-+	for (; kix < nkeys; kix++) {
- 		key = keylist->keys[kix];
- 		if (key->type != &key_type_keyring)
- 			continue;
-@@ -515,7 +519,7 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
- 	struct keyring_list *klist;
- 	unsigned long possessed;
- 	struct key *keyring, *key;
--	int loop;
-+	int nkeys, loop;
- 
- 	keyring = key_ref_to_ptr(keyring_ref);
- 	possessed = is_key_possessed(keyring_ref);
-@@ -524,7 +528,9 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
- 
- 	klist = rcu_dereference(keyring->payload.subscriptions);
- 	if (klist) {
--		for (loop = 0; loop < klist->nkeys; loop++) {
-+		nkeys = klist->nkeys;
-+		smp_rmb();
-+		for (loop = 0; loop < nkeys ; loop++) {
- 			key = klist->keys[loop];
- 
- 			if (key->type == ktype &&
-@@ -622,7 +628,7 @@ static int keyring_detect_cycle(struct key *A, struct key *B)
- 
- 	struct keyring_list *keylist;
- 	struct key *subtree, *key;
--	int sp, kix, ret;
-+	int sp, nkeys, kix, ret;
- 
- 	rcu_read_lock();
- 
-@@ -645,7 +651,9 @@ descend:
- 
- ascend:
- 	/* iterate through the remaining keys in this keyring */
--	for (; kix < keylist->nkeys; kix++) {
-+	nkeys = keylist->nkeys;
-+	smp_rmb();
-+	for (; kix < nkeys; kix++) {
- 		key = keylist->keys[kix];
- 
- 		if (key == A)
+ static struct dentry *debug_mount(struct file_system_type *fs_type,
+-- 
+1.7.7
 
