@@ -1,55 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab2APTlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 14:41:13 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44616 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565Ab2APTlL (ORCPT
+	id S1756557Ab2APTlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 14:41:39 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50473 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755947Ab2APTli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 14:41:11 -0500
-Date: Mon, 16 Jan 2012 19:42:11 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+	Mon, 16 Jan 2012 14:41:38 -0500
+Date: Mon, 16 Jan 2012 20:41:32 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>, Keith Packard <keithp@keithp.com>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 3.3
-Message-ID: <20120116194211.2cd09fb3@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com>
-References: <20120109003255.GA6598@havoc.gtf.org>
-	<CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
-	<4F12E57E.3090805@garzik.org>
-	<1326676534.13517.3.camel@minggr>
-	<1326691403.13517.21.camel@minggr>
-	<CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: New drm-intel-next tree
+Message-ID: <20120116194132.GC3627@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Keith Packard <keithp@keithp.com>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux phenom 3.2.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The IO ports are all there, the *only* reason we don't use AHCI seems
-> to be that the firmware didn't turn off the legacy bit, so it doesn't
-> show as an AHCI interface. That's kind of sad.
+Hi all,
 
-There are two sets of problems with that
+Because Keith is routinely really busy with all kinds of things, notably
+gathering fixes for drm-intel-fixes, the patch merge process for the next
+release cycle sometimes falls behind. To support him and improve things I've
+been volunteered to take over handling the -next tree. 
 
-The first is that quite a few machines crap themselves if you do this
-because nobody has ever tested things like the IRQ routing or the
-firmware on suspend/resume when they find the hardwared controller has
-gone for a walk.
+The main aim is to shift the drm/i915 -next merge process massively ahead with
+the goals to:
+- Reduce pressure to merge questionable patches into -rc kernels because the
+  -next tree is not yet open for patches.
+- Allow our QA at Intel and also the community to actually test things before
+  they land in mainline. The lack of such testing has severly bitten us in the
+  past few releases.
+- Refocus -fixes on handling regressions with absolute top priority (as it
+  should).
+- And generally get a steady and predictable patch-flow towards mainline back
+  into gears.
 
-Putting it back on suspend might help in some cases but then you get to
-pick your way through the documentation minefield, deal with device
-changes while in non AHCI mode, figure out how to set up registers the
-BIOS didn't etc.
+I plan to run this -next tree with a few simple rules:
+- I'll open the drm/i915 -next tree around -rc1 (maybe earlier in the future)
+  and cut regular new trees about every 2nd week or so. 2 weeks should be enough
+  for both our qa and the community to give it some decent testing.
 
-Would be a good project for someone with a lot of patience anyway as the
-AHCI mode is also 64bit capable and *much* faster overall as it doesn't
-keep stalling the CPU poking imaginary registers and turning them into
-messages on the SATA bus.
+- I intend to send out the previous -next to Dave Airlie (assuming it tests ok)
+  so that he has a good check on the stuff that's going on in i915-land. A few
+  other people also asked for a better overview of what's going on on drm/i915 -
+  I'll plan to announce every new -next tree with a short mail (maybe together
+  with the pull request to Dave for the old one).
 
-Alan
+- -next will close about 1-2 weeks before the merge opens. No new features after
+  that point for a given release cycle.
+
+- To make this really work we also need to cut down on what can go into -fixes.
+  drm/i915 unfortunately has the reputation that deserves it a bunch of
+  draconian rules (which are stricter than drm/* in general):
+
+  - Only fixes for serious issues and regressions after the -next tree went to
+    Dave.
+  - After -rc2 regression fixes only. It simply happend why too often that an
+    "obvious" patch blew up late in the -rc release cycle, my patches included.
+  - After -rc4/5 only reverts and disable patches. Imo it's way too late to play
+    games by then, the real fix should go straight to -next (which will close
+    only a few weeks afterwards already).
+
+- Regressions have top priority, if they get neglected due to ongoing work
+  headed for -next I'll refuse to merge the patches.
+
+- We have a test-suite in the intel-gpu-tools package for the kernel. Expect me
+  to be annoying about patches that should have testcases for them but don't.
+  This includes new features, but also bugs that can be reproduced with a
+  reasonable amount of effort.
+
+- To avoid me pushing utter crack I will only merge my own patches after they
+  have gathered sufficient review on intel-gfx. Please yell at me at the top of
+  your voice (and in public) if I violate this.
+
+- The main discussion list for patches to drm/i915 is
+  intel-gfx@lists.freedesktop.org - I don't keep up with lkml usually.
+
+- I'll reserve my human right to act like an incompetent arrogant fool once in a
+  while.
+
+Last but not least, the new tree is available at
+
+http://cgit.freedesktop.org/~danvet/drm-intel
+git://people.freedesktop.org/~danvet/drm-intel
+
+drm-intel-next is the main branch, but I expect at least a for-airlied branch
+for pull requests and maybe other branches with proposed patches to show up.
+
+Comments, flames and suggestions highly welcome.
+
+Yours, Daniel
+
+PS: Quick version for people with too short attentation spans:
+
+- -next will open around -rc1, a new tree should show up about every second
+  week. -next trees that are tested will regurarly be forwarded to Dave.
+
+- No stuff in -fixes that should go into -next instead.
+
+- -next will close for features about 1-2 weeks ahead of the upstream merge window.
+
+- Regressions have top priority.
+
+- Implementing proper tests is required.
+
+- Hit me hard if I break these rules for my own patches.
+
+- Sometimes I'll screw things up badly.
+
+Now grab the tree from
+
+git://people.freedesktop.org/~danvet/drm-intel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
