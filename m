@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab2APPJY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:09:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754891Ab2APPJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:09:23 -0500
-Date: Mon, 16 Jan 2012 16:03:07 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
-Message-ID: <20120116150307.GA12817@redhat.com>
-References: <20120110174509.GA30802@redhat.com> <20120113182015.GA3902@redhat.com> <20120115182441.GA24694@redhat.com> <20120116074540.GE15641@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120116074540.GE15641@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755044Ab2APPNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 10:13:44 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65405 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab2APPNm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 10:13:42 -0500
+Message-ID: <1326726817.2255.52.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?UTF-8?Q?=C5=A0tefan?= Gula <steweg@gmail.com>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 16 Jan 2012 16:13:37 +0100
+In-Reply-To: <CAGsizz+LEPJEGhMEHgswFJL4=Mh9R8g9FX6BcjqH0LBp2MUg0Q@mail.gmail.com>
+References: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
+	 <1326719999.2255.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CAGsizzJpdF5xzsEiZd5R0GD8r7pDJyz4ro=4vLBnonxfAVYg-Q@mail.gmail.com>
+	 <1326723932.2255.41.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CAGsizz+LEPJEGhMEHgswFJL4=Mh9R8g9FX6BcjqH0LBp2MUg0Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16, Ingo Molnar wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > > 2/2 looks like a bugfix to me, but 1/2 changes the output from
-> > > trace_signal_generate() and removes trace_signal_overflow_fail.
-> > > In essence the change is:
-> > >
-> > > 	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
-> > > 	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
-> > >
->
-> I've also Cc:-ed Masami-san who appears to have introduced most
-> of this trace information.
+Le lundi 16 janvier 2012 à 15:47 +0100, Štefan Gula a écrit :
 
-Thanks... although he is already cc'ed, may be I used the wrong
-email.
+> File: net/birdge/br_fdb.c
+> Functions:
+> __br_fdb_get
+> br_fdb_get
+> My analogy fuctions:
+> __ipgre_tap_bridge_get
+> ipgre_tap_bridge_get
+> 
 
-> Looks good to me at a first (quick) sight, except this bit
-> which changes the ABI:
->
-> > > 	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
-> > > 	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
->
-> That's not how we change tracepoints generally - we add a new
-> one and eventually phase out the old one.
+There is no br_fdb_get(), you copied some buggy code I am afraid.
 
-Well, "vmscan/trace: Add 'file' info to trace_mm_vmscan_lru_isolate()"
-ea4d349f adds the new field too. In fact this patch (floating in -mm)
-plus the previous discussion convinced me we should go this way.
+Read again your patch.
 
-> Which apps/tools rely
-> on the old tracepoint? If it's exactly zero apps then we might
-> be able to change it, but this needs to be investigated.
+If you use atomic_inc_not_zero(&x->use_count), then you must do the
+atomic_dec() or leak entries.
 
-If only I knew. How can we investigate this? Hopefully nothing
-relies on the old tracepoint, but who knows.
-
-OK. So we should add the new tracepoint. Looks a bit ugly, but
-I understand your concerns.
+Current bridge code doesnt use atomic_inc_not_zero()
 
 
-Say, trace_send_signal(sig, info, t, group, result), OK?
-
-
-Seiji, please double check this is all you need, it won't be
-simply to change this tracepoint again. While we are adding the
-new one, we can add/change something in TP_STRUCT__entry if you
-think this is needed.
-
-> Note, it might make sense to send these as two patches to lkml
-> with me Cc:-ed to avoid any github trust issues, i can apply
-> them and push them to Linus.
-
-Ingo, I sent them 3 times and you were cc'ed ;)
-
-Thanks!
-
-Oleg.
 
