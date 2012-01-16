@@ -1,60 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab2APHoF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 02:44:05 -0500
-Received: from solca.med.ec ([200.105.240.90]:44717 "EHLO mail.solca.med.ec"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab2APHoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 02:44:04 -0500
-Message-ID: <9561.41.203.64.131.1326700042.squirrel@mail.solca.med.ec>
-Date: Mon, 16 Jan 2012 02:47:22 -0500 (ECT)
-Subject: Alerta de seguridad
-From: "Web Admin" <info@webmaster.org>
-Reply-To: customerservice2011@w.cn
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
+	id S1753451Ab2APHqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 02:46:01 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38051 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858Ab2APHqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 02:46:00 -0500
+Date: Mon, 16 Jan 2012 08:45:40 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
+Message-ID: <20120116074540.GE15641@elte.hu>
+References: <20120110174509.GA30802@redhat.com>
+ <20120113182015.GA3902@redhat.com>
+ <20120115182441.GA24694@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18648.005
-X-TM-AS-Result: No--3.562-4.5-31-10
-X-imss-scan-details: No--3.562-4.5-31-10
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-MatchedRID: U6Jrua8GgYjmmSf1X0gaw+2rZX1eoLgM/9et2d3xf6o5RsZB3hoSQG9I
-	Sm3O4Wunf7cFRYRvJAkzwrQim1qAwrjeQcxFQkKiuMiPkx23vGhyW4PmwHhPsPprS3qGyPXN0F6
-	8OFyaXJRi1Gz2PC7CQ57W+0rovQ7CKKC1g9WijAMgyS/n9NIiTQA40y5WUc63dPdyufZHPaGYi0
-	1TLzfD00rrlJ3TjLSArkfvmTouqkFK/VZqvh/Rr50CK+8OZKf5RFZw5Jcg4miWnKrEhSD9lOo86
-	dL2DqU+tNr5O1/q1W/QLWxBF9DMQcRB0bsfrpPIcSqbxBgG0w7/JUNlfU/XrY5jw6TVen+Xtm/7
-	O/7w2x6xGMIWYJK4v8q0SXXSgzy8+YlDwsR+R08v7VfPXbFcYtlOuC5qtSNjs4XByodKgml9P2E
-	pOx/OaJwexsbz4ANuEFdCocZZbHBB5zm7ZuESkA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120115182441.GA24694@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+* Oleg Nesterov <oleg@redhat.com> wrote:
 
+> On 01/13, Oleg Nesterov wrote:
+> >
+> > Hello,
+> 
+> ping ;)
+> 
+> > Please pull from
+> >
+> > 	git://github.com/utrace/linux sigtrace
+> >
+> >
+> > Another (4th) attempt to push these simple changes, now in the form
+> > of a pull request (yes, github, I still can't restore my korg account).
+> >
+> > 2/2 looks like a bugfix to me, but 1/2 changes the output from
+> > trace_signal_generate() and removes trace_signal_overflow_fail.
+> > In essence the change is:
+> >
+> > 	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
+> > 	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
+> >
+> > where
+> > 	- grp=0/1 means private or shared
+> >
+> > 	- res is enum {
+> > 			TRACE_SIGNAL_DELIVERED,
+> > 			TRACE_SIGNAL_IGNORED,
+> > 			TRACE_SIGNAL_ALREADY_PENDING,
+> > 			TRACE_SIGNAL_OVERFLOW_FAIL,
+> > 			TRACE_SIGNAL_LOSE_INFO,
+> > 		};
+> >
+> > Obviously this is the user visible change. But personally I do
+> > agree with Seiji who requested this feature. Currently
+> > trace_signal_generate() just records the fact that __send_signal()
+> > was called, you can't know whether the signal was actually sent
+> > or not.
+> >
+> > Steven Rostedt says:
+> >
+> > 	Adding more to a tracepoint is never an issue, even without a library to
+> > 	parse the data correctly (which we still need in the distros). Thus this
+> > 	change should have no issues.
+> >
+> >
+> >
+> > Oleg Nesterov (2):
+> >       tracing: let trace_signal_generate() report more info, kill overflow_fail/lose_info
+> >       tracing: send_sigqueue() needs trace_signal_generate() too
+> >
+> >  include/trace/events/signal.h |   85 +++++++++++------------------------------
+> >  kernel/signal.c               |   28 +++++++++----
+> >  2 files changed, 41 insertions(+), 72 deletions(-)
 
-Alerta de seguridad,
+I've also Cc:-ed Masami-san who appears to have introduced most 
+of this trace information.
 
-Un virus DGTJTO se ha detectado en su cuenta de Webmail. Su cuenta de
-correo electrónico tiene que ser protegida en nuestro VQZZF nueva de
-seguro! McAfee antivirus 2011/1012 versión para evitar daños a nuestra
-base de datos y sus archivos y mensajes importantes. Sólo tiene que
-rellenar los datos solicitados a continuación y enviar de nuevo a nosotros
-para la protección de sus archivos y base de datos para evitar la
-propagación del virus.
+Looks good to me at a first (quick) sight, except this bit 
+which changes the ABI:
 
-Dirección de correo electrónico:
-Nombre de Usuario:
-contraseña:
-Vuelva a escribir-Contraseña:
-Código Anti-Virus: QQ1 76!
+> > 	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
+> > 	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
 
-Webmaster Webmail. Tenga en cuenta que la contraseña será encriptada y su
-cuota de correo también se actualizará para su seguridad.
+That's not how we change tracepoints generally - we add a new 
+one and eventually phase out the old one. Which apps/tools rely 
+on the old tracepoint? If it's exactly zero apps then we might 
+be able to change it, but this needs to be investigated.
 
-Gracias por su cooperación,
-Web Admin
+Note, it might make sense to send these as two patches to lkml 
+with me Cc:-ed to avoid any github trust issues, i can apply 
+them and push them to Linus.
 
+Thanks,
+
+	Ingo
