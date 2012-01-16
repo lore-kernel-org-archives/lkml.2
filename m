@@ -1,32 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab2APVkY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 16:40:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35033 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656Ab2APVkX (ORCPT
+	id S1756949Ab2APVmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 16:42:13 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12488 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755836Ab2APVmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 16:40:23 -0500
+	Mon, 16 Jan 2012 16:42:11 -0500
+Date: Mon, 16 Jan 2012 22:42:10 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-usb@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: [PATCH] renesas; Silence uninitialized variable report in
+ usbhsg_recip_run_handle()
+Message-ID: <alpine.LNX.2.00.1201162239110.16712@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1326564981-7142-1-git-send-email-devendra.aaru@gmail.com>
-References: <1326564981-7142-1-git-send-email-devendra.aaru@gmail.com>
-From: Jesse Gross <jesse@nicira.com>
-Date: Mon, 16 Jan 2012 13:40:01 -0800
-Message-ID: <CAEP_g=-2qSjcobw0q0Rp9KUAZC9+PmedCntaXS0JNs7NnnggLw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] remove version.h includes in net/openvswitch/
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, dev@openvswitch.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 14, 2012 at 10:16 AM, Devendra Naga <devendra.aaru@gmail.com> wrote:
-> remove version.h includes in net/openswitch/ as reported by make versioncheck.
->
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+In drivers/usb/renesas_usbhs/mod_gadget.c::usbhsg_recip_run_handle()
+the Coverity Prevent checker currently flags a warning about possibly
+uninitialized use of 'ret' i usbhsg_recip_run_handle(). It does this
+since it assumes we take one of the non-default branches in the switch
+and then subsequently take the false branch in the 'if (func)' case
+below. This exact scenario will never happen, but Coverity can't see
+that for some reason. This patch initializes 'ret' to '0' when it is
+declared which should shut up this report and won't really hurt - so
+why not? At least then it's clear that 'ret' is always initialized..
 
-I'm fine with the change (it's just a leftover from the out-of-tree
-module), although in general please prefix the subject with the area
-that it is modifying.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/usb/renesas_usbhs/mod_gadget.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/renesas_usbhs/mod_gadget.c b/drivers/usb/renesas_usbhs/mod_gadget.c
+index 528691d5f..7542aa9 100644
+--- a/drivers/usb/renesas_usbhs/mod_gadget.c
++++ b/drivers/usb/renesas_usbhs/mod_gadget.c
+@@ -425,7 +425,7 @@ static int usbhsg_recip_run_handle(struct usbhs_priv *priv,
+ 	struct usbhs_pipe *pipe;
+ 	int recip = ctrl->bRequestType & USB_RECIP_MASK;
+ 	int nth = le16_to_cpu(ctrl->wIndex) & USB_ENDPOINT_NUMBER_MASK;
+-	int ret;
++	int ret = 0;
+ 	int (*func)(struct usbhs_priv *priv, struct usbhsg_uep *uep,
+ 		    struct usb_ctrlrequest *ctrl);
+ 	char *msg;
+-- 
+1.7.8.3
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
