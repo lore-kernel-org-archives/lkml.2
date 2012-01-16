@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab2APGeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 01:34:11 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35472 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728Ab2APGeK convert rfc822-to-8bit (ORCPT
+	id S1752356Ab2APGmd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 01:42:33 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46412 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab2APGmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 01:34:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120116055354.GA15265@localhost>
-References: <CAOAMb1AUHV6mHwkUbX4+0wfOJpnMuVj_vr9jvb=h-Q4+6HKFzg@mail.gmail.com>
-	<CAH+eYFB8xBPLJdN+jfqpESsqjkxdeRQD7oyfU8qHewzfmbqHow@mail.gmail.com>
-	<20120115125853.GA9234@localhost>
-	<20120115153838.GA4279@debian>
-	<20120116025331.GA16516@localhost>
-	<CAOAMb1Av0w8ip+YyMm82_U3n3zt8DDrofOmvKR+_5ikDMcbYmQ@mail.gmail.com>
-	<20120116055044.GA14857@localhost>
-	<20120116055354.GA15265@localhost>
-Date: Mon, 16 Jan 2012 15:34:09 +0900
-Message-ID: <CAOAMb1B7oENhPzgUkFjzuJ0==dnHRJkmHFSq-7QtSGeV6JeBvA@mail.gmail.com>
-Subject: Re: [PATCH] mm/backing-dev.c: fix crash when USB/SCSI device is detached
-From: Chanho Min <chanho0207@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Rabin Vincent <rabin@rab.in>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Jan 2012 01:42:32 -0500
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: patches@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Dmitry Antipov <dmitry.antipov@linaro.org>
+Subject: [PATCH] mmc: change mmc_delay() to use usleep_range()
+Date: Mon, 16 Jan 2012 10:43:20 +0400
+Message-Id: <1326696200-514-1-git-send-email-dmitry.antipov@linaro.org>
+X-Mailer: git-send-email 1.7.7.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But wait.. Rabin's patch actually fixes the NULL deference in
-> the call
->
->        trace_writeback_wake_forker_thread(bdi);
->
-> The wakeup of the forker thread should be harmless.
->
-The forker thread shoud not be woken up after the bdi is unregistered.
-Is this also Rabin's intention?
-Also, I'm not sure the wakeup of the forker thread is harmless as bellows.
-..
-case FORK_THREAD:
-..
-  task = kthread_create(bdi_writeback_thread, &bdi->wb,
-		      "flush-%s", dev_name(bdi->dev));
+Use the usleep_range() to simplify mmc_delay() and give some more
+accuracy to it - but with an exception of mmc_card_sleepawake():
+for the hosts with very small (<100us) sleep/awake timeout, it's
+value is rounded up to 100us so usleep_range() always makes sense.
+---
+ drivers/mmc/core/core.h    |    8 ++------
+ drivers/mmc/core/mmc_ops.c |    9 ++++++---
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
-Thanks
-Chanho
+diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
+index 3bdafbc..fbd2cba 100644
+--- a/drivers/mmc/core/core.h
++++ b/drivers/mmc/core/core.h
+@@ -48,12 +48,8 @@ void mmc_power_off(struct mmc_host *host);
+ 
+ static inline void mmc_delay(unsigned int ms)
+ {
+-	if (ms < 1000 / HZ) {
+-		cond_resched();
+-		mdelay(ms);
+-	} else {
+-		msleep(ms);
+-	}
++	unsigned long us = ms * USEC_PER_MSEC;
++	usleep_range(us, us + 1000);
+ }
+ 
+ void mmc_rescan(struct work_struct *work);
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index 4d41fa9..457443a 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -82,9 +82,12 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
+ 	 * SEND_STATUS command to poll the status because that command (and most
+ 	 * others) is invalid while the card sleeps.
+ 	 */
+-	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
+-		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
+-
++	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY)) {
++		/* JEDEC MMCA 4.41 specifies the timeout value is in 200ns..838.86ms
++		   range, which is rounded it up to 100us here. */
++		unsigned long us = DIV_ROUND_UP(card->ext_csd.sa_timeout, 1000);
++		usleep_range(us, us + 100);
++	}
+ 	if (!sleep)
+ 		err = mmc_select_card(card);
+ 
+-- 
+1.7.7.5
+
