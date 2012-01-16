@@ -1,61 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751043Ab2APXH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 18:07:28 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51547 "EHLO mga09.intel.com"
+	id S1751197Ab2APXIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 18:08:13 -0500
+Received: from mga14.intel.com ([143.182.124.37]:50817 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab2APXH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 18:07:27 -0500
+	id S1750715Ab2APXIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 18:08:12 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="99280024"
-Message-ID: <4F14AD99.80905@linux.intel.com>
-Date: Mon, 16 Jan 2012 15:07:05 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="96500460"
+Date: Tue, 17 Jan 2012 07:08:09 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Takashi Iwai <tiwai@suse.de>,
+        "intel-gfx@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>,
+        Michal Marek <mmarek@suse.com>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Lemaire <rlemaire@suse.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: set AUD_CONFIG N_value_index for
+ DisplayPort
+Message-ID: <20120116230809.GA7837@localhost>
+References: <20120109131717.GA4713@localhost>
+ <86y5tgx02g.fsf@sumi.keithp.com>
+ <20120110054519.GA27257@localhost>
+ <86ty404yhd.fsf@sumi.keithp.com>
+ <20120116080252.GA18538@localhost>
+ <20120116202618.GG3627@phenom.ffwll.local>
+ <86obu31io4.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: nbowler@elliptictech.com, linux-kernel@vger.kernel.org,
-        arjan@linux.intel.com, alan@linux.intel.com, tomoya.rohm@gmail.com,
-        jeffrey.t.kirsher@intel.com, paul.gortmaker@windriver.com,
-        jdmason@kudzu.us, netdev@vger.kernel.org
-Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing
- probe
-References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com> <20120114.001525.2158050844390627233.davem@davemloft.net> <20120116152239.GA9953@elliptictech.com> <20120116.180433.986989348820850613.davem@davemloft.net>
-In-Reply-To: <20120116.180433.986989348820850613.davem@davemloft.net>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86obu31io4.fsf@sumi.keithp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 01/16/2012 03:04 PM, David Miller wrote:
-> From: Nick Bowler <nbowler@elliptictech.com>
-> Date: Mon, 16 Jan 2012 10:22:39 -0500
+On Mon, Jan 16, 2012 at 12:44:43PM -0800, Keith Packard wrote:
+> On Mon, 16 Jan 2012 21:26:18 +0100, Daniel Vetter <daniel@ffwll.ch> wrote:
 > 
->> On 2012-01-14 00:15 -0800, David Miller wrote:
->>> From: Darren Hart <dvhart@linux.intel.com>
->>> Date: Fri, 13 Jan 2012 22:44:55 -0800
->>>
->>>> CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com> (commit_signer:1/3=33%,commit_signer:1/8=12%)
->>>
->>> BTW, please try to figure out where this "commit_signer" stuff came from.
->>>
->>> It ended up corrupting the CC: list of your posting too.
->>
->> While it ended up on the CC line, the result is still a valid and
->> correct email address per RFC 822.
+> > Keith, does this address your concern and this patch is r-b: Keith or do
+> > we want an
+> > 
+> > } else {
+> > 	I915_WRITE(aud_config, 0);
+> > }
+> > 
+> > for paranoia?
 > 
-> I didn't say it wasn't an "RFC compliant" email address, I just said
-> it's complete garbage.
+> I think we want this added, just to be sure we set the configuration
+> correctly in all cases; it's easy to imagine moving from DP to HDMI and
+> leaving this bit set.
 
-Indeed. An oversight on my part and I've addressed it. Apologies for the
-noise.
+Ah good point! Here is the updated patch.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+---
+Subject: drm/i915: set AUD_CONFIG N_value_index for DisplayPort
+Date: Fri Jan 06 14:41:31 CST 2012
+
+It should be programmed to "0" for HDMI or "1" for DisplayPort.
+
+This enables DisplayPort audio for
+
+- HP EliteBook 8460p
+  (whose BIOS does not set the N_value_index bit for us)
+
+- DisplayPort monitor hot plugged after boot
+  (otherwise most BIOS will fill the N_value_index bit for us)
+
+Tested-by: Robert Lemaire <rlemaire@suse.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ drivers/gpu/drm/i915/i915_reg.h      |   12 ++++++++++++
+ drivers/gpu/drm/i915/intel_display.c |    8 +++++++-
+ 2 files changed, 19 insertions(+), 1 deletion(-)
+
+--- linux.orig/drivers/gpu/drm/i915/i915_reg.h	2012-01-07 23:11:10.000000000 +0800
++++ linux/drivers/gpu/drm/i915/i915_reg.h	2012-01-10 13:20:17.000000000 +0800
+@@ -3582,4 +3582,16 @@
+ #define CPT_AUD_CNTL_ST_A		0xE50B4
+ #define CPT_AUD_CNTRL_ST2		0xE50C0
+ 
++#define IBX_AUD_CONFIG_A			0xe2000
++#define CPT_AUD_CONFIG_A			0xe5000
++#define   AUD_CONFIG_N_VALUE_INDEX		(1 << 29)
++#define   AUD_CONFIG_N_PROG_ENABLE		(1 << 28)
++#define   AUD_CONFIG_UPPER_N_SHIFT		20
++#define   AUD_CONFIG_UPPER_N_VALUE		(0xff << 20)
++#define   AUD_CONFIG_LOWER_N_SHIFT		4
++#define   AUD_CONFIG_LOWER_N_VALUE		(0xfff << 4)
++#define   AUD_CONFIG_PIXEL_CLOCK_HDMI_SHIFT	16
++#define   AUD_CONFIG_PIXEL_CLOCK_HDMI		(0xf << 16)
++#define   AUD_CONFIG_DISABLE_NCTS		(1 << 3)
++
+ #endif /* _I915_REG_H_ */
+--- linux.orig/drivers/gpu/drm/i915/intel_display.c	2012-01-07 23:11:10.000000000 +0800
++++ linux/drivers/gpu/drm/i915/intel_display.c	2012-01-17 07:06:29.000000000 +0800
+@@ -5908,15 +5908,18 @@ static void ironlake_write_eld(struct dr
+ 	uint32_t i;
+ 	int len;
+ 	int hdmiw_hdmiedid;
++	int aud_config;
+ 	int aud_cntl_st;
+ 	int aud_cntrl_st2;
+ 
+ 	if (HAS_PCH_IBX(connector->dev)) {
+ 		hdmiw_hdmiedid = IBX_HDMIW_HDMIEDID_A;
++		aud_config = IBX_AUD_CONFIG_A;
+ 		aud_cntl_st = IBX_AUD_CNTL_ST_A;
+ 		aud_cntrl_st2 = IBX_AUD_CNTL_ST2;
+ 	} else {
+ 		hdmiw_hdmiedid = CPT_HDMIW_HDMIEDID_A;
++		aud_config = CPT_AUD_CONFIG_A;
+ 		aud_cntl_st = CPT_AUD_CNTL_ST_A;
+ 		aud_cntrl_st2 = CPT_AUD_CNTRL_ST2;
+ 	}
+@@ -5924,6 +5927,7 @@ static void ironlake_write_eld(struct dr
+ 	i = to_intel_crtc(crtc)->pipe;
+ 	hdmiw_hdmiedid += i * 0x100;
+ 	aud_cntl_st += i * 0x100;
++	aud_config += i * 0x100;
+ 
+ 	DRM_DEBUG_DRIVER("ELD on pipe %c\n", pipe_name(i));
+ 
+@@ -5943,7 +5947,9 @@ static void ironlake_write_eld(struct dr
+ 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_DISPLAYPORT)) {
+ 		DRM_DEBUG_DRIVER("ELD: DisplayPort detected\n");
+ 		eld[5] |= (1 << 2);	/* Conn_Type, 0x1 = DisplayPort */
+-	}
++		I915_WRITE(aud_config, AUD_CONFIG_N_VALUE_INDEX); /* 0x1 = DP */
++	} else
++		I915_WRITE(aud_config, 0);
+ 
+ 	if (intel_eld_uptodate(connector,
+ 			       aud_cntrl_st2, eldv,
