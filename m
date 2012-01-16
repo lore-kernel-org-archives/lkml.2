@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab2APMRy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 07:17:54 -0500
-Received: from mga03.intel.com ([143.182.124.21]:12546 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827Ab2APMRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 07:17:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="56873233"
-Date: Mon, 16 Jan 2012 12:31:10 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Darren Hart <dvhart@linux.intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        arjan@linux.intel.com, jeffrey.t.kirsher@intel.com,
-        paul.gortmaker@windriver.com, jdmason@kudzu.us, netdev@vger.kernel.org
-Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of
- failing probe
-Message-ID: <20120116123110.7ce91f2d@bob.linux.org.uk>
-In-Reply-To: <CANKRQnge1n4M7W5xCqwyGzXp8J3eK1HbZVRqGW7BoE5iOwYCDQ@mail.gmail.com>
-References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com>
-	<20120114.001430.787918662083526597.davem@davemloft.net>
-	<4F11A533.4040406@linux.intel.com>
-	<20120114.115604.2101782124431552110.davem@davemloft.net>
-	<20120114214658.4ddfec30@pyramind.ukuu.org.uk>
-	<4F120357.3020808@linux.intel.com>
-	<CANKRQnge1n4M7W5xCqwyGzXp8J3eK1HbZVRqGW7BoE5iOwYCDQ@mail.gmail.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754543Ab2APMR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 07:17:58 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60360 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516Ab2APMRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 07:17:55 -0500
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Cc: xfs-masters@oss.sgi.com, xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 1/1] xfs: kill the unused XFS_BB_FSB_OFFSET macro
+Date: Mon, 16 Jan 2012 17:54:36 +0530
+Message-Id: <1326716676-11842-1-git-send-email-amit.sahrawat83@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Saving MAC address into external ROM is generic method, I think.
-> Though I know the ROM-less system using eg20t-pch, however I think
-> this system is not common.
-> So, I think pch_gbe shouldn't have auto-mac address assignment.
+Removing the macro, as this is no more needed in the code.
+Tried to find the reference when it was last used - but the usage
+for this seemed to have been dropped long time ago.
 
-The problem is the module load fails for those cases. You cannot load
-the module and use the standard ifconfig eth0 hw aa:bb:cc:dd:ee:ff
-interface. The better fix might be to make sure it loads.
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ fs/xfs/xfs_sb.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-So change from
+diff --git a/fs/xfs/xfs_sb.h b/fs/xfs/xfs_sb.h
+index cb6ae71..f429d9d 100644
+--- a/fs/xfs/xfs_sb.h
++++ b/fs/xfs/xfs_sb.h
+@@ -529,7 +529,6 @@ static inline int xfs_sb_version_hasprojid32bit(xfs_sb_t *sbp)
+ #define	XFS_BB_TO_FSB(mp,bb)	\
+ 	(((bb) + (XFS_FSB_TO_BB(mp,1) - 1)) >> (mp)->m_blkbb_log)
+ #define	XFS_BB_TO_FSBT(mp,bb)	((bb) >> (mp)->m_blkbb_log)
+-#define	XFS_BB_FSB_OFFSET(mp,bb) ((bb) & ((mp)->m_bsize - 1))
+ 
+ /*
+  * File system block to byte conversions.
+-- 
+1.7.2.3
 
-        memcpy(netdev->dev_addr, adapter->hw.mac.addr,
-        netdev->addr_len);   
-        if (!is_valid_ether_addr(netdev->dev_addr)) {
-                dev_err(&pdev->dev, "Invalid MAC Address\n");
-                ret = -EIO; 
-                goto err_free_adapter;
-        }
-
-to just printing a warning, and check the current address when a user
-tries to ifconfig it up and refuse to allow the port to go active.
-
-Alan
