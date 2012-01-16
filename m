@@ -1,208 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab2APBkY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 20:40:24 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56259 "EHLO
+	id S1753156Ab2APBlK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 20:41:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51007 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab2APBkW convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752915Ab2APBlG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 20:40:22 -0500
+	Sun, 15 Jan 2012 20:41:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <addf0ca0d9cc381436209af3afdf878f.squirrel@webmail.greenhost.nl>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	<1326302710-9427-2-git-send-email-wad@chromium.org>
-	<20120112162231.GA23960@redhat.com>
-	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
-	<20120112172315.GA26295@redhat.com>
-	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
-	<addf0ca0d9cc381436209af3afdf878f.squirrel@webmail.greenhost.nl>
-Date: Sun, 15 Jan 2012 19:40:14 -0600
-Message-ID: <CABqD9hbBu8cEbArJWhSr-exFUDrnLSXskP1RrTATBczH2MYzFA@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+In-Reply-To: <4F12316E.6050204@xenotime.net>
+References: <1326411506-16894-1-git-send-email-wad@chromium.org>
+	<1326411506-16894-3-git-send-email-wad@chromium.org>
+	<4F12316E.6050204@xenotime.net>
+Date: Sun, 15 Jan 2012 19:41:03 -0600
+Message-ID: <CABqD9hYg79C6ctW6dzsV1CQ8e3zDpAWiiRP+C1PgC2M6huubvA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] Documentation: prctl/seccomp_filter
 From: Will Drewry <wad@chromium.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org
-Content-Type: text/plain; charset=UTF-8
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 14, 2012 at 9:40 PM, Indan Zupancic <indan@nul.nu> wrote:
-> Hello,
->
-> (I hoped everyone is CC'ed, emails forwarded via lkml truncate the CC list
-> when it's too long.)
->
-> On Sat, January 14, 2012 00:10, Will Drewry wrote:
->> On Fri, Jan 13, 2012 at 1:01 PM, Will Drewry <wad@chromium.org> wrote:
->>> On Fri, Jan 13, 2012 at 11:31 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>> On 01/12, Will Drewry wrote:
->>>>>
->>>>> On Thu, Jan 12, 2012 at 11:23 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>> > On 01/12, Will Drewry wrote:
->>>>> >>
->>>>> >> On Thu, Jan 12, 2012 at 10:22 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>> >> >> + ï¿½ ï¿½ ï¿½*/
->>>>> >> >> + ï¿½ ï¿½ regs = seccomp_get_regs(regs_tmp, &regs_size);
->>>>> >> >
->>>>> >> > Stupid question. I am sure you know what are you doing ;) and I know
->>>>> >> > nothing about !x86 arches.
->>>>> >> >
->>>>> >> > But could you explain why it is designed to use user_regs_struct ?
->>>>> >> > Why we can't simply use task_pt_regs() and avoid the (costly) regsets?
->>>>> >>
->>>>> >> So on x86 32, it would work since user_regs_struct == task_pt_regs
->>>>> >> (iirc), but on x86-64
->>>>> >> and others, that's not true.
->>>>> >
->>>>> > Yes sure, I meant that userpace should use pt_regs too.
->>>>> >
->>>>> >> If it would be appropriate to expose pt_regs to userspace, then I'd
->>>>> >> happily do so :)
->>>>> >
->>>>> > Ah, so that was the reason. But it is already exported? At least I see
->>>>> > the "#ifndef __KERNEL__" definition in arch/x86/include/asm/ptrace.h.
->>>>> >
->>>>> > Once again, I am not arguing, just trying to understand. And I do not
->>>>> > know if this definition is part of abi.
->>>>>
->>>>> I don't either :/ ï¿½My original idea was to operate on task_pt_regs(current),
->>>>> but I noticed that PTRACE_GETREGS/SETREGS only uses the
->>>>> user_regs_struct. So I went that route.
->>>>
->>>> Well, I don't know where user_regs_struct come from initially. But
->>>> probably it is needed to allow to access the "artificial" things like
->>>> fs_base. Or perhaps this struct mimics the layout in the coredump.
->>>
->>> Not sure - added Roland whose name was on many of the files :)
->>>
->>> I just noticed that ptrace ABI allows pt_regs access using the register
->>> macros (PTRACE_PEEKUSR) and user_regs_struct access (PTRACE_GETREGS).
->>>
->>> But I think the latter is guaranteed to have a certain layout while the macros
->>> for PEEKUSR can do post-processing fixup. ï¿½(Which could be done in the
->>> bpf evaluator load_pointer() helper if needed.)
->>>
->>>>> I'd love for pt_regs to be fair game to cut down on the copying!
->>>>
->>>> Me too. I see no point in using user_regs_struct.
->>>
->>> I'll rev the change to use pt_regs and drop all the helper code. ï¿½If
->>> no one says otherwise, that certainly seems ideal from a performance
->>> perspective, and I see pt_regs exported to userland along with ptrace
->>> abi register offset macros.
+On Sat, Jan 14, 2012 at 7:52 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 01/12/2012 03:38 PM, Will Drewry wrote:
+>> Documents how system call filtering using Berkeley Packet
+>> Filter programs works and how it may be used.
+>> Includes an example for x86 (32-bit).
 >>
->> On second thought, pt_regs is scary :)
+>> v3: - call out BPF <-> Berkeley Packet Filter (rdunlap@xenotime.net)
+>>     - document use of tentative always-unprivileged
+>>     - guard sample compilation for i386 and x86_64
+>> v2: - move code to samples (corbet@lwn.net)
 >>
->> From looking at
->> Â  http://lxr.linux.no/linux+v3.2.1/arch/x86/include/asm/syscall.h#L97
->> and ia32syscall enty code, it appears that for x86, at least, the
->> pt_regs for compat processes will be 8 bytes wide per register on the
->> stack. Â This means if a self-filtering 32-bit program runs on a 64-bit host in
->> IA32_EMU, its filters will always index into pt_regs incorrectly.
+>> Signed-off-by: Will Drewry <wad@chromium.org>
+>> ---
+>>  Documentation/prctl/seccomp_filter.txt |   94 ++++++++++++++++++++++++++++++++
+>>  samples/Makefile                       |    2 +-
+>>  samples/seccomp/Makefile               |   18 ++++++
+>>  samples/seccomp/bpf-example.c          |   74 +++++++++++++++++++++++++
+>>  4 files changed, 187 insertions(+), 1 deletions(-)
+>>  create mode 100644 Documentation/prctl/seccomp_filter.txt
+>>  create mode 100644 samples/seccomp/Makefile
+>>  create mode 100644 samples/seccomp/bpf-example.c
 >>
->> I'm not 100% that I am reading the code right, but it means that I can either
->> keep using user_regs_struct or fork the code behavior based on compat. That
->> would need to be arch dependent then which is pretty rough.
->>
->> Any thoughts?
->>
->> I'll do a v5 rev for Eric's comments soon, but I'm not quite sure
->> about the pt_regs
->> change yet. Â If the performance boost is worth the effort of having a
->> per-arch fixup,
->> I can go that route. Â Otherwise, I could look at some alternate approach
->> for a faster-than-regview payload.
+>> diff --git a/Documentation/prctl/seccomp_filter.txt b/Documentation/prctl/seccomp_filter.txt
+>> new file mode 100644
+>> index 0000000..2db8b89
+>> --- /dev/null
+>> +++ b/Documentation/prctl/seccomp_filter.txt
+>> @@ -0,0 +1,94 @@
+>> +             Seccomp filtering
+>> +             =================
+>> +
+>> +Introduction
+>> +------------
+>> +
+>> +A large number of system calls are exposed to every userland process
+>> +with many of them going unused for the entire lifetime of the process.
+>> +As system calls change and mature, bugs are found and eradicated.  A
+>> +certain subset of userland applications benefit by having a reduced set
+>> +of available system calls.  The resulting set reduces the total kernel
+>> +surface exposed to the application.  System call filtering is meant for
+>> +use with those applications.
+>> +
+>> +Seccomp filtering provides a means for a process to specify a filter
+>> +for incoming system calls.  The filter is expressed as a Berkeley Packet
+>> +Filter (BPF) program, as with socket filters, except that the data
+>> +operated on is the current user_regs_struct.  This allows for expressive
+>> +filtering of system calls using the pre-existing system call ABI and
+>> +using a filter program language with a long history of being exposed to
+>> +userland.  Additionally, BPF makes it impossible for users of seccomp to
+>> +fall prey to time-of-check-time-of-use (TOCTOU) attacks that are common
+>> +in system call interposition frameworks because the evaluated data is
+>> +solely register state just after system call entry.
+>> +
+>> +What it isn't
+>> +-------------
+>> +
+>> +System call filtering isn't a sandbox.  It provides a clearly defined
+>> +mechanism for minimizing the exposed kernel surface.  Beyond that,
+>> +policy for logical behavior and information flow should be managed with
+>> +a combinations of other system hardening techniques and, potentially, a
 >
-> I recommend not giving access to the registers at all, but to instead provide
-> a fixed cross-platform ABI (a 32 bit version and one 64 bit version).
-
-I don't believe it is possible to create a fixed cross-platform ABI
-that will be compat and future safe.  user_regs_struct (or even
-pt_regs) should always match whatever each arch is doing -- even weird
-personality-based changes.  If we do a new ABI, not only does that
-have to be exported to userland, but it means we're still copying and
-munging the data around (which was why I was trying to see if pt_regs
-was a easier way to get a speed boost).
-
-If there's consensus, I'll change it (and use syscall_get_arguments),
-but I don't believe it makes sense. (more below)
-
-> As everyone dealing with system call is mostly interested in the same things:
-> The syscall number and the arguments. You can add some other potentially useful
-> info like instruction pointer as well, but keep it limited to cross-platform
-> things with a clear meaning that make sense for system call filtering.
-
-Well there are also clone/fork, sig_rt_return, etc related registers
-too.  I like not making the decision for each syscall filtering
-consumer.  We have an ABI so it seems like I'd be making work for the
-kernel to manage yet another one for system call calling conventions.
-
-> So I propose an interface like the following instead of a register interface:
+>     combination                                                         an
 >
-> /* Currently 6, but to be future proof, make it 8 */
-> #define MAX_SC_ARGS Â  Â  8
+>> +LSM of your choosing.  Expressive, dynamic filters provide further options down
+>> +this path (avoiding pathological sizes or selecting which of the multiplexed
+>> +system calls in socketcall() is allowed, for instance) which could be
+>> +construed, incorrectly, as a more complete sandboxing solution.
+>> +
+>> +Usage
+>> +-----
+>> +
+>> +An additional seccomp mode is added, but they are not directly set by the
+>> +consuming process.  The new mode, '2', is only available if
+>> +CONFIG_SECCOMP_FILTER is set and enabled using prctl with the
+>> +PR_ATTACH_SECCOMP_FILTER argument.
+>> +
+>> +Interacting with seccomp filters is done using one prctl(2) call.
+>> +
+>> +PR_ATTACH_SECCOMP_FILTER:
+>> +     Allows the specification of a new filter using a BPF program.
+>> +     The BPF program will be executed over a user_regs_struct data
+>> +     reflecting system call time except with the system call number
+>> +     resident in orig_[register].  To allow a system call, the size
+>> +     of the data must be returned.  At present, all other return values
+>> +     result in the system call being blocked, but it is recommended to
+>> +     return 0 in those cases.  This will allow for future custom return
+>> +     values to be introduced, if ever desired.
+>> +
+>> +     Usage:
+>> +             prctl(PR_ATTACH_SECCOMP_FILTER, prog);
+>> +
+>> +     The 'prog' argument is a pointer to a struct sock_fprog which will
+>> +     contain the filter program.  If the program is invalid, the call
+>> +     will return -1 and set errno to -EINVAL.
 >
-> struct syscall_bpf_data {
-> Â  Â  Â  Â unsigned long syscall_nr;
-> Â  Â  Â  Â unsigned long flags;
-> Â  Â  Â  Â unsigned long instruction_pointer;
-> Â  Â  Â  Â unsigned long arg[MAX_SC_ARGS];
-> Â  Â  Â  Â unsigned long _reserved[5];
-> };
+>                                        EINVAL.
+> (I think)
 >
-> The flag argument can be used to e.g. tell if it is a compat 32 program
-> running on a 64 bit system.
+>> +
+>> +     The struct user_regs_struct the @prog will see is based on the
+>> +     personality of the task at the time of this prctl call.  Additionally,
+>> +     is_compat_task is also tracked for the @prog.  This means that once set
+>> +     the calling task will have all of its system calls blocked if it
+>> +     switches its system call ABI (via personality or other means).
+>> +
+>> +     If fork/clone and execve are allowed by @prog, any child processes will
+>> +     be constrained to the same filters and syscal call ABI as the parent.
+>
+>                                               syscall
+>
+>> +
+>> +     When called from an unprivileged process (lacking CAP_SYS_ADMIN), the
+>> +     "always_unprivileged" bit is enabled for the process.
+>> +
+>> +     Additionally, if prctl(2) is allowed by the attached filter,
+>> +     additional filters may be layered on which will increase evaluation
+>> +     time, but allow for further decreasing the attack surface during
+>> +     execution of a process.
+>> +
+>> +The above call returns 0 on success and non-zero on error.
+>> +
+>> +Example
+>> +-------
+>> +
+>> +samples/seccomp-bpf-example.c shows an example process that allows read from stdin,
+>
+>   samples/seccomp/bpf-example.c
+>
+>> +write to stdout/err, exit and signal returns for 32-bit x86.
+>
+>                  /stderr,
+>
 
-I certainly considered this, but I don't think this is a practical
-idea.  Firstly, CONFIG_COMPAT is meant to be compatibility mode.  We
-can't assume a program knows about it.  Second, if we assume any new
-program will be "smart" and check @flags, then the first few
-instruction of _every_ (32-bit) seccomp filter program will be
-checking compat mode - a serious waste :(  I'm also not sure if
-is_compat_task actually covers all random personality-based changes --
-just 32-bit v 64-bit.
-
-I _really_ wanted to make compat a flag and push that logic out of the
-kernel, but I don't think it makes sense to burden all ABI consumers
-with a "just in case" compat flag check.  Also, what happens if a new,
-weird architecture comes along where that flag doesn't make the same
-sense?  We can fix all the internal kernel stuff, but we'd end up with
-an ABI change to boot :/  Using regviews, we stay consistent
-regardless of whatever the new craziness is.  I just wish there was a
-way to make it speedier.
-
-> This way the registers have to be interpreted only once by the kernel and all
-> filtering programs don't have to do that mapping themselves. It also avoids
-> doing unnecessary work fiddling/translating registers like the ptrace ABI does.
-
-The kernel does only interpret them once (after entry to
-__secure_computing). It gets the regview and has it populate a
-user_regs_struct.  All the register info is per-arch and matches
-PTRACE_GETREGS, but not PTRACE_PEEKUSR.  All the weird stuff is in
-PEEKUSR to deal with the fact that compat pt_regs members are not
-actually the same width as userspace would expect.  If we populated an
-ABI as you've proposed, we'd at least need to build that data set and
-give it syscall_get_arguments() output.
-
-I was hoping I could just hand over pt_regs and avoid any processing,
-but it doesn't look promising.  In theory, all the same bit-twiddling
-compat_ptrace does could be done during load_pointer in the patch
-series, but it seems wrong to go that route.
-
-> I missed if the original version was allowed to change the registers or not,
-> if it is then perhaps the BPF program should set a specific flag after changing
-> anything, to make it more explicit.
-
-Registers are const from the BPF perspective (just like with socket
-filters).   Adding support for tracehook interception later could
-allow for supervisor guided register mutation.
-
-Thanks!
+Thanks for the close reading! I've got another patchset mostly rolled
+and I'll pull these in too.
 will
