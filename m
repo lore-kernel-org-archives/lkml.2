@@ -1,78 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab2APS1V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:27:21 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64221 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755736Ab2APS1T convert rfc822-to-8bit (ORCPT
+	id S1755887Ab2APS2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:28:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48569 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755736Ab2APS2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:27:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="99191737"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Greg KH <gregkh@suse.de>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+	Mon, 16 Jan 2012 13:28:14 -0500
+Date: Mon, 16 Jan 2012 11:28:08 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "gouders@et.bocholt.fh-gelsenkirchen.de" 
-	<gouders@et.bocholt.fh-gelsenkirchen.de>,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "prasad@linux.vnet.ibm.com" <prasad@linux.vnet.ibm.com>,
-        "justinmattock@gmail.com" <justinmattock@gmail.com>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Subject: RE: x86/mce: machine check warning during poweroff
-Thread-Topic: x86/mce: machine check warning during poweroff
-Thread-Index: AQHMz/OlOc7kfDtuEUKAYzibjjPRa5YJUWqAgAH3DQCAACx1gIAABziAgAAKkwCAACuJgIAAAzoAgADINQCAA10WgP//fHYw
-Date: Mon, 16 Jan 2012 18:27:16 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F01C672@ORSMSX104.amr.corp.intel.com>
-References: <20120111000051.GA28874@dztty>
- <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
- <4F10929E.8070007@linux.vnet.ibm.com>
- <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
- <4F10BDF7.8030306@linux.vnet.ibm.com>
- <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
- <4F10EB5B.5060804@linux.vnet.ibm.com>
- <CA+55aFxK5XCh6NCbo9AMvsarS9_A+s0QqV6=vC2O4dgg3vg=Aw@mail.gmail.com>
- <20120114144938.GA32033@suse.de> <20120116181135.GA2680@suse.de>
-In-Reply-To: <20120116181135.GA2680@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: Pinmux bindings proposal
+Message-ID: <20120116182808.GG4223@ponder.secretlab.ca>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The "correct" way to fix this up would be to have a per-cpu structure
-> for all of the different mce things that are created in this driver
-> (struct device, struct mce, exception counts, work queues, polling
-> banks, etc.), but that seems pretty messy, and I imagine some of these
-> want to stay as-is for some performance issues.  As I don't know this
-> code at all, I'm a bit leary to make that kind of change.
+On Fri, Jan 13, 2012 at 12:39:42PM -0800, Stephen Warren wrote:
+> I thought a bit more about pinmux DT bindings. I came up with something
+> that I like well enough, and is pretty similar to the binding that Dong
+> posted recently. I think it'll work for both Tegra's and IMX's needs.
+> Please take a look!
+> 
+> Note: I've used named constants below just to make this easier to read.
+> We still don't have a solution to actually use named constants in dtc yet.
+> 
+> tegra20.dtsi:
+> 
+> / {
+>         tegra_pmx: pinmux@70000000 {
+>                 compatible = "nvidia,tegra20-pinmux";
+>                 reg = <0x70000014 0x10   /* Tri-state registers */
+>                        0x70000080 0x20   /* Mux registers */
+>                        0x700000a0 0x14   /* Pull-up/down registers */
+>                        0x70000868 0xa8>; /* Pad control registers */
+>         };
+> 
+>         sdhci@c8000200 {
+>                 compatible = "nvidia,tegra20-sdhci";
+>                 reg = <0xc8000200 0x200>;
+>                 interrupts = <0 15 0x04>;
+>         };
+> };
+> 
+> tegra-harmony.dts:
+> 
+> /{
+>         sdhci@c8000200 {
+>                 cd-gpios = <&gpio 69 0>; /* gpio PI5 */
+>                 wp-gpios = <&gpio 57 0>; /* gpio PH1 */
+>                 power-gpios = <&gpio 155 0>; /* gpio PT3 */
+> 
+>                 /*
+>                  * A list of named configurations that this device needs.
+>                  * Format is a list of <"name" &phandle_of_pmx_configuration>
+>                  *
+>                  * Multiple "name"s are needed e.g. to support active/suspend,
+>                  * or whatever device-defined states are appropriate. The
+>                  * device defines which names are needed, just like a device
+>                  * defines which regulators, clocks, GPIOs, interrupts, ...
+>                  * it needs.
+>                  *
+>                  * This example shows a 1:1 relation between name and phandle.
+>                  * We might want a 1:n relation, so that we can blend multiple
+>                  * pre-defined sets of data together, e.g. one pre-defined set
+>                  * for the pin mux configuration, another for the pin config
+>                  * settings, both being put into the single "default" setting
+>                  * for this one device.
+>                  *
+>                  * A pinmux controller can contain this property too, to
+>                  * define "hogged" or "system" pin mux configuration.
+>                  *
+>                  * Note: Mixing strings and integers in a property seems
+>                  * unusual. However, I have seen other bindings floating
+>                  * around that are starting to do this...
+>                  */
+>                 pinmux =
+>                         <"default" &pmx_sdhci_active>
+>                         <"suspend" &pmx_sdhci_suspend>;
+> 
+>                 /* 1:n example: */
+>                 pinmux =
+>                         <"default" &pmx_sdhci_mux_a>
+>                         <"default" &pmx_sdhci_pincfg_a>
+>                         <"suspend" &pmx_sdhci_mux_a>
+>                         <"suspend" &pmx_sdhci_pincfg_a_suspend>;
 
-If you get so many machine checks that you care about the performance
-of the handler - you may be worrying about the wrong things.
 
-I'm more concerned about maintainability of the code. Seto-san has
-submitted many patches re-grouping the functions inside mce.c into
-functional areas - keeping the data structures separated makes
-sense - especially if there is some goal of splitting mce.c into
-separate files.
+Yeah, don't do this.  Mixing phandle, string and cell values in a
+property gets messy and could become troublesome to parse.  I've
+backed away from it in the clk binding.
 
--Tony
+pinumx-* is better, but I'm not thrilled with it and I avoided that
+pattern too for the latest iteration of the clk binding.  I prefer
+using a "pinmux" + "pinmux-names" pair of properties when dealing with
+an array of like objects (ie. reg, interrupts, clks, etc), but that
+might not fit well since each setting has multiple state nodes.
+
+> 
+>                 /*
+>                  * Alternative: One property for each required state. But,
+>                  * how does pinctrl core know which properties to parse?
+>                  * Every property named "pinctrl*" seems a little too far-
+>                  * reaching. Perhaps if we used vendor-name "pinmux", that'd
+>                  * be OK, i.e. pinmux,default and pinmux,suspend?
+
+It isn't actually a vendor name, so don't use a ','.  "pinmux-" prefix
+is fine.
+
+g.
