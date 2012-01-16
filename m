@@ -1,257 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab2APRXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 12:23:23 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:61017 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab2APRXV (ORCPT
+	id S1755623Ab2APR00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 12:26:26 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59763 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754152Ab2APR0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 12:23:21 -0500
-Message-ID: <4F145C17.1060009@ah.jp.nec.com>
-Date: Mon, 16 Jan 2012 12:19:19 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Organization: NEC Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+	Mon, 16 Jan 2012 12:26:24 -0500
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAJd=RBCp+Pdkip7O+xRhGFU2kpFyJQmxeXR5dJu7xmQ2uNrW9Q@mail.gmail.com>
+References: <CADZ9YHicin2YjGm_m9B0LMv3NW1Z3cb7HSCaqwycFmVfRpvpWA@mail.gmail.com>
+	<1326302955.2442.174.camel@twins>
+	<CADZ9YHiC8732D=D8KpkT0d+81_BNdAvj0ZJLwL5mhyq9OPLW0Q@mail.gmail.com>
+	<1326353130.2442.177.camel@twins>
+	<4F13D77B.9070103@linux.vnet.ibm.com>
+	<CADZ9YHiNWddjLBGnvDO==Jpz9nQtPREmkFOX0P5ELOK2neW1=g@mail.gmail.com>
+	<CAJd=RBCp+Pdkip7O+xRhGFU2kpFyJQmxeXR5dJu7xmQ2uNrW9Q@mail.gmail.com>
+Date: Mon, 16 Jan 2012 23:26:24 +0600
+Message-ID: <CADZ9YHio6QkM3mQJrPFd-Pac_+o5BcHx=Qb7ppfx4OKgfq4Fhg@mail.gmail.com>
+Subject: Re: [Question] sched: Should nr_uninterruptible be decremented in ttwu_do_activate()?
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 14, 2012 at 06:19:56PM +0100, Andrea Arcangeli wrote:
-> On Thu, Jan 12, 2012 at 02:34:54PM -0500, Naoya Horiguchi wrote:
-...
-> > index 36b3d98..b7811df 100644
-> > --- 3.2-rc5.orig/mm/huge_memory.c
-> > +++ 3.2-rc5/mm/huge_memory.c
-> > @@ -1001,29 +1001,21 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
-> >  {
-> >  	int ret = 0;
-> >  
-> > -	spin_lock(&tlb->mm->page_table_lock);
-> > -	if (likely(pmd_trans_huge(*pmd))) {
-> > -		if (unlikely(pmd_trans_splitting(*pmd))) {
-> > -			spin_unlock(&tlb->mm->page_table_lock);
-> > -			wait_split_huge_page(vma->anon_vma,
-> > -					     pmd);
-> > -		} else {
-> > -			struct page *page;
-> > -			pgtable_t pgtable;
-> > -			pgtable = get_pmd_huge_pte(tlb->mm);
-> > -			page = pmd_page(*pmd);
-> > -			pmd_clear(pmd);
-> > -			page_remove_rmap(page);
-> > -			VM_BUG_ON(page_mapcount(page) < 0);
-> > -			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
-> > -			VM_BUG_ON(!PageHead(page));
-> > -			spin_unlock(&tlb->mm->page_table_lock);
-> > -			tlb_remove_page(tlb, page);
-> > -			pte_free(tlb->mm, pgtable);
-> > -			ret = 1;
-> > -		}
-> > -	} else
-> > +	if (likely(pmd_trans_huge_stable(pmd, vma))) {
-> > +		struct page *page;
-> > +		pgtable_t pgtable;
-> > +		pgtable = get_pmd_huge_pte(tlb->mm);
-> > +		page = pmd_page(*pmd);
-> > +		pmd_clear(pmd);
-> > +		page_remove_rmap(page);
-> > +		VM_BUG_ON(page_mapcount(page) < 0);
-> > +		add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
-> > +		VM_BUG_ON(!PageHead(page));
-> >  		spin_unlock(&tlb->mm->page_table_lock);
-> > +		tlb_remove_page(tlb, page);
-> > +		pte_free(tlb->mm, pgtable);
-> > +		ret = 1;
-> > +	}
-> 
-> This has been micro slowed down. I think you should use
-> pmd_trans_huge_stable only in places where pmd_trans_huge cannot be
-> set. I would back out the above as it's a micro-regression.
+On Mon, Jan 16, 2012 at 7:00 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> On Mon, Jan 16, 2012 at 4:27 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>> On Mon, Jan 16, 2012 at 1:53 PM, Michael Wang
+>> <wangyun@linux.vnet.ibm.com> wrote:
+>>> I think the task in rq->wake_list should already have state:TASK_WAKING,
+>>> because it's a wake list.
+>>>
+>> But, what I got by means of TASK_WAKING is this task is about to RUN,
+>> very soon it'll have TASK_RUNNING state. And, if I hadn't miss any
+>> portion of code, then rq->wake_list doesn't have TASK_WAKING state.
+>>
+> Hi Rakib
+>
+> The question maybe settled down by adding a BUG_ON or similar to
+> capture what you concern, and wait results while drinking tea or
+> coffee.
+>
+Hi Hillf,
 
-I guess this micro-regression happens because I failed to correctly replace
-likely()/unlikey() applied to pmd_trans_huge() and pmd_trans_splitting().
-I should have keep them in pmd_trans_huge_stable() instead of applying
-likely() on pmd_trans_huge_stable().
+Thanks for your suggestions, will apply this technique when some new
+confusion arises. Now, it's quite clear :)
 
-> Maybe what you could do if you want to clean it up further is to make
-> a static inline in huge_mm of pmd_trans_huge_stable that only checks
-> pmd_trans_huge and then calls __pmd_trans_huge_stable, and use
-> __pmd_trans_huge_stable above.
-
-OK, I agree.
-
-> > @@ -1034,21 +1026,14 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-> >  {
-> >  	int ret = 0;
-> >  
-> > -	spin_lock(&vma->vm_mm->page_table_lock);
-> > -	if (likely(pmd_trans_huge(*pmd))) {
-> > -		ret = !pmd_trans_splitting(*pmd);
-> > -		spin_unlock(&vma->vm_mm->page_table_lock);
-> > -		if (unlikely(!ret))
-> > -			wait_split_huge_page(vma->anon_vma, pmd);
-> > -		else {
-> > -			/*
-> > -			 * All logical pages in the range are present
-> > -			 * if backed by a huge page.
-> > -			 */
-> > -			memset(vec, 1, (end - addr) >> PAGE_SHIFT);
-> > -		}
-> > -	} else
-> > +	if (likely(pmd_trans_huge_stable(pmd, vma))) {
-> > +		/*
-> > +		 * All logical pages in the range are present
-> > +		 * if backed by a huge page.
-> > +		 */
-> >  		spin_unlock(&vma->vm_mm->page_table_lock);
-> > +		memset(vec, 1, (end - addr) >> PAGE_SHIFT);
-> > +	}
-> >  
-> >  	return ret;
-> >  }
-> 
-> same slowdown here. Here even __pmd_trans_huge_stable wouldn't be
-> enough to optimize it as it'd still generate more .text with two
-> spin_unlock (one in __pmd_trans_huge_stable and one retained above)
-> instead of just 1 in the original version.
-
-Yes, additional spin_unlock() raises the binary size of mincore_huge_pmd().
-But replacing with __pmd_trans_huge_stable() which unifies duplicate codes
-reduces the binary size too. I think the amount of size reduction is larger
-than that of size growth of additional spin_unlock().
-
-> I'd avoid the cleanup for
-> the above ultra optimized version.
-
-Anyway if you don't like this replacement, I'll leave it as it is.
-
-> > @@ -1078,21 +1063,12 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
-> >  		goto out;
-> >  	}
-> >  
-> > -	spin_lock(&mm->page_table_lock);
-> > -	if (likely(pmd_trans_huge(*old_pmd))) {
-> > -		if (pmd_trans_splitting(*old_pmd)) {
-> > -			spin_unlock(&mm->page_table_lock);
-> > -			wait_split_huge_page(vma->anon_vma, old_pmd);
-> > -			ret = -1;
-> > -		} else {
-> > -			pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
-> > -			VM_BUG_ON(!pmd_none(*new_pmd));
-> > -			set_pmd_at(mm, new_addr, new_pmd, pmd);
-> > -			spin_unlock(&mm->page_table_lock);
-> > -			ret = 1;
-> > -		}
-> > -	} else {
-> > +	if (likely(pmd_trans_huge_stable(old_pmd, vma))) {
-> > +		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
-> > +		VM_BUG_ON(!pmd_none(*new_pmd));
-> > +		set_pmd_at(mm, new_addr, new_pmd, pmd);
-> >  		spin_unlock(&mm->page_table_lock);
-> > +		ret = 1;
-> >  	}
-> 
-> Same slowdown here, needs __pmd_trans_huge_stable as usual, but you
-> are now forcing mremap to call split_huge_page even if it's not needed
-> (i.e. after wait_split_huge_page).
-
-I didn't think the behavior changes but this can be performance regression
-of additional if-check. As you commented below, we had better go to change
-the return value of wait_split_huge_page path in __pmd_trans_huge_stable().
-
-> I'd like no-regression cleanups so
-> I'd reverse the above and avoid changing already ultra-optimized code
-> paths.
-
-I agree.
-
-> >  out:
-> >  	return ret;
-> > @@ -1104,27 +1080,48 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-> >  	struct mm_struct *mm = vma->vm_mm;
-> >  	int ret = 0;
-> >  
-> > -	spin_lock(&mm->page_table_lock);
-> > -	if (likely(pmd_trans_huge(*pmd))) {
-> > -		if (unlikely(pmd_trans_splitting(*pmd))) {
-> > -			spin_unlock(&mm->page_table_lock);
-> > -			wait_split_huge_page(vma->anon_vma, pmd);
-> > -		} else {
-> > -			pmd_t entry;
-> > +	if (likely(pmd_trans_huge_stable(pmd, vma))) {
-> > +		pmd_t entry;
-> >  
-> > -			entry = pmdp_get_and_clear(mm, addr, pmd);
-> > -			entry = pmd_modify(entry, newprot);
-> > -			set_pmd_at(mm, addr, pmd, entry);
-> > -			spin_unlock(&vma->vm_mm->page_table_lock);
-> > -			flush_tlb_range(vma, addr, addr + HPAGE_PMD_SIZE);
-> > -			ret = 1;
-> > -		}
-> > -	} else
-> > +		entry = pmdp_get_and_clear(mm, addr, pmd);
-> > +		entry = pmd_modify(entry, newprot);
-> > +		set_pmd_at(mm, addr, pmd, entry);
-> >  		spin_unlock(&vma->vm_mm->page_table_lock);
-> > +		flush_tlb_range(vma, addr, addr + HPAGE_PMD_SIZE);
-> > +		ret = 1;
-> > +	}
-> >  
-> >  	return ret;
-> 
-> Needs __pmd_trans_huge_stable. Ok to cleanup with that (no regression
-> in this case with the __ version).
-> 
-> > diff --git 3.2-rc5.orig/mm/mremap.c 3.2-rc5/mm/mremap.c
-> > index d6959cb..d534668 100644
-> > --- 3.2-rc5.orig/mm/mremap.c
-> > +++ 3.2-rc5/mm/mremap.c
-> > @@ -155,9 +155,8 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
-> >  			if (err > 0) {
-> >  				need_flush = true;
-> >  				continue;
-> > -			} else if (!err) {
-> > -				split_huge_page_pmd(vma->vm_mm, old_pmd);
-> >  			}
-> > +			split_huge_page_pmd(vma->vm_mm, old_pmd);
-> >  			VM_BUG_ON(pmd_trans_huge(*old_pmd));
-> >  		}
-> >  		if (pmd_none(*new_pmd) && __pte_alloc(new_vma->vm_mm, new_vma,
-> 
-> regression. If you really want to optimize this and cleanup you could
-> make __pmd_trans_huge_stable return -1 if wait_split_huge_page path
-> was taken, then you just change the other checks to == 1 and behave
-> the same if it's 0 or -1, except in move_huge_pmd where you'll return
-> -1 if __pmd_trans_huge_stable returned -1 to retain the above
-> optimizaton.
-
-All right.
-
-> Maybe it's not much of an optimization anyway because we trade one
-> branch for another, and both should be in l1 cache (though the retval
-> is even guaranteed in a register not only in l1 cache so it's even
-> better to check that for a branch), but to me is more about keeping
-> the code strict which kinds of self-documents it, because conceptually
-> calling split_huge_page_pmd if wait_split_huge_page was called is
-> superflous (even if at runtime it won't make any difference).
-
-OK, I cancel this change.
-
-> Thanks for cleaning up this, especially where pmd_trans_huge_stable is
-> perfect fit, this is a nice cleanup.
-
-Thank you for your valuable feedbacks!
-
-Naoya
+Thanks,
+Rakib
