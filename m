@@ -1,114 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab2APIq5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 03:46:57 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59570 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab2APIqz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 03:46:55 -0500
+	id S1753673Ab2APIrT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 03:47:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39918 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753509Ab2APIrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 03:47:17 -0500
+Date: Mon, 16 Jan 2012 09:47:15 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: linux-mm@kvack.org, "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH] memcg: fix compile warning on non-numa systems
+Message-ID: <20120116084715.GA1639@tiehlicka.suse.cz>
+References: <4F13BE05.70505@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL-cBk1J-LWCHQxzqVuj1x7B2CxN-8+bBoNTBPCG_8SntHkQOg@mail.gmail.com>
-References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
-	<1326192547.11926.5.camel@linux-s257.site>
-	<CAL-cBk011b4QbSRRuKxbZhNKxQQ-DkRHvq34Ua881h+AKXY_NQ@mail.gmail.com>
-	<CAKPZvrZdw_n_JRw=WvUXEwO6E8HtE=tgQo0G5MCERbwjOY+Fgw@mail.gmail.com>
-	<CAL-cBk1J-LWCHQxzqVuj1x7B2CxN-8+bBoNTBPCG_8SntHkQOg@mail.gmail.com>
-Date: Mon, 16 Jan 2012 14:16:53 +0530
-Message-ID: <CAKPZvrZwvHRaWnvBxQyXiHTds+N7aUiWStdHgrDtLXPrSQRjrA@mail.gmail.com>
-Subject: Re: high speed cams are not working on usbip
-From: nagarjun kommineni <nagarjunkommineni@gmail.com>
-To: David Chang <dchang@suse.com>
-Cc: joeyli <jlee@suse.com>, linux-kernel@vger.kernel.org, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F13BE05.70505@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon 16-01-12 14:04:53, Li Zefan wrote:
+> Fix this warning:
+> 
+>   CC      mm/memcontrol.o
+> mm/memcontrol.c: In function 'memcg_check_events':
+> mm/memcontrol.c:779:22: warning: unused variable 'do_numainfo'
 
-Both server and client are working at 100Mbps.
+This has been already posted by Kirill and I didn't like the solution
+(https://lkml.org/lkml/2011/12/27/86). He then reposted with a different
+version (https://lkml.org/lkml/2012/1/6/281).
+The later one looks better but I still think this is not worth
+complicate the code just to get rid of this warning.
 
-On 1/16/12, David Chang <dchang@suse.com> wrote:
-> Hi,
->
-> 在 2012年1月11日下午3:47，nagarjun kommineni <nagarjunkommineni@gmail.com> 寫道：
->> hi,
->> these are the my test specifications.
->>
->> OS:            Scientific Linux 6.1 (default kernel 2.6.32)
->> Kernel:       3.1.4 (I have built it)
->> Web Cam:  Logitech Pro 9000
->> Test App:   Gstreamer
->>
->> To see the web cam output I have used the Gstreamer  with the following
->> command.
->> gst-launch v4l2src ! video/x-raw-yuv,width=160,height=120,framerate=15/1 !
->> ffmpegcolorspace ! autovideosink
->>
->> my cam supported resloutions are 160*120, 176*144, 320*240, 352*288,
->> 640*480, 800*600, 960*720, 1600*1200.
->>
->> it works fine upto 320*240, beyond this it doesn't work.
->
-> What's the speed of server and client network interface?
->
-> David
->>
->>
->> 2012/1/10 David Chang <dchang@suse.com>
->>>
->>> Hi Joey,
->>>
->>> 2012/1/10 joeyli <jlee@suse.com>:
->>> > 於 二，2012-01-10 於 13:46 +0530，nagarjun kommineni 提到：
->>> >> Hi,
->>> >>
->>> >> problem with usbip in drivers/staging/usbip
->>> >>
->>> >>  I have configured one pc as server and one as client, with this
->>> >> configuration high speed web cams are not working for higher
->>> >> resolutions.
->>> >>
->>> >
->>> > How "high" does this web's speed?
->>> >
->>> >> please have a look at this problem.
->>> >>
->>> >
->>> > David,
->>> > as I remember you test webcam in old kernel before? looks works fine.
->>>
->>> Yes, but I would suggest using lower resolution.
->>>
->>> Regards,
->>> David
->>> >
->>> >
->>> > Thanks
->>> > Joey Lee
->>> >
->>> >
->>> > --
->>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>> > in
->>> > the body of a message to majordomo@vger.kernel.org
->>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> > Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->>
->>
->> --
->> Regards,
->> Nagarjuna Kommineni.
->>
->>
->
-
+> 
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   10 ++++++----
+>  1 files changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 602207b..c8aeab8 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -776,14 +776,16 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+>  	/* threshold event is triggered in finer grain than soft limit */
+>  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+>  						MEM_CGROUP_TARGET_THRESH))) {
+> -		bool do_softlimit, do_numainfo;
+> -
+> -		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+> -						MEM_CGROUP_TARGET_SOFTLIMIT);
+> +		bool do_softlimit;
+>  #if MAX_NUMNODES > 1
+> +		bool do_numainfo;
+> +
+>  		do_numainfo = mem_cgroup_event_ratelimit(memcg,
+>  						MEM_CGROUP_TARGET_NUMAINFO);
+>  #endif
+> +
+> +		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+> +						MEM_CGROUP_TARGET_SOFTLIMIT);
+>  		preempt_enable();
+>  
+>  		mem_cgroup_threshold(memcg);
+> -- 
+> 1.7.3.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Regards,
-Nagarjuna Kommineni.
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
