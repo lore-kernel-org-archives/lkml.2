@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab2APDwE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 22:52:04 -0500
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:42572 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753225Ab2APDwB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 22:52:01 -0500
-From: Preston Fick <Preston.Fick@silabs.com>
-To: "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb-devel@vger.kernel.org" <linux-usb-devel@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Preston Fick <Preston.Fick@silabs.com>
-Date: Sun, 15 Jan 2012 21:51:56 -0600
-Subject: [PATCH 3.2.0] cp210x: Bug fix for CP2104 baudrate usage, Bugzilla
- #42586
-Thread-Topic: [PATCH 3.2.0] cp210x: Bug fix for CP2104 baudrate usage,
- Bugzilla #42586
-Thread-Index: AczUAjEIaNPKJI1sRS60+8/okQ3Cnw==
-Message-ID: <00374F755A5C474884D69FBCA77349D10493F97C2A@EXCAUS002.silabs.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753308Ab2APEF7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 23:05:59 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17146 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab2APEF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 23:05:58 -0500
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, wim@iguana.be, torvalds@linux-foundation.org,
+        stable@vger.kernel.org, Thomas.Mingarelli@hp.com,
+        Maxim Uvarov <maxim.uvarov@oracle.com>
+Subject: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
+Date: Sun, 15 Jan 2012 20:02:50 -0800
+Message-Id: <1326686570-19303-2-git-send-email-maxim.uvarov@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1326686570-19303-1-git-send-email-maxim.uvarov@oracle.com>
+References: <1326686570-19303-1-git-send-email-maxim.uvarov@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F13A219.001E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Preston Fick <preston.fick@silabs.com>
+1. addess has to be page aligned.
+2. set_memory_x uses page size argument, not size.
+Bug causes with following commit:
+	commit da28179b4e90dda56912ee825c7eaa62fc103797
+	Author: Mingarelli, Thomas <Thomas.Mingarelli@hp.com>
+	Date:   Mon Nov 7 10:59:00 2011 +0100
 
-This is a patch for the cp210x.ko driver with regards to the following bug report:
-CP2104 Device doesn't respond to baudrate change request
-Bug Report: #42586 in bugzilla.kernel.org: https://bugzilla.kernel.org/show_bug.cgi?id=42586
+     watchdog: hpwdt: Changes to handle NX secure bit in 32bit path
 
-OS/Kernel version: GNU/Linux 3.2.0 (Mainline)
+    commit e67d668e147c3b4fec638c9e0ace04319f5ceccd upstream.
 
-Description:
-This fix changes the way baudrates are set on the CP210x devices from Silicon Labs. The CP2101/2/3 will respond to both a GET/SET_BAUDDIV command, and GET/SET_BAUDRATE command, while CP2104 and higher devices only respond to GET/SET_BAUDRATE. The current cp210x.ko driver in kernel version 3.2.0 only implements the GET/SET_BAUDDIV command.
+    This patch makes use of the set_memory_x() kernel API in order
+    to make necessary BIOS calls to source NMIs.
 
-This patch implements the two new codes for the GET/SET_BAUDRATE commands. Then there is a change in the way that the baudrate is assigned or retrieved. This is done according to the CP210x USB specification in AN571. This document can be found here: http://www.silabs.com/pages/DownloadDoc.aspx?FILEURL=Support%20Documents/TechnicalDocs/AN571.pdf&src=DocumentationWebPart
-
-Sections 5.3/5.4 describe the USB packets for the old baudrate method. Sections 5.5/5.6 describe the USB packets for the new method. This patch also implements the new request scheme, and eliminates the unnecessary baudrate calculations since it uses the "actual baudrate" method.
-
-This patch solves the problem reported for the CP2104 in bug 42586, and also keeps support for all other devices (CP2101/2/3).
-
-This patchfile is also attached to the bug report on bugzilla.kernel.org. This patch has been developed and test on the 3.2.0 mainline kernel version under Ubuntu 10.11.
-
-Signed-off-by: Preston Fick <preston.fick@silabs.com>
-
+Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
 ---
+ drivers/watchdog/hpwdt.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thank you for the consideration of this patch.
-
-Kind Regards -
-Preston Fick
-
-Begin patchfile text:
-
-diff -uNr linux.vanilla/linux-3.2/drivers/usb/serial/cp210x.c linux.new/linux-3.2/drivers/usb/serial/cp210x.c
---- linux.vanilla/linux-3.2/drivers/usb/serial/cp210x.c	2012-01-04 17:55:44.000000000 -0600
-+++ linux.new/linux-3.2/drivers/usb/serial/cp210x.c	2012-01-13 11:35:44.031334039 -0600
-@@ -200,6 +200,8 @@
- #define CP210X_EMBED_EVENTS	0x15
- #define CP210X_GET_EVENTSTATE	0x16
- #define CP210X_SET_CHARS	0x19
-+#define CP210X_GET_BAUDRATE	0x1D
-+#define CP210X_SET_BAUDRATE	0x1E
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 9cb60df..7f04d37 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -216,7 +216,7 @@ static int __devinit cru_detect(unsigned long map_entry,
  
- /* CP210X_IFC_ENABLE */
- #define UART_ENABLE		0x0001
-@@ -459,10 +461,7 @@
+ 	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
  
- 	dbg("%s - port %d", __func__, port->number);
+-	set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
++	set_memory_x((unsigned long)bios32_entrypoint & PAGE_MASK, 2);
+ 	asminline_call(&cmn_regs, bios32_entrypoint);
  
--	cp210x_get_config(port, CP210X_GET_BAUDDIV, &baud, 2);
--	/* Convert to baudrate */
--	if (baud)
--		baud = cp210x_quantise_baudrate((BAUD_RATE_GEN_FREQ + baud/2)/ baud);
-+	cp210x_get_config(port, CP210X_GET_BAUDDIV, &baud, 4);
- 
- 	dbg("%s - baud rate = %d", __func__, baud);
- 	*baudp = baud;
-@@ -597,8 +596,7 @@
- 	if (baud != tty_termios_baud_rate(old_termios) && baud != 0) {
- 		dbg("%s - Setting baud rate to %d baud", __func__,
- 				baud);
--		if (cp210x_set_config_single(port, CP210X_SET_BAUDDIV,
--					((BAUD_RATE_GEN_FREQ + baud/2) / baud))) {
-+		if (cp210x_set_config(port, CP210X_SET_BAUDRATE, &baud, 4)) {
- 			dbg("Baud rate requested not supported by device");
- 			baud = tty_termios_baud_rate(old_termios);
+ 	if (cmn_regs.u1.ral != 0) {
+@@ -235,7 +235,7 @@ static int __devinit cru_detect(unsigned long map_entry,
+ 			cru_rom_addr =
+ 				ioremap(cru_physical_address, cru_length);
+ 			if (cru_rom_addr) {
+-				set_memory_x((unsigned long)cru_rom_addr, cru_length);
++				set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK, cru_length >> PAGE_SHIFT);
+ 				retval = 0;
+ 			}
  		}
-This message (including any attachments) is intended only for the use of the individual or entity to which it is addressed and may contain information that is non-public, proprietary, privileged, confidential, and exempt from disclosure under applicable law or may constitute as attorney work product.  If you are not the intended recipient, you are hereby notified that any use, dissemination, distribution, or copying of this communication is strictly prohibited. If you have received this communication in error, notify us immediately by telephone and (i) destroy this message if a facsimile or (ii) delete this message immediately if this is an electronic communication.  
-
-Thank you.
-
+-- 
+1.7.4.1
 
