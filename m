@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab2APJXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 04:23:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15179 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753694Ab2APJXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 04:23:38 -0500
-Date: Mon, 16 Jan 2012 10:20:50 +0100
-From: Andrew Jones <drjones@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, david.woodhouse@intel.com,
-        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, holt@sgi.com,
-        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
-        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
-        dhowells@redhat.com, takata@linux-m32r.org, geert@linux-m68k.org,
-        yasutake.koichi@jp.panasonic.com, jonas@southpole.se, kyle@mcmartin.ca,
-        deller@gmx.de, jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
-        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
-        mchehab@infradead.org, johannes@sipsolutions.net,
-        linville@tuxdriver.com
-Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
-Message-ID: <20120116091832.GA2401@turtle.usersys.redhat.com>
-References: <1326295008-29795-1-git-send-email-drjones@redhat.com>
- <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com>
- <201201120918.53026.arnd@arndb.de>
- <20120112101805.GA2375@turtle.usersys.redhat.com>
- <alpine.DEB.2.00.1201121259270.17287@chino.kir.corp.google.com>
- <20120113085125.GA2452@turtle.usersys.redhat.com>
- <alpine.DEB.2.00.1201130230320.15417@chino.kir.corp.google.com>
- <20120113122202.GB2452@turtle.usersys.redhat.com>
- <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753826Ab2APJYy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 04:24:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41888 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab2APJYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 04:24:53 -0500
+Message-ID: <1326705996.14299.19.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] PM / MTD: Fix regressions related to mtd_suspend()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Oliver Neukum <oneukum@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org
+Date: Mon, 16 Jan 2012 11:26:36 +0200
+In-Reply-To: <201201161023.45321.oneukum@suse.de>
+References: <201201151443.30897.rjw@sisk.pl>
+	 <201201160018.02305.rjw@sisk.pl>
+	 <1326705441.14299.10.camel@sauron.fi.intel.com>
+	 <201201161023.45321.oneukum@suse.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-rponj/d/UakxBggZZsJP"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 01:27:35PM -0800, David Rientjes wrote:
-> CONFIG_EXPERT does work, there haven't been problems reported with it in 
-> the year that it has been in the kernel, and CONFIG_EMBEDDED is available 
-> to be extended to have its logical semantics.  Right now, CONFIG_EMBEDDED 
-> is pretty useless other than setting CONFIG_EXPERT but that could easily 
 
-Um? Isn't the whole point of me sending a patch because there's a problem?
-Thus THIS is problem report. Who else besides a kernel developer would
-even notice this problem? As you say, EMBEDDED does nothing more than
-select EXPERT, which does exactly the same thing as EMBEDDED did.
-Therefore to people using EMBEDDED there has been no change. But what new
-users of EXPERT will there ever be as long EXPERT twists default config
-options?
+--=-rponj/d/UakxBggZZsJP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> You can't responsibly untangle EXPERT and EMBEDDED without making EMBEDDED 
-> not select EXPERT and instead replace config options that should be 
-> configurable only on embedded devices to do "depends on EXPERT || 
-> EMBEDDED".  That's not what your patch does.
+On Mon, 2012-01-16 at 10:23 +0100, Oliver Neukum wrote:
+> Am Montag, 16. Januar 2012, 10:17:21 schrieb Artem Bityutskiy:
+> > Thanks Rafael!
+> >=20
+> > I've pushed this patch to l2-mtd-2.6.git (David, would you please merge
+> > it upstream?).
+>=20
+> Does this need to go into stable?
 
-What? A dependency (or in this case a reverse dependency using select)
-does not mean the semantics of the options are tangled. EXPERT should be
-free of those old EMBEDDED semantics and do only one thing, expose expert
-options. EMBEDDED can then select it or not, I don't care. As for your
-example "depends on EXPERT || EMBEDDED", that doesn't matter to me either.
-I don't care if EMBEDDED just selects EXPERT, or if somebody sprinkles
-around something like that for particular options. If you actually did
-know what my patch does, then you'd see what I care about is getting rid
-of "default !EXPERT".
+No, this is a regression introduced during this merge window. I'll amend
+the commit message to make it clear, thanks.
 
-As I've said several times, cleaning up EMBEDDED's semantics, or doing
-anything at all with EMBEDDED, is outside the scope of this patch. This
-patch fixes EXPERT. It reverts EMBEDDED's side effects back onto itself.
-Additional patches can tackle EMBEDDED later, but for starters let's just
-make EXPERT something useful. And yes, until somebody does something with
-EMBEDDED, it is now required that it selects EXPERT, but, hey, it already
-does.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-> Breaking backwards compatibility for users who aren't defconfigs is a 
-> non-starter, as I've said.  Admitting that your patch does it is almost 
-> like nacking your own patch.
+--=-rponj/d/UakxBggZZsJP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Like I said (twice), afaik config options aren't in the ABI that we must
-maintain. They're internal to the kernel. While it's nice to keep them the
-same, in order to save people some effort, it's not required. If people
-are compiling kernels, then they can (and should) select their options
-each time they grab a new release. Oh, and guess what? It would be really
-cool if the kconfig help accurately described what the option does that
-they're debating over enabling/disabling, wouldn't it? Where does it say
-for EXPERT that some defaults will be automatically changed? It says
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-          This option allows certain base kernel options and settings
-          to be disabled or tweaked. This is for specialized
-          environments which can tolerate a "non-standard" kernel.
-          Only use this if you really know what you are doing.
+iQIcBAABAgAGBQJPE+1MAAoJECmIfjd9wqK0oQwP/22Rg+05JAmreWJ2V5ro2RDP
+iDwpFom8PUv05IEnMqkOFJ2TxVs9XY4E1QKh9wG105UiPsDYoGKUMuTGFc0bUvRw
+Q6S6HnzuO3HCO71sokB8Sexh9JLqaHK0jlUyuvBn6fDJR1hZfUniNXTk/HaMMoz5
+7ZPWdZleLBORAAJglC+N13axwgxsKaczaUMtS4QopShV2YE2bMPGprlyaz0PCs/5
+t16c1m7MUbOYdtrFiIYXZV9wy9lGe62FjRXfx1T6g2amom3+NVwHtP5QaSeoUuQw
+JV7QYaxE92/kT4wKsU//73rT9232uIIGdd7FTk596ckpS0qUMSelNUUOEsGFxLux
+aPOzprFwl9ru4WxJgNNy715T/9yQbAaY9ven1SxgTfUhYTuHt1osi87fJgAGBKrs
+P/85I+pN/8pmoOD9FTL3GOh+qY4ZS1sBDKGPexZ55L75lY7GfCe338CElzPYzwjm
+B5MKLm1/eEEdma+5gMql2EtXa5083tCXEWa8yjkzxQnuRe8kf+uiNWTbJuDMfMvn
+N6llwJ+3ZBBmEWbkIJaGC+whVOUgxKhdgyMRxzy4kqr3g5aPlIciTLxPukxZuqrB
+/6viSn/IH/VdPpFp9I/SCpCoMa1FdaN63M/ZDKWb6PxZbrleCOp7uZM3Hq0RWpj8
+q5y7OnpwCdIQne3ZBUlT
+=bzB5
+-----END PGP SIGNATURE-----
 
-See the word _allows_. It shouldn't actually disable anything, or if it
-does (which it shouldn't), then it should state it as such, preferably
-with a big WARNING in front of it.
+--=-rponj/d/UakxBggZZsJP--
 
-I say break the compatibility and fix it now, rather than letting the mess
-last any longer. The impact should be small since the patch is only a
-year old, it's only used by a handful of people that are ok with the
-defaults being flipped automatically, and I've updated the defconfigs,
-which should help alert those that base their configs off of them that
-they need to make a change. The alternative of adding a new EXPERT
-(EXPERT2), which only exposes config options and doesn't have side
-effects, just in order to preserve backward compatibility, would be
-silly.
-
-This is a trivial patch for an obvious problem. In all the emails that
-we've exchanged you haven't told me anything I didn't know before posting.
-I've now explained this patch in several ways (I thought for sure the
-dialog idea would make it 100% obvious). If you still don't understand it,
-then please try asking specific questions, rather than reiterating the
-motivation for 6a108a14fa35. BTW, by your standpoint of config options
-being required to be backward compatible, then what was the motivation for
-6a108a14fa35? If you can never change EMBEDDED's semantics, in order to
-maintain backward compatibility, then you can never stop selecting EXPERT,
-and EXPERT can never lose its side effects. So 6a108a14fa35 achieved
-nothing other than wasting a potentially useful config option name.
