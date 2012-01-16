@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab2APU0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 15:26:14 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44885 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756401Ab2APU0M (ORCPT
+	id S1756710Ab2APU00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 15:26:26 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42354 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab2APU0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 15:26:12 -0500
-Date: Mon, 16 Jan 2012 20:26:04 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH 4/4] Allow unprivileged chroot when safe
-Message-ID: <20120116202604.GO23916@ZenIV.linux.org.uk>
-References: <cover.1326673414.git.luto@amacapital.net>
- <c4c1a0e710a50e48221aa28d2b60b486ab686369.1326673414.git.luto@amacapital.net>
- <20120116200618.GN23916@ZenIV.linux.org.uk>
- <CALCETrU62cq43hd7Wray0eZQfbQ9+hkuuo9AzCFgrL_2h_v7qw@mail.gmail.com>
+	Mon, 16 Jan 2012 15:26:23 -0500
+Date: Mon, 16 Jan 2012 21:26:18 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Keith Packard <keithp@keithp.com>, Takashi Iwai <tiwai@suse.de>,
+        "intel-gfx@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>,
+        Michal Marek <mmarek@suse.com>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Lemaire <rlemaire@suse.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: set AUD_CONFIG N_value_index for
+ DisplayPort
+Message-ID: <20120116202618.GG3627@phenom.ffwll.local>
+Mail-Followup-To: Wu Fengguang <fengguang.wu@intel.com>,
+	Keith Packard <keithp@keithp.com>, Takashi Iwai <tiwai@suse.de>,
+	"intel-gfx@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>,
+	Michal Marek <mmarek@suse.com>, LKML <linux-kernel@vger.kernel.org>,
+	Robert Lemaire <rlemaire@suse.com>
+References: <20120109131717.GA4713@localhost>
+ <86y5tgx02g.fsf@sumi.keithp.com>
+ <20120110054519.GA27257@localhost>
+ <86ty404yhd.fsf@sumi.keithp.com>
+ <20120116080252.GA18538@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrU62cq43hd7Wray0eZQfbQ9+hkuuo9AzCFgrL_2h_v7qw@mail.gmail.com>
+In-Reply-To: <20120116080252.GA18538@localhost>
+X-Operating-System: Linux phenom 3.2.0-rc6+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 12:15:09PM -0800, Andy Lutomirski wrote:
+On Mon, Jan 16, 2012 at 04:02:53PM +0800, Wu Fengguang wrote:
+> On Thu, Jan 12, 2012 at 09:33:34AM -0800, Keith Packard wrote:
+> > On Tue, 10 Jan 2012 13:45:19 +0800, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > 
+> > > @@ -5943,6 +5947,7 @@ static void ironlake_write_eld(struct dr
+> > >  	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_DISPLAYPORT)) {
+> > >  		DRM_DEBUG_DRIVER("ELD: DisplayPort detected\n");
+> > >  		eld[5] |= (1 << 2);	/* Conn_Type, 0x1 = DisplayPort */
+> > > +		I915_WRITE(aud_config, AUD_CONFIG_N_VALUE_INDEX); /* 0x1 = DP */
+> > >  	}
+> > 
+> > Do we need to clear this bit in the HDMI case? Or do we just trust the
+> > BIOS to either leave this bit zero or set it correctly?
+> 
+> I tried booting
+> 
+> 1) with HDMI monitor plugged
+> 2) plug HDMI monitor after BIOS boot
+> 
+> In both cases, I get the same AUD_CONFIG values for the host/sink matrix
+> 
+>                 RX-V1800        SONY TV
+> ivybridge       0x00000000      0x00000000
+> ironlake        0x00000000      0x00000000
+> 
+> HDMI audio is working fine in all cases. So I guess it's fine to leave
+> HDMI as (unconfigured) 0.
 
-> The first approach I tried was (from memory -- may not compile at all
-> on any version) fs->root.mnt != fs->root.mnt->mnt_parent.  That didn't
-> work.  The issue is that on dracut-based distros, AFAICT, the root (in
-> the sense of the root of the tree of struct vfsmounts) is rootfs.  The
-> apparent root (the filesystem containing /, /usr, etc) is mounted on
-> top of (rootfs)/.  Dracut then does something with the effect of
-> chroot("/").  So you end up with the vfsmount that contains "/" not
-> being the actual root vfsmount.  But there's nothing hidden by the
-> chroot -- even if fs->root.mnt pointed at rootfs, "/" would still
-> follow the mountpoint into the actual filesystem.
+Keith, does this address your concern and this patch is r-b: Keith or do
+we want an
 
-That has nothing whatsoever to do with dracut.  _Everything_ ends up
-that way; IOW, everything including init(8) runs chrooted into the
-final userland root.  On any normal distro.  Your test is complete BS - e.g.
-mount /dev/crap /mnt/blah
-mount /dev/garbage /mnt/blah
-chroot /mnt/blah
-will *NOT* be chrooted per your definition.
+} else {
+	I915_WRITE(aud_config, 0);
+}
+
+for paranoia?
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
