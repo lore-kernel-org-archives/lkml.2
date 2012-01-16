@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab2APNmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 08:42:35 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45331 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab2APNmd convert rfc822-to-8bit (ORCPT
+	id S1754845Ab2APNnF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 08:43:05 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55076 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab2APNnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 08:42:33 -0500
+	Mon, 16 Jan 2012 08:43:03 -0500
+Message-ID: <4F142962.2050606@openvz.org>
+Date: Mon, 16 Jan 2012 17:42:58 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20111108 Iceape/2.0.14
 MIME-Version: 1.0
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AF46@saturn3.aculab.com>
-References: <1326719999.2255.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <AE90C24D6B3A694183C094C60CF0A2F6D8AF46@saturn3.aculab.com>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@gmail.com>
-Date: Mon, 16 Jan 2012 14:42:12 +0100
-Message-ID: <CAGsizzJr1nOBP=Sd8c3OrK8+BVr+dwT+_2y-9Xts4-NbZV_KwQ@mail.gmail.com>
-Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: David Laight <David.Laight@aculab.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2] kvm: remove dependence on delay-accounting
+References: <20120114162413.15761.7341.stgit@zurg> <20120114163051.23946.25895.stgit@zurg> <20120116111446.GF7937@amt.cnet>
+In-Reply-To: <20120116111446.GF7937@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/16 David Laight <David.Laight@aculab.com>:
->> > +   for (i = 0; i < GRETAP_BR_HASH_SIZE; i++) {
->> > +           struct ipgre_tap_bridge_entry *entry;
->> > +           struct hlist_node *h, *n;
->> > +           hlist_for_each_entry_safe(entry, h, n,
->> > +                   &tunnel->hash[i], hlist)
->> > +           {
->> > +                   unsigned long this_timer;
->> > +                   this_timer = entry->ageing_timer + delay;
->> > +                   if (time_before_eq(this_timer, jiffies))
->> > +                           ipgre_tap_bridge_delete(entry);
->> > +                   else if (time_before(this_timer, next_timer))
->> > +                           next_timer = this_timer;
->> > +           }
->> > +   }
->> > +   spin_unlock_bh(&tunnel->hash_lock);
->> > +   mod_timer(&tunnel->gc_timer, round_jiffies(next_timer + HZ/4));
+Marcelo Tosatti wrote:
+> On Sat, Jan 14, 2012 at 08:30:51PM +0400, Konstantin Khlebnikov wrote:
+>> KVM selects delay-accounting only to get sched-info for steal-time accounting.
+>> Meanwhile delay-accounting can be disabled by boot option. This is ridiculous.
 >>
->> wow... why setup a 250 ms timer, if entries are valid 300 seconds ?
+>> This patch adds internal boolean option CONFIG_TASK_SCHED_INFO to enable only
+>> task->sched_info and its collecting inside scheduler.
+>>
+
+<cut>
+
+>>   static inline int sched_info_on(void)
+>>   {
+>> -#ifdef CONFIG_SCHEDSTATS
+>> +#if IS_ENABLED(CONFIG_SCHEDSTATS) || IS_ENABLED(CONFIG_KVM)
+>>   	return 1;
 >
-> Isn't that code trying to wakeup 250ms after the first expiry of any
-> of its items?
->
-> Do you even need a timer at all?
->
-> It may be enough to just put a timestamp into each entry
-> and tidy up when scanning one of the hash chains in (say)
-> the 'add item' path - when you need write access anyway.
->
-> A hash table might not be the best structure either!
-> The hash lookup is still o(n) for n >> table_size.
-> It also may be likely that you'll do repeated lookups for a small
-> number of items - in which case using a hash to cache recent lookups
-> might be useful (maybe with some type of balanced tree structure)
->
->        David
->
+> CONFIG_TASK_SCHED_INFO?
 >
 
-That part of code is modified from original linux bridge code, as I
-wanted to avoid of developing something that was already developed.
-The timer is actually needed to network
+It makes it equal to constant 1, because all its callers are
+under #ifdef CONFIG_TASK_SCHED_INFO =)
 
+its current code:
 
--- 
-Stefan Gula
+static inline int sched_info_on(void)
+{
+#ifdef CONFIG_SCHEDSTATS
+	return 1;
+#elif defined(CONFIG_TASK_DELAY_ACCT)
+	extern int delayacct_on;
+	return delayacct_on;
+#else
+	return 0;
+#endif
+}
+
+CONFIG_SCHEDSTATS == debug option in lib/Kconfig.debug for /proc/schedstat
+CONFIG_TASK_DELAY_ACCT == wierd net-link based statistics collecting tool
+
+Thus, may be better to remove this function, because it can return 0
+only if delay-accounting is compiled but disabled by boot option
+(delayacct_on =1 by default since 2.6.18)
+
+patch follows...
+
