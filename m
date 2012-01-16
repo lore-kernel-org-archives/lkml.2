@@ -1,295 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab2APPck (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:32:40 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48968 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab2APPcg (ORCPT
+	id S1755230Ab2APPcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 10:32:46 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40044 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711Ab2APPco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:32:36 -0500
-Date: Mon, 16 Jan 2012 19:32:31 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v6
-Message-ID: <20120116153231.GF2998@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Jan 2012 10:32:44 -0500
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 3/3] watchdog: Add Congatec CGEB watchdog driver
+Date: Mon, 16 Jan 2012 16:32:20 +0100
+Message-Id: <1326727940-6078-4-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1326727940-6078-1-git-send-email-s.hauer@pengutronix.de>
+References: <1326727940-6078-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:219:66ff:fe5b:d076
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we do checkpoint of a task we need to know the list of children
-the task, has but there is no easy and fast way to generate reverse
-parent->children chain from arbitrary <pid> (while a parent pid is
-provided in "PPid" field of /proc/<pid>/status).
+This driver provides support for the CGEB watchdog found on some
+Congatec x86 modules.
 
-So instead of walking over all pids in the system (creating one big process
-tree in memory, just to figure out which children a task has) -- we add
-explicit /proc/<pid>/task/<tid>/children entry, because the kernel already has
-this kind of information but it is not yet exported.
-
-This is a first level children, not the whole process tree.
-
-v2:
- - Kame suggested to use a separated /proc/<pid>/children entry
-   instead of poking /proc/<pid>/status
- - Andew suggested to use rcu facility instead of locking
-   tasklist_lock
- - Tejun pointed that non-seekable seq file might not be
-   enough for tasks with large number of children
-
-v3:
- - To be on a safe side use %lu format for pid_t printing
-
-v4:
- - New line get printed when sequence ends not at seq->stop,
-   a nit pointed by Tejun
- - Documentation update
- - tasklist_lock is back, Oleg pointed that ->children list
-   is actually not rcu-safe
-
-v5:
- - Oleg suggested to make /proc/<pid>/task/<tid>/children
-   instead of global /proc/<pid>/children, which eliminates
-   hardness related to threads and children migration, and
-   allows patch to be a way simplier.
-
-v6:
- - Drop ptrace_may_access tests, pids are can be found anyway
-   so nothing to protect here.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- Documentation/filesystems/proc.txt |   18 ++++
- fs/proc/array.c                    |  146 +++++++++++++++++++++++++++++++++++++
- fs/proc/base.c                     |    1 
- fs/proc/internal.h                 |    1 
- 4 files changed, 166 insertions(+)
+ drivers/watchdog/Kconfig                  |    9 ++
+ drivers/watchdog/Makefile                 |    1 +
+ drivers/watchdog/congatec_cgeb_watchdog.c |  181 +++++++++++++++++++++++++++++
+ 3 files changed, 191 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/watchdog/congatec_cgeb_watchdog.c
 
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -40,6 +40,7 @@ Table of Contents
-   3.4	/proc/<pid>/coredump_filter - Core dump filtering settings
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
-+  3.7   /proc/<pid>/task/<tid>/children - Information about task children
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 79fd606..a1f35a5 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -880,6 +880,15 @@ config SBC_EPX_C3_WATCHDOG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called sbc_epx_c3.
  
-   4	Configuring procfs
-   4.1	Mount options
-@@ -1549,6 +1550,23 @@ then the kernel's TASK_COMM_LEN (current
- comm value.
++config CONGATEC_CGEB_WATCHDOG
++	tristate "Congatec CGEB watchdog"
++	---help---
++	  This driver provides support for the watchdogs found on Congatec
++	  modules with the CGEB BIOS interface.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called congatec_cgeb_wdt.
++
+ # M32R Architecture
  
+ # M68K Architecture
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index fe893e9..d0b2f1d 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -107,6 +107,7 @@ obj-$(CONFIG_W83977F_WDT) += w83977f_wdt.o
+ obj-$(CONFIG_MACHZ_WDT) += machzwd.o
+ obj-$(CONFIG_SBC_EPX_C3_WATCHDOG) += sbc_epx_c3.o
+ obj-$(CONFIG_INTEL_SCU_WATCHDOG) += intel_scu_watchdog.o
++obj-$(CONFIG_CONGATEC_CGEB_WATCHDOG) += congatec_cgeb_watchdog.o
  
-+3.7	/proc/<pid>/task/<tid>/children - Information about task children
-+-------------------------------------------------------------------------
-+This file provides a fast way to retrieve first level children pids
-+of a task pointed by <pid>/<tid> pair. The format is a space separated
-+stream of pids.
-+
-+Note the "first level" here -- if a child has own children they will
-+not be listed here, one needs to read /proc/<children-pid>/task/<tid>/children
-+to obtain the descendants.
-+
-+Since this interface is intended to be fast and cheap it doesn't
-+guarantee to provide precise results, which means if there a new child
-+created while we read the "children" file -- it might or might not be
-+counted. So one need to either stop or freeze processes if precise
-+results are needed.
-+
-+
- ------------------------------------------------------------------------------
- Configuring procfs
- ------------------------------------------------------------------------------
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -547,3 +547,149 @@ int proc_pid_statm(struct seq_file *m, s
+ # M32R Architecture
  
- 	return 0;
- }
+diff --git a/drivers/watchdog/congatec_cgeb_watchdog.c b/drivers/watchdog/congatec_cgeb_watchdog.c
+new file mode 100644
+index 0000000..a4be745
+--- /dev/null
++++ b/drivers/watchdog/congatec_cgeb_watchdog.c
+@@ -0,0 +1,181 @@
++/*
++ * CGEB watchdog driver
++ *
++ * (c) 2011 Sascha Hauer, Pengutronix
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/watchdog.h>
++#include <linux/mfd/congatec-cgeb.h>
 +
-+struct proc_pid_children_iter {
-+	struct pid_namespace *pid_ns;
-+	struct pid *pid_start;
++#define CGOS_WDOG_MODE_REBOOT_PC    0
++#define CGOS_WDOG_MODE_RESTART_OS   1
++#define CGOS_WDOG_MODE_STAGED    0x80
++
++#define CGOS_WDOG_OPMODE_DISABLED      0
++#define CGOS_WDOG_OPMODE_ONETIME_TRIG  1
++#define CGOS_WDOG_OPMODE_SINGLE_EVENT  2
++#define CGOS_WDOG_OPMODE_EVENT_REPEAT  3
++
++#define CGOS_WDOG_EVENT_INT 0	/* NMI/IRQ */
++#define CGOS_WDOG_EVENT_SCI 1	/* SMI/SCI */
++#define CGOS_WDOG_EVENT_RST 2	/* system reset */
++#define CGOS_WDOG_EVENT_BTN 3	/* power button */
++
++#define CGOS_WDOG_EVENT_MAX_STAGES 3
++
++struct cgeb_watchdog_stage {
++	unsigned long timeout;
++	unsigned long event;
 +};
 +
-+static struct pid *
-+get_children_pid(struct proc_pid_children_iter *iter, struct pid *pid_prev, loff_t pos)
-+{
-+	struct task_struct *start, *task;
-+	struct pid *pid = NULL;
-+
-+	read_lock(&tasklist_lock);
-+
-+	start = pid_task(iter->pid_start, PIDTYPE_PID);
-+	if (!start)
-+		goto out;
-+
-+	/*
-+	 * Lets try to continue searching first, this gives
-+	 * us significant speedup on children-rich processes.
-+	 */
-+	if (pid_prev) {
-+		task = pid_task(pid_prev, PIDTYPE_PID);
-+		if (task && task->real_parent == start &&
-+		    !(list_empty(&task->sibling))) {
-+			/*
-+			 * We might miss some freshly created children
-+			 * here, but it was never promised to be
-+			 * accurate.
-+			 */
-+			if (list_is_last(&task->sibling, &start->children))
-+				goto out;
-+			task = list_first_entry(&task->sibling,
-+						struct task_struct, sibling);
-+			pid = get_pid(task_pid(task));
-+			goto out;
-+		}
-+	}
-+
-+	/* Slow search case */
-+	list_for_each_entry(task, &start->children, sibling) {
-+		if (pos-- == 0) {
-+			pid = get_pid(task_pid(task));
-+			break;
-+		}
-+	}
-+
-+out:
-+	read_unlock(&tasklist_lock);
-+	return pid;
-+}
-+
-+static int children_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct proc_pid_children_iter *iter = seq->private;
-+	unsigned long pid = (unsigned long)pid_nr_ns(v, iter->pid_ns);
-+
-+	return seq_printf(seq, " %lu", pid);
-+}
-+
-+static void *children_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	return get_children_pid(seq->private, NULL, *pos);
-+}
-+
-+static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct proc_pid_children_iter *iter = seq->private;
-+	struct pid *pid = NULL;
-+
-+	pid = get_children_pid(iter, v, *pos + 1);
-+	if (!pid)
-+		seq_printf(seq, "\n");
-+	put_pid(v);
-+
-+	++*pos;
-+	return pid;
-+}
-+
-+static void children_seq_stop(struct seq_file *seq, void *v)
-+{
-+	put_pid(v);
-+}
-+
-+static const struct seq_operations children_seq_ops = {
-+	.start	= children_seq_start,
-+	.next	= children_seq_next,
-+	.stop	= children_seq_stop,
-+	.show	= children_seq_show,
++struct cgeb_watchdog_config {
++	unsigned long size;
++	unsigned long timeout; /* not used in staged mode */
++	unsigned long delay;
++	unsigned long mode;
++	/* optional parameters for staged watchdog */
++	unsigned long op_mode;
++	unsigned long stage_count;
++	struct cgeb_watchdog_stage stages[CGOS_WDOG_EVENT_MAX_STAGES];
 +};
 +
-+static int children_seq_open(struct inode *inode, struct file *file)
++struct cgeb_watchdog_priv {
++	struct cgeb_board_data	*board;
++	struct watchdog_device	wdd;
++	unsigned int		timeout_s;
++	int unit;
++};
++
++static struct watchdog_info cgeb_wdd_info = {
++	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
++	.firmware_version = 0,
++	.identity = "cgeb watchdog",
++};
++
++static unsigned int watchdog_set_config(struct cgeb_watchdog_priv *priv,
++		unsigned int timeout_s)
 +{
-+	struct proc_pid_children_iter *iter = NULL;
-+	struct task_struct *task = NULL;
-+	int ret = 0;
++	struct cgeb_board_data *board = priv->board;
++	struct cgeb_watchdog_config wdi;
++	struct cgeb_function_parameters fps;
 +
-+	task = get_proc_task(inode);
-+	if (!task) {
-+		ret = -ENOENT;
-+		goto err;
-+	}
++	memset(&wdi, 0, sizeof(wdi));
++	memset(&fps, 0, sizeof(fps));
 +
-+	iter = kmalloc(sizeof(*iter), GFP_KERNEL);
-+	if (!iter) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
++	fps.unit = priv->unit;
++	fps.iptr = &wdi;
 +
-+	ret = seq_open(file, &children_seq_ops);
-+	if (!ret) {
-+		struct seq_file *m = file->private_data;
-+		m->private = iter;
++	wdi.timeout = timeout_s * 1000;
++	wdi.delay = 0;
++	wdi.size = sizeof(wdi);
++	wdi.mode = CGOS_WDOG_MODE_REBOOT_PC;
 +
-+		iter->pid_start = get_pid(task_pid(task));
-+		iter->pid_ns = inode->i_sb->s_fs_info;
-+	}
-+
-+err:
-+	if (task)
-+		put_task_struct(task);
-+	if (ret)
-+		kfree(iter);
-+
-+	return ret;
++	return cgeb_call(board, &fps, CgebWDogSetConfig);
 +}
 +
-+int children_seq_release(struct inode *inode, struct file *file)
++static int cgeb_watchdog_start(struct watchdog_device *wdd)
 +{
-+	struct seq_file *m = file->private_data;
-+	struct proc_pid_children_iter *iter = m->private;
++	struct cgeb_watchdog_priv *priv = watchdog_get_drvdata(wdd);
 +
-+	put_pid(iter->pid_start);
-+	kfree(iter);
++	return watchdog_set_config(priv, priv->timeout_s);
++}
 +
-+	seq_release(inode, file);
++static int cgeb_watchdog_stop(struct watchdog_device *wdd)
++{
++	struct cgeb_watchdog_priv *priv = watchdog_get_drvdata(wdd);
++
++	return watchdog_set_config(priv, 0);
++}
++
++static int cgeb_watchdog_set_timeout(struct watchdog_device *wdd,
++		unsigned int timeout_s)
++{
++	struct cgeb_watchdog_priv *priv = watchdog_get_drvdata(wdd);
++
++	if (!timeout_s)
++		return -EINVAL;
++
++	priv->timeout_s = timeout_s;
++
 +	return 0;
 +}
 +
-+const struct file_operations proc_tid_children_operations = {
-+	.open    = children_seq_open,
-+	.read    = seq_read,
-+	.llseek  = seq_lseek,
-+	.release = children_seq_release,
++struct watchdog_ops cgeb_watchdog_ops = {
++	.start = cgeb_watchdog_start,
++	.stop = cgeb_watchdog_stop,
++	.set_timeout = cgeb_watchdog_set_timeout,
 +};
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -3454,6 +3454,7 @@ static const struct pid_entry tid_base_s
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
- 	REG("maps",      S_IRUGO, proc_maps_operations),
-+	REG("children",  S_IRUGO, proc_tid_children_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps", S_IRUGO, proc_numa_maps_operations),
- #endif
-Index: linux-2.6.git/fs/proc/internal.h
-===================================================================
---- linux-2.6.git.orig/fs/proc/internal.h
-+++ linux-2.6.git/fs/proc/internal.h
-@@ -53,6 +53,7 @@ extern int proc_pid_statm(struct seq_fil
- 				struct pid *pid, struct task_struct *task);
- extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
- 
-+extern const struct file_operations proc_tid_children_operations;
- extern const struct file_operations proc_maps_operations;
- extern const struct file_operations proc_numa_maps_operations;
- extern const struct file_operations proc_smaps_operations;
++
++static int __devinit cgeb_watchdog_probe(struct platform_device *pdev)
++{
++	struct cgeb_watchdog_priv *priv;
++	struct cgeb_pdata *pdata = pdev->dev.platform_data;
++	int ret;
++
++	dev_info(&pdev->dev, "registering\n");
++
++	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->wdd.ops = &cgeb_watchdog_ops;
++	priv->wdd.info = &cgeb_wdd_info;
++	priv->wdd.min_timeout = 1;
++	priv->wdd.max_timeout = 3600;
++	priv->board = pdata->board;
++	priv->unit = pdata->unit;
++
++	watchdog_set_drvdata(&priv->wdd, priv);
++	platform_set_drvdata(pdev, priv);
++
++	ret = watchdog_register_device(&priv->wdd);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static int __devexit cgeb_watchdog_remove(struct platform_device *pdev)
++{
++	struct cgeb_watchdog_priv *priv = platform_get_drvdata(pdev);
++
++	watchdog_unregister_device(&priv->wdd);
++
++	return 0;
++}
++
++static struct platform_driver cgeb_watchdog_driver = {
++	.probe		= cgeb_watchdog_probe,
++	.remove		= __exit_p(cgeb_watchdog_remove),
++	.driver	= {
++		.name	= "cgeb-watchdog",
++		.owner	= THIS_MODULE,
++	},
++};
++
++static int __init cgeb_watchdog_driver_init(void)
++{
++	return platform_driver_register(&cgeb_watchdog_driver);
++}
++
++static void __exit cgeb_watchdog_driver_exit(void)
++{
++	platform_driver_unregister(&cgeb_watchdog_driver);
++}
++
++module_init(cgeb_watchdog_driver_init);
++module_exit(cgeb_watchdog_driver_exit);
++
++MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
++MODULE_DESCRIPTION("cgeb watchdog driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.2.5
+
