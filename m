@@ -1,209 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab2APQG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 11:06:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32915 "EHLO mx2.suse.de"
+	id S1755371Ab2APQHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:07:48 -0500
+Received: from mga11.intel.com ([192.55.52.93]:6494 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab2APQGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 11:06:24 -0500
-From: Ludwig Nussel <ludwig.nussel@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
-        Greg Kroah-Hartman <gregkh@suse.de> (supporter:DRIVER CORE, KOBJ...)
-Subject: [PATCH] debugfs: add mode, uid and gid options
-Date: Mon, 16 Jan 2012 17:06:21 +0100
-Message-Id: <1326729981-6605-1-git-send-email-ludwig.nussel@suse.de>
-X-Mailer: git-send-email 1.7.7
+	id S1753084Ab2APQHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 11:07:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112816988"
+Message-ID: <4F144B4F.7050905@linux.intel.com>
+Date: Mon, 16 Jan 2012 08:07:43 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Darren Hart <dvhart@linux.intel.com>
+CC: Alan Cox <alan@linux.intel.com>, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        jeffrey.t.kirsher@intel.com, paul.gortmaker@windriver.com,
+        jdmason@kudzu.us, netdev@vger.kernel.org
+Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing
+ probe
+References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com> <20120114.001430.787918662083526597.davem@davemloft.net> <4F11A533.4040406@linux.intel.com> <20120114.115604.2101782124431552110.davem@davemloft.net> <20120114214658.4ddfec30@pyramind.ukuu.org.uk> <4F120357.3020808@linux.intel.com> <CANKRQnge1n4M7W5xCqwyGzXp8J3eK1HbZVRqGW7BoE5iOwYCDQ@mail.gmail.com> <20120116123110.7ce91f2d@bob.linux.org.uk> <4F14457F.8060509@linux.intel.com>
+In-Reply-To: <4F14457F.8060509@linux.intel.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cautious admins may want to restrict access to debugfs. Currently a
-manual chown/chmod e.g. in an init script is needed to achieve that.
-Distributions that want to make the mount options configurable need
-to add extra config files. By allowing to set the root inode's uid,
-gid and mode via mount options no such hacks are needed anymore.
-Instead configuration becomes straight forward via fstab.
+On 1/16/2012 7:42 AM, Darren Hart wrote:
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
----
- fs/debugfs/inode.c |  149 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 148 insertions(+), 1 deletions(-)
+> One reason I don't care for this alternative approach is that this
+> particular hardware is targeted at embedded use where we can't assume a
+> full init system is available, etc. It can be made to work of course, it
+> just isn't as automated.
+> 
 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index f3a257d..b48f34a 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -23,9 +23,13 @@
- #include <linux/debugfs.h>
- #include <linux/fsnotify.h>
- #include <linux/string.h>
-+#include <linux/seq_file.h>
-+#include <linux/parser.h>
- #include <linux/magic.h>
- #include <linux/slab.h>
- 
-+#define DEBUGFS_DEFAULT_MODE	0755
-+
- static struct vfsmount *debugfs_mount;
- static int debugfs_mount_count;
- static bool debugfs_registered;
-@@ -125,11 +129,154 @@ static inline int debugfs_positive(struct dentry *dentry)
- 	return dentry->d_inode && !d_unhashed(dentry);
- }
- 
-+struct debugfs_mount_opts {
-+	uid_t uid;
-+	gid_t gid;
-+	umode_t mode;
-+};
-+
-+enum {
-+	Opt_uid,
-+	Opt_gid,
-+	Opt_mode,
-+	Opt_err
-+};
-+
-+static const match_table_t tokens = {
-+	{Opt_uid, "uid=%u"},
-+	{Opt_gid, "gid=%u"},
-+	{Opt_mode, "mode=%o"},
-+	{Opt_err, NULL}
-+};
-+
-+struct debugfs_fs_info {
-+	struct debugfs_mount_opts mount_opts;
-+};
-+
-+static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
-+{
-+	substring_t args[MAX_OPT_ARGS];
-+	int option;
-+	int token;
-+	char *p;
-+
-+	opts->mode = DEBUGFS_DEFAULT_MODE;
-+
-+	while ((p = strsep(&data, ",")) != NULL) {
-+		if (!*p)
-+			continue;
-+
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case Opt_uid:
-+			if (match_int(&args[0], &option))
-+				return -EINVAL;
-+			opts->uid = option;
-+			break;
-+		case Opt_gid:
-+			if (match_octal(&args[0], &option))
-+				return -EINVAL;
-+			opts->gid = option;
-+			break;
-+		case Opt_mode:
-+			if (match_octal(&args[0], &option))
-+				return -EINVAL;
-+			opts->mode = option & S_IALLUGO;
-+			break;
-+		/*
-+		 * We might like to report bad mount options here;
-+		 * but traditionally debugfs has ignored all mount options
-+		 */
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int debugfs_apply_options(struct super_block *sb)
-+{
-+	struct debugfs_fs_info *fsi = sb->s_fs_info;
-+	struct inode *inode = sb->s_root->d_inode;
-+	struct debugfs_mount_opts *opts = &fsi->mount_opts;
-+
-+	inode->i_mode &= ~S_IALLUGO;
-+	inode->i_mode |= opts->mode;
-+
-+	inode->i_uid = opts->uid;
-+	inode->i_gid = opts->gid;
-+
-+	return 0;
-+}
-+
-+static int debugfs_remount(struct super_block *sb, int *flags, char *data)
-+{
-+	int err;
-+	struct debugfs_fs_info *fsi = sb->s_fs_info;
-+
-+	err = debugfs_parse_options(data, &fsi->mount_opts);
-+	if (err)
-+		goto fail;
-+
-+	debugfs_apply_options(sb);
-+
-+fail:
-+	return err;
-+}
-+
-+static int debugfs_show_options(struct seq_file *m, struct vfsmount *mnt)
-+{
-+	struct debugfs_fs_info *fsi = mnt->mnt_sb->s_fs_info;
-+	struct debugfs_mount_opts *opts = &fsi->mount_opts;
-+
-+	if (opts->uid != 0)
-+		seq_printf(m, ",uid=%u", opts->uid);
-+	if (opts->gid != 0)
-+		seq_printf(m, ",gid=%u", opts->gid);
-+	if (opts->mode != DEBUGFS_DEFAULT_MODE)
-+		seq_printf(m, ",mode=%o", opts->mode);
-+
-+	return 0;
-+}
-+
-+static const struct super_operations debugfs_super_operations = {
-+	.statfs		= simple_statfs,
-+	.remount_fs	= debugfs_remount,
-+	.show_options	= debugfs_show_options,
-+};
-+
- static int debug_fill_super(struct super_block *sb, void *data, int silent)
- {
- 	static struct tree_descr debug_files[] = {{""}};
-+	struct debugfs_fs_info *fsi;
-+	int err;
-+
-+	save_mount_options(sb, data);
-+
-+	fsi = kzalloc(sizeof(struct debugfs_fs_info), GFP_KERNEL);
-+	sb->s_fs_info = fsi;
-+	if (!fsi) {
-+		err = -ENOMEM;
-+		goto fail;
-+	}
-+
-+	err = debugfs_parse_options(data, &fsi->mount_opts);
-+	if (err)
-+		goto fail;
-+
-+	err  =  simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
-+	if (err)
-+		goto fail;
-+
-+	sb->s_op = &debugfs_super_operations;
-+
-+	debugfs_apply_options(sb);
-+
-+	return 0;
- 
--	return simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
-+fail:
-+	kfree(fsi);
-+	sb->s_fs_info = NULL;
-+	return err;
- }
- 
- static struct dentry *debug_mount(struct file_system_type *fs_type,
--- 
-1.7.7
+the tricky thing with embedded hw like this is that all devices might
+end up with the same, read-only filesystem, so storing the mac on the FS
+and then loading it from there into the HW is... suboptimal.
+
+Would be very nice if busybox had a command that would check the mac
+from each IF, and created the random mac from userspace automatically...
 
