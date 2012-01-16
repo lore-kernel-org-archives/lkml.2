@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab2APLfm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 06:35:42 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46762 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754219Ab2APLfl (ORCPT
+	id S1754370Ab2APLmw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 06:42:52 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:59748 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754173Ab2APLmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 06:35:41 -0500
+	Mon, 16 Jan 2012 06:42:50 -0500
+Message-ID: <4F140D25.1000309@st.com>
+Date: Mon, 16 Jan 2012 17:12:29 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <CAE2SPAZH9vQ=7mTxaCGY6DHdf5Yvv-0SWCwUobUY3tTD5caLow@mail.gmail.com>
-References: <201111160019.51303.rjw@sisk.pl>
-	<201201091700.09318.roucaries.bastien@gmail.com>
-	<20120116004110.GA21240@srcf.ucam.org>
-	<CAE2SPAZH9vQ=7mTxaCGY6DHdf5Yvv-0SWCwUobUY3tTD5caLow@mail.gmail.com>
-Date: Mon, 16 Jan 2012 12:35:40 +0100
-Message-ID: <CAE2SPAax24rQZTBRih9X9bOguQSSNW7snOuNb12jy2gwO_tKfQ@mail.gmail.com>
-Subject: Re: [PATCH] x86 / reboot: Blacklist Dell OptiPlex 990 known to
- require PCI reboot
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Content-Type: multipart/mixed; boundary=14dae9d2f79e32c50704b6a39d57
+To: "vinod.koul@intel.com" <vinod.koul@intel.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>
+Subject: Re: [PATCH 8/8] dmaengine/dw_dmac: Add support for DMA_SLAVE_CONFIG
+References: <cover.1326707233.git.viresh.kumar@st.com> <7c1e6fd573d5cd348b22f8363c9960fe5efcd658.1326707233.git.viresh.kumar@st.com>
+In-Reply-To: <7c1e6fd573d5cd348b22f8363c9960fe5efcd658.1326707233.git.viresh.kumar@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae9d2f79e32c50704b6a39d57
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 1/16/2012 3:20 PM, Viresh KUMAR wrote:
+> +	/*
+> +	 * Fix sconfig's burst size according to dw_dmac. We need to convert
+> +	 * them as: 1 -> 0, 2 -> 1, 4 -> 2, 8 -> 3, 16 -> 4.
+> +	 *
+> +	 * This can be done by findiding least significant bit set: n & (n - 1)
+> +	 */
+> +	sconfig->src_maxburst &= sconfig->src_maxburst - 1;
+> +	sconfig->dst_maxburst &= sconfig->dst_maxburst - 1;
 
-Add FACP
+Perhaps, this looks incorrect. It will always return 0. :(
+Can somebody suggest any inbuild function to do this, i think
 
-2012/1/16 Bastien ROUCARIES <roucaries.bastien@gmail.com>:
-> On Mon, Jan 16, 2012 at 1:41 AM, Matthew Garrett <mjg59@srcf.ucam.org> wr=
-ote:
->> On Mon, Jan 09, 2012 at 05:00:08PM +0100, bastien ROUCARIES wrote:
->>> Le Wednesday 16 November 2011 00:19:51, Rafael J. Wysocki a =C3=A9crit =
-:
->>> > From: Rafael J. Wysocki <rjw@sisk.pl>
->>> >
->>> > Dell OptiPlex 990 is known to require PCI reboot, so add it to the re=
-boot
->>> > blacklist in pci_reboot_dmi_table[].
->>>
->>>
->>> Sorry to hi jack this thread but it seems that dell made the same crap =
-with my precision T1600. See
->>> http://www.centos.org/modules/newbb/print.php?form=3D1&topic_id=3D32948=
-&forum=3D55&order=3DASC&start=3D0
->>> or
->>> https://bugzilla.redhat.com/show_bug.cgi?id=3D698239
->>
->> Does it work if you disable VT-d in the firmware? If so, then adding it
->> to the reboot method blacklist is the wrong fix - we need to figure out
->> why VT-d interferes with Dell's reboot code.
->
-> Yes it work
->
-> I suppose you need DSDT ? Join here
->
->>
->> --
->> Matthew Garrett | mjg59@srcf.ucam.org
+find_next_bit(sconfig->src_maxburst, sizeof(sconfig->src_maxburst), 0)
 
---14dae9d2f79e32c50704b6a39d57
-Content-Type: application/octet-stream; name=FACP
-Content-Disposition: attachment; filename=FACP
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gxhf3fkf2
+will do it.
 
-RkFDUPQAAAAEk0RFTEwgIENCWDMgICAABCAiBk1TRlQTAAEAQE5+zxgQd88BAAkAsgAAAKChAIAA
-BAAAAAAAAAQEAAAAAAAAUAQAAAgEAAAgBAAAAAAAAAQCAQQQAACFZQDpAwAEEAABA31+MhMAAKWG
-AwABCAAAZAAAAAAAAAD+AAAAQE1+zwAAAAAYEHfPAAAAAAEgAAAABAAAAAAAAAEAAAAAAAAAAAAA
-AAEQAAAEBAAAAAAAAAEAAAAAAAAAAAAAAAEIAABQBAAAAAAAAAEgAAAIBAAAAAAAAAGAAAAgBAAA
-AAAAAAEAAAAAAAAAAAAAAA==
---14dae9d2f79e32c50704b6a39d57
-Content-Type: application/octet-stream; name=FACS
-Content-Disposition: attachment; filename=FACS
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gxhf3j4w3
-
-RkFDU0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAA==
---14dae9d2f79e32c50704b6a39d57--
+-- 
+viresh
