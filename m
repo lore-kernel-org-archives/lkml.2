@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab2APIzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 03:55:39 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50421 "EHLO mx2.mail.elte.hu"
+	id S1753715Ab2API5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 03:57:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596Ab2APIzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 03:55:37 -0500
-Date: Mon, 16 Jan 2012 09:55:07 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Greg KH <greg@kroah.com>
-Cc: Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        devel@driverdev.osuosl.org, "Ted Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, lttng-dev@lists.lttng.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [lttng-dev] Perf ABI (was: Re: [PATCH 09/11] sched: export
- task_prio to GPL modules)
-Message-ID: <20120116085507.GA759@elte.hu>
-References: <20111219153053.GA21548@Krystal>
- <20111220110813.GA19105@elte.hu>
- <20111223164629.GA30474@Krystal>
- <20111223172155.GA14117@thunk.org>
- <20111223181641.GA12681@Krystal>
- <20111225174613.GA12732@thunk.org>
- <20120112140905.GA30377@Krystal>
- <1326380042.7642.73.camel@gandalf.stny.rr.com>
- <20120112153957.GA20514@Krystal>
- <20120112200003.GC28100@kroah.com>
+	id S1753638Ab2API5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 03:57:19 -0500
+Date: Mon, 16 Jan 2012 09:57:09 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCHv5 0/7] ftrace, perf: Adding support to use function trace
+Message-ID: <20120116085709.GA1660@m.brq.redhat.com>
+References: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
+ <1325495060-6402-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120112200003.GC28100@kroah.com>
+In-Reply-To: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hi,
+any feedback?
 
-* Greg KH <greg@kroah.com> wrote:
+thanks,
+jirka
 
-> So I think udev actually is a good example of how to do it 
-> right, we provide proper backwards compatibility in the kernel 
-> to keep userspace working.
-
-I agree, i still have a udev system that i installed 5 years 
-ago, and it's working mostly fine with current kernels.
-
-Compatibility is a desirable property, it is something that 
-preserves our users - and if done right it's almost never a big 
-issue technically. If it is hindering someone then there must be 
-other problems.
-
-Of course to developers the simplest approach is always to just 
-develop without regard for compatibility. The simplest form of 
-that is that people write patches that work fine on their own 
-systems but crash the kernel on other systems. We fix those 
-bugs. Another, subtler form is when the patches work fine on 
-their systems but break apps on other systems. We fix those bugs 
-too.
-
-That's why we have testing, regression tracking and maintainers, 
-to control that - compatibility is just another dimension to 
-'correctness', in the typical case with no inherent restrictions 
-on future features and possibilities.
-
-Thanks,
-
-	Ingo
+On Mon, Jan 02, 2012 at 10:04:13AM +0100, Jiri Olsa wrote:
+> hi,
+> here's another version of perf support for function trace
+> with filter. 
+> 
+> attached patches:
+>   1/7 ftrace: Change filter/notrace set functions to return exit code
+>   2/7 ftrace: Add enable/disable ftrace_ops control interface
+>   3/7 ftrace, perf: Add open/close tracepoint perf registration actions
+>   4/7 ftrace, perf: Add add/del tracepoint perf registration actions
+>   5/7 ftrace, perf: Add support to use function tracepoint in perf
+>   6/7 ftrace, perf: Distinguish ftrace function event field type
+>   7/7 ftrace, perf: Add filter support for function trace event
+> 
+> v5 changes:
+>   7/7 - fixed to properly support ',' in filter expressions
+> 
+> v4 changes:
+>   2/7 - FL_GLOBAL_CONTROL changed to FL_GLOBAL_CONTROL_MASK
+>       - changed WARN_ON_ONCE() to include the !preempt_count()
+>       - changed this_cpu_ptr to per_cpu_ptr
+> 
+>   ommited Fix possible NULL dereferencing in __ftrace_hash_rec_update
+>   (2/8 in v3)
+> 
+> v3 changes:
+>   3/8 - renamed __add/remove_ftrace_ops
+>       - fixed preemtp_enable/recursion_clear order in ftrace_ops_control_func 
+>       - renamed/commented API functions -  enable/disable_ftrace_function
+>   
+>   ommited graph tracer workarounf patch 10/10  
+> 
+> v2 changes:
+>  01/10 - keeping the old fix instead of adding hash_has_contents func
+>          I'll send separating patchset for this
+>  02/10 - using different way to avoid the issue (3/9 in v1)
+>  03/10 - using the way proposed by Steven for controling ftrace_ops
+>          (4/9 in v1)
+>  06/10 - added check ensuring the ftrace:function event could be used by
+>          root only (7/9 in v1)
+>  08/10 - added more description (8/9 in v1)
+>  09/10 - changed '&&' operator to '||' which seems more suitable
+>          in this case (9/9 in v1)
+> 
+> thanks,
+> jirka
+> ---
+>  include/linux/ftrace.h             |   47 ++++++++-
+>  include/linux/ftrace_event.h       |    9 +-
+>  include/linux/perf_event.h         |    3 +
+>  kernel/trace/ftrace.c              |  140 +++++++++++++++++++++--
+>  kernel/trace/trace.h               |   11 ++-
+>  kernel/trace/trace_event_perf.c    |  214 +++++++++++++++++++++++++++++-------
+>  kernel/trace/trace_events.c        |   12 ++-
+>  kernel/trace/trace_events_filter.c |  164 ++++++++++++++++++++++++++-
+>  kernel/trace/trace_export.c        |   53 ++++++++-
+>  kernel/trace/trace_kprobe.c        |    8 +-
+>  kernel/trace/trace_syscalls.c      |   18 +++-
+>  11 files changed, 598 insertions(+), 81 deletions(-)
