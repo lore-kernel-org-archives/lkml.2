@@ -1,747 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553Ab2APXMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 18:12:14 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64068 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab2APXMM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 18:12:12 -0500
+	id S1751762Ab2APXPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 18:15:24 -0500
+Received: from home.keithp.com ([63.227.221.253]:60259 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068Ab2APXPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 18:15:21 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Takashi Iwai <tiwai@suse.de>,
+        "intel-gfx\@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>,
+        Michal Marek <mmarek@suse.com>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Lemaire <rlemaire@suse.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: set AUD_CONFIG N_value_index for DisplayPort
+In-Reply-To: <20120116230809.GA7837@localhost>
+References: <20120109131717.GA4713@localhost> <86y5tgx02g.fsf@sumi.keithp.com> <20120110054519.GA27257@localhost> <86ty404yhd.fsf@sumi.keithp.com> <20120116080252.GA18538@localhost> <20120116202618.GG3627@phenom.ffwll.local> <86obu31io4.fsf@sumi.keithp.com> <20120116230809.GA7837@localhost>
+User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 16 Jan 2012 15:15:13 -0800
+Message-ID: <86d3ajgry6.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <1326745733.2564.14.camel@edumazet-laptop>
-References: <CAGsizz+x1GVNR9Pz=b7wO0ELx29=FMosfvhQWL5K26EpkwsUCg@mail.gmail.com>
- <1326745733.2564.14.camel@edumazet-laptop>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Tue, 17 Jan 2012 00:11:50 +0100
-X-Google-Sender-Auth: HbCHVgvuR-tUkRA3eyV1tlZfqp0
-Message-ID: <CAGsizz+2nH+Sx+7TjZwEeKBiHbio0BxoN7CgT4Sspp0EzRN6Ug@mail.gmail.com>
-Subject: Re: [patch v2, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dňa 16. januára 2012 21:28, Eric Dumazet <eric.dumazet@gmail.com> napísal/a:
-> Le lundi 16 janvier 2012 à 20:45 +0100, Štefan Gula a écrit :
->> From: Stefan Gula <steweg@gmail.com
->>
->> This patch is an extension for current Ethernet over GRE
->> implementation, which allows user to create virtual bridge (multipoint
->> VPN) and forward traffic based on Ethernet MAC address information in
->> it. It simulates the Bridge behavior learning mechanism, but instead
->> of learning port ID from which given MAC address comes, it learns IP
->> address of peer which encapsulated given packet. Multicast, Broadcast
->> and unknown-multicast traffic is send over network as multicast
->> encapsulated GRE packet, so one Ethernet multipoint GRE tunnel can be
->> represented as one single virtual switch on logical level and be also
->> represented as one multicast IPv4 address on network level.
->>
->> Signed-off-by: Stefan Gula <steweg@gmail.com>
->>
->> ---
->>
->> code was merged with latest bridge code and should be easily comparable
->>
->
-> Please make sure it applies properly on net-next tree.
->
-> That is mandatory.
->
->> diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff
->> linux-3.2.1-orig/include/net/ipip.h linux-3.2.1-my/include/net/ipip.h
->> --- linux-3.2.1-orig/include/net/ipip.h       2012-01-12 20:42:45.000000000 +0100
->> +++ linux-3.2.1-my/include/net/ipip.h 2012-01-16 11:17:01.000000000 +0100
->> @@ -27,6 +27,14 @@ struct ip_tunnel {
->>       __u32                   o_seqno;        /* The last output seqno */
->>       int                     hlen;           /* Precalculated GRE header length */
->>       int                     mlink;
->> +#ifdef CONFIG_NET_IPGRE_BRIDGE
->> +#define GRETAP_BR_HASH_BITS 8
->> +#define GRETAP_BR_HASH_SIZE (1 << GRETAP_BR_HASH_BITS)
->> +     struct hlist_head       hash[GRETAP_BR_HASH_SIZE];
->> +     spinlock_t              hash_lock;
->> +     unsigned long           ageing_time;
->> +     struct timer_list       gc_timer;
->> +#endif
->>
->>       struct ip_tunnel_parm   parms;
->>
->> diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff
->> linux-3.2.1-orig/net/ipv4/Kconfig linux-3.2.1-my/net/ipv4/Kconfig
->> --- linux-3.2.1-orig/net/ipv4/Kconfig 2012-01-12 20:42:45.000000000 +0100
->> +++ linux-3.2.1-my/net/ipv4/Kconfig   2012-01-16 12:37:00.000000000 +0100
->> @@ -211,6 +211,15 @@ config NET_IPGRE_BROADCAST
->>         Network), but can be distributed all over the Internet. If you want
->>         to do that, say Y here and to "IP multicast routing" below.
->>
->> +config NET_IPGRE_BRIDGE
->> +     bool "IP: Ethernet over multipoint GRE over IP"
->> +     depends on IP_MULTICAST && NET_IPGRE && NET_IPGRE_BROADCAST
->> +     help
->> +       Allows you to use multipoint GRE VPN as virtual switch and interconnect
->> +       several L2 endpoints over L3 routed infrastructure. It is useful for
->> +       creating multipoint L2 VPNs which can be later used inside bridge
->> +       interfaces If you want to use. GRE multipoint L2 VPN feature say Y.
->> +
->>  config IP_MROUTE
->>       bool "IP: multicast routing"
->>       depends on IP_MULTICAST
->> diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff
->> linux-3.2.1-orig/net/ipv4/ip_gre.c linux-3.2.1-my/net/ipv4/ip_gre.c
->> --- linux-3.2.1-orig/net/ipv4/ip_gre.c        2012-01-12 20:42:45.000000000 +0100
->> +++ linux-3.2.1-my/net/ipv4/ip_gre.c  2012-01-16 20:42:03.000000000 +0100
->> @@ -52,6 +52,11 @@
->>  #include <net/ip6_route.h>
->>  #endif
->>
->> +#ifdef CONFIG_NET_IPGRE_BRIDGE
->> +#include <linux/jhash.h>
->> +#include <asm/unaligned.h>
->> +#endif
->> +
->>  /*
->>     Problems & solutions
->>     --------------------
->> @@ -134,6 +139,191 @@ struct ipgre_net {
->>       struct net_device *fb_tunnel_dev;
->>  };
->>
->> +#ifdef CONFIG_NET_IPGRE_BRIDGE
->> +     /*
->> +      * This part of code includes codes to enable L2 ethernet
->> +      * switch virtualization over IP routed infrastructure with
->> +      * utilization of multicast capable endpoint using Ethernet
->> +      * over GRE
->> +      *
->> +      * Author: Stefan Gula
->> +      * Signed-off-by: Stefan Gula <steweg@gmail.com>
->> +      */
->> +struct mac_addr {
->> +     unsigned char   addr[6];
->
-> Did I mention : ETH_ALEN ?
->
->> +};
->> +
->> +struct ipgre_tap_bridge_entry {
->> +     struct hlist_node       hlist;
->> +     u32                     raddr;
->
->        __be32 raddr ?
->
->> +     struct mac_addr         addr;
->> +     struct net_device       *dev;
->> +     struct rcu_head         rcu;
->> +     unsigned long           updated;
->> +};
->> +
->> +static struct kmem_cache *ipgre_tap_bridge_cache __read_mostly;
->> +static u32 ipgre_salt __read_mostly;
->> +
->> +int __net_init ipgre_tap_bridge_init(void)
->> +{
->> +     ipgre_tap_bridge_cache = kmem_cache_create("ipgre_tap_bridge_cache",
->> +             sizeof(struct ipgre_tap_bridge_entry),
->> +             0,
->> +             SLAB_HWCACHE_ALIGN, NULL);
->> +     if (!ipgre_tap_bridge_cache)
->> +             return -ENOMEM;
->> +     get_random_bytes(&ipgre_salt, sizeof(ipgre_salt));
->> +     return 0;
->> +}
->> +
->> +void ipgre_tap_bridge_fini(void)
->> +{
->> +     kmem_cache_destroy(ipgre_tap_bridge_cache);
->> +}
->> +
->> +static inline int ipgre_tap_bridge_hash(const unsigned char *mac)
->> +{
->> +     u32 key = get_unaligned((u32 *)(mac + 2));
->> +     return jhash_1word(key, ipgre_salt) & (GRETAP_BR_HASH_SIZE - 1);
->> +}
->> +
->> +static inline int ipgre_tap_bridge_has_expired(const struct ip_tunnel *tunnel,
->> +             const struct ipgre_tap_bridge_entry *entry)
->> +{
->> +     return time_before_eq(entry->updated + tunnel->ageing_time,
->> +             jiffies);
->> +}
->> +
->> +static void ipgre_tap_bridge_rcu_free(struct rcu_head *head)
->> +{
->> +     struct ipgre_tap_bridge_entry *entry
->> +             = container_of(head, struct ipgre_tap_bridge_entry, rcu);
->> +     kmem_cache_free(ipgre_tap_bridge_cache, entry);
->> +}
->> +
->> +static inline void ipgre_tap_bridge_delete(struct
->> ipgre_tap_bridge_entry *entry)
->> +{
->> +     hlist_del_rcu(&entry->hlist);
->> +     call_rcu(&entry->rcu, ipgre_tap_bridge_rcu_free);
->> +}
->
-> Did I mention : kfree_rcu() ?
->
->> +
->> +
->> +
->> +static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_find(
->> +     struct hlist_head *head,
->> +     const unsigned char *addr)
->> +{
->> +     struct hlist_node *h;
->> +     struct ipgre_tap_bridge_entry *entry;
->> +     hlist_for_each_entry(entry, h, head, hlist) {
->> +             if (!compare_ether_addr(entry->addr.addr, addr))
->> +                     return entry;
->> +     }
->> +     return NULL;
->> +}
->> +
->> +
->> +static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_find_rcu(
->> +     struct hlist_head *head,
->> +     const unsigned char *addr)
->> +{
->> +     struct hlist_node *h;
->> +     struct ipgre_tap_bridge_entry *entry;
->> +     hlist_for_each_entry_rcu(entry, h, head, hlist) {
->> +             if (!compare_ether_addr(entry->addr.addr, addr))
->> +                     return entry;
->> +     }
->> +     return NULL;
->> +}
->> +
->> +static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_create(
->> +             struct hlist_head *head,
->> +             u32 source,
->
->        __be32 source,
->
->> +             const unsigned char *addr, struct net_device *dev)
->> +{
->> +     struct ipgre_tap_bridge_entry *entry;
->> +     entry = kmem_cache_alloc(ipgre_tap_bridge_cache, GFP_ATOMIC);
->> +     if (entry) {
->> +             memcpy(entry->addr.addr, addr, ETH_ALEN);
->> +             hlist_add_head_rcu(&entry->hlist, head);
->
-> Thats bogus.
->
-> You must init all entry fields _before_ inserting entry in hash table.
->
->> +             entry->raddr = source;
->> +             entry->dev = dev;
->> +             entry->updated = jiffies;
->> +     }
->> +     return entry;
->> +}
->> +
->> +__be32 ipgre_tap_bridge_get_raddr(struct ip_tunnel *tunnel,
->> +     const unsigned char *addr)
->> +{
->> +     struct ipgre_tap_bridge_entry *entry;
->> +     entry = __ipgre_tap_bridge_get(tunnel, addr);
->> +     if (entry == NULL)
->> +             return 0;
->> +     else
->> +             return entry->raddr;
->> +}
->> +
->> +#endif
->>  /* Tunnel hash table */
->>
->>  /*
->> @@ -563,6 +753,13 @@ static int ipgre_rcv(struct sk_buff *skb
->>       int    offset = 4;
->>       __be16 gre_proto;
->>
->> +#ifdef CONFIG_NET_IPGRE_BRIDGE
->> +     u32 orig_source;
->
-> Please run sparse on your code...  (make C=2 ...)
->
-> orig_source is not u32, but __be32
->
->> +     struct hlist_head *head;
->> +     struct ipgre_tap_bridge_entry *entry;
->> +     struct ethhdr *tethhdr;
->> +#endif
->> +
->>       if (!pskb_may_pull(skb, 16))
->>               goto drop_nolock;
->>
->> @@ -659,10 +856,39 @@ static int ipgre_rcv(struct sk_buff *skb
->>                               tunnel->dev->stats.rx_errors++;
->>                               goto drop;
->>                       }
->> -
->> +#ifdef CONFIG_NET_IPGRE_BRIDGE
->> +                     orig_source = iph->saddr;
->> +#endif
->>                       iph = ip_hdr(skb);
->>                       skb->protocol = eth_type_trans(skb, tunnel->dev);
->>                       skb_postpull_rcsum(skb, eth_hdr(skb), ETH_HLEN);
->> +#ifdef CONFIG_NET_IPGRE_BRIDGE
->> +                     if (ipv4_is_multicast(tunnel->parms.iph.daddr)) {
->> +                             tethhdr = eth_hdr(skb);
->> +                             if (!is_multicast_ether_addr(
->> +                                     tethhdr->h_source)) {
->> +                                     head = &tunnel->hash[
->> +                                             ipgre_tap_bridge_hash(
->> +                                                     tethhdr->h_source)];
->> +                                     entry = ipgre_tap_bridge_find_rcu(head,
->> +                                             tethhdr->h_source);
->> +                                     if (likely(entry)) {
->> +                                             entry->raddr = orig_source;
->> +                                             entry->updated = jiffies;
->> +                                     } else {
->> +                                       spin_lock_bh(&tunnel->hash_lock);
->
-> You dont need the _bh() variant here, since we run from softirq handler.
->
->> +                                       if (!ipgre_tap_bridge_find(head,
->> +                                             tethhdr->h_source))
->> +                                             ipgre_tap_bridge_create(
->> +                                              head,
->> +                                              orig_source,
->> +                                              tethhdr->h_source,
->> +                                              tunnel->dev);
->> +                                       spin_unlock_bh(&tunnel->hash_lock);
->> +                                     }
->> +                             }
->> +                     }
->> +#endif
->>               }
->>
->>               tstats = this_cpu_ptr(tunnel->dev->tstats);
->> @@ -716,7 +942,19 @@ static netdev_tx_t ipgre_tunnel_xmit(str
->>               tiph = &tunnel->parms.iph;
->>       }
->>
->> +#ifdef CONFIG_NET_IPGRE_BRIDGE
->> +     rcu_read_lock();
->> +     if ((dev->type == ARPHRD_ETHER) &&
->> +             ipv4_is_multicast(tunnel->parms.iph.daddr))
->> +             dst = ipgre_tap_bridge_get_raddr(tunnel,
->> +                     ((struct ethhdr *)skb->data)->h_dest);
->> +     rcu_read_unlock();
->
-> this rcu_read_lock()/rcu_read_unlock() pair should be done in
-> ipgre_tap_bridge_get_raddr() instead... so we dont hit this for all
-> packets.
->
->> +     if (dst == 0)
->> +             dst = tiph->daddr;
->> +     if (dst == 0) {
->> +#else
->>       if ((dst = tiph->daddr) == 0) {
->> +#endif
->>               /* NBMA tunnel */
->>
->
-> General comment :
->
-> It would be nice this stuff is installed on a new "ip tunnel add"
-> option...
->
-> Hash table is 2048 bytes long... and an "ip tunnel " option would permit
-> to size the hash table eventually, instead of fixed 256 slots.
->
->
->
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-I agree with you, but for the start of this feature I believe static
-slots size is enough here - same limitation is inside the original
-linux bridge code. I have merged hopefully all your comments and here
-is the newest patch:
+On Tue, 17 Jan 2012 07:08:09 +0800, Wu Fengguang <fengguang.wu@intel.com> w=
+rote:
+> On Mon, Jan 16, 2012 at 12:44:43PM -0800, Keith Packard wrote:
+> > On Mon, 16 Jan 2012 21:26:18 +0100, Daniel Vetter <daniel@ffwll.ch> wro=
+te:
+> >=20
+> > > Keith, does this address your concern and this patch is r-b: Keith or=
+ do
+> > > we want an
+> > >=20
+> > > } else {
+> > > 	I915_WRITE(aud_config, 0);
+> > > }
+> > >=20
+> > > for paranoia?
+> >=20
+> > I think we want this added, just to be sure we set the configuration
+> > correctly in all cases; it's easy to imagine moving from DP to HDMI and
+> > leaving this bit set.
+>=20
+> Ah good point! Here is the updated patch.
+>=20
+> ---
+> Subject: drm/i915: set AUD_CONFIG N_value_index for DisplayPort
+> Date: Fri Jan 06 14:41:31 CST 2012
+>=20
+> It should be programmed to "0" for HDMI or "1" for DisplayPort.
+>=20
+> This enables DisplayPort audio for
+>=20
+> - HP EliteBook 8460p
+>   (whose BIOS does not set the N_value_index bit for us)
+>=20
+> - DisplayPort monitor hot plugged after boot
+>   (otherwise most BIOS will fill the N_value_index bit for us)
+>=20
+> Tested-by: Robert Lemaire <rlemaire@suse.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 
-diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff
-linux-3.2.1-orig/include/net/ipip.h linux-3.2.1-my/include/net/ipip.h
---- linux-3.2.1-orig/include/net/ipip.h	2012-01-12 20:42:45.000000000 +0100
-+++ linux-3.2.1-my/include/net/ipip.h	2012-01-16 11:17:01.000000000 +0100
-@@ -27,6 +27,14 @@ struct ip_tunnel {
- 	__u32			o_seqno;	/* The last output seqno */
- 	int			hlen;		/* Precalculated GRE header length */
- 	int			mlink;
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+#define GRETAP_BR_HASH_BITS 8
-+#define GRETAP_BR_HASH_SIZE (1 << GRETAP_BR_HASH_BITS)
-+	struct hlist_head	hash[GRETAP_BR_HASH_SIZE];
-+	spinlock_t		hash_lock;
-+	unsigned long		ageing_time;
-+	struct timer_list	gc_timer;
-+#endif
+Reviewed-by: Keith Packard <keithp@keithp.com>
 
- 	struct ip_tunnel_parm	parms;
+> ---
+>  drivers/gpu/drm/i915/i915_reg.h      |   12 ++++++++++++
+>  drivers/gpu/drm/i915/intel_display.c |    8 +++++++-
+>  2 files changed, 19 insertions(+), 1 deletion(-)
+>=20
+> --- linux.orig/drivers/gpu/drm/i915/i915_reg.h	2012-01-07 23:11:10.000000=
+000 +0800
+> +++ linux/drivers/gpu/drm/i915/i915_reg.h	2012-01-10 13:20:17.000000000 +=
+0800
+> @@ -3582,4 +3582,16 @@
+>  #define CPT_AUD_CNTL_ST_A		0xE50B4
+>  #define CPT_AUD_CNTRL_ST2		0xE50C0
+>=20=20
+> +#define IBX_AUD_CONFIG_A			0xe2000
+> +#define CPT_AUD_CONFIG_A			0xe5000
+> +#define   AUD_CONFIG_N_VALUE_INDEX		(1 << 29)
+> +#define   AUD_CONFIG_N_PROG_ENABLE		(1 << 28)
+> +#define   AUD_CONFIG_UPPER_N_SHIFT		20
+> +#define   AUD_CONFIG_UPPER_N_VALUE		(0xff << 20)
+> +#define   AUD_CONFIG_LOWER_N_SHIFT		4
+> +#define   AUD_CONFIG_LOWER_N_VALUE		(0xfff << 4)
+> +#define   AUD_CONFIG_PIXEL_CLOCK_HDMI_SHIFT	16
+> +#define   AUD_CONFIG_PIXEL_CLOCK_HDMI		(0xf << 16)
+> +#define   AUD_CONFIG_DISABLE_NCTS		(1 << 3)
+> +
+>  #endif /* _I915_REG_H_ */
+> --- linux.orig/drivers/gpu/drm/i915/intel_display.c	2012-01-07 23:11:10.0=
+00000000 +0800
+> +++ linux/drivers/gpu/drm/i915/intel_display.c	2012-01-17 07:06:29.000000=
+000 +0800
+> @@ -5908,15 +5908,18 @@ static void ironlake_write_eld(struct dr
+>  	uint32_t i;
+>  	int len;
+>  	int hdmiw_hdmiedid;
+> +	int aud_config;
+>  	int aud_cntl_st;
+>  	int aud_cntrl_st2;
+>=20=20
+>  	if (HAS_PCH_IBX(connector->dev)) {
+>  		hdmiw_hdmiedid =3D IBX_HDMIW_HDMIEDID_A;
+> +		aud_config =3D IBX_AUD_CONFIG_A;
+>  		aud_cntl_st =3D IBX_AUD_CNTL_ST_A;
+>  		aud_cntrl_st2 =3D IBX_AUD_CNTL_ST2;
+>  	} else {
+>  		hdmiw_hdmiedid =3D CPT_HDMIW_HDMIEDID_A;
+> +		aud_config =3D CPT_AUD_CONFIG_A;
+>  		aud_cntl_st =3D CPT_AUD_CNTL_ST_A;
+>  		aud_cntrl_st2 =3D CPT_AUD_CNTRL_ST2;
+>  	}
+> @@ -5924,6 +5927,7 @@ static void ironlake_write_eld(struct dr
+>  	i =3D to_intel_crtc(crtc)->pipe;
+>  	hdmiw_hdmiedid +=3D i * 0x100;
+>  	aud_cntl_st +=3D i * 0x100;
+> +	aud_config +=3D i * 0x100;
+>=20=20
+>  	DRM_DEBUG_DRIVER("ELD on pipe %c\n", pipe_name(i));
+>=20=20
+> @@ -5943,7 +5947,9 @@ static void ironlake_write_eld(struct dr
+>  	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_DISPLAYPORT)) {
+>  		DRM_DEBUG_DRIVER("ELD: DisplayPort detected\n");
+>  		eld[5] |=3D (1 << 2);	/* Conn_Type, 0x1 =3D DisplayPort */
+> -	}
+> +		I915_WRITE(aud_config, AUD_CONFIG_N_VALUE_INDEX); /* 0x1 =3D DP */
+> +	} else
+> +		I915_WRITE(aud_config, 0);
+>=20=20
+>  	if (intel_eld_uptodate(connector,
+>  			       aud_cntrl_st2, eldv,
 
-diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff
-linux-3.2.1-orig/net/ipv4/Kconfig linux-3.2.1-my/net/ipv4/Kconfig
---- linux-3.2.1-orig/net/ipv4/Kconfig	2012-01-12 20:42:45.000000000 +0100
-+++ linux-3.2.1-my/net/ipv4/Kconfig	2012-01-16 12:37:00.000000000 +0100
-@@ -211,6 +211,15 @@ config NET_IPGRE_BROADCAST
- 	  Network), but can be distributed all over the Internet. If you want
- 	  to do that, say Y here and to "IP multicast routing" below.
+=2D-=20
+keith.packard@intel.com
 
-+config NET_IPGRE_BRIDGE
-+	bool "IP: Ethernet over multipoint GRE over IP"
-+	depends on IP_MULTICAST && NET_IPGRE && NET_IPGRE_BROADCAST
-+	help
-+	  Allows you to use multipoint GRE VPN as virtual switch and interconnect
-+	  several L2 endpoints over L3 routed infrastructure. It is useful for
-+	  creating multipoint L2 VPNs which can be later used inside bridge
-+	  interfaces If you want to use. GRE multipoint L2 VPN feature say Y.
-+
- config IP_MROUTE
- 	bool "IP: multicast routing"
- 	depends on IP_MULTICAST
-diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff
-linux-3.2.1-orig/net/ipv4/ip_gre.c linux-3.2.1-my/net/ipv4/ip_gre.c
---- linux-3.2.1-orig/net/ipv4/ip_gre.c	2012-01-12 20:42:45.000000000 +0100
-+++ linux-3.2.1-my/net/ipv4/ip_gre.c	2012-01-17 00:01:17.000000000 +0100
-@@ -52,6 +52,11 @@
- #include <net/ip6_route.h>
- #endif
+--=-=-=
+Content-Type: application/pgp-signature
 
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+#include <linux/jhash.h>
-+#include <asm/unaligned.h>
-+#endif
-+
- /*
-    Problems & solutions
-    --------------------
-@@ -134,6 +139,184 @@ struct ipgre_net {
- 	struct net_device *fb_tunnel_dev;
- };
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+	/*
-+	 * This part of code includes codes to enable L2 ethernet
-+	 * switch virtualization over IP routed infrastructure with
-+	 * utilization of multicast capable endpoint using Ethernet
-+	 * over GRE
-+	 *
-+	 * Author: Stefan Gula
-+	 * Signed-off-by: Stefan Gula <steweg@gmail.com>
-+	 */
-+struct ipgre_tap_bridge_entry {
-+	struct hlist_node	hlist;
-+	__be32			raddr;
-+	unsigned char		addr[ETH_ALEN];
-+	struct net_device	*dev;
-+	struct rcu_head		rcu;
-+	unsigned long		updated;
-+};
-+
-+static struct kmem_cache *ipgre_tap_bridge_cache __read_mostly;
-+static u32 ipgre_salt __read_mostly;
-+
-+static int __net_init ipgre_tap_bridge_init(void)
-+{
-+	ipgre_tap_bridge_cache = kmem_cache_create("ipgre_tap_bridge_cache",
-+		sizeof(struct ipgre_tap_bridge_entry),
-+		0,
-+		SLAB_HWCACHE_ALIGN, NULL);
-+	if (!ipgre_tap_bridge_cache)
-+		return -ENOMEM;
-+	get_random_bytes(&ipgre_salt, sizeof(ipgre_salt));
-+	return 0;
-+}
-+
-+static void ipgre_tap_bridge_fini(void)
-+{
-+	kmem_cache_destroy(ipgre_tap_bridge_cache);
-+}
-+
-+static inline int ipgre_tap_bridge_hash(const unsigned char *mac)
-+{
-+	u32 key = get_unaligned((u32 *)(mac + 2));
-+	return jhash_1word(key, ipgre_salt) & (GRETAP_BR_HASH_SIZE - 1);
-+}
-+
-+static inline int ipgre_tap_bridge_has_expired(const struct ip_tunnel *tunnel,
-+		const struct ipgre_tap_bridge_entry *entry)
-+{
-+	return time_before_eq(entry->updated + tunnel->ageing_time,
-+		jiffies);
-+}
-+
-+static inline void ipgre_tap_bridge_delete(struct
-ipgre_tap_bridge_entry *entry)
-+{
-+	hlist_del_rcu(&entry->hlist);
-+	kfree_rcu(entry, rcu);
-+}
-+
-+static void ipgre_tap_bridge_cleanup(unsigned long _data)
-+{
-+	struct ip_tunnel *tunnel = (struct ip_tunnel *)_data;
-+	unsigned long delay = tunnel->ageing_time;
-+	unsigned long next_timer = jiffies + tunnel->ageing_time;
-+	int i;
-+	spin_lock(&tunnel->hash_lock);
-+	for (i = 0; i < GRETAP_BR_HASH_SIZE; i++) {
-+		struct ipgre_tap_bridge_entry *entry;
-+		struct hlist_node *h, *n;
-+		hlist_for_each_entry_safe(entry, h, n,
-+			&tunnel->hash[i], hlist)
-+		{
-+			unsigned long this_timer;
-+			this_timer = entry->updated + delay;
-+			if (time_before_eq(this_timer, jiffies))
-+				ipgre_tap_bridge_delete(entry);
-+			else if (time_before(this_timer, next_timer))
-+				next_timer = this_timer;
-+		}
-+	}
-+	spin_unlock(&tunnel->hash_lock);
-+	mod_timer(&tunnel->gc_timer, round_jiffies_up(next_timer));
-+}
-+
-+static void ipgre_tap_bridge_flush(struct ip_tunnel *tunnel)
-+{
-+	int i;
-+	spin_lock_bh(&tunnel->hash_lock);
-+	for (i = 0; i < GRETAP_BR_HASH_SIZE; i++) {
-+		struct ipgre_tap_bridge_entry *entry;
-+		struct hlist_node *h, *n;
-+		hlist_for_each_entry_safe(entry, h, n,
-+			&tunnel->hash[i], hlist)
-+		{
-+			ipgre_tap_bridge_delete(entry);
-+		}
-+	}
-+	spin_unlock_bh(&tunnel->hash_lock);
-+}
-+
-+static struct ipgre_tap_bridge_entry *__ipgre_tap_bridge_get(
-+	struct ip_tunnel *tunnel, const unsigned char *addr)
-+{
-+	struct hlist_node *h;
-+	struct ipgre_tap_bridge_entry *entry;
-+	hlist_for_each_entry_rcu(entry, h,
-+		&tunnel->hash[ipgre_tap_bridge_hash(addr)], hlist)
-+	{
-+		if (!compare_ether_addr(entry->addr, addr)) {
-+			if (unlikely(ipgre_tap_bridge_has_expired(tunnel,
-+				entry)))
-+				break;
-+			return entry;
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
-+static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_find(
-+	struct hlist_head *head,
-+	const unsigned char *addr)
-+{
-+	struct hlist_node *h;
-+	struct ipgre_tap_bridge_entry *entry;
-+	hlist_for_each_entry(entry, h, head, hlist) {
-+		if (!compare_ether_addr(entry->addr, addr))
-+			return entry;
-+	}
-+	return NULL;
-+}
-+
-+
-+static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_find_rcu(
-+	struct hlist_head *head,
-+	const unsigned char *addr)
-+{
-+	struct hlist_node *h;
-+	struct ipgre_tap_bridge_entry *entry;
-+	hlist_for_each_entry_rcu(entry, h, head, hlist) {
-+		if (!compare_ether_addr(entry->addr, addr))
-+			return entry;
-+	}
-+	return NULL;
-+}
-+
-+static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_create(
-+		struct hlist_head *head,
-+		u32 source,
-+		const unsigned char *addr, struct net_device *dev)
-+{
-+	struct ipgre_tap_bridge_entry *entry;
-+	entry = kmem_cache_alloc(ipgre_tap_bridge_cache, GFP_ATOMIC);
-+	if (entry) {
-+		memcpy(entry->addr, addr, ETH_ALEN);
-+		entry->raddr = source;
-+		entry->dev = dev;
-+		entry->updated = jiffies;
-+		hlist_add_head_rcu(&entry->hlist, head);
-+	}
-+	return entry;
-+}
-+
-+static __be32 ipgre_tap_bridge_get_raddr(struct ip_tunnel *tunnel,
-+	const unsigned char *addr)
-+{
-+	__be32 raddr;
-+	struct ipgre_tap_bridge_entry *entry;
-+	rcu_read_lock();
-+	entry = __ipgre_tap_bridge_get(tunnel, addr);
-+	if (entry == NULL)
-+		raddr = 0;
-+	else
-+		raddr = entry->raddr;
-+	rcu_read_unlock();
-+	return raddr;
-+}
-+
-+#endif
- /* Tunnel hash table */
-
- /*
-@@ -563,6 +746,13 @@ static int ipgre_rcv(struct sk_buff *skb
- 	int    offset = 4;
- 	__be16 gre_proto;
-
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+	__be32 orig_source;
-+	struct hlist_head *head;
-+	struct ipgre_tap_bridge_entry *entry;
-+	struct ethhdr *tethhdr;
-+#endif
-+
- 	if (!pskb_may_pull(skb, 16))
- 		goto drop_nolock;
-
-@@ -659,10 +849,39 @@ static int ipgre_rcv(struct sk_buff *skb
- 				tunnel->dev->stats.rx_errors++;
- 				goto drop;
- 			}
--
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+			orig_source = iph->saddr;
-+#endif
- 			iph = ip_hdr(skb);
- 			skb->protocol = eth_type_trans(skb, tunnel->dev);
- 			skb_postpull_rcsum(skb, eth_hdr(skb), ETH_HLEN);
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+			if (ipv4_is_multicast(tunnel->parms.iph.daddr)) {
-+				tethhdr = eth_hdr(skb);
-+				if (!is_multicast_ether_addr(
-+					tethhdr->h_source)) {
-+					head = &tunnel->hash[
-+						ipgre_tap_bridge_hash(
-+							tethhdr->h_source)];
-+					entry = ipgre_tap_bridge_find_rcu(head,
-+						tethhdr->h_source);
-+					if (likely(entry)) {
-+						entry->raddr = orig_source;
-+						entry->updated = jiffies;
-+					} else {
-+					  spin_lock(&tunnel->hash_lock);
-+					  if (!ipgre_tap_bridge_find(head,
-+						tethhdr->h_source))
-+						ipgre_tap_bridge_create(
-+						 head,
-+						 orig_source,
-+						 tethhdr->h_source,
-+						 tunnel->dev);
-+					  spin_unlock(&tunnel->hash_lock);
-+					}
-+				}
-+			}
-+#endif
- 		}
-
- 		tstats = this_cpu_ptr(tunnel->dev->tstats);
-@@ -716,7 +935,17 @@ static netdev_tx_t ipgre_tunnel_xmit(str
- 		tiph = &tunnel->parms.iph;
- 	}
-
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+	if ((dev->type == ARPHRD_ETHER) &&
-+		ipv4_is_multicast(tunnel->parms.iph.daddr))
-+		dst = ipgre_tap_bridge_get_raddr(tunnel,
-+			((struct ethhdr *)skb->data)->h_dest);
-+	if (dst == 0)
-+		dst = tiph->daddr;
-+	if (dst == 0) {
-+#else
- 	if ((dst = tiph->daddr) == 0) {
-+#endif
- 		/* NBMA tunnel */
-
- 		if (skb_dst(skb) == NULL) {
-@@ -1209,6 +1438,16 @@ static int ipgre_open(struct net_device
- 			return -EADDRNOTAVAIL;
- 		t->mlink = dev->ifindex;
- 		ip_mc_inc_group(__in_dev_get_rtnl(dev), t->parms.iph.daddr);
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+		if (t->dev->type == ARPHRD_ETHER) {
-+			INIT_HLIST_HEAD(t->hash);
-+			spin_lock_init(&t->hash_lock);
-+			t->ageing_time = 300 * HZ;
-+			setup_timer(&t->gc_timer, ipgre_tap_bridge_cleanup,
-+				(unsigned long) t);
-+			mod_timer(&t->gc_timer, jiffies + t->ageing_time);
-+		}
-+#endif
- 	}
- 	return 0;
- }
-@@ -1219,6 +1458,12 @@ static int ipgre_close(struct net_device
-
- 	if (ipv4_is_multicast(t->parms.iph.daddr) && t->mlink) {
- 		struct in_device *in_dev;
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+		if (t->dev->type == ARPHRD_ETHER) {
-+			ipgre_tap_bridge_flush(t);
-+			del_timer_sync(&t->gc_timer);
-+		}
-+#endif
- 		in_dev = inetdev_by_index(dev_net(dev), t->mlink);
- 		if (in_dev)
- 			ip_mc_dec_group(in_dev, t->parms.iph.daddr);
-@@ -1341,6 +1586,12 @@ static int __net_init ipgre_init_net(str
- 	struct ipgre_net *ign = net_generic(net, ipgre_net_id);
- 	int err;
-
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+	err = ipgre_tap_bridge_init();
-+	if (err)
-+		goto err_out;
-+#endif
-+
- 	ign->fb_tunnel_dev = alloc_netdev(sizeof(struct ip_tunnel), "gre0",
- 					   ipgre_tunnel_setup);
- 	if (!ign->fb_tunnel_dev) {
-@@ -1362,6 +1613,10 @@ static int __net_init ipgre_init_net(str
- err_reg_dev:
- 	ipgre_dev_free(ign->fb_tunnel_dev);
- err_alloc_dev:
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+	ipgre_tap_bridge_fini();
-+err_out:
-+#endif
- 	return err;
- }
-
-@@ -1375,6 +1630,9 @@ static void __net_exit ipgre_exit_net(st
- 	ipgre_destroy_tunnels(ign, &list);
- 	unregister_netdevice_many(&list);
- 	rtnl_unlock();
-+#ifdef CONFIG_NET_IPGRE_BRIDGE
-+	ipgre_tap_bridge_fini();
-+#endif
- }
-
- static struct pernet_operations ipgre_net_ops = {
+iQIVAwUBTxSvgTYtFsjWk68qAQgRDRAAtucnD1EpQYP1G5eAuibf99j6AM8z+qc1
+tMBI/WrvG6LQtBg86+kqmBWcf4ECB95BjFyi7zhEph7VJxu3m6/T/WVceUZ8fmrY
+ND9qRvz/Hzi1J04qMLUDCfGYlB9KDyH8Axnnp9ycMLxYK4V1SazuYTQe+TwwKqu9
+MVyn/yAkvIe6ZBgO3ObUlhrLWWy+mP/kKPD7JrjAEciIA4svGf+V/Is4w/rTdh63
+Kfhw5FJk0h8XBDfN+YWIiYP+U4s+R+pWWkQRLTwbBrc7nV2wFDQoj/iRzkQfn2be
+JbbljgKA2DkfMVE3NpEnVLuW7/Lk/2syxZIbXRV7GRZwpF4xJBJ0U0RCf2gn/tw9
+MslaWGzfFL6o/rixmLxaHlgGGEgscA2xi27PLM6ZHCqypSDk3IDSHUhuEEOFk3Rx
+ssa5VwDk1p+jtKN+yrIYG7vFi89Rb4ltx5d27gkhkcR/FQE2VgfOklmV8kDBDYgj
+LV3TJSxqT5C7mAW3l112r8Bgc78+pcWmNxYlKcVETUnu/15yH459b6dnyOipJFAm
+MZzhJDvRHmdMAZ0NnaIOAKdgd2RkXum8D3ZWhqa0JLmnGVgv825T12WKun0rWgGs
+Re18gEJSnwR8S1CWPq7HXevjvt7RsSV5Dp8XmHqS30dXe+JP4vAh+VNBVjYJa9KU
+FzbH13KQrdc=
+=5sHx
+-----END PGP SIGNATURE-----
+--=-=-=--
