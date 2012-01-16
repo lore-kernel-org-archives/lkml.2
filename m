@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab2APSul (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:50:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43163 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756732Ab2APSu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756737Ab2APSu3 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 16 Jan 2012 13:50:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43142 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756693Ab2APSuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:50:22 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:17 2012
-Message-Id: <20120116184517.232107006@clark.kroah.org>
+Message-Id: <20120116184517.889861070@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:44 -0800
+Date: Mon, 16 Jan 2012 10:44:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [17/48] KVM: Remove ability to assign a device without iommu support
+        alan@lxorguk.ukuu.org.uk, Josef Bacik <josef@redhat.com>,
+        Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        NeilBrown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [25/48] NFS - fix recent breakage to NFS error handling.
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,78 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: NeilBrown <neilb@suse.de>
 
-From: Alex Williamson <alex.williamson@redhat.com>
+commit 2edb6bc3852c681c0d948245bd55108dc6407604 upstream.
 
-(cherry picked from commit 423873736b78f549fbfa2f715f2e4de7e6c5e1e9)
+>From c6d615d2b97fe305cbf123a8751ced859dca1d5e Mon Sep 17 00:00:00 2001
+From: NeilBrown <neilb@suse.de>
+Date: Wed, 16 Nov 2011 09:39:05 +1100
+Subject: [25/48] NFS - fix recent breakage to NFS error handling.
 
-This option has no users and it exposes a security hole that we
-can allow devices to be assigned without iommu protection.  Make
-KVM_DEV_ASSIGN_ENABLE_IOMMU a mandatory option.
+commit 02c24a82187d5a628c68edfe71ae60dc135cd178 made a small and
+presumably unintended change to write error handling in NFS.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Previously an error from filemap_write_and_wait_range would only be of
+interest if nfs_file_fsync did not return an error.  After this commit,
+an error from filemap_write_and_wait_range would mean that (the rest of)
+nfs_file_fsync would not even be called.
+
+This means that:
+ 1/ you are more likely to see EIO than e.g. EDQUOT or ENOSPC.
+ 2/ NFS_CONTEXT_ERROR_WRITE remains set for longer so more writes are
+    synchronous.
+
+This patch restores previous behaviour.
+
+Cc: Josef Bacik <josef@redhat.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- Documentation/virtual/kvm/api.txt |    3 +++
- virt/kvm/assigned-dev.c           |   18 +++++++++---------
- 2 files changed, 12 insertions(+), 9 deletions(-)
 
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1131,6 +1131,9 @@ following flags are specified:
- /* Depends on KVM_CAP_IOMMU */
- #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1 << 0)
+---
+ fs/nfs/file.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -321,13 +321,13 @@ nfs_file_fsync(struct file *file, loff_t
+ 			datasync);
  
-+The KVM_DEV_ASSIGN_ENABLE_IOMMU flag is a mandatory option to ensure
-+isolation of the device.  Usages not specifying this flag are deprecated.
-+
- 4.49 KVM_DEASSIGN_PCI_DEVICE
+ 	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
+-	if (ret)
+-		return ret;
+ 	mutex_lock(&inode->i_mutex);
  
- Capability: KVM_CAP_DEVICE_DEASSIGNMENT
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -481,6 +481,9 @@ static int kvm_vm_ioctl_assign_device(st
- 	struct kvm_assigned_dev_kernel *match;
- 	struct pci_dev *dev;
- 
-+	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
-+		return -EINVAL;
-+
- 	mutex_lock(&kvm->lock);
- 	idx = srcu_read_lock(&kvm->srcu);
- 
-@@ -538,16 +541,14 @@ static int kvm_vm_ioctl_assign_device(st
- 
- 	list_add(&match->list, &kvm->arch.assigned_dev_head);
- 
--	if (assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU) {
--		if (!kvm->arch.iommu_domain) {
--			r = kvm_iommu_map_guest(kvm);
--			if (r)
--				goto out_list_del;
--		}
--		r = kvm_assign_device(kvm, match);
-+	if (!kvm->arch.iommu_domain) {
-+		r = kvm_iommu_map_guest(kvm);
- 		if (r)
- 			goto out_list_del;
- 	}
-+	r = kvm_assign_device(kvm, match);
-+	if (r)
-+		goto out_list_del;
- 
- out:
- 	srcu_read_unlock(&kvm->srcu, idx);
-@@ -587,8 +588,7 @@ static int kvm_vm_ioctl_deassign_device(
- 		goto out;
- 	}
- 
--	if (match->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU)
--		kvm_deassign_device(kvm, match);
-+	kvm_deassign_device(kvm, match);
- 
- 	kvm_free_assigned_device(kvm, match);
- 
+ 	nfs_inc_stats(inode, NFSIOS_VFSFSYNC);
+ 	have_error = test_and_clear_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
+ 	status = nfs_commit_inode(inode, FLUSH_SYNC);
++	if (status >= 0 && ret < 0)
++		status = ret;
+ 	have_error |= test_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
+ 	if (have_error)
+ 		ret = xchg(&ctx->error, 0);
 
 
