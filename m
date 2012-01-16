@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab2APJD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 04:03:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45053 "EHLO
+	id S1753777Ab2APJEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 04:04:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45068 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab2APJD0 (ORCPT
+	with ESMTP id S1753677Ab2APJEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 04:03:26 -0500
-Date: Mon, 16 Jan 2012 01:03:03 -0800
-From: "tip-bot for xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>
-Message-ID: <tip-a1c611745c8c4e8996c1877d4e5d0fc95f227c38@git.kernel.org>
+	Mon, 16 Jan 2012 04:04:20 -0500
+Date: Mon, 16 Jan 2012 01:03:50 -0800
+From: tip-bot for Tejun Heo <tj@kernel.org>
+Message-ID: <tip-5d53cb27d849c899136c048ec84c940ac449494b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, mingo@elte.hu,
-        xiyou.wangcong@gmail.com
+        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        benh@kernel.crashing.org, akpm@linux-foundation.org, tj@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        xiyou.wangcong@gmail.com, mingo@elte.hu
-In-Reply-To: <1326628937-27609-1-git-send-email-xiyou.wangcong@gmail.com>
-References: <1326628937-27609-1-git-send-email-xiyou.wangcong@gmail.com>
+        benh@kernel.crashing.org, konrad.wilk@oracle.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tj@kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20120113181412.GA11112@google.com>
+References: <20120113181412.GA11112@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] x86/kprobes: Add arch/x86/tools/insn_sanity to .
- gitignore
-Git-Commit-ID: a1c611745c8c4e8996c1877d4e5d0fc95f227c38
+Subject: [tip:core/urgent] memblock:
+  Fix alloc failure due to dumb underflow protection in memblock_find_in_range_node
+ ()
+Git-Commit-ID: 5d53cb27d849c899136c048ec84c940ac449494b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,46 +33,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Jan 2012 01:03:09 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Jan 2012 01:03:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a1c611745c8c4e8996c1877d4e5d0fc95f227c38
-Gitweb:     http://git.kernel.org/tip/a1c611745c8c4e8996c1877d4e5d0fc95f227c38
-Author:     xiyou.wangcong@gmail.com <xiyou.wangcong@gmail.com>
-AuthorDate: Sun, 15 Jan 2012 20:02:17 +0800
+Commit-ID:  5d53cb27d849c899136c048ec84c940ac449494b
+Gitweb:     http://git.kernel.org/tip/5d53cb27d849c899136c048ec84c940ac449494b
+Author:     Tejun Heo <tj@kernel.org>
+AuthorDate: Fri, 13 Jan 2012 10:14:12 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 16 Jan 2012 08:21:59 +0100
+CommitDate: Mon, 16 Jan 2012 08:38:06 +0100
 
-x86/kprobes: Add arch/x86/tools/insn_sanity to .gitignore
+memblock: Fix alloc failure due to dumb underflow protection in memblock_find_in_range_node()
 
-After compiling the kernel, I got:
+7bd0b0f0da ("memblock: Reimplement memblock allocation using
+reverse free area iterator") implemented a simple top-down
+allocator using a reverse memblock iterator.  To avoid underflow
+in the allocator loop, it simply raised the lower boundary to
+the requested size under the assumption that requested size
+would be far smaller than available memblocks.
 
-	% git status
-	# On branch master
-	# Untracked files:
-	#   (use "git add <file>..." to include in what will be committed)
-	#
-	#	arch/x86/tools/insn_sanity
-	nothing added to commit but untracked files present (use "git add" to track)
+This causes early page table allocation failure under certain
+configurations in Xen.  Fix it by checking for underflow directly
+instead of bumping up lower bound.
 
-it should be added to .gitignore.
-
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/1326628937-27609-1-git-send-email-xiyou.wangcong@gmail.com
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: rjw@sisk.pl
+Cc: xen-devel@lists.xensource.com
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20120113181412.GA11112@google.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/.gitignore |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ mm/memblock.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/.gitignore b/arch/x86/.gitignore
-index 0280790..7cab8c0 100644
---- a/arch/x86/.gitignore
-+++ b/arch/x86/.gitignore
-@@ -1,3 +1,4 @@
- boot/compressed/vmlinux
- tools/test_get_len
-+tools/insn_sanity
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 2f55f19..77b5f22 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -106,14 +106,17 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+ 		end = memblock.current_limit;
  
+-	/* adjust @start to avoid underflow and allocating the first page */
+-	start = max3(start, size, (phys_addr_t)PAGE_SIZE);
++	/* avoid allocating the first page */
++	start = max_t(phys_addr_t, start, PAGE_SIZE);
+ 	end = max(start, end);
+ 
+ 	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
+ 		this_start = clamp(this_start, start, end);
+ 		this_end = clamp(this_end, start, end);
+ 
++		if (this_end < size)
++			continue;
++
+ 		cand = round_down(this_end - size, align);
+ 		if (cand >= this_start)
+ 			return cand;
