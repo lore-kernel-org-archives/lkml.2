@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab2APJw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 04:52:27 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:33720 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753962Ab2APJvj (ORCPT
+	id S1754074Ab2APJwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 04:52:44 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:40417 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753907Ab2APJvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 04:51:39 -0500
+	Mon, 16 Jan 2012 04:51:38 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
 Cc: <linux@arm.linux.org.uk>, <linus.walleij@linaro.org>,
@@ -17,9 +17,9 @@ Cc: <linux@arm.linux.org.uk>, <linus.walleij@linaro.org>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
         <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH 7/8] dmaengine/dw_dmac: Unmap all memory buffers after completion of slave transfers
-Date: Mon, 16 Jan 2012 15:20:35 +0530
-Message-ID: <5e5d0fcff79b9b78e64c7424317d6b77736eca43.1326707233.git.viresh.kumar@st.com>
+Subject: [PATCH 6/8] dmaengine/dw_dmac: Don't handle block interrupts
+Date: Mon, 16 Jan 2012 15:20:34 +0530
+Message-ID: <5de6fe5e4560f459075e2b82bbcfd04e56eedc41.1326707233.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.8.110.g4cb5d
 In-Reply-To: <cover.1326707233.git.viresh.kumar@st.com>
 References: <cover.1326707233.git.viresh.kumar@st.com>
@@ -29,160 +29,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, after completion of transfer, source address or destination address
-of only the first LLI descriptor is unmapped. And length passed for unmap is
-total length of all descriptors in the list. Which means unmapping code assumed
-that the memory buffers pointed to by the descriptors will be physically
-contiguous, which might not be the case. It is possible for other drivers to
-pass sglist to slave_sg(), in which all buffers are scattered throughout the
-memory.
+Block interrupts give interrupt on completion of every LLI, which is actually
+too much interrupts. This is just not required for current functioning of
+dw_dmac.
 
-This patch intends to fix this wrong expectation of dw_dmac. Now, first desc
-will not contain total length of transfer. But individual descriptors will
-contain their individual lengths. Finally, we will call unmap for all
-descriptors.
+So, just don't handle them at all.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/dw_dmac.c |   49 +++++++++++++++++++++++++++++++------------------
- 1 files changed, 31 insertions(+), 18 deletions(-)
+ drivers/dma/dw_dmac.c |   36 ++++++------------------------------
+ 1 files changed, 6 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 8698d3b..c33c06b 100644
+index f061daa..8698d3b 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -231,6 +231,14 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
+@@ -192,7 +192,6 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
  
- /*----------------------------------------------------------------------*/
+ 	/* Enable interrupts */
+ 	channel_set_bit(dw, MASK.XFER, dwc->mask);
+-	channel_set_bit(dw, MASK.BLOCK, dwc->mask);
+ 	channel_set_bit(dw, MASK.ERROR, dwc->mask);
  
-+#define dw_dmac_unmap(utype, _desc, _child, _buf, _dir)			\
-+do {									\
-+	list_for_each_entry(_child, &_desc->tx_list, desc_node)		\
-+		dma_unmap_##utype(parent, _child->lli._buf,		\
-+				_child->len, _dir);			\
-+	dma_unmap_##utype(parent, _desc->lli._buf, _desc->len, _dir);	\
-+} while (0)
-+
- static void
- dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
- 		bool callback_required)
-@@ -264,19 +272,19 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
- 		struct device *parent = chan2parent(&dwc->chan);
- 		if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
- 			if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
--				dma_unmap_single(parent, desc->lli.dar,
--						desc->len, DMA_FROM_DEVICE);
-+				dw_dmac_unmap(single, desc, child, dar,
-+						DMA_FROM_DEVICE);
- 			else
--				dma_unmap_page(parent, desc->lli.dar,
--						desc->len, DMA_FROM_DEVICE);
-+				dw_dmac_unmap(page, desc, child, dar,
-+						DMA_FROM_DEVICE);
- 		}
- 		if (!(txd->flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
- 			if (txd->flags & DMA_COMPL_SRC_UNMAP_SINGLE)
--				dma_unmap_single(parent, desc->lli.sar,
--						desc->len, DMA_TO_DEVICE);
-+				dw_dmac_unmap(single, desc, child, sar,
-+						DMA_TO_DEVICE);
- 			else
--				dma_unmap_page(parent, desc->lli.sar,
--						desc->len, DMA_TO_DEVICE);
-+				dw_dmac_unmap(page, desc, child, sar,
-+						DMA_TO_DEVICE);
- 		}
+ 	dwc->initialized = true;
+@@ -329,12 +328,6 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&dwc->lock, flags);
+-	/*
+-	 * Clear block interrupt flag before scanning so that we don't
+-	 * miss any, and read LLP before RAW_XFER to ensure it is
+-	 * valid if we decide to scan the list.
+-	 */
+-	dma_writel(dw, CLEAR.BLOCK, dwc->mask);
+ 	llp = channel_readl(dwc, LLP);
+ 	status_xfer = dma_readl(dw, RAW.XFER);
+ 
+@@ -470,17 +463,16 @@ EXPORT_SYMBOL(dw_dma_get_dst_addr);
+ 
+ /* called with dwc->lock held and all DMAC interrupts disabled */
+ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
+-		u32 status_block, u32 status_err, u32 status_xfer)
++		u32 status_err, u32 status_xfer)
+ {
+ 	unsigned long flags;
+ 
+-	if (status_block & dwc->mask) {
++	if (dwc->mask) {
+ 		void (*callback)(void *param);
+ 		void *callback_param;
+ 
+ 		dev_vdbg(chan2dev(&dwc->chan), "new cyclic period llp 0x%08x\n",
+ 				channel_readl(dwc, LLP));
+-		dma_writel(dw, CLEAR.BLOCK, dwc->mask);
+ 
+ 		callback = dwc->cdesc->period_callback;
+ 		callback_param = dwc->cdesc->period_callback_param;
+@@ -520,7 +512,6 @@ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
+ 		channel_writel(dwc, CTL_LO, 0);
+ 		channel_writel(dwc, CTL_HI, 0);
+ 
+-		dma_writel(dw, CLEAR.BLOCK, dwc->mask);
+ 		dma_writel(dw, CLEAR.ERROR, dwc->mask);
+ 		dma_writel(dw, CLEAR.XFER, dwc->mask);
+ 
+@@ -537,36 +528,29 @@ static void dw_dma_tasklet(unsigned long data)
+ {
+ 	struct dw_dma *dw = (struct dw_dma *)data;
+ 	struct dw_dma_chan *dwc;
+-	u32 status_block;
+ 	u32 status_xfer;
+ 	u32 status_err;
+ 	int i;
+ 
+-	status_block = dma_readl(dw, RAW.BLOCK);
+ 	status_xfer = dma_readl(dw, RAW.XFER);
+ 	status_err = dma_readl(dw, RAW.ERROR);
+ 
+-	dev_vdbg(dw->dma.dev, "tasklet: status_block=%x status_err=%x\n",
+-			status_block, status_err);
++	dev_vdbg(dw->dma.dev, "tasklet: status_err=%x\n", status_err);
+ 
+ 	for (i = 0; i < dw->dma.chancnt; i++) {
+ 		dwc = &dw->chan[i];
+ 		if (test_bit(DW_DMA_IS_CYCLIC, &dwc->flags))
+-			dwc_handle_cyclic(dw, dwc, status_block, status_err,
+-					status_xfer);
++			dwc_handle_cyclic(dw, dwc, status_err, status_xfer);
+ 		else if (status_err & (1 << i))
+ 			dwc_handle_error(dw, dwc);
+-		else if ((status_block | status_xfer) & (1 << i))
++		else if (status_xfer & (1 << i))
+ 			dwc_scan_descriptors(dw, dwc);
  	}
  
-@@ -676,6 +684,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		desc->lli.dar = dest + offset;
- 		desc->lli.ctllo = ctllo;
- 		desc->lli.ctlhi = xfer_count;
-+		desc->len = xfer_count << src_width;
+ 	/*
+-	 * Re-enable interrupts. Block Complete interrupts are only
+-	 * enabled if the INT_EN bit in the descriptor is set. This
+-	 * will trigger a scan before the whole list is done.
++	 * Re-enable interrupts.
+ 	 */
+ 	channel_set_bit(dw, MASK.XFER, dw->all_chan_mask);
+-	channel_set_bit(dw, MASK.BLOCK, dw->all_chan_mask);
+ 	channel_set_bit(dw, MASK.ERROR, dw->all_chan_mask);
+ }
  
- 		if (!first) {
- 			first = desc;
-@@ -701,7 +710,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 			DMA_TO_DEVICE);
+@@ -583,7 +567,6 @@ static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
+ 	 * softirq handler.
+ 	 */
+ 	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
+-	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
+ 	channel_clear_bit(dw, MASK.ERROR, dw->all_chan_mask);
  
- 	first->txd.flags = flags;
--	first->len = len;
+ 	status = dma_readl(dw, STATUS_INT);
+@@ -594,7 +577,6 @@ static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
  
- 	return &first->txd;
+ 		/* Try to recover */
+ 		channel_clear_bit(dw, MASK.XFER, (1 << 8) - 1);
+-		channel_clear_bit(dw, MASK.BLOCK, (1 << 8) - 1);
+ 		channel_clear_bit(dw, MASK.SRC_TRAN, (1 << 8) - 1);
+ 		channel_clear_bit(dw, MASK.DST_TRAN, (1 << 8) - 1);
+ 		channel_clear_bit(dw, MASK.ERROR, (1 << 8) - 1);
+@@ -1068,7 +1050,6 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
  
-@@ -725,7 +733,6 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 	unsigned int		mem_width;
- 	unsigned int		i;
- 	struct scatterlist	*sg;
--	size_t			total_len = 0;
+ 	/* Disable interrupts */
+ 	channel_clear_bit(dw, MASK.XFER, dwc->mask);
+-	channel_clear_bit(dw, MASK.BLOCK, dwc->mask);
+ 	channel_clear_bit(dw, MASK.ERROR, dwc->mask);
  
- 	dev_vdbg(chan2dev(chan), "prep_dma_slave\n");
- 
-@@ -774,6 +781,7 @@ slave_sg_todev_fill_desc:
- 			}
- 
- 			desc->lli.ctlhi = dlen >> mem_width;
-+			desc->len = dlen;
- 
- 			if (!first) {
- 				first = desc;
-@@ -787,7 +795,6 @@ slave_sg_todev_fill_desc:
- 						&first->tx_list);
- 			}
- 			prev = desc;
--			total_len += dlen;
- 
- 			if (len)
- 				goto slave_sg_todev_fill_desc;
-@@ -831,6 +838,7 @@ slave_sg_fromdev_fill_desc:
- 				len = 0;
- 			}
- 			desc->lli.ctlhi = dlen >> reg_width;
-+			desc->len = dlen;
- 
- 			if (!first) {
- 				first = desc;
-@@ -844,7 +852,6 @@ slave_sg_fromdev_fill_desc:
- 						&first->tx_list);
- 			}
- 			prev = desc;
--			total_len += dlen;
- 
- 			if (len)
- 				goto slave_sg_fromdev_fill_desc;
-@@ -863,8 +870,6 @@ slave_sg_fromdev_fill_desc:
- 			prev->txd.phys, sizeof(prev->lli),
- 			DMA_TO_DEVICE);
- 
--	first->len = total_len;
--
- 	return &first->txd;
- 
- err_desc_get:
-@@ -950,11 +955,19 @@ dwc_tx_status(struct dma_chan *chan,
- 		ret = dma_async_is_complete(cookie, last_complete, last_used);
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+@@ -1120,7 +1101,6 @@ int dw_dma_cyclic_start(struct dma_chan *chan)
+ 		return -EBUSY;
  	}
  
--	if (ret != DMA_SUCCESS)
--		dma_set_tx_state(txstate, last_complete, last_used,
--				dwc_first_active(dwc)->len);
--	else
-+	if (ret != DMA_SUCCESS) {
-+		struct dw_desc *desc, *child;
-+		unsigned int len;
-+
-+		desc = dwc_first_active(dwc);
-+		len = desc->len;
-+		list_for_each_entry(child, &desc->tx_list, desc_node)
-+			len += child->len;
-+
-+		dma_set_tx_state(txstate, last_complete, last_used, len);
-+	} else {
- 		dma_set_tx_state(txstate, last_complete, last_used, 0);
-+	}
+-	dma_writel(dw, CLEAR.BLOCK, dwc->mask);
+ 	dma_writel(dw, CLEAR.ERROR, dwc->mask);
+ 	dma_writel(dw, CLEAR.XFER, dwc->mask);
  
- 	if (dwc->paused)
- 		return DMA_PAUSED;
+@@ -1322,7 +1302,6 @@ void dw_dma_cyclic_free(struct dma_chan *chan)
+ 	while (dma_readl(dw, CH_EN) & dwc->mask)
+ 		cpu_relax();
+ 
+-	dma_writel(dw, CLEAR.BLOCK, dwc->mask);
+ 	dma_writel(dw, CLEAR.ERROR, dwc->mask);
+ 	dma_writel(dw, CLEAR.XFER, dwc->mask);
+ 
+@@ -1347,7 +1326,6 @@ static void dw_dma_off(struct dw_dma *dw)
+ 	dma_writel(dw, CFG, 0);
+ 
+ 	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
+-	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
+ 	channel_clear_bit(dw, MASK.SRC_TRAN, dw->all_chan_mask);
+ 	channel_clear_bit(dw, MASK.DST_TRAN, dw->all_chan_mask);
+ 	channel_clear_bit(dw, MASK.ERROR, dw->all_chan_mask);
+@@ -1449,13 +1427,11 @@ static int __init dw_probe(struct platform_device *pdev)
+ 
+ 	/* Clear/disable all interrupts on all channels. */
+ 	dma_writel(dw, CLEAR.XFER, dw->all_chan_mask);
+-	dma_writel(dw, CLEAR.BLOCK, dw->all_chan_mask);
+ 	dma_writel(dw, CLEAR.SRC_TRAN, dw->all_chan_mask);
+ 	dma_writel(dw, CLEAR.DST_TRAN, dw->all_chan_mask);
+ 	dma_writel(dw, CLEAR.ERROR, dw->all_chan_mask);
+ 
+ 	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
+-	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
+ 	channel_clear_bit(dw, MASK.SRC_TRAN, dw->all_chan_mask);
+ 	channel_clear_bit(dw, MASK.DST_TRAN, dw->all_chan_mask);
+ 	channel_clear_bit(dw, MASK.ERROR, dw->all_chan_mask);
 -- 
 1.7.8.110.g4cb5d
 
