@@ -1,84 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab2APJEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 04:04:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45082 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab2APJEx (ORCPT
+	id S1753784Ab2APJPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 04:15:40 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62296 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab2APJPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 04:04:53 -0500
-Date: Mon, 16 Jan 2012 01:04:36 -0800
-From: tip-bot for Anton Vorontsov <cbouatmailru@gmail.com>
-Message-ID: <tip-f10448689d95b9516c656ccd4078839e656656e7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        luto@mit.edu, torvalds@linux-foundation.org, error27@gmail.com,
-        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu,
-        cbouatmailru@gmail.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        luto@mit.edu, torvalds@linux-foundation.org, error27@gmail.com,
-        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu,
-        cbouatmailru@gmail.com
-In-Reply-To: <20120111011146.GA30428@oksana.dev.rtsoft.ru>
-References: <20120111011146.GA30428@oksana.dev.rtsoft.ru>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Get rid of dubious one-bit signed bitfield
-Git-Commit-ID: f10448689d95b9516c656ccd4078839e656656e7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Jan 2012 01:04:43 -0800 (PST)
+	Mon, 16 Jan 2012 04:15:38 -0500
+Message-ID: <1326705441.14299.10.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] PM / MTD: Fix regressions related to mtd_suspend()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org
+Date: Mon, 16 Jan 2012 11:17:21 +0200
+In-Reply-To: <201201160018.02305.rjw@sisk.pl>
+References: <201201151443.30897.rjw@sisk.pl>
+	 <1326637306.2201.22.camel@koala> <201201160018.02305.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-4AQcwaFqBWtjamcUdu34"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f10448689d95b9516c656ccd4078839e656656e7
-Gitweb:     http://git.kernel.org/tip/f10448689d95b9516c656ccd4078839e656656e7
-Author:     Anton Vorontsov <cbouatmailru@gmail.com>
-AuthorDate: Wed, 11 Jan 2012 05:11:46 +0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 16 Jan 2012 09:39:54 +0100
 
-x86: Get rid of dubious one-bit signed bitfield
+--=-4AQcwaFqBWtjamcUdu34
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This very noisy sparse warning appears on almost every file in
-the kernel:
+Thanks Rafael!
 
-  CHECK   init/main.c
-  arch/x86/include/asm/thread_info.h:43:55: error: dubious one-bit
-  signed bitfield arch/x86/include/asm/thread_info.h:44:46: error:
-  dubious one-bit signed bitfield
+I've pushed this patch to l2-mtd-2.6.git (David, would you please merge
+it upstream?).
 
-Sparse is right and this patch changes sig_on_uaccess_error and
-uaccess_err flags to unsigned type and thus fixes the warning.
+Rafael, should I add some tags with your name like Tested-by or
+Acked-by?
 
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-Acked-by: Andy Lutomirski <luto@mit.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Dan Carpenter <error27@gmail.com>
-Link: http://lkml.kernel.org/r/20120111011146.GA30428@oksana.dev.rtsoft.ru
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+=46rom d0eb0d769923d562781fcf43fdc6fa28e3823756 Mon Sep 17 00:00:00 2001
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Date: Mon, 16 Jan 2012 11:07:16 +0200
+Subject: [PATCH] mtd: fix MTD suspend
+
+Commits 3fe4bae88460869a8e553397cd9057a4ee7ca341 and
+079c985e7a6f4ce60f931cebfdd5ee3c3 broke MTD suspend in 2 ways:
+
+1. When the '->suspend' method is not present, we return -EOPNOTSUPP, but
+   the callers of 'mtd_suspend()' expects 0 instead.
+2. Checking of the 'mtd' parameter against NULL has been incorrectly remove=
+d
+   in 'mtd_cls_suspend()'.
+
+This patch fixes the breakages. This has been found, analyzed, reported
+and tested by Rafael J. Wysocki <rjw@sisk.pl>.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
- arch/x86/include/asm/thread_info.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/mtdcore.c   |    2 +-
+ include/linux/mtd/mtd.h |    4 +---
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 185b719..56a63ff 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -40,8 +40,8 @@ struct thread_info {
- 						*/
- 	__u8			supervisor_stack[0];
- #endif
--	int			sig_on_uaccess_error:1;
--	int			uaccess_err:1;	/* uaccess failed */
-+	unsigned int		sig_on_uaccess_error:1;
-+	unsigned int		uaccess_err:1;	/* uaccess failed */
- };
- 
- #define INIT_THREAD_INFO(tsk)			\
+diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+index b265188..de96865 100644
+--- a/drivers/mtd/mtdcore.c
++++ b/drivers/mtd/mtdcore.c
+@@ -119,7 +119,7 @@ static int mtd_cls_suspend(struct device *dev, pm_messa=
+ge_t state)
+ {
+        struct mtd_info *mtd =3D dev_get_drvdata(dev);
+=20
+-       return mtd_suspend(mtd);
++       return mtd ? mtd_suspend(mtd) : 0;
+ }
+=20
+ static int mtd_cls_resume(struct device *dev)
+diff --git a/include/linux/mtd/mtd.h b/include/linux/mtd/mtd.h
+index 1a81fde..d8c7aad 100644
+--- a/include/linux/mtd/mtd.h
++++ b/include/linux/mtd/mtd.h
+@@ -427,9 +427,7 @@ static inline int mtd_is_locked(struct mtd_info *mtd, l=
+off_t ofs, uint64_t len)
+=20
+ static inline int mtd_suspend(struct mtd_info *mtd)
+ {
+-       if (!mtd->suspend)
+-               return -EOPNOTSUPP;
+-       return mtd->suspend(mtd);
++       return mtd->suspend ? mtd->suspend(mtd) : 0;
+ }
+=20
+ static inline void mtd_resume(struct mtd_info *mtd)
+--=20
+1.7.8.3
+
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-4AQcwaFqBWtjamcUdu34
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPE+shAAoJECmIfjd9wqK0fPYP/jxpPcUdtU4DTSUv/dzQTRSY
+ER/C7vXski9AQT1ZOPCMkky4EyeFWm2uzK7zWiiEWkPCybJjj4r7LMqFRXqMlpHK
+7pyLIRxZD3kqLT/frT1gxrbmZDb88AShXSbXP37yOLU4EKS84u8moCBiUoXc85OY
+HvS8wwlQOKNiNYNt7d06lDgl9yPF1WZw64oZhSV4gy/DFco7d+iSzqQzoBGnLOdg
+K32qjIsNXSxwfFgsdQP3hjz9AGDfxdkuHX+93BjOwHu6Co4XeJLkoT5SGxWO/0YI
++0SB1Diwl7W0n2IzP4ZeXYHD9gaAf4Kr05SW4Ti2Ftq5rwfwMCNo9Ouic1bvXXIz
+3OqALpVg8dHaF+CZclfkYSvY/CfPzyWfI/4sHXRvS4evs5g2cEX7ghGEa/K+fa8x
+08D8u+aYQHVz3IezpAQmTAg6pDKLCHphSCG6jvAYHv5qKbVq0SrDHsE2qNCmEvMe
+D06WgQbscVdcBs+z/B1FzUsyvi6LFbP7md3k9xvxr+haTDj7+2E3opTI+zLMpAlV
+tSFN90Fpz1f0e8UbjN1MJF62hWg/noBbjBQs0Oo2tnJlR/tNZ2ThXP5AmB2g80Gu
+e6c3l0Y3tVhUYruHEPCpYJ7d/KgdE9K89m78mv52t/FKkbldKZKTQ4wDsRS1sSxs
+Ura8/JSaIN535ZwQAIer
+=4q0e
+-----END PGP SIGNATURE-----
+
+--=-4AQcwaFqBWtjamcUdu34--
+
