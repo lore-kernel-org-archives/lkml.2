@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab2APQo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 11:44:57 -0500
-Received: from mta.tdm.co.mz ([41.220.162.44]:35071 "EHLO mta.tdm.co.mz"
+	id S1754650Ab2APQte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:49:34 -0500
+Received: from mga02.intel.com ([134.134.136.20]:7412 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754650Ab2APQou convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 11:44:50 -0500
-X-Greylist: delayed 7540 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jan 2012 11:44:50 EST
-X-CTCH-RefID: str=0001.0A0B0201.4F143686.010B,ss=1,re=0.000,fgs=0
-Message-ID: <24a67a0f97cc0612bed89c811c86752c.squirrel@webmail.tdm.co.mz>
-Date: Mon, 16 Jan 2012 16:37:21 +0200 (CAT)
-Subject: Final Warning
-From: "Your email account will be terminated" <Warning@warning.com>
-Reply-To: "do not" <reply@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+	id S1754053Ab2APQtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 11:49:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="99153454"
+Date: Mon, 16 Jan 2012 17:02:51 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        jeffrey.t.kirsher@intel.com, paul.gortmaker@windriver.com,
+        jdmason@kudzu.us, netdev@vger.kernel.org
+Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of
+ failing probe
+Message-ID: <20120116170251.3e5d07cd@bob.linux.org.uk>
+In-Reply-To: <20120116164424.GA19621@sirena.org.uk>
+References: <AE90C24D6B3A694183C094C60CF0A2F6D8AF47@saturn3.aculab.com>
+	<4F1451BD.9030904@linux.intel.com>
+	<20120116164424.GA19621@sirena.org.uk>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> bootloader configuration) - for a lot of applications random
+> generation doesn't help that much as entropy is hard to come by.
 
+This is an x86 platform - plenty of entropy from the tsc etc.
 
-
-We've noticed some unusual activity in your Email Account, To help protect
-you
-and everyone else, we've temporarily  blocked your account. To unblock it,
-verify your account. By clicking on the link below or copy and past the
-link on your web browser.
-
-http://www.hotelmarocca.com/book/use/sale1/form1.html
-
-Please you have to  login for the verification of your acount.
-
-Your email account will be terminated if you have not verified your email
-account.
-Failure to do this your email account will be suspended fully.
-
-
--- 
-This email was Virus checked by Astaro Security Gateway. http://www.astaro.com
