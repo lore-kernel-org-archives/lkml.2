@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab2APSui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:50:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43166 "EHLO mx2.suse.de"
+	id S932077Ab2APSuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:50:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43108 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756124Ab2APSud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:50:33 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:19 2012
-Message-Id: <20120116184519.755069782@clark.kroah.org>
+	id S1756129Ab2APSuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:50:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:17 2012
+Message-Id: <20120116184517.564403034@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:45:15 -0800
+Date: Mon, 16 Jan 2012 10:44:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ludwig Nussel <ludwig.nussel@suse.de>,
-        harvey.harrison@gmail.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [48/48] x86: Fix mmap random address range
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [21/48] drm/radeon/kms: disable writeback on pre-R300 asics
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludwig Nussel <ludwig.nussel@suse.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9af0c7a6fa860698d080481f24a342ba74b68982 upstream.
+commit 28eebb703e28bc455ba704adb1026f76649b768c upstream.
 
-On x86_32 casting the unsigned int result of get_random_int() to
-long may result in a negative value.  On x86_32 the range of
-mmap_rnd() therefore was -255 to 255.  The 32bit mode on x86_64
-used 0 to 255 as intended.
+We often end up missing fences on older asics with
+writeback enabled which leads to delays in the userspace
+accel code, so just disable it by default on those asics.
 
-The bug was introduced by 675a081 ("x86: unify mmap_{32|64}.c")
-in January 2008.
-
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: harvey.harrison@gmail.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/201111152246.pAFMklOB028527@wpaz5.hot.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Reported-by: Helge Deller <deller@gmx.de>
+Reported-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/mm/mmap.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_device.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -87,9 +87,9 @@ static unsigned long mmap_rnd(void)
- 	*/
- 	if (current->flags & PF_RANDOMIZE) {
- 		if (mmap_is_ia32())
--			rnd = (long)get_random_int() % (1<<8);
-+			rnd = get_random_int() % (1<<8);
- 		else
--			rnd = (long)(get_random_int() % (1<<28));
-+			rnd = get_random_int() % (1<<28);
- 	}
- 	return rnd << PAGE_SHIFT;
- }
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -224,8 +224,11 @@ int radeon_wb_init(struct radeon_device
+ 	if (radeon_no_wb == 1)
+ 		rdev->wb.enabled = false;
+ 	else {
+-		/* often unreliable on AGP */
+ 		if (rdev->flags & RADEON_IS_AGP) {
++			/* often unreliable on AGP */
++			rdev->wb.enabled = false;
++		} else if (rdev->family < CHIP_R300) {
++			/* often unreliable on pre-r300 */
+ 			rdev->wb.enabled = false;
+ 		} else {
+ 			rdev->wb.enabled = true;
 
 
