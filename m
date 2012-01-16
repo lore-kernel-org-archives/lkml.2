@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab2APSsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:48:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42713 "EHLO mx2.suse.de"
+	id S1756166Ab2APSs2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:48:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42846 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab2APSsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:48:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:17 2012
-Message-Id: <20120116184517.132382029@clark.kroah.org>
+	id S1756146Ab2APSsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:48:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:16 2012
+Message-Id: <20120116184516.285528673@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:43 -0800
+Date: Mon, 16 Jan 2012 10:44:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: [16/48] KVM: x86: Prevent starting PIT timers in the absence of irqchip support
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [06/48] ext4: fix undefined behavior in ext4_fill_flex_info()
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,69 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Xi Wang <xi.wang@gmail.com>
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+commit d50f2ab6f050311dbf7b8f5501b25f0bf64a439b upstream.
 
-(cherry picked from commit 0924ab2cfa98b1ece26c033d696651fd62896c69)
+Commit 503358ae01b70ce6909d19dd01287093f6b6271c ("ext4: avoid divide by
+zero when trying to mount a corrupted file system") fixes CVE-2009-4307
+by performing a sanity check on s_log_groups_per_flex, since it can be
+set to a bogus value by an attacker.
 
-User space may create the PIT and forgets about setting up the irqchips.
-In that case, firing PIT IRQs will crash the host:
+	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
+	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000128
-IP: [<ffffffffa10f6280>] kvm_set_irq+0x30/0x170 [kvm]
-...
-Call Trace:
- [<ffffffffa11228c1>] pit_do_work+0x51/0xd0 [kvm]
- [<ffffffff81071431>] process_one_work+0x111/0x4d0
- [<ffffffff81071bb2>] worker_thread+0x152/0x340
- [<ffffffff81075c8e>] kthread+0x7e/0x90
- [<ffffffff815a4474>] kernel_thread_helper+0x4/0x10
+	if (groups_per_flex < 2) { ... }
 
-Prevent this by checking the irqchip mode before starting a timer. We
-can't deny creating the PIT if the irqchips aren't set up yet as
-current user land expects this order to work.
+This patch fixes two potential issues in the previous commit.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+1) The sanity check might only work on architectures like PowerPC.
+On x86, 5 bits are used for the shifting amount.  That means, given a
+large s_log_groups_per_flex value like 36, groups_per_flex = 1 << 36
+is essentially 1 << 4 = 16, rather than 0.  This will bypass the check,
+leaving s_log_groups_per_flex and groups_per_flex inconsistent.
+
+2) The sanity check relies on undefined behavior, i.e., oversized shift.
+A standard-confirming C compiler could rewrite the check in unexpected
+ways.  Consider the following equivalent form, assuming groups_per_flex
+is unsigned for simplicity.
+
+	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+	if (groups_per_flex == 0 || groups_per_flex == 1) {
+
+We compile the code snippet using Clang 3.0 and GCC 4.6.  Clang will
+completely optimize away the check groups_per_flex == 0, leaving the
+patched code as vulnerable as the original.  GCC keeps the check, but
+there is no guarantee that future versions will do the same.
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/x86/kvm/i8254.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -338,11 +338,15 @@ static enum hrtimer_restart pit_timer_fn
- 		return HRTIMER_NORESTART;
- }
+---
+ fs/ext4/super.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1984,17 +1984,16 @@ static int ext4_fill_flex_info(struct su
+ 	struct ext4_group_desc *gdp = NULL;
+ 	ext4_group_t flex_group_count;
+ 	ext4_group_t flex_group;
+-	int groups_per_flex = 0;
++	unsigned int groups_per_flex = 0;
+ 	size_t size;
+ 	int i;
  
--static void create_pit_timer(struct kvm_kpit_state *ps, u32 val, int is_period)
-+static void create_pit_timer(struct kvm *kvm, u32 val, int is_period)
- {
-+	struct kvm_kpit_state *ps = &kvm->arch.vpit->pit_state;
- 	struct kvm_timer *pt = &ps->pit_timer;
- 	s64 interval;
+ 	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
+-	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+-
+-	if (groups_per_flex < 2) {
++	if (sbi->s_log_groups_per_flex < 1 || sbi->s_log_groups_per_flex > 31) {
+ 		sbi->s_log_groups_per_flex = 0;
+ 		return 1;
+ 	}
++	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
  
-+	if (!irqchip_in_kernel(kvm))
-+		return;
-+
- 	interval = muldiv64(val, NSEC_PER_SEC, KVM_PIT_FREQ);
- 
- 	pr_debug("create pit timer, interval is %llu nsec\n", interval);
-@@ -394,13 +398,13 @@ static void pit_load_count(struct kvm *k
-         /* FIXME: enhance mode 4 precision */
- 	case 4:
- 		if (!(ps->flags & KVM_PIT_FLAGS_HPET_LEGACY)) {
--			create_pit_timer(ps, val, 0);
-+			create_pit_timer(kvm, val, 0);
- 		}
- 		break;
- 	case 2:
- 	case 3:
- 		if (!(ps->flags & KVM_PIT_FLAGS_HPET_LEGACY)){
--			create_pit_timer(ps, val, 1);
-+			create_pit_timer(kvm, val, 1);
- 		}
- 		break;
- 	default:
+ 	/* We allocate both existing and potentially added groups */
+ 	flex_group_count = ((sbi->s_groups_count + groups_per_flex - 1) +
 
 
