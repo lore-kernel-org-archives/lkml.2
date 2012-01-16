@@ -1,186 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab2APQNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 11:13:48 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51595 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755475Ab2APQNS (ORCPT
+	id S1755475Ab2APQQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:16:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49289 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755412Ab2APQQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 11:13:18 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: stable@kernel.org, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH stable 2/3] block: fail SCSI passthrough ioctls on partition devices
-Date: Mon, 16 Jan 2012 17:12:59 +0100
-Message-Id: <1326730380-7674-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.7.1
-In-Reply-To: <1326730380-7674-1-git-send-email-pbonzini@redhat.com>
-References: <1326730380-7674-1-git-send-email-pbonzini@redhat.com>
+	Mon, 16 Jan 2012 11:16:06 -0500
+Date: Mon, 16 Jan 2012 09:16:03 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86: convert to generic irq_domain
+Message-ID: <20120116161603.GD4223@ponder.secretlab.ca>
+References: <1324099129-28832-1-git-send-email-robherring2@gmail.com>
+ <20120115163538.GA19026@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120115163538.GA19026@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux allows executing the SG_IO ioctl on a partition or LVM volume, and
-will pass the command to the underlying block device.  This is
-well-known, but it is also a large security problem when (via Unix
-permissions, ACLs, SELinux or a combination thereof) a program or user
-needs to be granted access only to part of the disk.
+On Sun, Jan 15, 2012 at 05:35:38PM +0100, Sebastian Andrzej Siewior wrote:
+> * Rob Herring | 2011-12-16 23:18:49 [-0600]:
+> 
+> >From: Grant Likely <grant.likely@secretlab.ca>
+> >
+> >This is needed to avoid struct collisions with the generic irq_domain
+> >support being added to kernel/irq/generic-chip.c.
+> >
+> >Boot tested, but not on a DT enabled platform.
+> 
+> If you add this piece into your patch:
+> 
+> From 34d9bb9b582136c8412e14ad870c8aaaa28c9e15 Mon Sep 17 00:00:00 2001
+> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Date: Sun, 15 Jan 2012 16:52:13 +0100
+> Subject: [PATCH] fixup of "x86: convert to generic irq_domain"
+> 
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-This patch lets partitions forward a small set of harmless ioctls;
-others are logged with printk so that we can see which ioctls are
-actually sent.  In my tests only CDROM_GET_CAPABILITY actually occurred.
-Of course it was being sent to a (partition on a) hard disk, so it would
-have failed with ENOTTY and the patch isn't changing anything in
-practice.  Still, I'm treating it specially to avoid spamming the logs.
+It's a little late for 3.3, and I've got a major rework to irq_domain
+almost ready which will get merged in 3.4.  I'll rework the patch on
+top of that series and get you to retest.
 
-In principle, this restriction should include programs running with
-CAP_SYS_RAWIO.  If for example I let a program access /dev/sda2 and
-/dev/sdb, it still should not be able to read/write outside the
-boundaries of /dev/sda2 independent of the capabilities.  However, for
-now programs with CAP_SYS_RAWIO will still be allowed to send the
-ioctls.  Their actions will still be logged.
+g.
 
-This patch does not affect the non-libata IDE driver.  That driver
-however already tests for bd != bd->bd_contains before issuing some
-ioctl; it could be restricted further to forbid these ioctls even for
-programs running with CAP_SYS_ADMIN/CAP_SYS_RAWIO.
-
-[ Cherry picked from 3ed4e7ba4be8c72051d87dcb2dec279d97a18d41
-
-  Changes with respect to 3.3: return -ENOTTY from scsi_verify_blk_ioctl
-  and -ENOIOCTLCMD from sd_compat_ioctl. ]
-
-Cc: stable@kernel.org
-Cc: linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[ Make it also print the command name when warning - Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
----
- block/scsi_ioctl.c     |   45 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/scsi/sd.c      |   11 +++++++++--
- include/linux/blkdev.h |    1 +
- 3 files changed, 55 insertions(+), 2 deletions(-)
-
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index a2c11f3..260fa80 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -24,6 +24,7 @@
- #include <linux/capability.h>
- #include <linux/completion.h>
- #include <linux/cdrom.h>
-+#include <linux/ratelimit.h>
- #include <linux/slab.h>
- #include <linux/times.h>
- #include <asm/uaccess.h>
-@@ -690,9 +691,53 @@ int scsi_cmd_ioctl(struct request_queue *q, struct gendisk *bd_disk, fmode_t mod
- }
- EXPORT_SYMBOL(scsi_cmd_ioctl);
- 
-+int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
-+{
-+	if (bd && bd == bd->bd_contains)
-+		return 0;
-+
-+	/* Actually none of these is particularly useful on a partition,
-+	 * but they are safe.
-+	 */
-+	switch (cmd) {
-+	case SCSI_IOCTL_GET_IDLUN:
-+	case SCSI_IOCTL_GET_BUS_NUMBER:
-+	case SCSI_IOCTL_GET_PCI:
-+	case SCSI_IOCTL_PROBE_HOST:
-+	case SG_GET_VERSION_NUM:
-+	case SG_SET_TIMEOUT:
-+	case SG_GET_TIMEOUT:
-+	case SG_GET_RESERVED_SIZE:
-+	case SG_SET_RESERVED_SIZE:
-+	case SG_EMULATED_HOST:
-+		return 0;
-+	case CDROM_GET_CAPABILITY:
-+		/* Keep this until we remove the printk below.  udev sends it
-+		 * and we do not want to spam dmesg about it.   CD-ROMs do
-+		 * not have partitions, so we get here only for disks.
-+		 */
-+		return -ENOTTY;
-+	default:
-+		break;
-+	}
-+
-+	/* In particular, rule out all resets and host-specific ioctls.  */
-+	printk_ratelimited(KERN_WARNING
-+			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
-+
-+	return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
-+}
-+EXPORT_SYMBOL(scsi_verify_blk_ioctl);
-+
- int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
- 		       unsigned int cmd, void __user *arg)
- {
-+	int ret;
-+
-+	ret = scsi_verify_blk_ioctl(bd, cmd);
-+	if (ret < 0)
-+		return ret;
-+
- 	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
- }
- EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index b4d57bb..c691fb5 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1075,6 +1075,10 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
- 	SCSI_LOG_IOCTL(1, sd_printk(KERN_INFO, sdkp, "sd_ioctl: disk=%s, "
- 				    "cmd=0x%x\n", disk->disk_name, cmd));
- 
-+	error = scsi_verify_blk_ioctl(bdev, cmd);
-+	if (error < 0)
-+		return error;
-+
- 	/*
- 	 * If we are in the middle of error recovery, don't let anyone
- 	 * else try and use this device.  Also, if error recovery fails, it
-@@ -1267,6 +1271,11 @@ static int sd_compat_ioctl(struct block_device *bdev, fmode_t mode,
- 			   unsigned int cmd, unsigned long arg)
- {
- 	struct scsi_device *sdev = scsi_disk(bdev->bd_disk)->device;
-+	int ret;
-+
-+	ret = scsi_verify_blk_ioctl(bdev, cmd);
-+	if (ret < 0)
-+		return -ENOIOCTLCMD;
- 
- 	/*
- 	 * If we are in the middle of error recovery, don't let anyone
-@@ -1278,8 +1287,6 @@ static int sd_compat_ioctl(struct block_device *bdev, fmode_t mode,
- 		return -ENODEV;
- 	       
- 	if (sdev->host->hostt->compat_ioctl) {
--		int ret;
--
- 		ret = sdev->host->hostt->compat_ioctl(sdev, cmd, (void __user *)arg);
- 
- 		return ret;
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index ca7b869..0ed1eb0 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -675,6 +675,7 @@ extern int blk_insert_cloned_request(struct request_queue *q,
- 				     struct request *rq);
- extern void blk_delay_queue(struct request_queue *, unsigned long);
- extern void blk_recount_segments(struct request_queue *, struct bio *);
-+extern int scsi_verify_blk_ioctl(struct block_device *, unsigned int);
- extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
- 			      unsigned int, void __user *);
- extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
--- 
-1.7.7.1
-
-
+> ---
+>  arch/x86/Kconfig             |    1 +
+>  arch/x86/kernel/devicetree.c |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index d6f1e91..0d74f88 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -397,6 +397,7 @@ config X86_INTEL_CE
+>  	select X86_REBOOTFIXUPS
+>  	select OF
+>  	select OF_EARLY_FLATTREE
+> +	select IRQ_DOMAIN
+>  	---help---
+>  	  Select for the Intel CE media processor (CE4100) SOC.
+>  	  This option compiles in support for the CE4100 SOC for settop
+> diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+> index 5632e5b..41eb2a7 100644
+> --- a/arch/x86/kernel/devicetree.c
+> +++ b/arch/x86/kernel/devicetree.c
+> @@ -4,6 +4,7 @@
+>  #include <linux/bootmem.h>
+>  #include <linux/export.h>
+>  #include <linux/io.h>
+> +#include <linux/irqdomain.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/list.h>
+>  #include <linux/of.h>
+> -- 
+> 
+> you add my acked-by to it.
+> 
+> Sebastian
