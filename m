@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab2APJqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 04:46:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41310 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab2APJqA (ORCPT
+	id S1753940Ab2APJtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 04:49:41 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:56665 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751896Ab2APJtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 04:46:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <7FE21149F4667147B645348EC60578850910C3@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1326673015-963-1-git-send-email-linus.walleij@stericsson.com>
-	<7FE21149F4667147B645348EC60578850910C3@039-SN2MPN1-013.039d.mgd.msft.net>
-Date: Mon, 16 Jan 2012 10:46:00 +0100
-Message-ID: <CACRpkdaLEasbm-_Vg9VzD+EwwJst1yLQ1sruPaHtFASxcRXXUA@mail.gmail.com>
-Subject: Re: [PATCH v3] pinctrl: add support for group and pinmux states
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng-B29396 <B29396@freescale.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 16 Jan 2012 04:49:40 -0500
+Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
+ address is invalid"
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Keith Packard <keithp@keithp.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20120116093133.GB15333@elte.hu>
+References: <1323648762-2148-1-git-send-email-keithp@keithp.com>
+	 <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
+	 <867h22jwj1.fsf@sumi.keithp.com> <4EE575E3.7090206@zytor.com>
+	 <8639cqjvyn.fsf@sumi.keithp.com>
+	 <1323684083.3669.15.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <86sjkpiw8i.fsf@sumi.keithp.com>
+	 <1323962963.314.14.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1326705757.3629.18.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <20120116093133.GB15333@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Jan 2012 09:49:27 +0000
+Message-ID: <1326707367.3629.26.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 9:26 AM, Dong Aisheng-B29396
-<B29396@freescale.com> wrote:
+On Mon, 2012-01-16 at 10:31 +0100, Ingo Molnar wrote:
+> * Matt Fleming <matt@console-pimps.org> wrote:
+> 
+> > Ping?
+> 
+> Would be nice to have testing from Keith as your fix looks more 
+> attractive than the plain revert.
+> 
+> I could queue up the fix blindly and do a double revert if it 
+> breaks, but i already strongly depleted my problematic-tree 
+> quota for this cycle, so i'd rather have a nice Tested-by tag 
+> from Keith ... ;-)
 
-> The question is that we allow customer to define pingroup state and this is
-> independent on pinctrl core.
+Sorry, I should have been more verbose here. What I was really asking
+was whether Keith has had chance to test this patch. A Tested-by tag is
+essential - I really don't want to be responsible for a problematic
+tree ;-)
 
-You are right, this patch might not be helpful :-(
+> Failing that i guess we'll have to do the revert, and re-try the 
+> original commit with your fix merged into it.
 
-I had bad dreams after writing it, and I think I also missed Stephens point,
-that the pinctrl core should iteratively call the config interface of the
-controller while walking a config.
+The revert is already in Linus' tree as e1ad783b12ec "Revert "x86, efi:
+Calling __pa() with an ioremap()ed address is invalid", so at least
+we've got some time to get this patch right.
 
-I am authoring a different proposal which is much closer to the pinmux
-maps, and thus closer to what you're currently doing with the device
-tree bindings and all.
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
-Hold on, hope to post this later today.
-
-Linus Walleij
