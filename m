@@ -1,150 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab2API3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 03:29:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753507Ab2API3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 03:29:35 -0500
-Date: Mon, 16 Jan 2012 03:29:27 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, jmoyer@redhat.com
-Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
-Message-ID: <20120116082927.GF3174@redhat.com>
-References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
- <20120104071931.GB17026@dastard>
- <1325746241.22361.503.camel@sli10-conroe>
- <1325826750.22361.533.camel@sli10-conroe>
- <20120108221615.GA4198@dastard>
- <1326071375.22361.543.camel@sli10-conroe>
- <20120115224532.GD3174@redhat.com>
- <1326688590.22361.578.camel@sli10-conroe>
- <20120116071132.GE3174@redhat.com>
- <1326700541.22361.607.camel@sli10-conroe>
+	id S1753600Ab2APIc6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 03:32:58 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:24325 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753509Ab2APIc4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 03:32:56 -0500
+X-SpamScore: -9
+X-BigFish: VPS-9(zz936eK1432Nzz1202hzzz2dhc1ahc1bh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: "axel.lin@gmail.com" <axel.lin@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Date: Mon, 16 Jan 2012 08:33:38 +0000
+Subject: RE: [PATCH] backlight: Fix the logic to set bits in adp8860_bl and
+ adp8870_bl drivers
+Thread-Topic: [PATCH] backlight: Fix the logic to set bits in adp8860_bl and
+ adp8870_bl drivers
+Thread-Index: AczSni1NROKeWaCFTM2zTaf5dSxREQBikDtA
+Message-ID: <544AC56F16B56944AEC3BD4E3D59177148736CE09D@LIMKCMBX1.ad.analog.com>
+References: <1326442521.5482.1.camel@phoenix>
+ <20120113141019.1fc1439e.akpm@linux-foundation.org>
+ <CAF+7xW=qATBpVy-wG6+Joq+LB19TmM6qJUxoOV0U7R8omLVrxw@mail.gmail.com>
+In-Reply-To: <CAF+7xW=qATBpVy-wG6+Joq+LB19TmM6qJUxoOV0U7R8omLVrxw@mail.gmail.com>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326700541.22361.607.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 03:55:41PM +0800, Shaohua Li wrote:
-> On Mon, 2012-01-16 at 02:11 -0500, Vivek Goyal wrote:
-> > On Mon, Jan 16, 2012 at 12:36:30PM +0800, Shaohua Li wrote:
-> > > On Sun, 2012-01-15 at 17:45 -0500, Vivek Goyal wrote:
-> > > > On Mon, Jan 09, 2012 at 09:09:35AM +0800, Shaohua Li wrote:
-> > > > 
-> > > > [..]
-> > > > > > You need to present raw numbers and give us some idea of how close
-> > > > > > those numbers are to raw hardware capability for us to have any idea
-> > > > > > what improvements these numbers actually demonstrate.
-> > > > > Yes, your guess is right. The hardware has limitation. 12 SSD exceeds
-> > > > > the jbod capability, for both throughput and IOPS, that's why only
-> > > > > read/write mixed workload impacts. I'll use less SSD in later tests,
-> > > > > which will demonstrate the performance better. I'll report both raw
-> > > > > numbers and fiops/cfq numbers later.
-> > > > 
-> > > > If fiops number are better please explain why those numbers are better.
-> > > > If you cut down on idling, it is obivious that you will get higher
-> > > > throughput on these flash devices. CFQ does disable queue idling for
-> > > > non rotational NCQ devices. If higher throughput is due to driving
-> > > > deeper queue depths, then CFQ can do that too just by changing quantum
-> > > > and disabling idling. 
-> > > it's because of quantum. Surely you can change the quantum, and CFQ
-> > > performance will increase, but you will find CFQ is very unfair then.
-> > 
-> > Why increasing quantum leads to CFQ being unfair? In terms of time it
-> > still tries to be fair. 
-> we can dispatch a lot of requests to NCQ SSD with very small time
-> interval. The disk can finish a lot of requests in small time interval
-> too. The time is much smaller than 1 jiffy. Increasing quantum can lead
-> a task dispatches request more faster and makes the accounting worse,
-> because with small quantum the task needs wait to dispatch. you can
-> easily verify this with a simple fio test.
-> 
-> > That's a different thing that with NCQ, right
-> > time measurement is not possible with requests from multiple queues
-> > being in the driver/disk at the same time. So accouting in terms of
-> > iops per queue might make sense.
-> yes.
-> 
-> > > > So I really don't understand that what are you doing fundamentally
-> > > > different in FIOPS ioscheduler. 
-> > > > 
-> > > > The only thing I can think of more accurate accounting per queue in
-> > > > terms of number of IOs instead of time. Which can just serve to improve
-> > > > fairness a bit for certain workloads. In practice, I think it might
-> > > > not matter much.
-> > > If quantum is big, CFQ will have better performance, but it actually
-> > > fallbacks to Noop, no any fairness. fairness is important and is why we
-> > > introduce CFQ.
-> > 
-> > It is not exactly noop. It still preempts writes and prioritizes reads
-> > and direct writes. 
-> sure, I mean fairness mostly here.
-> 
-> > Also, what's the real life workload where you face issues with using
-> > say deadline with these flash based storage.
-> deadline doesn't provide fairness. mainly cgroup workload. workload with
-> different ioprio has issues too, but I don't know which real workload
-> uses ioprio.
+Axel Lin wrote on 2012-01-14:
+>>> diff --git a/drivers/video/backlight/adp8860_bl.c
+>>> b/drivers/video/backlight/adp8860_bl.c index 66bc74d..378276c 100644
+>>> --- a/drivers/video/backlight/adp8860_bl.c +++
+>>> b/drivers/video/backlight/adp8860_bl.c @@ -146,7 +146,7 @@ static int
+>>> adp8860_set_bits(struct i2c_client *client, int reg, uint8_t bit_mask
+>>>
+>>>       ret = adp8860_read(client, reg, &reg_val);
+>>>
+>>> -     if (!ret && ((reg_val & bit_mask) == 0)) { +     if (!ret &&
+>>> ((reg_val & bit_mask) != bit_mask)) {               reg_val |=
+>>> bit_mask;               ret = adp8860_write(client, reg, reg_val);
+>>>   } diff --git a/drivers/video/backlight/adp8870_bl.c
+>>> b/drivers/video/backlight/adp8870_bl.c index 6c68a68..6735059 100644
+>>> --- a/drivers/video/backlight/adp8870_bl.c +++
+>>> b/drivers/video/backlight/adp8870_bl.c @@ -160,7 +160,7 @@ static int
+>>> adp8870_set_bits(struct i2c_client *client, int reg, uint8_t bit_mask
+>>>
+>>>       ret = adp8870_read(client, reg, &reg_val);
+>>>
+>>> -     if (!ret && ((reg_val & bit_mask) == 0)) {
+>>> +     if (!ret && ((reg_val & bit_mask) != bit_mask)) {
+>>>               reg_val |= bit_mask;
+>>>               ret = adp8870_write(client, reg, reg_val);
+>>>       }
+>>
+>> This patch is applicable to 3.2.x, but I don't know whether to route it
+>> to -stable becasue you didn't tell me what effect the patch has :(
+>>
+>
+> It's because I don't have this hardware.
+> I just found the bug while reading the code.
+>
+> I was thinking I should CC stable, but since the code is there for a
+> long time
+> and I don't know any complains of the bug. So I didn't CC stable.
+>
+> Michael, do you see any user-visible effects of the bug?
 
-Personally I have not run into any workload which provides deep queue depths
-constantly for a very long time. I had to run fio to create such
-scnearios.
+No - This fixes a bug. The code seemed to be working before,
+only by accident.
 
-Not running deep queue depths will lead to expiration of queue (Otherwise
-idling will kill performance on these fast devices). And without idling
-most of the logic of slice and accounting does not help. A queue
-dispatches some requests and expires (irrespective of what time slice
-you had allocated it based on ioprio).
 
-That's why I am insisting that it would be nice that any move in this
-direction should be driven by some real workload instead of just coming
-up with synthetic workloads.
+Greetings,
+Michael
 
-> 
-> > > 
-> > > In summary, CFQ isn't both fair and good performance. FIOPS is trying to
-> > > be fair and have good performance. I didn't think any time based
-> > > accounting can make the goal happen for NCQ and SSD (even cfq cgroup
-> > > code has iops mode, so suppose you should already know this well).
-> > > 
-> > > Surely you can change CFQ to make it IOPS based, but this will mess the
-> > > code a lot, and FIOPS shares a lot of code with CFQ. So I'd like to have
-> > > a separate ioscheduler which is IOPS based.
-> > 
-> > I think writing a separate IO scheduler just to do accouting in IOPS while
-> > retaining rest of the CFQ code is not a very good idea. Modifying CFQ code
-> > to be able to deal with both time based as well as IOPS accounting might
-> > turn out to be simpler.
-> changing CFQ works, but I really want to avoid having something like
-> if (iops) 
->    xxx
-> else
->    xxx
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
+Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
 
-I think you can provide a wrapper function and abstract out unit of time
-as "charge" or something like that. 
 
-> I plan adding scales for read/write, request size, etc, because
-> read/write cost is different and request with different size has
-> different cost in SSD. This can be added to CFQ too with pain. That said
-> I didn't completely object to make CFQ support IOPS accounting, but my
-> feeling is a separate ioscheduler is more clean.
 
-You can provide one function to calculate the "charge" which can be either
-time or some kind of IOPS unit adjusted with request size and use that.
-
-Given the fact that new IOPS scheduler will be sharing lots of code with
-CFQ (I presume 80-90% of concepts are same) and the only major difference
-is accounting, I would tend to think that modifying CFQ is better.
-
-Jens, what do you think?
-
-Thanks
-Vivek
