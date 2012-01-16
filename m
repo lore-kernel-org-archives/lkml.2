@@ -1,111 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab2APKIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 05:08:42 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46607 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab2APKIl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 05:08:41 -0500
+	id S1754014Ab2APKMB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 05:12:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22175 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927Ab2APKL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 05:11:59 -0500
+Message-ID: <4F13F7EB.3060108@redhat.com>
+Date: Mon, 16 Jan 2012 12:11:55 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <4F13EEC5.8050807@linux.vnet.ibm.com>
-References: <4F13EE3D.2070602@linux.vnet.ibm.com>
-	<4F13EEC5.8050807@linux.vnet.ibm.com>
-Date: Mon, 16 Jan 2012 10:08:40 +0000
-Message-ID: <CAJSP0QVxR9sYYh_Vr6ZKAU-YrWpjgL5jpiKz2zt7eJxV_kgaOg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
-From: Stefan Hajnoczi <stefanha@gmail.com>
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] KVM: perf: a smart tool to analyse kvm events
+References: <4F13EE3D.2070602@linux.vnet.ibm.com>
+In-Reply-To: <4F13EE3D.2070602@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 9:32 AM, Xiao Guangrong
-<xiaoguangrong@linux.vnet.ibm.com> wrote:
-> +DESCRIPTION
-> +-----------
-> +You can analyze some crucial events and statistics with this
-> +'perf kvm-events' command.
+On 01/16/2012 11:30 AM, Xiao Guangrong wrote:
+> This tool is very like xenoprof(if i remember correctly), and traces kvm events
+> smartly. currently, it supports vmexit/mmio/ioport events.
+>
+> Usage:
+> - to trace kvm events:
+> # ./perf kvm-events record
+>
+> - show the result
+> # ./perf kvm-events report
+>
+> Some output are as follow:
+> # ./perf kvm-events report
+>   Warning: Error: expected type 5 but read 4
+>   Warning: Error: expected type 5 but read 0
+>   Warning: unknown op '}'
+>
+>
+> Analyze events for all VCPUs:
+>
+>              VM-EXIT    Samples      Samples%         Time%        Avg time
+>
+>          APIC_ACCESS     438107        44.89%         6.20%        17.91us
+>   EXTERNAL_INTERRUPT     219226        22.46%         8.01%        46.20us
+>       IO_INSTRUCTION     122651        12.57%         1.88%        19.44us
+>        EPT_VIOLATION      83110         8.52%         1.36%        20.75us
+>    PENDING_INTERRUPT      37055         3.80%         0.16%         5.38us
+>                CPUID      32718         3.35%         0.08%         3.15us
+>        EXCEPTION_NMI      23601         2.42%         0.17%         8.87us
+>                  HLT      15424         1.58%        82.12%      6735.06us
+>            CR_ACCESS       4089         0.42%         0.02%         6.08us
+>
+> Total Samples:975981, Total events handled time:126502464.88us.
 
-This line is very general and does not explain which events/statistics
-can be collected or how you can use that information.  I suggest
-making this description more specific.  Explain that this subcommand
-observers kvm.ko tracepoints and annotates/decodes them with
-additional information (this is why I would use this command and not
-raw perf record -e kvm:\*).
+Nice!  If we can have a live version as well, this can replace kvm_stat.
 
-> +       { SVM_EXIT_MONITOR,                     "monitor" }, \
-> +       { SVM_EXIT_MWAIT,                       "mwait" }, \
-> +       { SVM_EXIT_XSETBV,                      "xsetbv" }, \
-> +       { SVM_EXIT_NPF,                         "npf" }
+The average numbers are really high.  Like a factor of 3x-4x off.  Would
+be good to print the standard deviation and see why.  Maybe it's due to
+the tracing overhead.
 
-All this copy-paste could be avoided by sharing this stuff with the
-arch/x86/kvm/ code.
+> The default event to be analysed is vmexit, we can use --event to specify it,
+> for example, if we want to trace mmio event:
+> # ./perf kvm-events report --event mmio
+>   Warning: Error: expected type 5 but read 4
+>   Warning: Error: expected type 5 but read 0
+>   Warning: unknown op '}'
+>
+>
+> Analyze events for all VCPUs:
+>
+>          MMIO Access    Samples      Samples%         Time%        Avg time
+>
+>         0xfee00380:W     196589        64.95%        70.01%         3.83us
+>         0xfee00310:W      35356        11.68%         6.48%         1.97us
+>         0xfee00300:W      35356        11.68%        16.37%         4.97us
+>         0xfee00300:R      35356        11.68%         7.14%         2.17us
 
-> +static void exit_event_decode_key(struct event_key *key, char decode[20])
-> +{
-> +       const char *exit_reason = get_exit_reason(key->info, key->key);
-> +
-> +       memset(decode, 0, 20);
-> +       strncpy(decode, exit_reason, 20);
+These are more reasonable (though still high - 5us for an ICR write?)
 
-This is a bad pattern to follow when using strncpy(3) because if there
-was a strlen(exit_reason) == 20 string then decode[] would not be
-NUL-terminated.  Right now it's safe but it's better to just use
-strlcpy() and drop the memset(3).
+>
+> Total Samples:302657, Total events handled time:1074746.01us.
+>
+> We can use --vcpu to specify which vcpu is traced:
+> root@localhost perf]# ./perf kvm-events report --event mmio --vcpu 1
+>   Warning: Error: expected type 5 but read 4
+>   Warning: Error: expected type 5 but read 0
+>   Warning: unknown op '}'
+>
+>
+> Analyze events for VCPU 1:
+>
+>          MMIO Access    Samples      Samples%         Time%        Avg time
+>
+>         0xfee00380:W      58041        71.20%        74.90%         3.70us
+>         0xfee00310:W       7826         9.60%         5.28%         1.93us
+>         0xfee00300:W       7826         9.60%        13.82%         5.06us
+>         0xfee00300:R       7826         9.60%         6.01%         2.20us
+>
+> Total Samples:81519, Total events handled time:286577.81us.
+>
+> And, '--key' is used to sort the result, the possible value sample (default,
+> the result is sorted by samples number), time(the result is sorted by time%):
+> # ./perf kvm-events report --key time
+>   Warning: Error: expected type 5 but read 4
+>   Warning: Error: expected type 5 but read 0
+>   Warning: unknown op '}'
+>
+>
+> Analyze events for all VCPUs:
+>
+>              VM-EXIT    Samples      Samples%         Time%        Avg time
+>
+>                  HLT      15424         1.58%        82.12%      6735.06us
+>   EXTERNAL_INTERRUPT     219226        22.46%         8.01%        46.20us
+>          APIC_ACCESS     438107        44.89%         6.20%        17.91us
+>       IO_INSTRUCTION     122651        12.57%         1.88%        19.44us
+>        EPT_VIOLATION      83110         8.52%         1.36%        20.75us
+>        EXCEPTION_NMI      23601         2.42%         0.17%         8.87us
+>    PENDING_INTERRUPT      37055         3.80%         0.16%         5.38us
+>                CPUID      32718         3.35%         0.08%         3.15us
+>            CR_ACCESS       4089         0.42%         0.02%         6.08us
+>
+> Total Samples:975981, Total events handled time:126502464.88us.
+>
+> I hope guys will like it and any comments are welcome! :)
 
-> +}
-> +
-> +static struct kvm_events_ops exit_events = {
-> +       .is_begain_event = exit_event_begain,
-> +       .is_end_event = exit_event_end,
-> +       .get_key = exit_event_get_key,
-> +       .decode_key = exit_event_decode_key,
-> +       .name = "VM-EXIT"
-> +};
-> +
-> +#define KVM_TRACE_MMIO_READ_UNSATISFIED 0
-> +#define KVM_TRACE_MMIO_READ 1
-> +#define KVM_TRACE_MMIO_WRITE 2
-> +static bool mmio_event_begain(struct event *event, void *data)
-> +{
-> +       if (!strcmp(event->name, "kvm_mmio")) {
-> +               long type = raw_field_value(event, "type", data);
-> +
-> +               if (type != KVM_TRACE_MMIO_READ_UNSATISFIED)
-> +                       return true;
-> +       };
-> +
-> +       return false;
-> +}
-> +
-> +static bool mmio_event_end(struct event *event)
-> +{
-> +       return !strcmp(event->name, "kvm_mmio_done");
-> +}
-> +
-> +static struct event_key mmio_event_get_key(struct event *event, void *data)
-> +{
-> +       struct event_key key;
-> +
-> +       key.key = raw_field_value(event, "gpa", data);
-> +       key.info = raw_field_value(event, "type", data);
-> +
-> +       return key;
-> +}
-> +
-> +static void mmio_event_decode_key(struct event_key *key, char decode[20])
-> +{
-> +       memset(decode, 0, 20);
-> +       sprintf(decode, "%#lx:%s", key->key,
-> +               key->info == KVM_TRACE_MMIO_READ ? "R" : "W");
+I think it's great!  A live version would be a nice addition too.
 
-Please drop the memset and use snprintf(3) instead of sprintf(3).  It
-places the NUL-terminator and ensures you don't exceed the buffer
-size.
+Please copy the perf userspace maintainers to get more detailed review
+in the next version.
 
-Same pattern below.
+-- 
+error compiling committee.c: too many arguments to function
+
