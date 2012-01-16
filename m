@@ -1,64 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab2APHzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 02:55:15 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51465 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752864Ab2APHzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 02:55:13 -0500
-Message-ID: <4F13D873.4070808@cn.fujitsu.com>
-Date: Mon, 16 Jan 2012 15:57:39 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Cong Wang <amwang@redhat.com>, Arnaud Lacombe <lacombar@gmail.com>,
-        Davidlohr Bueso <dave@gnu.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org, Wang YanQing <udknight@gmail.com>
-Subject: [PATCH] menuconfig: fix a regression when canceling the prompt dialog
- at exit
-References: <4F13CB49.8030004@cn.fujitsu.com> <1326698421.4151.4.camel@cr0> <4F13D216.3060705@cn.fujitsu.com>
-In-Reply-To: <4F13D216.3060705@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-01-16 15:54:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-01-16 15:54:05,
-	Serialize complete at 2012-01-16 15:54:05
+	id S1753513Ab2APHzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 02:55:22 -0500
+Received: from mga03.intel.com ([143.182.124.21]:21032 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752864Ab2APHzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 02:55:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="96230327"
+Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, jmoyer@redhat.com
+In-Reply-To: <20120116071132.GE3174@redhat.com>
+References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
+	 <20120104071931.GB17026@dastard> <1325746241.22361.503.camel@sli10-conroe>
+	 <1325826750.22361.533.camel@sli10-conroe> <20120108221615.GA4198@dastard>
+	 <1326071375.22361.543.camel@sli10-conroe>
+	 <20120115224532.GD3174@redhat.com>
+	 <1326688590.22361.578.camel@sli10-conroe>
+	 <20120116071132.GE3174@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Jan 2012 15:55:41 +0800
+Message-ID: <1326700541.22361.607.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit fixes a bug, while introducing a new one..
+On Mon, 2012-01-16 at 02:11 -0500, Vivek Goyal wrote:
+> On Mon, Jan 16, 2012 at 12:36:30PM +0800, Shaohua Li wrote:
+> > On Sun, 2012-01-15 at 17:45 -0500, Vivek Goyal wrote:
+> > > On Mon, Jan 09, 2012 at 09:09:35AM +0800, Shaohua Li wrote:
+> > > 
+> > > [..]
+> > > > > You need to present raw numbers and give us some idea of how close
+> > > > > those numbers are to raw hardware capability for us to have any idea
+> > > > > what improvements these numbers actually demonstrate.
+> > > > Yes, your guess is right. The hardware has limitation. 12 SSD exceeds
+> > > > the jbod capability, for both throughput and IOPS, that's why only
+> > > > read/write mixed workload impacts. I'll use less SSD in later tests,
+> > > > which will demonstrate the performance better. I'll report both raw
+> > > > numbers and fiops/cfq numbers later.
+> > > 
+> > > If fiops number are better please explain why those numbers are better.
+> > > If you cut down on idling, it is obivious that you will get higher
+> > > throughput on these flash devices. CFQ does disable queue idling for
+> > > non rotational NCQ devices. If higher throughput is due to driving
+> > > deeper queue depths, then CFQ can do that too just by changing quantum
+> > > and disabling idling. 
+> > it's because of quantum. Surely you can change the quantum, and CFQ
+> > performance will increase, but you will find CFQ is very unfair then.
+> 
+> Why increasing quantum leads to CFQ being unfair? In terms of time it
+> still tries to be fair. 
+we can dispatch a lot of requests to NCQ SSD with very small time
+interval. The disk can finish a lot of requests in small time interval
+too. The time is much smaller than 1 jiffy. Increasing quantum can lead
+a task dispatches request more faster and makes the accounting worse,
+because with small quantum the task needs wait to dispatch. you can
+easily verify this with a simple fio test.
 
-commit 7203ddbd4be9720649e47d756a001e0c7d7f8ae2
-Author: Wang YanQing <udknight@gmail.com>
-Date:   Thu Jan 12 11:31:32 2012 +0800
+> That's a different thing that with NCQ, right
+> time measurement is not possible with requests from multiple queues
+> being in the driver/disk at the same time. So accouting in terms of
+> iops per queue might make sense.
+yes.
 
-    menuconfig: let make not report error when not save configuration
+> > > So I really don't understand that what are you doing fundamentally
+> > > different in FIOPS ioscheduler. 
+> > > 
+> > > The only thing I can think of more accurate accounting per queue in
+> > > terms of number of IOs instead of time. Which can just serve to improve
+> > > fairness a bit for certain workloads. In practice, I think it might
+> > > not matter much.
+> > If quantum is big, CFQ will have better performance, but it actually
+> > fallbacks to Noop, no any fairness. fairness is important and is why we
+> > introduce CFQ.
+> 
+> It is not exactly noop. It still preempts writes and prioritizes reads
+> and direct writes. 
+sure, I mean fairness mostly here.
 
-Pressing ESC should cancel the yes/no dialog and return back to
-the main menu, but not exit from menuconfig.
+> Also, what's the real life workload where you face issues with using
+> say deadline with these flash based storage.
+deadline doesn't provide fairness. mainly cgroup workload. workload with
+different ioprio has issues too, but I don't know which real workload
+uses ioprio.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- scripts/kconfig/mconf.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> > In summary, CFQ isn't both fair and good performance. FIOPS is trying to
+> > be fair and have good performance. I didn't think any time based
+> > accounting can make the goal happen for NCQ and SSD (even cfq cgroup
+> > code has iops mode, so suppose you should already know this well).
+> > 
+> > Surely you can change CFQ to make it IOPS based, but this will mess the
+> > code a lot, and FIOPS shares a lot of code with CFQ. So I'd like to have
+> > a separate ioscheduler which is IOPS based.
+> 
+> I think writing a separate IO scheduler just to do accouting in IOPS while
+> retaining rest of the CFQ code is not a very good idea. Modifying CFQ code
+> to be able to deal with both time based as well as IOPS accounting might
+> turn out to be simpler.
+changing CFQ works, but I really want to avoid having something like
+if (iops) 
+   xxx
+else
+   xxx
+I plan adding scales for read/write, request size, etc, because
+read/write cost is different and request with different size has
+different cost in SSD. This can be added to CFQ too with pain. That said
+I didn't completely object to make CFQ support IOPS accounting, but my
+feeling is a separate ioscheduler is more clean.
 
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index 86cd1ea..2c6286c 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -830,7 +830,8 @@ static int handle_exit(void)
- 		fprintf(stderr, _("\n\n"
- 				  "Your configuration changes were NOT saved."
- 				  "\n\n"));
--		res = 0;
-+		if (res != KEY_ESC)
-+			res = 0;
- 	}
- 
- 	return res;
--- 
-1.7.3.1
+Thanks,
+Shaohua
+
