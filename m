@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab2APAiP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 19:38:15 -0500
+	id S1753019Ab2APAiN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 19:38:13 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:48333 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab2APAh7 (ORCPT
+	with ESMTP id S1752904Ab2APAhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 19:37:59 -0500
+	Sun, 15 Jan 2012 19:37:52 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: Casey Schaufler <casey@schaufler-ca.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -24,9 +24,9 @@ Cc: Jamie Lokier <jamie@shareable.org>, Will Drewry <wad@chromium.org>,
         linux-security-module@vger.kernel.org, olofj@chromium.org,
         mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
         alan@lxorguk.ukuu.org.uk, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 4/4] Allow unprivileged chroot when safe
-Date: Sun, 15 Jan 2012 16:37:21 -0800
-Message-Id: <c4c1a0e710a50e48221aa28d2b60b486ab686369.1326673414.git.luto@amacapital.net>
+Subject: [PATCH v2 3/4] Allow unprivileged CLONE_NEWUTS and CLONE_NEWIPC with no_new_privs
+Date: Sun, 15 Jan 2012 16:37:20 -0800
+Message-Id: <7b13e7dbe19369a01d2eee793b01df9da4ff100b.1326673414.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <cover.1326673414.git.luto@amacapital.net>
 References: <cover.1326673414.git.luto@amacapital.net>
@@ -36,56 +36,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chroot can easily be used to subvert setuid programs.  If no_new_privs,
-then setuid programs don't gain any privilege, so allow chroot.
-
-Because chroot is an easy way to break out of chroot jail, CAP_SYS_ADMIN
-is still required if the caller is already chrooted.
+They are normally disallowed because they could be used to subvert
+setuid programs.  But if setuid is disabled, then they are safe.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- fs/open.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+ kernel/nsproxy.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index f711921..80ca7e2 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -422,6 +422,8 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
- {
- 	struct path path;
- 	int error;
-+	struct fs_struct *fs = current->fs;
-+	bool is_chrooted;
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 9aeab4b..471f4a3 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -191,7 +191,13 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+ 			       CLONE_NEWNET)))
+ 		return 0;
  
- 	error = user_path_dir(filename, &path);
- 	if (error)
-@@ -432,13 +434,23 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
- 		goto dput_and_out;
+-	if (!capable(CAP_SYS_ADMIN))
++	/* We require either no_new_privs or CAP_SYS_ADMIN for all modes */
++	if (!current->no_new_privs && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	/* NEWNS and NEWNET always require CAP_SYS_ADMIN. */
++	if ((unshare_flags & (CLONE_NEWNS | CLONE_NEWNET)) &&
++	    !capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
  
- 	error = -EPERM;
--	if (!capable(CAP_SYS_CHROOT))
-+	/*
-+	 * Chroot is dangerous unless no_new_privs is set.  But we also
-+	 * don't want to allow unprivileged users to break out of chroot
-+	 * jail with another chroot call, so we require either CAP_SYS_CHROOT
-+	 * unless we're not chrooted already and we have no_new_privs.
-+	 */
-+	is_chrooted = (fs->root.mnt->mnt_mountpoint !=
-+		       fs->root.mnt->mnt_parent->mnt_root ||
-+		       fs->root.dentry != fs->root.mnt->mnt_root);
-+	if (!(current->no_new_privs && !is_chrooted) &&
-+	    !capable(CAP_SYS_CHROOT))
- 		goto dput_and_out;
- 	error = security_path_chroot(&path);
- 	if (error)
- 		goto dput_and_out;
- 
--	set_fs_root(current->fs, &path);
-+	set_fs_root(fs, &path);
- 	error = 0;
- dput_and_out:
- 	path_put(&path);
+ 	*new_nsp = create_new_namespaces(unshare_flags, current,
 -- 
 1.7.7.5
 
