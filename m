@@ -1,144 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab2APOxL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 09:53:11 -0500
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:42583 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab2APOxI (ORCPT
+	id S1754928Ab2APOyl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 09:54:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47310 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab2APOyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 09:53:08 -0500
-X-SENDER-IP: [85.230.170.239]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AopGAO04FE9V5qrvPGdsb2JhbABDiVihL4ElgQoZAQEBATcygXIBAQUnExwjEAgDRhQlChqID7ViE4keBAkFAQUJCQUBBQYPCgEbBwkNEAECAQEIAQEBAwsCAgEDCAIQBQgMBwQZDR4BCAgDhRVjBJUQhWGMYg
-X-IronPort-AV: E=Sophos;i="4.71,518,1320620400"; 
-   d="scan'208";a="1792084873"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 16 Jan 2012 15:53:04 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Subject: Re: [PATCH 1/2] hid-multitouch: add support for trackpads
-Message-ID: <20120116145304.GA9828@polaris.bitmath.org>
-References: <1326469531-26808-1-git-send-email-benjamin.tissoires@enac.fr>
+	Mon, 16 Jan 2012 09:54:40 -0500
+Date: Mon, 16 Jan 2012 06:54:09 -0800
+From: tip-bot for Matt Fleming <matt@console-pimps.org>
+Message-ID: <tip-add75d07b7b3fdba9b9e53db404ad17ceab5646c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, keithp@keithp.com, torvalds@linux-foundation.org,
+        rui.zhang@intel.com, huang.ying.caritas@gmail.com,
+        matt.fleming@intel.com, matt@console-pimps.org, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, keithp@keithp.com,
+        torvalds@linux-foundation.org, rui.zhang@intel.com,
+        huang.ying.caritas@gmail.com, matt.fleming@intel.com,
+        matt@console-pimps.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1326708966.3629.31.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1326708966.3629.31.camel@mfleming-mobl1.ger.corp.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/efi] x86/efi: Delete efi_ioremap()
+  and fix CONFIG_X86_32 oops
+Git-Commit-ID: add75d07b7b3fdba9b9e53db404ad17ceab5646c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1326469531-26808-1-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Jan 2012 06:54:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+Commit-ID:  add75d07b7b3fdba9b9e53db404ad17ceab5646c
+Gitweb:     http://git.kernel.org/tip/add75d07b7b3fdba9b9e53db404ad17ceab5646c
+Author:     Matt Fleming <matt@console-pimps.org>
+AuthorDate: Mon, 16 Jan 2012 10:16:06 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 16 Jan 2012 11:21:57 +0100
 
-> * some multitouch trackpads present the touch usage. This needs to be
-> filtered as it will conflict with mt-implementation.
-> * trackpads send BTN_TOOL_* to notify how many fingers are present
-> (this is used by xorg to use synaptics instead of generic evdev)
-> * trackpads like Perixx 701 are not different from a hid point of view
-> from a touchscreen, and we need to manually set them as touchpad.
+x86/efi: Delete efi_ioremap() and fix CONFIG_X86_32 oops
 
-Missing subject line?
+This patch reimplements the fix from e8c7106280a3 ("x86, efi:
+Calling __pa() with an ioremap()ed address is invalid") which
+was reverted in e1ad783b12ec because it caused a regression on
+some MacBooks (they hung at boot). The regression was caused
+because the commit only marked EFI_RUNTIME_SERVICES_DATA as
+E820_RESERVED_EFI, when it should have marked all regions that
+have the EFI_MEMORY_RUNTIME attribute.
 
-> @@ -265,17 +266,31 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  {
->  	struct mt_device *td = hid_get_drvdata(hdev);
->  	struct mt_class *cls = &td->mtclass;
-> +	int code;
->  
->  	/* Only map fields from TouchScreen or TouchPad collections.
->           * We need to ignore fields that belong to other collections
->           * such as Mouse that might have the same GenericDesktop usages. */
->  	if (field->application == HID_DG_TOUCHSCREEN)
->  		set_bit(INPUT_PROP_DIRECT, hi->input->propbit);
-> -	else if (field->application == HID_DG_TOUCHPAD)
-> -		set_bit(INPUT_PROP_POINTER, hi->input->propbit);
-> -	else
-> +	else if (field->application != HID_DG_TOUCHPAD)
->  		return 0;
->  
-> +	/* In case of an indirect device (touchpad), we need to add
-> +	 * specific BTN_TOOL_* to be handled by the synaptics xorg
-> +	 * driver.
-> +	 * We also consider that touchscreens providing buttons are touchpads.
-> +	 */
-> +	if (field->application == HID_DG_TOUCHPAD ||
-> +	    (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON ||
-> +	    cls->is_indirect) {
-> +		set_bit(INPUT_PROP_POINTER, hi->input->propbit);
-> +		set_bit(BTN_TOOL_FINGER, hi->input->keybit);
-> +		set_bit(BTN_TOOL_DOUBLETAP, hi->input->keybit);
-> +		set_bit(BTN_TOOL_TRIPLETAP, hi->input->keybit);
-> +		set_bit(BTN_TOOL_QUADTAP, hi->input->keybit);
-> +	}
-> +
->  	/* eGalax devices provide a Digitizer.Stylus input which overrides
->  	 * the correct Digitizers.Finger X/Y ranges.
->  	 * Let's just ignore this input. */
-> @@ -389,9 +404,20 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  				td->last_field_index = field->index;
->  			return -1;
->  		}
-> +		case HID_DG_TOUCH:
-> +			/* Legacy devices use TIPSWITCH and not TOUCH.
-> +			 * Let's just ignore this field. */
-> +			return -1;
->  		/* let hid-input decide for the others */
->  		return 0;
->  
-> +	case HID_UP_BUTTON:
-> +		code = ((usage->hid - 1) & HID_USAGE);
-> +		code += BTN_MOUSE;
+Calling __pa() with an ioremap'd address is invalid. If we
+encounter an efi_memory_desc_t without EFI_MEMORY_WB set in
+->attribute we currently call set_memory_uc(), which in turn
+calls __pa() on a potentially ioremap'd address. On
+CONFIG_X86_32 this results in the following oops,
 
-Any reason not to write ((usage->hid - 1) & HID_USAGE) | BTN_MOUSE?
+  BUG: unable to handle kernel paging request at f7f22280
+  IP: [<c10257b9>] reserve_ram_pages_type+0x89/0x210
+  *pdpt = 0000000001978001 *pde = 0000000001ffb067 *pte = 0000000000000000
+  Oops: 0000 [#1] PREEMPT SMP
+  Modules linked in:
 
-> +		hid_map_usage(hi, usage, bit, max, EV_KEY, code);
-> +		input_set_capability(hi->input, EV_KEY, code);
-> +		return 1;
-> +
->  	case 0xff000000:
->  		/* we do not want to map these: no input-oriented meaning */
->  		return -1;
-> @@ -453,6 +479,7 @@ static void mt_complete_slot(struct mt_device *td)
->  static void mt_emit_event(struct mt_device *td, struct input_dev *input)
->  {
->  	int i;
-> +	int finger_count = 0;
->  
->  	for (i = 0; i < td->maxcontacts; ++i) {
->  		struct mt_slot *s = &(td->slots[i]);
-> @@ -477,12 +504,14 @@ static void mt_emit_event(struct mt_device *td, struct input_dev *input)
->  			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
->  			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
->  			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, minor);
-> +			finger_count++;
->  		}
->  		s->seen_in_this_frame = false;
->  
->  	}
->  
->  	input_mt_report_pointer_emulation(input, true);
-> +	input_mt_report_finger_count(input, finger_count);
->  	input_sync(input);
->  	td->num_received = 0;
->  }
-> @@ -538,6 +567,9 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
->  			if (value)
->  				td->num_expected = value;
->  			break;
-> +		case HID_DG_TOUCH:
-> +			/* do nothing */
-> +			break;
->  
->  		default:
->  			/* fallback to the generic hidinput handling */
-> -- 
-> 1.7.4.4
+  Pid: 0, comm: swapper Not tainted 3.0.0-acpi-efi-0805 #3
+   EIP: 0060:[<c10257b9>] EFLAGS: 00010202 CPU: 0
+   EIP is at reserve_ram_pages_type+0x89/0x210
+   EAX: 0070e280 EBX: 38714000 ECX: f7814000 EDX: 00000000
+   ESI: 00000000 EDI: 38715000 EBP: c189fef0 ESP: c189fea8
+   DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+  Process swapper (pid: 0, ti=c189e000 task=c18bbe60 task.ti=c189e000)
+  Stack:
+   80000200 ff108000 00000000 c189ff00 00038714 00000000 00000000 c189fed0
+   c104f8ca 00038714 00000000 00038715 00000000 00000000 00038715 00000000
+   00000010 38715000 c189ff48 c1025aff 38715000 00000000 00000010 00000000
+  Call Trace:
+   [<c104f8ca>] ? page_is_ram+0x1a/0x40
+   [<c1025aff>] reserve_memtype+0xdf/0x2f0
+   [<c1024dc9>] set_memory_uc+0x49/0xa0
+   [<c19334d0>] efi_enter_virtual_mode+0x1c2/0x3aa
+   [<c19216d4>] start_kernel+0x291/0x2f2
+   [<c19211c7>] ? loglevel+0x1b/0x1b
+   [<c19210bf>] i386_start_kernel+0xbf/0xc8
 
-Looks good otherwise.
+A better approach to this problem is to map the memory region
+with the correct attributes from the start, instead of modifying
+them after the fact.
 
-Thanks,
-Henrik
+Despite first impressions, it's not possible to use
+ioremap_cache() to map all cached memory regions on
+CONFIG_X86_64 because of the way that the memory map might be
+configured as detailed in the following bug report,
+
+	https://bugzilla.redhat.com/show_bug.cgi?id=748516
+
+Therefore, we need to ensure that any regions requiring a
+runtime mapping are covered by the direct kernel mapping table.
+Previously, this was taken care of by efi_ioremap() but if we
+handle this case earlier, in setup_arch(), we can delete the
+CONFIG_X86_32 and CONFIG_X86_64 efi_ioremap() implementations
+entirely.
+
+To accomplish this we now mark any regions that need a runtime
+mapping as E820_RESERVED_EFI and map them via the direct kernel
+mapping in setup_arch().
+
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Cc: Keith Packard <keithp@keithp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Huang Ying <huang.ying.caritas@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Link: http://lkml.kernel.org/r/1326708966.3629.31.camel@mfleming-mobl1.ger.corp.intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/e820.h    |    7 +++++++
+ arch/x86/include/asm/efi.h     |    5 -----
+ arch/x86/kernel/e820.c         |    3 ++-
+ arch/x86/kernel/setup.c        |   21 ++++++++++++++++++++-
+ arch/x86/platform/efi/efi.c    |   37 ++++++++++++++++++++++++-------------
+ arch/x86/platform/efi/efi_64.c |   17 -----------------
+ 6 files changed, 53 insertions(+), 37 deletions(-)
+
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 908b969..bc0a9c0 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -53,6 +53,12 @@
+  */
+ #define E820_RESERVED_KERN        128
+ 
++/*
++ * Address ranges that need to be mapped by the kernel direct mapping
++ * because they require a runtime mapping. See setup_arch().
++ */
++#define E820_RESERVED_EFI         129
++
+ #ifndef __ASSEMBLY__
+ #include <linux/types.h>
+ struct e820entry {
+@@ -115,6 +121,7 @@ static inline void early_memtest(unsigned long start, unsigned long end)
+ }
+ #endif
+ 
++extern unsigned long e820_end_pfn(unsigned long limit_pfn, unsigned type);
+ extern unsigned long e820_end_of_ram_pfn(void);
+ extern unsigned long e820_end_of_low_ram_pfn(void);
+ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index 844f735..26d8c18 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -35,8 +35,6 @@ extern unsigned long asmlinkage efi_call_phys(void *, ...);
+ #define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)	\
+ 	efi_call_virt(f, a1, a2, a3, a4, a5, a6)
+ 
+-#define efi_ioremap(addr, size, type)		ioremap_cache(addr, size)
+-
+ #else /* !CONFIG_X86_32 */
+ 
+ #define EFI_LOADER_SIGNATURE	"EL64"
+@@ -88,9 +86,6 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
+ 	efi_call6((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+ 		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
+ 
+-extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
+-				 u32 type);
+-
+ #endif /* CONFIG_X86_32 */
+ 
+ extern int add_efi_memmap;
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 303a0e4..65ffd11 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -135,6 +135,7 @@ static void __init e820_print_type(u32 type)
+ 		printk(KERN_CONT "(usable)");
+ 		break;
+ 	case E820_RESERVED:
++	case E820_RESERVED_EFI:
+ 		printk(KERN_CONT "(reserved)");
+ 		break;
+ 	case E820_ACPI:
+@@ -783,7 +784,7 @@ u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
+ /*
+  * Find the highest page frame number we have available
+  */
+-static unsigned long __init e820_end_pfn(unsigned long limit_pfn, unsigned type)
++unsigned long __init e820_end_pfn(unsigned long limit_pfn, unsigned type)
+ {
+ 	int i;
+ 	unsigned long last_pfn = 0;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 421a5e7..b1c27ba 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -691,6 +691,8 @@ early_param("reservelow", parse_reservelow);
+ 
+ void __init setup_arch(char **cmdline_p)
+ {
++	unsigned long end_pfn;
++
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
+@@ -927,7 +929,24 @@ void __init setup_arch(char **cmdline_p)
+ 	init_gbpages();
+ 
+ 	/* max_pfn_mapped is updated here */
+-	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
++	end_pfn = max_low_pfn;
++
++#ifdef CONFIG_X86_64
++	/*
++	 * There may be regions after the last E820_RAM region that we
++	 * want to include in the kernel direct mapping because their
++	 * contents are needed at runtime.
++	 */
++	if (efi_enabled) {
++		unsigned long efi_end;
++
++		efi_end = e820_end_pfn(MAXMEM>>PAGE_SHIFT, E820_RESERVED_EFI);
++		if (efi_end > end_pfn)
++			end_pfn = efi_end;
++	}
++#endif
++
++	max_low_pfn_mapped = init_memory_mapping(0, end_pfn << PAGE_SHIFT);
+ 	max_pfn_mapped = max_low_pfn_mapped;
+ 
+ #ifdef CONFIG_X86_64
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 37718f0..f5c22d4 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -323,13 +323,20 @@ static void __init do_add_efi_memmap(void)
+ 		case EFI_UNUSABLE_MEMORY:
+ 			e820_type = E820_UNUSABLE;
+ 			break;
++		case EFI_MEMORY_MAPPED_IO:
++		case EFI_MEMORY_MAPPED_IO_PORT_SPACE:
++			e820_type = E820_RESERVED;
++			break;
+ 		default:
+ 			/*
+ 			 * EFI_RESERVED_TYPE EFI_RUNTIME_SERVICES_CODE
+-			 * EFI_RUNTIME_SERVICES_DATA EFI_MEMORY_MAPPED_IO
+-			 * EFI_MEMORY_MAPPED_IO_PORT_SPACE EFI_PAL_CODE
++			 * EFI_RUNTIME_SERVICES_DATA
++			 * EFI_PAL_CODE
+ 			 */
+-			e820_type = E820_RESERVED;
++			if (md->attribute & EFI_MEMORY_RUNTIME)
++				e820_type = E820_RESERVED_EFI;
++			else
++				e820_type = E820_RESERVED;
+ 			break;
+ 		}
+ 		e820_add_region(start, size, e820_type);
+@@ -671,10 +678,21 @@ void __init efi_enter_virtual_mode(void)
+ 		end_pfn = PFN_UP(end);
+ 		if (end_pfn <= max_low_pfn_mapped
+ 		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
+-			&& end_pfn <= max_pfn_mapped))
++			&& end_pfn <= max_pfn_mapped)) {
+ 			va = __va(md->phys_addr);
+-		else
+-			va = efi_ioremap(md->phys_addr, size, md->type);
++
++			if (!(md->attribute & EFI_MEMORY_WB)) {
++				addr = (u64) (unsigned long)va;
++				npages = md->num_pages;
++				memrange_efi_to_native(&addr, &npages);
++				set_memory_uc(addr, npages);
++			}
++		} else {
++			if (!(md->attribute & EFI_MEMORY_WB))
++				va = ioremap_nocache(md->phys_addr, size);
++			else
++				va = ioremap_cache(md->phys_addr, size);
++		}
+ 
+ 		md->virt_addr = (u64) (unsigned long) va;
+ 
+@@ -684,13 +702,6 @@ void __init efi_enter_virtual_mode(void)
+ 			continue;
+ 		}
+ 
+-		if (!(md->attribute & EFI_MEMORY_WB)) {
+-			addr = md->virt_addr;
+-			npages = md->num_pages;
+-			memrange_efi_to_native(&addr, &npages);
+-			set_memory_uc(addr, npages);
+-		}
+-
+ 		systab = (u64) (unsigned long) efi_phys.systab;
+ 		if (md->phys_addr <= systab && systab < end) {
+ 			systab += md->virt_addr - md->phys_addr;
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index ac3aa54..312250c 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -80,20 +80,3 @@ void __init efi_call_phys_epilog(void)
+ 	local_irq_restore(efi_flags);
+ 	early_code_mapping_set_exec(0);
+ }
+-
+-void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+-				 u32 type)
+-{
+-	unsigned long last_map_pfn;
+-
+-	if (type == EFI_MEMORY_MAPPED_IO)
+-		return ioremap(phys_addr, size);
+-
+-	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
+-	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
+-		unsigned long top = last_map_pfn << PAGE_SHIFT;
+-		efi_ioremap(top, size - (top - phys_addr), type);
+-	}
+-
+-	return (void __iomem *)__va(phys_addr);
+-}
