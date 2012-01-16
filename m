@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab2APQUw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 11:20:52 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:50494 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755463Ab2APQUu convert rfc822-to-8bit (ORCPT
+	id S1755478Ab2APQWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:22:47 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:48700 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab2APQWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 11:20:50 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 16 Jan 2012 11:22:46 -0500
+Subject: [RFC PATCH v1 0/2] sched: unified sched_powersavings tunables
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Indan Zupancic <indan@nul.nu>,
+        Youquan Song <youquan.song@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 16 Jan 2012 21:52:26 +0530
+Message-ID: <20120116161740.29759.4679.stgit@localhost>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing probe
-Date: Mon, 16 Jan 2012 16:20:45 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AF47@saturn3.aculab.com>
-In-Reply-To: <4F144B4F.7050905@linux.intel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing probe
-Thread-Index: AczUaQatCadqeCGhRImEIufyqS02+wAAUgqw
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Arjan van de Ven" <arjan@linux.intel.com>,
-        "Darren Hart" <dvhart@linux.intel.com>
-Cc: "Alan Cox" <alan@linux.intel.com>,
-        "Tomoya MORINAGA" <tomoya.rohm@gmail.com>,
-        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
-        "David Miller" <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <jeffrey.t.kirsher@intel.com>, <paul.gortmaker@windriver.com>,
-        <jdmason@kudzu.us>, <netdev@vger.kernel.org>
-X-OriginalArrivalTime: 16 Jan 2012 16:20:45.0440 (UTC) FILETIME=[CCCB5000:01CCD46A]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011607-3568-0000-0000-000001100D1A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> the tricky thing with embedded hw like this is that all devices might
-> end up with the same, read-only filesystem, so storing the 
-> mac on the FS
-> and then loading it from there into the HW is... suboptimal.
-> 
-> Would be very nice if busybox had a command that would check the mac
-> from each IF, and created the random mac from userspace 
-> automatically...
+Hi,
 
-Since multiple interfaces on a single system are unlikely
-to be connected to the same LAN segment, it doesn't really
-matter if they use same MAC address.
+I have created the following RFC patch based on the recent discussions
+and consensus on simplifying the power aware scheduler in the kernel.
 
-For a long time sun solaris systems used the same MAC
-address (based on the system id) on all their ethernet
-interfaces.
+Ref: LWN: Rethinking power-aware scheduling
+     http://lwn.net/Articles/474915/
 
-But yes, you don't want a 'random' number generator that
-might give the same value for cloned systems.
-You also really want a 'manufacturer id' for 'random address'
-so that they can't collide with anuything using real addresses.
+The goal of the unified tunable are as follows:
 
-	David
+* Simple and single tunable for different (all) topology
+* Good default powersavings for kernel
+* Potential to map this setting to other subsystems like cpufreq and
+  cpuidle    
 
+What this patch does: (first step)
+
+* Create a single sched_powersavings tunable in sysfs
+* Enable current sched_mc and sched_smt features based on 
+  value of this single tunable
+
+What this patch is yet to do:
+
+* Tune the default power savings to pack packages only till
+  a threshold of say 50%
+* Add notifiers to change setting on battery/AC transitions
+* Feed the thresholds from arch specific code so that different archs
+  can do 'optimal' packing based on topology  
+* May be move this to /sys/device/system/powersavings and add additional
+  platform tunables like x86_energy_perf_policy?
+
+This RFC has only x86 changes and has been tested on dual-socket,
+quad-core,HT configuration.
+
+Please let me know your comments and feedback.
+
+Thanks,
+Vaidy
+
+---
+
+Vaidyanathan Srinivasan (2):
+      sched: unified sched_powersavings sysfs tunable
+      sched: fix group_capacity for thread level consolidation
+
+
+ arch/x86/Kconfig          |   20 ++++--------
+ arch/x86/kernel/smpboot.c |    2 +
+ block/blk.h               |   11 ++++---
+ drivers/base/cpu.c        |    2 +
+ include/linux/sched.h     |   29 +++++++++--------
+ include/linux/topology.h  |    9 +----
+ kernel/sched/core.c       |   75 +++++++++++----------------------------------
+ kernel/sched/fair.c       |   38 ++++++++++++++++-------
+ 8 files changed, 77 insertions(+), 109 deletions(-)
 
