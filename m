@@ -1,159 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab2APUkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 15:40:12 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65375 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756401Ab2APUkK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 15:40:10 -0500
+	id S1756793Ab2APUos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 15:44:48 -0500
+Received: from home.keithp.com ([63.227.221.253]:44003 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756401Ab2APUor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 15:44:47 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Daniel Vetter <daniel@ffwll.ch>, Wu Fengguang <fengguang.wu@intel.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        "intel-gfx\@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>,
+        Michal Marek <mmarek@suse.com>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Lemaire <rlemaire@suse.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: set AUD_CONFIG N_value_index for DisplayPort
+In-Reply-To: <20120116202618.GG3627@phenom.ffwll.local>
+References: <20120109131717.GA4713@localhost> <86y5tgx02g.fsf@sumi.keithp.com> <20120110054519.GA27257@localhost> <86ty404yhd.fsf@sumi.keithp.com> <20120116080252.GA18538@localhost> <20120116202618.GG3627@phenom.ffwll.local>
+User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 16 Jan 2012 12:44:43 -0800
+Message-ID: <86obu31io4.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Date: Mon, 16 Jan 2012 12:40:10 -0800
-Message-ID: <CA+HUmGgLmsHsTUbKb=XB_Ow+BPajpu75B18Um0zRZRkof8rQmw@mail.gmail.com>
-Subject: [PATCH 1/1] net: race condition in ipv6 forwarding and disable_ipv6 parameters
-From: Francesco Ruggeri <fruggeri@aristanetworks.com>
-To: netdev@vger.kernel.org, David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org,
-        Francesco Ruggeri <fruggeri@aristanetworks.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Francesco Ruggeri <fruggeri@aristanetworks.com>
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-There is a race condition in addrconf_sysctl_forward() and
-addrconf_sysctl_disable().
-These functions change idev->cnf.forwarding (resp. idev->cnf.disable_ipv6)
-and then try to grab the rtnl lock before performing any actions.
-If that fails they restore the original value and restart the syscall.
-This creates race conditions if ipv6 code tries to access
-these parameters, or if multiple instances try to do the same operation.
-As an example of the former, if __ipv6_ifa_notify() finds a 0 in
-idev->cnf.forwarding when invoked by addrconf_ifdown() it may not free
-anycast addresses, ultimately resulting in the net_device not being freed.
-This patch reads the user parameters into a temporary location and only
-writes the actual parameters when the rtnl lock is acquired.
-Tested in 2.6.38.8.
-Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
----
-diff -up a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
---- a/net/ipv6/addrconf.c	2011-03-14 18:20:32.000000000 -0700
-+++ b/net/ipv6/addrconf.c	2012-01-07 16:48:54.146386450 -0800
-@@ -502,29 +502,31 @@ static void addrconf_forward_change(stru
- 	rcu_read_unlock();
- }
+On Mon, 16 Jan 2012 21:26:18 +0100, Daniel Vetter <daniel@ffwll.ch> wrote:
 
--static int addrconf_fixup_forwarding(struct ctl_table *table, int *p, int old)
-+static int addrconf_fixup_forwarding(struct ctl_table *table, int *p, int newf)
- {
- 	struct net *net;
-+	int old;
-+
-+	if (!rtnl_trylock())
-+		return restart_syscall();
+> Keith, does this address your concern and this patch is r-b: Keith or do
+> we want an
+>=20
+> } else {
+> 	I915_WRITE(aud_config, 0);
+> }
+>=20
+> for paranoia?
 
- 	net = (struct net *)table->extra2;
--	if (p == &net->ipv6.devconf_dflt->forwarding)
--		return 0;
-+	old = *p;
-+	*p = newf;
+I think we want this added, just to be sure we set the configuration
+correctly in all cases; it's easy to imagine moving from DP to HDMI and
+leaving this bit set.
 
--	if (!rtnl_trylock()) {
--		/* Restore the original values before restarting */
--		*p = old;
--		return restart_syscall();
-+	if (p == &net->ipv6.devconf_dflt->forwarding) {
-+		rtnl_unlock();
-+		return 0;
- 	}
+=2D-=20
+keith.packard@intel.com
 
- 	if (p == &net->ipv6.devconf_all->forwarding) {
--		__s32 newf = net->ipv6.devconf_all->forwarding;
- 		net->ipv6.devconf_dflt->forwarding = newf;
- 		addrconf_forward_change(net, newf);
--	} else if ((!*p) ^ (!old))
-+	} else if ((!newf) ^ (!old))
- 		dev_forward_change((struct inet6_dev *)table->extra1);
- 	rtnl_unlock();
+--=-=-=
+Content-Type: application/pgp-signature
 
--	if (*p)
-+	if (newf)
- 		rt6_purge_dflt_routers(net);
- 	return 1;
- }
-@@ -4257,9 +4259,17 @@ int addrconf_sysctl_forward(ctl_table *c
- 	int *valp = ctl->data;
- 	int val = *valp;
- 	loff_t pos = *ppos;
-+	ctl_table lctl;
- 	int ret;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
--	ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
-+	/*
-+	 * ctl->data points to idev->cnf.forwarding, we should
-+	 * not modify it until we get the rtnl lock.
-+	 */
-+	lctl = *ctl;
-+	lctl.data = &val;
-+
-+	ret = proc_dointvec(&lctl, write, buffer, lenp, ppos);
-
- 	if (write)
- 		ret = addrconf_fixup_forwarding(ctl, valp, val);
-@@ -4297,26 +4307,27 @@ static void addrconf_disable_change(stru
- 	rcu_read_unlock();
- }
-
--static int addrconf_disable_ipv6(struct ctl_table *table, int *p, int old)
-+static int addrconf_disable_ipv6(struct ctl_table *table, int *p, int newf)
- {
- 	struct net *net;
-+	int old;
-+
-+	if (!rtnl_trylock())
-+		return restart_syscall();
-
- 	net = (struct net *)table->extra2;
-+	old = *p;
-+	*p = newf;
-
--	if (p == &net->ipv6.devconf_dflt->disable_ipv6)
-+	if (p == &net->ipv6.devconf_dflt->disable_ipv6) {
-+		rtnl_unlock();
- 		return 0;
--
--	if (!rtnl_trylock()) {
--		/* Restore the original values before restarting */
--		*p = old;
--		return restart_syscall();
- 	}
-
- 	if (p == &net->ipv6.devconf_all->disable_ipv6) {
--		__s32 newf = net->ipv6.devconf_all->disable_ipv6;
- 		net->ipv6.devconf_dflt->disable_ipv6 = newf;
- 		addrconf_disable_change(net, newf);
--	} else if ((!*p) ^ (!old))
-+	} else if ((!newf) ^ (!old))
- 		dev_disable_change((struct inet6_dev *)table->extra1);
-
- 	rtnl_unlock();
-@@ -4330,9 +4341,17 @@ int addrconf_sysctl_disable(ctl_table *c
- 	int *valp = ctl->data;
- 	int val = *valp;
- 	loff_t pos = *ppos;
-+	ctl_table lctl;
- 	int ret;
-
--	ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
-+	/*
-+	 * ctl->data points to idev->cnf.disable_ipv6, we should
-+	 * not modify it until we get the rtnl lock.
-+	 */
-+	lctl = *ctl;
-+	lctl.data = &val;
-+
-+	ret = proc_dointvec(&lctl, write, buffer, lenp, ppos);
-
- 	if (write)
- 		ret = addrconf_disable_ipv6(ctl, valp, val);
+iQIVAwUBTxSMOzYtFsjWk68qAQj03A/9GBY0spPMAgmJdZ3q+GH1CI4+8c59FXPA
+kEcAdF1yfWLoKPwg9ymKHY2u3kPAuhV9cYzn46h2lJwLTw8cKDy47ofqV4SgqokQ
+TQDKnyMcgz1atBkoufKmRhYPo5c47GZ2desuSHJwlBHzj/c7zsbaCZ8Is8Ggu5c1
+hXydqOmIo2vP6dFu5OZoPSGjPYlcaCS1xSzpWQ5rHWoXhM2+hNynP2p763RQtDvw
+1XN84erp2k36BUij843xEodlGNZ9S6bVw5tgGXHv4KblR8v4IHGDdw8RhvKJckzs
+kTlR91FZaZyX6PgayC4LZJEmxOPjVBu6bvC5BXlthB7DpzrHPVdQxR01xjbLw19y
+21/reIDT0YCDkj5l4qUJbRcSl3ajVhdNv3fZWktq+EeFmatmxvkqNuwBJ306nffq
+0KgUkhUGOWJE0CZehpcVz1odI5uxYTio4he/tGOYBKdF1pwPkV2aJXmvA0YL0/U+
+UDEiju2O5BUE/uZ/Vrd23sSv3CYwVgQfbkaS5IdwEirTQHVLkr/30VrZR+idZjIN
+GiSTxkVwFr8D7OOHVS8yPbPQh2CcezayckJBMRgwKum1j2/KqK4R5G25sU5s03nS
+37H2OESXn1sjXWqIUv+XcrLPCKWw4/OyTfIJenKj3MPO1/xL2R+u21nnNVJ1qI6h
+6ExBbOHfNPM=
+=Bhp7
+-----END PGP SIGNATURE-----
+--=-=-=--
