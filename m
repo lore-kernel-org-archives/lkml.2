@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab2APSmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:42:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54813 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760Ab2APSmi convert rfc822-to-8bit (ORCPT
+	id S1755944Ab2APSp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:45:58 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54946 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755831Ab2APSp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:42:38 -0500
+	Mon, 16 Jan 2012 13:45:57 -0500
+X-Sasl-enc: 0LCvIclXfDXA4Rht8XgYZdu1xSV8kM5eEbblGahVD+ni 1326739556
+Date: Mon, 16 Jan 2012 10:45:27 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [00/48] 3.1.10-stable review
+Message-ID: <20120116184527.GA11972@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20120116181135.GA2680@suse.de>
-References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
- <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
- <4F10BDF7.8030306@linux.vnet.ibm.com> <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
- <4F10EB5B.5060804@linux.vnet.ibm.com> <CA+55aFxK5XCh6NCbo9AMvsarS9_A+s0QqV6=vC2O4dgg3vg=Aw@mail.gmail.com>
- <20120114144938.GA32033@suse.de> <20120116181135.GA2680@suse.de>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 16 Jan 2012 19:42:14 +0100
-Message-ID: <CAPXgP12uw9MKhsHPK6GHLER7E0UDGJ6FHPHGLtRGefkMYAk+Fw@mail.gmail.com>
-Subject: Re: x86/mce: machine check warning during poweroff
-To: Greg KH <gregkh@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 19:11, Greg KH <gregkh@suse.de> wrote:
+Note, this is the LAST 3.1.y stable release.  Everyone should move to
+the 3.2 kernel series now.
 
->> It has to do with the fact that this is a "static" device that is being
->> reused.  Normally it would be cleaned up properly in the release
->> function, but as there isn't one, some fields are being left in a bad
->> state.
->
-> Kay, I looked at this this morning, and it comes down to the line:
->
-> DEFINE_PER_CPU(struct device, mce_device);
->
-> Where we are creating static struct device variables.  I'm guessing this
-> is just done for "convenience" as we really don't care about where in
-> memory these structures are, we just want to make sure we have enough of
-> them around (this is the way all the other mce per-cpu structures are
-> handled.)
+This is the start of the stable review cycle for the 3.1.10 release.
+There are 48 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-It's a pretty common pattern across the CPU handling code. I don't
-know the details, but I doubt many of them are needed or really useful
-in the context which they are used. So, it's either convenience or
-just 'hoping stuff could be made without managing memory'. :)
+Responses should be made by Wed, January 18, 2012, 18:00:00 UTC.
+Anything received after that time might be too late.
 
-Having the 'machinecheck' devices pre-allocated per CPU might not make
-too much sense, because the driver core operations will still need to
-allocate stuff dynamically at register() time anyway. Attaching
-devices to interfaces and drivers of a subsystem will require the same
-thing, even the simplest kobject allocates the name dynamically.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.1.10-rc1.gz
+and the diffstat can be found below.
 
-I guess, the driver core part ofmachinecheckcould just be fully
-dynamic, instead of statically pre-allocated.
+thanks,
 
-Kay
+greg k-h
+
+ Documentation/virtual/kvm/api.txt           |    7 ++
+ Makefile                                    |    4 +-
+ arch/x86/include/asm/amd_nb.h               |    2 +
+ arch/x86/kernel/amd_nb.c                    |   31 +++++++++
+ arch/x86/kernel/kvmclock.c                  |    5 +-
+ arch/x86/kvm/i8254.c                        |   10 ++-
+ arch/x86/mm/mmap.c                          |    4 +-
+ arch/x86/pci/Makefile                       |    3 +-
+ arch/x86/pci/acpi.c                         |   18 +++++-
+ arch/x86/pci/amd_bus.c                      |   42 +++---------
+ drivers/gpu/drm/radeon/r100.c               |    5 +-
+ drivers/gpu/drm/radeon/r600_hdmi.c          |    7 ++
+ drivers/gpu/drm/radeon/radeon_device.c      |    5 +-
+ drivers/gpu/drm/radeon/rs600.c              |    4 +-
+ drivers/hid/Kconfig                         |    1 +
+ drivers/hid/hid-core.c                      |    2 +-
+ drivers/md/raid1.c                          |   11 +++-
+ drivers/mtd/mtd_blkdevs.c                   |    3 +-
+ drivers/mtd/mtdoops.c                       |    5 +-
+ drivers/mtd/tests/mtd_stresstest.c          |    7 ++
+ drivers/mtd/ubi/eba.c                       |    6 +-
+ drivers/mtd/ubi/ubi.h                       |    2 +
+ drivers/mtd/ubi/wl.c                        |   12 ++-
+ drivers/net/wireless/rtlwifi/rtl8192se/fw.c |    4 +
+ drivers/pci/msi.c                           |   10 +++
+ drivers/platform/x86/ideapad-laptop.c       |    2 +
+ drivers/pnp/quirks.c                        |   42 ++++++++++++
+ drivers/rtc/interface.c                     |    4 +-
+ drivers/scsi/mpt2sas/mpt2sas_base.c         |   83 ++++++++----------------
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c        |   11 ++--
+ drivers/xen/xenbus/xenbus_xs.c              |    6 ++
+ fs/ext4/super.c                             |    7 +-
+ fs/nfs/callback_proc.c                      |    2 +-
+ fs/nfs/file.c                               |    4 +-
+ fs/nfs/nfs4proc.c                           |   96 ++++++++++++++++-----------
+ fs/nfs/nfs4xdr.c                            |   31 +++++++--
+ fs/nfs/super.c                              |   43 +++++-------
+ include/linux/memcontrol.h                  |    6 ++
+ include/linux/nfs_xdr.h                     |    5 ++
+ include/linux/pci_regs.h                    |    2 +-
+ include/linux/sunrpc/xdr.h                  |    2 +
+ include/xen/interface/io/xs_wire.h          |    3 +
+ init/do_mounts.c                            |   35 +++++++++-
+ mm/filemap.c                                |   18 +-----
+ mm/memcontrol.c                             |   44 ++++++++++++
+ mm/slub.c                                   |    5 ++
+ net/mac80211/wpa.c                          |    2 +-
+ net/sunrpc/xdr.c                            |    3 +-
+ security/integrity/ima/ima_api.c            |    4 +-
+ security/integrity/ima/ima_queue.c          |   17 ++++--
+ sound/pci/hda/hda_local.h                   |    7 ++-
+ sound/pci/hda/hda_proc.c                    |    2 +
+ sound/pci/hda/patch_cirrus.c                |   27 ++------
+ sound/pci/hda/patch_conexant.c              |    2 -
+ sound/pci/hda/patch_sigmatel.c              |   36 +++++++----
+ sound/pci/hda/patch_via.c                   |    5 +-
+ sound/pci/ice1712/amp.c                     |    7 ++-
+ sound/usb/usx2y/usb_stream.c                |    6 +-
+ virt/kvm/assigned-dev.c                     |   93 +++++++++++++++++++++++---
+ 59 files changed, 591 insertions(+), 281 deletions(-)
+
