@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab2APSuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:50:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43125 "EHLO mx2.suse.de"
+	id S1756472Ab2APSwk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:52:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43101 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756655Ab2APSuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:50:15 -0500
+	id S1756650Ab2APSuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:50:02 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:17 2012
-Message-Id: <20120116184517.720641885@clark.kroah.org>
+Message-Id: <20120116184517.476961050@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:50 -0800
+Date: Mon, 16 Jan 2012 10:44:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Lukas Razik <linux@razik.name>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [23/48] NFS: Retry mounting NFSROOT
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [20/48] drm/radeon/kms: workaround invalid AVI infoframe checksum issue
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,92 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit 43717c7daebf10b43f12e68512484b3095bb1ba5 upstream.
+commit 92db7f6c860b8190571a9dc1fcbc16d003422fe8 upstream.
 
-Lukas Razik <linux@razik.name> reports that on his SPARC system,
-booting with an NFS root file system stopped working after commit
-56463e50 "NFS: Use super.c for NFSROOT mount option parsing."
+This change was verified to fix both issues with no video I've
+investigated. I've also checked checksum calculation with fglrx on:
+RV620, HD54xx, HD5450, HD6310, HD6320.
 
-We found that the network switch to which Lukas' client was attached
-was delaying access to the LAN after the client's NIC driver reported
-that its link was up.  The delay was longer than the timeouts used in
-the NFS client during mounting.
-
-NFSROOT worked for Lukas before commit 56463e50 because in those
-kernels, the client's first operation was an rpcbind request to
-determine which port the NFS server was listening on.  When that
-request failed after a long timeout, the client simply selected the
-default NFS port (2049).  By that time the switch was allowing access
-to the LAN, and the mount succeeded.
-
-Neither of these client behaviors is desirable, so reverting 56463e50
-is really not a choice.  Instead, introduce a mechanism that retries
-the NFSROOT mount request several times.  This is the same tactic that
-normal user space NFS mounts employ to overcome server and network
-delays.
-
-Signed-off-by: Lukas Razik <linux@razik.name>
-[ cel: match kernel coding style, add proper patch description ]
-[ cel: add exponential back-off ]
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Tested-by: Lukas Razik <linux@razik.name>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- init/do_mounts.c |   35 +++++++++++++++++++++++++++++++----
- 1 file changed, 31 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/r600_hdmi.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -360,15 +360,42 @@ out:
- }
-  
- #ifdef CONFIG_ROOT_NFS
-+
-+#define NFSROOT_TIMEOUT_MIN	5
-+#define NFSROOT_TIMEOUT_MAX	30
-+#define NFSROOT_RETRY_MAX	5
-+
- static int __init mount_nfs_root(void)
- {
- 	char *root_dev, *root_data;
-+	unsigned int timeout;
-+	int try, err;
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -196,6 +196,13 @@ static void r600_hdmi_videoinfoframe(
+ 	frame[0xD] = (right_bar >> 8);
  
--	if (nfs_root_data(&root_dev, &root_data) != 0)
--		return 0;
--	if (do_mount_root(root_dev, "nfs", root_mountflags, root_data) != 0)
-+	err = nfs_root_data(&root_dev, &root_data);
-+	if (err != 0)
- 		return 0;
--	return 1;
-+
-+	/*
-+	 * The server or network may not be ready, so try several
-+	 * times.  Stop after a few tries in case the client wants
-+	 * to fall back to other boot methods.
-+	 */
-+	timeout = NFSROOT_TIMEOUT_MIN;
-+	for (try = 1; ; try++) {
-+		err = do_mount_root(root_dev, "nfs",
-+					root_mountflags, root_data);
-+		if (err == 0)
-+			return 1;
-+		if (try > NFSROOT_RETRY_MAX)
-+			break;
-+
-+		/* Wait, in case the server refused us immediately */
-+		ssleep(timeout);
-+		timeout <<= 1;
-+		if (timeout > NFSROOT_TIMEOUT_MAX)
-+			timeout = NFSROOT_TIMEOUT_MAX;
-+	}
-+	return 0;
- }
- #endif
+ 	r600_hdmi_infoframe_checksum(0x82, 0x02, 0x0D, frame);
++	/* Our header values (type, version, length) should be alright, Intel
++	 * is using the same. Checksum function also seems to be OK, it works
++	 * fine for audio infoframe. However calculated value is always lower
++	 * by 2 in comparison to fglrx. It breaks displaying anything in case
++	 * of TVs that strictly check the checksum. Hack it manually here to
++	 * workaround this issue. */
++	frame[0x0] += 2;
  
+ 	WREG32(offset+R600_HDMI_VIDEOINFOFRAME_0,
+ 		frame[0x0] | (frame[0x1] << 8) | (frame[0x2] << 16) | (frame[0x3] << 24));
 
 
