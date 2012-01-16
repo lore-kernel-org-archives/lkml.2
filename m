@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab2APStT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:49:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42962 "EHLO mx2.suse.de"
+	id S1756539Ab2APSti (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:49:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43021 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756416Ab2APStO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:49:14 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:18 2012
-Message-Id: <20120116184518.685520326@clark.kroah.org>
+	id S1755565Ab2APSte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:49:34 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:19 2012
+Message-Id: <20120116184519.100994279@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:45:02 -0800
+Date: Mon, 16 Jan 2012 10:45:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [35/48] x86/PCI: amd: factor out MMCONFIG discovery
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Subject: [40/48] md/raid1: perform bad-block tests for WriteMostly devices too.
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,154 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 24d25dbfa63c376323096660bfa9ad45a08870ce upstream.
+commit 307729c8bc5b5a41361af8af95906eee7552acb1 upstream.
 
-This factors out the AMD native MMCONFIG discovery so we can use it
-outside amd_bus.c.
+We normally try to avoid reading from write-mostly devices, but when
+we do we really have to check for bad blocks and be sure not to
+try reading them.
 
-amd_bus.c reads AMD MSRs so it can remove the MMCONFIG area from the
-PCI resources.  We may also need the MMCONFIG information to work
-around BIOS defects in the ACPI MCFG table.
+With the current code, best_good_sectors might not get set and that
+causes zero-length read requests to be send down which is very
+confusing.
 
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+This bug was introduced in commit d2eb35acfdccbe2 and so the patch
+is suitable for 3.1.x and 3.2.x
+
+Reported-and-tested-by: Michał Mirosław <mirq-linux@rere.qmqm.pl>
+Reported-and-tested-by: Art -kwaak- van Breemen <ard@telegraafnet.nl>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/amd_nb.h |    2 ++
- arch/x86/kernel/amd_nb.c      |   31 +++++++++++++++++++++++++++++++
- arch/x86/pci/amd_bus.c        |   42 +++++++++++-------------------------------
- 3 files changed, 44 insertions(+), 31 deletions(-)
+ drivers/md/raid1.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_AMD_NB_H
- #define _ASM_X86_AMD_NB_H
- 
-+#include <linux/ioport.h>
- #include <linux/pci.h>
- 
- struct amd_nb_bus_dev_range {
-@@ -13,6 +14,7 @@ extern const struct pci_device_id amd_nb
- extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
- 
- extern bool early_is_amd_nb(u32 value);
-+extern struct resource *amd_get_mmconfig_range(struct resource *res);
- extern int amd_cache_northbridges(void);
- extern void amd_flush_garts(void);
- extern int amd_numa_init(void);
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -119,6 +119,37 @@ bool __init early_is_amd_nb(u32 device)
- 	return false;
- }
- 
-+struct resource *amd_get_mmconfig_range(struct resource *res)
-+{
-+	u32 address;
-+	u64 base, msr;
-+	unsigned segn_busn_bits;
-+
-+	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
-+		return NULL;
-+
-+	/* assume all cpus from fam10h have mmconfig */
-+        if (boot_cpu_data.x86 < 0x10)
-+		return NULL;
-+
-+	address = MSR_FAM10H_MMIO_CONF_BASE;
-+	rdmsrl(address, msr);
-+
-+	/* mmconfig is not enabled */
-+	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
-+		return NULL;
-+
-+	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
-+
-+	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
-+			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
-+
-+	res->flags = IORESOURCE_MEM;
-+	res->start = base;
-+	res->end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
-+	return res;
-+}
-+
- int amd_get_subcaches(int cpu)
- {
- 	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -30,34 +30,6 @@ static struct pci_hostbridge_probe pci_p
- 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
- };
- 
--static u64 __initdata fam10h_mmconf_start;
--static u64 __initdata fam10h_mmconf_end;
--static void __init get_pci_mmcfg_amd_fam10h_range(void)
--{
--	u32 address;
--	u64 base, msr;
--	unsigned segn_busn_bits;
--
--	/* assume all cpus from fam10h have mmconf */
--        if (boot_cpu_data.x86 < 0x10)
--		return;
--
--	address = MSR_FAM10H_MMIO_CONF_BASE;
--	rdmsrl(address, msr);
--
--	/* mmconfig is not enable */
--	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
--		return;
--
--	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
--
--	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
--			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
--
--	fam10h_mmconf_start = base;
--	fam10h_mmconf_end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
--}
--
- #define RANGE_NUM 16
- 
- /**
-@@ -85,6 +57,9 @@ static int __init early_fill_mp_bus_info
- 	u64 val;
- 	u32 address;
- 	bool found;
-+	struct resource fam10h_mmconf_res, *fam10h_mmconf;
-+	u64 fam10h_mmconf_start;
-+	u64 fam10h_mmconf_end;
- 
- 	if (!early_pci_allowed())
- 		return -1;
-@@ -211,12 +186,17 @@ static int __init early_fill_mp_bus_info
- 		subtract_range(range, RANGE_NUM, 0, end);
- 
- 	/* get mmconfig */
--	get_pci_mmcfg_amd_fam10h_range();
-+	fam10h_mmconf = amd_get_mmconfig_range(&fam10h_mmconf_res);
- 	/* need to take out mmconf range */
--	if (fam10h_mmconf_end) {
--		printk(KERN_DEBUG "Fam 10h mmconf [%llx, %llx]\n", fam10h_mmconf_start, fam10h_mmconf_end);
-+	if (fam10h_mmconf) {
-+		printk(KERN_DEBUG "Fam 10h mmconf %pR\n", fam10h_mmconf);
-+		fam10h_mmconf_start = fam10h_mmconf->start;
-+		fam10h_mmconf_end = fam10h_mmconf->end;
- 		subtract_range(range, RANGE_NUM, fam10h_mmconf_start,
- 				 fam10h_mmconf_end + 1);
-+	} else {
-+		fam10h_mmconf_start = 0;
-+		fam10h_mmconf_end = 0;
- 	}
- 
- 	/* mmio resource */
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -508,8 +508,17 @@ static int read_balance(conf_t *conf, r1
+ 		if (test_bit(WriteMostly, &rdev->flags)) {
+ 			/* Don't balance among write-mostly, just
+ 			 * use the first as a last resort */
+-			if (best_disk < 0)
++			if (best_disk < 0) {
++				if (is_badblock(rdev, this_sector, sectors,
++						&first_bad, &bad_sectors)) {
++					if (first_bad < this_sector)
++						/* Cannot use this */
++						continue;
++					best_good_sectors = first_bad - this_sector;
++				} else
++					best_good_sectors = sectors;
+ 				best_disk = disk;
++			}
+ 			continue;
+ 		}
+ 		/* This is a reasonable device to use.  It might
 
 
