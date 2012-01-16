@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab2APKEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 05:04:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab2APKEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 05:04:37 -0500
-Message-ID: <4F13F631.9010804@redhat.com>
-Date: Mon, 16 Jan 2012 12:04:33 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753994Ab2APKGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 05:06:31 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40757 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751896Ab2APKGa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 05:06:30 -0500
+Date: Mon, 16 Jan 2012 10:06:00 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "moussaba@micron.com" <moussaba@micron.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [RFC PATCH] proc: clear_refs: do not clear reserved pages
+Message-ID: <20120116100600.GA9068@mudshark.cambridge.arm.com>
+References: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
+ <alpine.LFD.2.02.1201131748380.2722@xanadu.home>
+ <alpine.LSU.2.00.1201140901260.2381@eggly.anvils>
+ <20120115150706.GA7474@mudshark.cambridge.arm.com>
+ <alpine.LFD.2.02.1201152314420.2722@xanadu.home>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
-References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EEC5.8050807@linux.vnet.ibm.com>
-In-Reply-To: <4F13EEC5.8050807@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1201152314420.2722@xanadu.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2012 11:32 AM, Xiao Guangrong wrote:
-> Add 'perf kvm-events' support to analyze kvm vmexit/mmio/ioport smartly
->
-> Usage:
-> 	perf kvm-events record
+On Mon, Jan 16, 2012 at 04:19:43AM +0000, Nicolas Pitre wrote:
+> On Sun, 15 Jan 2012, Will Deacon wrote:
+> > Something like what I've got below seems to do the trick, and clear_refs
+> > also seems to behave when it's presented with the gate_vma. If Russell is
+> > happy with the approach, we can move to the gate_vma in the future.
+> 
+> I like it much better, although I haven't tested it fully yet.
+> 
+> However your patch is missing the worst of the current ARM hack I would 
+> be glad to see go as follows:
+> 
+> diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
+> index 71605d9f8e..876e545297 100644
+> --- a/arch/arm/include/asm/mmu_context.h
+> +++ b/arch/arm/include/asm/mmu_context.h
+> @@ -18,6 +18,7 @@
+>  #include <asm/cacheflush.h>
+>  #include <asm/cachetype.h>
+>  #include <asm/proc-fns.h>
+> +#include <asm-generic/mm_hooks.h>
+>  
+>  void __check_kvm_seq(struct mm_struct *mm);
+>  
+> @@ -133,32 +135,4 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
+>  #define deactivate_mm(tsk,mm)	do { } while (0)
+>  #define activate_mm(prev,next)	switch_mm(prev, next, NULL)
+>  
+> -/*
+> - * We are inserting a "fake" vma for the user-accessible vector page so
+> - * gdb and friends can get to it through ptrace and /proc/<pid>/mem.
+> - * But we also want to remove it before the generic code gets to see it
+> - * during process exit or the unmapping of it would  cause total havoc.
+> - * (the macro is used as remove_vma() is static to mm/mmap.c)
+> - */
+> -#define arch_exit_mmap(mm) \
+> -do { \
+> -	struct vm_area_struct *high_vma = find_vma(mm, 0xffff0000); \
+> -	if (high_vma) { \
+> -		BUG_ON(high_vma->vm_next);  /* it should be last */ \
+> -		if (high_vma->vm_prev) \
+> -			high_vma->vm_prev->vm_next = NULL; \
+> -		else \
+> -			mm->mmap = NULL; \
+> -		rb_erase(&high_vma->vm_rb, &mm->mm_rb); \
+> -		mm->mmap_cache = NULL; \
+> -		mm->map_count--; \
+> -		remove_vma(high_vma); \
+> -	} \
+> -} while (0)
+> -
+> -static inline void arch_dup_mmap(struct mm_struct *oldmm,
+> -				 struct mm_struct *mm)
+> -{
+> -}
+> -
+>  #endif
 
-Why not 'perf record -e kvm'?
+Nice, I missed those hunks! I'm more than happy to include this for v2
+(which I'll just post to the ARM list). I'll also give this some testing on
+the boards that I have.
 
-> 	perf kvm-events report
+Thanks,
 
-
-
-> +static const char *get_exit_reason(long isa, u64 exit_code)
-> +{
-> +	int table_size = ARRAY_SIZE(svm_exit_reasons);
-> +	struct exit_reasons_table *table = svm_exit_reasons;
-> +
-> +
-> +	if (isa == 1) {
-> +		table = vmx_exit_reasons;
-> +		table_size = ARRAY_SIZE(vmx_exit_reasons);
-> +	}
-> +
-> +	while (table_size--) {
-> +		if (table->exit_code == exit_code)
-> +			return table->reason;
-
-... table[exit_code] ...
-
-> +		table++;
-> +	}
-> +
-> +	die("unkonw kvm exit code:%ld on %s\n", exit_code, isa == 1 ?
-> +						"VMX" : "SVM");
-
-"unknown"
-
-> +
-> +struct kvm_events_ops {
-> +	bool (*is_begain_event)(struct event *event, void *data);
-
-begin
-
-> +	bool (*is_end_event)(struct event *event);
-> +	struct event_key (*get_key)(struct event *event, void *data);
-> +	void (*decode_key)(struct event_key *key, char decode[20]);
-> +	const char *name;
-> +};
-> +
-> +
-> +static struct event_key exit_event_get_key(struct event *event, void *data)
-> +{
-> +	struct event_key key;
-> +
-> +	key.key = raw_field_value(event, "exit_reason", data);
-> +	key.info = raw_field_value(event, "isa", data);
-
-"isa" is not available on all kernel versions; need to fall back to
-/proc/cpuid detection.
-
-> +	return key;
-> +}
->
-
--- 
-error compiling committee.c: too many arguments to function
-
+Will
