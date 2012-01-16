@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab2APStD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:49:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42934 "EHLO mx2.suse.de"
+	id S1756408Ab2APStN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:49:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42957 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756311Ab2APStA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:49:00 -0500
+	id S1756307Ab2APStK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:49:10 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:18 2012
-Message-Id: <20120116184518.372473956@clark.kroah.org>
+Message-Id: <20120116184518.610613516@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:58 -0800
+Date: Mon, 16 Jan 2012 10:45:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [31/48] UBI: fix use-after-free on error path
+        alan@lxorguk.ukuu.org.uk, Gary Hade <garyhade@us.ibm.com>,
+        Thomas Renninger <trenn@novell.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [34/48] x86/PCI: Ignore CPU non-addressable _CRS reserved memory resources
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Gary Hade <garyhade@us.ibm.com>
 
-commit e57e0d8e818512047fe379157c3f77f1b9fabffb upstream.
+commit ae5cd86455381282ece162966183d3f208c6fad7 upstream.
 
-When we fail to erase a PEB, we free the corresponding erase entry object,
-but then re-schedule this object if the error code was something like -EAGAIN.
-Obviously, it is a bug to use the object after we have freed it.
+This assures that a _CRS reserved host bridge window or window region is
+not used if it is not addressable by the CPU.  The new code either trims
+the window to exclude the non-addressable portion or totally ignores the
+window if the entire window is non-addressable.
 
-Reported-by: Emese Revfy <re.emese@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+The current code has been shown to be problematic with 32-bit non-PAE
+kernels on systems where _CRS reserves resources above 4GB.
+
+Signed-off-by: Gary Hade <garyhade@us.ibm.com>
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Renninger <trenn@novell.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/ubi/wl.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/pci/acpi.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1052,7 +1052,6 @@ static int erase_worker(struct ubi_devic
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -149,7 +149,7 @@ setup_resource(struct acpi_resource *acp
+ 	struct acpi_resource_address64 addr;
+ 	acpi_status status;
+ 	unsigned long flags;
+-	u64 start, end;
++	u64 start, orig_end, end;
  
- 	ubi_err("failed to erase PEB %d, error %d", pnum, err);
- 	kfree(wl_wrk);
--	kmem_cache_free(ubi_wl_entry_slab, e);
+ 	status = resource_to_addr(acpi_res, &addr);
+ 	if (!ACPI_SUCCESS(status))
+@@ -165,7 +165,21 @@ setup_resource(struct acpi_resource *acp
+ 		return AE_OK;
  
- 	if (err == -EINTR || err == -ENOMEM || err == -EAGAIN ||
- 	    err == -EBUSY) {
-@@ -1065,14 +1064,16 @@ static int erase_worker(struct ubi_devic
- 			goto out_ro;
- 		}
- 		return err;
--	} else if (err != -EIO) {
-+	}
+ 	start = addr.minimum + addr.translation_offset;
+-	end = addr.maximum + addr.translation_offset;
++	orig_end = end = addr.maximum + addr.translation_offset;
 +
-+	kmem_cache_free(ubi_wl_entry_slab, e);
-+	if (err != -EIO)
- 		/*
- 		 * If this is not %-EIO, we have no idea what to do. Scheduling
- 		 * this physical eraseblock for erasure again would cause
- 		 * errors again and again. Well, lets switch to R/O mode.
- 		 */
- 		goto out_ro;
--	}
++	/* Exclude non-addressable range or non-addressable portion of range */
++	end = min(end, (u64)iomem_resource.end);
++	if (end <= start) {
++		dev_info(&info->bridge->dev,
++			"host bridge window [%#llx-%#llx] "
++			"(ignored, not CPU addressable)\n", start, orig_end);
++		return AE_OK;
++	} else if (orig_end != end) {
++		dev_info(&info->bridge->dev,
++			"host bridge window [%#llx-%#llx] "
++			"([%#llx-%#llx] ignored, not CPU addressable)\n",
++			start, orig_end, end + 1, orig_end);
++	}
  
- 	/* It is %-EIO, the PEB went bad */
- 
+ 	res = &info->res[info->res_num];
+ 	res->name = info->name;
 
 
