@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab2APHWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 02:22:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58062 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab2APHWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 02:22:32 -0500
-Date: Sun, 15 Jan 2012 23:22:26 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Block IO bits for 3.3-rc
-Message-ID: <20120116072226.GA3399@mtj.dyndns.org>
-References: <4F12A025.2090207@kernel.dk>
- <CA+55aFxyiMXg0BHrZ0LJtCeE+u+pNSM1n=zDbW5-7CtZnh2O=Q@mail.gmail.com>
+	id S1753400Ab2APHZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 02:25:17 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46649 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858Ab2APHZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 02:25:16 -0500
+Date: Mon, 16 Jan 2012 08:24:56 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Dave Jones <davej@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH][GIT PULL][v3.3] tracepoints/module: Fix disabling
+ tracepoints with taint CRAP or OOT
+Message-ID: <20120116072456.GA15641@elte.hu>
+References: <1326658250.7642.136.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxyiMXg0BHrZ0LJtCeE+u+pNSM1n=zDbW5-7CtZnh2O=Q@mail.gmail.com>
+In-Reply-To: <1326658250.7642.136.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Sun, Jan 15, 2012 at 12:33:20PM -0800, Linus Torvalds wrote:
-> On Sun, Jan 15, 2012 at 1:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> > See below for the initial 3.3-rc1 git pull request in the block IO area.
-> > Not too much queued up for this round, mostly some code churn to improve
-> > some of the existing functionality.
-> >
-> > It has the following changes:
-> >
-> > - The big io context cleanup from Tejun.
-> 
-> Ok. This got some conflicts that I think I got right, but I'd really
-> like Tejun to check it out. There were changes mainly to things he had
-> removed, and I think all the changes were made irrelevant by his
-> cleanups, but...
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-In cfq-iosched.c, there were the following three mainline commits
-which weren't in the block branch.
+>  	/*
+>  	 * We skip modules that tain the kernel, especially those with different
 
-- 2984ff38cc "cfq-iosched: free cic_index if blkio_alloc_blkg_stats fails"
+While touching this commit we might as well fix the typo here?
 
-	This fixes cic->cic_index freeing in alloc failure path.
-	cic_index got moved to q->id which is allocated in
-	blk_alloc_queue_node() and properly freed after any failure.
-	This doesn't cause any conflict per-se but causes compiler
-	failure as cic_index no longer exists.  Changes made by this
-	patch should be removed.
+>  	 * module header (for forced load), to make sure we don't cause a crash.
 
-- 5eb46851de "cfq-iosched: fix cfq_cic_link() race confition"
+... and the second typo as well?
 
-	This fixes install race handling in unlock-alloc-lock-install
-	sequence.  The logic got moved to ioc_create_icq() which
-	already deals with it properly.  Ignoring conflict and
-	removing the conflicted part from mainline should do.
+> +	 * Staging and out-of-tree modules are fine.
+>  	 */
 
-- 6ae0516b8a "block, cfq: fix empty queue crash caused by request merge"
+I'd phrase it as 'out-of-tree GPL modules'.
 
-	The same commit existed in block as 4a0b75c7d0.  Nothing to
-	do.
+Thanks,
 
-In blk-ioc.c, the following commit.
-
-- bb9d97b6df "cgroup: don't use subsys->can_attach_task() or ->attach_task()"
-
-	It conflicts with three block commits updating how ioc is
-	obtained and the changed flag is set.  Putting the updated
-	per-task logic from block inside cgroup_taskset_for_each()
-	loop is the correct resolution.
-
-So, yeap, my merge matches yours exactly and everything looks good to
-me.
-
-Thanks.
-
---
-tejun
+	Ingo
