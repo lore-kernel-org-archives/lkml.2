@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab2APUGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 15:06:35 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52137 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab2APUGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 15:06:33 -0500
-Date: Mon, 16 Jan 2012 20:06:18 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH 4/4] Allow unprivileged chroot when safe
-Message-ID: <20120116200618.GN23916@ZenIV.linux.org.uk>
-References: <cover.1326673414.git.luto@amacapital.net>
- <c4c1a0e710a50e48221aa28d2b60b486ab686369.1326673414.git.luto@amacapital.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c4c1a0e710a50e48221aa28d2b60b486ab686369.1326673414.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755312Ab2APUJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 15:09:18 -0500
+Received: from mga11.intel.com ([192.55.52.93]:58926 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754255Ab2APUJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 15:09:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="107679250"
+Subject: [patch] x86, tsc: fix SMI induced variation in quick_pit_calibrate()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, asit.k.mallick@intel.com
+Date: Mon, 16 Jan 2012 12:15:32 -0800
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1326744932.16150.9.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 15, 2012 at 04:37:21PM -0800, Andy Lutomirski wrote:
+Linus, We are seeing NTP failures on a big cluster as a result of big
+variation in calibrated TSC values. Our debug showed that it is indeed
+because of the SMI and its effect on quick pit calibration. Appended
+patch helps fix it. It ran over the weekend boot tests with out any
+failures.
 
-> +	is_chrooted = (fs->root.mnt->mnt_mountpoint !=
-> +		       fs->root.mnt->mnt_parent->mnt_root ||
-> +		       fs->root.dentry != fs->root.mnt->mnt_root);
+thanks,
+suresh
+---
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, tsc: fix SMI induced variation in quick_pit_calibrate()
 
-Folks, is it _that_ hard to at least try to compile your patches?  Hint:
-this one will *not*.  That sad detail aside, this test would have been
-a pile of garbage even on the kernels that used to have mnt_mountpoint
-in struct vfsmount.  What *are* you trying to test here?  The last part
-at least does make some sense - it's "process root happens to be the
-root of some vfsmount".  The first part, though, makes no sense whatsoever;
-it's "... and that vfsmount is mounted on top of root of some other
-vfsmount".
+pit_expect_msb() returns success wrongly in the below SMI scenario:
 
-Grr...  NAKed, with extreme prejudice.
+a. pit_verify_msb() has not yet seen the MSB transition.
+
+b. We are close to the MSB transition though and got a SMI immediately after
+   returning from pit_verify_msb() which didn't see the MSB transition. PIT MSB
+   transition has happened somewhere during SMI execution.
+
+c. Returned from SMI and we noted down the 'tsc', saw the pit MSB change now and
+   exited the loop to calculate d1/d2. Instead of noting the TSC at the MSB
+   transition, we are way off because of the SMI.  And as the SMI happened
+   between the pit_verify_msb() and before the 'tsc' is recorded in the
+   for loop, d1/d2 will be small and quick_pit_calibrate() will not notice
+   this error.
+
+Depending on whether SMI disturbance happens while computing d1 or d2, we will
+see the TSC calibrated value smaller or bigger than the expected value. As a
+result, in a cluster we were seeing a variation of approximately +/- 20MHz in
+the calibrated values, resulting in NTP failures.
+
+  [ As far as the SMI source is concerned, this is a periodic SMI that gets
+    disabled after ACPI is enabled by the OS. But the TSC calibration happens
+    before the ACPI is enabled. ]
+
+Fix this by comparing the returned delta (that is supposed to capture the MSB
+transition and represents d1/d2 in the quick_pit_calibrate()) with
+the one before in the for loop. If both of them are similar, then the returned
+delta, tsc is captured closer to the MSB transition. Otherwise we will return
+failure and fallback to slow PIT calibration.
+
+Any SMI induced disturbance in returned delta (d1/d2) itself is already caught
+in our requirements of error has to be less than 500ppm.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/kernel/tsc.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index c0dd5b6..27a1311 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -290,11 +290,12 @@ static inline int pit_verify_msb(unsigned char val)
+ static inline int pit_expect_msb(unsigned char val, u64 *tscp, unsigned long *deltap)
+ {
+ 	int count;
+-	u64 tsc = 0;
++	u64 tsc = 0, tsc_old;
+ 
+ 	for (count = 0; count < 50000; count++) {
+ 		if (!pit_verify_msb(val))
+ 			break;
++		tsc_old = tsc;
+ 		tsc = get_cycles();
+ 	}
+ 	*deltap = get_cycles() - tsc;
+@@ -304,7 +305,7 @@ static inline int pit_expect_msb(unsigned char val, u64 *tscp, unsigned long *de
+ 	 * We require _some_ success, but the quality control
+ 	 * will be based on the error terms on the TSC values.
+ 	 */
+-	return count > 5;
++	return count > 5 && (tsc - tsc_old <= 2 * (*deltap));
+ }
+ 
+ /*
+
+
