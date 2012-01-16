@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab2APG7D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 01:59:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55169 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab2APG7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 01:59:01 -0500
-Message-ID: <4F13CB49.8030004@cn.fujitsu.com>
-Date: Mon, 16 Jan 2012 15:01:29 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Arnaud Lacombe <lacombar@gmail.com>, Davidlohr Bueso <dave@gnu.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
-Subject: [PATCH] kconfig: fix a regression when exiting menuconfig without
- saving
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-01-16 14:57:51,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-01-16 14:57:53,
-	Serialize complete at 2012-01-16 14:57:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1753270Ab2APHBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 02:01:38 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48489 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab2APHBh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 02:01:37 -0500
+Message-ID: <1326697292.5287.122.camel@edumazet-laptop>
+Subject: Re: Why the number of /proc/interrupts doesn't change when nic is
+ under heavy workload?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Yuehai Xu <yuehaixu@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, yhxu@wayne.edu
+Date: Mon, 16 Jan 2012 08:01:32 +0100
+In-Reply-To: <1326696808.5287.115.camel@edumazet-laptop>
+References: <CAEc1PS0doeaH59621ia7n2GT=WgRSsCit_EzGrCV93QH95XZqw@mail.gmail.com>
+	 <1326665367.5287.97.camel@edumazet-laptop>
+	 <CAEc1PS0QxYfHfLFTiSFdTX27ufuxVfJd6Vg5oyv5aip5r=tD4A@mail.gmail.com>
+	 <1326696808.5287.115.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-$ make menuconfig
-  HOSTCC  scripts/kconfig/mconf.o
-  HOSTLD  scripts/kconfig/mconf
-scripts/kconfig/mconf Kconfig
+Le lundi 16 janvier 2012 à 07:53 +0100, Eric Dumazet a écrit :
+> Le dimanche 15 janvier 2012 à 17:27 -0500, Yuehai Xu a écrit :
+> > Thanks for replying! Please see below:
+> 
+> > My memcached uses 8 different UDP sockets(8 different UDP ports), so
+> > there should be no lock contention for a single UDP rx-queue.
+> 
+> Ah, I missed this mail, so you really should post here result of "perf
+> top -C 0", after you make sure your NIC interrupts are handled by cpu 0.
+> 
+> Also, what speed is your link, and how many UDP messages per second do
+> you receive ?
+> 
 
-Your configuration changes were NOT saved.
+RPS is not good for you because the generic rxhash computation will
+spread messages for UDP port XX on many different cpus (because rxhash
+computation takes into account the complete tuple (src ip, dst ip, src
+port, dst port), not only dst port.
 
-make[1]: *** [menuconfig] Error 1
-make: *** [menuconfig] Error 2
+It would be better for your workload to only hash dst port, to avoid
+false sharing on socket structure.
 
-Exiting menuconfig without saving, make will report error.
-This is a regression, and was introduced by
+I guess we could extend rxhash computation to use a pluggable BPF
+filter, now we can have fast filters.
 
-	commit 564899f9f0a2df85fa367c8749a1fef323cb3215
-	Author: Davidlohr Bueso <dave@gnu.org>
-	Date:   Sun Aug 21 22:04:09 2011 -0300
 
-	    kconfig: handle SIGINT in menuconfig
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- scripts/kconfig/mconf.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index 19e200d..2c6286c 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -830,6 +830,8 @@ static int handle_exit(void)
- 		fprintf(stderr, _("\n\n"
- 				  "Your configuration changes were NOT saved."
- 				  "\n\n"));
-+		if (res != KEY_ESC)
-+			res = 0;
- 	}
- 
- 	return res;
--- 
-1.7.3.1
