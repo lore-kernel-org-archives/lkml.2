@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab2APP6r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:58:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35149 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab2APP6q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:58:46 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=KHR86nk1PkcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=67cctG__aU3_VJJcc88A:9 a=giQXQ_IR4Q78TMTjETAA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326729524.7642.151.camel@gandalf.stny.rr.com>
-Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Mon, 16 Jan 2012 10:58:44 -0500
-In-Reply-To: <20120116150307.GA12817@redhat.com>
-References: <20120110174509.GA30802@redhat.com>
-	 <20120113182015.GA3902@redhat.com> <20120115182441.GA24694@redhat.com>
-	 <20120116074540.GE15641@elte.hu> <20120116150307.GA12817@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755386Ab2APQBk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:01:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60952 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338Ab2APQBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 11:01:38 -0500
+Date: Mon, 16 Jan 2012 17:01:36 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+Message-ID: <20120116160136.GC16431@quack.suse.cz>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
+ <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-16 at 16:03 +0100, Oleg Nesterov wrote:
-
-> > Which apps/tools rely
-> > on the old tracepoint? If it's exactly zero apps then we might
-> > be able to change it, but this needs to be investigated.
+On Sat 14-01-12 18:19:02, Linus Torvalds wrote:
+> On Thu, Jan 5, 2012 at 6:40 AM, Jan Kara <jack@suse.cz> wrote:
+> >
+> >  for mostly historical reasons we still clear buffer_uptodate flag on write
+> > IO errors. This is not only semantically wrong (buffer still has correct data
+> > in it)
 > 
-> If only I knew. How can we investigate this? Hopefully nothing
-> relies on the old tracepoint, but who knows.
-
-I remember Linus saying that we break ABI all the time. It's when
-someone complains about it that we revert the breakage.
-
-The chances that an app is using this tracepoint is slim. The chances
-that an app is using this tracepoint *and* requires the data structure
-size to remain the same is miniscule.
-
+> That statement is so nonsensical that I can't get past it.
 > 
-> OK. So we should add the new tracepoint. Looks a bit ugly, but
-> I understand your concerns.
+> When you understand why it is nonsensical, you understand why the bit
+> is cleared.
+  Hum, let me understand this. I understand the meaning of buffer_uptodate
+bit as "the buffer has at least as new content as what is on disk". Now
+when storage cannot write the block under the buffer, the contents of the
+buffer is still "at least as new as what is (was) on disk". Therefore I
+made above statement about clearing buffer_uptodate bit being wrong. But
+apparently you have a different definition of buffer_uptodate or I was not
+clear enough in explaining what I mean... Which is the case?
 
-And it can bloat the kernel. Each tracepoint can add up to 5K in size.
-I'm still working on fixing that.
-
--- Steve
-
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
