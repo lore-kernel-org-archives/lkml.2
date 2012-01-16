@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab2APSu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:50:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43142 "EHLO mx2.suse.de"
+	id S1756731Ab2APSvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:51:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43180 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756693Ab2APSuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:50:22 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:17 2012
-Message-Id: <20120116184517.889861070@clark.kroah.org>
+	id S1756621Ab2APSug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:50:36 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:19 2012
+Message-Id: <20120116184519.663826105@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:52 -0800
+Date: Mon, 16 Jan 2012 10:45:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josef Bacik <josef@redhat.com>,
-        Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        NeilBrown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [25/48] NFS - fix recent breakage to NFS error handling.
+        alan@lxorguk.ukuu.org.uk,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Miklos Szeredi <mszeredi@suse.cz>, Hugh Dickins <hughd@google.com>
+Subject: [47/48] memcg: add mem_cgroup_replace_page_cache() to fix LRU issue
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,58 +27,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-commit 2edb6bc3852c681c0d948245bd55108dc6407604 upstream.
+commit ab936cbcd02072a34b60d268f94440fd5cf1970b upstream.
 
->From c6d615d2b97fe305cbf123a8751ced859dca1d5e Mon Sep 17 00:00:00 2001
-From: NeilBrown <neilb@suse.de>
-Date: Wed, 16 Nov 2011 09:39:05 +1100
-Subject: [25/48] NFS - fix recent breakage to NFS error handling.
+Commit ef6a3c6311 ("mm: add replace_page_cache_page() function") added a
+function replace_page_cache_page().  This function replaces a page in the
+radix-tree with a new page.  WHen doing this, memory cgroup needs to fix
+up the accounting information.  memcg need to check PCG_USED bit etc.
 
-commit 02c24a82187d5a628c68edfe71ae60dc135cd178 made a small and
-presumably unintended change to write error handling in NFS.
+In some(many?) cases, 'newpage' is on LRU before calling
+replace_page_cache().  So, memcg's LRU accounting information should be
+fixed, too.
 
-Previously an error from filemap_write_and_wait_range would only be of
-interest if nfs_file_fsync did not return an error.  After this commit,
-an error from filemap_write_and_wait_range would mean that (the rest of)
-nfs_file_fsync would not even be called.
+This patch adds mem_cgroup_replace_page_cache() and removes the old hooks.
+ In that function, old pages will be unaccounted without touching
+res_counter and new page will be accounted to the memcg (of old page).
+WHen overwriting pc->mem_cgroup of newpage, take zone->lru_lock and avoid
+races with LRU handling.
 
-This means that:
- 1/ you are more likely to see EIO than e.g. EDQUOT or ENOSPC.
- 2/ NFS_CONTEXT_ERROR_WRITE remains set for longer so more writes are
-    synchronous.
+Background:
+  replace_page_cache_page() is called by FUSE code in its splice() handling.
+  Here, 'newpage' is replacing oldpage but this newpage is not a newly allocated
+  page and may be on LRU. LRU mis-accounting will be critical for memory cgroup
+  because rmdir() checks the whole LRU is empty and there is no account leak.
+  If a page is on the other LRU than it should be, rmdir() will fail.
 
-This patch restores previous behaviour.
+This bug was added in March 2011, but no bug report yet.  I guess there
+are not many people who use memcg and FUSE at the same time with upstream
+kernels.
 
-Cc: Josef Bacik <josef@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+The result of this bug is that admin cannot destroy a memcg because of
+account leak.  So, no panic, no deadlock.  And, even if an active cgroup
+exist, umount can succseed.  So no problem at shutdown.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/file.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/memcontrol.h |    6 ++++++
+ mm/filemap.c               |   18 ++----------------
+ mm/memcontrol.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 52 insertions(+), 16 deletions(-)
 
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -321,13 +321,13 @@ nfs_file_fsync(struct file *file, loff_t
- 			datasync);
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -116,6 +116,8 @@ struct zone_reclaim_stat*
+ mem_cgroup_get_reclaim_stat_from_page(struct page *page);
+ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+ 					struct task_struct *p);
++extern void mem_cgroup_replace_page_cache(struct page *oldpage,
++					struct page *newpage);
  
- 	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
--	if (ret)
--		return ret;
- 	mutex_lock(&inode->i_mutex);
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ extern int do_swap_account;
+@@ -361,6 +363,10 @@ static inline
+ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+ {
+ }
++static inline void mem_cgroup_replace_page_cache(struct page *oldpage,
++				struct page *newpage)
++{
++}
+ #endif /* CONFIG_CGROUP_MEM_CONT */
  
- 	nfs_inc_stats(inode, NFSIOS_VFSFSYNC);
- 	have_error = test_and_clear_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
- 	status = nfs_commit_inode(inode, FLUSH_SYNC);
-+	if (status >= 0 && ret < 0)
-+		status = ret;
- 	have_error |= test_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
- 	if (have_error)
- 		ret = xchg(&ctx->error, 0);
+ #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -393,24 +393,11 @@ EXPORT_SYMBOL(filemap_write_and_wait_ran
+ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+ {
+ 	int error;
+-	struct mem_cgroup *memcg = NULL;
+ 
+ 	VM_BUG_ON(!PageLocked(old));
+ 	VM_BUG_ON(!PageLocked(new));
+ 	VM_BUG_ON(new->mapping);
+ 
+-	/*
+-	 * This is not page migration, but prepare_migration and
+-	 * end_migration does enough work for charge replacement.
+-	 *
+-	 * In the longer term we probably want a specialized function
+-	 * for moving the charge from old to new in a more efficient
+-	 * manner.
+-	 */
+-	error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
+-	if (error)
+-		return error;
+-
+ 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+ 	if (!error) {
+ 		struct address_space *mapping = old->mapping;
+@@ -432,13 +419,12 @@ int replace_page_cache_page(struct page
+ 		if (PageSwapBacked(new))
+ 			__inc_zone_page_state(new, NR_SHMEM);
+ 		spin_unlock_irq(&mapping->tree_lock);
++		/* mem_cgroup codes must not be called under tree_lock */
++		mem_cgroup_replace_page_cache(old, new);
+ 		radix_tree_preload_end();
+ 		if (freepage)
+ 			freepage(old);
+ 		page_cache_release(old);
+-		mem_cgroup_end_migration(memcg, old, new, true);
+-	} else {
+-		mem_cgroup_end_migration(memcg, old, new, false);
+ 	}
+ 
+ 	return error;
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3355,6 +3355,50 @@ void mem_cgroup_end_migration(struct mem
+ 	cgroup_release_and_wakeup_rmdir(&mem->css);
+ }
+ 
++/*
++ * At replace page cache, newpage is not under any memcg but it's on
++ * LRU. So, this function doesn't touch res_counter but handles LRU
++ * in correct way. Both pages are locked so we cannot race with uncharge.
++ */
++void mem_cgroup_replace_page_cache(struct page *oldpage,
++				  struct page *newpage)
++{
++	struct mem_cgroup *memcg;
++	struct page_cgroup *pc;
++	struct zone *zone;
++	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
++	unsigned long flags;
++
++	if (mem_cgroup_disabled())
++		return;
++
++	pc = lookup_page_cgroup(oldpage);
++	/* fix accounting on old pages */
++	lock_page_cgroup(pc);
++	memcg = pc->mem_cgroup;
++	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), -1);
++	ClearPageCgroupUsed(pc);
++	unlock_page_cgroup(pc);
++
++	if (PageSwapBacked(oldpage))
++		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
++
++	zone = page_zone(newpage);
++	pc = lookup_page_cgroup(newpage);
++	/*
++	 * Even if newpage->mapping was NULL before starting replacement,
++	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
++	 * LRU while we overwrite pc->mem_cgroup.
++	 */
++	spin_lock_irqsave(&zone->lru_lock, flags);
++	if (PageLRU(newpage))
++		del_page_from_lru_list(zone, newpage, page_lru(newpage));
++	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type);
++	if (PageLRU(newpage))
++		add_page_to_lru_list(zone, newpage, page_lru(newpage));
++	spin_unlock_irqrestore(&zone->lru_lock, flags);
++}
++
+ #ifdef CONFIG_DEBUG_VM
+ static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
+ {
 
 
