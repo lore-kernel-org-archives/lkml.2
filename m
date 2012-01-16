@@ -1,140 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab2APMeN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 07:34:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22217 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754599Ab2APMcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 07:32:23 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/9] perf, tool: Add sysfs mountpoint interface
-Date: Mon, 16 Jan 2012 13:31:37 +0100
-Message-Id: <1326717103-10287-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
-References: <20120109152855.GA1597@m.brq.redhat.com>--suppress-cc=author>
- <1326717103-10287-1-git-send-email-jolsa@redhat.com>
+	id S1754572Ab2APMiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 07:38:07 -0500
+Received: from static.213.204.9.176.clients.your-server.de ([176.9.204.213]:40789
+	"EHLO shutemov.name" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab2APMiF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 07:38:05 -0500
+Date: Mon, 16 Jan 2012 14:38:21 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>, Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH 8/8] cgroups: Add a task counter subsystem
+Message-ID: <20120116123821.GA25918@shutemov.name>
+References: <1326478441-3048-1-git-send-email-fweisbec@gmail.com>
+ <1326478441-3048-17-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326478441-3048-17-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding sysfs object to provide sysfs mount information
-in the same way as debugfs object does.
+On Fri, Jan 13, 2012 at 07:14:00PM +0100, Frederic Weisbecker wrote:
+> Add a new subsystem to limit the number of running tasks,
+> similar to the NR_PROC rlimit but in the scope of a cgroup.
+> 
+> The user can set an upper bound limit that is checked every
+> time a task forks in a cgroup or is moved into a cgroup
+> with that subsystem binded.
+> 
+> The primary goal is to protect against forkbombs that explode
+> inside a container. The traditional NR_PROC rlimit is not
+> efficient in that case because if we run containers in parallel
+> under the same user, one of these could starve all the others
+> by spawning a high number of tasks close to the user wide limit.
+> 
+> This is a prevention against forkbombs, so it's not deemed to
+> cure the effects of a forkbomb when the system is in a state
+> where it's not responsive. It's aimed at preventing from ever
+> reaching that state and stop the spreading of tasks early.
+> While defining the limit on the allowed number of tasks, it's
+> up to the user to find the right balance between the resource
+> its containers may need and what it can afford to provide.
+> 
+> As it's totally dissociated from the rlimit NR_PROC, both
+> can be complementary: the cgroup task counter can set an upper
+> bound per container and the rlmit can be an upper bound on the
+> overall set of containers.
+> 
+> Also this subsystem can be used to kill all the tasks in a cgroup
+> without races against concurrent forks, by setting the limit of
+> tasks to 0, any further forks can be rejected. This is a good
+> way to kill a forkbomb in a container, or simply kill any container
+> without the need to retry an unbound number of times.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul Menage <paul@paulmenage.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Aditya Kali <adityakali@google.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: Tim Hockin <thockin@hockin.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Kirill A. Shutemov <kirill@shutemov.name>
+> Cc: Containers <containers@lists.linux-foundation.org>
 
-The object provides following function:
-  sysfs_find_mountpoint
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-which returns the sysfs mount point.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/Makefile     |    2 +
- tools/perf/util/sysfs.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/sysfs.h |    6 ++++
- 3 files changed, 68 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/util/sysfs.c
- create mode 100644 tools/perf/util/sysfs.h
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index ac86d67..41daa92 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -259,6 +259,7 @@ LIB_H += util/callchain.h
- LIB_H += util/build-id.h
- LIB_H += util/debug.h
- LIB_H += util/debugfs.h
-+LIB_H += util/sysfs.h
- LIB_H += util/event.h
- LIB_H += util/evsel.h
- LIB_H += util/evlist.h
-@@ -305,6 +306,7 @@ LIB_OBJS += $(OUTPUT)util/build-id.o
- LIB_OBJS += $(OUTPUT)util/config.o
- LIB_OBJS += $(OUTPUT)util/ctype.o
- LIB_OBJS += $(OUTPUT)util/debugfs.o
-+LIB_OBJS += $(OUTPUT)util/sysfs.o
- LIB_OBJS += $(OUTPUT)util/environment.o
- LIB_OBJS += $(OUTPUT)util/event.o
- LIB_OBJS += $(OUTPUT)util/evlist.o
-diff --git a/tools/perf/util/sysfs.c b/tools/perf/util/sysfs.c
-new file mode 100644
-index 0000000..0368bba
---- /dev/null
-+++ b/tools/perf/util/sysfs.c
-@@ -0,0 +1,60 @@
-+
-+#include "util.h"
-+#include "sysfs.h"
-+
-+static const char *sysfs_known_mountpoints[] = {
-+	"/sys",
-+	0,
-+};
-+
-+static int sysfs_found;
-+char sysfs_mountpoint[PATH_MAX];
-+
-+static int sysfs_valid_mountpoint(const char *sysfs)
-+{
-+	struct statfs st_fs;
-+
-+	if (statfs(sysfs, &st_fs) < 0)
-+		return -ENOENT;
-+	else if (st_fs.f_type != (long) SYSFS_MAGIC)
-+		return -ENOENT;
-+
-+	return 0;
-+}
-+
-+const char *sysfs_find_mountpoint(void)
-+{
-+	const char **ptr;
-+	char type[100];
-+	FILE *fp;
-+
-+	if (sysfs_found)
-+		return (const char *) sysfs_mountpoint;
-+
-+	ptr = sysfs_known_mountpoints;
-+	while (*ptr) {
-+		if (sysfs_valid_mountpoint(*ptr) == 0) {
-+			sysfs_found = 1;
-+			strcpy(sysfs_mountpoint, *ptr);
-+			return sysfs_mountpoint;
-+		}
-+		ptr++;
-+	}
-+
-+	/* give up and parse /proc/mounts */
-+	fp = fopen("/proc/mounts", "r");
-+	if (fp == NULL)
-+		return NULL;
-+
-+	while (!sysfs_found &&
-+	       fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
-+		      sysfs_mountpoint, type) == 2) {
-+
-+		if (strcmp(type, "sysfs") == 0)
-+			sysfs_found = 1;
-+	}
-+
-+	fclose(fp);
-+
-+	return sysfs_found ? sysfs_mountpoint : NULL;
-+}
-diff --git a/tools/perf/util/sysfs.h b/tools/perf/util/sysfs.h
-new file mode 100644
-index 0000000..a813b72
---- /dev/null
-+++ b/tools/perf/util/sysfs.h
-@@ -0,0 +1,6 @@
-+#ifndef __SYSFS_H__
-+#define __SYSFS_H__
-+
-+const char *sysfs_find_mountpoint(void);
-+
-+#endif /* __DEBUGFS_H__ */
 -- 
-1.7.6.5
-
+ Kirill A. Shutemov
