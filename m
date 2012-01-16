@@ -1,119 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab2APQuD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 11:50:03 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:60773 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752654Ab2APQuB (ORCPT
+	id S1754755Ab2APQv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:51:59 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53925 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445Ab2APQv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 11:50:01 -0500
-Message-ID: <4F14552B.1030203@ti.com>
-Date: Mon, 16 Jan 2012 22:19:47 +0530
-From: Shubhrajyoti <shubhrajyoti@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+	Mon, 16 Jan 2012 11:51:58 -0500
 MIME-Version: 1.0
-To: ext-denis.2.karpov@nokia.com
-CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] mmc : omap_hsmmc : Save and restore the sysc across
- reset
-References: <1326713587-26463-1-git-send-email-shubhrajyoti@ti.com> <5E7C2FE2AE03DF4CA6AC500032BF8F77C1762A@008-AM1MPN1-072.mgdnok.nokia.com> <4F143296.8090802@ti.com> <5E7C2FE2AE03DF4CA6AC500032BF8F77C176F7@008-AM1MPN1-072.mgdnok.nokia.com>
-In-Reply-To: <5E7C2FE2AE03DF4CA6AC500032BF8F77C176F7@008-AM1MPN1-072.mgdnok.nokia.com>
+In-Reply-To: <20120116083615.GB23622@elte.hu>
+References: <1326389222.9115.2.camel@localhost.localdomain>
+	<20120116075639.GG15641@elte.hu>
+	<CADZ9YHjxuqJ2YpEonqXjRsJZGsihy7ao_cA-NRwXoOM1KF3Tpw@mail.gmail.com>
+	<20120116083615.GB23622@elte.hu>
+Date: Mon, 16 Jan 2012 22:51:57 +0600
+Message-ID: <CADZ9YHh9rnTom8dRk5PBdY0Qu6WQVNpUr2jJDeyqg7fxTiu1gg@mail.gmail.com>
+Subject: Re: [PATCH] sched: Update scheduler stat documentation.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 January 2012 08:23 PM, ext-denis.2.karpov@nokia.com wrote:
-> ext Shubhrajyoti wrote on 2012-01-16:
->> On Monday 16 January 2012 06:41 PM, ext-denis.2.karpov@nokia.com wrote:
->>> ext Shubhrajyoti D wrote on 2012-01-16:
->>>> The commit 11dd62:[omap_hsmmc: context save/restore support]
->>>>
->>>> does a reset and restores AUTOIDLE settings.
->>>> This patch saves the register does a reset and restores
->>>> the same configuration.
->>> ...
->>>>  	if (pdata->get_context_loss_count) {
->>>> @@ -700,6 +700,7 @@ static int omap_hsmmc_context_restore(struct
->>>> omap_hsmmc_host *host)
->>>>  		&& time_before(jiffies, timeout)) 		; +	sysc =
->>>>  OMAP_HSMMC_READ(host->base, SYSCONFIG); 	/* Do software reset */
->>>>  	OMAP_HSMMC_WRITE(host->base, SYSCONFIG, SOFTRESET); 	timeout =
->>>>  jiffies + msecs_to_jiffies(MMC_TIMEOUT_MS);
->>>> @@ -707,8 +708,7 @@ static int omap_hsmmc_context_restore(struct
->>>> omap_hsmmc_host *host)
->>>>  		&& time_before(jiffies, timeout))
->>>>  		;
->>>> -	OMAP_HSMMC_WRITE(host->base, SYSCONFIG,
->>>> -			OMAP_HSMMC_READ(host->base, SYSCONFIG) | AUTOIDLE);
->>>> +	OMAP_HSMMC_WRITE(host->base, SYSCONFIG, sysc);
->>> The meaning of the code is to restore the register context after it was lost
->> during transition into low power consumption state. SW reset is needed to bring
->> all the registers in a consistent state before reconfiguring some of them.
->> Agreed thanks.
->>> Saving and restoring the SYSCONFIG register across SW reset is not needed.
->>>
->>> Also re-configuring AUTOIDLE feature is not necessary since SYSCONFIG reset
->> value has is 1 already, according to TRM. I guess it was done to make things
->> more explicit.
->> However in addition to autoidle there are other bits in the register
->> like the sidle mode , enable wakeup which will get not get overwritten now.
->>
->> Do you agree?
-> No, there's no need to do that - after SW reset the registers have predefined reset values; the reset value is correct in case of SYSCONFIG register for most of omap3|4 boards based, doesn't need any update after SW reset.
+On Mon, Jan 16, 2012 at 2:36 PM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> If in case of your board the reset value of SYSCONFIG register is not what you want - you still cannot rely on the contents of the SYSCONFIG register once the context was lost, i.e. saving its value before SW reset doesn't help. 
-> You would need to initialize it to the proper value after the SW reset manually, probably the same value that you used during initialization.
+>
+> Yes - but we should also change it to export a value of zero.
+> The field is a legacy 'array expirations' field, and as such it
+> should be zero.
+>
 
-if you check the following code
-arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+Ok, thanks for suggestions. Please, look at the following patch, it's
+been roughly created to address your suggestion. If it looks okay,
+then I can send formal patch (perhaps two separate patches?). In this
+way, I think we can also remove rq->sched_switch field (not done in
+this patch)?
 
-/*
- * 'mmc' class
- * multimedia card high-speed/sd/sdio (mmc/sd/sdio) host controller
- */
+diff --git a/Documentation/scheduler/sched-stats.txt
+b/Documentation/scheduler/sched-stats.txt
+index 1cd5d51..cc2d107 100644
+--- a/Documentation/scheduler/sched-stats.txt
++++ b/Documentation/scheduler/sched-stats.txt
+@@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
+      1) # of times sched_yield() was called
 
-static struct omap_hwmod_class_sysconfig omap44xx_mmc_sysc = {
-        .rev_offs       = 0x0000,
-        .sysc_offs      = 0x0010,
-        .sysc_flags     = (SYSC_HAS_EMUFREE | SYSC_HAS_MIDLEMODE |
-                           SYSC_HAS_RESET_STATUS | SYSC_HAS_SIDLEMODE |
-                           SYSC_HAS_SOFTRESET),
-        .idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-                           SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-                           MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-        .sysc_fields    = &omap_hwmod_sysc_type2,
+ Next three are schedule() statistics:
+-     2) # of times we switched to the expired queue and reused it
++     2) This field is a legacy array expiration field used in O(1) scheduler.
++	But still kept for ABI integrity.
+      3) # of times schedule() was called
+      4) # of times schedule() left the processor idle
 
-<>
-arch/arm/mach-omap2/omap_hwmod.c
-
- * upon error or 0 upon success.
- */
-static int _enable_wakeup(struct omap_hwmod *oh, u32 *v)
-{
-        if (!oh->class->sysc ||
-            !((oh->class->sysc->sysc_flags & SYSC_HAS_ENAWAKEUP) ||
-              (oh->class->sysc->idlemodes & SIDLE_SMART_WKUP) ||
-              (oh->class->sysc->idlemodes & MSTANDBY_SMART_WKUP)))
-                return -EINVAL;
-
-        if (!oh->class->sysc->sysc_fields) {
-                WARN(1, "omap_hwmod: %s: offset struct for sysconfig not
-provided in class\n", oh->name);
-                return -EINVAL;
-        }
-
-        if (oh->class->sysc->sysc_flags & SYSC_HAS_ENAWAKEUP)
-                *v |= 0x1 << oh->class->sysc->sysc_fields->enwkup_shift;
-
-        if (oh->class->sysc->idlemodes & SIDLE_SMART_WKUP)
-                _set_slave_idlemode(oh, HWMOD_IDLEMODE_SMART_WKUP, v);
-        if (oh->class->sysc->idlemodes & MSTANDBY_SMART_WKUP)
-                _set_master_standbymode(oh, HWMOD_IDLEMODE_SMART_WKUP, v);
-
-however, I agree we could use hwmod framework to reset.
-
-
-> Denis
-
+diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
+index 2a581ba..01a52d9 100644
+--- a/kernel/sched/stats.c
++++ b/kernel/sched/stats.c
+@@ -25,6 +25,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 	seq_printf(seq, "timestamp %lu\n", jiffies);
+ 	for_each_online_cpu(cpu) {
+ 		struct rq *rq = cpu_rq(cpu);
++		int rq_sched_switch = 0;
+ #ifdef CONFIG_SMP
+ 		struct sched_domain *sd;
+ 		int dcount = 0;
+@@ -34,7 +35,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 		seq_printf(seq,
+ 		    "cpu%d %u %u %u %u %u %u %llu %llu %lu",
+ 		    cpu, rq->yld_count,
+-		    rq->sched_switch, rq->sched_count, rq->sched_goidle,
++		    rq_sched_switch, rq->sched_count, rq->sched_goidle,
+ 		    rq->ttwu_count, rq->ttwu_local,
+ 		    rq->rq_cpu_time,
+ 		    rq->rq_sched_info.run_delay, rq->rq_sched_info.pcount);
