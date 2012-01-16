@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab2APWrO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 17:47:14 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:10095
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751239Ab2APWrN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 17:47:13 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bhz2fhc1ahc1bh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Index: AQHM0W763o2pXZK11UadxuudCK0AbpYMmkCA//+5EwCAA1dLgP//9AjQ
-Date: Mon, 16 Jan 2012 22:47:21 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B6F059F@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1326402943-14031-1-git-send-email-kys@microsoft.com>
- <20120114164228.GB9682@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481B6F0307@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20120116152951.GA9720@infradead.org>
-In-Reply-To: <20120116152951.GA9720@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.74]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757133Ab2APWwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 17:52:47 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39225 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab2APWwq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 17:52:46 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <20120116202907.GF1077372@jupiter.n2.diac24.net>
+References: <CAGsizz+x1GVNR9Pz=b7wO0ELx29=FMosfvhQWL5K26EpkwsUCg@mail.gmail.com>
+ <20120116202907.GF1077372@jupiter.n2.diac24.net>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
+Date: Mon, 16 Jan 2012 23:52:25 +0100
+X-Google-Sender-Auth: JmY6qWVrd9encvAzfldp7MDWWlA
+Message-ID: <CAGsizz+NuyPHtau3b2LjCqdAGyrPf1-08v2uD0xJBSJS9qs5Fg@mail.gmail.com>
+Subject: Re: [patch v2, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: David Lamparter <equinox@diac24.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Christoph.
+Dňa 16. januára 2012 21:29, David Lamparter <equinox@diac24.net> napísal/a:
+> At the risk of repeating myself, Linux GRE support already has
+> provisions for multipoint tunnels. And unlike your code, those reuse the
+> existing neighbor table infrastructure, including all of its user
+> interface and introspection capabilities.
+>
+> It's actually slightly visible in your patch:
+>
+> On Mon, Jan 16, 2012 at 08:45:14PM +0100, Štefan Gula wrote:
+>> +++ linux-3.2.1-my/net/ipv4/ip_gre.c  2012-01-16 20:42:03.000000000 +0100
+>> @@ -716,7 +942,19 @@ static netdev_tx_t ipgre_tunnel_xmit(str
+> [...]
+>>               /* NBMA tunnel */
+>>
+>>               if (skb_dst(skb) == NULL) {
+>
+>
+> -David
 
-Regards,
+That code you are referring to is used only for routed traffic inside
+GRE - L3 traffic over L3 routed infrastructure. My patch is dealing
+with L2 traffic over L3 routed infrastructure - so the decision here
+is based on destination MAC addresses and not based on IPv4/IPv6
+addresses.
 
-K. Y
-
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Monday, January 16, 2012 10:30 AM
-> To: KY Srinivasan
-> Cc: Christoph Hellwig; JBottomley@parallels.com; gregkh@suse.de; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org; ohering@suse.com
-> Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
-> staging area
-> 
-> On Sat, Jan 14, 2012 at 08:31:18PM +0000, KY Srinivasan wrote:
-> > Thanks Christoph. Would you be taking this driver out of staging or should I ask
-> Greg. James had indicated that
-> > he had turned the driver over to you for reviewing.
-> 
-> In the end James still maintains the SCSI tree and send on all drivers.
-> The only thing I can do is give a positive review.
-
-
+-- 
+Stefan Gula
+CCNP, CCIP
