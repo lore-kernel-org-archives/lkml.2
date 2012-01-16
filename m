@@ -1,213 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab2APPE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:04:26 -0500
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:55996 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2APPEY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:04:24 -0500
-X-SENDER-IP: [85.230.170.239]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoJGAMk7FE9V5qrvPGdsb2JhbABDiViiVIEKGQEBAQE3MoFyAQEEAScTHCMFCwgDRhQlChoTh3oCtWQTiR4ECQUBBQkJBQEFBg8KARsHCQ0QAQIBAQgBAQEOAgIBAwgCEAUIDAcEGQ0eAQgIA4UVYwSVEIVhjGI
-X-IronPort-AV: E=Sophos;i="4.71,518,1320620400"; 
-   d="scan'208";a="252019385"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 16 Jan 2012 16:04:27 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Subject: Re: [PATCH 2/2] HID: multitouch: support Perixx PERIPAD 701
-Message-ID: <20120116150427.GB9828@polaris.bitmath.org>
-References: <1326469531-26808-1-git-send-email-benjamin.tissoires@enac.fr>
- <1326469531-26808-2-git-send-email-benjamin.tissoires@enac.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326469531-26808-2-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755004Ab2APPFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 10:05:40 -0500
+Received: from mga01.intel.com ([192.55.52.88]:8882 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754888Ab2APPFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 10:05:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112796218"
+Subject: [GIT PULL] slave-dmaengine updates
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan <dan.j.williams@intel.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Jan 2012 20:36:20 +0530
+Message-ID: <1326726380.1540.112.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
 
-> Perrix Peripad 701 is an hybrid device which presents a touchpad and
-> a keyboard on the same surface. The switch between the two is controlled
-> by a physical switch, and the firmware sends the events on the right
-> interface (mouse, keyboard or multitouch).
-> This patch enables the multitouch interface of this device to work.
-> 
-> We need to manually set the device as a trackpad (we cannot infer it
-> from the reports descriptors as the device works under Windows, a system
-> that does not allow multitouch touchpad).
-> We also need to set the hid feature MAX CONTACT NUMBER to 2 or the device
-> stops sending events once it has been pressed by two touches.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> ---
->  drivers/hid/Kconfig          |    1 +
->  drivers/hid/hid-ids.h        |    1 +
->  drivers/hid/hid-multitouch.c |   47 ++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 49 insertions(+), 0 deletions(-)
+Hi Linus,
 
-What tree does this patch apply to?
+Here is the slave-dmaengine updates which include a new DMA engine API
+for 2D interleaved transfers along with fixes for slave dma_tranfer
+direction along with usual fixes and updates on bunch of the slave dma
+drivers.
 
-> 
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index a421abd..f7c43b6 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -355,6 +355,7 @@ config HID_MULTITOUCH
->  	  - Lumio CrystalTouch panels
->  	  - MosArt dual-touch panels
->  	  - PenMount dual touch panels
-> +	  - Perixx Peripad 701 touchpad
->  	  - PixArt optical touch screen
->  	  - Pixcir dual touch panels
->  	  - Quanta panels
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index b8574cd..662a0b6 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -659,6 +659,7 @@
->  
->  #define USB_VENDOR_ID_TOPSEED2		0x1784
->  #define USB_DEVICE_ID_TOPSEED2_RF_COMBO	0x0004
-> +#define USB_DEVICE_ID_TOPSEED2_PERIPAD_701	0x0016
->  
->  #define USB_VENDOR_ID_TOPMAX		0x0663
->  #define USB_DEVICE_ID_TOPMAX_COBRAPAD	0x0103
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 1ba60d3..a3fa874 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -77,6 +77,8 @@ struct mt_device {
->  	unsigned last_slot_field;	/* the last field of a slot */
->  	int last_mt_collection;	/* last known mt-related collection */
->  	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
-> +	__s8 maxcontactnumber;		/* Maximum Contact Number HID feature,
-> +				   -1 if non-existent */
 
-How about separating this addition from the device patch?
+Thanks
+~Vinod
 
->  	__u8 num_received;	/* how many contacts we received */
->  	__u8 num_expected;	/* expected last contact index */
->  	__u8 maxcontacts;
-> @@ -101,6 +103,7 @@ struct mt_device {
->  #define MT_CLS_CYPRESS				0x0102
->  #define MT_CLS_EGALAX				0x0103
->  #define MT_CLS_EGALAX_SERIAL			0x0104
-> +#define MT_CLS_TOPSEED				0x0105
->  
->  #define MT_DEFAULT_MAXCONTACT	10
->  
-> @@ -190,6 +193,11 @@ static struct mt_class mt_classes[] = {
->  		.sn_move = 4096,
->  		.sn_pressure = 32,
->  	},
-> +	{ .name = MT_CLS_TOPSEED,
-> +		.quirks = MT_QUIRK_ALWAYS_VALID,
-> +		.is_indirect = true,
-> +		.maxcontacts = 2,
-> +	},
->  
->  	{ }
->  };
-> @@ -242,6 +250,7 @@ static void mt_feature_mapping(struct hid_device *hdev,
->  		td->inputmode = field->report->id;
->  		break;
->  	case HID_DG_CONTACTMAX:
-> +		td->maxcontactnumber = field->report->id;
->  		td->maxcontacts = field->value[0];
->  		if (td->mtclass.maxcontacts)
->  			/* check if the maxcontacts is given by the class */
 
-Contactnumber is a bit unclear, easily mistaken for maxcontacts
-semantic. How about a maxcontact_(id|rid|report_id) instead?
+The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
+  Linus Torvalds (1):
+        Linux 3.2-rc1
 
-> @@ -610,6 +619,36 @@ static void mt_set_input_mode(struct hid_device *hdev)
->  	}
->  }
->  
-> +static void mt_set_maxcontacts(struct hid_device *hdev)
-> +{
-> +	struct mt_device *td = hid_get_drvdata(hdev);
-> +	struct hid_report *r;
-> +	struct hid_report_enum *re;
-> +	int fieldmax, max;
-> +
-> +	if (td->maxcontactnumber < 0)
-> +		return;
-> +
-> +	if (!td->mtclass.maxcontacts)
-> +		return;
-> +
-> +	re = &(hdev->report_enum[HID_FEATURE_REPORT]);
-> +	r = re->report_id_hash[td->maxcontactnumber];
-> +	if (r) {
-> +		max = td->mtclass.maxcontacts;
-> +		fieldmax = r->field[0]->logical_maximum;
-> +		hid_info(hdev, "%s: value = %d / %d / %d\n", __func__,
-> +			r->field[0]->value[0],
-> +			td->mtclass.maxcontacts,
-> +			fieldmax);
-> +		max = fieldmax < max ? fieldmax : max;
-> +		if (r->field[0]->value[0] != max) {
-> +			r->field[0]->value[0] = max;
-> +			usbhid_submit_report(hdev, r, USB_DIR_OUT);
-> +		}
-> +	}
-> +}
-> +
+are available in the git repository at:
 
-This seems to execute for all devices, not only for the present device?
+  git://git.infradead.org/users/vkoul/slave-dma.git next
 
->  static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  {
->  	int ret, i;
-> @@ -635,6 +674,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  	}
->  	td->mtclass = *mtclass;
->  	td->inputmode = -1;
-> +	td->maxcontactnumber = -1;
->  	td->last_mt_collection = -1;
->  	hid_set_drvdata(hdev, td);
->  
-> @@ -657,6 +697,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  
->  	ret = sysfs_create_group(&hdev->dev.kobj, &mt_attribute_group);
->  
-> +	mt_set_maxcontacts(hdev);
->  	mt_set_input_mode(hdev);
->  
->  	return 0;
-> @@ -669,6 +710,7 @@ fail:
->  #ifdef CONFIG_PM
->  static int mt_reset_resume(struct hid_device *hdev)
->  {
-> +	mt_set_maxcontacts(hdev);
->  	mt_set_input_mode(hdev);
->  	return 0;
->  }
-> @@ -869,6 +911,11 @@ static const struct hid_device_id mt_devices[] = {
->  		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM_SITRONIX,
->  			USB_DEVICE_ID_MTP_SITRONIX)},
->  
-> +	/* TopSeed panels */
-> +	{ .driver_data = MT_CLS_TOPSEED,
-> +		HID_USB_DEVICE(USB_VENDOR_ID_TOPSEED2,
-> +			USB_DEVICE_ID_TOPSEED2_PERIPAD_701) },
-> +
->  	/* Touch International panels */
->  	{ .driver_data = MT_CLS_DEFAULT,
->  		HID_USB_DEVICE(USB_VENDOR_ID_TOUCH_INTL,
-> -- 
-> 1.7.4.4
-> 
+Adrian Hunter (2):
+      dmaengine: intel_mid_dma: locking and freeing fixes
+      dmaengine: intel_mid_dma: error path fix
 
-Thanks,
-Henrik
+Axel Lin (1):
+      dmaengine: convert drivers/dma/* to use module_platform_driver()
+
+Boojin Kim (1):
+      DMA: PL330: Fix build warning
+
+Ciaran McCormick (1):
+      dma: fix spacing for method declaration, coding style issue in iop-adma.c
+
+Guennadi Liakhovetski (2):
+      dma: shdma: fix runtime PM: clear channel buffers on reset
+      ARM: mach-shmobile: specify CHCLR registers on SH7372
+
+Haitao Zhang (1):
+      dma/imx-sdma: save irq flags when use spin_lock in sdma_tx_submit
+
+Huang Shijie (3):
+      IMX/DMA : set the DMA direction in the sdma_control()
+      IMX/SDMA : save the real count for one DMA transaction.
+      mtd: fix compile error for gpmi-nand
+
+Jassi Brar (1):
+      DMAEngine: Define interleaved transfer request api
+
+Kristen Carlson Accardi (1):
+      dmaengine: intel_mid_dma: remove legacy pm interface
+
+Lothar Waßmann (4):
+      dma: mxs-dma: fix a typo in comment
+      dma: mxs-dma: Always leave mxs_dma_init() with the clock disabled.
+      dma: mxs-dma: make mxs_dma_prep_slave_sg() multi user safe
+      dma: mxs-dma: Don't use CLKGATE bits in CTRL0 to disable DMA channels
+
+Mika Westerberg (1):
+      dma/ep93xx_dma: prevent ep93xx_dma_tasklet() to reference an empty list
+
+Narayanan G (3):
+      dmaengine/ste_dma40: support pm in dma40
+      dmaengine/ste_dma40: Add support to use lcla area from esram
+      dmaengine/ste_dma40: allow fixed physical channel
+
+Nicolas Ferre (5):
+      dmaengine: at_hdmac: platform data move to use .id_table
+      dmaengine: at_hdmac: add device tree support
+      dmaengine: at_hdmac: add const to struct platform_device_id definition
+      dmaengine: at_hdmac: empty entry shape modification
+      dmaengine: at_hdmac: simplify device selection from platform data or DT
+
+Rabin Vincent (1):
+      dmaengine/ste_dma40: clear LNK on channel startup
+
+Rafal Prylowski (1):
+      dma/ep93xx_dma: fix initialization of M2M control register
+
+Rongjun Ying (1):
+      dmaengine: add CSR SiRFprimaII DMAC driver
+
+Sascha Hauer (3):
+      dma i.MX: remove individual SOC dependency
+      i.MX IPU DMA: Fix wrong burstsize settings
+      video i.MX IPU: Fix display connections
+
+Shawn Guo (4):
+      dmaengine: add DMA_TRANS_NONE to dma_transfer_direction
+      mmc: mxs-mmc: fix the dma_transfer_direction migration
+      mtd: gpmi-nand: move to dma_transfer_direction
+      ASoC: mxs: correct 'direction' of device_prep_dma_cyclic
+
+Tomoya MORINAGA (2):
+      pch_dma: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
+      pch_dma: Support new device LAPIS Semiconductor ML7831 IOH
+
+Tushar Behera (1):
+      DMA: PL330: Remove pm_runtime_xxx calls from pl330 probe/remove
+
+Vinod Koul (13):
+      dmaengine: add new enum dma_transfer_direction
+      dmaengine: move drivers to dma_transfer_direction
+      plat-samsung: move to dma_transfer_direction
+      media, video: move to dma_transfer_direction
+      carma: move to dma_transfer_direction
+      mmc-host: move to dma_transfer_direction
+      spi, serial: move to dma_transfer_direction
+      sound-soc: move to dma_transfer_direction
+      net-ks8842: move to dma_transfer_direction
+      USB-musb: move to dma_transfer_direction
+      USB-renesas: move to dma_transfer_direction
+      Merge branch 'dma_slave_direction' into next_test_dirn
+      dmaengine: timb_dma: fix the spare warinings
+
+Viresh Kumar (2):
+      dmaengine/dw_dmac: Reconfigure interrupt and chan_cfg register on resume
+      dmaengine/amba-pl08x: Config ccfg and increment phychan_hold if phychan is true
+
+ .../devicetree/bindings/dma/atmel-dma.txt          |   14 +
+ Documentation/dmaengine.txt                        |    8 +
+ MAINTAINERS                                        |    1 +
+ arch/arm/mach-ep93xx/include/mach/dma.h            |    6 +-
+ arch/arm/mach-shmobile/setup-sh7372.c              |   15 +-
+ arch/arm/plat-mxc/include/mach/mx3fb.h             |   15 +
+ arch/arm/plat-nomadik/include/plat/ste_dma40.h     |   11 +-
+ arch/arm/plat-samsung/dma-ops.c                    |    4 +-
+ arch/arm/plat-samsung/include/plat/dma-ops.h       |    4 +-
+ drivers/dma/Kconfig                                |   27 +-
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/amba-pl08x.c                           |   41 +-
+ drivers/dma/at_hdmac.c                             |  103 +++-
+ drivers/dma/at_hdmac_regs.h                        |    1 +
+ drivers/dma/coh901318.c                            |   12 +-
+ drivers/dma/coh901318_lli.c                        |   23 +-
+ drivers/dma/coh901318_lli.h                        |    4 +-
+ drivers/dma/dmaengine.c                            |    4 +-
+ drivers/dma/dw_dmac.c                              |   83 ++-
+ drivers/dma/dw_dmac_regs.h                         |    1 +
+ drivers/dma/ep93xx_dma.c                           |   90 ++-
+ drivers/dma/fsldma.c                               |    4 +-
+ drivers/dma/imx-dma.c                              |   10 +-
+ drivers/dma/imx-sdma.c                             |   27 +-
+ drivers/dma/intel_mid_dma.c                        |   39 +-
+ drivers/dma/intel_mid_dma_regs.h                   |    4 +-
+ drivers/dma/iop-adma.c                             |   16 +-
+ drivers/dma/ipu/ipu_idmac.c                        |   29 +-
+ drivers/dma/mpc512x_dma.c                          |   12 +-
+ drivers/dma/mxs-dma.c                              |   53 +--
+ drivers/dma/pch_dma.c                              |   20 +-
+ drivers/dma/pl330.c                                |   38 +-
+ drivers/dma/shdma.c                                |   72 ++-
+ drivers/dma/sirf-dma.c                             |  707 ++++++++++++++++++++
+ drivers/dma/ste_dma40.c                            |  441 +++++++++++--
+ drivers/dma/ste_dma40_ll.h                         |   11 +
+ drivers/dma/timb_dma.c                             |   30 +-
+ drivers/dma/txx9dmac.c                             |   12 +-
+ drivers/media/video/mx3_camera.c                   |    2 +-
+ drivers/media/video/timblogiw.c                    |    2 +-
+ drivers/misc/carma/carma-fpga-program.c            |    2 +-
+ drivers/mmc/host/atmel-mci.c                       |   10 +-
+ drivers/mmc/host/mmci.c                            |   11 +-
+ drivers/mmc/host/mxcmmc.c                          |   10 +-
+ drivers/mmc/host/mxs-mmc.c                         |   10 +-
+ drivers/mmc/host/sh_mmcif.c                        |    4 +-
+ drivers/mmc/host/tmio_mmc_dma.c                    |    4 +-
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c              |   22 +-
+ drivers/net/ethernet/micrel/ks8842.c               |    4 +-
+ drivers/spi/spi-dw-mid.c                           |    8 +-
+ drivers/spi/spi-ep93xx.c                           |    9 +-
+ drivers/spi/spi-pl022.c                            |    8 +-
+ drivers/spi/spi-topcliff-pch.c                     |    4 +-
+ drivers/tty/serial/amba-pl011.c                    |    8 +-
+ drivers/tty/serial/pch_uart.c                      |    4 +-
+ drivers/tty/serial/sh-sci.c                        |    4 +-
+ drivers/usb/musb/ux500_dma.c                       |    4 +-
+ drivers/usb/renesas_usbhs/fifo.c                   |    4 +-
+ drivers/video/mx3fb.c                              |   65 +--
+ include/linux/amba/pl08x.h                         |    4 +-
+ include/linux/dmaengine.h                          |   99 +++-
+ include/linux/dw_dmac.h                            |    2 +-
+ include/linux/mtd/gpmi-nand.h                      |   68 ++
+ include/linux/sh_dma.h                             |    4 +-
+ include/linux/sirfsoc_dma.h                        |    6 +
+ sound/atmel/abdac.c                                |    2 +-
+ sound/atmel/ac97c.c                                |   10 +-
+ sound/soc/ep93xx/ep93xx-pcm.c                      |    4 +-
+ sound/soc/imx/imx-pcm-dma-mx2.c                    |    6 +-
+ sound/soc/mxs/mxs-pcm.c                            |    2 +-
+ sound/soc/samsung/dma.c                            |    4 +-
+ sound/soc/sh/siu_pcm.c                             |    4 +-
+ sound/soc/txx9/txx9aclc.c                          |    2 +-
+ 73 files changed, 1876 insertions(+), 533 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/dma/atmel-dma.txt
+ create mode 100644 drivers/dma/sirf-dma.c
+ create mode 100644 include/linux/mtd/gpmi-nand.h
+ create mode 100644 include/linux/sirfsoc_dma.h
+
+
+-- 
+~Vinod
+
