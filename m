@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab2APVai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 16:30:38 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:54079 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167Ab2APVah (ORCPT
+	id S1756924Ab2APVfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 16:35:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64237 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199Ab2APVfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 16:30:37 -0500
-Date: Mon, 16 Jan 2012 21:30:24 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Michael D Labriola <mlabriol@gdeb.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Kushal Koolwal <kushalkoolwal@gmail.com>,
-        support@versalogic.com, michael.d.labriola@gmail.com
-Subject: Re: Reboot hangs on VersaLogic Ocelot
-Message-ID: <20120116213024.GC6313@srcf.ucam.org>
-References: <OFE7865F25.43E4BFD2-ON85257984.0057CD12-85257984.0058D31D@gdeb.com>
- <20120116075348.GF15641@elte.hu>
+	Mon, 16 Jan 2012 16:35:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120116075348.GF15641@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120116212640.GA6313@srcf.ucam.org>
+References: <20120109003255.GA6598@havoc.gtf.org> <CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
+ <4F12E57E.3090805@garzik.org> <1326676534.13517.3.camel@minggr>
+ <1326691403.13517.21.camel@minggr> <CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com>
+ <20120116194211.2cd09fb3@pyramind.ukuu.org.uk> <CA+55aFxNcAtCmzEejS=3+_L_rp-MOBS0yLS061YgiCsFw_Mt5Q@mail.gmail.com>
+ <20120116195427.64edd96f@pyramind.ukuu.org.uk> <CA+55aFzXFyHTUv=8NtSmXA2UY_qO5P=HXdGnhUmF9YoA5vpX1g@mail.gmail.com>
+ <20120116212640.GA6313@srcf.ucam.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 16 Jan 2012 13:34:53 -0800
+X-Google-Sender-Auth: 6xbRKjhgJ4DYUaW6TH99d8533Q4
+Message-ID: <CA+55aFw53SiHYZ29bo83iyuEG1vEz5WYcx5PWegw51Y1r8YZzA@mail.gmail.com>
+Subject: Re: [git patches] libata updates for 3.3
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Lin Ming <ming.m.lin@intel.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 08:53:48AM +0100, Ingo Molnar wrote:
-> Please send a patch that removes the quirk (not named a revert - 
-> as technically the old quirk did solve problems), with the 
-> changelog containing your (excellent) bug analysis and the test 
-> coverage above, plus a signoff?
-> 
-> Matthew, do you concur? Looks like your reordering changes 
-> actively improved the default behavior and we can start removing 
-> quirks.
+On Mon, Jan 16, 2012 at 1:26 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>
+> Macs will come up with ahci if you boot via EFI rather than the BIOS
+> compatibility module.
 
-Well, that was certainly the aim. Dropping the quirk here should be 
-correct.
+Apparently not this one. Or there is something else subtly wrong. I
+use rEFIt to boot Linux on this thing, which should mean that it
+booted as an EFI image, even if the kernel itself is not natively
+using EFI (or even built to care).
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+But maybe rEFIt does something else than I expected it to do, so who knows..
+
+                  Linus
