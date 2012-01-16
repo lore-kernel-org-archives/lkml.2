@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab2APSsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:48:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42887 "EHLO mx2.suse.de"
+	id S1756257Ab2APSss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:48:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42901 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755951Ab2APSsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:48:39 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:16 2012
-Message-Id: <20120116184516.596654354@clark.kroah.org>
+	id S1755951Ab2APSsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:48:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:18 2012
+Message-Id: <20120116184518.041994651@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:37 -0800
+Date: Mon, 16 Jan 2012 10:44:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pavel Hofman <pavel.hofman@ivitera.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [10/48] ALSA: ice1724 - Check for ac97 to avoid kernel oops
+        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [27/48] nfs: fix regression in handling of context= option in NFSv4
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Hofman <pavel.hofman@ivitera.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit e7848163aa2a649d9065f230fadff80dc3519775 upstream.
+commit 8a0d551a59ac92d8ff048d6cb29d3a02073e81e8 upstream.
 
-Cards with identical PCI ids but no AC97 config in EEPROM do not have
-the ac97 field initialized. We must check for this case to avoid kernel oops.
+Setting the security context of a NFSv4 mount via the context= mount
+option is currently broken. The NFSv4 codepath allocates a parsed
+options struct, and then parses the mount options to fill it. It
+eventually calls nfs4_remote_mount which calls security_init_mnt_opts.
+That clobbers the lsm_opts struct that was populated earlier. This bug
+also looks like it causes a small memory leak on each v4 mount where
+context= is used.
 
-Signed-off-by: Pavel Hofman <pavel.hofman@ivitera.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix this by moving the initialization of the lsm_opts into
+nfs_alloc_parsed_mount_data. Also, add a destructor for
+nfs_parsed_mount_data to make it easier to free all of the allocations
+hanging off of it, and to ensure that the security_free_mnt_opts is
+called whenever security_init_mnt_opts is.
+
+I believe this regression was introduced quite some time ago, probably
+by commit c02d7adf.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/ice1712/amp.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/nfs/super.c |   43 +++++++++++++++++++------------------------
+ 1 file changed, 19 insertions(+), 24 deletions(-)
 
---- a/sound/pci/ice1712/amp.c
-+++ b/sound/pci/ice1712/amp.c
-@@ -68,8 +68,11 @@ static int __devinit snd_vt1724_amp_init
- 
- static int __devinit snd_vt1724_amp_add_controls(struct snd_ice1712 *ice)
- {
--	/* we use pins 39 and 41 of the VT1616 for left and right read outputs */
--	snd_ac97_write_cache(ice->ac97, 0x5a, snd_ac97_read(ice->ac97, 0x5a) & ~0x8000);
-+	if (ice->ac97)
-+		/* we use pins 39 and 41 of the VT1616 for left and right
-+		read outputs */
-+		snd_ac97_write_cache(ice->ac97, 0x5a,
-+			snd_ac97_read(ice->ac97, 0x5a) & ~0x8000);
- 	return 0;
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -904,10 +904,24 @@ static struct nfs_parsed_mount_data *nfs
+ 		data->auth_flavor_len	= 1;
+ 		data->version		= version;
+ 		data->minorversion	= 0;
++		security_init_mnt_opts(&data->lsm_opts);
+ 	}
+ 	return data;
  }
  
++static void nfs_free_parsed_mount_data(struct nfs_parsed_mount_data *data)
++{
++	if (data) {
++		kfree(data->client_address);
++		kfree(data->mount_server.hostname);
++		kfree(data->nfs_server.export_path);
++		kfree(data->nfs_server.hostname);
++		kfree(data->fscache_uniq);
++		security_free_mnt_opts(&data->lsm_opts);
++		kfree(data);
++	}
++}
++
+ /*
+  * Sanity-check a server address provided by the mount command.
+  *
+@@ -2215,9 +2229,7 @@ static struct dentry *nfs_fs_mount(struc
+ 	data = nfs_alloc_parsed_mount_data(NFS_DEFAULT_VERSION);
+ 	mntfh = nfs_alloc_fhandle();
+ 	if (data == NULL || mntfh == NULL)
+-		goto out_free_fh;
+-
+-	security_init_mnt_opts(&data->lsm_opts);
++		goto out;
+ 
+ 	/* Validate the mount data */
+ 	error = nfs_validate_mount_data(raw_data, data, mntfh, dev_name);
+@@ -2229,8 +2241,6 @@ static struct dentry *nfs_fs_mount(struc
+ #ifdef CONFIG_NFS_V4
+ 	if (data->version == 4) {
+ 		mntroot = nfs4_try_mount(flags, dev_name, data);
+-		kfree(data->client_address);
+-		kfree(data->nfs_server.export_path);
+ 		goto out;
+ 	}
+ #endif	/* CONFIG_NFS_V4 */
+@@ -2285,13 +2295,8 @@ static struct dentry *nfs_fs_mount(struc
+ 	s->s_flags |= MS_ACTIVE;
+ 
+ out:
+-	kfree(data->nfs_server.hostname);
+-	kfree(data->mount_server.hostname);
+-	kfree(data->fscache_uniq);
+-	security_free_mnt_opts(&data->lsm_opts);
+-out_free_fh:
++	nfs_free_parsed_mount_data(data);
+ 	nfs_free_fhandle(mntfh);
+-	kfree(data);
+ 	return mntroot;
+ 
+ out_err_nosb:
+@@ -2618,9 +2623,7 @@ nfs4_remote_mount(struct file_system_typ
+ 
+ 	mntfh = nfs_alloc_fhandle();
+ 	if (data == NULL || mntfh == NULL)
+-		goto out_free_fh;
+-
+-	security_init_mnt_opts(&data->lsm_opts);
++		goto out;
+ 
+ 	/* Get a volume representation */
+ 	server = nfs4_create_server(data, mntfh);
+@@ -2672,13 +2675,10 @@ nfs4_remote_mount(struct file_system_typ
+ 
+ 	s->s_flags |= MS_ACTIVE;
+ 
+-	security_free_mnt_opts(&data->lsm_opts);
+ 	nfs_free_fhandle(mntfh);
+ 	return mntroot;
+ 
+ out:
+-	security_free_mnt_opts(&data->lsm_opts);
+-out_free_fh:
+ 	nfs_free_fhandle(mntfh);
+ 	return ERR_PTR(error);
+ 
+@@ -2858,7 +2858,7 @@ static struct dentry *nfs4_mount(struct
+ 
+ 	data = nfs_alloc_parsed_mount_data(4);
+ 	if (data == NULL)
+-		goto out_free_data;
++		goto out;
+ 
+ 	/* Validate the mount data */
+ 	error = nfs4_validate_mount_data(raw_data, data, dev_name);
+@@ -2872,12 +2872,7 @@ static struct dentry *nfs4_mount(struct
+ 		error = PTR_ERR(res);
+ 
+ out:
+-	kfree(data->client_address);
+-	kfree(data->nfs_server.export_path);
+-	kfree(data->nfs_server.hostname);
+-	kfree(data->fscache_uniq);
+-out_free_data:
+-	kfree(data);
++	nfs_free_parsed_mount_data(data);
+ 	dprintk("<-- nfs4_mount() = %d%s\n", error,
+ 			error != 0 ? " [error]" : "");
+ 	return res;
 
 
