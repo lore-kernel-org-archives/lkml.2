@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2APHWB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 02:22:01 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:34563 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab2APHV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 02:21:59 -0500
-Message-ID: <4F13CFEA.9010406@parallels.com>
-Date: Mon, 16 Jan 2012 11:21:14 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753394Ab2APHWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 02:22:33 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58062 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618Ab2APHWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 02:22:32 -0500
+Date: Sun, 15 Jan 2012 23:22:26 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Block IO bits for 3.3-rc
+Message-ID: <20120116072226.GA3399@mtj.dyndns.org>
+References: <4F12A025.2090207@kernel.dk>
+ <CA+55aFxyiMXg0BHrZ0LJtCeE+u+pNSM1n=zDbW5-7CtZnh2O=Q@mail.gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <davej@redhat.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: recvmsg sleeping from invalid context
-References: <20120113182401.GA25885@redhat.com> <20120113.102712.600185688659703015.davem@davemloft.net>
-In-Reply-To: <20120113.102712.600185688659703015.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxyiMXg0BHrZ0LJtCeE+u+pNSM1n=zDbW5-7CtZnh2O=Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 10:27 PM, David Miller wrote:
-> From: Dave Jones<davej@redhat.com>
-> Date: Fri, 13 Jan 2012 13:24:01 -0500
->
->> getting a ton of these on the latest head (099469502f62fbe0d7e4f0b83a2f22538367f734)
->>
->> BUG: sleeping function called from invalid context at mm/memory.c:3905
->> in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
->> INFO: lockdep is turned off.
->> Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
->> Call Trace:
->>   [<ffffffff81099415>] __might_sleep+0x145/0x200
->>   [<ffffffff811752a4>] might_fault+0x34/0xb0
->>   [<ffffffff81551555>] ? sock_def_readable+0x25/0x1a0
->>   [<ffffffff8155c387>] put_cmsg+0x77/0x120
->>   [<ffffffff8159379c>] netlink_recvmsg+0x35c/0x480
->>   [<ffffffff8155201a>] ? sock_update_classid+0x9a/0x260
->>   [<ffffffff81552052>] ? sock_update_classid+0xd2/0x260
->>   [<ffffffff81549fbd>] sock_recvmsg+0x11d/0x140
->>   [<ffffffff811752c3>] ? might_fault+0x53/0xb0
->>   [<ffffffff8117530c>] ? might_fault+0x9c/0xb0
->>   [<ffffffff811752c3>] ? might_fault+0x53/0xb0
->>   [<ffffffff8154b1b3>] __sys_recvmsg+0x153/0x2d0
->>   [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
->>   [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
->>   [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
->>   [<ffffffff811bc43b>] ? fget_light+0xfb/0x470
->>   [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
->>   [<ffffffff8154e2e9>] sys_recvmsg+0x49/0x90
->>   [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
->
-> Sigh, I suspect the new socket memcg code, which I didn't want to
-> even apply in the first place. :-/
->
-> Glauber, please fix this.
+Hello,
 
-I really don't see how this can be related to sock memcg at all.
-Nothing in the stack trace points to it.
+On Sun, Jan 15, 2012 at 12:33:20PM -0800, Linus Torvalds wrote:
+> On Sun, Jan 15, 2012 at 1:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> > See below for the initial 3.3-rc1 git pull request in the block IO area.
+> > Not too much queued up for this round, mostly some code churn to improve
+> > some of the existing functionality.
+> >
+> > It has the following changes:
+> >
+> > - The big io context cleanup from Tejun.
+> 
+> Ok. This got some conflicts that I think I got right, but I'd really
+> like Tejun to check it out. There were changes mainly to things he had
+> removed, and I think all the changes were made irrelevant by his
+> cleanups, but...
 
-You probably got this impression by "sock_update_classid", which has
-a naming similar to the ones I used to update some sockets attributes, 
-but are something else entirely.
+In cfq-iosched.c, there were the following three mainline commits
+which weren't in the block branch.
 
+- 2984ff38cc "cfq-iosched: free cic_index if blkio_alloc_blkg_stats fails"
+
+	This fixes cic->cic_index freeing in alloc failure path.
+	cic_index got moved to q->id which is allocated in
+	blk_alloc_queue_node() and properly freed after any failure.
+	This doesn't cause any conflict per-se but causes compiler
+	failure as cic_index no longer exists.  Changes made by this
+	patch should be removed.
+
+- 5eb46851de "cfq-iosched: fix cfq_cic_link() race confition"
+
+	This fixes install race handling in unlock-alloc-lock-install
+	sequence.  The logic got moved to ioc_create_icq() which
+	already deals with it properly.  Ignoring conflict and
+	removing the conflicted part from mainline should do.
+
+- 6ae0516b8a "block, cfq: fix empty queue crash caused by request merge"
+
+	The same commit existed in block as 4a0b75c7d0.  Nothing to
+	do.
+
+In blk-ioc.c, the following commit.
+
+- bb9d97b6df "cgroup: don't use subsys->can_attach_task() or ->attach_task()"
+
+	It conflicts with three block commits updating how ioc is
+	obtained and the changed flag is set.  Putting the updated
+	per-task logic from block inside cgroup_taskset_for_each()
+	loop is the correct resolution.
+
+So, yeap, my merge matches yours exactly and everything looks good to
+me.
+
+Thanks.
+
+--
+tejun
