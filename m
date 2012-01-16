@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051Ab2APW2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 17:28:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50364 "EHLO mx2.suse.de"
+	id S1757063Ab2APWkj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 17:40:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50607 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243Ab2APW2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 17:28:48 -0500
-Date: Mon, 16 Jan 2012 14:28:35 -0800
+	id S1751239Ab2APWkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 17:40:37 -0500
+Date: Mon, 16 Jan 2012 14:40:28 -0800
 From: Greg KH <gregkh@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Sergei Trofimovich <slyich@gmail.com>, linux-kernel@vger.kernel.org,
         Kay Sievers <kay.sievers@vrfy.org>,
         Linux PM mailing list <linux-pm@vger.kernel.org>,
         Tony Luck <tony.luck@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
         Borislav Petkov <bp@amd64.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com
-Subject: Re: 3.2.0-07927-gc49c41a: s2ram: Device 'machinecheck1' does not
- have a release() function, it is broken and must be fixed
-Message-ID: <20120116222835.GA4869@suse.de>
-References: <Pine.LNX.4.44L0.1201161645490.11125-100000@netrider.rowland.org>
- <201201162308.49530.rjw@sisk.pl>
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>, justinmattock@gmail.com,
+        Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: [PATCH] mce: fix warning messages about static struct mce_device
+Message-ID: <20120116224028.GA5072@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201201162308.49530.rjw@sisk.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 11:08:49PM +0100, Rafael J. Wysocki wrote:
-> On Monday, January 16, 2012, Alan Stern wrote:
-> > On Mon, 16 Jan 2012, Rafael J. Wysocki wrote:
-> > 
-> > > On Monday, January 16, 2012, Srivatsa S. Bhat wrote:
-> > 
-> > > > Just to re-instate, an end-user need not really worry about this warning
-> > > > too much since this was there before (at a different place, and hidden)
-> > > > when things were working fine... Hence it would be worthwhile to fix
-> > > > this warning "correctly" if possible, than just do a quick and dirty
-> > > > "silence the warning" kind of workaround. 
-> > > 
-> > > Well, since there's nothing to release in there, I really see only two
-> > > possible "fixes": either silence the warning the way you describe, or
-> > > remove it from the core.
-> > 
-> > No, the right fix is to release something.  The device structures
-> > should be allocated dynamically, not statically.  Greg's suggestion of
-> > using a set of per-cpu pointers to dynamically-allocated structures
-> > sounds right.
-> 
-> OK, so the source of the problem is that the device structure is statically
-> allocated, right?
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-Yes, the patch below is what I am currently testing (my laptop is taking
-a while to rebuild.)  It shows the general idea here...
+When suspending, there was a large list of warnings going something like:
 
-thanks,
+	Device 'machinecheck1' does not have a release() function, it is broken and must be fixed
 
-greg k-h
+This patch turns the static mce_devices into dynamically allocated, and
+properly frees them when they are removed from the system.  It solves
+the warning messages on my laptop here.
+
+Reported-by: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+
+Linus, this should fix the warnings on your laptop, it does on mine.
+
+ include/asm/mce.h           |    2 +-
+ kernel/cpu/mcheck/mce.c     |   18 ++++++++++++++----
+ kernel/cpu/mcheck/mce_amd.c |   18 +++++++++++-------
+ 3 files changed, 26 insertions(+), 12 deletions(-)
+
 
 diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
 index f35ce43..6aefb14 100644
@@ -214,3 +213,4 @@ index ba0b94a..786e76a 100644
  		per_cpu(threshold_banks, i)[bank] = NULL;
  	}
  
+
