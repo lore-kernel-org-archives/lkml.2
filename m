@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab2APSuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:50:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43114 "EHLO mx2.suse.de"
+	id S1756759Ab2APSui (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:50:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43166 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932079Ab2APSuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:50:10 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:17 2012
-Message-Id: <20120116184517.638776712@clark.kroah.org>
+	id S1756124Ab2APSud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:50:33 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:19 2012
+Message-Id: <20120116184519.755069782@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:49 -0800
+Date: Mon, 16 Jan 2012 10:45:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [22/48] radeon: Fix disabling PCI bus mastering on big endian hosts.
+        alan@lxorguk.ukuu.org.uk, Ludwig Nussel <ludwig.nussel@suse.de>,
+        harvey.harrison@gmail.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [48/48] x86: Fix mmap random address range
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,62 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michel Dänzer <michel.daenzer@amd.com>
+From: Ludwig Nussel <ludwig.nussel@suse.de>
 
-commit 3df96909b75835d487a9178761622b0cbd7310d4 upstream.
+commit 9af0c7a6fa860698d080481f24a342ba74b68982 upstream.
 
-It would previously write basically random bits to PCI configuration space...
-Not very surprising that the GPU tended to stop responding completely. The
-resulting MCE even froze the whole machine sometimes.
+On x86_32 casting the unsigned int result of get_random_int() to
+long may result in a negative value.  On x86_32 the range of
+mmap_rnd() therefore was -255 to 255.  The 32bit mode on x86_64
+used 0 to 255 as intended.
 
-Now resetting the GPU after a lockup has at least a fighting chance of
-succeeding.
+The bug was introduced by 675a081 ("x86: unify mmap_{32|64}.c")
+in January 2008.
 
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: harvey.harrison@gmail.com
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Harvey Harrison <harvey.harrison@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/201111152246.pAFMklOB028527@wpaz5.hot.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/r100.c  |    5 +++--
- drivers/gpu/drm/radeon/rs600.c |    4 ++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/mm/mmap.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -2069,6 +2069,7 @@ bool r100_gpu_is_lockup(struct radeon_de
- void r100_bm_disable(struct radeon_device *rdev)
- {
- 	u32 tmp;
-+	u16 tmp16;
- 
- 	/* disable bus mastering */
- 	tmp = RREG32(R_000030_BUS_CNTL);
-@@ -2079,8 +2080,8 @@ void r100_bm_disable(struct radeon_devic
- 	WREG32(R_000030_BUS_CNTL, (tmp & 0xFFFFFFFF) | 0x00000040);
- 	tmp = RREG32(RADEON_BUS_CNTL);
- 	mdelay(1);
--	pci_read_config_word(rdev->pdev, 0x4, (u16*)&tmp);
--	pci_write_config_word(rdev->pdev, 0x4, tmp & 0xFFFB);
-+	pci_read_config_word(rdev->pdev, 0x4, &tmp16);
-+	pci_write_config_word(rdev->pdev, 0x4, tmp16 & 0xFFFB);
- 	mdelay(1);
- }
- 
---- a/drivers/gpu/drm/radeon/rs600.c
-+++ b/drivers/gpu/drm/radeon/rs600.c
-@@ -324,10 +324,10 @@ void rs600_hpd_fini(struct radeon_device
- 
- void rs600_bm_disable(struct radeon_device *rdev)
- {
--	u32 tmp;
-+	u16 tmp;
- 
- 	/* disable bus mastering */
--	pci_read_config_word(rdev->pdev, 0x4, (u16*)&tmp);
-+	pci_read_config_word(rdev->pdev, 0x4, &tmp);
- 	pci_write_config_word(rdev->pdev, 0x4, tmp & 0xFFFB);
- 	mdelay(1);
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -87,9 +87,9 @@ static unsigned long mmap_rnd(void)
+ 	*/
+ 	if (current->flags & PF_RANDOMIZE) {
+ 		if (mmap_is_ia32())
+-			rnd = (long)get_random_int() % (1<<8);
++			rnd = get_random_int() % (1<<8);
+ 		else
+-			rnd = (long)(get_random_int() % (1<<28));
++			rnd = get_random_int() % (1<<28);
+ 	}
+ 	return rnd << PAGE_SHIFT;
  }
 
 
