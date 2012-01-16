@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab2APNeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 08:34:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55169 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241Ab2APNeG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 08:34:06 -0500
-Message-ID: <1326720836.2442.231.camel@twins>
-Subject: Re: [PATCH v2] kvm: remove dependence on delay-accounting
-From: Peter Zijlstra <peterz@infradead.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Mon, 16 Jan 2012 14:33:56 +0100
-In-Reply-To: <20120114163051.23946.25895.stgit@zurg>
-References: <20120114162413.15761.7341.stgit@zurg>
-	 <20120114163051.23946.25895.stgit@zurg>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1754817Ab2APNfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 08:35:32 -0500
+Received: from spaceboyz.net ([87.106.131.203]:46703 "EHLO spaceboyz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752066Ab2APNfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 08:35:30 -0500
+Date: Mon, 16 Jan 2012 14:35:05 +0100
+From: David Lamparter <equinox@diac24.net>
+To: =?utf-8?Q?=C5=A0tefan?= Gula <steweg@gmail.com>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+Message-ID: <20120116133505.GE1077372@jupiter.n2.diac24.net>
+References: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-01-14 at 20:30 +0400, Konstantin Khlebnikov wrote:
-> KVM selects delay-accounting only to get sched-info for steal-time accounting.
-> Meanwhile delay-accounting can be disabled by boot option. This is ridiculous.
-> 
-> This patch adds internal boolean option CONFIG_TASK_SCHED_INFO to enable only
-> task->sched_info and its collecting inside scheduler.
+On Mon, Jan 16, 2012 at 01:13:19PM +0100, Štefan Gula wrote:
+> it learns IP address of peer which encapsulated given packet.
 
-Urgh, more stupid config knobs, we should be removing them, not adding
-moar.
+This feature is already present in the Linux kernel, albeit only for IP
+to IP lookup. Please look at "userspace ARPd" and its relation to
+multipoint GRE. OpenNHRP is the associated userspace part.
 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 868cb83..dd5bf78 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -734,7 +734,6 @@ extern struct user_struct root_user;
->  
->  struct backing_dev_info;
->  
-> -#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
->  struct sched_info {
->  	/* cumulative counters */
->  	unsigned long pcount;	      /* # of times run on this cpu */
-> @@ -744,7 +743,6 @@ struct sched_info {
->  	unsigned long long last_arrival,/* when we last ran on a cpu */
->  			   last_queued;	/* when we were last queued to run */
->  };
-> -#endif /* defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT) */
-
-Not having that structure helps with compile errors.
-
->  #ifdef CONFIG_TASK_DELAY_ACCT
->  struct task_delay_info {
-> @@ -782,7 +780,7 @@ struct task_delay_info {
->  
->  static inline int sched_info_on(void)
->  {
-> -#ifdef CONFIG_SCHEDSTATS
-> +#if IS_ENABLED(CONFIG_SCHEDSTATS) || IS_ENABLED(CONFIG_KVM)
-
-WTF is IS_ENABLED and why do you use it?
+That code reuses the existing neighbor management infrastructure. Adding
+support for gretap and automatic learning from incoming packets
+shouldn't be too hard...
 
 
-Not much like this stuff.
+-David
