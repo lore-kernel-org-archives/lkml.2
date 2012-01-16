@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2APAIj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 19:08:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42004 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751045Ab2APAIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 19:08:38 -0500
-Message-ID: <4F136A50.80203@zytor.com>
-Date: Sun, 15 Jan 2012 16:07:44 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752794Ab2APAPN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 19:15:13 -0500
+Received: from hapkido.dreamhost.com ([66.33.216.122]:37126 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab2APAPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 19:15:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pcharlan.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=pcharlan.com;
+	 b=VBSVS1HLXjYrEAgz7hm6JpVNWXne3tW65JzTe2rjCl5R1/9tH9EoivU3juxm6
+	P/tjKyiaKSa4K/jF0YaRGMoLLY97DcCKIrdc5PCXjK4ErPf31No5JwS3O6VcRDkj
+	D7QVFfSfvF6Aa5Ut68I4hK5X3cai0sOcGOWCcEnw38p1mQ=
+Message-ID: <4F136BE4.4040502@pcharlan.com>
+Date: Sun, 15 Jan 2012 16:14:28 -0800
+From: Pete Harlan <pgit@pcharlan.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-To: Brian Gerst <brgerst@gmail.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
- save mtrr
-References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com> <1326301493-28760-11-git-send-email-fenghua.yu@intel.com> <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
-In-Reply-To: <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Git Mailing List <git@vger.kernel.org>
+Subject: Re: Re* Regulator updates for 3.3
+References: <20120109073727.GF22134@opensource.wolfsonmicro.com> <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com> <20120110184530.GE7164@opensource.wolfsonmicro.com> <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com> <20120110222711.GK7164@opensource.wolfsonmicro.com> <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com> <7vmx9v7z1r.fsf@alter.siamese.dyndns.org> <CA+55aFx5NATrpLnkMiV2vAxSAJPK7wkY2vyHbyeZGgT9+jP06w@mail.gmail.com> <7vehv77xeq.fsf@alter.siamese.dyndns.org> <CA+55aFzuGtJkQFDooSGWQ2_NiJVHN2E7S5dmOnWTYn8_s8Gg3g@mail.gmail.com> <7vzkdu7miv.fsf@alter.siamese.dyndns.org>
+In-Reply-To: <7vzkdu7miv.fsf@alter.siamese.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2012 04:33 AM, Brian Gerst wrote:
-> On Wed, Jan 11, 2012 at 12:04 PM, Fenghua Yu <fenghua.yu@intel.com> wrote:
->> From: Fenghua Yu <fenghua.yu@intel.com>
->>
->> Ask the first online CPU to save mtrr instead of asking BSP. BSP could be
->> offline when mtrr_save_state() is called.
-> 
-> If you can use any non-boot cpu to save the MTRRs why not just use the
-> current cpu?  They should all be in sync anyways.
-> 
+On 01/10/2012 10:59 PM, Junio C Hamano wrote:
+> There may be existing scripts that leave the standard input and the
+> standard output of the "git merge" connected to whatever environment the
+> scripts were started, and such invocation might trigger the above
+> "interactive session" heuristics. Such scripts can export GIT_MERGE_LEGACY
+> environment variable set to "yes" to force the traditional behaviour.
 
-A much bigger question: why do we ever bother saving the MTRR state per
-se?  We examine the MTRR state -- we have to -- during boot, and it
-should never diverge from the state set by the OS from that point on --
-we'll need to set it back to that.  So we should just keep track of what
-the correct MTRR state is at all times.
+The name GIT_MERGE_LEGACY gives no clue about what flavor of legacy
+merge behavior is being enabled.  Something like GIT_MERGE_LEGACY_EDIT
+might be clearer, or perhaps just have GIT_MERGE_EDIT=0 to get the old
+behavior without reference to whether or not that behavior is
+considered legacy.
 
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+--Pete
