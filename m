@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab2APPdx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:33:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50862 "EHLO mx1.redhat.com"
+	id S1755224Ab2APPeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 10:34:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754637Ab2APPdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:33:51 -0500
-Message-ID: <4F1442C5.70500@redhat.com>
-Date: Mon, 16 Jan 2012 16:31:17 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1755066Ab2APPeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 10:34:12 -0500
+Date: Mon, 16 Jan 2012 16:33:27 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v9 3.2 7/9] tracing: uprobes trace_event interface
+Message-ID: <20120116153327.GE5265@m.brq.redhat.com>
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
+ <20120110114943.17610.28293.sendpatchset@srdronam.in.ibm.com>
+ <20120116131137.GB5265@m.brq.redhat.com>
+ <20120116144538.GG10189@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Jones <drjones@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        david.woodhouse@intel.com, gregkh@suse.de, davem@davemloft.net,
-        axboe@kernel.dk, holt@sgi.com, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, hskinnemoen@gmail.com, egtvedt@samfundet.no,
-        msalter@redhat.com, a-jacquiot@ti.com, starvik@axis.com,
-        jesper.nilsson@axis.com, dhowells@redhat.com, takata@linux-m32r.org,
-        geert@linux-m68k.org, yasutake.koichi@jp.panasonic.com,
-        jonas@southpole.se, kyle@mcmartin.ca, deller@gmx.de,
-        jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
-        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
-        mchehab@infradead.org, johannes@sipsolutions.net,
-        linville@tuxdriver.com
-Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
-References: <1326295008-29795-1-git-send-email-drjones@redhat.com> <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com> <201201120918.53026.arnd@arndb.de> <20120112101805.GA2375@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201121259270.17287@chino.kir.corp.google.com> <20120113085125.GA2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201130230320.15417@chino.kir.corp.google.com> <20120113122202.GB2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120116144538.GG10189@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 10:27 PM, David Rientjes wrote:
-> CONFIG_EXPERT does work, there haven't been problems reported with it in 
-> the year that it has been in the kernel, and CONFIG_EMBEDDED is available 
-> to be extended to have its logical semantics.  Right now, CONFIG_EMBEDDED 
-> is pretty useless other than setting CONFIG_EXPERT but that could easily 
-> be extended if someone wants to spend the time to separate options out 
-> from CONFIG_EXPERT that don't make any sense for embedded devices.  I'm 
-> not from the embedded world, so I don't know the problems they face when 
-> configuring the kernel.
+On Mon, Jan 16, 2012 at 08:15:38PM +0530, Srikar Dronamraju wrote:
+> > 
+> > I've tested following event:
+> >         echo "p:probe_libc/free /lib64/libc-2.13.so:0x7a4f0 %ax" > ./uprobe_events
+> > 
+> > and commands like:
+> >         perf record -a -e probe_libc:free  --filter "common_pid == 1127"
+> >         perf record -e probe_libc:free --filter "arg1 == 0xa" ls
+> > 
+> > got me proper results.
+> > 
+> 
+> Okay thanks for the inputs.
+> 
+> > thanks,
+> > jirka
+> > 
+> > ---
+> > The preemption needs to be disabled when submitting data into perf.
+> 
+> I actually looked at other places where perf_trace_buf_prepare and
+> perf_trace_buf_submit are being called. for example perf_syscall_enter
+> and perf_syscall_exit both call the above routines and they didnt seem
+> to be called with premption disabled. Is that the way perf probe is
+> called in our case that needs us to call pre-emption here? Did you see a
+> case where calling these without preemption disabled caused a problem?
 
-I don't see what your objections to this patch are. It actually does not
-change anything to CONFIG_EMBEDDED and 6a108a14fa35 didn't either.
-CONFIG_EMBEDDED still exposes the same options and set the same default
-values as it did before or after 6a108a14fa35 was applied.
+the perf_trace_buf_prepare touches per cpu variables,
+hence the preemption disabling
 
-This patch just makes EXPERT exposes config option as advertised by its
-description without changing any default value.
-For instance, Why would CONFIG_EXPERT disable by default some HID devices?
-I could understand why it is done for CONFIG_EMBEDDED, but certainly not
-for an general EXPERT option.
+the perf_trace_buf_prepare code is used by syscalls,
+kprobes, and trace events
+
+- both syscalls and trace events are implemented by
+  tracepoints which disable preemption before calling the probe
+  (see __DO_TRACE macro in include/linux/tracepoint.h)
+
+- kprobes disable preemption as well
+  (kprobe_handler in arch/x86/kernel/kprobes.c)
+  haven't checked the optimalized kprobes,
+  but should be the same case
+
+jirka
 
 > 
->> This patch is actually attempting to make progress in the separation of
->> the semantics for EXPERT and the old, insane EMBEDDED, which had the very
->> loose semantics. That's why it's called "untangle EXPERT and EMBEDDED".
->>
-
-If EMBEDDED was insane before 6a108a14fa35, then it still was after, since
-nothing changed. EMBEDDED was just renamed EXPERT, and the "new" EMBEDDED
-option just selects EXPERT.
-
 > 
-> Breaking backwards compatibility for users who aren't defconfigs is a 
-> non-starter, as I've said.  Admitting that your patch does it is almost 
-> like nacking your own patch.
-
-If people use CONFIG_EXPERT while expecting it to change some default value
-useful for embedded device, while at all time there was a CONFIG_EMBEDDED
-available that is according to its description made for this purpose, then
-the shame on them...
-If CONFIG_EMBEDDED is broken, it has to be fixed. As Andrew already said,
-this is out of the scope of this patch.
-
-Jerome
-
+> > ---
+> >  kernel/trace/trace_uprobe.c |    6 +++++-
+> >  1 files changed, 5 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> > index af29368..4d3857c 100644
+> > --- a/kernel/trace/trace_uprobe.c
+> > +++ b/kernel/trace/trace_uprobe.c
+> > @@ -653,9 +653,11 @@ static void uprobe_perf_func(struct trace_uprobe *tp, struct pt_regs *regs)
+> >  		     "profile buffer not large enough"))
+> >  		return;
+> > 
+> > +	preempt_disable();
+> > +
+> >  	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
+> >  	if (!entry)
+> > -		return;
+> > +		goto out;
+> > 
+> >  	entry->ip = get_uprobe_bkpt_addr(task_pt_regs(current));
+> >  	data = (u8 *)&entry[1];
+> > @@ -665,6 +667,8 @@ static void uprobe_perf_func(struct trace_uprobe *tp, struct pt_regs *regs)
+> > 
+> >  	head = this_cpu_ptr(call->perf_events);
+> >  	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head);
+> > + out:
+> > +	preempt_enable();
+> >  }
+> >  #endif	/* CONFIG_PERF_EVENTS */
+> > 
+> 
+> -- 
+> Thanks and Regards
+> Srikar
+> 
