@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab2APQv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 11:51:59 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53925 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445Ab2APQv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 11:51:58 -0500
+	id S1754876Ab2APQzT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:55:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37733 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754372Ab2APQzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 11:55:17 -0500
+Date: Mon, 16 Jan 2012 08:48:51 -0800
+From: Greg KH <gregkh@suse.de>
+To: Ben Myers <bpm@sgi.com>
+Cc: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [41/42] xfs: validate acl count
+Message-ID: <20120116164851.GA13459@suse.de>
+References: <20120110215031.GA19398@kroah.com>
+ <20120110215024.482323323@clark.kroah.org>
+ <20120111074135.GA30829@lst.de>
+ <20120111150021.GB23608@suse.de>
+ <20120111150532.GL20739@sgi.com>
+ <20120113161727.GB6519@sgi.com>
+ <20120113181952.GA30393@suse.de>
+ <20120113194218.GB14857@sgi.com>
+ <20120113195206.GA16462@suse.de>
+ <20120116155309.GC14857@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <20120116083615.GB23622@elte.hu>
-References: <1326389222.9115.2.camel@localhost.localdomain>
-	<20120116075639.GG15641@elte.hu>
-	<CADZ9YHjxuqJ2YpEonqXjRsJZGsihy7ao_cA-NRwXoOM1KF3Tpw@mail.gmail.com>
-	<20120116083615.GB23622@elte.hu>
-Date: Mon, 16 Jan 2012 22:51:57 +0600
-Message-ID: <CADZ9YHh9rnTom8dRk5PBdY0Qu6WQVNpUr2jJDeyqg7fxTiu1gg@mail.gmail.com>
-Subject: Re: [PATCH] sched: Update scheduler stat documentation.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120116155309.GC14857@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 2:36 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
->
-> Yes - but we should also change it to export a value of zero.
-> The field is a legacy 'array expirations' field, and as such it
-> should be zero.
->
+On Mon, Jan 16, 2012 at 09:53:09AM -0600, Ben Myers wrote:
+> Hey Greg,
+> 
+> On Fri, Jan 13, 2012 at 11:52:06AM -0800, Greg KH wrote:
+> > On Fri, Jan 13, 2012 at 01:42:18PM -0600, Ben Myers wrote:
+> > > On Fri, Jan 13, 2012 at 10:19:52AM -0800, Greg KH wrote:
+> > > > On Fri, Jan 13, 2012 at 10:17:27AM -0600, Ben Myers wrote:
+> > > > > Hey Greg,
+> > > > > 
+> > > > > On Wed, Jan 11, 2012 at 09:05:32AM -0600, Ben Myers wrote:
+> > > > > > Hi Christoph & Greg,
+> > > > > > 
+> > > > > > On Wed, Jan 11, 2012 at 07:00:21AM -0800, Greg KH wrote:
+> > > > > > > On Wed, Jan 11, 2012 at 08:41:35AM +0100, Christoph Hellwig wrote:
+> > > > > > > > On Tue, Jan 10, 2012 at 01:48:51PM -0800, Greg KH wrote:
+> > > > > > > > > 3.1-stable review patch.  If anyone has any objections, please let me know.
+> > > > > > > > 
+> > > > > > > > Just curious, how well tested are all the patches on 2.6.32 and 3.1 hat I only
+> > > > > > > > submitted for 3.0?  I'd really prefer if they at least get an xfstest run
+> > > > > > > > before they get sent out to the world.
+> > > > > > > 
+> > > > > > > I took these patches on my own as they were reported to fix a public
+> > > > > > > vulnerability which was assigned a CVE.  They applied with no fuzz and
+> > > > > > > "looked correct" so I applied them on my own.
+> > > > > > > 
+> > > > > > > If I shouldn't have, please let me know and I'll drop them.
+> > > > > > > 
+> > > > > > > Otherwise, a nice run of xfstest by someone would be appreciated.
+> > > > > > 
+> > > > > > I have a 3.1 test rig and will get this done today, then I'll go after
+> > > > > > 2.6.32.
+> > > > > 
+> > > > > I ran xfstests with 'xfs: validate acl count' and 'xfs: fix acl count
+> > > > > validation in xfs_acl_from_disk()' applied to 3.1-stable.  It came out
+> > > > > ok.  I'll get started on 2.6.32.
+> > > > 
+> > > > Thanks, how about the 3.0 release?
+> > > 
+> > > HCH would have given them a spin before he sent them to stable@.
+> > 
+> > You are right, sorry, for some reason I thought that was for 3.1, too
+> > many different kernel trees at the moment :(
+> 
+> My v2.6.32.54 test run came out ok too.
 
-Ok, thanks for suggestions. Please, look at the following patch, it's
-been roughly created to address your suggestion. If it looks okay,
-then I can send formal patch (perhaps two separate patches?). In this
-way, I think we can also remove rq->sched_switch field (not done in
-this patch)?
+Wonderful, thanks for testing and letting us know.
 
-diff --git a/Documentation/scheduler/sched-stats.txt
-b/Documentation/scheduler/sched-stats.txt
-index 1cd5d51..cc2d107 100644
---- a/Documentation/scheduler/sched-stats.txt
-+++ b/Documentation/scheduler/sched-stats.txt
-@@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
-      1) # of times sched_yield() was called
-
- Next three are schedule() statistics:
--     2) # of times we switched to the expired queue and reused it
-+     2) This field is a legacy array expiration field used in O(1) scheduler.
-+	But still kept for ABI integrity.
-      3) # of times schedule() was called
-      4) # of times schedule() left the processor idle
-
-diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
-index 2a581ba..01a52d9 100644
---- a/kernel/sched/stats.c
-+++ b/kernel/sched/stats.c
-@@ -25,6 +25,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
- 	seq_printf(seq, "timestamp %lu\n", jiffies);
- 	for_each_online_cpu(cpu) {
- 		struct rq *rq = cpu_rq(cpu);
-+		int rq_sched_switch = 0;
- #ifdef CONFIG_SMP
- 		struct sched_domain *sd;
- 		int dcount = 0;
-@@ -34,7 +35,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
- 		seq_printf(seq,
- 		    "cpu%d %u %u %u %u %u %u %llu %llu %lu",
- 		    cpu, rq->yld_count,
--		    rq->sched_switch, rq->sched_count, rq->sched_goidle,
-+		    rq_sched_switch, rq->sched_count, rq->sched_goidle,
- 		    rq->ttwu_count, rq->ttwu_local,
- 		    rq->rq_cpu_time,
- 		    rq->rq_sched_info.run_delay, rq->rq_sched_info.pcount);
+greg k-h
