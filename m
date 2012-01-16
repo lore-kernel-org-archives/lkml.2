@@ -1,123 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2APLxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 06:53:09 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:16720 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271Ab2APLxH (ORCPT
+	id S1754478Ab2APLyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 06:54:04 -0500
+Received: from static.213.204.9.176.clients.your-server.de ([176.9.204.213]:40757
+	"EHLO shutemov.name" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385Ab2APLyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 06:53:07 -0500
-Date: Mon, 16 Jan 2012 14:52:58 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
-Subject: [patch] nfsd: oopses in cache_parse()
-Message-ID: <20120116115258.GC3294@mwanda>
-References: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
+	Mon, 16 Jan 2012 06:54:01 -0500
+Date: Mon, 16 Jan 2012 13:54:16 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        stable@kernel.org
+Subject: Re: [RESEND, PATCH 4/6] memcg: fix broken boolean expression
+Message-ID: <20120116115416.GA25687@shutemov.name>
+References: <1325883472-5614-1-git-send-email-kirill@shutemov.name>
+ <1325883472-5614-4-git-send-email-kirill@shutemov.name>
+ <20120109140404.GG3588@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bKyqfOwhbdpXa4YI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <20120109140404.GG3588@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F140F97.0068,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 09, 2012 at 03:04:04PM +0100, Johannes Weiner wrote:
+> On Fri, Jan 06, 2012 at 10:57:50PM +0200, Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> > 
+> > action != CPU_DEAD || action != CPU_DEAD_FROZEN is always true.
+> > 
+> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> > Cc: <stable@kernel.org>
+> 
+> I think you don't need to actually CC stable via email.  If you
+> include that tag, they will pick it up once the patch hits mainline.
 
---bKyqfOwhbdpXa4YI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't think it's a problem for stable@.
 
-We fixed expkey_parse() in b2ea70afad "nfsd: Fix oops when parsing a
-0 length export" but there are other cache_parse() implimentations
-which have the same issue.
+> 
+> The changelog is too terse, doubly so for a patch that should go into
+> stable.  How is the code supposed to work?  What are the consequences
+> of the bug?
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Is it enough?
+
 ---
-Since half of the implimentations get this wrong, maybe we should
-just check for this in cache_do_downcall().  Is there ever a valid
-reason to pass a zero length string to cache_parse()?
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index cf8a6bd..1d147a8 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -496,7 +496,7 @@ static int svc_export_parse(struct cache_detail *cd, ch=
-ar *mesg, int mlen)
- 	struct svc_export exp =3D {}, *expp;
- 	int an_int;
-=20
--	if (mesg[mlen-1] !=3D '\n')
-+	if (mlen < 1 || mesg[mlen - 1] !=3D '\n')
- 		return -EINVAL;
- 	mesg[mlen-1] =3D 0;
-=20
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index a6e711a..d945d71 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -217,7 +217,7 @@ static int nfs_dns_parse(struct cache_detail *cd, char =
-*buf, int buflen)
- 	ssize_t len;
- 	int ret =3D -EINVAL;
-=20
--	if (buf[buflen-1] !=3D '\n')
-+	if (buflen < 1 || buf[buflen - 1] !=3D '\n')
- 		goto out;
- 	buf[buflen-1] =3D '\0';
-=20
-diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index 9409627..f8456a4 100644
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -202,7 +202,7 @@ idtoname_parse(struct cache_detail *cd, char *buf, int =
-buflen)
- 	int len;
- 	int error =3D -EINVAL;
-=20
--	if (buf[buflen - 1] !=3D '\n')
-+	if (buflen < 1 || buf[buflen - 1] !=3D '\n')
- 		return (-EINVAL);
- 	buf[buflen - 1]=3D '\0';
-=20
-@@ -378,7 +378,7 @@ nametoid_parse(struct cache_detail *cd, char *buf, int =
-buflen)
- 	char *buf1;
- 	int error =3D -EINVAL;
-=20
--	if (buf[buflen - 1] !=3D '\n')
-+	if (buflen < 1 || buf[buflen - 1] !=3D '\n')
- 		return (-EINVAL);
- 	buf[buflen - 1]=3D '\0';
-=20
+>From fe1c2f2dc1abf63cce12017e2d9031cf67f0a161 Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Sat, 24 Dec 2011 04:12:53 +0200
+Subject: [PATCH 4/6] memcg: fix broken boolean expression
 
+action != CPU_DEAD || action != CPU_DEAD_FROZEN is always true.
 
---bKyqfOwhbdpXa4YI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We should return at the point if CPU doesn't go away. Otherwise drain
+all counters and stocks from the CPU.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: <stable@kernel.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-iQIcBAEBAgAGBQJPFA+ZAAoJEOnZkXI/YHqRKCUP/ipCvCv63JE5c116KQynw2KA
-W4uqcUUWouUC9Zi1RWvdqSQPHKrZyaCuUaI1Eou8KSL3rh/f+VfxP7dQY2386i5a
-m4WMIzkOuzQzUhrh9OwED6icTsa/GGne4gHudBfCOHc3SfaL676RvQStLVTRTAkh
-n8Vu09x9q2IBkbLosffjnCVrHnnqiZuhrbSAYQruzmGZnAPOhfzY+eGGRYd0Ri+N
-57urc0oWBjJ7y2yq+faqHDsb8SdO6O7c+nkGDPFivmthUN7JbyOLgh8gzWfmPU+Q
-91HoLst6F1vamlmgUPRtUcqBTFopE+rePGH69PH+hs5Cpo02/DDRZUvoCsGaiBzT
-NYcrMi78aGJIae5DIt6WgrGSl5X+fahdf1h7at4jHAonnBbrazAHwaGSXEBJSpD1
-X+sZV2CCi4ckIfmYSNpRsJ6XrhLu48GAGLgil3SoKhko9zxJTrsrj+vj8U4WumJO
-yuOTumVBGSc/tIKfOTDf96LViYwXW4KYe/ACchFIA+oLAZQvM94tQW47rXYuc7mk
-BTnAAIVgAjN4kQuz2YQxig++xAOKSgNdOrh2dg5he4larJ+G/g5GfZut7NPVbxRV
-UUyX2cYOs8hzYxxdXzyl/IKZZMl3dvKR6kErMEoWK7pwKVefMoBRZ1P021jltr46
-3leX0BXD2ePyM4Mujmee
-=Vqr+
------END PGP SIGNATURE-----
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 4ed6737..513ae04 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2095,9 +2095,11 @@ static int __cpuinit memcg_cpu_hotplug_callback(struct notifier_block *nb,
+ 		return NOTIFY_OK;
+ 	}
+ 
+-	if ((action != CPU_DEAD) || action != CPU_DEAD_FROZEN)
++	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
+ 		return NOTIFY_OK;
+ 
++	/* CPU goes away */
++
+ 	for_each_mem_cgroup(iter)
+ 		mem_cgroup_drain_pcp_counter(iter, cpu);
+ 
+-- 
+1.7.8.3
 
---bKyqfOwhbdpXa4YI--
+-- 
+ Kirill A. Shutemov
