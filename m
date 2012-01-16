@@ -1,69 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab2APMx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 07:53:57 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41246 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827Ab2APMx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 07:53:56 -0500
-Date: Mon, 16 Jan 2012 13:53:30 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
-Message-ID: <20120116125329.GB31667@elte.hu>
-References: <20120110174509.GA30802@redhat.com>
- <20120113182015.GA3902@redhat.com>
- <20120115182441.GA24694@redhat.com>
- <20120116074540.GE15641@elte.hu>
- <1326717070.7642.144.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326717070.7642.144.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1754699Ab2APMyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 07:54:12 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40983 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab2APMyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 07:54:09 -0500
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        Dmitry Antipov <dmitry.antipov@linaro.org>
+Subject: [PATCH] hrtimers: teach usleep_range() to return how many usecs was slept
+Date: Mon, 16 Jan 2012 16:53:23 +0400
+Message-Id: <1326718403-28156-1-git-send-email-dmitry.antipov@linaro.org>
+X-Mailer: git-send-email 1.7.7.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Teach usleep_range() to return how many usecs was actually spent
+in sleep. The rationale beyond this is to convert jiffies-based
+wait-for-hardware loops like:
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+unsigned long timeout = jiffies + msecs_to_jiffies(1000);
+while (hw_is_not_ready()) {
+	if (time_after(jiffies, timeout))
+		return -ETIMEDOUT;
+	msleep(1);
+}
 
-> On Mon, 2012-01-16 at 08:45 +0100, Ingo Molnar wrote:
-> 
-> > Looks good to me at a first (quick) sight, except this bit 
-> > which changes the ABI:
-> > 
-> > > > 	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
-> > > > 	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
-> > 
-> > That's not how we change tracepoints generally - we add a new 
-> > one and eventually phase out the old one. Which apps/tools rely 
-> > on the old tracepoint? If it's exactly zero apps then we might 
-> > be able to change it, but this needs to be investigated.
-> 
-> But this tracepoint wasn't changed, it was added on to. 
-> There's a difference. Any tool that uses this (including 
-> something like powertop) should be able to handle it. [...]
+to:
 
-That's mostly true in theory - the question is, is it true in 
-practice?
+unsigned long timeout = 0;
+while (hw_is_not_ready()) {
+      if (timeout > USEC_PER_SEC)
+	      return -ETIMEDOUT;
+      timeout += usleep_range(1000, 2000);
+}
 
-Say if an app relies on the smaller data structure, it sure 
-might get surprised by the kernel writing a wider record ...
+Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+---
+ fs/eventpoll.c          |    2 +-
+ fs/select.c             |    2 +-
+ include/linux/delay.h   |    2 +-
+ include/linux/hrtimer.h |    9 ++++++---
+ ipc/mqueue.c            |    2 +-
+ kernel/hrtimer.c        |   28 ++++++++++++++++++++++++----
+ kernel/timer.c          |   12 ++++++++----
+ 7 files changed, 42 insertions(+), 15 deletions(-)
 
-Thanks,
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index aabdfc3..7a957fd 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -1349,7 +1349,7 @@ fetch_events:
+ 			}
+ 
+ 			spin_unlock_irqrestore(&ep->lock, flags);
+-			if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS))
++			if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS, NULL))
+ 				timed_out = 1;
+ 
+ 			spin_lock_irqsave(&ep->lock, flags);
+diff --git a/fs/select.c b/fs/select.c
+index d33418f..eceb573 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -236,7 +236,7 @@ int poll_schedule_timeout(struct poll_wqueues *pwq, int state,
+ 
+ 	set_current_state(state);
+ 	if (!pwq->triggered)
+-		rc = schedule_hrtimeout_range(expires, slack, HRTIMER_MODE_ABS);
++		rc = schedule_hrtimeout_range(expires, slack, HRTIMER_MODE_ABS, NULL);
+ 	__set_current_state(TASK_RUNNING);
+ 
+ 	/*
+diff --git a/include/linux/delay.h b/include/linux/delay.h
+index a6ecb34..e512a50 100644
+--- a/include/linux/delay.h
++++ b/include/linux/delay.h
+@@ -45,7 +45,7 @@ extern unsigned long lpj_fine;
+ void calibrate_delay(void);
+ void msleep(unsigned int msecs);
+ unsigned long msleep_interruptible(unsigned int msecs);
+-void usleep_range(unsigned long min, unsigned long max);
++unsigned long usleep_range(unsigned long min, unsigned long max);
+ 
+ static inline void ssleep(unsigned int seconds)
+ {
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0dc30..661dd25 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -128,6 +128,7 @@ struct hrtimer {
+ struct hrtimer_sleeper {
+ 	struct hrtimer timer;
+ 	struct task_struct *task;
++	ktime_t elapsed;
+ };
+ 
+ /**
+@@ -429,9 +430,11 @@ extern void hrtimer_init_sleeper(struct hrtimer_sleeper *sl,
+ 				 struct task_struct *tsk);
+ 
+ extern int schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
+-						const enum hrtimer_mode mode);
+-extern int schedule_hrtimeout_range_clock(ktime_t *expires,
+-		unsigned long delta, const enum hrtimer_mode mode, int clock);
++				    const enum hrtimer_mode mode,
++				    unsigned long *elapsed);
++extern int schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
++					  const enum hrtimer_mode mode, int clock,
++					  unsigned long *elapsed);
+ extern int schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
+ 
+ /* Soft interrupt function to run the hrtimer queues: */
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index 9b7c8ab..578cce7 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -450,7 +450,7 @@ static int wq_sleep(struct mqueue_inode_info *info, int sr,
+ 
+ 		spin_unlock(&info->lock);
+ 		time = schedule_hrtimeout_range_clock(timeout, 0,
+-			HRTIMER_MODE_ABS, CLOCK_REALTIME);
++		        HRTIMER_MODE_ABS, CLOCK_REALTIME, NULL);
+ 
+ 		while (ewp->state == STATE_PENDING)
+ 			cpu_relax();
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index ae34bf5..75c9c5c 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1475,6 +1475,12 @@ static enum hrtimer_restart hrtimer_wakeup(struct hrtimer *timer)
+ 	struct hrtimer_sleeper *t =
+ 		container_of(timer, struct hrtimer_sleeper, timer);
+ 	struct task_struct *task = t->task;
++	struct hrtimer_clock_base *base;
++	unsigned long flags;
++
++	base = lock_hrtimer_base(timer, &flags);
++	t->elapsed = ktime_sub(base->get_time(), t->elapsed);
++	unlock_hrtimer_base(timer, &flags);
+ 
+ 	t->task = NULL;
+ 	if (task)
+@@ -1485,6 +1491,13 @@ static enum hrtimer_restart hrtimer_wakeup(struct hrtimer *timer)
+ 
+ void hrtimer_init_sleeper(struct hrtimer_sleeper *sl, struct task_struct *task)
+ {
++	struct hrtimer_clock_base *base;
++	unsigned long flags;
++
++	base = lock_hrtimer_base(&sl->timer, &flags);
++	sl->elapsed = base->get_time();
++	unlock_hrtimer_base(&sl->timer, &flags);
++
+ 	sl->timer.function = hrtimer_wakeup;
+ 	sl->task = task;
+ }
+@@ -1750,10 +1763,13 @@ void __init hrtimers_init(void)
+  * @delta:	slack in expires timeout (ktime_t)
+  * @mode:	timer mode, HRTIMER_MODE_ABS or HRTIMER_MODE_REL
+  * @clock:	timer clock, CLOCK_MONOTONIC or CLOCK_REALTIME
++ * @elapsed:	pointer to unsigned long variable where to store
++ * 		the time actually slept in timeout (usecs)
+  */
+ int __sched
+ schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
+-			       const enum hrtimer_mode mode, int clock)
++			       const enum hrtimer_mode mode, int clock,
++			       unsigned long *elapsed)
+ {
+ 	struct hrtimer_sleeper t;
+ 
+@@ -1787,6 +1803,8 @@ schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
+ 	if (likely(t.task))
+ 		schedule();
+ 
++	if (elapsed)
++		*elapsed = ktime_to_us(t.elapsed);
+ 	hrtimer_cancel(&t.timer);
+ 	destroy_hrtimer_on_stack(&t.timer);
+ 
+@@ -1800,6 +1818,8 @@ schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
+  * @expires:	timeout value (ktime_t)
+  * @delta:	slack in expires timeout (ktime_t)
+  * @mode:	timer mode, HRTIMER_MODE_ABS or HRTIMER_MODE_REL
++ * @elapsed:	pointer to unsigned long variable where to store
++ *		the time actually slept in timeout (usecs)
+  *
+  * Make the current task sleep until the given expiry time has
+  * elapsed. The routine will return immediately unless
+@@ -1824,10 +1844,10 @@ schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
+  * Returns 0 when the timer has expired otherwise -EINTR
+  */
+ int __sched schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
+-				     const enum hrtimer_mode mode)
++				     const enum hrtimer_mode mode, unsigned long *elapsed)
+ {
+ 	return schedule_hrtimeout_range_clock(expires, delta, mode,
+-					      CLOCK_MONOTONIC);
++					      CLOCK_MONOTONIC, elapsed);
+ }
+ EXPORT_SYMBOL_GPL(schedule_hrtimeout_range);
+ 
+@@ -1856,6 +1876,6 @@ EXPORT_SYMBOL_GPL(schedule_hrtimeout_range);
+ int __sched schedule_hrtimeout(ktime_t *expires,
+ 			       const enum hrtimer_mode mode)
+ {
+-	return schedule_hrtimeout_range(expires, 0, mode);
++	return schedule_hrtimeout_range(expires, 0, mode, NULL);
+ }
+ EXPORT_SYMBOL_GPL(schedule_hrtimeout);
+diff --git a/kernel/timer.c b/kernel/timer.c
+index a297ffc..aaad2b8 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1819,14 +1819,15 @@ unsigned long msleep_interruptible(unsigned int msecs)
+ 
+ EXPORT_SYMBOL(msleep_interruptible);
+ 
+-static int __sched do_usleep_range(unsigned long min, unsigned long max)
++static int __sched do_usleep_range(unsigned long min, unsigned long max,
++				   unsigned long *elapsed)
+ {
+ 	ktime_t kmin;
+ 	unsigned long delta;
+ 
+ 	kmin = ktime_set(0, min * NSEC_PER_USEC);
+ 	delta = (max - min) * NSEC_PER_USEC;
+-	return schedule_hrtimeout_range(&kmin, delta, HRTIMER_MODE_REL);
++	return schedule_hrtimeout_range(&kmin, delta, HRTIMER_MODE_REL, elapsed);
+ }
+ 
+ /**
+@@ -1834,9 +1835,12 @@ static int __sched do_usleep_range(unsigned long min, unsigned long max)
+  * @min: Minimum time in usecs to sleep
+  * @max: Maximum time in usecs to sleep
+  */
+-void usleep_range(unsigned long min, unsigned long max)
++unsigned long usleep_range(unsigned long min, unsigned long max)
+ {
++	unsigned long elapsed;
++
+ 	__set_current_state(TASK_UNINTERRUPTIBLE);
+-	do_usleep_range(min, max);
++	do_usleep_range(min, max, &elapsed);
++	return elapsed;
+ }
+ EXPORT_SYMBOL(usleep_range);
+-- 
+1.7.7.5
 
-	Ingo
