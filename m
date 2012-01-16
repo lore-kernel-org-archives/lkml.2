@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab2APWVC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 17:21:02 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:36918 "EHLO ogre.sisk.pl"
+	id S1757095Ab2APWVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 17:21:31 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:36936 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754612Ab2APWVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 17:21:00 -0500
+	id S1756619Ab2APWVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 17:21:01 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 2/3][Resend] PM / Sleep: Introduce generic callbacks for new device PM phases
-Date: Mon, 16 Jan 2012 23:23:27 +0100
+Subject: [PATCH 3/3] PM / Domains: Run late/early device suspend callbacks at the right time
+Date: Mon, 16 Jan 2012 23:24:15 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
         Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
@@ -20,319 +20,351 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201162323.27894.rjw@sisk.pl>
+Message-Id: <201201162324.15434.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Introduce generic subsystem callbacks for the new phases of device
-suspend/resume during system power transitions: "late suspend",
-"early resume", "late freeze", "early thaw", "late poweroff",
-"early restore".
+After the introduction of the late/early phases of device
+suspend/resume during system-wide power transitions it is possible
+to make the generic PM domains code execute its default late/early
+device suspend/resume callbacks during those phases instead of the
+corresponding _noirq phases.  The _noirq device suspend/resume
+phases were only used for executing those callbacks, because this
+was the only way it could be done, but now we can do better.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/generic_ops.c |  163 +++++++++++++++++++++++++--------------
- include/linux/pm.h               |    6 +
- 2 files changed, 113 insertions(+), 56 deletions(-)
+ drivers/base/power/domain.c |  157 +++++++++++++++++++++++++++++++-------------
+ 1 file changed, 111 insertions(+), 46 deletions(-)
 
-Index: linux/drivers/base/power/generic_ops.c
+Index: linux/drivers/base/power/domain.c
 ===================================================================
---- linux.orig/drivers/base/power/generic_ops.c
-+++ linux/drivers/base/power/generic_ops.c
-@@ -92,59 +92,28 @@ int pm_generic_prepare(struct device *de
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -820,17 +820,16 @@ static int pm_genpd_suspend(struct devic
  }
  
  /**
-- * __pm_generic_call - Generic suspend/freeze/poweroff/thaw subsystem callback.
-- * @dev: Device to handle.
-- * @event: PM transition of the system under way.
-- * @bool: Whether or not this is the "noirq" stage.
-- *
-- * Execute the PM callback corresponding to @event provided by the driver of
-- * @dev, if defined, and return its error code.    Return 0 if the callback is
-- * not present.
-- */
--static int __pm_generic_call(struct device *dev, int event, bool noirq)
--{
--	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
--	int (*callback)(struct device *);
--
--	if (!pm)
+- * pm_genpd_suspend_noirq - Late suspend of a device from an I/O PM domain.
++ * pm_genpd_suspend_late - Late suspend of a device from an I/O PM domain.
+  * @dev: Device to suspend.
+  *
+  * Carry out a late suspend of a device under the assumption that its
+  * pm_domain field points to the domain member of an object of type
+  * struct generic_pm_domain representing a PM domain consisting of I/O devices.
+  */
+-static int pm_genpd_suspend_noirq(struct device *dev)
++static int pm_genpd_suspend_late(struct device *dev)
+ {
+ 	struct generic_pm_domain *genpd;
+-	int ret;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+@@ -838,14 +837,28 @@ static int pm_genpd_suspend_noirq(struct
+ 	if (IS_ERR(genpd))
+ 		return -EINVAL;
+ 
+-	if (genpd->suspend_power_off)
+-		return 0;
++	return genpd->suspend_power_off ? 0 : genpd_suspend_late(genpd, dev);
++}
+ 
+-	ret = genpd_suspend_late(genpd, dev);
+-	if (ret)
+-		return ret;
++/**
++ * pm_genpd_suspend_noirq - Completion of suspend of device in an I/O PM domain.
++ * @dev: Device to suspend.
++ *
++ * Stop the device and remove power from the domain if all devices in it have
++ * been stopped.
++ */
++static int pm_genpd_suspend_noirq(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
+ 
+-	if (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev))
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	if (genpd->suspend_power_off
++	    || (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev)))
+ 		return 0;
+ 
+ 	genpd_stop_dev(genpd, dev);
+@@ -862,13 +875,10 @@ static int pm_genpd_suspend_noirq(struct
+ }
+ 
+ /**
+- * pm_genpd_resume_noirq - Early resume of a device from an I/O power domain.
++ * pm_genpd_resume_noirq - Start of resume of device in an I/O PM domain.
+  * @dev: Device to resume.
+  *
+- * Carry out an early resume of a device under the assumption that its
+- * pm_domain field points to the domain member of an object of type
+- * struct generic_pm_domain representing a power domain consisting of I/O
+- * devices.
++ * Restore power to the device's PM domain, if necessary, and start the device.
+  */
+ static int pm_genpd_resume_noirq(struct device *dev)
+ {
+@@ -890,13 +900,34 @@ static int pm_genpd_resume_noirq(struct
+ 	 */
+ 	pm_genpd_poweron(genpd);
+ 	genpd->suspended_count--;
+-	genpd_start_dev(genpd, dev);
+ 
+-	return genpd_resume_early(genpd, dev);
++	return genpd_start_dev(genpd, dev);
+ }
+ 
+ /**
+- * pm_genpd_resume - Resume a device belonging to an I/O power domain.
++ * pm_genpd_resume_early - Early resume of a device in an I/O PM domain.
++ * @dev: Device to resume.
++ *
++ * Carry out an early resume of a device under the assumption that its
++ * pm_domain field points to the domain member of an object of type
++ * struct generic_pm_domain representing a power domain consisting of I/O
++ * devices.
++ */
++static int pm_genpd_resume_early(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	return genpd->suspend_power_off ? 0 : genpd_resume_early(genpd, dev);
++}
++
++/**
++ * pm_genpd_resume - Resume of device in an I/O PM domain.
+  * @dev: Device to resume.
+  *
+  * Resume a device under the assumption that its pm_domain field points to the
+@@ -917,7 +948,7 @@ static int pm_genpd_resume(struct device
+ }
+ 
+ /**
+- * pm_genpd_freeze - Freeze a device belonging to an I/O power domain.
++ * pm_genpd_freeze - Freezing a device in an I/O PM domain.
+  * @dev: Device to freeze.
+  *
+  * Freeze a device under the assumption that its pm_domain field points to the
+@@ -938,7 +969,29 @@ static int pm_genpd_freeze(struct device
+ }
+ 
+ /**
+- * pm_genpd_freeze_noirq - Late freeze of a device from an I/O power domain.
++ * pm_genpd_freeze_late - Late freeze of a device in an I/O PM domain.
++ * @dev: Device to freeze.
++ *
++ * Carry out a late freeze of a device under the assumption that its
++ * pm_domain field points to the domain member of an object of type
++ * struct generic_pm_domain representing a power domain consisting of I/O
++ * devices.
++ */
++static int pm_genpd_freeze_late(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	return genpd->suspend_power_off ? 0 : genpd_freeze_late(genpd, dev);
++}
++
++/**
++ * pm_genpd_freeze_noirq - Completion of freezing a device in an I/O PM domain.
+  * @dev: Device to freeze.
+  *
+  * Carry out a late freeze of a device under the assumption that its
+@@ -949,7 +1002,6 @@ static int pm_genpd_freeze(struct device
+ static int pm_genpd_freeze_noirq(struct device *dev)
+ {
+ 	struct generic_pm_domain *genpd;
+-	int ret;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+@@ -957,20 +1009,31 @@ static int pm_genpd_freeze_noirq(struct
+ 	if (IS_ERR(genpd))
+ 		return -EINVAL;
+ 
+-	if (genpd->suspend_power_off)
+-		return 0;
++	return genpd->suspend_power_off ? 0 : genpd_stop_dev(genpd, dev);
++}
++
++/**
++ * pm_genpd_thaw_noirq - Early thaw of device in an I/O PM domain.
++ * @dev: Device to thaw.
++ *
++ * Start the device, unless power has been removed from the domain already
++ * before the system transition.
++ */
++static int pm_genpd_thaw_noirq(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
+ 
+-	ret = genpd_freeze_late(genpd, dev);
+-	if (ret)
+-		return ret;
++	dev_dbg(dev, "%s()\n", __func__);
+ 
+-	genpd_stop_dev(genpd, dev);
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
+ 
+-	return 0;
++	return genpd->suspend_power_off ? 0 : genpd_start_dev(genpd, dev);
+ }
+ 
+ /**
+- * pm_genpd_thaw_noirq - Early thaw of a device from an I/O power domain.
++ * pm_genpd_thaw_early - Early thaw of device in an I/O PM domain.
+  * @dev: Device to thaw.
+  *
+  * Carry out an early thaw of a device under the assumption that its
+@@ -978,7 +1041,7 @@ static int pm_genpd_freeze_noirq(struct
+  * struct generic_pm_domain representing a power domain consisting of I/O
+  * devices.
+  */
+-static int pm_genpd_thaw_noirq(struct device *dev)
++static int pm_genpd_thaw_early(struct device *dev)
+ {
+ 	struct generic_pm_domain *genpd;
+ 
+@@ -988,12 +1051,7 @@ static int pm_genpd_thaw_noirq(struct de
+ 	if (IS_ERR(genpd))
+ 		return -EINVAL;
+ 
+-	if (genpd->suspend_power_off)
 -		return 0;
 -
--	switch (event) {
--	case PM_EVENT_SUSPEND:
--		callback = noirq ? pm->suspend_noirq : pm->suspend;
--		break;
--	case PM_EVENT_FREEZE:
--		callback = noirq ? pm->freeze_noirq : pm->freeze;
--		break;
--	case PM_EVENT_HIBERNATE:
--		callback = noirq ? pm->poweroff_noirq : pm->poweroff;
--		break;
--	case PM_EVENT_RESUME:
--		callback = noirq ? pm->resume_noirq : pm->resume;
--		break;
--	case PM_EVENT_THAW:
--		callback = noirq ? pm->thaw_noirq : pm->thaw;
--		break;
--	case PM_EVENT_RESTORE:
--		callback = noirq ? pm->restore_noirq : pm->restore;
--		break;
--	default:
--		callback = NULL;
--		break;
--	}
-+ * pm_generic_suspend_noirq - Generic suspend_noirq callback for subsystems.
-+ * @dev: Device to suspend.
-+ */
-+int pm_generic_suspend_noirq(struct device *dev)
-+{
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
- 
--	return callback ? callback(dev) : 0;
-+	return pm && pm->suspend_noirq ? pm->suspend_noirq(dev) : 0;
+-	genpd_start_dev(genpd, dev);
+-
+-	return genpd_thaw_early(genpd, dev);
++	return genpd->suspend_power_off ? 0 : genpd_thaw_early(genpd, dev);
  }
-+EXPORT_SYMBOL_GPL(pm_generic_suspend_noirq);
  
  /**
-- * pm_generic_suspend_noirq - Generic suspend_noirq callback for subsystems.
-+ * pm_generic_suspend_late - Generic suspend_late callback for subsystems.
-  * @dev: Device to suspend.
-  */
--int pm_generic_suspend_noirq(struct device *dev)
-+int pm_generic_suspend_late(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_SUSPEND, true);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->suspend_late ? pm->suspend_late(dev) : 0;
+@@ -1018,13 +1076,11 @@ static int pm_genpd_thaw(struct device *
  }
--EXPORT_SYMBOL_GPL(pm_generic_suspend_noirq);
-+EXPORT_SYMBOL_GPL(pm_generic_suspend_late);
  
  /**
-  * pm_generic_suspend - Generic suspend callback for subsystems.
-@@ -152,7 +121,9 @@ EXPORT_SYMBOL_GPL(pm_generic_suspend_noi
-  */
- int pm_generic_suspend(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_SUSPEND, false);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->suspend ? pm->suspend(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_suspend);
- 
-@@ -162,17 +133,33 @@ EXPORT_SYMBOL_GPL(pm_generic_suspend);
-  */
- int pm_generic_freeze_noirq(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_FREEZE, true);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->freeze_noirq ? pm->freeze_noirq(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_freeze_noirq);
- 
- /**
-+ * pm_generic_freeze_late - Generic freeze_late callback for subsystems.
-+ * @dev: Device to freeze.
-+ */
-+int pm_generic_freeze_late(struct device *dev)
-+{
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->freeze_late ? pm->freeze_late(dev) : 0;
-+}
-+EXPORT_SYMBOL_GPL(pm_generic_freeze_late);
-+
-+/**
-  * pm_generic_freeze - Generic freeze callback for subsystems.
-  * @dev: Device to freeze.
-  */
- int pm_generic_freeze(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_FREEZE, false);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->freeze ? pm->freeze(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_freeze);
- 
-@@ -182,17 +169,33 @@ EXPORT_SYMBOL_GPL(pm_generic_freeze);
-  */
- int pm_generic_poweroff_noirq(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_HIBERNATE, true);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->poweroff_noirq ? pm->poweroff_noirq(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_poweroff_noirq);
- 
- /**
-+ * pm_generic_poweroff_late - Generic poweroff_late callback for subsystems.
-+ * @dev: Device to handle.
-+ */
-+int pm_generic_poweroff_late(struct device *dev)
-+{
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->poweroff_late ? pm->poweroff_late(dev) : 0;
-+}
-+EXPORT_SYMBOL_GPL(pm_generic_poweroff_late);
-+
-+/**
-  * pm_generic_poweroff - Generic poweroff callback for subsystems.
-  * @dev: Device to handle.
-  */
- int pm_generic_poweroff(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_HIBERNATE, false);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->poweroff ? pm->poweroff(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_poweroff);
- 
-@@ -202,17 +205,33 @@ EXPORT_SYMBOL_GPL(pm_generic_poweroff);
-  */
- int pm_generic_thaw_noirq(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_THAW, true);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->thaw_noirq ? pm->thaw_noirq(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_thaw_noirq);
- 
- /**
-+ * pm_generic_thaw_early - Generic thaw_early callback for subsystems.
-+ * @dev: Device to thaw.
-+ */
-+int pm_generic_thaw_early(struct device *dev)
-+{
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->thaw_early ? pm->thaw_early(dev) : 0;
-+}
-+EXPORT_SYMBOL_GPL(pm_generic_thaw_early);
-+
-+/**
-  * pm_generic_thaw - Generic thaw callback for subsystems.
-  * @dev: Device to thaw.
-  */
- int pm_generic_thaw(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_THAW, false);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->thaw ? pm->thaw(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_thaw);
- 
-@@ -222,17 +241,33 @@ EXPORT_SYMBOL_GPL(pm_generic_thaw);
-  */
- int pm_generic_resume_noirq(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_RESUME, true);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->resume_noirq ? pm->resume_noirq(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_resume_noirq);
- 
- /**
-+ * pm_generic_resume_early - Generic resume_early callback for subsystems.
-+ * @dev: Device to resume.
-+ */
-+int pm_generic_resume_early(struct device *dev)
-+{
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->resume_early ? pm->resume_early(dev) : 0;
-+}
-+EXPORT_SYMBOL_GPL(pm_generic_resume_early);
-+
-+/**
-  * pm_generic_resume - Generic resume callback for subsystems.
+- * pm_genpd_restore_noirq - Early restore of a device from an I/O power domain.
++ * pm_genpd_restore_noirq - Start of restore of device in an I/O PM domain.
   * @dev: Device to resume.
+  *
+- * Carry out an early restore of a device under the assumption that its
+- * pm_domain field points to the domain member of an object of type
+- * struct generic_pm_domain representing a power domain consisting of I/O
+- * devices.
++ * Make sure the domain will be in the same power state as before the
++ * hibernation the system is resuming from and start the device if necessary.
   */
- int pm_generic_resume(struct device *dev)
+ static int pm_genpd_restore_noirq(struct device *dev)
  {
--	return __pm_generic_call(dev, PM_EVENT_RESUME, false);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->resume ? pm->resume(dev) : 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_resume);
+@@ -1054,9 +1110,8 @@ static int pm_genpd_restore_noirq(struct
  
-@@ -242,17 +277,33 @@ EXPORT_SYMBOL_GPL(pm_generic_resume);
-  */
- int pm_generic_restore_noirq(struct device *dev)
- {
--	return __pm_generic_call(dev, PM_EVENT_RESTORE, true);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->restore_noirq ? pm->restore_noirq(dev) : 0;
+ 	pm_genpd_poweron(genpd);
+ 	genpd->suspended_count--;
+-	genpd_start_dev(genpd, dev);
+ 
+-	return genpd_resume_early(genpd, dev);
++	return genpd_start_dev(genpd, dev);
  }
- EXPORT_SYMBOL_GPL(pm_generic_restore_noirq);
  
  /**
-+ * pm_generic_restore_early - Generic restore_early callback for subsystems.
-+ * @dev: Device to resume.
-+ */
-+int pm_generic_restore_early(struct device *dev)
-+{
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->restore_early ? pm->restore_early(dev) : 0;
-+}
-+EXPORT_SYMBOL_GPL(pm_generic_restore_early);
-+
-+/**
-  * pm_generic_restore - Generic restore callback for subsystems.
-  * @dev: Device to restore.
-  */
- int pm_generic_restore(struct device *dev)
+@@ -1099,11 +1154,15 @@ static void pm_genpd_complete(struct dev
+ 
+ #define pm_genpd_prepare		NULL
+ #define pm_genpd_suspend		NULL
++#define pm_genpd_suspend_late		NULL
+ #define pm_genpd_suspend_noirq		NULL
++#define pm_genpd_resume_early		NULL
+ #define pm_genpd_resume_noirq		NULL
+ #define pm_genpd_resume			NULL
+ #define pm_genpd_freeze			NULL
++#define pm_genpd_freeze_late		NULL
+ #define pm_genpd_freeze_noirq		NULL
++#define pm_genpd_thaw_early		NULL
+ #define pm_genpd_thaw_noirq		NULL
+ #define pm_genpd_thaw			NULL
+ #define pm_genpd_restore_noirq		NULL
+@@ -1450,7 +1509,7 @@ static int pm_genpd_default_suspend_late
  {
--	return __pm_generic_call(dev, PM_EVENT_RESTORE, false);
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	return pm && pm->restore ? pm->restore(dev) : 0;
+ 	int (*cb)(struct device *__dev) = dev_gpd_data(dev)->ops.suspend_late;
+ 
+-	return cb ? cb(dev) : pm_generic_suspend_noirq(dev);
++	return cb ? cb(dev) : pm_generic_suspend_late(dev);
  }
- EXPORT_SYMBOL_GPL(pm_generic_restore);
  
-Index: linux/include/linux/pm.h
-===================================================================
---- linux.orig/include/linux/pm.h
-+++ linux/include/linux/pm.h
-@@ -632,17 +632,23 @@ extern void __suspend_report_result(cons
- extern int device_pm_wait_for_dev(struct device *sub, struct device *dev);
+ /**
+@@ -1461,7 +1520,7 @@ static int pm_genpd_default_resume_early
+ {
+ 	int (*cb)(struct device *__dev) = dev_gpd_data(dev)->ops.resume_early;
  
- extern int pm_generic_prepare(struct device *dev);
-+extern int pm_generic_suspend_late(struct device *dev);
- extern int pm_generic_suspend_noirq(struct device *dev);
- extern int pm_generic_suspend(struct device *dev);
-+extern int pm_generic_resume_early(struct device *dev);
- extern int pm_generic_resume_noirq(struct device *dev);
- extern int pm_generic_resume(struct device *dev);
- extern int pm_generic_freeze_noirq(struct device *dev);
-+extern int pm_generic_freeze_late(struct device *dev);
- extern int pm_generic_freeze(struct device *dev);
- extern int pm_generic_thaw_noirq(struct device *dev);
-+extern int pm_generic_thaw_early(struct device *dev);
- extern int pm_generic_thaw(struct device *dev);
- extern int pm_generic_restore_noirq(struct device *dev);
-+extern int pm_generic_restore_early(struct device *dev);
- extern int pm_generic_restore(struct device *dev);
- extern int pm_generic_poweroff_noirq(struct device *dev);
-+extern int pm_generic_poweroff_late(struct device *dev);
- extern int pm_generic_poweroff(struct device *dev);
- extern void pm_generic_complete(struct device *dev);
+-	return cb ? cb(dev) : pm_generic_resume_noirq(dev);
++	return cb ? cb(dev) : pm_generic_resume_early(dev);
+ }
  
+ /**
+@@ -1494,7 +1553,7 @@ static int pm_genpd_default_freeze_late(
+ {
+ 	int (*cb)(struct device *__dev) = dev_gpd_data(dev)->ops.freeze_late;
+ 
+-	return cb ? cb(dev) : pm_generic_freeze_noirq(dev);
++	return cb ? cb(dev) : pm_generic_freeze_late(dev);
+ }
+ 
+ /**
+@@ -1505,7 +1564,7 @@ static int pm_genpd_default_thaw_early(s
+ {
+ 	int (*cb)(struct device *__dev) = dev_gpd_data(dev)->ops.thaw_early;
+ 
+-	return cb ? cb(dev) : pm_generic_thaw_noirq(dev);
++	return cb ? cb(dev) : pm_generic_thaw_early(dev);
+ }
+ 
+ /**
+@@ -1564,16 +1623,22 @@ void pm_genpd_init(struct generic_pm_dom
+ 	genpd->domain.ops.runtime_idle = pm_generic_runtime_idle;
+ 	genpd->domain.ops.prepare = pm_genpd_prepare;
+ 	genpd->domain.ops.suspend = pm_genpd_suspend;
++	genpd->domain.ops.suspend_late = pm_genpd_suspend_late;
+ 	genpd->domain.ops.suspend_noirq = pm_genpd_suspend_noirq;
+ 	genpd->domain.ops.resume_noirq = pm_genpd_resume_noirq;
++	genpd->domain.ops.resume_early = pm_genpd_resume_early;
+ 	genpd->domain.ops.resume = pm_genpd_resume;
+ 	genpd->domain.ops.freeze = pm_genpd_freeze;
++	genpd->domain.ops.freeze_late = pm_genpd_freeze_late;
+ 	genpd->domain.ops.freeze_noirq = pm_genpd_freeze_noirq;
+ 	genpd->domain.ops.thaw_noirq = pm_genpd_thaw_noirq;
++	genpd->domain.ops.thaw_early = pm_genpd_thaw_early;
+ 	genpd->domain.ops.thaw = pm_genpd_thaw;
+ 	genpd->domain.ops.poweroff = pm_genpd_suspend;
++	genpd->domain.ops.poweroff_late = pm_genpd_suspend_late;
+ 	genpd->domain.ops.poweroff_noirq = pm_genpd_suspend_noirq;
+ 	genpd->domain.ops.restore_noirq = pm_genpd_restore_noirq;
++	genpd->domain.ops.restore_early = pm_genpd_resume_early;
+ 	genpd->domain.ops.restore = pm_genpd_resume;
+ 	genpd->domain.ops.complete = pm_genpd_complete;
+ 	genpd->dev_ops.save_state = pm_genpd_default_save_state;
 
