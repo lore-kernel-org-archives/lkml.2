@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab2APAkr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 19:40:47 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60058 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab2APAkq (ORCPT
+	id S1753053Ab2APAlV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 19:41:21 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:51915 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab2APAlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 19:40:46 -0500
+	Sun, 15 Jan 2012 19:41:19 -0500
+Date: Mon, 16 Jan 2012 00:41:10 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: [PATCH] x86 / reboot: Blacklist Dell OptiPlex 990 known to
+ require PCI reboot
+Message-ID: <20120116004110.GA21240@srcf.ucam.org>
+References: <201111160019.51303.rjw@sisk.pl>
+ <201201091700.09318.roucaries.bastien@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4F136FED.8090201@hitachi.com>
-References: <CAOPLpQc_TfvtfJ0NL+4fsi2r_eW+4qWX+WbXrZ9BjGn44nAmBw@mail.gmail.com>
- <4F136FED.8090201@hitachi.com>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Sun, 15 Jan 2012 19:40:24 -0500
-Message-ID: <CAOPLpQfytPyDEBF1Hbkpo7ovUerEsstVGxBr=EpDL-BKEMaqLA@mail.gmail.com>
-Subject: Re: Typo transferred from Intel manual
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201201091700.09318.roucaries.bastien@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 15, 2012 at 19:31, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> Could you add a comment line above the fix in x86-opcode-map.txt?
-> I just consider the case that someone may confuse the fix itself
-> is typo.
+On Mon, Jan 09, 2012 at 05:00:08PM +0100, bastien ROUCARIES wrote:
+> Le Wednesday 16 November 2011 00:19:51, Rafael J. Wysocki a écrit :
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > Dell OptiPlex 990 is known to require PCI reboot, so add it to the reboot
+> > blacklist in pci_reboot_dmi_table[].
+> 
+> 
+> Sorry to hi jack this thread but it seems that dell made the same crap with my precision T1600. See 
+> http://www.centos.org/modules/newbb/print.php?form=1&topic_id=32948&forum=55&order=ASC&start=0
+> or
+> https://bugzilla.redhat.com/show_bug.cgi?id=698239
 
-Find the changed patch below.
+Does it work if you disable VT-d in the firmware? If so, then adding it 
+to the reboot method blacklist is the wrong fix - we need to figure out 
+why VT-d interferes with Dell's reboot code.
 
-
-Signed-off-by: Ulrich Drepper <drepper@gmail.com>
-
-diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
-index 5b83c51..c292885 100644
---- a/arch/x86/lib/x86-opcode-map.txt
-+++ b/arch/x86/lib/x86-opcode-map.txt
-@@ -219,7 +219,9 @@ ab: STOS/W/D/Q Yv,rAX
- ac: LODS/B AL,Xb
- ad: LODS/W/D/Q rAX,Xv
- ae: SCAS/B AL,Yb
--af: SCAS/W/D/Q rAX,Xv
-+# Note: The May 2011 Intel manual shows Xv for the second parameter of the
-+# next instruction but Yv is correct
-+af: SCAS/W/D/Q rAX,Yv
- # 0xb0 - 0xbf
- b0: MOV AL/R8L,Ib
- b1: MOV CL/R9L,Ib
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
