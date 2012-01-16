@@ -1,143 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab2APXiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 18:38:13 -0500
-Received: from tundra.namei.org ([65.99.196.166]:36665 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab2APXiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 18:38:11 -0500
-Date: Tue, 17 Jan 2012 10:38:05 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: David Howells <dhowells@redhat.com>
-cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KEYS: Add missing smp_rmb() primitives to the keyring
- search code
-In-Reply-To: <20120116160349.10775.92195.stgit@warthog.procyon.org.uk>
-Message-ID: <alpine.LRH.2.00.1201171037420.12160@tundra.namei.org>
-References: <20120116160349.10775.92195.stgit@warthog.procyon.org.uk>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752095Ab2APXlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 18:41:17 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41909 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab2APXlP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 18:41:15 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAEP_g=-8C2Gen0nxRFH-CizG5jA1cHH84g+3qiOkmf4j+tbihg@mail.gmail.com>
+References: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
+ <20120116083634.7b327c34@nehalam.linuxnetplumber.net> <CAGsizzK-La0iqt8sOXBVcn4W+8KgxMnvQgFFozEqZzQY+hGpzA@mail.gmail.com>
+ <CAEP_g=-8C2Gen0nxRFH-CizG5jA1cHH84g+3qiOkmf4j+tbihg@mail.gmail.com>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@gmail.com>
+Date: Tue, 17 Jan 2012 00:40:54 +0100
+Message-ID: <CAGsizzK-tM+5JZ_V60qBGwRLj5TDvWL6cXpoLJBWQ4FdQDJ36g@mail.gmail.com>
+Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: Jesse Gross <jesse@nicira.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jan 2012, David Howells wrote:
+Dòa 16. januára 2012 22:22, Jesse Gross <jesse@nicira.com> napísal/a:
+> 2012/1/16 ©tefan Gula <steweg@gmail.com>:
+>> Dòa 16. januára 2012 17:36, Stephen Hemminger <shemminger@vyatta.com> napísal/a:
+>>> On Mon, 16 Jan 2012 13:13:19 +0100
+>>> ©tefan Gula <steweg@gmail.com> wrote:
+>>>
+>>>> From: Stefan Gula <steweg@gmail.com
+>>>>
+>>>> This patch is an extension for current Ethernet over GRE
+>>>> implementation, which allows user to create virtual bridge (multipoint
+>>>> VPN) and forward traffic based on Ethernet MAC address informations in
+>>>> it. It simulates the Bridge bahaviour learing mechanism, but instead
+>>>> of learning port ID from which given MAC address comes, it learns IP
+>>>> address of peer which encapsulated given packet. Multicast, Broadcast
+>>>> and unknown-multicast traffic is send over network as multicast
+>>>> enacapsulated GRE packet, so one Ethernet multipoint GRE tunnel can be
+>>>> represented as one single virtual switch on logical level and be also
+>>>> represented as one multicast IPv4 address on network level.
+>>>>
+>>>> Signed-off-by: Stefan Gula <steweg@gmail.com>
+>>>
+>>> Thanks for the effort, but it is duplicating existing functionality.
+>>> It possible to do this already with existing gretap device and the
+>>> current bridge.
+>>>
+>>> The same thing is also supported by OpenVswitch.
+>>>
+>>
+>> gretap with bridge will not do the same as gretap allows you to only
+>> encapsulate L2 frames inside the GRE - this one part is actually
+>> utilized in my code. GRE multipoint implementation is also utilized in
+>> my code as well. But what is missing is forwarding logic here, which
+>> prevents the traffic going not optimal way. Scenario one - e.g. if you
+>> connect through 3 sites with using 1 gretap multipoint VPN, it always
+>> forwards frames between site 1 and site 2 even if they are unicast.
+>> That represents waste of bandwidth for site 3. Now assume that there
+>> will be more than 40 sites and I hope you see that single current
+>> multipoint gretap is not also good solution here
+>>
+>> The second scenario - e.g. using 3 sites using point-to-point gretap
+>> interfaces between each 2 sites (2 gretap VPN interfaces per site) and
+>> bridging those interfaces with real ones results in looped topology
+>> which needs to utilized STP inside to prevent loops. Once STP
+>> converges the topology will looks like this, traffic from site 1 to
+>> site 2 will go always directly by the way of unicast (on GRE level),
+>> from site 2 to site 3 always directly by the way of unicast (on GRE
+>> level) and from site 1 to site 3 will go indirectly through site 2 due
+>> STP limitations, which results in another not optimalized traffic
+>> flows. Now assume that the number of sites rises, so gretap+standard
+>> bridge code is also not a good solution here.
+>>
+>> My code utilizes it that way that I have extended the gretap
+>> multipoint interface with the forwarding logic e.g. using 3 sites,
+>> each site uses only one gretap VPN interface and if destination MAC
+>> address is known to bridge code inside the gretap interface forwarding
+>> logic, it forwards it towards only VPN endpoint that actually need
+>> that by the way of unicasting on GRE level. On the other hand if the
+>> destination MAC address is unknown or destination MAC address is L2
+>> multicast or L2 broadcast than the frame is spread out through
+>> multicasting on GRE level, providing delivery mechanism analogous to
+>> standard switches on top of the multipoint GRE tunnels.
+>>
+>> I also get through briefly over OpenVswitch documentation and found
+>> that it is more related to virtualization inside the box like VMware
+>> switches or so and not to such technologies interconnecting two or
+>> more separate segments over routed L3 infrastructure - there is a
+>> mention about the CAPWAP UDP transport but this is more related to
+>> WiFi implementations than generic ones. My patch also doesn't need any
+>> special userspace api to be configured. It utilizes the existing one.
+>
+> I understand what you're trying to do and I think that the goal makes
+> sense but I agree with Stephen that this is not the right way to go
+> about it.  I see two issues:
+>
+>  * It copies a lot of bridge code, making it unmaintainable and
+> inflexible to other use cases.
+>  * The implementation exists in the GRE protocol stack but it applies
+> equally to other tunneling protocols as well (VXLAN comes to mind).
+>
+> Open vSwitch doesn't quite do this level of learning yet but it's the
+> direction that we want to move in (and there's nothing particularly
+> virtualization specific about it).  What I think makes the most sense
+> is to create some internal interfaces to the GRE stack that exposes
+> the information needed to do learning.  That way there is only one
+> instance of the protocol code for each tunneling mechanism and then
+> each way of managing those addresses (i.e. the current device-based
+> mechanism, Open vSwitch, potentially a direct bridge-based mechanism,
+> etc.) can be reused as well.
 
-> Add missing smp_rmb() primitives to the keyring search code.
-> 
-
-Does this need to go into 3.3 and stable?
-
-
-> When keyring payloads are appended to without replacement (thus using up spare
-> slots in the key pointer array), an smp_wmb() is issued between the pointer
-> assignment and the increment of the key count (nkeys).
-> 
-> There should be corresponding read barriers between the read of nkeys and
-> dereferences of keys[n] when n is dependent on the value of nkeys.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
-> 
->  security/keys/gc.c      |    4 +++-
->  security/keys/keyring.c |   22 +++++++++++++++-------
->  2 files changed, 18 insertions(+), 8 deletions(-)
-> 
-> diff --git a/security/keys/gc.c b/security/keys/gc.c
-> index bf4d8da..a42b455 100644
-> --- a/security/keys/gc.c
-> +++ b/security/keys/gc.c
-> @@ -145,7 +145,9 @@ static void key_gc_keyring(struct key *keyring, time_t limit)
->  	if (!klist)
->  		goto unlock_dont_gc;
->  
-> -	for (loop = klist->nkeys - 1; loop >= 0; loop--) {
-> +	loop = klist->nkeys;
-> +	smp_rmb();
-> +	for (loop--; loop >= 0; loop--) {
->  		key = klist->keys[loop];
->  		if (test_bit(KEY_FLAG_DEAD, &key->flags) ||
->  		    (key->expiry > 0 && key->expiry <= limit))
-> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> index 37a7f3b..d605f75 100644
-> --- a/security/keys/keyring.c
-> +++ b/security/keys/keyring.c
-> @@ -319,7 +319,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
->  	struct key *keyring, *key;
->  	key_ref_t key_ref;
->  	long err;
-> -	int sp, kix;
-> +	int sp, nkeys, kix;
->  
->  	keyring = key_ref_to_ptr(keyring_ref);
->  	possessed = is_key_possessed(keyring_ref);
-> @@ -380,7 +380,9 @@ descend:
->  		goto not_this_keyring;
->  
->  	/* iterate through the keys in this keyring first */
-> -	for (kix = 0; kix < keylist->nkeys; kix++) {
-> +	nkeys = keylist->nkeys;
-> +	smp_rmb();
-> +	for (kix = 0; kix < nkeys; kix++) {
->  		key = keylist->keys[kix];
->  		kflags = key->flags;
->  
-> @@ -421,7 +423,9 @@ descend:
->  	/* search through the keyrings nested in this one */
->  	kix = 0;
->  ascend:
-> -	for (; kix < keylist->nkeys; kix++) {
-> +	nkeys = keylist->nkeys;
-> +	smp_rmb();
-> +	for (; kix < nkeys; kix++) {
->  		key = keylist->keys[kix];
->  		if (key->type != &key_type_keyring)
->  			continue;
-> @@ -515,7 +519,7 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
->  	struct keyring_list *klist;
->  	unsigned long possessed;
->  	struct key *keyring, *key;
-> -	int loop;
-> +	int nkeys, loop;
->  
->  	keyring = key_ref_to_ptr(keyring_ref);
->  	possessed = is_key_possessed(keyring_ref);
-> @@ -524,7 +528,9 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
->  
->  	klist = rcu_dereference(keyring->payload.subscriptions);
->  	if (klist) {
-> -		for (loop = 0; loop < klist->nkeys; loop++) {
-> +		nkeys = klist->nkeys;
-> +		smp_rmb();
-> +		for (loop = 0; loop < nkeys ; loop++) {
->  			key = klist->keys[loop];
->  
->  			if (key->type == ktype &&
-> @@ -622,7 +628,7 @@ static int keyring_detect_cycle(struct key *A, struct key *B)
->  
->  	struct keyring_list *keylist;
->  	struct key *subtree, *key;
-> -	int sp, kix, ret;
-> +	int sp, nkeys, kix, ret;
->  
->  	rcu_read_lock();
->  
-> @@ -645,7 +651,9 @@ descend:
->  
->  ascend:
->  	/* iterate through the remaining keys in this keyring */
-> -	for (; kix < keylist->nkeys; kix++) {
-> +	nkeys = keylist->nkeys;
-> +	smp_rmb();
-> +	for (; kix < nkeys; kix++) {
->  		key = keylist->keys[kix];
->  
->  		if (key == A)
-> 
-
--- 
-James Morris
-<jmorris@namei.org>
+I agree with you that using such approach of copying bridge code with
+some modifications is maybe not flexible enough, but on the other hand
+it does the job needed. It also doesn't breaks any previous
+compatibility of usage of gretap interfaces as it modifies the
+encapsulation and decapsulation part of codes *how the traffic goes to
+and from remote destinations), which doesn't face any change on the
+internal linkages coding inside the box (e.g. linking that gretap
+interface to standard logical bridge interface is still fully
+possible). I would rather see getting some standard set of generic
+bridge code, which can be reused anywhere in network stack, but for
+now this is the only way I know how to do it. Exposing the GRE
+interfaces will not do the job as what I needed was to rebuild the
+bridge logic to allow learning endpoint IPs instead of network ports
+IDs (it's almost the same as using multiple gretap interfaces inside
+one bridge.interface) To obtain back the maintainability I would
+assume redesigning the bridge code is the best way here, but I am not
+that well coder to do it myself. So if anybody is interested in this
+feel free to do it.
