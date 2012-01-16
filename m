@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab2APC2u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 21:28:50 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:32945 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753032Ab2APC2s (ORCPT
+	id S1753219Ab2APCjk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 21:39:40 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:48791 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753032Ab2APCjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 21:28:48 -0500
-From: Neil Zhang <zhangwm@marvell.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Chao Xie <cxie4@marvell.com>,
-        Felipe Balbi <balbi@ti.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 15 Jan 2012 18:28:29 -0800
-Subject: RE: [PATCH] usb: mv-otg - Fix build if CONFIG_USB is not set
-Thread-Topic: [PATCH] usb: mv-otg - Fix build if CONFIG_USB is not set
-Thread-Index: AczTeej7sZv1ae43R2SdZIGZO0+CmwAfAFOA
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE1A17284091@SC-VEXCH4.marvell.com>
-References: <1326627376-12883-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1326627376-12883-1-git-send-email-geert@linux-m68k.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Sun, 15 Jan 2012 21:39:39 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/TxmY8nJnTtrE1F/2hfMNvkm8Dfl16yZjAr/Pqz1
+	vLcFFqjkPAY57N
+Subject: Re: Chronic resource starvation.
+From: Mike Galbraith <efault@gmx.de>
+To: Mike Mestnik <cheako@mikemestnik.net>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4F1322A6.7090009@mikemestnik.net>
+References: <4F10F3AE.3030801@mikemestnik.net>
+	 <4F11E3B8.6090007@mikemestnik.net>
+	 <1326629295.6352.14.camel@marge.simson.net>
+	 <4F1322A6.7090009@mikemestnik.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Jan 2012 03:39:34 +0100
+Message-ID: <1326681574.6446.25.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0G2SsUU008401
 
-Hi Geert,
+On Sun, 2012-01-15 at 13:01 -0600, Mike Mestnik wrote:
+> On 01/15/12 06:08, Mike Galbraith wrote:
 
-> -----Original Message-----
-> From: Geert Uytterhoeven [mailto:geert@linux-m68k.org]
-> Sent: 2012Äê1ÔÂ15ÈÕ 19:36
-> To: Neil Zhang; Chao Xie; Felipe Balbi
-> Cc: Randy Dunlap; linux-usb@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Geert Uytterhoeven
-> Subject: [PATCH] usb: mv-otg - Fix build if CONFIG_USB is not set
+> >> Does this behavior look normal or is it just my system?  If it is normal
+> >> how difficult would it be to make corrections and would those
+> >> corrections likely be kernel or application related?
+> > That "Backup complete" makes me suspect a classic case of IO-itis.  If
+> > bits of your GUI were pushed out or ram (or weren't previously used),
+> > and live on a disk you're beating hell out of, you get to experience
+> > horrid interactivity while those missing bits are being retrieved.
+> Thank you for the reply!
 > 
-> ERROR: "usb_remove_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
-> ERROR: "usb_add_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
+> That's DVDShrink, copies from optical drive(slow) to disk(fast-ish?).
+> http://www.dvdshrink.info/
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> --
-> Inpired by drivers/usb/otg/msm_otg.c. Is this correct?
-> 
->  drivers/usb/otg/mv_otg.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/usb/otg/mv_otg.c b/drivers/usb/otg/mv_otg.c
-> index db0d4fc..b5fbe14 100644
-> --- a/drivers/usb/otg/mv_otg.c
-> +++ b/drivers/usb/otg/mv_otg.c
-> @@ -202,6 +202,7 @@ static void mv_otg_init_irq(struct mv_otg *mvotg)
-> 
->  static void mv_otg_start_host(struct mv_otg *mvotg, int on)
->  {
-> +#ifdef CONFIG_USB
->  	struct otg_transceiver *otg = &mvotg->otg;
->  	struct usb_hcd *hcd;
-> 
-> @@ -216,6 +217,7 @@ static void mv_otg_start_host(struct mv_otg *mvotg,
-> int on)
->  		usb_add_hcd(hcd, hcd->irq, IRQF_SHARED);
->  	else
->  		usb_remove_hcd(hcd);
-> +#endif /* CONFIG_USB */
->  }
-> 
->  static void mv_otg_start_periphrals(struct mv_otg *mvotg, int on)
-> --
-> 1.7.0.4
+> That wouldn't explain why the monitor(gkrellm) stopped updating, every
+> part of that is pooling like top would.  Gkrellm indicates disk activity
+> and it shows the backup complete on sr1 and a backup in progress on sr0,
+> however neither of these operations rate on Disk or sda.
 
-Thanks for your information.
-I think it would be better to add a dependency on USB_EHCI_MV since there is no need to use the OTG driver without enable host.
+No, dvdshrink wouldn't do enough IO to matter much.  Heavy IO can (or
+could) cause symptoms like your video though, all of it.  I used to be
+able to trigger loss of GUI control for 30 minutes at a time.  All it
+took was something poking fdatasync after a large streaming IO had been
+running for a while.
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Another IO thing that can cause horrible interactivity is IO error
+recovery.  That can (or again, could) make a box lurch like hell.  If
+that were the cause, you'd have kernel gripes in dmesg output.
+
+	-Mike
+
