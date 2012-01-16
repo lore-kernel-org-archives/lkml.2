@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab2APCsz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 21:48:55 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56294 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab2APCsy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 21:48:54 -0500
+	id S1753247Ab2APCxf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 21:53:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44849 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752906Ab2APCxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 21:53:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="98885170"
+Date: Mon, 16 Jan 2012 10:53:32 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Chanho Min <chanho0207@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/backing-dev.c: fix crash when USB/SCSI device is
+ detached
+Message-ID: <20120116025331.GA16516@localhost>
+References: <CAOAMb1AUHV6mHwkUbX4+0wfOJpnMuVj_vr9jvb=h-Q4+6HKFzg@mail.gmail.com>
+ <CAH+eYFB8xBPLJdN+jfqpESsqjkxdeRQD7oyfU8qHewzfmbqHow@mail.gmail.com>
+ <20120115125853.GA9234@localhost>
+ <20120115153838.GA4279@debian>
 MIME-Version: 1.0
-In-Reply-To: <CAKPZvrZdw_n_JRw=WvUXEwO6E8HtE=tgQo0G5MCERbwjOY+Fgw@mail.gmail.com>
-References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
-	<1326192547.11926.5.camel@linux-s257.site>
-	<CAL-cBk011b4QbSRRuKxbZhNKxQQ-DkRHvq34Ua881h+AKXY_NQ@mail.gmail.com>
-	<CAKPZvrZdw_n_JRw=WvUXEwO6E8HtE=tgQo0G5MCERbwjOY+Fgw@mail.gmail.com>
-Date: Mon, 16 Jan 2012 10:48:52 +0800
-X-Google-Sender-Auth: qPwxiZwy3JB_93YdrScz4ybVRqA
-Message-ID: <CAL-cBk1J-LWCHQxzqVuj1x7B2CxN-8+bBoNTBPCG_8SntHkQOg@mail.gmail.com>
-Subject: Re: high speed cams are not working on usbip
-From: David Chang <dchang@suse.com>
-To: nagarjun kommineni <nagarjunkommineni@gmail.com>
-Cc: joeyli <jlee@suse.com>, linux-kernel@vger.kernel.org, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120115153838.GA4279@debian>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jan 15, 2012 at 09:11:07PM +0530, Rabin Vincent wrote:
+> On Sun, Jan 15, 2012 at 08:58:53PM +0800, Wu Fengguang wrote:
+> > On Sun, Jan 15, 2012 at 03:58:43PM +0530, Rabin Vincent wrote:
+> > > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> > > index 71034f4..a39ad70 100644
+> > > --- a/mm/backing-dev.c
+> > > +++ b/mm/backing-dev.c
+> > > @@ -318,7 +318,7 @@ static void wakeup_timer_fn(unsigned long data)
+> > >  	if (bdi->wb.task) {
+> > >  		trace_writeback_wake_thread(bdi);
+> > >  		wake_up_process(bdi->wb.task);
+> > > -	} else {
+> > > +	} else if (bdi->dev) {
+> > >  		/*
+> > >  		 * When bdi tasks are inactive for long time, they are killed.
+> > >  		 * In this case we have to wake-up the forker thread which
+> > > @@ -584,6 +584,8 @@ EXPORT_SYMBOL(bdi_register_dev);
+> > >   */
+> > >  static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+> > >  {
+> > > +	struct task_struct *task = NULL;
+> > 
+> > NULL not necessary?
+> 
+> Will fix.
+> 
+> Also, I notice another problem here.  bdi->dev should be made NULL before the
+> device is unregistered, not after:
 
-在 2012年1月11日下午3:47，nagarjun kommineni <nagarjunkommineni@gmail.com> 寫道：
-> hi,
-> these are the my test specifications.
->
-> OS:            Scientific Linux 6.1 (default kernel 2.6.32)
-> Kernel:       3.1.4 (I have built it)
-> Web Cam:  Logitech Pro 9000
-> Test App:   Gstreamer
->
-> To see the web cam output I have used the Gstreamer  with the following
-> command.
-> gst-launch v4l2src ! video/x-raw-yuv,width=160,height=120,framerate=15/1 !
-> ffmpegcolorspace ! autovideosink
->
-> my cam supported resloutions are 160*120, 176*144, 320*240, 352*288,
-> 640*480, 800*600, 960*720, 1600*1200.
->
-> it works fine upto 320*240, beyond this it doesn't work.
+Yes, good catch!
 
-What's the speed of server and client network interface?
+> 		if (!bdi_cap_flush_forker(bdi))
+> 			bdi_wb_shutdown(bdi);
+> 		bdi_debug_unregister(bdi);
+> 		device_unregister(bdi->dev);
+> 		bdi->dev = NULL;
 
-David
->
->
-> 2012/1/10 David Chang <dchang@suse.com>
->>
->> Hi Joey,
->>
->> 2012/1/10 joeyli <jlee@suse.com>:
->> > 於 二，2012-01-10 於 13:46 +0530，nagarjun kommineni 提到：
->> >> Hi,
->> >>
->> >> problem with usbip in drivers/staging/usbip
->> >>
->> >>  I have configured one pc as server and one as client, with this
->> >> configuration high speed web cams are not working for higher
->> >> resolutions.
->> >>
->> >
->> > How "high" does this web's speed?
->> >
->> >> please have a look at this problem.
->> >>
->> >
->> > David,
->> > as I remember you test webcam in old kernel before? looks works fine.
->>
->> Yes, but I would suggest using lower resolution.
->>
->> Regards,
->> David
->> >
->> >
->> > Thanks
->> > Joey Lee
->> >
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->> > in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
->
-> --
-> Regards,
-> Nagarjuna Kommineni.
->
->
+Thanks,
+Fengguang
