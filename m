@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab2APIrT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 03:47:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39918 "EHLO mx2.suse.de"
+	id S1753684Ab2APIvW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 03:51:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab2APIrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 03:47:17 -0500
-Date: Mon, 16 Jan 2012 09:47:15 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: linux-mm@kvack.org, "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH] memcg: fix compile warning on non-numa systems
-Message-ID: <20120116084715.GA1639@tiehlicka.suse.cz>
-References: <4F13BE05.70505@cn.fujitsu.com>
+	id S1753578Ab2APIvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 03:51:20 -0500
+Message-ID: <4F13E4FD.3070500@redhat.com>
+Date: Mon, 16 Jan 2012 09:51:09 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F13BE05.70505@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] block: fail SCSI passthrough ioctls on partition
+ devices
+References: <1326380489-9044-1-git-send-email-pbonzini@redhat.com> <1326380489-9044-3-git-send-email-pbonzini@redhat.com> <CA+55aFxuEzfAOL=pH1m7KQxdO1yzz=nGb2fU80AbysFd3J4Dvg@mail.gmail.com>
+In-Reply-To: <CA+55aFxuEzfAOL=pH1m7KQxdO1yzz=nGb2fU80AbysFd3J4Dvg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-01-12 14:04:53, Li Zefan wrote:
-> Fix this warning:
-> 
->   CC      mm/memcontrol.o
-> mm/memcontrol.c: In function 'memcg_check_events':
-> mm/memcontrol.c:779:22: warning: unused variable 'do_numainfo'
+On 01/15/2012 12:43 AM, Linus Torvalds wrote:
+> Anyway, with the changes to print out warnings and still allow it for
+> root, this all looked safe and nice, so they are in my tree now. I
+> only noticed after applying them that you hadn't marked them with 'cc:
+> stable@kernel.org', so we should probably point Greg at them. They are
+> commits
+>
+>    577ebb374c78 block: add and use scsi_blk_cmd_ioctl
+>    0bfc96cb7722 block: fail SCSI passthrough ioctls on partition devices
+>    ec8013beddd7 dm: do not forward ioctls from logical volumes to the
+> underlying device
+>
+> in my tree now.
 
-This has been already posted by Kirill and I didn't like the solution
-(https://lkml.org/lkml/2011/12/27/86). He then reposted with a different
-version (https://lkml.org/lkml/2012/1/6/281).
-The later one looks better but I still think this is not worth
-complicate the code just to get rid of this warning.
+I'll tweak them myself for stable based on what you committed, so that 
+they do not require your ENOTTY/ENOIOCTLCMD change (i.e. with the uglier 
+v1 implementation).
 
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  mm/memcontrol.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 602207b..c8aeab8 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -776,14 +776,16 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
->  	/* threshold event is triggered in finer grain than soft limit */
->  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_THRESH))) {
-> -		bool do_softlimit, do_numainfo;
-> -
-> -		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> -						MEM_CGROUP_TARGET_SOFTLIMIT);
-> +		bool do_softlimit;
->  #if MAX_NUMNODES > 1
-> +		bool do_numainfo;
-> +
->  		do_numainfo = mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_NUMAINFO);
->  #endif
-> +
-> +		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> +						MEM_CGROUP_TARGET_SOFTLIMIT);
->  		preempt_enable();
->  
->  		mem_cgroup_threshold(memcg);
-> -- 
-> 1.7.3.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Thanks very much.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Paolo
