@@ -1,85 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab2APXhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 18:37:09 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53707 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab2APXhH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 18:37:07 -0500
-Date: Mon, 16 Jan 2012 15:37:01 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jerome Marchand <jmarchan@redhat.com>
-cc: Andrew Jones <drjones@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        david.woodhouse@intel.com, gregkh@suse.de, davem@davemloft.net,
-        axboe@kernel.dk, holt@sgi.com, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, hskinnemoen@gmail.com, egtvedt@samfundet.no,
-        msalter@redhat.com, a-jacquiot@ti.com, starvik@axis.com,
-        jesper.nilsson@axis.com, dhowells@redhat.com, takata@linux-m32r.org,
-        geert@linux-m68k.org, yasutake.koichi@jp.panasonic.com,
-        jonas@southpole.se, kyle@mcmartin.ca, deller@gmx.de,
-        jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
-        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
-        mchehab@infradead.org, johannes@sipsolutions.net,
-        linville@tuxdriver.com
-Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
-In-Reply-To: <4F1442C5.70500@redhat.com>
-Message-ID: <alpine.DEB.2.00.1201161530170.16270@chino.kir.corp.google.com>
-References: <1326295008-29795-1-git-send-email-drjones@redhat.com> <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com> <201201120918.53026.arnd@arndb.de> <20120112101805.GA2375@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201121259270.17287@chino.kir.corp.google.com>
- <20120113085125.GA2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201130230320.15417@chino.kir.corp.google.com> <20120113122202.GB2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com> <4F1442C5.70500@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752013Ab2APXiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 18:38:13 -0500
+Received: from tundra.namei.org ([65.99.196.166]:36665 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751825Ab2APXiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 18:38:11 -0500
+Date: Tue, 17 Jan 2012 10:38:05 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KEYS: Add missing smp_rmb() primitives to the keyring
+ search code
+In-Reply-To: <20120116160349.10775.92195.stgit@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.00.1201171037420.12160@tundra.namei.org>
+References: <20120116160349.10775.92195.stgit@warthog.procyon.org.uk>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jan 2012, Jerome Marchand wrote:
+On Mon, 16 Jan 2012, David Howells wrote:
 
-> I don't see what your objections to this patch are. It actually does not
-> change anything to CONFIG_EMBEDDED and 6a108a14fa35 didn't either.
-
-Then you don't understand the context in which it was written.  
-CONFIG_EMBEDDED was hijacked to allow certain options to be configurable 
-that have nothing to do with embedded devices.  It was a dumping ground 
-for any option that was non-standard.  So we decided that enough is enough 
-and to actually give it a name that would imply you should know what 
-you're turning on and off before you can configure it.
-
-We also didn't want to break the millions of configs out in the wild that 
-tune CONFIG_EMBEDDED, so we allowed it to select EXPERT in the meantime 
-for backwards compatibility.  This allowed CONFIG_EMBEDDED to be extended 
-in the future so that it could separate the options away from EXPERT that 
-actually made sense for embedded devices to be aware of a configure.  At 
-that point, it would be possible to remove the "select EXPERT" from 
-CONFIG_EMBEDDED once all existing users become "depends on EXPERT || 
-EMBEDDED", or possibly even just "depends on EMBEDDED" in rare cases where 
-non-embedded users would never want to enable it.  (CONFIG_SLOB may be an 
-example of the latter, but I'll leave that to the embedded world to 
-decide.)
-
-> For instance, Why would CONFIG_EXPERT disable by default some HID devices?
-> I could understand why it is done for CONFIG_EMBEDDED, but certainly not
-> for an general EXPERT option.
+> Add missing smp_rmb() primitives to the keyring search code.
 > 
 
-Then this is a prime example that you've identified were it would make 
-sense to have the default value be dependant on EMBEDDED rather than 
-EXPERT.  Feel free to send a patch to the HID maintainers.
+Does this need to go into 3.3 and stable?
 
-> >> This patch is actually attempting to make progress in the separation of
-> >> the semantics for EXPERT and the old, insane EMBEDDED, which had the very
-> >> loose semantics. That's why it's called "untangle EXPERT and EMBEDDED".
-> >>
+
+> When keyring payloads are appended to without replacement (thus using up spare
+> slots in the key pointer array), an smp_wmb() is issued between the pointer
+> assignment and the increment of the key count (nkeys).
 > 
-> If EMBEDDED was insane before 6a108a14fa35, then it still was after, since
-> nothing changed. EMBEDDED was just renamed EXPERT, and the "new" EMBEDDED
-> option just selects EXPERT.
+> There should be corresponding read barriers between the read of nkeys and
+> dereferences of keys[n] when n is dependent on the value of nkeys.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+> 
+>  security/keys/gc.c      |    4 +++-
+>  security/keys/keyring.c |   22 +++++++++++++++-------
+>  2 files changed, 18 insertions(+), 8 deletions(-)
+> 
+> diff --git a/security/keys/gc.c b/security/keys/gc.c
+> index bf4d8da..a42b455 100644
+> --- a/security/keys/gc.c
+> +++ b/security/keys/gc.c
+> @@ -145,7 +145,9 @@ static void key_gc_keyring(struct key *keyring, time_t limit)
+>  	if (!klist)
+>  		goto unlock_dont_gc;
+>  
+> -	for (loop = klist->nkeys - 1; loop >= 0; loop--) {
+> +	loop = klist->nkeys;
+> +	smp_rmb();
+> +	for (loop--; loop >= 0; loop--) {
+>  		key = klist->keys[loop];
+>  		if (test_bit(KEY_FLAG_DEAD, &key->flags) ||
+>  		    (key->expiry > 0 && key->expiry <= limit))
+> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> index 37a7f3b..d605f75 100644
+> --- a/security/keys/keyring.c
+> +++ b/security/keys/keyring.c
+> @@ -319,7 +319,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+>  	struct key *keyring, *key;
+>  	key_ref_t key_ref;
+>  	long err;
+> -	int sp, kix;
+> +	int sp, nkeys, kix;
+>  
+>  	keyring = key_ref_to_ptr(keyring_ref);
+>  	possessed = is_key_possessed(keyring_ref);
+> @@ -380,7 +380,9 @@ descend:
+>  		goto not_this_keyring;
+>  
+>  	/* iterate through the keys in this keyring first */
+> -	for (kix = 0; kix < keylist->nkeys; kix++) {
+> +	nkeys = keylist->nkeys;
+> +	smp_rmb();
+> +	for (kix = 0; kix < nkeys; kix++) {
+>  		key = keylist->keys[kix];
+>  		kflags = key->flags;
+>  
+> @@ -421,7 +423,9 @@ descend:
+>  	/* search through the keyrings nested in this one */
+>  	kix = 0;
+>  ascend:
+> -	for (; kix < keylist->nkeys; kix++) {
+> +	nkeys = keylist->nkeys;
+> +	smp_rmb();
+> +	for (; kix < nkeys; kix++) {
+>  		key = keylist->keys[kix];
+>  		if (key->type != &key_type_keyring)
+>  			continue;
+> @@ -515,7 +519,7 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
+>  	struct keyring_list *klist;
+>  	unsigned long possessed;
+>  	struct key *keyring, *key;
+> -	int loop;
+> +	int nkeys, loop;
+>  
+>  	keyring = key_ref_to_ptr(keyring_ref);
+>  	possessed = is_key_possessed(keyring_ref);
+> @@ -524,7 +528,9 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
+>  
+>  	klist = rcu_dereference(keyring->payload.subscriptions);
+>  	if (klist) {
+> -		for (loop = 0; loop < klist->nkeys; loop++) {
+> +		nkeys = klist->nkeys;
+> +		smp_rmb();
+> +		for (loop = 0; loop < nkeys ; loop++) {
+>  			key = klist->keys[loop];
+>  
+>  			if (key->type == ktype &&
+> @@ -622,7 +628,7 @@ static int keyring_detect_cycle(struct key *A, struct key *B)
+>  
+>  	struct keyring_list *keylist;
+>  	struct key *subtree, *key;
+> -	int sp, kix, ret;
+> +	int sp, nkeys, kix, ret;
+>  
+>  	rcu_read_lock();
+>  
+> @@ -645,7 +651,9 @@ descend:
+>  
+>  ascend:
+>  	/* iterate through the remaining keys in this keyring */
+> -	for (; kix < keylist->nkeys; kix++) {
+> +	nkeys = keylist->nkeys;
+> +	smp_rmb();
+> +	for (; kix < nkeys; kix++) {
+>  		key = keylist->keys[kix];
+>  
+>  		if (key == A)
 > 
 
-Except now it's possible to decouple from EXPERT.  That's the goal that 
-Andrew doesn't understand and he's fine with breaking everybody's config 
-because they aren't defconfigs and there's no way such a thing would be 
-merged.
+-- 
+James Morris
+<jmorris@namei.org>
