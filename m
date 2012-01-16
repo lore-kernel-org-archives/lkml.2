@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2APSxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:53:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43076 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756598Ab2APStz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:49:55 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:19 2012
-Message-Id: <20120116184519.576410596@clark.kroah.org>
-User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:45:13 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [46/48] mac80211: fix rx->key NULL pointer dereference in promiscuous mode
-In-Reply-To: <20120116184527.GA11972@kroah.com>
+	id S1756669Ab2APSxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:53:32 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52394 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756129Ab2APSxa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:53:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABPqkBTe1uqiLm02fijYE2bwF=rWWu=V0mjZQbEzW0TUKa4-+Q@mail.gmail.com>
+References: <20120113144731.GA5458@quad>
+	<20120113165315.GA24387@infradead.org>
+	<CABPqkBTe1uqiLm02fijYE2bwF=rWWu=V0mjZQbEzW0TUKa4-+Q@mail.gmail.com>
+Date: Mon, 16 Jan 2012 19:53:28 +0100
+Message-ID: <CABPqkBS50jYOHepmAqOzGYY8m+4SCJQuhrMV2yLXRYfdFpE70g@mail.gmail.com>
+Subject: Re: [PATCH] perf: fix broken perf inject -b
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        robert.richter@amd.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+Arnaldo,
 
-------------------
-
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-
-commit 1140afa862842ac3e56678693050760edc4ecde9 upstream.
-
-Since:
-
-commit 816c04fe7ef01dd9649f5ccfe796474db8708be5
-Author: Christian Lamparter <chunkeey@googlemail.com>
-Date:   Sat Apr 30 15:24:30 2011 +0200
-
-    mac80211: consolidate MIC failure report handling
-
-is possible to that we dereference rx->key == NULL when driver set
-RX_FLAG_MMIC_STRIPPED and not RX_FLAG_IV_STRIPPED and we are in
-promiscuous mode. This happen with rt73usb and rt61pci at least.
-
-Before the commit we always check rx->key against NULL, so I assume
-fix should be done in mac80211 (also mic_fail path has similar check).
-
-References:
-https://bugzilla.redhat.com/show_bug.cgi?id=769766
-http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2012-January/004395.html
-
-Reported-by: Stuart D Gathman <stuart@gathman.org>
-Reported-by: Kai Wohlfahrt <kai.scorpio@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- net/mac80211/wpa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/net/mac80211/wpa.c
-+++ b/net/mac80211/wpa.c
-@@ -105,7 +105,7 @@ ieee80211_rx_h_michael_mic_verify(struct
- 		if (status->flag & RX_FLAG_MMIC_ERROR)
- 			goto mic_fail;
- 
--		if (!(status->flag & RX_FLAG_IV_STRIPPED))
-+		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key)
- 			goto update_iv;
- 
- 		return RX_CONTINUE;
-
-
+On Fri, Jan 13, 2012 at 5:54 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Fri, Jan 13, 2012 at 5:53 PM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+>> Em Fri, Jan 13, 2012 at 03:47:31PM +0100, Stephane Eranian escreveu:
+>>>
+>>> perf inject -b was broken. It would not inject any build_ids
+>>> into the stream. Furthermore, it would strip samples from the
+>>> stream.
+>>
+>> Against which tree is this patch?
+>>
+> 3.2.0-rc7-tip.
+> Did that get fixed later on?
+>
+>>> The reason was a missing initialization of the event attribute
+>>> structures. The perf_tool.tool.attr() callback was pointing to
+>>> a simple repipe. But there was no initialization of internal data
+>>> structures to keep track of events and event ids. That later caused
+>>> event id lookups to fail, and samples would get dropped.
+>>>
+>>> The patch simply adds back the call to perf_event__process_attr()
+>>> to initialize the evlist structure. Build_ids are again injected.
+>>> The PID is also inject for PERF_RECORD_HEADER_BUILD_ID.
+>>>
+>>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>>> ---
+>>>
+>>> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+>>> index 09c1061..f38f370 100644
+>>> --- a/tools/perf/builtin-inject.c
+>>> +++ b/tools/perf/builtin-inject.c
+>>> @@ -60,6 +60,11 @@ static int perf_event__repipe_tracing_data_synth(union perf_event *event,
+>>>  static int perf_event__repipe_attr(union perf_event *event,
+>>>                                  struct perf_evlist **pevlist __used)
+>>>  {
+>>> +     int ret;
+>>> +     ret = perf_event__process_attr(event, pevlist);
+>>> +     if (ret)
+>>> +             return ret;
+>>> +
+>>>       return perf_event__repipe_synth(NULL, event, NULL);
+>>>  }
+>>>
+>>> @@ -173,6 +178,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+>>>                      event->header.type);
+>>>               goto repipe;
+>>>       }
+>>> +     machine->pid = event->ip.pid;
+>>>
+I noticed that this statement conflicts with perf buildid-list (which
+I am also fixing for pipe mode).
+I don't quite understand why, though.
