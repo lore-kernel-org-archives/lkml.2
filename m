@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab2APIFE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 03:05:04 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:11421 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752977Ab2APIFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 03:05:02 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] move sock_update_memcg outside of CONFIG_INET
-Date: Mon, 16 Jan 2012 12:04:39 +0400
-Message-Id: <1326701079-10331-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.4
+	id S1753557Ab2APIF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 03:05:56 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:64910 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752977Ab2APIFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 03:05:54 -0500
+Date: Mon, 16 Jan 2012 16:05:16 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Michal Marek <mmarek@suse.cz>, Cong Wang <amwang@redhat.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Davidlohr Bueso <dave@gnu.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] menuconfig: fix a regression when canceling the prompt
+ dialog at exit
+Message-ID: <20120116080516.GA7447@udknight>
+Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
+	Li Zefan <lizf@cn.fujitsu.com>, Michal Marek <mmarek@suse.cz>,
+	Cong Wang <amwang@redhat.com>, Arnaud Lacombe <lacombar@gmail.com>,
+	Davidlohr Bueso <dave@gnu.org>, LKML <linux-kernel@vger.kernel.org>,
+	linux-kbuild@vger.kernel.org
+References: <4F13CB49.8030004@cn.fujitsu.com>
+ <1326698421.4151.4.camel@cr0>
+ <4F13D216.3060705@cn.fujitsu.com>
+ <4F13D873.4070808@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F13D873.4070808@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although only used currently for tcp sockets, this function
-is now used in common sock code (for sock_clone())
+On Mon, Jan 16, 2012 at 03:57:39PM +0800, Li Zefan wrote:
+> This commit fixes a bug, while introducing a new one..
+> 
+> commit 7203ddbd4be9720649e47d756a001e0c7d7f8ae2
+> Author: Wang YanQing <udknight@gmail.com>
+> Date:   Thu Jan 12 11:31:32 2012 +0800
+> 
+>     menuconfig: let make not report error when not save configuration
+> 
+> Pressing ESC should cancel the yes/no dialog and return back to
+> the main menu, but not exit from menuconfig.
+> 
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 
-Commit 475f1b52645a29936b9df1d8fcd45f7e56bd4a9f moved the
-declaration of sock_update_clone() to inside sock.c, but
-this only fixes the problem when CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-is also not defined.
+Acked-by: Wang YanQing <udknight@gmail.com>
 
-This patch here is verified to fix both problems, although
-reverting the previous one is not necessary.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>
----
- mm/memcontrol.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 602207b..3dbff4d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -373,7 +373,6 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
- 
- /* Writing them here to avoid exposing memcg's inner layout */
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
--#ifdef CONFIG_INET
- #include <net/sock.h>
- #include <net/ip.h>
- 
-@@ -420,6 +419,7 @@ void sock_release_memcg(struct sock *sk)
- 	}
- }
- 
-+#ifdef CONFIG_INET
- struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
- {
- 	if (!memcg || mem_cgroup_is_root(memcg))
--- 
-1.7.7.4
-
+> ---
+>  scripts/kconfig/mconf.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+> index 86cd1ea..2c6286c 100644
+> --- a/scripts/kconfig/mconf.c
+> +++ b/scripts/kconfig/mconf.c
+> @@ -830,7 +830,8 @@ static int handle_exit(void)
+>  		fprintf(stderr, _("\n\n"
+>  				  "Your configuration changes were NOT saved."
+>  				  "\n\n"));
+> -		res = 0;
+> +		if (res != KEY_ESC)
+> +			res = 0;
+>  	}
+>  
+>  	return res;
+> -- 
+> 1.7.3.1
