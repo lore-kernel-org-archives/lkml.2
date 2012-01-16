@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab2APTrq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 14:47:46 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50217 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029Ab2APTrp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 14:47:45 -0500
-Date: Mon, 16 Jan 2012 11:47:32 -0800
-Message-Id: <201201161947.q0GJlWqF012943@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/rdrand additional for v3.3-rc1
-Cc: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Jan 2012 11:47:38 -0800 (PST)
+	id S1756624Ab2APTvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 14:51:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64308 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755897Ab2APTvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 14:51:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="99218258"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jon Mason <jdmason@kudzu.us>, netdev@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Laight <David.Laight@ACULAB.COM>, Joe Perches <joe@perches.com>
+Subject: [PATCH] pch_gbe: Do not abort probe on bad MAC
+Date: Mon, 16 Jan 2012 11:50:19 -0800
+Message-Id: <965df7d0c78e4971faf8464ec3da0bb114e9b5ee.1326743419.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+If the MAC is invalid or not implemented, do not abort the probe. Issue
+a warning and prevent bringing the interface up until a MAC is set manually
+(via ifconfig $IFACE hw ether $MAC).
 
-The following changes since commit 53999bf34d55981328f8ba9def558d3e104d6e36:
+Tested on two platforms, one with a valid MAC, the other without a MAC. The real
+MAC is used if present, the interface fails to come up until the MAC is set on
+the other. They successfully get an IP over DHCP and pass a simple ping and
+login over ssh test.
 
-  error: implicit declaration of function 'module_flags_taint' (2012-01-15 16:21:07 -0800)
+This is meant to allow the Inforce SYS940X development board:
+http://www.inforcecomputing.com/SYS940X_ECX.html
+(and others suffering from a missing MAC) to work with the mainline kernel.
+Without this patch, the probe will fail and the interface will not be created,
+preventing the user from configuring the MAC manually.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/rdrand
+This does not make any attempt to address a missing or invalid MAC for the
+pch_phub driver.
 
-The head of this tree is 2dac8e54f988ab58525505d7ef982493374433c3.
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>
+CC: Alan Cox <alan@linux.intel.com>
+CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Jon Mason <jdmason@kudzu.us>
+CC: netdev@vger.kernel.org
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: David Laight <David.Laight@ACULAB.COM>
+CC: Joe Perches <joe@perches.com>
+---
+ .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
-This is simply Ted's patch to use RDRAND for initializing the random
-number pools, when available, with an additional patch to make it run
-the exact number of times needed; as written it would run twice the
-necessary number of iterations on 64-bit platforms.
-
-H. Peter Anvin (1):
-      random: Adjust the number of loops when initializing
-
-Theodore Ts'o (1):
-      random: Use arch-specific RNG to initialize the entropy store
-
- drivers/char/random.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 732215b..54ca8b2 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -965,6 +965,7 @@ EXPORT_SYMBOL(get_random_bytes);
-  */
- static void init_std_data(struct entropy_store *r)
- {
-+	int i;
- 	ktime_t now;
- 	unsigned long flags;
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+index 964e9c0..3ead111 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+@@ -1745,6 +1745,12 @@ int pch_gbe_up(struct pch_gbe_adapter *adapter)
+ 	struct pch_gbe_rx_ring *rx_ring = adapter->rx_ring;
+ 	int err;
  
-@@ -974,6 +975,11 @@ static void init_std_data(struct entropy_store *r)
- 
- 	now = ktime_get_real();
- 	mix_pool_bytes(r, &now, sizeof(now));
-+	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof flags) {
-+		if (!arch_get_random_long(&flags))
-+			break;
-+		mix_pool_bytes(r, &flags, sizeof(flags));
++	/* Ensure we have a valid MAC */
++	if (!is_valid_ether_addr(adapter->hw.mac.addr)) {
++		pr_err("Error: Invalid MAC address\n");
++		return -EINVAL;
 +	}
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
- }
++
+ 	/* hardware has been reset, we need to reload some things */
+ 	pch_gbe_set_multi(netdev);
  
+@@ -2468,9 +2474,14 @@ static int pch_gbe_probe(struct pci_dev *pdev,
+ 
+ 	memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
+ 	if (!is_valid_ether_addr(netdev->dev_addr)) {
+-		dev_err(&pdev->dev, "Invalid MAC Address\n");
+-		ret = -EIO;
+-		goto err_free_adapter;
++		/*
++		 * If the MAC is invalid (or just missing), display a warning
++		 * but do not abort setting up the device. pch_gbe_up will
++		 * prevent the interface from being brought up until a valid MAC
++		 * is set.
++		 */
++		dev_err(&pdev->dev, "Invalid MAC address, "
++		                    "interface disabled.\n");
+ 	}
+ 	setup_timer(&adapter->watchdog_timer, pch_gbe_watchdog,
+ 		    (unsigned long)adapter);
+-- 
+1.7.6.5
+
