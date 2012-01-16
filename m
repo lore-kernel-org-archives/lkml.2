@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab2APSxc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:53:32 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52394 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756129Ab2APSxa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:53:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <CABPqkBTe1uqiLm02fijYE2bwF=rWWu=V0mjZQbEzW0TUKa4-+Q@mail.gmail.com>
-References: <20120113144731.GA5458@quad>
-	<20120113165315.GA24387@infradead.org>
-	<CABPqkBTe1uqiLm02fijYE2bwF=rWWu=V0mjZQbEzW0TUKa4-+Q@mail.gmail.com>
-Date: Mon, 16 Jan 2012 19:53:28 +0100
-Message-ID: <CABPqkBS50jYOHepmAqOzGYY8m+4SCJQuhrMV2yLXRYfdFpE70g@mail.gmail.com>
-Subject: Re: [PATCH] perf: fix broken perf inject -b
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        robert.richter@amd.com
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756627Ab2APSxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:53:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43031 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756544Ab2APStl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:49:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:19 2012
+Message-Id: <20120116184519.271598812@clark.kroah.org>
+User-Agent: quilt/0.50-25.1
+Date: Mon, 16 Jan 2012 10:45:09 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [42/48] ima: fix invalid memory reference
+In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo,
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-On Fri, Jan 13, 2012 at 5:54 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Fri, Jan 13, 2012 at 5:53 PM, Arnaldo Carvalho de Melo
-> <acme@redhat.com> wrote:
->> Em Fri, Jan 13, 2012 at 03:47:31PM +0100, Stephane Eranian escreveu:
->>>
->>> perf inject -b was broken. It would not inject any build_ids
->>> into the stream. Furthermore, it would strip samples from the
->>> stream.
->>
->> Against which tree is this patch?
->>
-> 3.2.0-rc7-tip.
-> Did that get fixed later on?
->
->>> The reason was a missing initialization of the event attribute
->>> structures. The perf_tool.tool.attr() callback was pointing to
->>> a simple repipe. But there was no initialization of internal data
->>> structures to keep track of events and event ids. That later caused
->>> event id lookups to fail, and samples would get dropped.
->>>
->>> The patch simply adds back the call to perf_event__process_attr()
->>> to initialize the evlist structure. Build_ids are again injected.
->>> The PID is also inject for PERF_RECORD_HEADER_BUILD_ID.
->>>
->>> Signed-off-by: Stephane Eranian <eranian@google.com>
->>> ---
->>>
->>> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
->>> index 09c1061..f38f370 100644
->>> --- a/tools/perf/builtin-inject.c
->>> +++ b/tools/perf/builtin-inject.c
->>> @@ -60,6 +60,11 @@ static int perf_event__repipe_tracing_data_synth(union perf_event *event,
->>>  static int perf_event__repipe_attr(union perf_event *event,
->>>                                  struct perf_evlist **pevlist __used)
->>>  {
->>> +     int ret;
->>> +     ret = perf_event__process_attr(event, pevlist);
->>> +     if (ret)
->>> +             return ret;
->>> +
->>>       return perf_event__repipe_synth(NULL, event, NULL);
->>>  }
->>>
->>> @@ -173,6 +178,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
->>>                      event->header.type);
->>>               goto repipe;
->>>       }
->>> +     machine->pid = event->ip.pid;
->>>
-I noticed that this statement conflicts with perf buildid-list (which
-I am also fixing for pipe mode).
-I don't quite understand why, though.
+------------------
+
+From: Roberto Sassu <roberto.sassu@polito.it>
+
+commit 7b7e5916aa2f46e57f8bd8cb89c34620ebfda5da upstream.
+
+Don't free a valid measurement entry on TPM PCR extend failure.
+
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ security/integrity/ima/ima_queue.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
+
+--- a/security/integrity/ima/ima_queue.c
++++ b/security/integrity/ima/ima_queue.c
+@@ -23,6 +23,8 @@
+ #include <linux/slab.h>
+ #include "ima.h"
+ 
++#define AUDIT_CAUSE_LEN_MAX 32
++
+ LIST_HEAD(ima_measurements);	/* list of all measurements */
+ 
+ /* key: inode (before secure-hashing a file) */
+@@ -94,7 +96,8 @@ static int ima_pcr_extend(const u8 *hash
+ 
+ 	result = tpm_pcr_extend(TPM_ANY_NUM, CONFIG_IMA_MEASURE_PCR_IDX, hash);
+ 	if (result != 0)
+-		pr_err("IMA: Error Communicating to TPM chip\n");
++		pr_err("IMA: Error Communicating to TPM chip, result: %d\n",
++		       result);
+ 	return result;
+ }
+ 
+@@ -106,8 +109,9 @@ int ima_add_template_entry(struct ima_te
+ {
+ 	u8 digest[IMA_DIGEST_SIZE];
+ 	const char *audit_cause = "hash_added";
++	char tpm_audit_cause[AUDIT_CAUSE_LEN_MAX];
+ 	int audit_info = 1;
+-	int result = 0;
++	int result = 0, tpmresult = 0;
+ 
+ 	mutex_lock(&ima_extend_list_mutex);
+ 	if (!violation) {
+@@ -129,9 +133,11 @@ int ima_add_template_entry(struct ima_te
+ 	if (violation)		/* invalidate pcr */
+ 		memset(digest, 0xff, sizeof digest);
+ 
+-	result = ima_pcr_extend(digest);
+-	if (result != 0) {
+-		audit_cause = "TPM error";
++	tpmresult = ima_pcr_extend(digest);
++	if (tpmresult != 0) {
++		snprintf(tpm_audit_cause, AUDIT_CAUSE_LEN_MAX, "TPM_error(%d)",
++			 tpmresult);
++		audit_cause = tpm_audit_cause;
+ 		audit_info = 0;
+ 	}
+ out:
+
+
