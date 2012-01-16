@@ -1,103 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab2APTvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 14:51:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64308 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755897Ab2APTvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 14:51:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="99218258"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jon Mason <jdmason@kudzu.us>, netdev@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Laight <David.Laight@ACULAB.COM>, Joe Perches <joe@perches.com>
-Subject: [PATCH] pch_gbe: Do not abort probe on bad MAC
-Date: Mon, 16 Jan 2012 11:50:19 -0800
-Message-Id: <965df7d0c78e4971faf8464ec3da0bb114e9b5ee.1326743419.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1756554Ab2APTx0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 14:53:26 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38911 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab2APTxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 14:53:23 -0500
+Date: Mon, 16 Jan 2012 19:54:27 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates for 3.3
+Message-ID: <20120116195427.64edd96f@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+55aFxNcAtCmzEejS=3+_L_rp-MOBS0yLS061YgiCsFw_Mt5Q@mail.gmail.com>
+References: <20120109003255.GA6598@havoc.gtf.org>
+	<CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
+	<4F12E57E.3090805@garzik.org>
+	<1326676534.13517.3.camel@minggr>
+	<1326691403.13517.21.camel@minggr>
+	<CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com>
+	<20120116194211.2cd09fb3@pyramind.ukuu.org.uk>
+	<CA+55aFxNcAtCmzEejS=3+_L_rp-MOBS0yLS061YgiCsFw_Mt5Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the MAC is invalid or not implemented, do not abort the probe. Issue
-a warning and prevent bringing the interface up until a MAC is set manually
-(via ifconfig $IFACE hw ether $MAC).
+On Mon, 16 Jan 2012 11:47:12 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Tested on two platforms, one with a valid MAC, the other without a MAC. The real
-MAC is used if present, the interface fails to come up until the MAC is set on
-the other. They successfully get an IP over DHCP and pass a simple ping and
-login over ssh test.
+> On Mon, Jan 16, 2012 at 11:42 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> >
+> > There are two sets of problems with that
+> >
+> > The first is that quite a few machines crap themselves if you do this
+> > because nobody has ever tested things like the IRQ routing or the
+> > firmware on suspend/resume when they find the hardwared controller has
+> > gone for a walk.
+> 
+> I think this could trivially be solved at least on these kinds of
+> Apple machines by just making it a config option, and just not doing
+> it if it doesn't work. Some kernel command line to say "ahci=force" or
+> whatever.
 
-This is meant to allow the Inforce SYS940X development board:
-http://www.inforcecomputing.com/SYS940X_ECX.html
-(and others suffering from a missing MAC) to work with the mainline kernel.
-Without this patch, the probe will fail and the interface will not be created,
-preventing the user from configuring the MAC manually.
+There are patches for this from way back including a white list of
+devices that were tested
 
-This does not make any attempt to address a missing or invalid MAC for the
-pch_phub driver.
+Just ping Matthew about
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Alan Cox <alan@linux.intel.com>
-CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Jon Mason <jdmason@kudzu.us>
-CC: netdev@vger.kernel.org
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: David Laight <David.Laight@ACULAB.COM>
-CC: Joe Perches <joe@perches.com>
----
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+http://www.codon.org.uk/~mjg59/tmp/ahci_quirk_cleanup.diff
 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-index 964e9c0..3ead111 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -1745,6 +1745,12 @@ int pch_gbe_up(struct pch_gbe_adapter *adapter)
- 	struct pch_gbe_rx_ring *rx_ring = adapter->rx_ring;
- 	int err;
- 
-+	/* Ensure we have a valid MAC */
-+	if (!is_valid_ether_addr(adapter->hw.mac.addr)) {
-+		pr_err("Error: Invalid MAC address\n");
-+		return -EINVAL;
-+	}
-+
- 	/* hardware has been reset, we need to reload some things */
- 	pch_gbe_set_multi(netdev);
- 
-@@ -2468,9 +2474,14 @@ static int pch_gbe_probe(struct pci_dev *pdev,
- 
- 	memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
- 	if (!is_valid_ether_addr(netdev->dev_addr)) {
--		dev_err(&pdev->dev, "Invalid MAC Address\n");
--		ret = -EIO;
--		goto err_free_adapter;
-+		/*
-+		 * If the MAC is invalid (or just missing), display a warning
-+		 * but do not abort setting up the device. pch_gbe_up will
-+		 * prevent the interface from being brought up until a valid MAC
-+		 * is set.
-+		 */
-+		dev_err(&pdev->dev, "Invalid MAC address, "
-+		                    "interface disabled.\n");
- 	}
- 	setup_timer(&adapter->watchdog_timer, pch_gbe_watchdog,
- 		    (unsigned long)adapter);
--- 
-1.7.6.5
+> That doesn't solve the "user never even realized" problem, but at
+> least it gives the user the possibility of solving the "crap firmware
+> doesn't even allow this".
 
+For the "memory found over 4GB" case it may even be worth printing a
+warning.
+
+> > Putting it back on suspend might help in some cases but then you get to
+> > pick your way through the documentation minefield, deal with device
+> > changes while in non AHCI mode, figure out how to set up registers the
+> > BIOS didn't etc.
+> 
+> Yeah, no, that would just be horrible. I doubt it happens in practice,
+> though.  I bet the normal PCI/AHCI resume will just do the right
+> thing. But I haven't tried..
+
+Some BIOSes go off and try and re-unlock the drive with the bios password
+etc. They get most unhappy when the controller isn't in the mode they
+expected. Matthew used a white list for some he tested which didn't have
+problems. Most netbooks seem ok with it.
+
+Alan
