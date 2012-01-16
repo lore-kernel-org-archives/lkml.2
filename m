@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab2APPnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:43:16 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:44912 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2APPnO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:43:14 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Mon, 16 Jan 2012 10:42:46 -0500
-Subject: RE: [GIT PULL] tracing: make signal tracepoints more useful
-Thread-Topic: [GIT PULL] tracing: make signal tracepoints more useful
-Thread-Index: AczUYOvv9ZDz8V4FR5ClG/TrEPCHtgABFP4g
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DA76B3D88@USINDEVS01.corp.hds.com>
-References: <20120110174509.GA30802@redhat.com>
- <20120113182015.GA3902@redhat.com> <20120115182441.GA24694@redhat.com>
- <20120116074540.GE15641@elte.hu> <20120116150307.GA12817@redhat.com>
-In-Reply-To: <20120116150307.GA12817@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755279Ab2APPnX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 10:43:23 -0500
+Received: from mga02.intel.com ([134.134.136.20]:5270 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755142Ab2APPnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 10:43:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="97006320"
+Message-ID: <4F14457F.8060509@linux.intel.com>
+Date: Mon, 16 Jan 2012 07:42:55 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1201160144
+To: Alan Cox <alan@linux.intel.com>
+CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, jeffrey.t.kirsher@intel.com,
+        paul.gortmaker@windriver.com, jdmason@kudzu.us, netdev@vger.kernel.org
+Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing
+ probe
+References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com> <20120114.001430.787918662083526597.davem@davemloft.net> <4F11A533.4040406@linux.intel.com> <20120114.115604.2101782124431552110.davem@davemloft.net> <20120114214658.4ddfec30@pyramind.ukuu.org.uk> <4F120357.3020808@linux.intel.com> <CANKRQnge1n4M7W5xCqwyGzXp8J3eK1HbZVRqGW7BoE5iOwYCDQ@mail.gmail.com> <20120116123110.7ce91f2d@bob.linux.org.uk>
+In-Reply-To: <20120116123110.7ce91f2d@bob.linux.org.uk>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->OK. So we should add the new tracepoint. Looks a bit ugly, but
->I understand your concerns.
->
->
->Say, trace_send_signal(sig, info, t, group, result), OK?
->
->
->Seiji, please double check this is all you need, it won't be
->simply to change this tracepoint again. While we are adding the
->new one, we can add/change something in TP_STRUCT__entry if you
->think this is needed.
 
-I agree to add the new tracepoint as well.
-I will review updated patch if you send it.
 
-Seiji
+On 01/16/2012 04:31 AM, Alan Cox wrote:
+>> Saving MAC address into external ROM is generic method, I think.
+>> Though I know the ROM-less system using eg20t-pch, however I think
+>> this system is not common.
+>> So, I think pch_gbe shouldn't have auto-mac address assignment.
+> 
+> The problem is the module load fails for those cases. You cannot load
+> the module and use the standard ifconfig eth0 hw aa:bb:cc:dd:ee:ff
+> interface. The better fix might be to make sure it loads.
+> 
+> So change from
+> 
+>         memcpy(netdev->dev_addr, adapter->hw.mac.addr,
+>         netdev->addr_len);   
+>         if (!is_valid_ether_addr(netdev->dev_addr)) {
+>                 dev_err(&pdev->dev, "Invalid MAC Address\n");
+>                 ret = -EIO; 
+>                 goto err_free_adapter;
+>         }
+> 
+> to just printing a warning, and check the current address when a user
+> tries to ifconfig it up and refuse to allow the port to go active.
+
+I can go this route I suppose. I don't really understand the objection
+to the use of a random mac addr in the special case given the prevalence
+of this approach within existing drivers.
+
+One reason I don't care for this alternative approach is that this
+particular hardware is targeted at embedded use where we can't assume a
+full init system is available, etc. It can be made to work of course, it
+just isn't as automated.
+
+David, would you orefer/accept an alternative patch which allows the
+driver to load without a MAC address so the user can set it via ifconfig
+after boot?
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
