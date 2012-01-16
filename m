@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab2APSsv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:48:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42919 "EHLO mx2.suse.de"
+	id S1756363Ab2APStD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:49:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42934 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755951Ab2APSst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:48:49 -0500
+	id S1756311Ab2APStA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:49:00 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:18 2012
-Message-Id: <20120116184518.127401159@clark.kroah.org>
+Message-Id: <20120116184518.372473956@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:55 -0800
+Date: Mon, 16 Jan 2012 10:44:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chase Douglas <chase.douglas@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [28/48] HID: bump maximum global item tag report size to 96 bytes
+        alan@lxorguk.ukuu.org.uk,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [31/48] UBI: fix use-after-free on error path
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chase Douglas <chase.douglas@canonical.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit e46e927b9b7e8d95526e69322855243882b7e1a3 upstream.
+commit e57e0d8e818512047fe379157c3f77f1b9fabffb upstream.
 
-This allows the latest N-Trig devices to function properly.
+When we fail to erase a PEB, we free the corresponding erase entry object,
+but then re-schedule this object if the error code was something like -EAGAIN.
+Obviously, it is a bug to use the object after we have freed it.
 
-BugLink: https://bugs.launchpad.net/bugs/724831
-
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Emese Revfy <re.emese@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mtd/ubi/wl.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -361,7 +361,7 @@ static int hid_parser_global(struct hid_
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -1052,7 +1052,6 @@ static int erase_worker(struct ubi_devic
  
- 	case HID_GLOBAL_ITEM_TAG_REPORT_SIZE:
- 		parser->global.report_size = item_udata(item);
--		if (parser->global.report_size > 32) {
-+		if (parser->global.report_size > 96) {
- 			dbg_hid("invalid report_size %d\n",
- 					parser->global.report_size);
- 			return -1;
+ 	ubi_err("failed to erase PEB %d, error %d", pnum, err);
+ 	kfree(wl_wrk);
+-	kmem_cache_free(ubi_wl_entry_slab, e);
+ 
+ 	if (err == -EINTR || err == -ENOMEM || err == -EAGAIN ||
+ 	    err == -EBUSY) {
+@@ -1065,14 +1064,16 @@ static int erase_worker(struct ubi_devic
+ 			goto out_ro;
+ 		}
+ 		return err;
+-	} else if (err != -EIO) {
++	}
++
++	kmem_cache_free(ubi_wl_entry_slab, e);
++	if (err != -EIO)
+ 		/*
+ 		 * If this is not %-EIO, we have no idea what to do. Scheduling
+ 		 * this physical eraseblock for erasure again would cause
+ 		 * errors again and again. Well, lets switch to R/O mode.
+ 		 */
+ 		goto out_ro;
+-	}
+ 
+ 	/* It is %-EIO, the PEB went bad */
+ 
 
 
