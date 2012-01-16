@@ -1,216 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab2APWkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 17:40:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50607 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239Ab2APWkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 17:40:37 -0500
-Date: Mon, 16 Jan 2012 14:40:28 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Sergei Trofimovich <slyich@gmail.com>, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Borislav Petkov <bp@amd64.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>, justinmattock@gmail.com,
-        Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: [PATCH] mce: fix warning messages about static struct mce_device
-Message-ID: <20120116224028.GA5072@suse.de>
+	id S1757077Ab2APWnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 17:43:10 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45411 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab2APWnI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 17:43:08 -0500
+Message-ID: <4F14A7F8.8000004@linux.vnet.ibm.com>
+Date: Mon, 16 Jan 2012 17:43:04 -0500
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: Re: [Regression] Commit "tpm: Introduce function to poll for result
+ of self test" breaks suspend
+References: <201201160022.07176.rjw@sisk.pl> <201201162142.34096.rjw@sisk.pl> <4F149360.70604@linux.vnet.ibm.com> <201201162305.15662.rjw@sisk.pl>
+In-Reply-To: <201201162305.15662.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12011622-7282-0000-0000-000005ABBA4F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+On 01/16/2012 05:05 PM, Rafael J. Wysocki wrote:
+> On Monday, January 16, 2012, Stefan Berger wrote:
+>> On 01/16/2012 03:42 PM, Rafael J. Wysocki wrote:
+> Well, so the problem with that is that it requires Windows to be installed
+> to change the settings (i.e. the machine has no BIOS setup as we know it).
+> So, practically, I really can't do that.
+>
+Are there any other tpm related outputs in 'dmesg' from during the boot?
 
-When suspending, there was a large list of warnings going something like:
-
-	Device 'machinecheck1' does not have a release() function, it is broken and must be fixed
-
-This patch turns the static mce_devices into dynamically allocated, and
-properly frees them when they are removed from the system.  It solves
-the warning messages on my laptop here.
-
-Reported-by: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
-
-Linus, this should fix the warnings on your laptop, it does on mine.
-
- include/asm/mce.h           |    2 +-
- kernel/cpu/mcheck/mce.c     |   18 ++++++++++++++----
- kernel/cpu/mcheck/mce_amd.c |   18 +++++++++++-------
- 3 files changed, 26 insertions(+), 12 deletions(-)
-
-
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index f35ce43..6aefb14 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -151,7 +151,7 @@ static inline void enable_p5_mce(void) {}
- 
- void mce_setup(struct mce *m);
- void mce_log(struct mce *m);
--DECLARE_PER_CPU(struct device, mce_device);
-+extern struct device *mce_device[CONFIG_NR_CPUS];
- 
- /*
-  * Maximum banks number.
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 29ba329..5a11ae2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1859,7 +1859,7 @@ static struct bus_type mce_subsys = {
- 	.dev_name	= "machinecheck",
- };
- 
--DEFINE_PER_CPU(struct device, mce_device);
-+struct device *mce_device[CONFIG_NR_CPUS];
- 
- __cpuinitdata
- void (*threshold_cpu_callback)(unsigned long action, unsigned int cpu);
-@@ -2001,19 +2001,27 @@ static struct device_attribute *mce_device_attrs[] = {
- 
- static cpumask_var_t mce_device_initialized;
- 
-+static void mce_device_release(struct device *dev)
-+{
-+	kfree(dev);
-+}
-+
- /* Per cpu device init. All of the cpus still share the same ctrl bank: */
- static __cpuinit int mce_device_create(unsigned int cpu)
- {
--	struct device *dev = &per_cpu(mce_device, cpu);
-+	struct device *dev;
- 	int err;
- 	int i, j;
- 
- 	if (!mce_available(&boot_cpu_data))
- 		return -EIO;
- 
--	memset(dev, 0, sizeof(struct device));
-+	dev = kzalloc(sizeof *dev, GFP_KERNEL);
-+	if (!dev)
-+		return -ENOMEM;
- 	dev->id  = cpu;
- 	dev->bus = &mce_subsys;
-+	dev->release = &mce_device_release;
- 
- 	err = device_register(dev);
- 	if (err)
-@@ -2030,6 +2038,7 @@ static __cpuinit int mce_device_create(unsigned int cpu)
- 			goto error2;
- 	}
- 	cpumask_set_cpu(cpu, mce_device_initialized);
-+	mce_device[cpu] = dev;
- 
- 	return 0;
- error2:
-@@ -2046,7 +2055,7 @@ error:
- 
- static __cpuinit void mce_device_remove(unsigned int cpu)
- {
--	struct device *dev = &per_cpu(mce_device, cpu);
-+	struct device *dev = mce_device[cpu];
- 	int i;
- 
- 	if (!cpumask_test_cpu(cpu, mce_device_initialized))
-@@ -2060,6 +2069,7 @@ static __cpuinit void mce_device_remove(unsigned int cpu)
- 
- 	device_unregister(dev);
- 	cpumask_clear_cpu(cpu, mce_device_initialized);
-+	mce_device[cpu] = NULL;
- }
- 
- /* Make sure there are no machine checks on offlined CPUs. */
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-index ba0b94a..786e76a 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -523,6 +523,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- {
- 	int i, err = 0;
- 	struct threshold_bank *b = NULL;
-+	struct device *dev = mce_device[cpu];
- 	char name[32];
- 
- 	sprintf(name, "threshold_bank%i", bank);
-@@ -543,8 +544,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 		if (!b)
- 			goto out;
- 
--		err = sysfs_create_link(&per_cpu(mce_device, cpu).kobj,
--					b->kobj, name);
-+		err = sysfs_create_link(&dev->kobj, b->kobj, name);
- 		if (err)
- 			goto out;
- 
-@@ -565,7 +565,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 		goto out;
- 	}
- 
--	b->kobj = kobject_create_and_add(name, &per_cpu(mce_device, cpu).kobj);
-+	b->kobj = kobject_create_and_add(name, &dev->kobj);
- 	if (!b->kobj)
- 		goto out_free;
- 
-@@ -585,8 +585,9 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 		if (i == cpu)
- 			continue;
- 
--		err = sysfs_create_link(&per_cpu(mce_device, i).kobj,
--					b->kobj, name);
-+		dev = mce_device[i];
-+		if (dev)
-+			err = sysfs_create_link(&dev->kobj,b->kobj, name);
- 		if (err)
- 			goto out;
- 
-@@ -649,6 +650,7 @@ static void deallocate_threshold_block(unsigned int cpu,
- static void threshold_remove_bank(unsigned int cpu, int bank)
- {
- 	struct threshold_bank *b;
-+	struct device *dev;
- 	char name[32];
- 	int i = 0;
- 
-@@ -663,7 +665,7 @@ static void threshold_remove_bank(unsigned int cpu, int bank)
- #ifdef CONFIG_SMP
- 	/* sibling symlink */
- 	if (shared_bank[bank] && b->blocks->cpu != cpu) {
--		sysfs_remove_link(&per_cpu(mce_device, cpu).kobj, name);
-+		sysfs_remove_link(&mce_device[cpu]->kobj, name);
- 		per_cpu(threshold_banks, cpu)[bank] = NULL;
- 
- 		return;
-@@ -675,7 +677,9 @@ static void threshold_remove_bank(unsigned int cpu, int bank)
- 		if (i == cpu)
- 			continue;
- 
--		sysfs_remove_link(&per_cpu(mce_device, i).kobj, name);
-+		dev = mce_device[i];
-+		if (dev)
-+			sysfs_remove_link(&dev->kobj, name);
- 		per_cpu(threshold_banks, i)[bank] = NULL;
- 	}
- 
+    Stefan
 
