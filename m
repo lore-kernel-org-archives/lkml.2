@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2APSy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:54:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43013 "EHLO mx2.suse.de"
+	id S1756574Ab2APSzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:55:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42975 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756504Ab2APStb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:49:31 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:19 2012
-Message-Id: <20120116184519.009780337@clark.kroah.org>
+	id S1756317Ab2APStR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:49:17 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:18 2012
+Message-Id: <20120116184518.771490983@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:45:06 -0800
+Date: Mon, 16 Jan 2012 10:45:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Campbell <ian.campbell@citrix.com>,
-        Haogang Chen <haogangchen@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [39/48] xen/xenbus: Reject replies with payload > XENSTORE_PAYLOAD_MAX.
+        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [36/48] x86/PCI: build amd_bus.o only when CONFIG_AMD_NB=y
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 9e7860cee18241633eddb36a4c34c7b61d8cecbc upstream.
+commit 5cf9a4e69c1ff0ccdd1d2b7404f95c0531355274 upstream.
 
-Haogang Chen found out that:
+We only need amd_bus.o for AMD systems with PCI.  arch/x86/pci/Makefile
+already depends on CONFIG_PCI=y, so this patch just adds the dependency
+on CONFIG_AMD_NB.
 
- There is a potential integer overflow in process_msg() that could result
- in cross-domain attack.
-
- 	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
-
- When a malicious guest passes 0xffffffff in msg->hdr.len, the subsequent
- call to xb_read() would write to a zero-length buffer.
-
- The other end of this connection is always the xenstore backend daemon
- so there is no guest (malicious or otherwise) which can do this. The
- xenstore daemon is a trusted component in the system.
-
- However this seem like a reasonable robustness improvement so we should
- have it.
-
-And Ian when read the API docs found that:
-        The payload length (len field of the header) is limited to 4096
-        (XENSTORE_PAYLOAD_MAX) in both directions.  If a client exceeds the
-        limit, its xenstored connection will be immediately killed by
-        xenstored, which is usually catastrophic from the client's point of
-        view.  Clients (particularly domains, which cannot just reconnect)
-        should avoid this.
-
-so this patch checks against that instead.
-
-This also avoids a potential integer overflow pointed out by Haogang Chen.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Haogang Chen <haogangchen@gmail.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/xen/xenbus/xenbus_xs.c     |    6 ++++++
- include/xen/interface/io/xs_wire.h |    3 +++
- 2 files changed, 9 insertions(+)
+ arch/x86/pci/Makefile |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/xen/xenbus/xenbus_xs.c
-+++ b/drivers/xen/xenbus/xenbus_xs.c
-@@ -801,6 +801,12 @@ static int process_msg(void)
- 		goto out;
- 	}
+--- a/arch/x86/pci/Makefile
++++ b/arch/x86/pci/Makefile
+@@ -18,8 +18,9 @@ obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
+ obj-$(CONFIG_X86_MRST)		+= mrst.o
  
-+	if (msg->hdr.len > XENSTORE_PAYLOAD_MAX) {
-+		kfree(msg);
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
- 	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
- 	if (body == NULL) {
- 		kfree(msg);
---- a/include/xen/interface/io/xs_wire.h
-+++ b/include/xen/interface/io/xs_wire.h
-@@ -84,4 +84,7 @@ struct xenstore_domain_interface {
-     XENSTORE_RING_IDX rsp_cons, rsp_prod;
- };
+ obj-y				+= common.o early.o
+-obj-y				+= amd_bus.o bus_numa.o
++obj-y				+= bus_numa.o
  
-+/* Violating this is very bad.  See docs/misc/xenstore.txt. */
-+#define XENSTORE_PAYLOAD_MAX 4096
-+
- #endif /* _XS_WIRE_H */
++obj-$(CONFIG_AMD_NB)		+= amd_bus.o
+ obj-$(CONFIG_PCI_CNB20LE_QUIRK)	+= broadcom_bus.o
+ 
+ ifeq ($(CONFIG_PCI_DEBUG),y)
 
 
