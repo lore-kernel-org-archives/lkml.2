@@ -1,190 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055Ab2APWIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 17:08:41 -0500
-Received: from mailgw01.dd24.net ([193.46.215.41]:37777 "EHLO
-	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab2APWIj (ORCPT
+	id S1757033Ab2APWLd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 17:11:33 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:47237 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751245Ab2APWLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 17:08:39 -0500
-Subject: Re: iwl4965: "MAC is in deep sleep!" freezes
-From: Christoph Anton Mitterer <calestyo@scientia.net>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>, linux-kernel@vger.kernel.org
-In-Reply-To: <20120105101412.GB2103@redhat.com>
-References: <265f56a4dc9f5d3edeca3d101e445353@imap.dd24.net>
-	 <20110908084913.GB2195@redhat.com>
-	 <1321228952.3362.15.camel@fermat.scientia.net>
-	 <20111114014615.GC16508@elie.hsd1.il.comcast.net>
-	 <1321466933.3364.16.camel@fermat.scientia.net>
-	 <20111118074552.GB2203@redhat.com>
-	 <1325171851.3907.33.camel@fermat.scientia.net>
-	 <20111229201149.GB1674@elie.Belkin> <20120103105107.GB3391@redhat.com>
-	 <1325640148.3359.142.camel@fermat.scientia.net>
-	 <20120105101412.GB2103@redhat.com>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-rF4VsM8B3EA1UZSz1Veo"
-Date: Mon, 16 Jan 2012 23:08:30 +0100
-Message-ID: <1326751710.3502.25.camel@fermat.scientia.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Mon, 16 Jan 2012 17:11:32 -0500
+Message-ID: <4F14A06F.90507@metafoo.de>
+Date: Mon, 16 Jan 2012 23:10:55 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
+To: Peter Meerwald <pmeerw@pmeerw.net>
+CC: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, akpm@linux-foundation.org
+Subject: Re: [PATCH] leds: add driver for PCA9663 I2C chip
+References: <1326747861-10874-1-git-send-email-pmeerw@pmeerw.net>
+In-Reply-To: <1326747861-10874-1-git-send-email-pmeerw@pmeerw.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-rF4VsM8B3EA1UZSz1Veo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, 2012-01-05 at 11:14 +0100, Stanislaw Gruszka wrote:
-> Hmm, perhaps iwl4965 device does not work well with the new PCIe chipset.
->=20
-> Does any of fallowing workaround the problem?
->=20
-> kernel boot parameter:
-> pcie_aspm=3Doff
-> pci_aspm=3Dforce
-> pci=3Dnocrs
-> pci=3Duse_crs
->=20
-> iwlegacy module parameter:
-> bt_coex_active=3D0
->=20
-> iwl4965 module parameters
-> 11n_disable=3D1
-
-None of these helped,.. it seems however that even with pci_aspm=3Dforce
-it:
-ACPI _OSC control for PCIe not granted, disabling ASPM
+On 01/16/2012 10:04 PM, Peter Meerwald wrote:
+> From: Peter Meerwald <p.meerwald@bct-electronic.com>
+> 
+> simple driver for the PCA9633 I2C chip supporting four LEDs and
+> 255 brightness levels
 
 
-> There should be 3 or 2 antennas: 1 - white, 3 - grey, 2 - black,
-> connection on adapter should match cable color (ok, I don't know if
-> it does any difference, but it worth to try). If there is only one
-> antenna available, perhaps there is somewhere another miniPCIe slot
-> where are more antenna cables available. But, if there is really
-> only one antenna cable, it should be connected to number 1 (white)
-> adapter connector.
-Well what I thought to be the wifi controller till now, has only on
-cable (white).... with only one connector.
+Looks good, just a few minor issues.
 
-I tried to disassemble the whole thing but must shamefully admit that I
-wasn't able to... at some place it's kept somehow together (als screws
-are loosened) and I couldn't find out so far how.
+> 
+> ---
+>  drivers/leds/Kconfig        |    8 ++
+>  drivers/leds/Makefile       |    1 +
+>  drivers/leds/leds-pca9633.c |  219 +++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 228 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/leds/leds-pca9633.c
+> [...]
+> diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
+> new file mode 100644
+> index 0000000..68c30d7
+> --- /dev/null
+> +++ b/drivers/leds/leds-pca9633.c
+> @@ -0,0 +1,219 @@
+> +/*
+> + * Copyright 2011 bct electronic GmbH
+> + *
+> + * Author: Peter Meerwald <p.meerwald@bct-electronic.com>
+> + *
+> + * Based on leds-pca955x.c
+> + *
+> + * This file is subject to the terms and conditions of version 2 of
+> + * the GNU General Public License.  See the file COPYING in the main
+> + * directory of this archive for more details.
+> + *
+> + * LED driver for the PCA9633 I2C LED driver (7-bit slave address 0x62)
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/delay.h>
+> +#include <linux/string.h>
+> +#include <linux/ctype.h>
+> +#include <linux/leds.h>
+> +#include <linux/err.h>
+> +#include <linux/i2c.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/slab.h>
+> +
+> +/* LED select registers determine the source that drives LED outputs */
+> +#define PCA9633_LED_OFF		0x0	/* LED driver off */
+> +#define PCA9633_LED_ON		0x1	/* LED driver on */
+> +#define PCA9633_LED_PWM		0x2	/* Controlled through PWM */
+> +#define PCA9633_LED_GRP_PWM	0x3	/* Controlled through PWM/GRPPWM */
+> +
+> +#define PCA9633_MODE1		0x00
+> +#define PCA9633_MODE2		0x01
+> +#define PCA9633_PWM_BASE	0x02
+> +#define PCA9633_LEDOUT		0x08
+> +
+> +static const struct i2c_device_id pca9633_id[] = {
+> +	{ "pca9633", 0 },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, pca9633_id);
+> +
+> +struct pca9633_led {
+> +	struct i2c_client *client;
+> +	struct work_struct work;
+> +	spinlock_t lock;
+> +	enum led_brightness brightness;
+> +	struct led_classdev led_cdev;
+> +	int led_num; /* 0 .. 3 potentially */
+> +	char name[32];
+> +};
+> +
+> +static void pca9633_led_work(struct work_struct *work)
+> +{
+> +	struct pca9633_led *pca9633 = container_of(work,
+> +		struct pca9633_led, work);
+> +
+> +	u8 ledout = i2c_smbus_read_byte_data(pca9633->client, PCA9633_LEDOUT);
+> +	int shift = 2 * pca9633->led_num;
+> +	u8 mask = 0x3 << shift;
+> +
+> +	switch (pca9633->brightness) {
 
+Using led_cdev.brightness should work as well.
 
+> +	case LED_FULL:
+> +		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
+> +			(ledout & ~mask) | (PCA9633_LED_ON << shift));
+> +		break;
+> +	case LED_OFF:
+> +		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
+> +			ledout & ~mask);
+> +		break;
+> +	default:
+> +		i2c_smbus_write_byte_data(pca9633->client,
+> +			PCA9633_PWM_BASE + pca9633->led_num,
+> +			pca9633->brightness);
+> +		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
+> +			(ledout & ~mask) | (PCA9633_LED_PWM << shift));
+> +		break;
+> +	}
+> +}
+> +
+> +static void pca9633_led_set(struct led_classdev *led_cdev,
+> +	enum led_brightness value)
+> +{
+> +	struct pca9633_led *pca9633;
+> +
+> +	pca9633 = container_of(led_cdev, struct pca9633_led, led_cdev);
+> +
+> +	spin_lock(&pca9633->lock);
 
-Cheers,
-Chris.
+Does the spinlock actually protect against anything?
 
---=-rF4VsM8B3EA1UZSz1Veo
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
+> +	pca9633->brightness = value;
+> +
+> +	/*
+> +	 * Must use workqueue for the actual I/O since I2C operations
+> +	 * can sleep.
+> +	 */
+> +	schedule_work(&pca9633->work);
+> +
+> +	spin_unlock(&pca9633->lock);
+> +}
+> +
+> +static int __devinit pca9633_probe(struct i2c_client *client,
+> +					const struct i2c_device_id *id)
+> +{
+> +	struct pca9633_led *pca9633;
+> +	struct i2c_adapter *adapter;
+> +	struct led_platform_data *pdata;
+> +	int i, err;
+> +
+> +	adapter = to_i2c_adapter(client->dev.parent);
+> +	pdata = client->dev.platform_data;
+> +
+> +	printk(KERN_INFO "leds-pca9633: LED driver at slave address 0x%02x\n",
+> +		client->addr);
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIITMjCCBggw
-ggPwoAMCAQICAQEwDQYJKoZIhvcNAQEEBQAweTEQMA4GA1UEChMHUm9vdCBDQTEeMBwGA1UECxMV
-aHR0cDovL3d3dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcgQXV0aG9yaXR5
-MSEwHwYJKoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcwHhcNMDUxMDE0MDczNjU1WhcNMzMw
-MzI4MDczNjU1WjBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
-QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MIICIjANBgkqhkiG9w0BAQEF
-AAOCAg8AMIICCgKCAgEAq0k1EUh80iZ+U5TPQ6ndKNdCKovzh3gZWHwPntqJfeH763KQDXShlmSr
-n6AkmXPa4lV2xxd79QSsRrjDvn9kjRBsJPNhnMDykPpR5vVpAWPDD1biSkLP4kSMJSioxXkJfUa5
-ivPp8zQpCEXkHJ/LlAQcgagUs5hlxEPsToKNCdG9qluNktDs3pDFfwrC4+vmMVpedD6XM1nowwM9
-YDO/99FvR8TN7mKDUm4uCJqk2RUYkaaFkkewrkjrbbch7IUaaHI1q//wEF3A9JSnatU7kn5MkAV+
-k8Esi6SOYnQVcW4LcQPqrxU4mtTSBXJvjPkr61pyJfk5RuNyGz4Ew2QnIhAqik9YpwOtvrQuE+1d
-qkjX1X3UKntc+kYEUOTMDkJbjO3b8s/8lpPg2xE2VGI0OI8MYJs7l1Y4rfPSW4ugW+pOlrh819Wg
-hnBA05Ept6I8rfWMu88akorkNHvA2Gxf6QrCw6cgmlrfLF1SXLpH1ZvvJChwOCAv1X8pwLJBA2iS
-zOCczJdLRe86EAqrcDqYlXCtNbHqhSukHIAhMamuYHqAJkgAuAHAk2NVIpE8Vuev2zol848xVOom
-i4FZ+aHRUxHFe50D9nQR4G2xLD8shpGZcZqmd4s0YNEUtCysna+MENOfxGr4bxP8c1n3ZkJ0Horj
-+NzSb5icy0eYlUAF++kCAwEAAaOBvzCBvDAPBgNVHRMBAf8EBTADAQH/MF0GCCsGAQUFBwEBBFEw
-TzAjBggrBgEFBQcwAYYXaHR0cDovL29jc3AuQ0FjZXJ0Lm9yZy8wKAYIKwYBBQUHMAKGHGh0dHA6
-Ly93d3cuQ0FjZXJ0Lm9yZy9jYS5jcnQwSgYDVR0gBEMwQTA/BggrBgEEAYGQSjAzMDEGCCsGAQUF
-BwIBFiVodHRwOi8vd3d3LkNBY2VydC5vcmcvaW5kZXgucGhwP2lkPTEwMA0GCSqGSIb3DQEBBAUA
-A4ICAQB/CIih2hpQSdqJ+6EIcvOK9x7EOrR5WyAwsUXewl3TZWnxwl1UVDyFX7l7QpHCmf0bUZur
-RqWhEFOebYisc24sM6bw9J7gdcE+iEWp4WZD/lZa0XpBePdA2ko68QtbpbsWBubC55O5hU2XT7Ee
-OEOA75sNjO+4p2AAh1d9HkQcyyPvmzyZna+1KRxFeRaWTSdt8Rxsw8JVZLO8FOLzpB8eMvwnFQXP
-3S6uPoJhe/AhEBj2ROpTOfnc0Jog4Ma74LtaT8SZyAe9tb2i2y5iDUI0Qbz/i4r1USKqiDAA4rDU
-vL5lutUDV3mb6NzITfhQ7ZGlUiiirPs2WD7plCuRUIcb1l7WjMz3DxAMUk7QFmHl5QpsvxfHckZX
-nJj1bGBjem9euU4vyLm5u2qFvJgN7fk+l4Q0lK4Ar6Hl55JuTr3z4tkUi1zS6wFsoBelLRDrnHpK
-vb3uzv3tIkCrcDiI9QqHasKrBWDJSAXaU8HeRHdqs/M8PO2AvKY4SikkX/5ZO5slelZjAGS5XaRi
-fVc2T62D7x+SU6COd1fd5WERPSMAkEw8+qNgkwSjrzX2DmqPT0pgp4UFbEahj/THduOhWVf3cbLE
-bhRcbW1BZt8bk7HUAMPuy888PSGAqV9jZfzd4F+k9CvwhXFB1Gcl+xqxl67WmYITQdJupRuZJ4Dn
-C6moADCCBo8wggR3oAMCAQICAwCyHTANBgkqhkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQg
-SW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xh
-c3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oXDTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhD
-aHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAiBgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlh
-Lm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEv
-MC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG
-9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4w
-LAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEzsTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiG
-JmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2zJ4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYi
-gMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/hNOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/Mu
-dT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7H
-zdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYshPV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IB
-nTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgBhvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRp
-ZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0l
-BDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhC
-BAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6
-BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVudGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24u
-bWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9w
-aC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24u
-bWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEBBQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfS
-XpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlS
-GZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb95VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uB
-kAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRn
-oX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38BjULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV
-4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlYnAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD
-66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avqZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9
-uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPepTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQ
-EQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeGX3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY
-3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5bcp6cOPWgvzCCBo8wggR3oAMCAQICAwCyHTANBgkq
-hkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
-QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oX
-DTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhDaHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAi
-BgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlhLm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBj
-aHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEvMC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFu
-dG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0
-ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4wLAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50
-b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEz
-sTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiGJmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2z
-J4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYigMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/h
-NOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/MudT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/
-qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7HzdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYsh
-PV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IBnTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgB
-hvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRpZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0
-byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgor
-BgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUF
-BzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVu
-dGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFu
-dG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5p
-LW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEB
-BQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfSXpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK
-3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlSGZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb9
-5VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uBkAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8
-ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRnoX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38Bj
-ULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlY
-nAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avq
-ZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPe
-pTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQEQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeG
-X3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5b
-cp6cOPWgvzGCAr0wggK5AgEBMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0
-dHA6Ly93d3cuQ0FjZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMAkG
-BSsOAwIaBQCgggE3MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEy
-MDExNjIyMDgzMFowIwYJKoZIhvcNAQkEMRYEFP7boYad69ch1BEJBAGcdfuLdm5cMGoGCSsGAQQB
-gjcQBDFdMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93d3cuQ0Fj
-ZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMGwGCyqGSIb3DQEJEAIL
-MV2gWzBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQu
-b3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290AgMAsh0wDQYJKoZIhvcNAQEBBQAEggEA
-f8FLY1HDc6d2Rk5Q8jSbpzUwP6Xh5KuNyNPv/3tXF2kmUrutGSVkxQ3ETaA0VOc5Ior3+UIU5vi+
-mCWWc2xN9cEN6CE+bG3pgIK+6M1ECE7kUAUkVSVDuWTaAK00QpY5lmjXdG6WnyhvkUHwp6eSJUC1
-wlbac0w0nY5mnj8Y9bRKYYCuAw/vLIO9oTa8vrMt4B18oYR8V7TpewOIUwKr1tyJ7snvXLAjDkgC
-lUwJHDl0Rbj27N6QO2Ob0bu4PXRl9goSuPoSazE73FdofNMaG1g9IM+myCZEgLdCp1DyZqnOS2qf
-+sFtkRX/hgYUK+wKe2Hj0U3XeQyudqvV95k2MgAAAAAAAA==
+dev_info, but it probably wouldn't hurt either if the message is removed
+altogether.
 
+> +
+> +	if (!i2c_check_functionality(adapter, I2C_FUNC_I2C))
+> +		return -EIO;
 
---=-rF4VsM8B3EA1UZSz1Veo--
+You check for I2C functionality, but only ever use the smbus subset, which
+should be supported by all adapters anyway, so you should be safe even without
+the check.
+
+> +
+> +	if (pdata) {
+> +		if (pdata->num_leds <= 0 || pdata->num_leds > 4) {
+> +			dev_err(&client->dev, "board info must claim at most 4 LEDs");
+> +			return -ENODEV;
+
+-EINVAL?
+
+> +		}
+> +	}
+> +
+> +	pca9633 = kzalloc(sizeof(*pca9633) * 4, GFP_KERNEL);
+> +	if (!pca9633)
+> +		return -ENOMEM;
+> +
+> +	i2c_set_clientdata(client, pca9633);
+> +
+> +	for (i = 0; i < 4; i++) {
+> +		pca9633[i].client = client;
+> +		pca9633[i].led_num = i;
+> +
+> +		/* Platform data can specify LED names and default triggers */
+> +		if (pdata && i < pdata->num_leds) {
+> +			if (pdata->leds[i].name)
+> +				snprintf(pca9633[i].name,
+> +					 sizeof(pca9633[i].name), "pca9633:%s",
+> +					 pdata->leds[i].name);
+
+Why the prefix?
+
+> +			if (pdata->leds[i].default_trigger)
+> +				pca9633[i].led_cdev.default_trigger =
+> +					pdata->leds[i].default_trigger;
+> +		} else {
+> +			snprintf(pca9633[i].name, sizeof(pca9633[i].name),
+> +				 "pca9633:%d", i);
+> +		}
+> +
+> +		spin_lock_init(&pca9633[i].lock);
+> +
+> +		pca9633[i].led_cdev.name = pca9633[i].name;
+> +		pca9633[i].led_cdev.brightness_set = pca9633_led_set;
+> +
+> +		INIT_WORK(&pca9633[i].work, pca9633_led_work);
+> +
+> +		err = led_classdev_register(&client->dev, &pca9633[i].led_cdev);
+> +		if (err < 0)
+> +			goto exit;
+> +	}
+> +
+> +	/* Disable LED all-call address and set normal mode */
+> +	i2c_smbus_write_byte_data(client, PCA9633_MODE1, 0x00);
+> +
+> +	/* Turn off LEDs */
+> +	i2c_smbus_write_byte_data(client, PCA9633_LEDOUT, 0x00);
+> +
+> +	return 0;
+> +
+> +exit:
+> +	while (i--) {
+> +		led_classdev_unregister(&pca9633[i].led_cdev);
+> +		cancel_work_sync(&pca9633[i].work);
+> +	}
+> +
+> +	kfree(pca9633);
+> +
+> +	return err;
+> +}
+> +
+>[...]
+> +
+> +static int __init pca9633_leds_init(void)
+> +{
+> +	return i2c_add_driver(&pca9633_driver);
+> +}
+> +
+> +static void __exit pca9633_leds_exit(void)
+> +{
+> +	i2c_del_driver(&pca9633_driver);
+> +}
+> +
+> +module_init(pca9633_leds_init);
+> +module_exit(pca9633_leds_exit);
+
+Use the new module_i2c_driver macro.
 
