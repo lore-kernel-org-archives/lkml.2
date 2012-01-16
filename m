@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab2APPia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:38:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:28799 "EHLO mga11.intel.com"
+	id S1755183Ab2APPmw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 10:42:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13647 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753711Ab2APPi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:38:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="112807625"
-Message-ID: <4F14445E.8040307@linux.intel.com>
-Date: Mon, 16 Jan 2012 07:38:06 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1754943Ab2APPmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 10:42:51 -0500
+Message-ID: <4F1444FF.60205@redhat.com>
+Date: Mon, 16 Jan 2012 16:40:47 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, arjan@linux.intel.com,
-        alan@linux.intel.com, jeffrey.t.kirsher@intel.com,
-        paul.gortmaker@windriver.com, jdmason@kudzu.us, netdev@vger.kernel.org
-Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing
- probe
-References: <132d2a41a089905de3147b4656e350608aa7fd6f.1326523495.git.dvhart@linux.intel.com> <20120114.001430.787918662083526597.davem@davemloft.net> <4F11A533.4040406@linux.intel.com> <20120114.115604.2101782124431552110.davem@davemloft.net> <20120114214658.4ddfec30@pyramind.ukuu.org.uk> <4F120357.3020808@linux.intel.com> <CANKRQnge1n4M7W5xCqwyGzXp8J3eK1HbZVRqGW7BoE5iOwYCDQ@mail.gmail.com>
-In-Reply-To: <CANKRQnge1n4M7W5xCqwyGzXp8J3eK1HbZVRqGW7BoE5iOwYCDQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.4
+To: Andrew Jones <drjones@redhat.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rientjes@google.com, mingo@elte.hu, david.woodhouse@intel.com,
+        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, arnd@arndb.de,
+        holt@sgi.com, linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
+        dhowells@redhat.com, takata@linux-m32r.org, geert@linux-m68k.org,
+        yasutake.koichi@jp.panasonic.com, jonas@southpole.se, kyle@mcmartin.ca,
+        deller@gmx.de, jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
+        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
+        mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+References: <1326295008-29795-1-git-send-email-drjones@redhat.com>
+In-Reply-To: <1326295008-29795-1-git-send-email-drjones@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 01/15/2012 11:38 PM, Tomoya MORINAGA wrote:
-> 2012/1/16 Darren Hart <darren.hart@intel.com>:
->> I have since resolved this particular issue. I did not disable the
->> pcieqos driver I forward ported. With that disabled, pch_phub works as
->> expected.
-> Yes, you can not use both pcieqos and pch_phub at the same time.
-> Because pcieqos is previous version of pch_phub which is upstreamed.
-
-Right, they both claim the same PCI ID.
-
+On 01/11/2012 04:16 PM, Andrew Jones wrote:
+> Commit 6a108a14fa35 renamed CONFIG_EMBEDDED to CONFIG_EXPERT with the
+> justification that EMBEDDED was being used with a broader scope. It was
+> no longer just being used to expose standard options to embedded kernel
+> configs for tweaking, but rather for all "non-standard" kernel configs.
+> This is nice, because now developers have a way to clean up the config
+> menu by adding 'if EXPERT' to all entries in their Kconfig files that
+> should rarely have a non-default value selected (hint1: it would be nice
+> if developers would do this, hint2: it would also be nice if developers
+> would do this rather than making these types of options silent, and thus
+> impossible to override).
 > 
->> Which is to say it lists pch_mac, reads all 0's, and does
->> nothing on write (since the MAC ROM doesn't exist). Please see the patch
->> thread from Friday to address this using a random mac if the ROM is
->> missing or invalid.
-> Saving MAC address into external ROM is generic method, I think.
-> Though I know the ROM-less system using eg20t-pch, however I think
-> this system is not common.
-> So, I think pch_gbe shouldn't have auto-mac address assignment.
+> Unfortunately, EMBEDDED was also being used to modify the defaults of
+> some of these options to selections more appropriate for embedded
+> kernels. Since the renaming was a simple global search-replace, if
+> developers were to follow hints 1 and 2 above for non-embedded kernels,
+> then they may find unexpected changes in their configs after turning on
+> EXPERT.
 > 
-> BTW, as you know, a use can write MAC address using sysfs file system
-> like below.
-> echo aa:bb:cc:dd:ee:ff > pch_mac
+> This patch attempts to untangle these two, making EXPERT true to its
+> purpose, which is to only expose standard options for tweaking, and
+> EMBEDDED to resume use as a default option modifier. The patch was made
+> with the following four steps, which could not be split into separate
+> patches without breaking configs
+> 
+> 1. Make sure EMBEDDED does nothing, i.e. s/EMBEDDED/EXPERT/. There were
+> only three places EMBEDDED was used.
+> 
+> 2. Add CONFIG_EXPERT=y to all configs that had CONFIG_EMBEDDED=y (and
+> not CONFIG_EXPERT=y already) to make sure step1 has no effect. This step
+> isn't strictly necessary since EMBEDDED selects EXPERT, but I wanted the
+> configs expressing the new need explicitly. Only 13 *_defconfig files.
+> 
+> 3. Move all side effects (default changes) from EXPERT to EMBEDDED
+> 
+> 4. Add CONFIG_EMBEDDED=y to all configs that had CONFIG_EXPERT=y (and
+> not CONFIG_EMBEDDED=y already) to make sure step3 has no effect.
+> 
+> I certainly didn't test this for every touched config. However, I did
+> test it for one config and got the expected results;
+>     Before patch:
+>         1. diff config.orig orig.EXPERT   -- shows many changes
+>         2. diff config.orig orig.EMBEDDED -- shows same changes as (1)
+>                                              plus EMBEDDED on
+>     After patch:
+>         3. diff config.orig config.new    -- no change
+>         4. diff config.orig new.EXPERT    -- only 1 change, EXPERT on
+>         5. diff config.orig new.EMBEDDED  -- shows same changes as (2)
+> 
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> ---
 
-Right, this doesn't work on the ROM-less system. At least, the
-subsequent read returns all 0's. The same is true with the phub-util-mac
-and pcieqos. I believe this is due to pci_map_rom failing.
+> @@ -1259,8 +1259,7 @@ config SLUB
+>  	   a slab allocator.
+>  
+>  config SLOB
+> -	depends on EXPERT
+> -	bool "SLOB (Simple Allocator)"
+> +	bool "SLOB (Simple Allocator)" if EXPERT
+>  	help
+>  	   SLOB replaces the stock allocator with a drastically simpler
+>  	   allocator. SLOB is generally more space efficient but
 
-Also, if you don't build the driver as a module, then the above still
-isn't sufficient as the pci probe fails and the device isn't created.
+Am I missing something or this particular chunk does not actually change
+anything?
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Jerome
