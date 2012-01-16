@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab2APKwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 05:52:54 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:34084 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753228Ab2APKwx (ORCPT
+	id S1754140Ab2APKzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 05:55:17 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58507 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab2APKzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 05:52:53 -0500
-Message-ID: <4F14016A.4090209@st.com>
-Date: Mon, 16 Jan 2012 16:22:26 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Mon, 16 Jan 2012 05:55:16 -0500
+Date: Mon, 16 Jan 2012 10:54:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, pratyush.anand@st.com,
+        rajeev-dlh.kumar@st.com, bhupesh.sharma@st.com,
+        armando.visconti@st.com, linus.walleij@linaro.org, mirko.gardi@st.com,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com, shiraz.hashim@st.com,
+        amit.virdi@st.com, vipulkumar.samar@st.com, viresh.linux@gmail.com,
+        deepak.sikri@st.com, bhavna.yadav@st.com,
+        linux-arm-kernel@lists.infradead.org, vincenzo.frascino@st.com
+Subject: Re: [PATCH 7/8] dmaengine/dw_dmac: Unmap all memory buffers after
+	completion of slave transfers
+Message-ID: <20120116105448.GT1068@n2100.arm.linux.org.uk>
+References: <cover.1326707233.git.viresh.kumar@st.com> <5e5d0fcff79b9b78e64c7424317d6b77736eca43.1326707233.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>, Bhavna YADAV <bhavna.yadav@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>
-Subject: Re: [PATCH 5/8] dmaengine/dw_dmac: Use platform_get_drvdata instead
- of accessing dev directly
-References: <cover.1326707233.git.viresh.kumar@st.com> <51d3263224d48c1d68de1449af28fb1570900254.1326707233.git.viresh.kumar@st.com> <4F14004F.2010906@ru.mvista.com>
-In-Reply-To: <4F14004F.2010906@ru.mvista.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5e5d0fcff79b9b78e64c7424317d6b77736eca43.1326707233.git.viresh.kumar@st.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/16/2012 4:17 PM, Sergei Shtylyov wrote:
->> > Use already defined function platform_get_drvdata() instead of accessing
->> > pdev->dev.data.
->     pdev->dev.platform_data.
+On Mon, Jan 16, 2012 at 03:20:35PM +0530, Viresh Kumar wrote:
+> Currently, after completion of transfer, source address or destination address
+> of only the first LLI descriptor is unmapped. And length passed for unmap is
+> total length of all descriptors in the list. Which means unmapping code assumed
+> that the memory buffers pointed to by the descriptors will be physically
+> contiguous, which might not be the case. It is possible for other drivers to
+> pass sglist to slave_sg(), in which all buffers are scattered throughout the
+> memory.
 > 
+> This patch intends to fix this wrong expectation of dw_dmac. Now, first desc
+> will not contain total length of transfer. But individual descriptors will
+> contain their individual lengths. Finally, we will call unmap for all
+> descriptors.
 
-Oops!! Will fix comment once i get comments over other patches too.
+Note that DMA engine drivers are not responsible for unmapping the buffers
+when the transfer completes - that is the responsibility of the caller.
 
--- 
-viresh
+The automatic buffer unmapping is required for the async_tx APIs and
+offload APIs.
