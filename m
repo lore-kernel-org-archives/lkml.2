@@ -1,119 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab2APLdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 06:33:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46576 "EHLO mx2.suse.de"
+	id S1754325Ab2APLdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 06:33:22 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53056 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab2APLdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 06:33:10 -0500
-Date: Mon, 16 Jan 2012 11:33:04 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nai Xia <nai.xia@gmail.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/11] mm: compaction: Introduce sync-light migration for
- use by compaction
-Message-ID: <20120116113304.GB3143@suse.de>
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
- <1323877293-15401-9-git-send-email-mgorman@suse.de>
- <20120113132540.b2c1b170.akpm@linux-foundation.org>
+	id S1754297Ab2APLdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 06:33:17 -0500
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <linux-mmc@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>,
+        Denis Karpov <ext-denis.2.karpov@nokia.com>
+Subject: [PATCH RFC] mmc : omap_hsmmc : Save and restore the sysc across reset
+Date: Mon, 16 Jan 2012 17:03:07 +0530
+Message-ID: <1326713587-26463-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120113132540.b2c1b170.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 01:25:40PM -0800, Andrew Morton wrote:
-> On Wed, 14 Dec 2011 15:41:30 +0000
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
-> > mode that avoids writing back pages to backing storage. Async
-> > compaction maps to MIGRATE_ASYNC while sync compaction maps to
-> > MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
-> > hotplug, MIGRATE_SYNC is used.
-> > 
-> > This avoids sync compaction stalling for an excessive length of time,
-> > particularly when copying files to a USB stick where there might be
-> > a large number of dirty pages backed by a filesystem that does not
-> > support ->writepages.
-> >
-> > ...
-> > 
-> > --- a/include/linux/fs.h
-> > +++ b/include/linux/fs.h
-> > @@ -525,6 +525,7 @@ enum positive_aop_returns {
-> >  struct page;
-> >  struct address_space;
-> >  struct writeback_control;
-> > +enum migrate_mode;
-> >  
-> >  struct iov_iter {
-> >  	const struct iovec *iov;
-> > @@ -614,7 +615,7 @@ struct address_space_operations {
-> >  	 * is false, it must not block.
-> >  	 */
-> >  	int (*migratepage) (struct address_space *,
-> > -			struct page *, struct page *, bool);
-> > +			struct page *, struct page *, enum migrate_mode);
-> 
-> I'm getting a huge warning spew from this with my sparc64 gcc-3.4.5. 
-> I'm not sure why, really.
-> 
+The commit 11dd62:[omap_hsmmc: context save/restore support]
 
-Tetsuo Handa complained about the same thing using gcc 3.3 (added
-to cc).
+does a reset and restores AUTOIDLE settings.
+This patch saves the register does a reset and restores
+the same configuration.
 
-> Forward-declaring an enum in this fashion is problematic because some
-> compilers (I'm unsure about gcc) use different sizeofs for enums,
-> depending on the enum's value range.  For example, an enum which only
-> has values 0...255 can fit into a byte.  (iirc, the compiler actually
-> put it in a 16-bit storage).
-> 
+Cc: Denis Karpov <ext-denis.2.karpov@nokia.com>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+---
+Untested
+ drivers/mmc/host/omap_hsmmc.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Ok, I was not aware of this. Thanks for the heads-up.
-
-> So I propose:
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: mm: fix warnings regarding enum migrate_mode
-> 
-> sparc64 allmodconfig:
-> 
-> In file included from include/linux/compat.h:15,
->                  from /usr/src/25/arch/sparc/include/asm/siginfo.h:19,
->                  from include/linux/signal.h:5,
->                  from include/linux/sched.h:73,
->                  from arch/sparc/kernel/asm-offsets.c:13:
-> include/linux/fs.h:618: warning: parameter has incomplete type
-> 
-> It seems that my sparc64 compiler (gcc-3.4.5) doesn't like the forward
-> declaration of enums.
-> 
-> Fix this by moving the "enum migrate_mode" definition into its own header
-> file.
-> 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Andy Isaacson <adi@hexapodia.org>
-> Cc: Nai Xia <nai.xia@gmail.com>
-> Cc: Johannes Weiner <jweiner@redhat.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index fd0c661..175029d 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -680,7 +680,7 @@ static int omap_hsmmc_context_restore(struct omap_hsmmc_host *host)
+ 	struct mmc_ios *ios = &host->mmc->ios;
+ 	struct omap_mmc_platform_data *pdata = host->pdata;
+ 	int context_loss = 0;
+-	u32 hctl, capa;
++	u32 hctl, capa, sysc;
+ 	unsigned long timeout;
+ 
+ 	if (pdata->get_context_loss_count) {
+@@ -700,6 +700,7 @@ static int omap_hsmmc_context_restore(struct omap_hsmmc_host *host)
+ 		&& time_before(jiffies, timeout))
+ 		;
+ 
++	sysc = OMAP_HSMMC_READ(host->base, SYSCONFIG);
+ 	/* Do software reset */
+ 	OMAP_HSMMC_WRITE(host->base, SYSCONFIG, SOFTRESET);
+ 	timeout = jiffies + msecs_to_jiffies(MMC_TIMEOUT_MS);
+@@ -707,8 +708,7 @@ static int omap_hsmmc_context_restore(struct omap_hsmmc_host *host)
+ 		&& time_before(jiffies, timeout))
+ 		;
+ 
+-	OMAP_HSMMC_WRITE(host->base, SYSCONFIG,
+-			OMAP_HSMMC_READ(host->base, SYSCONFIG) | AUTOIDLE);
++	OMAP_HSMMC_WRITE(host->base, SYSCONFIG, sysc);
+ 
+ 	if (host->id == OMAP_MMC1_DEVID) {
+ 		if (host->power_mode != MMC_POWER_OFF &&
 -- 
-Mel Gorman
-SUSE Labs
+1.7.1
+
