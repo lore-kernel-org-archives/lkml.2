@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2APNiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 08:38:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55301 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839Ab2APNiL convert rfc822-to-8bit (ORCPT
+	id S1754826Ab2APNmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 08:42:35 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45331 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab2APNmd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 08:38:11 -0500
-Message-ID: <1326721082.2442.234.camel@twins>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yasunori Goto <y-goto@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Date: Mon, 16 Jan 2012 14:38:02 +0100
-In-Reply-To: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com>
-References: <20120106141258.GB19462@redhat.com>
-	 <20120107103059.BF5F.E1E9C6FF@jp.fujitsu.com>
-	 <20120116205140.6120.E1E9C6FF@jp.fujitsu.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 16 Jan 2012 08:42:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AF46@saturn3.aculab.com>
+References: <1326719999.2255.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <AE90C24D6B3A694183C094C60CF0A2F6D8AF46@saturn3.aculab.com>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@gmail.com>
+Date: Mon, 16 Jan 2012 14:42:12 +0100
+Message-ID: <CAGsizzJr1nOBP=Sd8c3OrK8+BVr+dwT+_2y-9Xts4-NbZV_KwQ@mail.gmail.com>
+Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: David Laight <David.Laight@aculab.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-16 at 20:51 +0900, Yasunori Goto wrote:
+2012/1/16 David Laight <David.Laight@aculab.com>:
+>> > +   for (i = 0; i < GRETAP_BR_HASH_SIZE; i++) {
+>> > +           struct ipgre_tap_bridge_entry *entry;
+>> > +           struct hlist_node *h, *n;
+>> > +           hlist_for_each_entry_safe(entry, h, n,
+>> > +                   &tunnel->hash[i], hlist)
+>> > +           {
+>> > +                   unsigned long this_timer;
+>> > +                   this_timer = entry->ageing_timer + delay;
+>> > +                   if (time_before_eq(this_timer, jiffies))
+>> > +                           ipgre_tap_bridge_delete(entry);
+>> > +                   else if (time_before(this_timer, next_timer))
+>> > +                           next_timer = this_timer;
+>> > +           }
+>> > +   }
+>> > +   spin_unlock_bh(&tunnel->hash_lock);
+>> > +   mod_timer(&tunnel->gc_timer, round_jiffies(next_timer + HZ/4));
+>>
+>> wow... why setup a 250 ms timer, if entries are valid 300 seconds ?
+>
+> Isn't that code trying to wakeup 250ms after the first expiry of any
+> of its items?
+>
+> Do you even need a timer at all?
+>
+> It may be enough to just put a timestamp into each entry
+> and tidy up when scanning one of the hash chains in (say)
+> the 'add item' path - when you need write access anyway.
+>
+> A hash table might not be the best structure either!
+> The hash lookup is still o(n) for n >> table_size.
+> It also may be likely that you'll do repeated lookups for a small
+> number of items - in which case using a hash to cache recent lookups
+> might be useful (maybe with some type of balanced tree structure)
+>
+>        David
+>
+>
 
-> try_to_wake_up() has a problem which may change status from TASK_DEAD to
-> TASK_RUNNING in race condition with SMI or guest environment of virtual
-> machine. (See: https://lkml.org/lkml/2011/12/21/523)
-> As a result, exited task is scheduled() again and panic occurs.
-> 
-> By this patch, do_exit() waits for releasing task->pi_lock which is used
-> in try_to_wake_up(). It guarantees the task becomes TASK_DEAD after
-> waking up.
+That part of code is modified from original linux bridge code, as I
+wanted to avoid of developing something that was already developed.
+The timer is actually needed to network
 
 
-This Changelog isn't very good. Please spell out the problem instead of
-referring to it so that people using git-blame and the like don't then
-have to go look up some (possibly non-existent) web-resource.
-
-> Signed-off-by: Yasunori Goto <y-goto@jp.fujitsu.com>
-> 
-> ---
->  kernel/exit.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> Index: linux-3.2/kernel/exit.c
-> ===================================================================
-> --- linux-3.2.orig/kernel/exit.c
-> +++ linux-3.2/kernel/exit.c
-> @@ -1038,6 +1038,14 @@ NORET_TYPE void do_exit(long code)
->  
->  	preempt_disable();
->  	exit_rcu();
-> +
-> +	/*
-> +	 * try_to_wake_up() might be waking me up due to race condition.
-> +	 * Make sure it is finished.
-> +	 */
-
-That comment is waaaay too terse. What race and what must be finished?
-
-> +	smp_mb();
-> +	raw_spin_unlock_wait(&tsk->pi_lock);
-> +
->  	/* causes final put_task_struct in finish_task_switch(). */
->  	tsk->state = TASK_DEAD;
->  	schedule();
-> 
-
+-- 
+Stefan Gula
