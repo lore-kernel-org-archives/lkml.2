@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab2AOXw1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 18:52:27 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53596 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab2AOXwZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 18:52:25 -0500
+	id S1752766Ab2APAIj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 19:08:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42004 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751045Ab2APAIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 19:08:38 -0500
+Message-ID: <4F136A50.80203@zytor.com>
+Date: Sun, 15 Jan 2012 16:07:44 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Date: Mon, 16 Jan 2012 10:52:23 +1100
-X-Google-Sender-Auth: XKBB7i6EcP-FYFfULW7K5Tstey0
-Message-ID: <CABqErrFZK0PA_p-esUTBACOo_WFcgQ2FyUst2RyfBGf42htSqg@mail.gmail.com>
-Subject: [ANNOUNCE] 3.2-ck1
-From: Con Kolivas <kernel@kolivas.org>
-To: linux-kernel@vger.kernel.org
+To: Brian Gerst <brgerst@gmail.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
+ save mtrr
+References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com> <1326301493-28760-11-git-send-email-fenghua.yu@intel.com> <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
+In-Reply-To: <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
+X-Enigmail-Version: 1.3.3
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are patches designed to improve system responsiveness and
-interactivity with specific emphasis on the desktop, but suitable to
-any commodity hardware workload.
+On 01/12/2012 04:33 AM, Brian Gerst wrote:
+> On Wed, Jan 11, 2012 at 12:04 PM, Fenghua Yu <fenghua.yu@intel.com> wrote:
+>> From: Fenghua Yu <fenghua.yu@intel.com>
+>>
+>> Ask the first online CPU to save mtrr instead of asking BSP. BSP could be
+>> offline when mtrr_save_state() is called.
+> 
+> If you can use any non-boot cpu to save the MTRRs why not just use the
+> current cpu?  They should all be in sync anyways.
+> 
 
-This is an upgrade to BFS 416, trivial bugfixes and a resync from
-3.1.0-ck1 . I've changed the versioning to not specify a 3 point
-release since it usually applies to successive 3 point releases for
-some time.
+A much bigger question: why do we ever bother saving the MTRR state per
+se?  We examine the MTRR state -- we have to -- during boot, and it
+should never diverge from the state set by the OS from that point on --
+we'll need to set it back to that.  So we should just keep track of what
+the correct MTRR state is at all times.
 
-Apply to 3.2.x:
-http://ck.kolivas.org/patches/3.0/3.2/3.2-ck1/patch-3.2-ck1.bz2
-
-
-Broken out tarball:
-http://ck.kolivas.org/patches/3.0/3.2/3.2-ck1/3.2-ck1-broken-out.tar.bz2
-
-
-Discrete patches:
-http://ck.kolivas.org/patches/3.0/3.2/3.2-ck1/patches/
-
-
-BFS by itself:
-http://ck.kolivas.org/patches/bfs/
+	-hpa
 
 
-Web:
-http://kernel.kolivas.org
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-
-Code blog when I feel like it:
-http://ck-hack.blogspot.com/
-
-
-Each discrete patch usually contains a brief description of what it does at
-the top of the patch itself.
-
-Full patchlist:
-
-3.2-sched-bfs-416.patch
-mm-minimal_swappiness.patch
-mm-enable_swaptoken_only_when_swap_full.patch
-mm-drop_swap_cache_aggressively.patch
-mm-kswapd_inherit_prio-1.patch
-mm-background_scan.patch
-mm-idleprio_prio-1.patch
-mm-lru_cache_add_lru_tail-2.patch
-mm-decrease_default_dirty_ratio-1.patch
-kconfig-expose_vmsplit_option.patch
-hz-default_1000.patch
-hz-no_default_250.patch
-hz-raise_max.patch
-preempt-desktop-tune.patch
-ck1-version.patch
-
-Enjoy!
-お楽しみください
-
---ck
