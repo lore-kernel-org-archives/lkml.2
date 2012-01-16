@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab2APPQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:16:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46987 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943Ab2APPQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:16:13 -0500
-Date: Mon, 16 Jan 2012 16:10:01 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
-Message-ID: <20120116151001.GB12817@redhat.com>
-References: <20120110174509.GA30802@redhat.com> <20120113182015.GA3902@redhat.com> <20120115182441.GA24694@redhat.com> <20120116074540.GE15641@elte.hu> <1326717070.7642.144.camel@gandalf.stny.rr.com> <20120116125329.GB31667@elte.hu>
+	id S1755084Ab2APPU2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 10:20:28 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44241 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab2APPU0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 10:20:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120116125329.GB31667@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1326726817.2255.52.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
+ <1326719999.2255.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CAGsizzJpdF5xzsEiZd5R0GD8r7pDJyz4ro=4vLBnonxfAVYg-Q@mail.gmail.com>
+ <1326723932.2255.41.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CAGsizz+LEPJEGhMEHgswFJL4=Mh9R8g9FX6BcjqH0LBp2MUg0Q@mail.gmail.com> <1326726817.2255.52.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@gmail.com>
+Date: Mon, 16 Jan 2012 16:20:05 +0100
+Message-ID: <CAGsizzKrY8OseQY=am4q=0fuNGHf9ff59pO4NvLvJfzHpYuXNg@mail.gmail.com>
+Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16, Ingo Molnar wrote:
+Dňa 16. januára 2012 16:13, Eric Dumazet <eric.dumazet@gmail.com> napísal/a:
+> Le lundi 16 janvier 2012 à 15:47 +0100, Štefan Gula a écrit :
 >
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
+>> File: net/birdge/br_fdb.c
+>> Functions:
+>> __br_fdb_get
+>> br_fdb_get
+>> My analogy fuctions:
+>> __ipgre_tap_bridge_get
+>> ipgre_tap_bridge_get
+>>
 >
-> > On Mon, 2012-01-16 at 08:45 +0100, Ingo Molnar wrote:
-> >
-> > > Looks good to me at a first (quick) sight, except this bit
-> > > which changes the ABI:
-> > >
-> > > > > 	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
-> > > > > 	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
-> > >
-> > > That's not how we change tracepoints generally - we add a new
-> > > one and eventually phase out the old one. Which apps/tools rely
-> > > on the old tracepoint? If it's exactly zero apps then we might
-> > > be able to change it, but this needs to be investigated.
-> >
-> > But this tracepoint wasn't changed, it was added on to.
-> > There's a difference. Any tool that uses this (including
-> > something like powertop) should be able to handle it. [...]
+> There is no br_fdb_get(), you copied some buggy code I am afraid.
 >
-> That's mostly true in theory - the question is, is it true in
-> practice?
+> Read again your patch.
 >
-> Say if an app relies on the smaller data structure, it sure
-> might get surprised by the kernel writing a wider record ...
-
-OK, I am not arguing, I'll resend the patch which adds the new
-tracepoint...
-
-But do we really need to keep the old tracepoint? IOW, what if
-we simply rename it and add more info?
-
-I am looking at "git log include/trace/events/", for example
-"mm-tracepoint: rename page-free events" b413d48a.
-
-Oleg.
-
+> If you use atomic_inc_not_zero(&x->use_count), then you must do the
+> atomic_dec() or leak entries.
+>
+> Current bridge code doesnt use atomic_inc_not_zero()
+>
+>
+>
+You are right, new bridge code doesn't have such function, I will adjust that
