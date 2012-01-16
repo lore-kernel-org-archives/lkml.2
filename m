@@ -1,74 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab2APLwa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 06:52:30 -0500
-Received: from ozlabs.org ([203.10.76.45]:52720 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab2APLwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 06:52:19 -0500
-Date: Mon, 16 Jan 2012 19:09:40 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Subject: Re: [PATCH 04/14] PowerPC: adapt for dma_map_ops changes
-Message-ID: <20120116080940.GF4512@truffala.fritz.box>
-Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
-	Marek Szyprowski <m.szyprowski@samsung.com>,
-	linux-kernel@vger.kernel.org,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-	x86@kernel.org, linux-sh@vger.kernel.org,
-	linux-alpha@vger.kernel.org, sparclinux@vger.kernel.org,
-	linux-ia64@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-	linux-mips@linux-mips.org, discuss@x86-64.org,
-	linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-	linaro-mm-sig@lists.linaro.org, Jonathan Corbet <corbet@lwn.net>,
-	Kyungmin Park <kyungmin.park@samsung.com>,
-	Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-References: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
- <1324643253-3024-5-git-send-email-m.szyprowski@samsung.com>
+	id S1754456Ab2APLxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 06:53:09 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:16720 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab2APLxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 06:53:07 -0500
+Date: Mon, 16 Jan 2012 14:52:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Subject: [patch] nfsd: oopses in cache_parse()
+Message-ID: <20120116115258.GC3294@mwanda>
+References: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bKyqfOwhbdpXa4YI"
 Content-Disposition: inline
-In-Reply-To: <1324643253-3024-5-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4F140F97.0068,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 23, 2011 at 01:27:23PM +0100, Marek Szyprowski wrote:
-> From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-> 
-> Adapt core PowerPC architecture code for dma_map_ops changes: replace
-> alloc/free_coherent with generic alloc/free methods.
-> 
-> Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Looks sane.
+--bKyqfOwhbdpXa4YI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: David Gibson <david@gibson.dropbear.id.au>
+We fixed expkey_parse() in b2ea70afad "nfsd: Fix oops when parsing a
+0 length export" but there are other cache_parse() implimentations
+which have the same issue.
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+Since half of the implimentations get this wrong, maybe we should
+just check for this in cache_do_downcall().  Is there ever a valid
+reason to pass a zero length string to cache_parse()?
+
+diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+index cf8a6bd..1d147a8 100644
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -496,7 +496,7 @@ static int svc_export_parse(struct cache_detail *cd, ch=
+ar *mesg, int mlen)
+ 	struct svc_export exp =3D {}, *expp;
+ 	int an_int;
+=20
+-	if (mesg[mlen-1] !=3D '\n')
++	if (mlen < 1 || mesg[mlen - 1] !=3D '\n')
+ 		return -EINVAL;
+ 	mesg[mlen-1] =3D 0;
+=20
+diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
+index a6e711a..d945d71 100644
+--- a/fs/nfs/dns_resolve.c
++++ b/fs/nfs/dns_resolve.c
+@@ -217,7 +217,7 @@ static int nfs_dns_parse(struct cache_detail *cd, char =
+*buf, int buflen)
+ 	ssize_t len;
+ 	int ret =3D -EINVAL;
+=20
+-	if (buf[buflen-1] !=3D '\n')
++	if (buflen < 1 || buf[buflen - 1] !=3D '\n')
+ 		goto out;
+ 	buf[buflen-1] =3D '\0';
+=20
+diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+index 9409627..f8456a4 100644
+--- a/fs/nfsd/nfs4idmap.c
++++ b/fs/nfsd/nfs4idmap.c
+@@ -202,7 +202,7 @@ idtoname_parse(struct cache_detail *cd, char *buf, int =
+buflen)
+ 	int len;
+ 	int error =3D -EINVAL;
+=20
+-	if (buf[buflen - 1] !=3D '\n')
++	if (buflen < 1 || buf[buflen - 1] !=3D '\n')
+ 		return (-EINVAL);
+ 	buf[buflen - 1]=3D '\0';
+=20
+@@ -378,7 +378,7 @@ nametoid_parse(struct cache_detail *cd, char *buf, int =
+buflen)
+ 	char *buf1;
+ 	int error =3D -EINVAL;
+=20
+-	if (buf[buflen - 1] !=3D '\n')
++	if (buflen < 1 || buf[buflen - 1] !=3D '\n')
+ 		return (-EINVAL);
+ 	buf[buflen - 1]=3D '\0';
+=20
+
+
+--bKyqfOwhbdpXa4YI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPFA+ZAAoJEOnZkXI/YHqRKCUP/ipCvCv63JE5c116KQynw2KA
+W4uqcUUWouUC9Zi1RWvdqSQPHKrZyaCuUaI1Eou8KSL3rh/f+VfxP7dQY2386i5a
+m4WMIzkOuzQzUhrh9OwED6icTsa/GGne4gHudBfCOHc3SfaL676RvQStLVTRTAkh
+n8Vu09x9q2IBkbLosffjnCVrHnnqiZuhrbSAYQruzmGZnAPOhfzY+eGGRYd0Ri+N
+57urc0oWBjJ7y2yq+faqHDsb8SdO6O7c+nkGDPFivmthUN7JbyOLgh8gzWfmPU+Q
+91HoLst6F1vamlmgUPRtUcqBTFopE+rePGH69PH+hs5Cpo02/DDRZUvoCsGaiBzT
+NYcrMi78aGJIae5DIt6WgrGSl5X+fahdf1h7at4jHAonnBbrazAHwaGSXEBJSpD1
+X+sZV2CCi4ckIfmYSNpRsJ6XrhLu48GAGLgil3SoKhko9zxJTrsrj+vj8U4WumJO
+yuOTumVBGSc/tIKfOTDf96LViYwXW4KYe/ACchFIA+oLAZQvM94tQW47rXYuc7mk
+BTnAAIVgAjN4kQuz2YQxig++xAOKSgNdOrh2dg5he4larJ+G/g5GfZut7NPVbxRV
+UUyX2cYOs8hzYxxdXzyl/IKZZMl3dvKR6kErMEoWK7pwKVefMoBRZ1P021jltr46
+3leX0BXD2ePyM4Mujmee
+=Vqr+
+-----END PGP SIGNATURE-----
+
+--bKyqfOwhbdpXa4YI--
