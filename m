@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2APSzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:55:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42975 "EHLO mx2.suse.de"
+	id S1756485Ab2APSzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:55:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42952 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756317Ab2APStR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:49:17 -0500
+	id S1756090Ab2APStH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:49:07 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:18 2012
-Message-Id: <20120116184518.771490983@clark.kroah.org>
+Message-Id: <20120116184518.525373711@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:45:03 -0800
+Date: Mon, 16 Jan 2012 10:45:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [36/48] x86/PCI: build amd_bus.o only when CONFIG_AMD_NB=y
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [33/48] PCI: msi: Disable msi interrupts when we initialize a pci device
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 5cf9a4e69c1ff0ccdd1d2b7404f95c0531355274 upstream.
+commit a776c491ca5e38c26d9f66923ff574d041e747f4 upstream.
 
-We only need amd_bus.o for AMD systems with PCI.  arch/x86/pci/Makefile
-already depends on CONFIG_PCI=y, so this patch just adds the dependency
-on CONFIG_AMD_NB.
+I traced a nasty kexec on panic boot failure to the fact that we had
+screaming msi interrupts and we were not disabling the msi messages at
+kernel startup.  The booting kernel had not enabled those interupts so
+was not prepared to handle them.
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+I can see no reason why we would ever want to leave the msi interrupts
+enabled at boot if something else has enabled those interrupts.  The pci
+spec specifies that msi interrupts should be off by default.  Drivers
+are expected to enable the msi interrupts if they want to use them.  Our
+interrupt handling code reprograms the interrupt handlers at boot and
+will not be be able to do anything useful with an unexpected interrupt.
+
+This patch applies cleanly all of the way back to 2.6.32 where I noticed
+the problem.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/pci/Makefile |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/pci/msi.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/x86/pci/Makefile
-+++ b/arch/x86/pci/Makefile
-@@ -18,8 +18,9 @@ obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
- obj-$(CONFIG_X86_MRST)		+= mrst.o
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -869,5 +869,15 @@ EXPORT_SYMBOL(pci_msi_enabled);
  
- obj-y				+= common.o early.o
--obj-y				+= amd_bus.o bus_numa.o
-+obj-y				+= bus_numa.o
- 
-+obj-$(CONFIG_AMD_NB)		+= amd_bus.o
- obj-$(CONFIG_PCI_CNB20LE_QUIRK)	+= broadcom_bus.o
- 
- ifeq ($(CONFIG_PCI_DEBUG),y)
+ void pci_msi_init_pci_dev(struct pci_dev *dev)
+ {
++	int pos;
+ 	INIT_LIST_HEAD(&dev->msi_list);
++
++	/* Disable the msi hardware to avoid screaming interrupts
++	 * during boot.  This is the power on reset default so
++	 * usually this should be a noop.
++	 */
++	pos = pci_find_capability(dev, PCI_CAP_ID_MSI);
++	if (pos)
++		msi_set_enable(dev, pos, 0);
++	msix_set_enable(dev, 0);
+ }
 
 
