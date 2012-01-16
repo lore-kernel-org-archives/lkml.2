@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2APQfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 11:35:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:38120 "EHLO mga01.intel.com"
+	id S1755558Ab2APQgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 11:36:39 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:48890 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754031Ab2APQfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 11:35:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="107619365"
-Message-ID: <4F1451BD.9030904@linux.intel.com>
-Date: Mon, 16 Jan 2012 08:35:09 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Darren Hart <dvhart@linux.intel.com>, Alan Cox <alan@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        jeffrey.t.kirsher@intel.com, paul.gortmaker@windriver.com,
-        jdmason@kudzu.us, netdev@vger.kernel.org
-Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing
- probe
-References: <AE90C24D6B3A694183C094C60CF0A2F6D8AF47@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AF47@saturn3.aculab.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754963Ab2APQgh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 11:36:37 -0500
+Date: Mon, 16 Jan 2012 08:36:34 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: =?UTF-8?B?xaB0ZWZhbg==?= Gula <steweg@gmail.com>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+Message-ID: <20120116083634.7b327c34@nehalam.linuxnetplumber.net>
+In-Reply-To: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
+References: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/16/2012 8:20 AM, David Laight wrote:
->  
->> the tricky thing with embedded hw like this is that all devices might
->> end up with the same, read-only filesystem, so storing the 
->> mac on the FS
->> and then loading it from there into the HW is... suboptimal.
->>
->> Would be very nice if busybox had a command that would check the mac
->> from each IF, and created the random mac from userspace 
->> automatically...
-> 
-> Since multiple interfaces on a single system are unlikely
-> to be connected to the same LAN segment, it doesn't really
-> matter if they use same MAC address.
+On Mon, 16 Jan 2012 13:13:19 +0100
+Štefan Gula <steweg@gmail.com> wrote:
 
-I think you missed the point. All embedded devices have the same fs, so
-if you have 2 boxes of the same model/brand on the same network, they'd
-have the same MAC. That's generally frowned upon by network
-administrators ;-)
+> From: Stefan Gula <steweg@gmail.com
+> 
+> This patch is an extension for current Ethernet over GRE
+> implementation, which allows user to create virtual bridge (multipoint
+> VPN) and forward traffic based on Ethernet MAC address informations in
+> it. It simulates the Bridge bahaviour learing mechanism, but instead
+> of learning port ID from which given MAC address comes, it learns IP
+> address of peer which encapsulated given packet. Multicast, Broadcast
+> and unknown-multicast traffic is send over network as multicast
+> enacapsulated GRE packet, so one Ethernet multipoint GRE tunnel can be
+> represented as one single virtual switch on logical level and be also
+> represented as one multicast IPv4 address on network level.
+> 
+> Signed-off-by: Stefan Gula <steweg@gmail.com>
+
+Thanks for the effort, but it is duplicating existing functionality.
+It possible to do this already with existing gretap device and the
+current bridge.
+
+The same thing is also supported by OpenVswitch.
+
