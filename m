@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2APEZX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 23:25:23 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38064 "EHLO arroyo.ext.ti.com"
+	id S1753326Ab2APEgH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 23:36:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:15621 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753232Ab2APEZV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 23:25:21 -0500
-From: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: RFC: usb: musb: Adding CPPI4.1 DMA driver under drivers/dma
-Thread-Topic: RFC: usb: musb: Adding CPPI4.1 DMA driver under drivers/dma
-Thread-Index: AQHM0bzZ3HvTVi65q0q5jVepkBzZG5YKErvggAAqlwCABCuSkA==
-Date: Mon, 16 Jan 2012 04:25:15 +0000
-Message-ID: <47CEF8C4B26E8C44B22B028A650E0EA9317AA069@DBDE01.ent.ti.com>
-References: <201201120753.00667.oneukum@suse.de>
- <Pine.LNX.4.44L0.1201121037340.1384-100000@iolanthe.rowland.org>
- <20120112215014.GC5735@xanatos> <20120112215459.GA1161@kroah.com>
- <20120112222947.GD5735@xanatos> <20120112223513.GA2925@kroah.com>
- <20120113061144.GA30569@suse.cz>
- <47CEF8C4B26E8C44B22B028A650E0EA9317A6B8B@DBDE01.ent.ti.com>
- <20120113180932.GB29700@kroah.com>
-In-Reply-To: <20120113180932.GB29700@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753232Ab2APEgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jan 2012 23:36:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="56771724"
+Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, jmoyer@redhat.com
+In-Reply-To: <20120115224532.GD3174@redhat.com>
+References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
+	 <20120104071931.GB17026@dastard> <1325746241.22361.503.camel@sli10-conroe>
+	 <1325826750.22361.533.camel@sli10-conroe> <20120108221615.GA4198@dastard>
+	 <1326071375.22361.543.camel@sli10-conroe>
+	 <20120115224532.GD3174@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Jan 2012 12:36:30 +0800
+Message-ID: <1326688590.22361.578.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-> On Fri, Jan 13, 2012 at 10:40:50AM +0000, Gupta, Ajay Kumar wrote:
-> > Hi,
-> >
-> > CPPI4.1 (Communication Port Programming Interface) is a TI specific
-> DMA
-> > controller used in multiple TI platform such as AM33x, DA8x, AM35x,
-> TI81x.
-> > The DMA engine is mainly used by musb controller on above platform.
-> >
-> > Earlier version of the driver was submitted by Sergei Shtylyov at [1]
-> but
-> > was not merged due to disagreement on the location of driver in
-> kernel.
-> > Refer the discussions at [1] for more details.
-> >
-> > [1] http://marc.info/?l=linux-usb&m=125087318308323
-> >
-> > The new implementation of the CPPI4.1 DMA slave driver will be in the
-> > drivers/dma folder, complying to dmaengine framework.
-> > It would involve changes in existing musb driver also for which
-> current
-> > plan is to maintain the compatibility of non-CPPI4.1 DMA in musb
-> driver.
-> >
-> > The task is planned to be spitted into below subtasks.
-> >
-> > (1) Post RFC on the API details, changes envisaged in musb driver and
-> other
-> > challenges
-> >
-> > (2) Implement and post RFC for the CPPI4.1 DMA driver and changes
-> needed in
-> > musb driver.
-> >
-> > Let me know if you have any thoughts/comments on this.
+On Sun, 2012-01-15 at 17:45 -0500, Vivek Goyal wrote:
+> On Mon, Jan 09, 2012 at 09:09:35AM +0800, Shaohua Li wrote:
 > 
-> First off, don't highjack threads (you responded to a linux-usb thread
-> here, get a better email client please.)
+> [..]
+> > > You need to present raw numbers and give us some idea of how close
+> > > those numbers are to raw hardware capability for us to have any idea
+> > > what improvements these numbers actually demonstrate.
+> > Yes, your guess is right. The hardware has limitation. 12 SSD exceeds
+> > the jbod capability, for both throughput and IOPS, that's why only
+> > read/write mixed workload impacts. I'll use less SSD in later tests,
+> > which will demonstrate the performance better. I'll report both raw
+> > numbers and fiops/cfq numbers later.
+> 
+> If fiops number are better please explain why those numbers are better.
+> If you cut down on idling, it is obivious that you will get higher
+> throughput on these flash devices. CFQ does disable queue idling for
+> non rotational NCQ devices. If higher throughput is due to driving
+> deeper queue depths, then CFQ can do that too just by changing quantum
+> and disabling idling. 
+it's because of quantum. Surely you can change the quantum, and CFQ
+performance will increase, but you will find CFQ is very unfair then.
 
-Sorry for inconvenience, I will take care of this in future.
+> So I really don't understand that what are you doing fundamentally
+> different in FIOPS ioscheduler. 
+> 
+> The only thing I can think of more accurate accounting per queue in
+> terms of number of IOs instead of time. Which can just serve to improve
+> fairness a bit for certain workloads. In practice, I think it might
+> not matter much.
+If quantum is big, CFQ will have better performance, but it actually
+fallbacks to Noop, no any fairness. fairness is important and is why we
+introduce CFQ.
+
+In summary, CFQ isn't both fair and good performance. FIOPS is trying to
+be fair and have good performance. I didn't think any time based
+accounting can make the goal happen for NCQ and SSD (even cfq cgroup
+code has iops mode, so suppose you should already know this well).
+
+Surely you can change CFQ to make it IOPS based, but this will mess the
+code a lot, and FIOPS shares a lot of code with CFQ. So I'd like to have
+a separate ioscheduler which is IOPS based.
 
 Thanks,
-Ajay
-> 
-> Second, that sounds fine, please post patches.
-> 
-> thanks,
-> 
-> greg k-h
+Shaohua
+
