@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab2APLEF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 06:04:05 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:35881 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab2APLED (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 06:04:03 -0500
-Message-ID: <4F140401.8050609@ce.jp.nec.com>
-Date: Mon, 16 Jan 2012 20:03:29 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1754216Ab2APLLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 06:11:19 -0500
+Received: from 8bytes.org ([88.198.83.132]:42045 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228Ab2APLLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 06:11:18 -0500
+Date: Mon, 16 Jan 2012 12:11:16 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [git pull] IOMMU fix for 3.3-rc1
+Message-ID: <20120116111116.GA2666@8bytes.org>
 MIME-Version: 1.0
-To: loody <miloody@gmail.com>
-CC: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel coredump about kblockd deadlock
-References: <CANudz+um5XG2Qua6a1O7ENnBeYcfiG5mOyyA6-=ctccXMYEFhg@mail.gmail.com>	<CANudz+uoY8pxCVEeKFhorfb0nqsD+re_Ai-6Ruz2b3ExtJChSA@mail.gmail.com> <CANudz+s9wTjWbTYyN292x1Ksh6POh63n-_P+6LX18gQhHmxULQ@mail.gmail.com>
-In-Reply-To: <CANudz+s9wTjWbTYyN292x1Ksh6POh63n-_P+6LX18gQhHmxULQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 01/15/12 23:45, loody wrote:
-> hi all:
-> 2012/1/15 loody <miloody@gmail.com>:
->> Dear all:
->> I use kernel 2.6.35.13 and cpu for mips
->> When I plug in/out usb stick for several times I got following warning
->> messages as I append at the end of mail.
->>
->> is it possible correlate to below issue
->> http://thread.gmane.org/gmane.linux.kernel/1177383/focus=69879
-> I want to reproduce the issue of the thread above in my platform.
-> But I have no idea about:
-> 1  dm-multipath
-> 2. dm-round-robin
-> 
-> are they additional module I need to download or it already include
-> kernel source?
-> if the later, which config I shout select?
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-They are in kernel source (in drivers/md).
-You have to select CONFIG_BLK_DEV_DM and CONFIG_DM_MULTIPATH
-to enable them.
+Hi Linus,
 
-To try reproducer in the thread, you also need "dmsetup"
-command, which is part of device-mapper utility.
+The following changes since commit 53999bf34d55981328f8ba9def558d3e104d6e36:
+
+  error: implicit declaration of function 'module_flags_taint' (2012-01-15 16:21:07 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git next
+
+Ohad Ben-Cohen (1):
+      ARM: OMAP3: fix build on !CONFIG_IOMMU_API
+
+ arch/arm/mach-omap2/devices.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+The patch fixes an IOMMU-API related build problem on the ARM/OMAP
+platform. The commit-id to pull on my local machine is
+
+	1a51a0ce174ddc0b0c11b6a0dbd179d95020e80b
+
+Please pull.
+
+Thanks,
+
+	Joerg
 
 
-> Appreciate your help,
-> 
->>
->>
->> INFO: task kblockd/0:10 blocked for more than 120 seconds.
->> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> kblockd/0        D [87016a78] 802d1e48     0    10 0x00100000      2
->>          11       9      (kernel thread)
->> Stack : 00000001 80107148 8562ed80 800e9098 00000001 00000001 7fffffff 00000000
->>        00000000 7fffffff 87053d38 ffffffff 87053d38 87053d28 872ff00c 802d1e48
->>        00000001 00000009 00000102 80071c80 00005965 0056addf 00005965 00000001
->>        00000000 00000000 7fffffff 80020c64 00000000 00000002 00000000 00000000
->>        7fffffff 802d1ca8 00000000 80024538 00000004 0000000a 00000001 87016a78
->>        ...
->> Call Trace:
->> [<802d1764>] schedule+0x648/0x70c from[<802d1e48>] schedule_timeout+0x30/0x324
->> [<802d1e48>] schedule_timeout+0x30/0x324 from[<802d1ca8>]
->> wait_for_common+0xf8/0x1c0
->> [<802d1ca8>] wait_for_common+0xf8/0x1c0 from[<80044400>]
->> __cancel_work_timer+0x188/0x210
->> [<80044400>] __cancel_work_timer+0x188/0x210 from[<801a48c4>]
->> blk_cleanup_queue+0x18/0x6c
->> [<801a48c4>] blk_cleanup_queue+0x18/0x6c from[<802098f4>]
->> scsi_device_dev_release_usercontext+0x174/0x1e4
->> [<802098f4>] scsi_device_dev_release_usercontext+0x174/0x1e4
->> from[<80043aa8>] execute_in_process_context+0x30/0x5c
->> [<80043aa8>] execute_in_process_context+0x30/0x5c from[<801eeda8>]
->> device_release+0x54/0x90
->> [<801eeda8>] device_release+0x54/0x90 from[<801b0180>] kobject_release+0x70/0xa8
->> [<801b0180>] kobject_release+0x70/0xa8 from[<801b17bc>] kref_put+0x80/0x98
->> [<801b17bc>] kref_put+0x80/0x98 from[<80203c04>] scsi_request_fn+0x51c/0x61c
->> [<80203c04>] scsi_request_fn+0x51c/0x61c from[<801a482c>]
->> generic_unplug_device+0x38/0x7c
->> [<801a482c>] generic_unplug_device+0x38/0x7c from[<80043e90>]
->> worker_thread+0x1ec/0x2d4
->> [<80043e90>] worker_thread+0x1ec/0x2d4 from[<800482c4>] kthread+0x7c/0x84
->> [<800482c4>] kthread+0x7c/0x84 from[<80007818>] kernel_thread_helper+0x10/0x18
->>
->> -------------------------------------------------------------------------------------
->> hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
->> hub 1-0:1.0: port 1, status 0000, change 0001, 12 Mb/s
->> usb 1-1: USB disconnect, address 35
->> usb 1-1: unregistering device
->> usb 1-1: unregistering interface 1-1:1.0
->> usb 1-1: usb_disable_device nuking all URBs
->> hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x0
->> hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
->> ehci-ehci ehci-ehci.0: GetStatus port 1 status 000803 sig=j CSC CONNECT
->> hub 1-0:1.0: port 1, status 0401, change 0001, 480 Mb/s
->> hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x401
->> ehci-ehci ehci-ehci.0: port 1 high speed
->> ehci-ehci ehci-ehci.0: GetStatus port 1 status 00000d sig=se0 PEC PE CONNECT
->> usb 1-1: new high speed USB device using ehci-ehci and address 36
->> ehci-ehci ehci-ehci.0: port 1 high speed
->> ehci-ehci ehci-ehci.0: GetStatus port 1 status 00000d sig=se0 PEC PE CONNECT
->> usb 1-1: default language 0x0409
->> usb 1-1: udev 36, busnum 1, minor = 35
+--FCuugMFkClbJLl1L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Jun'ichi Nomura, NEC Corporation
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPFAXTAAoJECvwRC2XARrjrU8P/1sIoZaeSrfuEZMlAfK1MwzW
+T1CGtkd4XBjoNqTr4dHO3yLDe0kD37EJVX6kXjyhGwRXKvmntLDR+gM+0HbCnmbv
+uuilKIGvE5r+iZtOvrENJINr7Ta7XGsmk5ASPrH6KB+9Y07jP3Wno8TZxxh6Nc8b
+FM+I2FKPFTu4DJYzH7R9D/X9ZtMm59YkPpkGIgWBAM7Ivtvf7XzRGoH7V3VnarEB
+RpsBv817Huhe5YJSEmM4GOta449opCLY9GF7IVnw6ZF+voU3YqVun8ZT+mTRPcAL
+Z4uoH2uhh4IIY4a0y6EsycF+/+wqSOy9oLNvy6aLtB5iJx5tV4Fpro+Q3ughaSCM
+S+zHpzsA2Mpe9ZaO8WL4KZFZdj95OvZty9kA8KLq1aoxciYXhTVMLj9eXDZXhwZT
+oHMV582wC+25qjFLga8FpNsptGxDE1wrAHwA5vo8RPD1Rtmmcf2QP1cR20nInDMK
++wvQd8Zqdt1B92m5Mk/ovrlnxXosC8YidOWo31bfZQSkChGd2L4Vi8HFpnsWy0QN
+hzAabeOpg9zJgLtZ63/ISOqrET7AVXDabPZlZdCLgZaa02N3o4HQHTfAM/3cvuvF
+uDfB/RE+ZS8e6fezRzAp9WHiRXUWzfYGQ835/BEOfs6zwpU26Bc2AoWYtoGpb5G5
+DtgfZD2sbSjnuq2Rcm2t
+=4Uuj
+-----END PGP SIGNATURE-----
+
+--FCuugMFkClbJLl1L--
