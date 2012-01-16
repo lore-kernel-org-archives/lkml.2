@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab2APFuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 00:50:20 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58526 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab2APFuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 00:50:18 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 16 Jan 2012 14:48:37 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+	id S1752032Ab2APFus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 00:50:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30669 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab2APFur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 00:50:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="98926725"
+Date: Mon, 16 Jan 2012 13:50:44 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Chanho Min <chanho0207@gmail.com>
+Cc: Rabin Vincent <rabin@rab.in>, Jens Axboe <axboe@kernel.dk>,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: update the correct soft limit tree during
- migration
-Message-Id: <20120116144837.eaedf4d3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1326469291-5642-1-git-send-email-hannes@cmpxchg.org>
-References: <1326469291-5642-1-git-send-email-hannes@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] mm/backing-dev.c: fix crash when USB/SCSI device is
+ detached
+Message-ID: <20120116055044.GA14857@localhost>
+References: <CAOAMb1AUHV6mHwkUbX4+0wfOJpnMuVj_vr9jvb=h-Q4+6HKFzg@mail.gmail.com>
+ <CAH+eYFB8xBPLJdN+jfqpESsqjkxdeRQD7oyfU8qHewzfmbqHow@mail.gmail.com>
+ <20120115125853.GA9234@localhost>
+ <20120115153838.GA4279@debian>
+ <20120116025331.GA16516@localhost>
+ <CAOAMb1Av0w8ip+YyMm82_U3n3zt8DDrofOmvKR+_5ikDMcbYmQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOAMb1Av0w8ip+YyMm82_U3n3zt8DDrofOmvKR+_5ikDMcbYmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012 16:41:31 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Mon, Jan 16, 2012 at 02:28:30PM +0900, Chanho Min wrote:
+> On Mon, Jan 16, 2012 at 11:53 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > On Sun, Jan 15, 2012 at 09:11:07PM +0530, Rabin Vincent wrote:
+> >> On Sun, Jan 15, 2012 at 08:58:53PM +0800, Wu Fengguang wrote:
+> >> > On Sun, Jan 15, 2012 at 03:58:43PM +0530, Rabin Vincent wrote:
+> >> > > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> >> > > index 71034f4..a39ad70 100644
+> >> > > --- a/mm/backing-dev.c
+> >> > > +++ b/mm/backing-dev.c
+> >> > > @@ -318,7 +318,7 @@ static void wakeup_timer_fn(unsigned long data)
+> >> > >   if (bdi->wb.task) {
+> >> > >           trace_writeback_wake_thread(bdi);
+> >> > >           wake_up_process(bdi->wb.task);
+> >> > > - } else {
+> >> > > + } else if (bdi->dev) {
+> >> > >           /*
+> >> > >            * When bdi tasks are inactive for long time, they are killed.
+> >> > >            * In this case we have to wake-up the forker thread which
+> >> > > @@ -584,6 +584,8 @@ EXPORT_SYMBOL(bdi_register_dev);
+> >> > >   */
+> >> > >  static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+> >> > >  {
+> >> > > + struct task_struct *task = NULL;
+> 
+> Thanks, I fully understand.
+> In addition, Would not bdi_wakeup_flusher also be fixed?
 
-> end_migration() passes the old page instead of the new page to commit
-> the charge.  This page descriptor is not used for committing itself,
-> though, since we also pass the (correct) page_cgroup descriptor.  But
-> it's used to find the soft limit tree through the page's zone, so the
-> soft limit tree of the old page's zone is updated instead of that of
-> the new page's, which might get slightly out of date until the next
-> charge reaches the ratelimit point.
+Yes, indeed!
+
+Thanks,
+Fengguang
+
+> >From dc7d4e86911c0a7ea35043485b04e8a09aa74ffd Mon Sep 17 00:00:00 2001
+> From: Chanho Min <chanho.min@lge.com>
+> Date: Mon, 16 Jan 2012 14:14:48 +0900
+> Subject: [PATCH] backing-dev: add for 'fix wakeup timer races with
+> bdi_unregister()'
 > 
-> This glitch has been present since '5564e88 memcg: condense
-> page_cgroup-to-page lookup points'.
-> 
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: Chanho Min <chanho.min@lge.com>
 > ---
->  mm/memcontrol.c |    2 +-
+>  fs/fs-writeback.c |    2 +-
 >  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> This fixes a bug that I introduced in 2.6.38.  It's benign enough (to
-> my knowledge) that we probably don't want this for stable.
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 602207b..7a292a5 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3247,7 +3247,7 @@ int mem_cgroup_prepare_migration(struct page *page,
->  		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
->  	else
->  		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> -	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype);
-> +	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype);
->  	return ret;
->  }
->  
-
-
-Nice Catch.
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index f855916..ee40833 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -97,7 +97,7 @@ static void bdi_wakeup_flusher(struct backing_dev_info *bdi)
+>  {
+>         if (bdi->wb.task) {
+>                 wake_up_process(bdi->wb.task);
+> -       } else {
+> +       } else if (bdi->dev) {
+>                 /*
+>                  * The bdi thread isn't there, wake up the forker thread which
+>                  * will create and run it.
+> -- 
+> 1.7.0.4
