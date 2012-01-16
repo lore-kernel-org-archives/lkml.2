@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab2APS5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:57:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42873 "EHLO mx2.suse.de"
+	id S1756148Ab2APSsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:48:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42831 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756191Ab2APSsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:48:36 -0500
+	id S1755979Ab2APSsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:48:22 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:16 2012
-Message-Id: <20120116184516.521429308@clark.kroah.org>
+Message-Id: <20120116184516.202437381@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:44:36 -0800
+Date: Mon, 16 Jan 2012 10:44:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [09/48] ALSA: HDA: Fix automute for Cirrus Logic 421x
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [05/48] drivers/rtc/interface.c: fix alarm rollover when day or month is out-of-range
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 78e2a928e377d5124932d4399c6c581908b027a0 upstream.
+commit e74a8f2edb92cb690b467cea0ab652c509e9f624 upstream.
 
-There was a bug in the automute logic causing speakers not to
-mute when headphones were plugged in.
+Commit f44f7f96a20a ("RTC: Initialize kernel state from RTC") introduced a
+potential infinite loop.  If an alarm time contains a wildcard month and
+an invalid day (> 31), or a wildcard year and an invalid month (>= 12),
+the loop searching for the next matching date will never terminate.  Treat
+the invalid values as wildcards.
 
-Tested-by: Hsin-Yi Chen <hychen@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes <http://bugs.debian.org/646429>, <http://bugs.debian.org/653331>
+
+Reported-by: leo weppelman <leoweppelman@googlemail.com>
+Reported-by: "P. van Gaans" <mailme667@yahoo.co.uk>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Acked-by: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_cirrus.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/rtc/interface.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_cirrus.c
-+++ b/sound/pci/hda/patch_cirrus.c
-@@ -916,16 +916,14 @@ static void cs_automute(struct hda_codec
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -227,11 +227,11 @@ int __rtc_read_alarm(struct rtc_device *
+ 		alarm->time.tm_hour = now.tm_hour;
  
- 	/* mute speakers if spdif or hp jack is plugged in */
- 	for (i = 0; i < cfg->speaker_outs; i++) {
-+		int pin_ctl = hp_present ? 0 : PIN_OUT;
-+		/* detect on spdif is specific to CS421x */
-+		if (spdif_present && (spec->vendor_nid == CS421X_VENDOR_NID))
-+			pin_ctl = 0;
-+
- 		nid = cfg->speaker_pins[i];
- 		snd_hda_codec_write(codec, nid, 0,
--				    AC_VERB_SET_PIN_WIDGET_CONTROL,
--				    hp_present ? 0 : PIN_OUT);
--		/* detect on spdif is specific to CS421x */
--		if (spec->vendor_nid == CS421X_VENDOR_NID) {
--			snd_hda_codec_write(codec, nid, 0,
--					AC_VERB_SET_PIN_WIDGET_CONTROL,
--					spdif_present ? 0 : PIN_OUT);
--		}
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL, pin_ctl);
+ 	/* For simplicity, only support date rollover for now */
+-	if (alarm->time.tm_mday == -1) {
++	if (alarm->time.tm_mday < 1 || alarm->time.tm_mday > 31) {
+ 		alarm->time.tm_mday = now.tm_mday;
+ 		missing = day;
  	}
- 	if (spec->board_config == CS420X_MBP53 ||
- 	    spec->board_config == CS420X_MBP55 ||
+-	if (alarm->time.tm_mon == -1) {
++	if ((unsigned)alarm->time.tm_mon >= 12) {
+ 		alarm->time.tm_mon = now.tm_mon;
+ 		if (missing == none)
+ 			missing = month;
 
 
