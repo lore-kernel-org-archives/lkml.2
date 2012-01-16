@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab2APH46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 02:56:58 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38449 "EHLO mx2.mail.elte.hu"
+	id S1753503Ab2APH6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 02:58:42 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60417 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753390Ab2APH45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 02:56:57 -0500
-Date: Mon, 16 Jan 2012 08:56:39 +0100
+	id S1753420Ab2APH6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 02:58:41 -0500
+Date: Mon, 16 Jan 2012 08:58:22 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: Update scheduler stat documentation.
-Message-ID: <20120116075639.GG15641@elte.hu>
-References: <1326389222.9115.2.camel@localhost.localdomain>
+To: xiyou.wangcong@gmail.com
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        ianfang.cn@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [Patch] x86, mm: fix the size calculation of mapping tables
+Message-ID: <20120116075822.GI15641@elte.hu>
+References: <1326628602-27442-1-git-send-email-xiyou.wangcong@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326389222.9115.2.camel@localhost.localdomain>
+In-Reply-To: <1326628602-27442-1-git-send-email-xiyou.wangcong@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -31,28 +36,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Rakib Mullick <rakib.mullick@gmail.com> wrote:
+* xiyou.wangcong@gmail.com <xiyou.wangcong@gmail.com> wrote:
 
-> /proc/schedstat's second field reflect to # of time context switch happened not # of times switched to the expired queue.
+> For machine enables PSE, the first 2/4M memory region still uses
+> 4K pages, so needs more PTEs in this case, but find_early_table_space()
+> doesn't count this. This patch fixes it.
 > 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-> ---
-> 
-> diff --git a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
-> index 1cd5d51..7d8e12c 100644
-> --- a/Documentation/scheduler/sched-stats.txt
-> +++ b/Documentation/scheduler/sched-stats.txt
-> @@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
->       1) # of times sched_yield() was called
->  
->  Next three are schedule() statistics:
-> -     2) # of times we switched to the expired queue and reused it
-> +     2) # of times context switch happened. This field is not utilized these
-> +	days but kept for holding userspace tools integrity.
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: ianfang.cn@gmail.com
+> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-if it's not used by anything but kept for the ABI then we should 
-not put context switch number in there, but always keep it zero, 
-right?
+What were the symptoms of this bug - or have you found it via 
+review only?
 
 Thanks,
 
