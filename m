@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab2APTF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 14:05:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1032 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754760Ab2APTFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 14:05:25 -0500
-Date: Mon, 16 Jan 2012 19:59:24 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] Fix race in process_vm_rw_core
-Message-ID: <20120116185924.GA24418@redhat.com>
-References: <20120113220028.4ba7cead@Gantu.yeoh.info> <20120113160442.GA20137@redhat.com> <20120114095633.139119b2@Gantu.yeoh.info> <20120114175829.GA32638@redhat.com> <20120116135655.1a31e13c@rockpopper>
+	id S1756054Ab2APTHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 14:07:06 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47357 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760Ab2APTHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 14:07:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120116135655.1a31e13c@rockpopper>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
+ <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
+ <20120116160136.GC16431@quack.suse.cz> <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 16 Jan 2012 11:06:41 -0800
+X-Google-Sender-Auth: fibecXb0QgavCKruBIFOlomA3a4
+Message-ID: <CA+55aFx638n1aQ00R6qfiOTrQiWR68uQQubGdy3PSpM+RUHaHQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16, Christopher Yeoh wrote:
+On Mon, Jan 16, 2012 at 10:55 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> +struct mm_struct *get_check_task_mm(struct task_struct *task, unsigned int mode)
-> +{
-> +	struct mm_struct *mm;
-> +	int err;
-> +
-> +	err =  mutex_lock_killable(&task->signal->cred_guard_mutex);
-> +	if (err)
-> +		return ERR_PTR(err);
-> +
-> +	task_lock(task);
-> +	mm = task->mm;
-> +	if (mm != current->mm && __ptrace_may_access(task, mode)) {
-> +		mm = ERR_PTR(-EACCES);
-> +		goto out;
-> +	}
-> +
-> +	if (mm) {
-> +		if (task->flags & PF_KTHREAD)
-> +			mm = NULL;
-> +		else
-> +			atomic_inc(&mm->mm_users);
-> +	}
+> If the write fails, the buffer contents have *nothing* to do with what
+> is on disk.
 
-This still looks a bit strange, we call __ptrace_may_access()
-before we check ->mm != NULL even if this is safe... Really, we
-would simply fix the bug then try to microoptimize this code.
+Another way of thinking of it: if the write fails, you really have two choices:
 
-But OK, I promised I won't argue ;)
+ - retry the write until it doesn't fail. In this case, the buffer is
+always "up-to-date" in the sense that it is what we *want* to be on
+disk, and what we tro to make sure really *is* on disk.
 
-I believe the patch is correct and fixes the problem.
+  This is the "good" case, but we can't really do it, because if we do
+and the disk has had a hard-failure, we'll just fill up memory with
+dirty data that we cannot do anything about.
 
-Oleg.
+ - just admit that the buffer we have have nothing what-so-ever to do
+with what the disk contents are. Any claim about the disk buffer
+having any relationship to the disk is clearly bogus.
 
+One reason to clear the up-to-date flag is simply to find out what the
+f*&^ we actually have on disk, rather than have to wait for the next
+reboot or whatever. Maybe the disk contents ended up ok'ish, but we
+got an error for some random reason. Clearing the bit and re-reading
+means that we can at least figure it out.
+
+Another is that if we don't clear it, it *will* get cleared eventually
+anyway, since the buffer will be free'd (which semantically is the
+same thing as clearing the up-to-date bit, in that any future access
+will have to read it from disk).
+
+So stop trying to claim that the buffer actually somehow is
+"up-to-date". It damn well isn't. If it's not marked dirty, and it
+doesn't match the disk contents, then it sure as hell is not
+"up-to-date", since dropping the buffer would result in something
+*different* being read back in.
+
+Now, you can use *other* arguments for not clearing the up-to-date
+bit. For example, if the up-to-date bit being cleared results in worse
+problems than some random warning, there's an implementation reason
+not to clear it. Or if you can argue that instead of clearing the
+up-to-date bit we instead flush the buffer aggressively and try to
+invalidate it, I would certainly agree that that is conceptually
+equally correct as clearing it.
+
+But just leaving it alone, and thinking that it's all good - that's
+just ugly and hiding the issue. The buffer is clearly *not* all good.
+
+                         Linus
