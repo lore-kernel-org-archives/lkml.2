@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab2APAiK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 19:38:10 -0500
+	id S1753042Ab2APAiP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 19:38:15 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:48333 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab2APAhq (ORCPT
+	with ESMTP id S1752913Ab2APAh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 19:37:46 -0500
+	Sun, 15 Jan 2012 19:37:59 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: Casey Schaufler <casey@schaufler-ca.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -24,9 +24,9 @@ Cc: Jamie Lokier <jamie@shareable.org>, Will Drewry <wad@chromium.org>,
         linux-security-module@vger.kernel.org, olofj@chromium.org,
         mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
         alan@lxorguk.ukuu.org.uk, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 2/4] Fix apparmor for PR_{GET,SET}_NO_NEW_PRIVS
-Date: Sun, 15 Jan 2012 16:37:19 -0800
-Message-Id: <3405cd6e7b219047a0c4171a0c56b90c29af9bb5.1326673414.git.luto@amacapital.net>
+Subject: [PATCH 4/4] Allow unprivileged chroot when safe
+Date: Sun, 15 Jan 2012 16:37:21 -0800
+Message-Id: <c4c1a0e710a50e48221aa28d2b60b486ab686369.1326673414.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <cover.1326673414.git.luto@amacapital.net>
 References: <cover.1326673414.git.luto@amacapital.net>
@@ -36,92 +36,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Johansen <john.johansen@canonical.com>
+Chroot can easily be used to subvert setuid programs.  If no_new_privs,
+then setuid programs don't gain any privilege, so allow chroot.
 
-Signed-off-by: John Johansen <john.johansen@canonical.com>
+Because chroot is an easy way to break out of chroot jail, CAP_SYS_ADMIN
+is still required if the caller is already chrooted.
+
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- security/apparmor/domain.c |   39 +++++++++++++++++++++++++++++++++++----
- 1 files changed, 35 insertions(+), 4 deletions(-)
+ fs/open.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
-index a24ee44..7316d77 100644
---- a/security/apparmor/domain.c
-+++ b/security/apparmor/domain.c
-@@ -360,10 +360,6 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 	if (bprm->cred_prepared)
- 		return 0;
+diff --git a/fs/open.c b/fs/open.c
+index f711921..80ca7e2 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -422,6 +422,8 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
+ {
+ 	struct path path;
+ 	int error;
++	struct fs_struct *fs = current->fs;
++	bool is_chrooted;
  
--	/* XXX: no_new_privs is not useable with AppArmor yet */
--	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
--		return -EPERM;
--
- 	cxt = bprm->cred->security;
- 	BUG_ON(!cxt);
+ 	error = user_path_dir(filename, &path);
+ 	if (error)
+@@ -432,13 +434,23 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
+ 		goto dput_and_out;
  
-@@ -399,6 +395,11 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 			new_profile = find_attach(ns, &ns->base.profiles, name);
- 		if (!new_profile)
- 			goto cleanup;
-+		/*
-+		 * NOTE: Domain transitions from unconfined are allowed
-+		 * even when no_new_privs is set because this aways results
-+		 * in a further reduction of permissions.
-+		 */
- 		goto apply;
- 	}
- 
-@@ -459,6 +460,16 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 		/* fail exec */
- 		error = -EACCES;
- 
+ 	error = -EPERM;
+-	if (!capable(CAP_SYS_CHROOT))
 +	/*
-+	 * Policy has specified a domain transition, if no_new_privs then
-+	 * fail the exec.
++	 * Chroot is dangerous unless no_new_privs is set.  But we also
++	 * don't want to allow unprivileged users to break out of chroot
++	 * jail with another chroot call, so we require either CAP_SYS_CHROOT
++	 * unless we're not chrooted already and we have no_new_privs.
 +	 */
-+	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS) {
-+		aa_put_profile(new_profile);
-+		error = -EPERM;
-+		goto cleanup;
-+	}
-+
- 	if (!new_profile)
- 		goto audit;
++	is_chrooted = (fs->root.mnt->mnt_mountpoint !=
++		       fs->root.mnt->mnt_parent->mnt_root ||
++		       fs->root.dentry != fs->root.mnt->mnt_root);
++	if (!(current->no_new_privs && !is_chrooted) &&
++	    !capable(CAP_SYS_CHROOT))
+ 		goto dput_and_out;
+ 	error = security_path_chroot(&path);
+ 	if (error)
+ 		goto dput_and_out;
  
-@@ -613,6 +624,14 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
- 	const char *target = NULL, *info = NULL;
- 	int error = 0;
- 
-+	/*
-+	 * Fail explicitly requested domain transitions if no_new_privs.
-+	 * There is no exception for unconfined as change_hat is not
-+	 * available.
-+	 */
-+	if (current->no_new_privs)
-+		return -EPERM;
-+
- 	/* released below */
- 	cred = get_current_cred();
- 	cxt = cred->security;
-@@ -754,6 +773,18 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
- 	cxt = cred->security;
- 	profile = aa_cred_profile(cred);
- 
-+	/*
-+	 * Fail explicitly requested domain transitions if no_new_privs
-+	 * and not unconfined.
-+	 * Domain transitions from unconfined are allowed even when
-+	 * no_new_privs is set because this aways results in a reduction
-+	 * of permissions.
-+	 */
-+	if (current->no_new_privs && !unconfined(profile)) {
-+		put_cred(cred);
-+		return -EPERM;
-+	}
-+
- 	if (ns_name) {
- 		/* released below */
- 		ns = aa_find_namespace(profile->ns, ns_name);
+-	set_fs_root(current->fs, &path);
++	set_fs_root(fs, &path);
+ 	error = 0;
+ dput_and_out:
+ 	path_put(&path);
 -- 
 1.7.7.5
 
