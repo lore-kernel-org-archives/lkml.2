@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab2APVRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 16:17:31 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:56822 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754889Ab2APVRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 16:17:30 -0500
-Date: Mon, 16 Jan 2012 15:17:50 -0600
+	id S1756839Ab2APVS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 16:18:29 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:36879 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754167Ab2APVS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 16:18:28 -0500
+Date: Mon, 16 Jan 2012 15:18:48 -0600
 From: Cliff Wickman <cpw@sgi.com>
 To: linux-kernel@vger.kernel.org, mingo@elte.hu, x86@kernel.org
 Cc: mingo@elte.hu, x86@kernel.org
-Subject: [PATCH 1/6] x86, UV2: use native UV2 broadcast mode
-Message-ID: <20120116211750.GA5767@sgi.com>
+Subject: [PATCH 2/6] x86, UV2: calc BAU destination timeout
+Message-ID: <20120116211848.GB5767@sgi.com>
 References: <20120116211617.GD5512@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,338 +23,56 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Update the use of the Broadcast Assist Unit on SGI Altix UV2 to the
-use of native UV2 mode (not the legacy mode).
-UV2 native mode has a different format for a broadcast message.  We also
-need quick differentiaton between UV1 and UV2.
+Move the call to enable_timeouts() forward so that BAU_MISC_CONTROL is 
+initialized before using it in calculate_destination_timeout().
+
+Fix the calculation of a BAU destination timeout for UV2 (in
+calculate_destination_timeout()).
 
 Signed-off-by: Cliff Wickman <cpw@sgi.com>
----
- arch/x86/include/asm/uv/uv_bau.h |   93 ++++++++++++++++++++++++++++++++++++---
- arch/x86/platform/uv/tlb_uv.c    |   88 +++++++++++++++++++++++++++---------
- 2 files changed, 151 insertions(+), 30 deletions(-)
 
-Index: 120113.linux-3.2.1/arch/x86/include/asm/uv/uv_bau.h
-===================================================================
---- 120113.linux-3.2.1.orig/arch/x86/include/asm/uv/uv_bau.h
-+++ 120113.linux-3.2.1/arch/x86/include/asm/uv/uv_bau.h
-@@ -65,7 +65,7 @@
-  * UV2: Bit 19 selects between
-  *  (0): 10 microsecond timebase and
-  *  (1): 80 microseconds
-- *  we're using 655us, similar to UV1: 65 units of 10us
-+ *  we're using 560us, similar to UV1: 65 units of 10us
-  */
- #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
- #define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
-@@ -235,10 +235,10 @@ struct bau_msg_payload {
- 
- 
- /*
-- * Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
-+ * UV1 Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
-  * see table 4.2.3.0.1 in broacast_assist spec.
-  */
--struct bau_msg_header {
-+struct uv1_bau_msg_header {
- 	unsigned int	dest_subnodeid:6;	/* must be 0x10, for the LB */
- 	/* bits 5:0 */
- 	unsigned int	base_dest_nasid:15;	/* nasid of the first bit */
-@@ -318,19 +318,87 @@ struct bau_msg_header {
- };
- 
- /*
-+ * UV2 Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
-+ * see figure 9-2 of harp_sys.pdf
-+ */
-+struct uv2_bau_msg_header {
-+	unsigned int	base_dest_nasid:15;	/* nasid of the first bit */
-+	/* bits 14:0 */				/* in uvhub map */
-+	unsigned int	dest_subnodeid:5;	/* must be 0x10, for the LB */
-+	/* bits 19:15 */
-+	unsigned int	rsvd_1:1;		/* must be zero */
-+	/* bit 20 */
-+	/* Address bits 59:21 */
-+	/* bits 25:2 of address (44:21) are payload */
-+	/* these next 24 bits become bytes 12-14 of msg */
-+	/* bits 28:21 land in byte 12 */
-+	unsigned int	replied_to:1;		/* sent as 0 by the source to
-+						   byte 12 */
-+	/* bit 21 */
-+	unsigned int	msg_type:3;		/* software type of the
-+						   message */
-+	/* bits 24:22 */
-+	unsigned int	canceled:1;		/* message canceled, resource
-+						   is to be freed*/
-+	/* bit 25 */
-+	unsigned int	payload_1:3;		/* not currently used */
-+	/* bits 28:26 */
-+
-+	/* bits 36:29 land in byte 13 */
-+	unsigned int	payload_2a:3;		/* not currently used */
-+	unsigned int	payload_2b:5;		/* not currently used */
-+	/* bits 36:29 */
-+
-+	/* bits 44:37 land in byte 14 */
-+	unsigned int	payload_3:8;		/* not currently used */
-+	/* bits 44:37 */
-+
-+	unsigned int	rsvd_2:7;		/* reserved */
-+	/* bits 51:45 */
-+	unsigned int	swack_flag:1;		/* software acknowledge flag */
-+	/* bit 52 */
-+	unsigned int	rsvd_3a:3;		/* must be zero */
-+	unsigned int	rsvd_3b:8;		/* must be zero */
-+	unsigned int	rsvd_3c:8;		/* must be zero */
-+	unsigned int	rsvd_3d:3;		/* must be zero */
-+	/* bits 74:53 */
-+	unsigned int	fairness:3;		/* usually zero */
-+	/* bits 77:75 */
-+
-+	unsigned int	sequence:16;		/* message sequence number */
-+	/* bits 93:78  Suppl_A  */
-+	unsigned int	chaining:1;		/* next descriptor is part of
-+						   this activation*/
-+	/* bit 94 */
-+	unsigned int	multilevel:1;		/* multi-level multicast
-+						   format */
-+	/* bit 95 */
-+	unsigned int	rsvd_4:24;		/* ordered / source node /
-+						   source subnode / aging
-+						   must be zero */
-+	/* bits 119:96 */
-+	unsigned int	command:8;		/* message type */
-+	/* bits 127:120 */
-+};
-+
-+/*
-  * The activation descriptor:
-  * The format of the message to send, plus all accompanying control
-  * Should be 64 bytes
-  */
- struct bau_desc {
--	struct pnmask			distribution;
-+	struct pnmask				distribution;
- 	/*
- 	 * message template, consisting of header and payload:
- 	 */
--	struct bau_msg_header		header;
--	struct bau_msg_payload		payload;
-+	union bau_msg_header {
-+		struct uv1_bau_msg_header	uv1_hdr;
-+		struct uv2_bau_msg_header	uv2_hdr;
-+	} header;
-+
-+	struct bau_msg_payload			payload;
- };
--/*
-+/* UV1:
-  *   -payload--    ---------header------
-  *   bytes 0-11    bits 41-56  bits 58-81
-  *       A           B  (2)      C (3)
-@@ -340,6 +408,16 @@ struct bau_desc {
-  *   bytes 0-11  bytes 12-14  bytes 16-17  (byte 15 filled in by hw as vector)
-  *   ------------payload queue-----------
-  */
-+/* UV2:
-+ *   -payload--    ---------header------
-+ *   bytes 0-11    bits 70-78  bits 21-44
-+ *       A           B  (2)      C (3)
-+ *
-+ *            A/B/C are moved to:
-+ *       A            C          B
-+ *   bytes 0-11  bytes 12-14  bytes 16-17  (byte 15 filled in by hw as vector)
-+ *   ------------payload queue-----------
-+ */
- 
- /*
-  * The payload queue on the destination side is an array of these.
-@@ -511,6 +589,7 @@ struct bau_control {
- 	short			osnode;
- 	short			uvhub_cpu;
- 	short			uvhub;
-+	short			uvhub_version;
- 	short			cpus_in_socket;
- 	short			cpus_in_uvhub;
- 	short			partition_base_pnode;
+---
+ arch/x86/platform/uv/tlb_uv.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
 Index: 120113.linux-3.2.1/arch/x86/platform/uv/tlb_uv.c
 ===================================================================
 --- 120113.linux-3.2.1.orig/arch/x86/platform/uv/tlb_uv.c
 +++ 120113.linux-3.2.1/arch/x86/platform/uv/tlb_uv.c
-@@ -573,7 +573,7 @@ static int wait_completion(struct bau_de
- 		right_shift = ((cpu - UV_CPUS_PER_AS) * UV_ACT_STATUS_SIZE);
+@@ -1617,14 +1617,14 @@ static int calculate_destination_timeout
+ 		ts_ns = base * mult1 * mult2;
+ 		ret = ts_ns / 1000;
+ 	} else {
+-		/* 4 bits  0/1 for 10/80us, 3 bits of multiplier */
+-		mmr_image = uv_read_local_mmr(UVH_AGING_PRESCALE_SEL);
++		/* 4 bits  0/1 for 10/80us base, 3 bits of multiplier */
++		mmr_image = uv_read_local_mmr(UVH_LB_BAU_MISC_CONTROL);
+ 		mmr_image = (mmr_image & UV_SA_MASK) >> UV_SA_SHFT;
+ 		if (mmr_image & (1L << UV2_ACK_UNITS_SHFT))
+-			mult1 = 80;
++			base = 80;
+ 		else
+-			mult1 = 10;
+-		base = mmr_image & UV2_ACK_MASK;
++			base = 10;
++		mult1 = mmr_image & UV2_ACK_MASK;
+ 		ret = mult1 * base;
+ 	}
+ 	return ret;
+@@ -1886,6 +1886,8 @@ static int __init uv_bau_init(void)
+ 			uv_base_pnode = uv_blade_to_pnode(uvhub);
  	}
  
--	if (is_uv1_hub())
-+	if (bcp->uvhub_version == 1)
- 		return uv1_wait_completion(bau_desc, mmr_offset, right_shift,
- 								bcp, try);
- 	else
-@@ -757,15 +757,22 @@ int uv_flush_send_and_wait(struct bau_de
- {
- 	int seq_number = 0;
- 	int completion_stat = 0;
-+	int uv1 = 0;
- 	long try = 0;
- 	unsigned long index;
- 	cycles_t time1;
- 	cycles_t time2;
- 	struct ptc_stats *stat = bcp->statp;
- 	struct bau_control *hmaster = bcp->uvhub_master;
-+	struct uv1_bau_msg_header *uv1_hdr = NULL;
-+	struct uv2_bau_msg_header *uv2_hdr = NULL;
++	enable_timeouts();
++
+ 	if (init_per_cpu(nuvhubs, uv_base_pnode)) {
+ 		nobau = 1;
+ 		return 0;
+@@ -1896,7 +1898,6 @@ static int __init uv_bau_init(void)
+ 		if (uv_blade_nr_possible_cpus(uvhub))
+ 			init_uvhub(uvhub, vector, uv_base_pnode);
  
--	if (is_uv1_hub())
-+	if (bcp->uvhub_version == 1) {
-+		uv1 = 1;
- 		uv1_throttle(hmaster, stat);
-+		uv1_hdr = &bau_desc->header.uv1_hdr;
-+	} else
-+		uv2_hdr = &bau_desc->header.uv2_hdr;
+-	enable_timeouts();
+ 	alloc_intr_gate(vector, uv_bau_message_intr1);
  
- 	while (hmaster->uvhub_quiesce)
- 		cpu_relax();
-@@ -773,14 +780,23 @@ int uv_flush_send_and_wait(struct bau_de
- 	time1 = get_cycles();
- 	do {
- 		if (try == 0) {
--			bau_desc->header.msg_type = MSG_REGULAR;
-+			if (uv1)
-+				uv1_hdr->msg_type = MSG_REGULAR;
-+			else
-+				uv2_hdr->msg_type = MSG_REGULAR;
- 			seq_number = bcp->message_number++;
- 		} else {
--			bau_desc->header.msg_type = MSG_RETRY;
-+			if (uv1)
-+				uv1_hdr->msg_type = MSG_RETRY;
-+			else
-+				uv2_hdr->msg_type = MSG_RETRY;
- 			stat->s_retry_messages++;
- 		}
- 
--		bau_desc->header.sequence = seq_number;
-+		if (uv1)
-+			uv1_hdr->sequence = seq_number;
-+		else
-+			uv2_hdr->sequence = seq_number;
- 		index = (1UL << AS_PUSH_SHIFT) | bcp->uvhub_cpu;
- 		bcp->send_message = get_cycles();
- 
-@@ -967,7 +983,7 @@ const struct cpumask *uv_flush_tlb_other
- 		stat->s_ntargself++;
- 
- 	bau_desc = bcp->descriptor_base;
--	bau_desc += ITEMS_PER_DESC * bcp->uvhub_cpu;
-+	bau_desc += (ITEMS_PER_DESC * bcp->uvhub_cpu);
- 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
- 	if (set_distrib_bits(flush_mask, bcp, bau_desc, &locals, &remotes))
- 		return NULL;
-@@ -1083,7 +1099,7 @@ static void __init enable_timeouts(void)
- 		 */
- 		mmr_image |= (1L << SOFTACK_MSHIFT);
- 		if (is_uv2_hub()) {
--			mmr_image |= (1L << UV2_LEG_SHFT);
-+			mmr_image &= ~(1L << UV2_LEG_SHFT);
- 			mmr_image |= (1L << UV2_EXT_SHFT);
- 		}
- 		write_mmr_misc_control(pnode, mmr_image);
-@@ -1432,12 +1448,15 @@ static void activation_descriptor_init(i
- {
- 	int i;
- 	int cpu;
-+	int uv1 = 0;
- 	unsigned long gpa;
- 	unsigned long m;
- 	unsigned long n;
- 	size_t dsize;
- 	struct bau_desc *bau_desc;
- 	struct bau_desc *bd2;
-+	struct uv1_bau_msg_header *uv1_hdr;
-+	struct uv2_bau_msg_header *uv2_hdr;
- 	struct bau_control *bcp;
- 
- 	/*
-@@ -1451,6 +1470,8 @@ static void activation_descriptor_init(i
- 	gpa = uv_gpa(bau_desc);
- 	n = uv_gpa_to_gnode(gpa);
- 	m = uv_gpa_to_offset(gpa);
-+	if (is_uv1_hub())
-+		uv1 = 1;
- 
- 	/* the 14-bit pnode */
- 	write_mmr_descriptor_base(pnode, (n << UV_DESC_PSHIFT | m));
-@@ -1461,21 +1482,33 @@ static void activation_descriptor_init(i
- 	 */
- 	for (i = 0, bd2 = bau_desc; i < (ADP_SZ * ITEMS_PER_DESC); i++, bd2++) {
- 		memset(bd2, 0, sizeof(struct bau_desc));
--		bd2->header.swack_flag =	1;
--		/*
--		 * The base_dest_nasid set in the message header is the nasid
--		 * of the first uvhub in the partition. The bit map will
--		 * indicate destination pnode numbers relative to that base.
--		 * They may not be consecutive if nasid striding is being used.
--		 */
--		bd2->header.base_dest_nasid =	UV_PNODE_TO_NASID(base_pnode);
--		bd2->header.dest_subnodeid =	UV_LB_SUBNODEID;
--		bd2->header.command =		UV_NET_ENDPOINT_INTD;
--		bd2->header.int_both =		1;
--		/*
--		 * all others need to be set to zero:
--		 *   fairness chaining multilevel count replied_to
--		 */
-+		if (uv1) {
-+			uv1_hdr = &bd2->header.uv1_hdr;
-+			uv1_hdr->swack_flag =	1;
-+			/*
-+			 * The base_dest_nasid set in the message header
-+			 * is the nasid of the first uvhub in the partition.
-+			 * The bit map will indicate destination pnode numbers
-+			 * relative to that base. They may not be consecutive
-+			 * if nasid striding is being used.
-+			 */
-+			uv1_hdr->base_dest_nasid =
-+						UV_PNODE_TO_NASID(base_pnode);
-+			uv1_hdr->dest_subnodeid =	UV_LB_SUBNODEID;
-+			uv1_hdr->command =		UV_NET_ENDPOINT_INTD;
-+			uv1_hdr->int_both =		1;
-+			/*
-+			 * all others need to be set to zero:
-+			 *   fairness chaining multilevel count replied_to
-+			 */
-+		} else {
-+			uv2_hdr = &bd2->header.uv2_hdr;
-+			uv2_hdr->swack_flag =	1;
-+			uv2_hdr->base_dest_nasid =
-+						UV_PNODE_TO_NASID(base_pnode);
-+			uv2_hdr->dest_subnodeid =	UV_LB_SUBNODEID;
-+			uv2_hdr->command =		UV_NET_ENDPOINT_INTD;
-+		}
- 	}
- 	for_each_present_cpu(cpu) {
- 		if (pnode != uv_blade_to_pnode(uv_cpu_to_blade_id(cpu)))
-@@ -1728,6 +1761,14 @@ static int scan_sock(struct socket_desc
- 		bcp->cpus_in_socket = sdp->num_cpus;
- 		bcp->socket_master = *smasterp;
- 		bcp->uvhub = bdp->uvhub;
-+		if (is_uv1_hub())
-+			bcp->uvhub_version = 1;
-+		else if (is_uv2_hub())
-+			bcp->uvhub_version = 2;
-+		else {
-+			printk(KERN_EMERG "uvhub version not 1 or 2\n");
-+			return 1;
-+		}
- 		bcp->uvhub_master = *hmasterp;
- 		bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->blade_processor_id;
- 		if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
-@@ -1867,7 +1908,8 @@ static int __init uv_bau_init(void)
- 			val = 1L << 63;
- 			write_gmmr_activation(pnode, val);
- 			mmr = 1; /* should be 1 to broadcast to both sockets */
--			write_mmr_data_broadcast(pnode, mmr);
-+			if (!is_uv1_hub())
-+				write_mmr_data_broadcast(pnode, mmr);
- 		}
- 	}
- 
+ 	for_each_possible_blade(uvhub) {
