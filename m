@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab2APHxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 02:53:51 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54315 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab2APHxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 02:53:50 -0500
-Message-ID: <4F13D77B.9070103@linux.vnet.ibm.com>
-Date: Mon, 16 Jan 2012 15:53:31 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	id S1753500Ab2APHy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 02:54:28 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43581 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753464Ab2APHyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 02:54:11 -0500
+Date: Mon, 16 Jan 2012 08:53:48 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Michael D Labriola <mlabriol@gdeb.com>, Matthew Garrett <mjg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Kushal Koolwal <kushalkoolwal@gmail.com>,
+        support@versalogic.com, michael.d.labriola@gmail.com
+Subject: Re: Reboot hangs on VersaLogic Ocelot
+Message-ID: <20120116075348.GF15641@elte.hu>
+References: <OFE7865F25.43E4BFD2-ON85257984.0057CD12-85257984.0058D31D@gdeb.com>
 MIME-Version: 1.0
-To: Rakib Mullick <rakib.mullick@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Question] sched: Should nr_uninterruptible be decremented in
- ttwu_do_activate()?
-References: <CADZ9YHicin2YjGm_m9B0LMv3NW1Z3cb7HSCaqwycFmVfRpvpWA@mail.gmail.com> <1326302955.2442.174.camel@twins> <CADZ9YHiC8732D=D8KpkT0d+81_BNdAvj0ZJLwL5mhyq9OPLW0Q@mail.gmail.com> <1326353130.2442.177.camel@twins> <CADZ9YHiGjjGJjxKj4WKWydqAz0zxFwY5=LsYBKhEREuZm=bKpg@mail.gmail.com>
-In-Reply-To: <CADZ9YHiGjjGJjxKj4WKWydqAz0zxFwY5=LsYBKhEREuZm=bKpg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011521-5490-0000-0000-0000008BD5F0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OFE7865F25.43E4BFD2-ON85257984.0057CD12-85257984.0058D31D@gdeb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 01:08 AM, Rakib Mullick wrote:
 
-> On Thu, Jan 12, 2012 at 1:25 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> On Thu, 2012-01-12 at 12:09 +0600, Rakib Mullick wrote:
->>> On Wed, Jan 11, 2012 at 11:29 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->>>> On Wed, 2012-01-11 at 23:22 +0600, Rakib Mullick wrote:
->>>>> Hello all,
->>>>>
->>>>> In ttwu_do_activate(), we're decrementing nr_uninterruptible if
->>>>> p->sched_contributes_to_load (for SMP=y). But, we're also decrementing
->>>>> nr_uninterruptible from activate_task at the same path. Why we're
->>>>> doing it twice for a single task activation path?
->>>>
->>>> activate_task() does:
->>>>
->>>>  if (task_contributes_to_load(p))
->>>>   rq->nr_uninterruptible--;
->>>>
->>>> Now task_contributes_to_load() reads like:
->>>>
->>>> #define task_contributes_to_load(task)  \
->>>>                                ((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
->>>>                                 (task->flags & PF_FREEZING) == 0)
->>>>
->>>> which will be false, since we've set TASK_WAKING.
->>>
->>> Enough confusing. TASK_WAKING will be set when called from
->>> try_to_wake_up(). ttwu_do_activate() gets called from other places:
->>> scheduler_ipi() and sched_ttwu_pending() (at the time of cpu goes
->>> down). TASK_WAKING will be not set at that time,
->>
->> Yes it will be, the only way to get on that list is throught
->> ttwu_queue_remote() at which point tasks are TASK_WAKING.
->>
->>>  moreover it is
->>> possible that, task has p->sched_contributes_to_load is set and latter
->>> on gets wake up by sched_ttwu_pending/scheduler_ipi() call.
->>
->> That's the entire point. But all ways to ttwu_queue_remote() explicitly
->> set ->sched_contributes_to_load.
+(Cc:-ed Matthew Garrett)
+
+* Michael D Labriola <mlabriol@gdeb.com> wrote:
+
+> I've been troubleshooting a VersaLogic Ocelot SBC that's been 
+> hanging on reboot ever since I upgraded its BIOS.  The 
+> conclusion I've come to is that commit e19e074 (x86: Fix 
+> reboot problem on VersaLogic Menlow boards) needs to be 
+> reverted.
+>
+> My system was rebooting fine (kernel v3.2) prior to upgrading 
+> the BIOS, but it turns out that the DMI string being looked 
+> for in the VersaLogic reboot quirk wasn't added until I 
+> upgraded the BIOS.
 > 
-> That might be the case for scheduler_ipi(), but when
-> sched_ttwu_pending() gets called when a cpu goes down, all tasks from
-> wake_list of that cpu has been moved without TASK_WAKING is set. For a
-
-
-I think the task in rq->wake_list should already have state:TASK_WAKING,
-because it's a wake list.
-
-> particular task it might be possible that when it ran previously it
-> had p->sched_contributes_to_load is set. Latter, this task's cpu has
-> been put down and calls sched_ttwu_pending(), then for that task
-> p->sched_contributes_to_load is set and TASK_WAKING is not set.
-> Couldn't be happen?
+> Here's a summary of the behavior I encountered on my system 
+> (VL-EPMs-21a rev 1.00 w/ BIOS 6.5.102)
 > 
-> Thanks,
-> Rakib
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> - v2.6.37 reboot=bios is needed
 > 
+> - v2.6.38-rc1: behavior changed, reboot=acpi is needed, reboot=kbd and
+>   reboot=bios result in system hang.
+> 
+> - v2.6.38: VersaLogic patch (e19e074 x86: Fix reboot problem on
+>   VersaLogic Menlow boards) was applied prior to v2.6.38-rc7.  This
+>   patch sets a quirk for VersaLogic Menlow boards that forces the use
+>   of reboot=bios, which doesn't work anymore.  As far as I can tell,
+>   there's no way to override this faulty quirk, as it seems to take
+>   precedence over the reboot= argument.
 
+That's another bug i'd argue - the user specifying something on 
+the boot command line should *always* override the kernel's 
+built-in defaults.
 
+> - v3.2: It seems that commit 660e34c (x86: Reorder reboot method
+>   preferences) changed the default reboot method to acpi prior to
+>   v3.0-rc1, which means the default behavior is appropriate for the
+>   Ocelot.  After reverting commit e19e074, my system reboots perfectly
+>   w/out passing any reboot= arguments.  I confirmed that this is a
+>   true statement for all 3 versions of the Ocelot's BIOS.
+
+And this works for the older BIOS version as well, the one which 
+motivated commit e19e074?
+
+Please send a patch that removes the quirk (not named a revert - 
+as technically the old quirk did solve problems), with the 
+changelog containing your (excellent) bug analysis and the test 
+coverage above, plus a signoff?
+
+Matthew, do you concur? Looks like your reordering changes 
+actively improved the default behavior and we can start removing 
+quirks.
+
+Thanks,
+
+	Ingo
