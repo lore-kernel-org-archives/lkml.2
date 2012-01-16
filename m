@@ -1,235 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab2APWH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 17:07:56 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:48280 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755844Ab2APWHz convert rfc822-to-8bit (ORCPT
+	id S1757055Ab2APWIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 17:08:41 -0500
+Received: from mailgw01.dd24.net ([193.46.215.41]:37777 "EHLO
+	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab2APWIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 17:07:55 -0500
-X-IronPort-AV: E=Sophos;i="4.71,520,1320652800"; 
-   d="scan'208";a="617488037"
-Message-ID: <1326751673.2921.1.camel@lade.trondhjem.org>
-Subject: [GIT PULL] Please pull more NFS client changes
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 16 Jan 2012 17:07:53 -0500
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+	Mon, 16 Jan 2012 17:08:39 -0500
+Subject: Re: iwl4965: "MAC is in deep sleep!" freezes
+From: Christoph Anton Mitterer <calestyo@scientia.net>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120105101412.GB2103@redhat.com>
+References: <265f56a4dc9f5d3edeca3d101e445353@imap.dd24.net>
+	 <20110908084913.GB2195@redhat.com>
+	 <1321228952.3362.15.camel@fermat.scientia.net>
+	 <20111114014615.GC16508@elie.hsd1.il.comcast.net>
+	 <1321466933.3364.16.camel@fermat.scientia.net>
+	 <20111118074552.GB2203@redhat.com>
+	 <1325171851.3907.33.camel@fermat.scientia.net>
+	 <20111229201149.GB1674@elie.Belkin> <20120103105107.GB3391@redhat.com>
+	 <1325640148.3359.142.camel@fermat.scientia.net>
+	 <20120105101412.GB2103@redhat.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-rF4VsM8B3EA1UZSz1Veo"
+Date: Mon, 16 Jan 2012 23:08:30 +0100
+Message-ID: <1326751710.3502.25.camel@fermat.scientia.net>
 Mime-Version: 1.0
-X-OriginalArrivalTime: 16 Jan 2012 22:07:53.0812 (UTC) FILETIME=[4B78A940:01CCD49B]
+X-Mailer: Evolution 2.32.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull from the signed tag "nfs-for-3.3-2" in the repository at
+--=-rF4VsM8B3EA1UZSz1Veo
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tag nfs-for-3.3-2
+On Thu, 2012-01-05 at 11:14 +0100, Stanislaw Gruszka wrote:
+> Hmm, perhaps iwl4965 device does not work well with the new PCIe chipset.
+>=20
+> Does any of fallowing workaround the problem?
+>=20
+> kernel boot parameter:
+> pcie_aspm=3Doff
+> pci_aspm=3Dforce
+> pci=3Dnocrs
+> pci=3Duse_crs
+>=20
+> iwlegacy module parameter:
+> bt_coex_active=3D0
+>=20
+> iwl4965 module parameters
+> 11n_disable=3D1
 
-This will update the following files through the appended changesets.
-
-  Cheers,
-    Trond
-
-----
- fs/nfs/blocklayout/blocklayout.c |  202 ++++++++++++++++++++++++-------------
- fs/nfs/blocklayout/blocklayout.h |   12 ++-
- fs/nfs/blocklayout/extents.c     |  176 ++++++++++++++-------------------
- fs/nfs/callback.h                |    2 +-
- fs/nfs/callback_xdr.c            |    4 +
- fs/nfs/nfs4filelayoutdev.c       |    2 +-
- fs/nfs/nfs4proc.c                |    2 +-
- 7 files changed, 222 insertions(+), 178 deletions(-)
-
-commit 7c5465d6ccd759caa959828e2add5603518dafc4
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:46 2012 +0800
-
-    pnfsblock: alloc short extent before submit bio
-    
-    As discussed earlier, it is better for block client to allocate memory for
-    tracking extents state before submitting bio. So the patch does it by allocating
-    a short_extent for every INVALID extent touched by write pagelist and for
-    every zeroing page we created, saving them in layout header. Then in end_io we
-    can just use them to create commit list items and avoid memory allocation there.
-    
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit c0411a94a8f318379464e29dd81db806249dbca6
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:44 2012 +0800
-
-    pnfsblock: remove rpc_call_ops from struct parallel_io
-    
-    block layout can just make use of generic read/write_done.
-    
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 72c508879979522de347bcec706507e00d7c443d
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:42 2012 +0800
-
-    pnfsblock: move find lock page logic out of bl_write_pagelist
-    
-    Also avoid unnecessary lock_page if page is handled by others.
-    
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 60c52e3a72fda10e82f38b6f979956eb2dcb3d4e
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:40 2012 +0800
-
-    pnfsblock: cleanup bl_mark_sectors_init
-    
-    It does not need to manipulate on partial initialized blocks.
-    Writeback code takes care of it.
-    
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 74a6eeb44ca6174d9cc93b9b8b4d58211c57bc80
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:48 2012 +0800
-
-    pnfsblock: limit bio page count
-    
-    One bio can have at most BIO_MAX_PAGES pages. We should limit it bec otherwise
-    bio_alloc will fail when there are many pages in one read/write_pagelist.
-    
-    Cc: <stable@vger.kernel.org> #3.1+
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 93a3844ee0f843b05a1df4b52e1a19ff26b98d24
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:47 2012 +0800
-
-    pnfsblock: don't spinlock when freeing block_dev
-    
-    bl_free_block_dev() may sleep. We can not call it with spinlock held.
-    Besides, there is no need to take bm_lock as we are last user freeing bm_devlist.
-    
-    Cc: <stable@vger.kernel.org> #3.1+
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 57582b372f63d0f655b1a35b0d306d73d1a46775
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:45 2012 +0800
-
-    pnfsblock: clean up _add_entry
-    
-    It is wrong to kmalloc in _add_entry() as it is inside
-    spinlock. memory should be already allocated _add_entry() is called.
-    
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 82b906d6550ee5fe0d5553359b3c9692dd0aed31
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:43 2012 +0800
-
-    pnfsblock: set read/write tk_status to pnfs_error
-    
-    To pass the IO status to upper layer.
-    
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 39e567ae36fe03c2b446e1b83ee3d39bea08f90b
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Thu Jan 12 23:18:41 2012 +0800
-
-    pnfsblock: acquire im_lock in _preload_range
-    
-    When calling _add_entry, we should take the im_lock to protect
-    agains other modifiers.
-    
-    Cc: <stable@vger.kernel.org> #3.1+
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit de040beccd52bb5fcac90031505384d037b1111c
-Author: Peng Tao <bergwolf@gmail.com>
-Date:   Tue Jan 10 22:42:47 2012 +0800
-
-    NFS4: fix compile warnings in nfs4proc.c
-    
-    compile in nfs-for-3.3 branch shows following warnings. Fix it here.
-    
-    fs/nfs/nfs4proc.c: In function ‘__nfs4_get_acl_uncached’:
-    fs/nfs/nfs4proc.c:3589: warning: format ‘%ld’ expects type ‘long int’, but argument 4 has type ‘size_t’
-    fs/nfs/nfs4proc.c:3589: warning: format ‘%ld’ expects type ‘long int’, but argument 6 has type ‘size_t’
-    
-    Signed-off-by: Peng Tao <peng_tao@emc.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 363e0df057ea8da539645fe4c3c227e3d44054cc
-Author: Dan Carpenter <dan.carpenter@oracle.com>
-Date:   Thu Jan 12 10:16:14 2012 +0300
-
-    nfs: check for integer overflow in decode_devicenotify_args()
-    
-    On 32 bit, if n is too large then "n * sizeof(*args->devs)" could
-    overflow and args->devs would be smaller than expected.
-    
-    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 13fff2f35fd21d69ee84ef6a78610420e1a42818
-Author: Dan Carpenter <dan.carpenter@oracle.com>
-Date:   Thu Jan 12 10:07:35 2012 +0300
-
-    NFS: cleanup endian type in decode_ds_addr()
-    
-    port is supposed to be a __be16 here.  The existing code should work
-    fine, but this is a cleanup.
-    
-    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 0e0243dc35a2349b3946e54f90e874be396fdb8b
-Author: Dan Carpenter <dan.carpenter@oracle.com>
-Date:   Thu Jan 12 10:06:05 2012 +0300
-
-    NFS: add an endian notation
-    
-    This function returns a big endian value.  The implementation in
-    fs/nfs/callback_proc.c is declared with "__be32" but the .h file uses
-    "unsigned" instead.  It makes sparse complain:
-    
-    fs/nfs/callback_proc.c:232:8: error:
-    	symbol 'nfs4_callback_layoutrecall' redeclared with different
-    	type (originally declared at fs/nfs/callback.h:165) - different
-    	base types
-    
-    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+None of these helped,.. it seems however that even with pci_aspm=3Dforce
+it:
+ACPI _OSC control for PCIe not granted, disabling ASPM
 
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+> There should be 3 or 2 antennas: 1 - white, 3 - grey, 2 - black,
+> connection on adapter should match cable color (ok, I don't know if
+> it does any difference, but it worth to try). If there is only one
+> antenna available, perhaps there is somewhere another miniPCIe slot
+> where are more antenna cables available. But, if there is really
+> only one antenna cable, it should be connected to number 1 (white)
+> adapter connector.
+Well what I thought to be the wifi controller till now, has only on
+cable (white).... with only one connector.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+I tried to disassemble the whole thing but must shamefully admit that I
+wasn't able to... at some place it's kept somehow together (als screws
+are loosened) and I couldn't find out so far how.
+
+
+
+Cheers,
+Chris.
+
+--=-rF4VsM8B3EA1UZSz1Veo
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIITMjCCBggw
+ggPwoAMCAQICAQEwDQYJKoZIhvcNAQEEBQAweTEQMA4GA1UEChMHUm9vdCBDQTEeMBwGA1UECxMV
+aHR0cDovL3d3dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcgQXV0aG9yaXR5
+MSEwHwYJKoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcwHhcNMDUxMDE0MDczNjU1WhcNMzMw
+MzI4MDczNjU1WjBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
+QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MIICIjANBgkqhkiG9w0BAQEF
+AAOCAg8AMIICCgKCAgEAq0k1EUh80iZ+U5TPQ6ndKNdCKovzh3gZWHwPntqJfeH763KQDXShlmSr
+n6AkmXPa4lV2xxd79QSsRrjDvn9kjRBsJPNhnMDykPpR5vVpAWPDD1biSkLP4kSMJSioxXkJfUa5
+ivPp8zQpCEXkHJ/LlAQcgagUs5hlxEPsToKNCdG9qluNktDs3pDFfwrC4+vmMVpedD6XM1nowwM9
+YDO/99FvR8TN7mKDUm4uCJqk2RUYkaaFkkewrkjrbbch7IUaaHI1q//wEF3A9JSnatU7kn5MkAV+
+k8Esi6SOYnQVcW4LcQPqrxU4mtTSBXJvjPkr61pyJfk5RuNyGz4Ew2QnIhAqik9YpwOtvrQuE+1d
+qkjX1X3UKntc+kYEUOTMDkJbjO3b8s/8lpPg2xE2VGI0OI8MYJs7l1Y4rfPSW4ugW+pOlrh819Wg
+hnBA05Ept6I8rfWMu88akorkNHvA2Gxf6QrCw6cgmlrfLF1SXLpH1ZvvJChwOCAv1X8pwLJBA2iS
+zOCczJdLRe86EAqrcDqYlXCtNbHqhSukHIAhMamuYHqAJkgAuAHAk2NVIpE8Vuev2zol848xVOom
+i4FZ+aHRUxHFe50D9nQR4G2xLD8shpGZcZqmd4s0YNEUtCysna+MENOfxGr4bxP8c1n3ZkJ0Horj
++NzSb5icy0eYlUAF++kCAwEAAaOBvzCBvDAPBgNVHRMBAf8EBTADAQH/MF0GCCsGAQUFBwEBBFEw
+TzAjBggrBgEFBQcwAYYXaHR0cDovL29jc3AuQ0FjZXJ0Lm9yZy8wKAYIKwYBBQUHMAKGHGh0dHA6
+Ly93d3cuQ0FjZXJ0Lm9yZy9jYS5jcnQwSgYDVR0gBEMwQTA/BggrBgEEAYGQSjAzMDEGCCsGAQUF
+BwIBFiVodHRwOi8vd3d3LkNBY2VydC5vcmcvaW5kZXgucGhwP2lkPTEwMA0GCSqGSIb3DQEBBAUA
+A4ICAQB/CIih2hpQSdqJ+6EIcvOK9x7EOrR5WyAwsUXewl3TZWnxwl1UVDyFX7l7QpHCmf0bUZur
+RqWhEFOebYisc24sM6bw9J7gdcE+iEWp4WZD/lZa0XpBePdA2ko68QtbpbsWBubC55O5hU2XT7Ee
+OEOA75sNjO+4p2AAh1d9HkQcyyPvmzyZna+1KRxFeRaWTSdt8Rxsw8JVZLO8FOLzpB8eMvwnFQXP
+3S6uPoJhe/AhEBj2ROpTOfnc0Jog4Ma74LtaT8SZyAe9tb2i2y5iDUI0Qbz/i4r1USKqiDAA4rDU
+vL5lutUDV3mb6NzITfhQ7ZGlUiiirPs2WD7plCuRUIcb1l7WjMz3DxAMUk7QFmHl5QpsvxfHckZX
+nJj1bGBjem9euU4vyLm5u2qFvJgN7fk+l4Q0lK4Ar6Hl55JuTr3z4tkUi1zS6wFsoBelLRDrnHpK
+vb3uzv3tIkCrcDiI9QqHasKrBWDJSAXaU8HeRHdqs/M8PO2AvKY4SikkX/5ZO5slelZjAGS5XaRi
+fVc2T62D7x+SU6COd1fd5WERPSMAkEw8+qNgkwSjrzX2DmqPT0pgp4UFbEahj/THduOhWVf3cbLE
+bhRcbW1BZt8bk7HUAMPuy888PSGAqV9jZfzd4F+k9CvwhXFB1Gcl+xqxl67WmYITQdJupRuZJ4Dn
+C6moADCCBo8wggR3oAMCAQICAwCyHTANBgkqhkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQg
+SW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xh
+c3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oXDTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhD
+aHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAiBgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlh
+Lm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEv
+MC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG
+9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4w
+LAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEzsTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiG
+JmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2zJ4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYi
+gMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/hNOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/Mu
+dT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7H
+zdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYshPV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IB
+nTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgBhvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRp
+ZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0l
+BDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhC
+BAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6
+BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVudGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24u
+bWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9w
+aC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24u
+bWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEBBQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfS
+XpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlS
+GZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb95VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uB
+kAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRn
+oX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38BjULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV
+4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlYnAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD
+66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avqZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9
+uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPepTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQ
+EQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeGX3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY
+3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5bcp6cOPWgvzCCBo8wggR3oAMCAQICAwCyHTANBgkq
+hkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
+QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oX
+DTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhDaHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAi
+BgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlhLm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBj
+aHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEvMC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFu
+dG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0
+ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4wLAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50
+b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEz
+sTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiGJmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2z
+J4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYigMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/h
+NOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/MudT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/
+qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7HzdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYsh
+PV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IBnTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgB
+hvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRpZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0
+byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgor
+BgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUF
+BzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVu
+dGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFu
+dG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5p
+LW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEB
+BQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfSXpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK
+3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlSGZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb9
+5VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uBkAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8
+ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRnoX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38Bj
+ULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlY
+nAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avq
+ZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPe
+pTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQEQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeG
+X3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5b
+cp6cOPWgvzGCAr0wggK5AgEBMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0
+dHA6Ly93d3cuQ0FjZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMAkG
+BSsOAwIaBQCgggE3MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEy
+MDExNjIyMDgzMFowIwYJKoZIhvcNAQkEMRYEFP7boYad69ch1BEJBAGcdfuLdm5cMGoGCSsGAQQB
+gjcQBDFdMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93d3cuQ0Fj
+ZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMGwGCyqGSIb3DQEJEAIL
+MV2gWzBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQu
+b3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290AgMAsh0wDQYJKoZIhvcNAQEBBQAEggEA
+f8FLY1HDc6d2Rk5Q8jSbpzUwP6Xh5KuNyNPv/3tXF2kmUrutGSVkxQ3ETaA0VOc5Ior3+UIU5vi+
+mCWWc2xN9cEN6CE+bG3pgIK+6M1ECE7kUAUkVSVDuWTaAK00QpY5lmjXdG6WnyhvkUHwp6eSJUC1
+wlbac0w0nY5mnj8Y9bRKYYCuAw/vLIO9oTa8vrMt4B18oYR8V7TpewOIUwKr1tyJ7snvXLAjDkgC
+lUwJHDl0Rbj27N6QO2Ob0bu4PXRl9goSuPoSazE73FdofNMaG1g9IM+myCZEgLdCp1DyZqnOS2qf
++sFtkRX/hgYUK+wKe2Hj0U3XeQyudqvV95k2MgAAAAAAAA==
+
+
+--=-rF4VsM8B3EA1UZSz1Veo--
 
