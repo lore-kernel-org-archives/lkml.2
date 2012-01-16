@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab2APSts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:49:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43049 "EHLO mx2.suse.de"
+	id S1756464Ab2APStY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:49:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42981 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755820Ab2APStp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:49:45 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:19 2012
-Message-Id: <20120116184519.345383502@clark.kroah.org>
+	id S1756435Ab2APStV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:49:21 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:17 2012
+Message-Id: <20120116184517.331213685@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Mon, 16 Jan 2012 10:45:10 -0800
+Date: Mon, 16 Jan 2012 10:44:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [43/48] slub: fix a possible memleak in __slab_alloc()
+        alan@lxorguk.ukuu.org.uk, kvm@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yang Bai <hamo.by@gmail.com>
+Subject: [18/48] KVM: Device assignment permission checks
 In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +27,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 73736e0387ba0e6d2b703407b4d26168d31516a7 upstream.
+From: Alex Williamson <alex.williamson@redhat.com>
 
-Zhihua Che reported a possible memleak in slub allocator on
-CONFIG_PREEMPT=y builds.
+(cherry picked from commit 3d27e23b17010c668db311140b17bbbb70c78fb9)
 
-It is possible current thread migrates right before disabling irqs in
-__slab_alloc(). We must check again c->freelist, and perform a normal
-allocation instead of scratching c->freelist.
+Only allow KVM device assignment to attach to devices which:
 
-Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
+ - Are not bridges
+ - Have BAR resources (assume others are special devices)
+ - The user has permissions to use
 
-V2: Its also possible an IRQ freed one (or several) object(s) and
-populated c->freelist, so its not a CONFIG_PREEMPT only problem.
+Assigning a bridge is a configuration error, it's not supported, and
+typically doesn't result in the behavior the user is expecting anyway.
+Devices without BAR resources are typically chipset components that
+also don't have host drivers.  We don't want users to hold such devices
+captive or cause system problems by fencing them off into an iommu
+domain.  We determine "permission to use" by testing whether the user
+has access to the PCI sysfs resource files.  By default a normal user
+will not have access to these files, so it provides a good indication
+that an administration agent has granted the user access to the device.
 
-Reported-by: Zhihua Che <zhihua.che@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+[Yang Bai: add missing #include]
+[avi: fix comment style]
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Yang Bai <hamo.by@gmail.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- mm/slub.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ Documentation/virtual/kvm/api.txt |    4 ++
+ virt/kvm/assigned-dev.c           |   75 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 79 insertions(+)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2077,6 +2077,11 @@ static void *__slab_alloc(struct kmem_ca
- 		goto new_slab;
- 	}
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -1134,6 +1134,10 @@ following flags are specified:
+ The KVM_DEV_ASSIGN_ENABLE_IOMMU flag is a mandatory option to ensure
+ isolation of the device.  Usages not specifying this flag are deprecated.
  
-+	/* must check again c->freelist in case of cpu migration or IRQ */
-+	object = c->freelist;
-+	if (object)
-+		goto load_freelist;
++Only PCI header type 0 devices with PCI BAR resources are supported by
++device assignment.  The user requesting this ioctl must have read/write
++access to the PCI sysfs resource files associated with the device.
 +
- 	stat(s, ALLOC_SLOWPATH);
+ 4.49 KVM_DEASSIGN_PCI_DEVICE
  
- 	do {
+ Capability: KVM_CAP_DEVICE_DEASSIGNMENT
+--- a/virt/kvm/assigned-dev.c
++++ b/virt/kvm/assigned-dev.c
+@@ -17,6 +17,8 @@
+ #include <linux/pci.h>
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
++#include <linux/namei.h>
++#include <linux/fs.h>
+ #include "irq.h"
+ 
+ static struct kvm_assigned_dev_kernel *kvm_find_assigned_dev(struct list_head *head,
+@@ -474,12 +476,73 @@ out:
+ 	return r;
+ }
+ 
++/*
++ * We want to test whether the caller has been granted permissions to
++ * use this device.  To be able to configure and control the device,
++ * the user needs access to PCI configuration space and BAR resources.
++ * These are accessed through PCI sysfs.  PCI config space is often
++ * passed to the process calling this ioctl via file descriptor, so we
++ * can't rely on access to that file.  We can check for permissions
++ * on each of the BAR resource files, which is a pretty clear
++ * indicator that the user has been granted access to the device.
++ */
++static int probe_sysfs_permissions(struct pci_dev *dev)
++{
++#ifdef CONFIG_SYSFS
++	int i;
++	bool bar_found = false;
++
++	for (i = PCI_STD_RESOURCES; i <= PCI_STD_RESOURCE_END; i++) {
++		char *kpath, *syspath;
++		struct path path;
++		struct inode *inode;
++		int r;
++
++		if (!pci_resource_len(dev, i))
++			continue;
++
++		kpath = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
++		if (!kpath)
++			return -ENOMEM;
++
++		/* Per sysfs-rules, sysfs is always at /sys */
++		syspath = kasprintf(GFP_KERNEL, "/sys%s/resource%d", kpath, i);
++		kfree(kpath);
++		if (!syspath)
++			return -ENOMEM;
++
++		r = kern_path(syspath, LOOKUP_FOLLOW, &path);
++		kfree(syspath);
++		if (r)
++			return r;
++
++		inode = path.dentry->d_inode;
++
++		r = inode_permission(inode, MAY_READ | MAY_WRITE | MAY_ACCESS);
++		path_put(&path);
++		if (r)
++			return r;
++
++		bar_found = true;
++	}
++
++	/* If no resources, probably something special */
++	if (!bar_found)
++		return -EPERM;
++
++	return 0;
++#else
++	return -EINVAL; /* No way to control the device without sysfs */
++#endif
++}
++
+ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
+ 				      struct kvm_assigned_pci_dev *assigned_dev)
+ {
+ 	int r = 0, idx;
+ 	struct kvm_assigned_dev_kernel *match;
+ 	struct pci_dev *dev;
++	u8 header_type;
+ 
+ 	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
+ 		return -EINVAL;
+@@ -510,6 +573,18 @@ static int kvm_vm_ioctl_assign_device(st
+ 		r = -EINVAL;
+ 		goto out_free;
+ 	}
++
++	/* Don't allow bridges to be assigned */
++	pci_read_config_byte(dev, PCI_HEADER_TYPE, &header_type);
++	if ((header_type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL) {
++		r = -EPERM;
++		goto out_put;
++	}
++
++	r = probe_sysfs_permissions(dev);
++	if (r)
++		goto out_put;
++
+ 	if (pci_enable_device(dev)) {
+ 		printk(KERN_INFO "%s: Could not enable PCI device\n", __func__);
+ 		r = -EBUSY;
 
 
