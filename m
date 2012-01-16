@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab2APPuV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 10:50:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58261 "EHLO mx1.redhat.com"
+	id S1755310Ab2APPug (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 10:50:36 -0500
+Received: from fieldses.org ([174.143.236.118]:55125 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755203Ab2APPuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 10:50:18 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <19981.1325887323@redhat.com>
-References: <19981.1325887323@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, arnd@arndb.de, alan@lxorguk.ukuu.org.uk,
-        hpa@zytor.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, airlied@redhat.com
-Subject: Pulling the rest of the User-API header split patches
-Date: Mon, 16 Jan 2012 15:50:02 +0000
-Message-ID: <10234.1326729002@redhat.com>
+	id S1755203Ab2APPue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 10:50:34 -0500
+Date: Mon, 16 Jan 2012 10:50:31 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Subject: Re: [patch] nfsd: oopses in cache_parse()
+Message-ID: <20120116155031.GC1750@fieldses.org>
+References: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
+ <20120116115258.GC3294@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120116115258.GC3294@mwanda>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 16, 2012 at 02:52:58PM +0300, Dan Carpenter wrote:
+> We fixed expkey_parse() in b2ea70afad "nfsd: Fix oops when parsing a
+> 0 length export" but there are other cache_parse() implimentations
+> which have the same issue.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> Since half of the implimentations get this wrong, maybe we should
+> just check for this in cache_do_downcall().  Is there ever a valid
+> reason to pass a zero length string to cache_parse()?
 
-Hi Linus,
+I don't think so, no.  Checking in cache_do_downcall() sounds like a
+good idea.
 
-Thanks for pulling the User-API header split preliminary patches.
+--b.
 
-Will you be pulling the rest of the patches to actually perform the split at
-the end of this merge window?  If so, as previously mentioned, I'll need to
-regenerate them before you do.
+> 
+> diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+> index cf8a6bd..1d147a8 100644
+> --- a/fs/nfsd/export.c
+> +++ b/fs/nfsd/export.c
+> @@ -496,7 +496,7 @@ static int svc_export_parse(struct cache_detail *cd, char *mesg, int mlen)
+>  	struct svc_export exp = {}, *expp;
+>  	int an_int;
+>  
+> -	if (mesg[mlen-1] != '\n')
+> +	if (mlen < 1 || mesg[mlen - 1] != '\n')
+>  		return -EINVAL;
+>  	mesg[mlen-1] = 0;
+>  
+> diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
+> index a6e711a..d945d71 100644
+> --- a/fs/nfs/dns_resolve.c
+> +++ b/fs/nfs/dns_resolve.c
+> @@ -217,7 +217,7 @@ static int nfs_dns_parse(struct cache_detail *cd, char *buf, int buflen)
+>  	ssize_t len;
+>  	int ret = -EINVAL;
+>  
+> -	if (buf[buflen-1] != '\n')
+> +	if (buflen < 1 || buf[buflen - 1] != '\n')
+>  		goto out;
+>  	buf[buflen-1] = '\0';
+>  
+> diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+> index 9409627..f8456a4 100644
+> --- a/fs/nfsd/nfs4idmap.c
+> +++ b/fs/nfsd/nfs4idmap.c
+> @@ -202,7 +202,7 @@ idtoname_parse(struct cache_detail *cd, char *buf, int buflen)
+>  	int len;
+>  	int error = -EINVAL;
+>  
+> -	if (buf[buflen - 1] != '\n')
+> +	if (buflen < 1 || buf[buflen - 1] != '\n')
+>  		return (-EINVAL);
+>  	buf[buflen - 1]= '\0';
+>  
+> @@ -378,7 +378,7 @@ nametoid_parse(struct cache_detail *cd, char *buf, int buflen)
+>  	char *buf1;
+>  	int error = -EINVAL;
+>  
+> -	if (buf[buflen - 1] != '\n')
+> +	if (buflen < 1 || buf[buflen - 1] != '\n')
+>  		return (-EINVAL);
+>  	buf[buflen - 1]= '\0';
+>  
+> 
 
-However, for the moment, I dropped the preliminary patches from my tree and
-regenerated the rest based on the tree I saw this morning:
 
-http://git.infradead.org/users/dhowells/linux-headers.git/shortlog/refs/heads/uapi-split
-
-I've made 'make allyesconfig' build again on x86_64.  arch/x86/lib/insn.c is
-compiled for use in both userspace and kernelspace, necessitating a bit of
-#include adjustment, but that was the only necessary change.  I've also had
-Dave Airlie review the preparatory DRM patches and those have been adjusted.
-
-An opinion, if I may: I have been checking the scripts into the GIT tree (with
-the intention to delete them later) so that a record of them is retained - but
-I wonder if I should bother...  Hopefully, once the scripts are run and the
-results applied, it won't be necessary to retain the scripts.
-
-Thanks,
-David
