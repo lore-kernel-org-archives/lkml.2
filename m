@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab2APKSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 05:18:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7139 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab2APKSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 05:18:20 -0500
-Message-ID: <4F13F967.5000007@redhat.com>
-Date: Mon, 16 Jan 2012 12:18:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1754076Ab2APK2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 05:28:17 -0500
+Received: from 1.mo1.mail-out.ovh.net ([178.32.127.22]:43043 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753209Ab2APK2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 05:28:15 -0500
+X-Greylist: delayed 2400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jan 2012 05:28:15 EST
+Message-ID: <4F13E964.5020207@sigfox.com>
+Date: Mon, 16 Jan 2012 10:09:56 +0100
+From: Marc Vertes <marc.vertes@sigfox.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0.1) Gecko/20111125 Firefox/8.0.1 SeaMonkey/2.5
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/3] KVM: trace mmio read event properly
-References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EE73.1080504@linux.vnet.ibm.com>
-In-Reply-To: <4F13EE73.1080504@linux.vnet.ibm.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [PATCH] watchdog: via_wdt: Staticise wdt_pci_table
+References: <1326540874.12848.1.camel@phoenix>
+In-Reply-To: <1326540874.12848.1.camel@phoenix>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 16817566909707044755
+X-Ovh-Remote: 92.103.90.130 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefledrudegucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeforghrtgcugggvrhhtvghsuceomhgrrhgtrdhvvghrthgvshesshhighhfohigrdgtohhmqeenucfjughrpefkfffhfgggvffufhgjtgfgsehtjegrtddtfeej
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedrtdekucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepkfffhfgfggfvufhfjggtgfesthejrgdttdefjeenucfhrhhomhepofgrrhgtucggvghrthgvshcuoehmrghrtgdrvhgvrhhtvghssehsihhgfhhogidrtghomheqnecuffhomhgrihhnpeen
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2012 11:31 AM, Xiao Guangrong wrote:
-> In current code, we use KVM_TRACE_MMIO_READ to trace mmio read event which
-> only can be completed immediately, instead of it, we trace the time when
-> read event occur, then cooperate with then later patch, we can know the time
-> of mmio read emulation
->
-> @@ -3744,6 +3740,8 @@ mmio:
->  	/*
->  	 * Is this MMIO handled locally?
->  	 */
-> +	trace_kvm_mmio(write ? KVM_TRACE_MMIO_WRITE : KVM_TRACE_MMIO_READ,
+Axel Lin wrote:
 
-It's better to push the conditional to the trace event itself, so it's
-only evaluated if tracing is enabled.
+> It is only used in this driver, so no need to make the symbol global.
+> 
 
-> +			bytes, gpa, *(u64 *)val);
+Agree.
 
-We get the wrong value for reads here, no?
+Acked-by: Marc Vertes <marc.vertes@sigfox.com>
 
-Can't we leave the code as is, and infer the start of the event from the
-last kvm_exit trace?
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/watchdog/via_wdt.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/watchdog/via_wdt.c b/drivers/watchdog/via_wdt.c
+> index 026b4bb..8b24b00 100644
+> --- a/drivers/watchdog/via_wdt.c
+> +++ b/drivers/watchdog/via_wdt.c
+> @@ -233,7 +233,7 @@ static void __devexit wdt_remove(struct pci_dev *pdev)
+>  	pci_disable_device(pdev);
+>  }
+>  
+> -DEFINE_PCI_DEVICE_TABLE(wdt_pci_table) = {
+> +static DEFINE_PCI_DEVICE_TABLE(wdt_pci_table) = {
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_CX700) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VX800) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VX855) },
 
->  	handled = ops->read_write_mmio(vcpu, gpa, bytes, val);
->  	if (handled == bytes)
->  		return X86EMUL_CONTINUE;
-
-
--- 
-error compiling committee.c: too many arguments to function
 
