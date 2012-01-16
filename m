@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab2APAb5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 19:31:57 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:47624 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2APAb4 (ORCPT
+	id S1752860Ab2APAcc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 19:32:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50676 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab2APAca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 19:31:56 -0500
-X-AuditID: b753bd60-9785eba00000359c-a5-4f136ffa2bc2
-X-AuditID: b753bd60-9785eba00000359c-a5-4f136ffa2bc2
-Message-ID: <4F136FED.8090201@hitachi.com>
-Date: Mon, 16 Jan 2012 09:31:41 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: Typo transferred from Intel manual
-References: <CAOPLpQc_TfvtfJ0NL+4fsi2r_eW+4qWX+WbXrZ9BjGn44nAmBw@mail.gmail.com>
-In-Reply-To: <CAOPLpQc_TfvtfJ0NL+4fsi2r_eW+4qWX+WbXrZ9BjGn44nAmBw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 15 Jan 2012 19:32:30 -0500
+From: Olof Johansson <olof@lixom.net>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH] modules: fix build error with !CONFIG_MODULE_UNLOAD
+Date: Sun, 15 Jan 2012 16:32:23 -0800
+Message-Id: <1326673943-26105-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.8.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulrich,
+Looks like the "module_flags_taint" helper was added under an #ifdef
+CONFIG_MODULE_UNLOAD block, move it out of it.
 
-(2012/01/14 7:24), Ulrich Drepper wrote:
-> The arch/x86/lib/x86-opcode-map.txt file contains the line
-> 
-> af: SCAS/W/D/Q rAX,Xv
-> 
-> 
-> This is what the Intel manuals show, but it's not correct.  The 'X' stands for
-> 
-> Memory addressed by the DS:rSI register pair (for example, MOVS, CMPS,
-> OUTS, or LODS).
-> 
-> 
-> On the other hand 'Y' means (also see the ae byte entry for SCASB):
-> 
-> Memory addressed by the ES:rDI register pair (for example, MOVS, CMPS,
-> INS, STOS, or SCAS).
+Fixes:
 
-I see, thanks for reporting :)
+kernel/module.c: In function 'show_taint':
+kernel/module.c:1024:2: error: implicit declaration of function 'module_flags_taint'
 
-> Hence the following patch should be applied:
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
+ kernel/module.c |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
-Could you add a comment line above the fix in x86-opcode-map.txt?
-I just consider the case that someone may confuse the fix itself
-is typo.
-
-Thank you!
-
-> 
-> 
-> Signed-off-by: Ulrich Drepper <drepper@gmail.com>
-> 
-> diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
-> index 5b83c51..c292885 100644
-> --- a/arch/x86/lib/x86-opcode-map.txt
-> +++ b/arch/x86/lib/x86-opcode-map.txt
-> @@ -219,7 +219,7 @@ ab: STOS/W/D/Q Yv,rAX
->  ac: LODS/B AL,Xb
->  ad: LODS/W/D/Q rAX,Xv
->  ae: SCAS/B AL,Yb
-> -af: SCAS/W/D/Q rAX,Xv
-> +af: SCAS/W/D/Q rAX,Yv
->  # 0xb0 - 0xbf
->  b0: MOV AL/R8L,Ib
->  b1: MOV CL/R9L,Ib
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+diff --git a/kernel/module.c b/kernel/module.c
+index acf6ed3..2c93276 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -842,26 +842,6 @@ out:
+ 	return ret;
+ }
+ 
+-static size_t module_flags_taint(struct module *mod, char *buf)
+-{
+-	size_t l = 0;
+-
+-	if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
+-		buf[l++] = 'P';
+-	if (mod->taints & (1 << TAINT_OOT_MODULE))
+-		buf[l++] = 'O';
+-	if (mod->taints & (1 << TAINT_FORCED_MODULE))
+-		buf[l++] = 'F';
+-	if (mod->taints & (1 << TAINT_CRAP))
+-		buf[l++] = 'C';
+-	/*
+-	 * TAINT_FORCED_RMMOD: could be added.
+-	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
+-	 * apply to modules.
+-	 */
+-	return l;
+-}
+-
+ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+ {
+ 	struct module_use *use;
+@@ -962,6 +942,26 @@ static inline int module_unload_init(struct module *mod)
+ }
+ #endif /* CONFIG_MODULE_UNLOAD */
+ 
++static size_t module_flags_taint(struct module *mod, char *buf)
++{
++	size_t l = 0;
++
++	if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
++		buf[l++] = 'P';
++	if (mod->taints & (1 << TAINT_OOT_MODULE))
++		buf[l++] = 'O';
++	if (mod->taints & (1 << TAINT_FORCED_MODULE))
++		buf[l++] = 'F';
++	if (mod->taints & (1 << TAINT_CRAP))
++		buf[l++] = 'C';
++	/*
++	 * TAINT_FORCED_RMMOD: could be added.
++	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
++	 * apply to modules.
++	 */
++	return l;
++}
++
+ static ssize_t show_initstate(struct module_attribute *mattr,
+ 			      struct module_kobject *mk, char *buffer)
+ {
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.8.GIT
+
