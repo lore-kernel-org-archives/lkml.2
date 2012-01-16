@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab2APTx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 14:53:26 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38911 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab2APTxX (ORCPT
+	id S1754394Ab2APT4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 14:56:33 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54829 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab2APT4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 14:53:23 -0500
-Date: Mon, 16 Jan 2012 19:54:27 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
+	Mon, 16 Jan 2012 14:56:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFy+1DWUaOMormPHy7hCJxNfdxmiAnj8W0gqNTbeogNN4w@mail.gmail.com>
+References: <20120109003255.GA6598@havoc.gtf.org> <CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
+ <4F12E57E.3090805@garzik.org> <1326676534.13517.3.camel@minggr>
+ <1326691403.13517.21.camel@minggr> <CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com>
+ <CA+55aFy+1DWUaOMormPHy7hCJxNfdxmiAnj8W0gqNTbeogNN4w@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 16 Jan 2012 11:55:42 -0800
+X-Google-Sender-Auth: RpccMQAKl5gqEfkYfNWYVdGH88U
+Message-ID: <CA+55aFxvUvWHbJvconcjPmDhUVcCRGxxA-iD+HEngRSt4iox5g@mail.gmail.com>
 Subject: Re: [git patches] libata updates for 3.3
-Message-ID: <20120116195427.64edd96f@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+55aFxNcAtCmzEejS=3+_L_rp-MOBS0yLS061YgiCsFw_Mt5Q@mail.gmail.com>
-References: <20120109003255.GA6598@havoc.gtf.org>
-	<CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com>
-	<4F12E57E.3090805@garzik.org>
-	<1326676534.13517.3.camel@minggr>
-	<1326691403.13517.21.camel@minggr>
-	<CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com>
-	<20120116194211.2cd09fb3@pyramind.ukuu.org.uk>
-	<CA+55aFxNcAtCmzEejS=3+_L_rp-MOBS0yLS061YgiCsFw_Mt5Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jan 2012 11:47:12 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Mon, Jan 16, 2012 at 11:29 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> and I do think that resume used to be faster in v3.2 than it is even
+> with your patch. But maybe that's some rose-colored glasses.
+>
+> I'll recompile an old kernel to check.
 
-> On Mon, Jan 16, 2012 at 11:42 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> >
-> > There are two sets of problems with that
-> >
-> > The first is that quite a few machines crap themselves if you do this
-> > because nobody has ever tested things like the IRQ routing or the
-> > firmware on suspend/resume when they find the hardwared controller has
-> > gone for a walk.
-> 
-> I think this could trivially be solved at least on these kinds of
-> Apple machines by just making it a config option, and just not doing
-> it if it doesn't work. Some kernel command line to say "ahci=force" or
-> whatever.
+Confirmed.
 
-There are patches for this from way back including a white list of
-devices that were tested
+Plain v3.2 really *is* faster than current git, even current git with
+your patch.
 
-Just ping Matthew about
+In v3.2 I get this:
 
-http://www.codon.org.uk/~mjg59/tmp/ahci_quirk_cleanup.diff
+ [   92.035600] ata_piix 0000:00:1f.2: PCI INT B -> GSI 19 (level,
+low) -> IRQ 19
+ [   92.035610] ata_piix 0000:00:1f.2: setting latency timer to 64
+ [   92.036213] sd 0:0:0:0: [sda] Starting disk
+ [   93.060471] ata2.00: failed to resume link (SControl 0)
+ [   93.379963] ata1.01: failed to resume link (SControl 0)
+ [   93.535802] ata1.00: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+ [   93.535815] ata1.01: SATA link down (SStatus 0 SControl 0)
+ [   93.543968] ata1.00: ACPI cmd ef/03:46:00:00:00:a0 (SET FEATURES)
+filtered out
+ [   93.544747] ata1.00: configured for UDMA/100
+ [   93.916453] PM: resume of devices complete after 1883.974 msecs
+ [   93.916677] PM: Finishing wakeup.
+ [   94.086800] ata2.01: failed to resume link (SControl 0)
+ [   94.098408] ata2.00: SATA link down (SStatus 4 SControl 0)
+ [   94.098429] ata2.01: SATA link down (SStatus 0 SControl 0)
 
-> That doesn't solve the "user never even realized" problem, but at
-> least it gives the user the possibility of solving the "crap firmware
-> doesn't even allow this".
+while current git (with your patch) gives me
 
-For the "memory found over 4GB" case it may even be worth printing a
-warning.
+ [  108.115373] ata_piix 0000:00:1f.2: setting latency timer to 64
+ [  109.142010] ata2.00: failed to resume link (SControl 0)
+ [  109.462004] ata1.01: failed to resume link (SControl 0)
+ [  109.618065] ata1.00: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+ [  109.618078] ata1.01: SATA link down (SStatus 0 SControl 0)
+ [  109.626242] ata1.00: ACPI cmd ef/03:46:00:00:00:a0 (SET FEATURES)
+filtered out
+ [  109.627060] ata1.00: configured for UDMA/100
+ [  109.627240] sd 0:0:0:0: [sda] Starting disk
+ [  110.170015] ata2.01: failed to resume link (SControl 0)
+ [  110.181480] ata2.00: SATA link down (SStatus 4 SControl 0)
+ [  110.181496] ata2.01: SATA link down (SStatus 0 SControl 0)
+ [  110.182124] PM: resume of devices complete after 2066.945 msecs
+ [  110.224533] PM: Finishing wakeup.
 
-> > Putting it back on suspend might help in some cases but then you get to
-> > pick your way through the documentation minefield, deal with device
-> > changes while in non AHCI mode, figure out how to set up registers the
-> > BIOS didn't etc.
-> 
-> Yeah, no, that would just be horrible. I doubt it happens in practice,
-> though.  I bet the normal PCI/AHCI resume will just do the right
-> thing. But I haven't tried..
+so old kernels used to be a tiny bit faster despite not doing that
+async thing (still slower than I'd like: I'd think that we should be
+able to resume devices in less than a second, but I don't know where
+all the time goes)
 
-Some BIOSes go off and try and re-unlock the drive with the bios password
-etc. They get most unhappy when the controller isn't in the mode they
-expected. Matthew used a white list for some he tested which didn't have
-problems. Most netbooks seem ok with it.
-
-Alan
+             Linus
