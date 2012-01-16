@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab2APAhg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jan 2012 19:37:36 -0500
+	id S1752980Ab2APAiK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jan 2012 19:38:10 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:48333 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2APAhe (ORCPT
+	with ESMTP id S1752898Ab2APAhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jan 2012 19:37:34 -0500
+	Sun, 15 Jan 2012 19:37:46 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: Casey Schaufler <casey@schaufler-ca.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -24,93 +24,104 @@ Cc: Jamie Lokier <jamie@shareable.org>, Will Drewry <wad@chromium.org>,
         linux-security-module@vger.kernel.org, olofj@chromium.org,
         mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
         alan@lxorguk.ukuu.org.uk, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 0/4] PR_SET_NO_NEW_PRIVS, unshare, and chroot
-Date: Sun, 15 Jan 2012 16:37:17 -0800
-Message-Id: <cover.1326673414.git.luto@amacapital.net>
+Subject: [PATCH v2 2/4] Fix apparmor for PR_{GET,SET}_NO_NEW_PRIVS
+Date: Sun, 15 Jan 2012 16:37:19 -0800
+Message-Id: <3405cd6e7b219047a0c4171a0c56b90c29af9bb5.1326673414.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.7.7.5
+In-Reply-To: <cover.1326673414.git.luto@amacapital.net>
+References: <cover.1326673414.git.luto@amacapital.net>
+In-Reply-To: <cover.1326673414.git.luto@amacapital.net>
+References: <cover.1326673414.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make the no_new_privs discussion more concrete, here is an updated
-series that is actually useful.  It adds PR_SET_NO_NEW_PRIVS with the
-same semantics as before (plus John Johansen's AppArmor fix and with
-improved bisectability).  It then allows some unshare flags and chroot
-(sometimes) when no_new_privs is set.
+From: John Johansen <john.johansen@canonical.com>
 
-The unprivileged chroot could be quite useful, even though it's rather
-constrained for now.
+Signed-off-by: John Johansen <john.johansen@canonical.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ security/apparmor/domain.c |   39 +++++++++++++++++++++++++++++++++++----
+ 1 files changed, 35 insertions(+), 4 deletions(-)
 
-I think that blocking setresuid, setuid, and capset in no_new_privs mode
-will make this a little less useful.  Comments are welcome.
-
-For the git-inclined, this series is here:
-https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=shortlog;h=refs/heads/security/no_new_privs/patch_v2
-
-Test it like this:
-
----- begin test case
-
-#include <sys/prctl.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-
-#define PR_SET_NO_NEW_PRIVS 35
-#define PR_GET_NO_NEW_PRIVS 36
-
-int main()
-{
-  int nnp = prctl(PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0);
-  if (nnp == -EINVAL) {
-    printf("Failed!\n");
-    return 1;
-  }
-
-  printf("nnp was %d\n", nnp);
-
-  if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0) {
-    printf("Failed!\n");
-    return 1;
-  }
-
-  nnp = prctl(PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0);
-  if (nnp == -EINVAL) {
-    printf("Failed!\n");
-    return 1;
-  }
-
-  printf("nnp is %d\n", nnp);
-
-  printf("here goes...\n");
-  execlp("bash", "bash", NULL);
-  printf("Failed to exec bash\n");
-  return 1;
-}
-
----- end test case
-
-Andy Lutomirski (3):
-  Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from granting privs
-  Allow unprivileged CLONE_NEWUTS and CLONE_NEWIPC with no_new_privs
-  Allow unprivileged chroot when safe
-
-John Johansen (1):
-  Fix apparmor for PR_{GET,SET}_NO_NEW_PRIVS
-
- fs/exec.c                  |   10 +++++++++-
- fs/open.c                  |   16 ++++++++++++++--
- include/linux/prctl.h      |   15 +++++++++++++++
- include/linux/sched.h      |    2 ++
- include/linux/security.h   |    1 +
- kernel/fork.c              |    2 ++
- kernel/nsproxy.c           |    8 +++++++-
- kernel/sys.c               |   10 ++++++++++
- security/apparmor/domain.c |   35 +++++++++++++++++++++++++++++++++++
- security/commoncap.c       |    7 +++++--
- security/selinux/hooks.c   |   10 +++++++++-
- 11 files changed, 109 insertions(+), 7 deletions(-)
-
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+index a24ee44..7316d77 100644
+--- a/security/apparmor/domain.c
++++ b/security/apparmor/domain.c
+@@ -360,10 +360,6 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 	if (bprm->cred_prepared)
+ 		return 0;
+ 
+-	/* XXX: no_new_privs is not useable with AppArmor yet */
+-	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
+-		return -EPERM;
+-
+ 	cxt = bprm->cred->security;
+ 	BUG_ON(!cxt);
+ 
+@@ -399,6 +395,11 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 			new_profile = find_attach(ns, &ns->base.profiles, name);
+ 		if (!new_profile)
+ 			goto cleanup;
++		/*
++		 * NOTE: Domain transitions from unconfined are allowed
++		 * even when no_new_privs is set because this aways results
++		 * in a further reduction of permissions.
++		 */
+ 		goto apply;
+ 	}
+ 
+@@ -459,6 +460,16 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 		/* fail exec */
+ 		error = -EACCES;
+ 
++	/*
++	 * Policy has specified a domain transition, if no_new_privs then
++	 * fail the exec.
++	 */
++	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS) {
++		aa_put_profile(new_profile);
++		error = -EPERM;
++		goto cleanup;
++	}
++
+ 	if (!new_profile)
+ 		goto audit;
+ 
+@@ -613,6 +624,14 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
+ 	const char *target = NULL, *info = NULL;
+ 	int error = 0;
+ 
++	/*
++	 * Fail explicitly requested domain transitions if no_new_privs.
++	 * There is no exception for unconfined as change_hat is not
++	 * available.
++	 */
++	if (current->no_new_privs)
++		return -EPERM;
++
+ 	/* released below */
+ 	cred = get_current_cred();
+ 	cxt = cred->security;
+@@ -754,6 +773,18 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
+ 	cxt = cred->security;
+ 	profile = aa_cred_profile(cred);
+ 
++	/*
++	 * Fail explicitly requested domain transitions if no_new_privs
++	 * and not unconfined.
++	 * Domain transitions from unconfined are allowed even when
++	 * no_new_privs is set because this aways results in a reduction
++	 * of permissions.
++	 */
++	if (current->no_new_privs && !unconfined(profile)) {
++		put_cred(cred);
++		return -EPERM;
++	}
++
+ 	if (ns_name) {
+ 		/* released below */
+ 		ns = aa_find_namespace(profile->ns, ns_name);
 -- 
 1.7.7.5
 
