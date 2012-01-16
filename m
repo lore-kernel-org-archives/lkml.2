@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2APSVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:21:11 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59459 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755736Ab2APSVJ (ORCPT
+	id S1755868Ab2APS1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:27:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64221 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755736Ab2APS1T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:21:09 -0500
-Message-ID: <4F146A76.2020908@gmail.com>
-Date: Mon, 16 Jan 2012 23:50:38 +0530
-From: mahendra singh meena <mahendra.devel@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Mon, 16 Jan 2012 13:27:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="99191737"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Greg KH <gregkh@suse.de>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "gouders@et.bocholt.fh-gelsenkirchen.de" 
+	<gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "prasad@linux.vnet.ibm.com" <prasad@linux.vnet.ibm.com>,
+        "justinmattock@gmail.com" <justinmattock@gmail.com>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+Subject: RE: x86/mce: machine check warning during poweroff
+Thread-Topic: x86/mce: machine check warning during poweroff
+Thread-Index: AQHMz/OlOc7kfDtuEUKAYzibjjPRa5YJUWqAgAH3DQCAACx1gIAABziAgAAKkwCAACuJgIAAAzoAgADINQCAA10WgP//fHYw
+Date: Mon, 16 Jan 2012 18:27:16 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F01C672@ORSMSX104.amr.corp.intel.com>
+References: <20120111000051.GA28874@dztty>
+ <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
+ <4F10929E.8070007@linux.vnet.ibm.com>
+ <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
+ <4F10BDF7.8030306@linux.vnet.ibm.com>
+ <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
+ <4F10EB5B.5060804@linux.vnet.ibm.com>
+ <CA+55aFxK5XCh6NCbo9AMvsarS9_A+s0QqV6=vC2O4dgg3vg=Aw@mail.gmail.com>
+ <20120114144938.GA32033@suse.de> <20120116181135.GA2680@suse.de>
+In-Reply-To: <20120116181135.GA2680@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: forest@alittletooquiet.net
-CC: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        joe@perches.com, xi.wang@gmail.com
-Subject: [PATCH 2/2] Staging: vt6655: Fix brace coding style issues in ioctl.c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> The "correct" way to fix this up would be to have a per-cpu structure
+> for all of the different mce things that are created in this driver
+> (struct device, struct mce, exception counts, work queues, polling
+> banks, etc.), but that seems pretty messy, and I imagine some of these
+> want to stay as-is for some performance issues.  As I don't know this
+> code at all, I'm a bit leary to make that kind of change.
 
-This patch fixes up unnecessary brace warnings found in ioctl.c
-by checkpatch.pl .
+If you get so many machine checks that you care about the performance
+of the handler - you may be worrying about the wrong things.
 
-Signed-off-by: Mahendra Singh Meena <mahendra.devel@gmail.com>
----
- drivers/staging/vt6655/ioctl.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
+I'm more concerned about maintainability of the code. Seto-san has
+submitted many patches re-grouping the functions inside mce.c into
+functional areas - keeping the data structures separated makes
+sense - especially if there is some goal of splitting mce.c into
+separate files.
 
-diff --git a/drivers/staging/vt6655/ioctl.c b/drivers/staging/vt6655/ioctl.c
-index 7fd5cc5..ef197ef 100644
---- a/drivers/staging/vt6655/ioctl.c
-+++ b/drivers/staging/vt6655/ioctl.c
-@@ -324,16 +324,16 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 				pItemSSID = (PWLAN_IE_SSID)pBSS->abySSID;
- 				memset(pList->sBSSIDList[ii].abySSID, 0, WLAN_SSID_MAXLEN + 1);
- 				memcpy(pList->sBSSIDList[ii].abySSID, pItemSSID->abySSID, pItemSSID->len);
--				if (WLAN_GET_CAP_INFO_ESS(pBSS->wCapInfo)) {
-+				if (WLAN_GET_CAP_INFO_ESS(pBSS->wCapInfo))
- 					pList->sBSSIDList[ii].byNetType = INFRA;
--				} else {
-+				else
- 					pList->sBSSIDList[ii].byNetType = ADHOC;
--				}
--				if (WLAN_GET_CAP_INFO_PRIVACY(pBSS->wCapInfo)) {
-+
-+				if (WLAN_GET_CAP_INFO_PRIVACY(pBSS->wCapInfo))
- 					pList->sBSSIDList[ii].bWEPOn = true;
--				} else {
-+				else
- 					pList->sBSSIDList[ii].bWEPOn = false;
--				}
-+
- 				ii++;
- 				if (ii >= pList->uItem)
- 					break;
-@@ -367,9 +367,9 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 		netif_stop_queue(pDevice->dev);
-
- 		spin_lock_irq(&pDevice->lock);
--		if (pDevice->bRadioOff == false) {
-+		if (pDevice->bRadioOff == false)
- 			CARDbRadioPowerOff(pDevice);
--		}
-+
- 		pDevice->bLinkPass = false;
- 		memset(pMgmt->abyCurrBSSID, 0, 6);
- 		pMgmt->eCurrState = WMAC_STATE_IDLE;
-@@ -489,13 +489,12 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
- 			break;
- 		}
-
--		if (sStartAPCmd.wBBPType == PHY80211g) {
-+		if (sStartAPCmd.wBBPType == PHY80211g)
- 			pMgmt->byAPBBType = PHY_TYPE_11G;
--		} else if (sStartAPCmd.wBBPType == PHY80211a) {
-+		else if (sStartAPCmd.wBBPType == PHY80211a)
- 			pMgmt->byAPBBType = PHY_TYPE_11A;
--		} else {
-+		else
- 			pMgmt->byAPBBType = PHY_TYPE_11B;
--		}
-
- 		pItemSSID = (PWLAN_IE_SSID)sStartAPCmd.ssid;
- 		if (pItemSSID->len > WLAN_SSID_MAXLEN + 1)
--- 
-1.7.0.4
-
+-Tony
