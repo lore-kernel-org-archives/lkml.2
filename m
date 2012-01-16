@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab2APXdF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 18:33:05 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:58268 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab2APXdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 18:33:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=FWPginPHV86PAQie3B+SHF+6YBdWkDxM
-	e8TnCQRBI4uu0ME4aA9jf0ZqQUBwxv4hJmgJFEtPUwLWDhtxmyOVO1zpA7HJglM5
-	0rjjKXNLtbIxsJZcaGWd0+SrE566Tn40E6ApRJ21YpboAjTy+jxPeyajjEKf8TdM
-	Ge4U4SpEZio=
-From: Junio C Hamano <junio@pobox.com>
-To: Pete Harlan <pgit@pcharlan.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Git Mailing List <git@vger.kernel.org>
-Subject: Re: Re* Regulator updates for 3.3
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
- <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
- <20120110184530.GE7164@opensource.wolfsonmicro.com>
- <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
- <20120110222711.GK7164@opensource.wolfsonmicro.com>
- <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
- <7vmx9v7z1r.fsf@alter.siamese.dyndns.org>
- <CA+55aFx5NATrpLnkMiV2vAxSAJPK7wkY2vyHbyeZGgT9+jP06w@mail.gmail.com>
- <7vehv77xeq.fsf@alter.siamese.dyndns.org>
- <CA+55aFzuGtJkQFDooSGWQ2_NiJVHN2E7S5dmOnWTYn8_s8Gg3g@mail.gmail.com>
- <7vzkdu7miv.fsf@alter.siamese.dyndns.org> <4F136BE4.4040502@pcharlan.com>
-Date: Mon, 16 Jan 2012 15:33:00 -0800
-In-Reply-To: <4F136BE4.4040502@pcharlan.com> (Pete Harlan's message of "Sun,
- 15 Jan 2012 16:14:28 -0800")
-Message-ID: <7v62gbussz.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751992Ab2APXhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 18:37:09 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53707 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab2APXhH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 18:37:07 -0500
+Date: Mon, 16 Jan 2012 15:37:01 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jerome Marchand <jmarchan@redhat.com>
+cc: Andrew Jones <drjones@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        david.woodhouse@intel.com, gregkh@suse.de, davem@davemloft.net,
+        axboe@kernel.dk, holt@sgi.com, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, hskinnemoen@gmail.com, egtvedt@samfundet.no,
+        msalter@redhat.com, a-jacquiot@ti.com, starvik@axis.com,
+        jesper.nilsson@axis.com, dhowells@redhat.com, takata@linux-m32r.org,
+        geert@linux-m68k.org, yasutake.koichi@jp.panasonic.com,
+        jonas@southpole.se, kyle@mcmartin.ca, deller@gmx.de,
+        jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
+        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
+        mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+In-Reply-To: <4F1442C5.70500@redhat.com>
+Message-ID: <alpine.DEB.2.00.1201161530170.16270@chino.kir.corp.google.com>
+References: <1326295008-29795-1-git-send-email-drjones@redhat.com> <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com> <201201120918.53026.arnd@arndb.de> <20120112101805.GA2375@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201121259270.17287@chino.kir.corp.google.com>
+ <20120113085125.GA2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201130230320.15417@chino.kir.corp.google.com> <20120113122202.GB2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com> <4F1442C5.70500@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 6E3BF7DC-409A-11E1-AE25-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pete Harlan <pgit@pcharlan.com> writes:
+On Mon, 16 Jan 2012, Jerome Marchand wrote:
 
-> On 01/10/2012 10:59 PM, Junio C Hamano wrote:
->> There may be existing scripts that leave the standard input and the
->> standard output of the "git merge" connected to whatever environment the
->> scripts were started, and such invocation might trigger the above
->> "interactive session" heuristics. Such scripts can export GIT_MERGE_LEGACY
->> environment variable set to "yes" to force the traditional behaviour.
->
-> The name GIT_MERGE_LEGACY gives no clue about what flavor of legacy
-> merge behavior is being enabled.  Something like GIT_MERGE_LEGACY_EDIT
-> might be clearer, or perhaps just have GIT_MERGE_EDIT=0 to get the old
-> behavior without reference to whether or not that behavior is
-> considered legacy.
+> I don't see what your objections to this patch are. It actually does not
+> change anything to CONFIG_EMBEDDED and 6a108a14fa35 didn't either.
 
-Hrm.
+Then you don't understand the context in which it was written.  
+CONFIG_EMBEDDED was hijacked to allow certain options to be configurable 
+that have nothing to do with embedded devices.  It was a dumping ground 
+for any option that was non-standard.  So we decided that enough is enough 
+and to actually give it a name that would imply you should know what 
+you're turning on and off before you can configure it.
 
-The only case your suggestion may make a difference would be when we find
-another earlier UI mistake we would want to correct in a backward
-incompatible way that affects _existing_ scripts.
+We also didn't want to break the millions of configs out in the wild that 
+tune CONFIG_EMBEDDED, so we allowed it to select EXPERT in the meantime 
+for backwards compatibility.  This allowed CONFIG_EMBEDDED to be extended 
+in the future so that it could separate the options away from EXPERT that 
+actually made sense for embedded devices to be aware of a configure.  At 
+that point, it would be possible to remove the "select EXPERT" from 
+CONFIG_EMBEDDED once all existing users become "depends on EXPERT || 
+EMBEDDED", or possibly even just "depends on EMBEDDED" in rare cases where 
+non-embedded users would never want to enable it.  (CONFIG_SLOB may be an 
+example of the latter, but I'll leave that to the embedded world to 
+decide.)
 
-With your suggestion, they need to export "GIT_MERGE_EDIT=0" today, and
-they will need to update again to export "GIT_MERGE_SOMETHINGELSE=0" when
-such an incompatible change comes.
+> For instance, Why would CONFIG_EXPERT disable by default some HID devices?
+> I could understand why it is done for CONFIG_EMBEDDED, but certainly not
+> for an general EXPERT option.
+> 
 
-With a single "GIT_MERGE_LEGACY=YesPlease", they can be future-proofed today
-and will not be affected when we make another incompatible change.
+Then this is a prime example that you've identified were it would make 
+sense to have the default value be dependant on EMBEDDED rather than 
+EXPERT.  Feel free to send a patch to the HID maintainers.
 
-So I am not sure why separating the big-red-switch into smaller pieces
-would be an improvement, especially wnen the scripts that want to specify
-finer-grained control of features can use "--[no-]edit" options to
-explicitly ask for it.
+> >> This patch is actually attempting to make progress in the separation of
+> >> the semantics for EXPERT and the old, insane EMBEDDED, which had the very
+> >> loose semantics. That's why it's called "untangle EXPERT and EMBEDDED".
+> >>
+> 
+> If EMBEDDED was insane before 6a108a14fa35, then it still was after, since
+> nothing changed. EMBEDDED was just renamed EXPERT, and the "new" EMBEDDED
+> option just selects EXPERT.
+> 
 
+Except now it's possible to decouple from EXPERT.  That's the goal that 
+Andrew doesn't understand and he's fine with breaking everybody's config 
+because they aren't defconfigs and there's no way such a thing would be 
+merged.
