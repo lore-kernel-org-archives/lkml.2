@@ -1,85 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab2APMcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 07:32:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1618 "EHLO mx1.redhat.com"
+	id S1754615Ab2APMcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 07:32:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28381 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754400Ab2APMcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 07:32:19 -0500
+	id S1754574Ab2APMcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 07:32:20 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFCv3 0/9] perf tool: parser generator for events parsing
-Date: Mon, 16 Jan 2012 13:31:34 +0100
-Message-Id: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
-In-Reply-To: <20120109152855.GA1597@m.brq.redhat.com>--suppress-cc=author>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 2/9] perf, tool: Remove unused functions from debugfs object
+Date: Mon, 16 Jan 2012 13:31:36 +0100
+Message-Id: <1326717103-10287-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
 References: <20120109152855.GA1597@m.brq.redhat.com>--suppress-cc=author>
+ <1326717103-10287-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-I'd never imagine how much code I need to introduce before
-I could push through the event grouping patch.. ;)
+Following debugfs object functions are not referenced
+within the code:
 
-Here's new version of event parsing patchset. To summarize:
- - adding event parser bison/flex generator
- - the event syntax stays as it was
- - adding event format file sysfs attribute
-   for pmu device
- - adding new syntax to specify raw events based
-   on the sysfs pmu's format attribute
-   eg. "cpu/config=1,config1=2,config2=3/u"
+  int debugfs_valid_entry(const char *path);
+  int debugfs_umount(void);
+  int debugfs_write(const char *entry, const char *value);
+  int debugfs_read(const char *entry, char *buffer, size_t size);
+  void debugfs_force_cleanup(void);
+  int debugfs_make_path(const char *element, char *buffer, int size);
 
-There are helping patches 1-4, which I did not want to
-mangle with the actual change. Patches 5-9 implement
-the feature itself.
+Removing them.
 
-I consider this patchset as RFC. Everything seems to work,
-but I did not want to spend much time over it before any
-fundamental design comments.. ;)
-
-Attached patches:
- 1/9 perf, tool: Make perf_evlist__splice_list_tail global
- 2/9 perf, tool: Remove unused functions from debugfs object
- 3/9 perf, tool: Add sysfs mountpoint interface
- 4/9 perf, tool: Add bitmap_or function into bitmap object
- 5/9 perf: Add sysfs format attribute for pmu device
- 6/9 perf, tool: Add parser generator for events parsing
- 7/9 perf, tool: Add config options support for event parsing
- 8/9 perf, tool: Add perf pmu object to access pmu format
- 9/9 perf, tool: Add support to specify pmu style event
-
-thanks for comments,
-jirka
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/perf_event.h             |    6 +
- kernel/events/core.c                   |   23 +
- tools/perf/Makefile                    |   32 +
- tools/perf/builtin-test.c              |   46 +
- tools/perf/util/bitmap.c               |   10 +
- tools/perf/util/debugfs.c              |  141 --
- tools/perf/util/debugfs.h              |    6 -
- tools/perf/util/evlist.c               |    6 +-
- tools/perf/util/evlist.h               |    5 +
- tools/perf/util/include/linux/bitmap.h |   11 +
- tools/perf/util/parse-events-bison.c   | 1813 ++++++++++++++++++++++++++
- tools/perf/util/parse-events-bison.h   |   81 ++
- tools/perf/util/parse-events-flex.c    | 2232 ++++++++++++++++++++++++++++++++
- tools/perf/util/parse-events-flex.h    |  316 +++++
- tools/perf/util/parse-events.c         |  552 ++++-----
- tools/perf/util/parse-events.h         |   37 +
- tools/perf/util/parse-events.l         |  107 ++
- tools/perf/util/parse-events.y         |  191 +++
- tools/perf/util/pmu-bison.c            | 1623 +++++++++++++++++++++++
- tools/perf/util/pmu-bison.h            |   72 +
- tools/perf/util/pmu-flex.c             | 1821 ++++++++++++++++++++++++++
- tools/perf/util/pmu-flex.h             |  316 +++++
- tools/perf/util/pmu.c                  |  409 ++++++
- tools/perf/util/pmu.h                  |   42 +
- tools/perf/util/pmu.l                  |   50 +
- tools/perf/util/pmu.y                  |   76 ++
- tools/perf/util/sysfs.c                |   60 +
- tools/perf/util/sysfs.h                |    6 +
- 28 files changed, 9613 insertions(+), 477 deletions(-)
+ tools/perf/util/debugfs.c |  141 ---------------------------------------------
+ tools/perf/util/debugfs.h |    6 --
+ 2 files changed, 0 insertions(+), 147 deletions(-)
+
+diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
+index ffc35e7..dd8b193 100644
+--- a/tools/perf/util/debugfs.c
++++ b/tools/perf/util/debugfs.c
+@@ -15,32 +15,6 @@ static const char *debugfs_known_mountpoints[] = {
+ 	0,
+ };
+ 
+-/* use this to force a umount */
+-void debugfs_force_cleanup(void)
+-{
+-	debugfs_find_mountpoint();
+-	debugfs_premounted = 0;
+-	debugfs_umount();
+-}
+-
+-/* construct a full path to a debugfs element */
+-int debugfs_make_path(const char *element, char *buffer, int size)
+-{
+-	int len;
+-
+-	if (strlen(debugfs_mountpoint) == 0) {
+-		buffer[0] = '\0';
+-		return -1;
+-	}
+-
+-	len = strlen(debugfs_mountpoint) + strlen(element) + 1;
+-	if (len >= size)
+-		return len+1;
+-
+-	snprintf(buffer, size-1, "%s/%s", debugfs_mountpoint, element);
+-	return 0;
+-}
+-
+ static int debugfs_found;
+ 
+ /* find the path to the mounted debugfs */
+@@ -97,17 +71,6 @@ int debugfs_valid_mountpoint(const char *debugfs)
+ 	return 0;
+ }
+ 
+-
+-int debugfs_valid_entry(const char *path)
+-{
+-	struct stat st;
+-
+-	if (stat(path, &st))
+-		return -errno;
+-
+-	return 0;
+-}
+-
+ static void debugfs_set_tracing_events_path(const char *mountpoint)
+ {
+ 	snprintf(tracing_events_path, sizeof(tracing_events_path), "%s/%s",
+@@ -149,107 +112,3 @@ void debugfs_set_path(const char *mountpoint)
+ 	snprintf(debugfs_mountpoint, sizeof(debugfs_mountpoint), "%s", mountpoint);
+ 	debugfs_set_tracing_events_path(mountpoint);
+ }
+-
+-/* umount the debugfs */
+-
+-int debugfs_umount(void)
+-{
+-	char umountcmd[128];
+-	int ret;
+-
+-	/* if it was already mounted, leave it */
+-	if (debugfs_premounted)
+-		return 0;
+-
+-	/* make sure it's a valid mount point */
+-	ret = debugfs_valid_mountpoint(debugfs_mountpoint);
+-	if (ret)
+-		return ret;
+-
+-	snprintf(umountcmd, sizeof(umountcmd),
+-		 "/bin/umount %s", debugfs_mountpoint);
+-	return system(umountcmd);
+-}
+-
+-int debugfs_write(const char *entry, const char *value)
+-{
+-	char path[PATH_MAX + 1];
+-	int ret, count;
+-	int fd;
+-
+-	/* construct the path */
+-	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
+-
+-	/* verify that it exists */
+-	ret = debugfs_valid_entry(path);
+-	if (ret)
+-		return ret;
+-
+-	/* get how many chars we're going to write */
+-	count = strlen(value);
+-
+-	/* open the debugfs entry */
+-	fd = open(path, O_RDWR);
+-	if (fd < 0)
+-		return -errno;
+-
+-	while (count > 0) {
+-		/* write it */
+-		ret = write(fd, value, count);
+-		if (ret <= 0) {
+-			if (ret == EAGAIN)
+-				continue;
+-			close(fd);
+-			return -errno;
+-		}
+-		count -= ret;
+-	}
+-
+-	/* close it */
+-	close(fd);
+-
+-	/* return success */
+-	return 0;
+-}
+-
+-/*
+- * read a debugfs entry
+- * returns the number of chars read or a negative errno
+- */
+-int debugfs_read(const char *entry, char *buffer, size_t size)
+-{
+-	char path[PATH_MAX + 1];
+-	int ret;
+-	int fd;
+-
+-	/* construct the path */
+-	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
+-
+-	/* verify that it exists */
+-	ret = debugfs_valid_entry(path);
+-	if (ret)
+-		return ret;
+-
+-	/* open the debugfs entry */
+-	fd = open(path, O_RDONLY);
+-	if (fd < 0)
+-		return -errno;
+-
+-	do {
+-		/* read it */
+-		ret = read(fd, buffer, size);
+-		if (ret == 0) {
+-			close(fd);
+-			return EOF;
+-		}
+-	} while (ret < 0 && errno == EAGAIN);
+-
+-	/* close it */
+-	close(fd);
+-
+-	/* make *sure* there's a null character at the end */
+-	buffer[ret] = '\0';
+-
+-	/* return the number of chars read */
+-	return ret;
+-}
+diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
+index 4a878f7..68f3e87 100644
+--- a/tools/perf/util/debugfs.h
++++ b/tools/perf/util/debugfs.h
+@@ -3,14 +3,8 @@
+ 
+ const char *debugfs_find_mountpoint(void);
+ int debugfs_valid_mountpoint(const char *debugfs);
+-int debugfs_valid_entry(const char *path);
+ char *debugfs_mount(const char *mountpoint);
+-int debugfs_umount(void);
+ void debugfs_set_path(const char *mountpoint);
+-int debugfs_write(const char *entry, const char *value);
+-int debugfs_read(const char *entry, char *buffer, size_t size);
+-void debugfs_force_cleanup(void);
+-int debugfs_make_path(const char *element, char *buffer, int size);
+ 
+ extern char debugfs_mountpoint[];
+ extern char tracing_events_path[];
+-- 
+1.7.6.5
+
