@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab2APFZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 00:25:42 -0500
-Received: from mailx.hitachi.co.jp ([133.145.228.49]:44777 "EHLO
+	id S1751802Ab2APFZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 00:25:49 -0500
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:44779 "EHLO
 	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab2APFZk (ORCPT
+	with ESMTP id S1751333Ab2APFZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 00:25:40 -0500
-X-AuditID: b753bd60-9a062ba00000359c-08-4f13b44ff5e5
-X-AuditID: b753bd60-9a062ba00000359c-08-4f13b44ff5e5
+	Mon, 16 Jan 2012 00:25:47 -0500
+X-AuditID: b753bd60-98392ba000007b1b-d4-4f13b4558703
+X-AuditID: b753bd60-98392ba000007b1b-d4-4f13b4558703
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v4 2/5] perf: set correct value to perf_event_header.misc
- for BTS
+Subject: [PATCH -tip v4 3/5] perf script: enhance IP and ADDR correlate
+ detection for BTS
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -26,8 +26,8 @@ Cc: linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Mon, 16 Jan 2012 14:22:16 +0900
-Message-ID: <20120116052216.2485.85130.stgit@linux3>
+Date: Mon, 16 Jan 2012 14:22:22 +0900
+Message-ID: <20120116052222.2485.53573.stgit@linux3>
 In-Reply-To: <20120116052146.2485.48349.stgit@linux3>
 References: <20120116052146.2485.48349.stgit@linux3>
 User-Agent: StGIT/0.14.3
@@ -39,11 +39,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set correct value to perf_event_headder.misc of BTS record
-to resolve symbols and DSOs correctly by user-space tools.
+BTS records branch_from_addr and branch_to_addr in IP and ADDR field in perf_sample.
+This patch detects this correlation in perf-script.
 
-Changes in v4:
- - Add check routine to set correct value
+# perf script -f ip,addr,dso,sym
+3f03e016b0    _start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e016b0    _start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e04b80 _dl_start (/lib64/ld-2.14.so)       3f03e016b3     _start (/lib64/ld-2.14.so)
+3f03e04b80 _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e04ba6 _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e04bad _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e04c1d _dl_start (/lib64/ld-2.14.so)       3f03e04bfb  _dl_start (/lib64/ld-2.14.so)
+[snip]
+
 
 Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -55,63 +63,24 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   31 +++++++++++++++++++----------
- 1 files changed, 20 insertions(+), 11 deletions(-)
+ tools/perf/builtin-script.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 73da6b6..2f99597 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -285,6 +285,18 @@ void intel_pmu_disable_bts(void)
- 	update_debugctlmsr(debugctlmsr);
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 11859eb..360a4da 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -312,6 +312,12 @@ static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
+ 	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)))
+ 		return true;
+ 
++	/* BTS Events */
++	if ((attr->type == PERF_TYPE_HARDWARE) &&
++	    (attr->config & PERF_COUNT_HW_BRANCH_INSTRUCTIONS) &&
++	    (attr->sample_period == 1))
++		return true;
++
+ 	return false;
  }
  
-+
-+#include <asm/insn.h>
-+
-+static inline bool kernel_ip(unsigned long ip)
-+{
-+#ifdef CONFIG_X86_32
-+	return ip > PAGE_OFFSET;
-+#else
-+	return (long)ip < 0;
-+#endif
-+}
-+
- int intel_pmu_drain_bts_buffer(void)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-@@ -330,6 +342,14 @@ int intel_pmu_drain_bts_buffer(void)
- 		return 1;
- 
- 	for (; at < top; at++) {
-+		/*
-+		 * To resolve user space symbols and DSOs correctly, set
-+		 * PERF_RECORD_MISC_USER if from_addr or to_addr is user space.
-+		 */
-+		if (!kernel_ip(data.ip) || !kernel_ip(data.addr)) {
-+			header.misc &= ~PERF_RECORD_MISC_CPUMODE_MASK;
-+			header.misc |= PERF_RECORD_MISC_USER;
-+		}
- 		data.ip		= at->from;
- 		data.addr	= at->to;
- 
-@@ -476,17 +496,6 @@ void intel_pmu_pebs_disable_all(void)
- 		wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
- }
- 
--#include <asm/insn.h>
--
--static inline bool kernel_ip(unsigned long ip)
--{
--#ifdef CONFIG_X86_32
--	return ip > PAGE_OFFSET;
--#else
--	return (long)ip < 0;
--#endif
--}
--
- static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 
