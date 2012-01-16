@@ -1,90 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab2APRfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 12:35:17 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:11048 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755607Ab2APRfP (ORCPT
+	id S1755816Ab2APRtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 12:49:07 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36569 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755653Ab2APRtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 12:35:15 -0500
-Message-ID: <1326735308.3065.29.camel@bwh-desktop>
-Subject: Re: [PATCH v5 03/12] x86/topology.c: Support functions for CPU0
- online/offline
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Fenghua Yu <fenghua.yu@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Date: Mon, 16 Jan 2012 17:35:08 +0000
-In-Reply-To: <1326301493-28760-4-git-send-email-fenghua.yu@intel.com>
-References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
-	 <1326301493-28760-4-git-send-email-fenghua.yu@intel.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Jan 2012 12:49:03 -0500
+X-Sasl-enc: U0hTwngnAOtB+2wzde0gOEAzjfqRSB9+/01DfcLhGctj 1326736142
+Date: Mon, 16 Jan 2012 09:42:12 -0800
+From: "greg@kroah.com" <greg@kroah.com>
+To: Preston Fick <Preston.Fick@silabs.com>
+Cc: "linux-usb-devel@vger.kernel.org" <linux-usb-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3.2.0] cp210x: Bug fix for CP2104 baudrate usage,
+ Bugzilla #42586
+Message-ID: <20120116174212.GA18163@kroah.com>
+References: <00374F755A5C474884D69FBCA77349D10493F97C2A@EXCAUS002.silabs.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18648.005
-X-TM-AS-Result: No--15.047800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00374F755A5C474884D69FBCA77349D10493F97C2A@EXCAUS002.silabs.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-11 at 09:04 -0800, Fenghua Yu wrote:
-> From: Fenghua Yu <fenghua.yu@intel.com>
+On Sun, Jan 15, 2012 at 09:51:56PM -0600, Preston Fick wrote:
+> From: Preston Fick <preston.fick@silabs.com>
 > 
-> If CONFIG_BOOTPARAM_HOTPLUG_CPU is turned on, CPU0 hotplug feature is enabled
-> by default.
+> This is a patch for the cp210x.ko driver with regards to the following bug report:
+> CP2104 Device doesn't respond to baudrate change request
+> Bug Report: #42586 in bugzilla.kernel.org: https://bugzilla.kernel.org/show_bug.cgi?id=42586
 > 
-> If CONFIG_BOOTPARAM_HOTPLUG_CPU is not turned on, CPU0 hotplug feature is not
-> enabled by default. The kernel parameter cpu0_hotplug can enable CPU0 hotplug
-> feature at boot.
-[...]
->  int __ref arch_register_cpu(int num)
->  {
->  	/*
-> -	 * CPU0 cannot be offlined due to several
-> -	 * restrictions and assumptions in kernel. This basically
-> -	 * doesn't add a control file, one cannot attempt to offline
-> -	 * BSP.
-> +	 * Two known BSP/CPU0 dependencies: Resume from suspend/hibernate
-> +	 * depends on BSP. PIC interrupts depend on BSP.
->  	 *
-> -	 * Also certain PCI quirks require not to enable hotplug control
-> -	 * for all CPU's.
-> +	 * If the BSP depencies are under control, one can tell kernel to
-> +	 * enable BSP hotplug. This basically adds a control file and
-> +	 * one can attempt to offline BSP.
->  	 */
-> -	if (num)
-> +	if (num || cpu0_hotpluggable)
->  		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
+> OS/Kernel version: GNU/Linux 3.2.0 (Mainline)
+> 
+> Description:
+> This fix changes the way baudrates are set on the CP210x devices from Silicon Labs. The CP2101/2/3 will respond to both a GET/SET_BAUDDIV command, and GET/SET_BAUDRATE command, while CP2104 and higher devices only respond to GET/SET_BAUDRATE. The current cp210x.ko driver in kernel version 3.2.0 only implements the GET/SET_BAUDDIV command.
+> 
+> This patch implements the two new codes for the GET/SET_BAUDRATE commands. Then there is a change in the way that the baudrate is assigned or retrieved. This is done according to the CP210x USB specification in AN571. This document can be found here: http://www.silabs.com/pages/DownloadDoc.aspx?FILEURL=Support%20Documents/TechnicalDocs/AN571.pdf&src=DocumentationWebPart
+> 
+> Sections 5.3/5.4 describe the USB packets for the old baudrate method. Sections 5.5/5.6 describe the USB packets for the new method. This patch also implements the new request scheme, and eliminates the unnecessary baudrate calculations since it uses the "actual baudrate" method.
+> 
+> This patch solves the problem reported for the CP2104 in bug 42586, and also keeps support for all other devices (CP2101/2/3).
+> 
+> This patchfile is also attached to the bug report on bugzilla.kernel.org. This patch has been developed and test on the 3.2.0 mainline kernel version under Ubuntu 10.11.
+> 
+> Signed-off-by: Preston Fick <preston.fick@silabs.com>
+> 
+> ---
+> 
+> Thank you for the consideration of this patch.
+> 
+> Kind Regards -
+> Preston Fick
+> 
+> Begin patchfile text:
+> 
+> diff -uNr linux.vanilla/linux-3.2/drivers/usb/serial/cp210x.c linux.new/linux-3.2/drivers/usb/serial/cp210x.c
+> --- linux.vanilla/linux-3.2/drivers/usb/serial/cp210x.c	2012-01-04 17:55:44.000000000 -0600
+> +++ linux.new/linux-3.2/drivers/usb/serial/cp210x.c	2012-01-13 11:35:44.031334039 -0600
+> @@ -200,6 +200,8 @@
+>  #define CP210X_EMBED_EVENTS	0x15
+>  #define CP210X_GET_EVENTSTATE	0x16
+>  #define CP210X_SET_CHARS	0x19
+> +#define CP210X_GET_BAUDRATE	0x1D
+> +#define CP210X_SET_BAUDRATE	0x1E
 >  
->  	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
+>  /* CP210X_IFC_ENABLE */
+>  #define UART_ENABLE		0x0001
+> @@ -459,10 +461,7 @@
+>  
+>  	dbg("%s - port %d", __func__, port->number);
+>  
+> -	cp210x_get_config(port, CP210X_GET_BAUDDIV, &baud, 2);
+> -	/* Convert to baudrate */
+> -	if (baud)
+> -		baud = cp210x_quantise_baudrate((BAUD_RATE_GEN_FREQ + baud/2)/ baud);
+> +	cp210x_get_config(port, CP210X_GET_BAUDDIV, &baud, 4);
 
-This change belongs at the end of the series.  It should not be possible
-to enable CPU0 hotplug until after the hotplug logic can do it
-correctly, and this might break bisection.
+Shouldn't this be CP210X_GET_BAUDRATE ?
 
-Ben.
+>  
+>  	dbg("%s - baud rate = %d", __func__, baud);
+>  	*baudp = baud;
+> @@ -597,8 +596,7 @@
+>  	if (baud != tty_termios_baud_rate(old_termios) && baud != 0) {
+>  		dbg("%s - Setting baud rate to %d baud", __func__,
+>  				baud);
+> -		if (cp210x_set_config_single(port, CP210X_SET_BAUDDIV,
+> -					((BAUD_RATE_GEN_FREQ + baud/2) / baud))) {
+> +		if (cp210x_set_config(port, CP210X_SET_BAUDRATE, &baud, 4)) {
+>  			dbg("Baud rate requested not supported by device");
+>  			baud = tty_termios_baud_rate(old_termios);
+>  		}
+> This message (including any attachments) is intended only for the use of the individual or entity to which it is addressed and may contain information that is non-public, proprietary, privileged, confidential, and exempt from disclosure under applicable law or may constitute as attorney work product.  If you are not the intended recipient, you are hereby notified that any use, dissemination, distribution, or copying of this communication is strictly prohibited. If you have received this communication in error, notify us immediately by telephone and (i) destroy this message if a facsimile or (ii) delete this message immediately if this is an electronic communication.  
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+With a footer like this, that directly contridicts the Signed-off-by:
+line, which do I believe?  As such, I can't accept patches with this
+type of footer, please fix your email client and try again.
 
+Also, how do the other patches sent to this list to solve the problem of
+this device look to you?  Do you think yours should be applied instead
+of them?
+
+thanks,
+
+greg k-h
