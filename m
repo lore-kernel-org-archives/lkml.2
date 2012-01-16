@@ -1,51 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab2APVGL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 16:06:11 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:42327 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754889Ab2APVGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 16:06:09 -0500
-Message-ID: <4F14913D.6090404@hp.com>
-Date: Mon, 16 Jan 2012 13:06:05 -0800
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Arjan van de Ven <arjan@linux.intel.com>,
-        Darren Hart <dvhart@linux.intel.com>, Alan Cox <alan@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        jeffrey.t.kirsher@intel.com, paul.gortmaker@windriver.com,
-        jdmason@kudzu.us, netdev@vger.kernel.org
-Subject: Re: [PATCH] pch_gbe: Use a randomly generated MAC instead of failing
- probe
-References: <AE90C24D6B3A694183C094C60CF0A2F6D8AF47@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AF47@saturn3.aculab.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756850Ab2APVPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 16:15:08 -0500
+Received: from ns.pmeerw.net ([87.118.82.44]:50383 "EHLO pmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754889Ab2APVPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 16:15:07 -0500
+X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jan 2012 16:15:06 EST
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: linux-kernel@vger.kernel.org
+Cc: rpurdie@rpsys.net, akpm@linux-foundation.org
+Subject: [PATCH] leds: add driver for PCA9663 I2C chip
+Date: Mon, 16 Jan 2012 22:04:21 +0100
+Message-Id: <1326747861-10874-1-git-send-email-pmeerw@pmeerw.net>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2012 08:20 AM, David Laight wrote:
-> Since multiple interfaces on a single system are unlikely
-> to be connected to the same LAN segment, it doesn't really
-> matter if they use same MAC address.
->
-> For a long time sun solaris systems used the same MAC
-> address (based on the system id) on all their ethernet
-> interfaces.
+From: Peter Meerwald <p.meerwald@bct-electronic.com>
 
-And there was a perhaps small, but certainly non-trivial stream of 
-people asking how to change that because their system(s) were indeed 
-multiple ports connected to the same broadcast domain.
+simple driver for the PCA9633 I2C chip supporting four LEDs and
+255 brightness levels
 
-Long since then Sun changed their defaults, and we've gotten things like 
-bonding, so I think any assumption that a system with multiple ports 
-will not have then connected to the same broadcast domain is brittle at 
-best.
+---
+ drivers/leds/Kconfig        |    8 ++
+ drivers/leds/Makefile       |    1 +
+ drivers/leds/leds-pca9633.c |  219 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 228 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/leds/leds-pca9633.c
 
-rick jones
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index c957c34..72df181 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -244,6 +244,14 @@ config LEDS_PCA955X
+ 	  LED driver chips accessed via the I2C bus.  Supported
+ 	  devices include PCA9550, PCA9551, PCA9552, and PCA9553.
+ 
++config LEDS_PCA9663
++	tristate "LED support for PCA9663 I2C chip"
++	depends on LEDS_CLASS
++	depends on I2C
++	help
++	  This option enables support for LEDs connected to the PCA9663
++	  LED driver chip accessed via the I2C bus.
++
+ config LEDS_WM831X_STATUS
+ 	tristate "LED support for status LEDs on WM831x PMICs"
+ 	depends on LEDS_CLASS
+diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+index b8a9723..a809871 100644
+--- a/drivers/leds/Makefile
++++ b/drivers/leds/Makefile
+@@ -30,6 +30,7 @@ obj-$(CONFIG_LEDS_CLEVO_MAIL)		+= leds-clevo-mail.o
+ obj-$(CONFIG_LEDS_HP6XX)		+= leds-hp6xx.o
+ obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
+ obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
++obj-$(CONFIG_LEDS_PCA9633)		+= leds-pca9633.o
+ obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
+ obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
+ obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
+diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
+new file mode 100644
+index 0000000..68c30d7
+--- /dev/null
++++ b/drivers/leds/leds-pca9633.c
+@@ -0,0 +1,219 @@
++/*
++ * Copyright 2011 bct electronic GmbH
++ *
++ * Author: Peter Meerwald <p.meerwald@bct-electronic.com>
++ *
++ * Based on leds-pca955x.c
++ *
++ * This file is subject to the terms and conditions of version 2 of
++ * the GNU General Public License.  See the file COPYING in the main
++ * directory of this archive for more details.
++ *
++ * LED driver for the PCA9633 I2C LED driver (7-bit slave address 0x62)
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/string.h>
++#include <linux/ctype.h>
++#include <linux/leds.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/workqueue.h>
++#include <linux/slab.h>
++
++/* LED select registers determine the source that drives LED outputs */
++#define PCA9633_LED_OFF		0x0	/* LED driver off */
++#define PCA9633_LED_ON		0x1	/* LED driver on */
++#define PCA9633_LED_PWM		0x2	/* Controlled through PWM */
++#define PCA9633_LED_GRP_PWM	0x3	/* Controlled through PWM/GRPPWM */
++
++#define PCA9633_MODE1		0x00
++#define PCA9633_MODE2		0x01
++#define PCA9633_PWM_BASE	0x02
++#define PCA9633_LEDOUT		0x08
++
++static const struct i2c_device_id pca9633_id[] = {
++	{ "pca9633", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, pca9633_id);
++
++struct pca9633_led {
++	struct i2c_client *client;
++	struct work_struct work;
++	spinlock_t lock;
++	enum led_brightness brightness;
++	struct led_classdev led_cdev;
++	int led_num; /* 0 .. 3 potentially */
++	char name[32];
++};
++
++static void pca9633_led_work(struct work_struct *work)
++{
++	struct pca9633_led *pca9633 = container_of(work,
++		struct pca9633_led, work);
++
++	u8 ledout = i2c_smbus_read_byte_data(pca9633->client, PCA9633_LEDOUT);
++	int shift = 2 * pca9633->led_num;
++	u8 mask = 0x3 << shift;
++
++	switch (pca9633->brightness) {
++	case LED_FULL:
++		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
++			(ledout & ~mask) | (PCA9633_LED_ON << shift));
++		break;
++	case LED_OFF:
++		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
++			ledout & ~mask);
++		break;
++	default:
++		i2c_smbus_write_byte_data(pca9633->client,
++			PCA9633_PWM_BASE + pca9633->led_num,
++			pca9633->brightness);
++		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
++			(ledout & ~mask) | (PCA9633_LED_PWM << shift));
++		break;
++	}
++}
++
++static void pca9633_led_set(struct led_classdev *led_cdev,
++	enum led_brightness value)
++{
++	struct pca9633_led *pca9633;
++
++	pca9633 = container_of(led_cdev, struct pca9633_led, led_cdev);
++
++	spin_lock(&pca9633->lock);
++	pca9633->brightness = value;
++
++	/*
++	 * Must use workqueue for the actual I/O since I2C operations
++	 * can sleep.
++	 */
++	schedule_work(&pca9633->work);
++
++	spin_unlock(&pca9633->lock);
++}
++
++static int __devinit pca9633_probe(struct i2c_client *client,
++					const struct i2c_device_id *id)
++{
++	struct pca9633_led *pca9633;
++	struct i2c_adapter *adapter;
++	struct led_platform_data *pdata;
++	int i, err;
++
++	adapter = to_i2c_adapter(client->dev.parent);
++	pdata = client->dev.platform_data;
++
++	printk(KERN_INFO "leds-pca9633: LED driver at slave address 0x%02x\n",
++		client->addr);
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_I2C))
++		return -EIO;
++
++	if (pdata) {
++		if (pdata->num_leds <= 0 || pdata->num_leds > 4) {
++			dev_err(&client->dev, "board info must claim at most 4 LEDs");
++			return -ENODEV;
++		}
++	}
++
++	pca9633 = kzalloc(sizeof(*pca9633) * 4, GFP_KERNEL);
++	if (!pca9633)
++		return -ENOMEM;
++
++	i2c_set_clientdata(client, pca9633);
++
++	for (i = 0; i < 4; i++) {
++		pca9633[i].client = client;
++		pca9633[i].led_num = i;
++
++		/* Platform data can specify LED names and default triggers */
++		if (pdata && i < pdata->num_leds) {
++			if (pdata->leds[i].name)
++				snprintf(pca9633[i].name,
++					 sizeof(pca9633[i].name), "pca9633:%s",
++					 pdata->leds[i].name);
++			if (pdata->leds[i].default_trigger)
++				pca9633[i].led_cdev.default_trigger =
++					pdata->leds[i].default_trigger;
++		} else {
++			snprintf(pca9633[i].name, sizeof(pca9633[i].name),
++				 "pca9633:%d", i);
++		}
++
++		spin_lock_init(&pca9633[i].lock);
++
++		pca9633[i].led_cdev.name = pca9633[i].name;
++		pca9633[i].led_cdev.brightness_set = pca9633_led_set;
++
++		INIT_WORK(&pca9633[i].work, pca9633_led_work);
++
++		err = led_classdev_register(&client->dev, &pca9633[i].led_cdev);
++		if (err < 0)
++			goto exit;
++	}
++
++	/* Disable LED all-call address and set normal mode */
++	i2c_smbus_write_byte_data(client, PCA9633_MODE1, 0x00);
++
++	/* Turn off LEDs */
++	i2c_smbus_write_byte_data(client, PCA9633_LEDOUT, 0x00);
++
++	return 0;
++
++exit:
++	while (i--) {
++		led_classdev_unregister(&pca9633[i].led_cdev);
++		cancel_work_sync(&pca9633[i].work);
++	}
++
++	kfree(pca9633);
++
++	return err;
++}
++
++static int __devexit pca9633_remove(struct i2c_client *client)
++{
++	struct pca9633_led *pca9633 = i2c_get_clientdata(client);
++	int i;
++
++	for (i = 0; i < 4; i++) {
++		led_classdev_unregister(&pca9633[i].led_cdev);
++		cancel_work_sync(&pca9633[i].work);
++	}
++
++	kfree(pca9633);
++
++	return 0;
++}
++
++static struct i2c_driver pca9633_driver = {
++	.driver = {
++		.name	= "leds-pca9633",
++		.owner	= THIS_MODULE,
++	},
++	.probe	= pca9633_probe,
++	.remove	= __devexit_p(pca9633_remove),
++	.id_table = pca9633_id,
++};
++
++static int __init pca9633_leds_init(void)
++{
++	return i2c_add_driver(&pca9633_driver);
++}
++
++static void __exit pca9633_leds_exit(void)
++{
++	i2c_del_driver(&pca9633_driver);
++}
++
++module_init(pca9633_leds_init);
++module_exit(pca9633_leds_exit);
++
++MODULE_AUTHOR("Peter Meerwald <p.meerwald@bct-electronic.com>");
++MODULE_DESCRIPTION("PCA9633 LED driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.4.1
+
