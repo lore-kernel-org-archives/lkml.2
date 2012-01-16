@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab2APS7C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:59:02 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:48546 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755905Ab2APS66 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:58:58 -0500
-Message-ID: <4F14811E.6090107@xenotime.net>
-Date: Mon, 16 Jan 2012 11:57:18 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        x86 maintainers <x86@kernel.org>
-Subject: [PATCH] config menu: move ZONE_DMA under a menu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1756060Ab2APSsE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:48:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42707 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755801Ab2APSsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:48:01 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:17 2012
+Message-Id: <20120116184517.042963719@clark.kroah.org>
+User-Agent: quilt/0.50-25.1
+Date: Mon, 16 Jan 2012 10:44:42 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, kvm@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>
+Subject: [15/48] KVM guest: prevent tracing recursion with kvmclock
+In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-Move the ZONE_DMA kconfig symbol under a menu item instead
-of having it listed before everything else in
-"make {xconfig | gconfig | nconfig | menuconfig}".
+------------------
 
-This drops the first line of the top-level kernel config menu
-(in 3.2) below and moves it under "Processor type and features".
+From: Avi Kivity <avi@redhat.com>
 
-          [*] DMA memory allocation support
-              General setup  --->
-          [*] Enable loadable module support  --->
-          [*] Enable the block layer  --->
-              Processor type and features  --->
-              Power management and ACPI options  --->
-              Bus options (PCI etc.)  --->
-              Executable file formats / Emulations  --->
+(cherry picked from commit 95ef1e52922cf75b1ea2eae54ef886f2cc47eecb)
 
+Prevent tracing of preempt_disable() in get_cpu_var() in
+kvm_clock_read(). When CONFIG_DEBUG_PREEMPT is enabled,
+preempt_disable/enable() are traced and this causes the function_graph
+tracer to go into an infinite recursion. By open coding the
+preempt_disable() around the get_cpu_var(), we can use the notrace
+version which prevents preempt_disable/enable() from being traced and
+prevents the recursion.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: David Rientjes <rientjes@google.com>
+Based on a similar patch for Xen from Jeremy Fitzhardinge.
+
+Tested-by: Gleb Natapov <gleb@redhat.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/Kconfig |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ arch/x86/kernel/kvmclock.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- lnx-32.orig/arch/x86/Kconfig
-+++ lnx-32/arch/x86/Kconfig
-@@ -118,16 +118,6 @@ config HAVE_LATENCYTOP_SUPPORT
- config MMU
- 	def_bool y
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -74,9 +74,10 @@ static cycle_t kvm_clock_read(void)
+ 	struct pvclock_vcpu_time_info *src;
+ 	cycle_t ret;
  
--config ZONE_DMA
--	bool "DMA memory allocation support" if EXPERT
--	default y
--	help
--	  DMA memory allocation support allows devices with less than 32-bit
--	  addressing to allocate within the first 16MB of address space.
--	  Disable if no such devices will be used.
--
--	  If unsure, say Y.
--
- config SBUS
- 	bool
+-	src = &get_cpu_var(hv_clock);
++	preempt_disable_notrace();
++	src = &__get_cpu_var(hv_clock);
+ 	ret = pvclock_clocksource_read(src);
+-	put_cpu_var(hv_clock);
++	preempt_enable_notrace();
+ 	return ret;
+ }
  
-@@ -254,6 +244,16 @@ source "kernel/Kconfig.freezer"
- 
- menu "Processor type and features"
- 
-+config ZONE_DMA
-+	bool "DMA memory allocation support" if EXPERT
-+	default y
-+	help
-+	  DMA memory allocation support allows devices with less than 32-bit
-+	  addressing to allocate within the first 16MB of address space.
-+	  Disable if no such devices will be used.
-+
-+	  If unsure, say Y.
-+
- source "kernel/time/Kconfig"
- 
- config SMP
+
+
