@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab2APJzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 04:55:45 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42329 "EHLO mx3.mail.elte.hu"
+	id S1753959Ab2APKEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 05:04:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29058 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927Ab2APJzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 04:55:44 -0500
-Date: Mon, 16 Jan 2012 10:55:29 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Keith Packard <keithp@keithp.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
- address is invalid"
-Message-ID: <20120116095529.GA838@elte.hu>
-References: <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
- <867h22jwj1.fsf@sumi.keithp.com>
- <4EE575E3.7090206@zytor.com>
- <8639cqjvyn.fsf@sumi.keithp.com>
- <1323684083.3669.15.camel@mfleming-mobl1.ger.corp.intel.com>
- <86sjkpiw8i.fsf@sumi.keithp.com>
- <1323962963.314.14.camel@mfleming-mobl1.ger.corp.intel.com>
- <1326705757.3629.18.camel@mfleming-mobl1.ger.corp.intel.com>
- <20120116093133.GB15333@elte.hu>
- <1326707367.3629.26.camel@mfleming-mobl1.ger.corp.intel.com>
+	id S1751877Ab2APKEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 05:04:37 -0500
+Message-ID: <4F13F631.9010804@redhat.com>
+Date: Mon, 16 Jan 2012 12:04:33 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326707367.3629.26.camel@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
+References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EEC5.8050807@linux.vnet.ibm.com>
+In-Reply-To: <4F13EEC5.8050807@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/16/2012 11:32 AM, Xiao Guangrong wrote:
+> Add 'perf kvm-events' support to analyze kvm vmexit/mmio/ioport smartly
+>
+> Usage:
+> 	perf kvm-events record
 
-* Matt Fleming <matt@console-pimps.org> wrote:
+Why not 'perf record -e kvm'?
 
-> > Failing that i guess we'll have to do the revert, and re-try 
-> > the original commit with your fix merged into it.
-> 
-> The revert is already in Linus' tree as e1ad783b12ec "Revert 
-> "x86, efi: Calling __pa() with an ioremap()ed address is 
-> invalid", so at least we've got some time to get this patch 
-> right.
+> 	perf kvm-events report
 
-Yeah, indeed - the hollidays made me forget everything and back 
-then tip-bot notification was not restored yet so today i 
-assumed the issue is still open ;-)
 
-Does your new patch apply cleanly on top of the revert? If not 
-then please send an updated one, so that we can investigate its 
-effects.
 
-Thanks,
+> +static const char *get_exit_reason(long isa, u64 exit_code)
+> +{
+> +	int table_size = ARRAY_SIZE(svm_exit_reasons);
+> +	struct exit_reasons_table *table = svm_exit_reasons;
+> +
+> +
+> +	if (isa == 1) {
+> +		table = vmx_exit_reasons;
+> +		table_size = ARRAY_SIZE(vmx_exit_reasons);
+> +	}
+> +
+> +	while (table_size--) {
+> +		if (table->exit_code == exit_code)
+> +			return table->reason;
 
-	Ingo
+... table[exit_code] ...
+
+> +		table++;
+> +	}
+> +
+> +	die("unkonw kvm exit code:%ld on %s\n", exit_code, isa == 1 ?
+> +						"VMX" : "SVM");
+
+"unknown"
+
+> +
+> +struct kvm_events_ops {
+> +	bool (*is_begain_event)(struct event *event, void *data);
+
+begin
+
+> +	bool (*is_end_event)(struct event *event);
+> +	struct event_key (*get_key)(struct event *event, void *data);
+> +	void (*decode_key)(struct event_key *key, char decode[20]);
+> +	const char *name;
+> +};
+> +
+> +
+> +static struct event_key exit_event_get_key(struct event *event, void *data)
+> +{
+> +	struct event_key key;
+> +
+> +	key.key = raw_field_value(event, "exit_reason", data);
+> +	key.info = raw_field_value(event, "isa", data);
+
+"isa" is not available on all kernel versions; need to fall back to
+/proc/cpuid detection.
+
+> +	return key;
+> +}
+>
+
+-- 
+error compiling committee.c: too many arguments to function
+
