@@ -1,140 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab2APXlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 18:41:17 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41909 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab2APXlP convert rfc822-to-8bit (ORCPT
+	id S1752150Ab2APXn1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 18:43:27 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:31513 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab2APXn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 18:41:15 -0500
+	Mon, 16 Jan 2012 18:43:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6591"; a="155485224"
+From: Martin Fick <mfick@codeaurora.org>
+Organization: CAF
+To: Junio C Hamano <junio@pobox.com>
+Subject: Re: Re* Regulator updates for 3.3
+Date: Mon, 16 Jan 2012 16:43:22 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.32-28-generic; KDE/4.4.5; x86_64; ; )
+Cc: Pete Harlan <pgit@pcharlan.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Git Mailing List <git@vger.kernel.org>
+References: <20120109073727.GF22134@opensource.wolfsonmicro.com> <4F136BE4.4040502@pcharlan.com> <7v62gbussz.fsf@alter.siamese.dyndns.org>
+In-Reply-To: <7v62gbussz.fsf@alter.siamese.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <CAEP_g=-8C2Gen0nxRFH-CizG5jA1cHH84g+3qiOkmf4j+tbihg@mail.gmail.com>
-References: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
- <20120116083634.7b327c34@nehalam.linuxnetplumber.net> <CAGsizzK-La0iqt8sOXBVcn4W+8KgxMnvQgFFozEqZzQY+hGpzA@mail.gmail.com>
- <CAEP_g=-8C2Gen0nxRFH-CizG5jA1cHH84g+3qiOkmf4j+tbihg@mail.gmail.com>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@gmail.com>
-Date: Tue, 17 Jan 2012 00:40:54 +0100
-Message-ID: <CAGsizzK-tM+5JZ_V60qBGwRLj5TDvWL6cXpoLJBWQ4FdQDJ36g@mail.gmail.com>
-Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: Jesse Gross <jesse@nicira.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201161643.23211.mfick@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dòa 16. januára 2012 22:22, Jesse Gross <jesse@nicira.com> napísal/a:
-> 2012/1/16 ©tefan Gula <steweg@gmail.com>:
->> Dòa 16. januára 2012 17:36, Stephen Hemminger <shemminger@vyatta.com> napísal/a:
->>> On Mon, 16 Jan 2012 13:13:19 +0100
->>> ©tefan Gula <steweg@gmail.com> wrote:
->>>
->>>> From: Stefan Gula <steweg@gmail.com
->>>>
->>>> This patch is an extension for current Ethernet over GRE
->>>> implementation, which allows user to create virtual bridge (multipoint
->>>> VPN) and forward traffic based on Ethernet MAC address informations in
->>>> it. It simulates the Bridge bahaviour learing mechanism, but instead
->>>> of learning port ID from which given MAC address comes, it learns IP
->>>> address of peer which encapsulated given packet. Multicast, Broadcast
->>>> and unknown-multicast traffic is send over network as multicast
->>>> enacapsulated GRE packet, so one Ethernet multipoint GRE tunnel can be
->>>> represented as one single virtual switch on logical level and be also
->>>> represented as one multicast IPv4 address on network level.
->>>>
->>>> Signed-off-by: Stefan Gula <steweg@gmail.com>
->>>
->>> Thanks for the effort, but it is duplicating existing functionality.
->>> It possible to do this already with existing gretap device and the
->>> current bridge.
->>>
->>> The same thing is also supported by OpenVswitch.
->>>
->>
->> gretap with bridge will not do the same as gretap allows you to only
->> encapsulate L2 frames inside the GRE - this one part is actually
->> utilized in my code. GRE multipoint implementation is also utilized in
->> my code as well. But what is missing is forwarding logic here, which
->> prevents the traffic going not optimal way. Scenario one - e.g. if you
->> connect through 3 sites with using 1 gretap multipoint VPN, it always
->> forwards frames between site 1 and site 2 even if they are unicast.
->> That represents waste of bandwidth for site 3. Now assume that there
->> will be more than 40 sites and I hope you see that single current
->> multipoint gretap is not also good solution here
->>
->> The second scenario - e.g. using 3 sites using point-to-point gretap
->> interfaces between each 2 sites (2 gretap VPN interfaces per site) and
->> bridging those interfaces with real ones results in looped topology
->> which needs to utilized STP inside to prevent loops. Once STP
->> converges the topology will looks like this, traffic from site 1 to
->> site 2 will go always directly by the way of unicast (on GRE level),
->> from site 2 to site 3 always directly by the way of unicast (on GRE
->> level) and from site 1 to site 3 will go indirectly through site 2 due
->> STP limitations, which results in another not optimalized traffic
->> flows. Now assume that the number of sites rises, so gretap+standard
->> bridge code is also not a good solution here.
->>
->> My code utilizes it that way that I have extended the gretap
->> multipoint interface with the forwarding logic e.g. using 3 sites,
->> each site uses only one gretap VPN interface and if destination MAC
->> address is known to bridge code inside the gretap interface forwarding
->> logic, it forwards it towards only VPN endpoint that actually need
->> that by the way of unicasting on GRE level. On the other hand if the
->> destination MAC address is unknown or destination MAC address is L2
->> multicast or L2 broadcast than the frame is spread out through
->> multicasting on GRE level, providing delivery mechanism analogous to
->> standard switches on top of the multipoint GRE tunnels.
->>
->> I also get through briefly over OpenVswitch documentation and found
->> that it is more related to virtualization inside the box like VMware
->> switches or so and not to such technologies interconnecting two or
->> more separate segments over routed L3 infrastructure - there is a
->> mention about the CAPWAP UDP transport but this is more related to
->> WiFi implementations than generic ones. My patch also doesn't need any
->> special userspace api to be configured. It utilizes the existing one.
->
-> I understand what you're trying to do and I think that the goal makes
-> sense but I agree with Stephen that this is not the right way to go
-> about it.  I see two issues:
->
->  * It copies a lot of bridge code, making it unmaintainable and
-> inflexible to other use cases.
->  * The implementation exists in the GRE protocol stack but it applies
-> equally to other tunneling protocols as well (VXLAN comes to mind).
->
-> Open vSwitch doesn't quite do this level of learning yet but it's the
-> direction that we want to move in (and there's nothing particularly
-> virtualization specific about it).  What I think makes the most sense
-> is to create some internal interfaces to the GRE stack that exposes
-> the information needed to do learning.  That way there is only one
-> instance of the protocol code for each tunneling mechanism and then
-> each way of managing those addresses (i.e. the current device-based
-> mechanism, Open vSwitch, potentially a direct bridge-based mechanism,
-> etc.) can be reused as well.
+On Monday, January 16, 2012 04:33:00 pm Junio C Hamano 
+wrote:
+> With your suggestion, they need to export
+> "GIT_MERGE_EDIT=0" today, and they will need to update
+> again to export "GIT_MERGE_SOMETHINGELSE=0" when such an
+> incompatible change comes.
+> 
+> With a single "GIT_MERGE_LEGACY=YesPlease", they can be
+> future-proofed today and will not be affected when we
+> make another incompatible change.
+> 
+> So I am not sure why separating the big-red-switch into
+> smaller pieces would be an improvement, especially wnen
+> the scripts that want to specify finer-grained control
+> of features can use "--[no-]edit" options to explicitly
+> ask for it.
 
-I agree with you that using such approach of copying bridge code with
-some modifications is maybe not flexible enough, but on the other hand
-it does the job needed. It also doesn't breaks any previous
-compatibility of usage of gretap interfaces as it modifies the
-encapsulation and decapsulation part of codes *how the traffic goes to
-and from remote destinations), which doesn't face any change on the
-internal linkages coding inside the box (e.g. linking that gretap
-interface to standard logical bridge interface is still fully
-possible). I would rather see getting some standard set of generic
-bridge code, which can be reused anywhere in network stack, but for
-now this is the only way I know how to do it. Exposing the GRE
-interfaces will not do the job as what I needed was to rebuild the
-bridge logic to allow learning endpoint IPs instead of network ports
-IDs (it's almost the same as using multiple gretap interfaces inside
-one bridge.interface) To obtain back the maintainability I would
-assume redesigning the bridge code is the best way here, but I am not
-that well coder to do it myself. So if anybody is interested in this
-feel free to do it.
+
+Then, what would I do if I write a script which uses the new 
+edit functionality (without even being aware that there was 
+an old way) and you introduce a new incompatibility?  I 
+can't turn on GIT_MERGE_LEGACY then since it would revert to 
+behavior which my script would not expect (since it was 
+written after the current incompatibility, but before the 
+new one)!
+
+-Martin
