@@ -1,125 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab2APLWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 06:22:40 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:47232 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173Ab2APLWi (ORCPT
+	id S1754251Ab2APLXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 06:23:39 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38434 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754019Ab2APLXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 06:22:38 -0500
-Message-ID: <4F140872.3090409@linux.vnet.ibm.com>
-Date: Mon, 16 Jan 2012 16:52:26 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Mon, 16 Jan 2012 06:23:38 -0500
 MIME-Version: 1.0
-To: Sergei Trofimovich <slyich@gmail.com>
-CC: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Tony Luck <tony.luck@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Borislav Petkov <bp@amd64.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com
-Subject: Re: 3.2.0-07927-gc49c41a: s2ram: Device 'machinecheck1' does not
- have a release() function, it is broken and must be fixed
-References: <20120116131842.53f7ccc8@sf.home>
-In-Reply-To: <20120116131842.53f7ccc8@sf.home>
+Date: Mon, 16 Jan 2012 09:23:36 -0200
+Message-ID: <CAAA8XhPgd_ZBE30eg3LbpY4dy4Ko=d2XbEa1E=kueoBW+eGRUQ@mail.gmail.com>
+Subject: Re: Re: Re: XFS deadlock fixed?
+From: Kelbel Junior <jymmyjr@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011601-5140-0000-0000-00000098A4CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2012 03:48 PM, Sergei Trofimovich wrote:
+Hello, everybody.
+It appeared that same error message when using kernel version 2.6.38.8 ...
 
-> With 3.2.0-rc0 I was not able to s2ram twice in a row. Bisected down to
-> 
->   commit 8a25a2fd126c621f44f3aeaef80d51f00fc11639
->   Author: Kay Sievers <kay.sievers@vrfy.org>
->   Date:   Wed Dec 21 14:29:42 2011 -0800
-> 
->       cpu: convert 'cpu' and 'machinecheck' sysdev_class to a regular subsystem
-> 
-> it was fixed recently by commit
-> 
->   commit a3301b751b19f0efbafddc4034f8e7ce6bf3007b
->   Author: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->   Date:   Sat Jan 14 08:11:31 2012 +0530
-> 
->     x86/mce: Fix CPU hotplug and suspend regression related to MCE
-> 
-> alas the warning pop ups (3.2.0-07927-gc49c41a).
-> 
-> command for suspend:
->     sudo sh -c "echo mem > /sys/power/state"
-> 
-> [ 7915.604188] ------------[ cut here ]------------
-> [ 7915.604203] WARNING: at drivers/base/core.c:194 device_release+0x85/0x90()
-> [ 7915.604209] Hardware name: HP Compaq 2510p Notebook PC
-> [ 7915.604214] Device 'machinecheck1' does not have a release() function, it is broken and must be fixed.
-> [ 7915.604219] Modules linked in: snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss
->  ext2 loop kvm_intel kvm fuse scsi_wait_scan usb_storage tun snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
->  snd_timer iwl4965 iwlegacy snd mac80211 cfg80211 yenta_socket soundcore pcmcia_core pcmcia_rsrc rfkill i915 sdhci_pci drm_kms_
-> helper sdhci mmc_core drm e1000e snd_page_alloc i2c_algo_bit
-> [ 7915.604293] Pid: 30171, comm: sh Not tainted 3.2.0-07927-gc49c41a #190
-> [ 7915.604298] Call Trace:
-> [ 7915.604311]  [<ffffffff81038f9a>] warn_slowpath_common+0x7a/0xb0
-> [ 7915.604320]  [<ffffffff81039071>] warn_slowpath_fmt+0x41/0x50
-> [ 7915.604331]  [<ffffffff81060781>] ? get_parent_ip+0x11/0x50
-> [ 7915.604338]  [<ffffffff8130a3d5>] device_release+0x85/0x90
-> [ 7915.604348]  [<ffffffff8125483d>] kobject_release+0x8d/0x1d0
-> [ 7915.604356]  [<ffffffff812546dc>] kobject_put+0x2c/0x60
-> [ 7915.604364]  [<ffffffff8130a122>] put_device+0x12/0x20
-> [ 7915.604371]  [<ffffffff8130b235>] device_unregister+0x25/0x60
-> [ 7915.604383]  [<ffffffff81450485>] mce_cpu_callback+0xe2/0x18a
-> [ 7915.604392]  [<ffffffff8105b4bc>] notifier_call_chain+0x4c/0x70
-> [ 7915.604400]  [<ffffffff8105b569>] __raw_notifier_call_chain+0x9/0x10
-> [ 7915.604408]  [<ffffffff8103ab1b>] __cpu_notify+0x1b/0x30
-> [ 7915.604416]  [<ffffffff8103ab40>] cpu_notify+0x10/0x20
-> [ 7915.604423]  [<ffffffff8103ab59>] cpu_notify_nofail+0x9/0x20
-> [ 7915.604433]  [<ffffffff8144345b>] _cpu_down+0x13b/0x250
-> [ 7915.604441]  [<ffffffff8145536c>] ? printk+0x3c/0x40
-> [ 7915.604450]  [<ffffffff8103ad76>] disable_nonboot_cpus+0x86/0x120
-> [ 7915.604460]  [<ffffffff81083598>] suspend_devices_and_enter+0x148/0x240
-> [ 7915.604469]  [<ffffffff810837e9>] enter_state+0x159/0x180
-> [ 7915.604477]  [<ffffffff81082606>] state_store+0xc6/0x140
-> [ 7915.604485]  [<ffffffff81254567>] kobj_attr_store+0x17/0x20
-> [ 7915.604494]  [<ffffffff81142ce4>] sysfs_write_file+0xf4/0x170
-> [ 7915.604504]  [<ffffffff810e15e6>] vfs_write+0xc6/0x180
-> [ 7915.604512]  [<ffffffff810e18fc>] sys_write+0x4c/0x90
-> [ 7915.604521]  [<ffffffff81459122>] system_call_fastpath+0x16/0x1b
-> [ 7915.604528] ---[ end trace a06cd82fe48c1076 ]---
-> 
+Several lines in /var/log/messages with:
+kernel: XFS: possible memory allocation deadlock in kmem_alloc (mode: 0x250)
+
+Does anyone know know if this bug has been fixed in newer versions of
+Linux kernel? 3.x maybe?
 
 
-Hi Sergei,
 
-As I noted in the mail in which I posted that patch
-(http://thread.gmane.org/gmane.linux.kernel/1237745/focus=1239134),
-my patch just fixes the suspend issue. It doesn't attempt to fix the
-"machinecheck not having a release() function" warning. And as mentioned
-in the preceding discussion in the same thread,
-(http://thread.gmane.org/gmane.linux.kernel/1237745/focus=1239052)
-this warning is not a problem for suspend to work.
+Thanks.
+Kelbel Junior
 
-Of course, we have to get rid of this warning and one easy and trivial
-way to get rid of this would be to add a dummy release() function for
-MCE, since technically there is nothing to be released, since we use
-per-cpu allocations of struct device.
 
-But the only reason I haven't really jumped into writing such a patch
-is that I would prefer to get the semantics right - adding a dummy
-function is IMO something like working around the rules of the driver-core
-framework just to silence the warning. Hence I feel we should resort
-to it _only_ if there is nothing better we can do about this.
+2011/5/11 Christoph Hellwig <>
 
-Just to re-instate, an end-user need not really worry about this warning
-too much since this was there before (at a different place, and hidden)
-when things were working fine... Hence it would be worthwhile to fix
-this warning "correctly" if possible, than just do a quick and dirty
-"silence the warning" kind of workaround. 
+    And here's the actual patch, sorry:
 
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
 
+    Index: linux-2.6/fs/xfs/linux-2.6/kmem.c
+    ===================================================================
+    --- linux-2.6.orig/fs/xfs/linux-2.6/kmem.c	2011-05-11
+17:29:51.729191621 +0200
+
+    +++ linux-2.6/fs/xfs/linux-2.6/kmem.c	2011-05-11 17:30:22.915689382 +0200
+    @@ -56,10 +56,12 @@ kmem_alloc(size_t size, unsigned int __n
+     		ptr = kmalloc(size, lflags);
+     		if (ptr || (flags & (KM_MAYFAIL|KM_NOSLEEP)))
+
+     			return ptr;
+    -		if (!(++retries % 100))
+    +		if (!(++retries % 100)) {
+     			xfs_err(NULL,
+     		"possible memory allocation deadlock in %s (mode:0x%x)",
+     					__func__, lflags);
+    +			dump_stack();
+
+    +		}
+     		congestion_wait(BLK_RW_ASYNC, HZ/50);
+     	} while (1);
+     }
+    @@ -112,10 +114,12 @@ kmem_zone_alloc(kmem_zone_t *zone, unsig
+     		ptr = kmem_cache_alloc(zone, lflags);
+     		if (ptr || (flags & (KM_MAYFAIL|KM_NOSLEEP)))
+
+     			return ptr;
+    -		if (!(++retries % 100))
+    +		if (!(++retries % 100)) {
+     			xfs_err(NULL,
+     		"possible memory allocation deadlock in %s (mode:0x%x)",
+     					__func__, lflags);
+    +			dump_stack();
+
+    +		}
+     		congestion_wait(BLK_RW_ASYNC, HZ/50);
+     	} while (1);
+     }
+
+
+    2011/5/11 Christoph Hellwig <>
+
+        You're probably running into a different issue.  Any chance you can try
+        the attached patch to see where you're stuck exactly?
+
+        Also in case you're using slub (CONFIG_SLUB) can you check if it still
+
+        happens when using slab (CONFIG_SLAB) instead?
+
+
+        2011/5/10 Felipe Wilhelms Damasio - Taghos <>
+
+                Hi Mr. Hellwig,
+
+                I saw the XFS deadlock thread regarding 2.6.38:
+
+            http://www.linux.sgi.com/archives/xfs/2011-03/msg00185.html
+
+
+                I'm seeing too in 2.6.38.4. A lot of
+
+            XFS: possible memory allocation deadlock in kmem_alloc (mode:0x250)
+
+                I checked the changelog for 2.6.38.6 and can't be sure
+if the fix got
+            in...could you tell me if it did?
+
+
+                Thanks,
+
+            --
+
+            Felipe Wilhelms Damasio
+
+
+            TAGHOS - Tecnologia
+            Rua Prof. Alvaro Alvim, 211
+            Porto Alegre - RS - (51) 3239-3180
+            www.taghos.com.br <http://www.taghos.com.br/>
