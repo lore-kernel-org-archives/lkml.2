@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab2APJYy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 04:24:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41888 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694Ab2APJYx (ORCPT
+	id S1753844Ab2APJbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 04:31:09 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41528 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab2APJbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 04:24:53 -0500
-Message-ID: <1326705996.14299.19.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] PM / MTD: Fix regressions related to mtd_suspend()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Oliver Neukum <oneukum@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org
-Date: Mon, 16 Jan 2012 11:26:36 +0200
-In-Reply-To: <201201161023.45321.oneukum@suse.de>
-References: <201201151443.30897.rjw@sisk.pl>
-	 <201201160018.02305.rjw@sisk.pl>
-	 <1326705441.14299.10.camel@sauron.fi.intel.com>
-	 <201201161023.45321.oneukum@suse.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-rponj/d/UakxBggZZsJP"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
+	Mon, 16 Jan 2012 04:31:07 -0500
+Message-ID: <4F13EE3D.2070602@linux.vnet.ibm.com>
+Date: Mon, 16 Jan 2012 17:30:37 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [RFC][PATCH] KVM: perf: a smart tool to analyse kvm events
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011609-2000-0000-0000-0000061201DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This tool is very like xenoprof(if i remember correctly), and traces kvm events
+smartly. currently, it supports vmexit/mmio/ioport events.
 
---=-rponj/d/UakxBggZZsJP
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Usage:
+- to trace kvm events:
+# ./perf kvm-events record
 
-On Mon, 2012-01-16 at 10:23 +0100, Oliver Neukum wrote:
-> Am Montag, 16. Januar 2012, 10:17:21 schrieb Artem Bityutskiy:
-> > Thanks Rafael!
-> >=20
-> > I've pushed this patch to l2-mtd-2.6.git (David, would you please merge
-> > it upstream?).
->=20
-> Does this need to go into stable?
+- show the result
+# ./perf kvm-events report
 
-No, this is a regression introduced during this merge window. I'll amend
-the commit message to make it clear, thanks.
+Some output are as follow:
+# ./perf kvm-events report
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 5 but read 0
+  Warning: unknown op '}'
 
---=20
-Best Regards,
-Artem Bityutskiy
 
---=-rponj/d/UakxBggZZsJP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Analyze events for all VCPUs:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+             VM-EXIT    Samples      Samples%         Time%        Avg time
 
-iQIcBAABAgAGBQJPE+1MAAoJECmIfjd9wqK0oQwP/22Rg+05JAmreWJ2V5ro2RDP
-iDwpFom8PUv05IEnMqkOFJ2TxVs9XY4E1QKh9wG105UiPsDYoGKUMuTGFc0bUvRw
-Q6S6HnzuO3HCO71sokB8Sexh9JLqaHK0jlUyuvBn6fDJR1hZfUniNXTk/HaMMoz5
-7ZPWdZleLBORAAJglC+N13axwgxsKaczaUMtS4QopShV2YE2bMPGprlyaz0PCs/5
-t16c1m7MUbOYdtrFiIYXZV9wy9lGe62FjRXfx1T6g2amom3+NVwHtP5QaSeoUuQw
-JV7QYaxE92/kT4wKsU//73rT9232uIIGdd7FTk596ckpS0qUMSelNUUOEsGFxLux
-aPOzprFwl9ru4WxJgNNy715T/9yQbAaY9ven1SxgTfUhYTuHt1osi87fJgAGBKrs
-P/85I+pN/8pmoOD9FTL3GOh+qY4ZS1sBDKGPexZ55L75lY7GfCe338CElzPYzwjm
-B5MKLm1/eEEdma+5gMql2EtXa5083tCXEWa8yjkzxQnuRe8kf+uiNWTbJuDMfMvn
-N6llwJ+3ZBBmEWbkIJaGC+whVOUgxKhdgyMRxzy4kqr3g5aPlIciTLxPukxZuqrB
-/6viSn/IH/VdPpFp9I/SCpCoMa1FdaN63M/ZDKWb6PxZbrleCOp7uZM3Hq0RWpj8
-q5y7OnpwCdIQne3ZBUlT
-=bzB5
------END PGP SIGNATURE-----
+         APIC_ACCESS     438107        44.89%         6.20%        17.91us
+  EXTERNAL_INTERRUPT     219226        22.46%         8.01%        46.20us
+      IO_INSTRUCTION     122651        12.57%         1.88%        19.44us
+       EPT_VIOLATION      83110         8.52%         1.36%        20.75us
+   PENDING_INTERRUPT      37055         3.80%         0.16%         5.38us
+               CPUID      32718         3.35%         0.08%         3.15us
+       EXCEPTION_NMI      23601         2.42%         0.17%         8.87us
+                 HLT      15424         1.58%        82.12%      6735.06us
+           CR_ACCESS       4089         0.42%         0.02%         6.08us
 
---=-rponj/d/UakxBggZZsJP--
+Total Samples:975981, Total events handled time:126502464.88us.
+
+The default event to be analysed is vmexit, we can use --event to specify it,
+for example, if we want to trace mmio event:
+# ./perf kvm-events report --event mmio
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 5 but read 0
+  Warning: unknown op '}'
+
+
+Analyze events for all VCPUs:
+
+         MMIO Access    Samples      Samples%         Time%        Avg time
+
+        0xfee00380:W     196589        64.95%        70.01%         3.83us
+        0xfee00310:W      35356        11.68%         6.48%         1.97us
+        0xfee00300:W      35356        11.68%        16.37%         4.97us
+        0xfee00300:R      35356        11.68%         7.14%         2.17us
+
+Total Samples:302657, Total events handled time:1074746.01us.
+
+We can use --vcpu to specify which vcpu is traced:
+root@localhost perf]# ./perf kvm-events report --event mmio --vcpu 1
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 5 but read 0
+  Warning: unknown op '}'
+
+
+Analyze events for VCPU 1:
+
+         MMIO Access    Samples      Samples%         Time%        Avg time
+
+        0xfee00380:W      58041        71.20%        74.90%         3.70us
+        0xfee00310:W       7826         9.60%         5.28%         1.93us
+        0xfee00300:W       7826         9.60%        13.82%         5.06us
+        0xfee00300:R       7826         9.60%         6.01%         2.20us
+
+Total Samples:81519, Total events handled time:286577.81us.
+
+And, '--key' is used to sort the result, the possible value sample (default,
+the result is sorted by samples number), time(the result is sorted by time%):
+# ./perf kvm-events report --key time
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 5 but read 0
+  Warning: unknown op '}'
+
+
+Analyze events for all VCPUs:
+
+             VM-EXIT    Samples      Samples%         Time%        Avg time
+
+                 HLT      15424         1.58%        82.12%      6735.06us
+  EXTERNAL_INTERRUPT     219226        22.46%         8.01%        46.20us
+         APIC_ACCESS     438107        44.89%         6.20%        17.91us
+      IO_INSTRUCTION     122651        12.57%         1.88%        19.44us
+       EPT_VIOLATION      83110         8.52%         1.36%        20.75us
+       EXCEPTION_NMI      23601         2.42%         0.17%         8.87us
+   PENDING_INTERRUPT      37055         3.80%         0.16%         5.38us
+               CPUID      32718         3.35%         0.08%         3.15us
+           CR_ACCESS       4089         0.42%         0.02%         6.08us
+
+Total Samples:975981, Total events handled time:126502464.88us.
+
+I hope guys will like it and any comments are welcome! :)
 
