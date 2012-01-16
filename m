@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756454Ab2APS4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:56:23 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57517 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351Ab2APS4R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:56:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120116160136.GC16431@quack.suse.cz>
-References: <1325774407-28531-1-git-send-email-jack@suse.cz>
- <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com> <20120116160136.GC16431@quack.suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 16 Jan 2012 10:55:55 -0800
-X-Google-Sender-Auth: yCFrz_MEQ2WOEzQl33hbcyuM1Yg
-Message-ID: <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Edward Shishkin <edward@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756272Ab2APS5f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:57:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42873 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756191Ab2APSsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 13:48:36 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 16 10:45:16 2012
+Message-Id: <20120116184516.521429308@clark.kroah.org>
+User-Agent: quilt/0.50-25.1
+Date: Mon, 16 Jan 2012 10:44:36 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [09/48] ALSA: HDA: Fix automute for Cirrus Logic 421x
+In-Reply-To: <20120116184527.GA11972@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 8:01 AM, Jan Kara <jack@suse.cz> wrote:
->
->  Hum, let me understand this. I understand the meaning of buffer_uptodate
-> bit as "the buffer has at least as new content as what is on disk". Now
-> when storage cannot write the block under the buffer, the contents of the
-> buffer is still "at least as new as what is (was) on disk".
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-No.
+------------------
 
-Stop making crap up.
+From: David Henningsson <david.henningsson@canonical.com>
 
-If the write fails, the buffer contents have *nothing* to do with what
-is on disk.
+commit 78e2a928e377d5124932d4399c6c581908b027a0 upstream.
 
-You don't know what the disk contents are.
+There was a bug in the automute logic causing speakers not to
+mute when headphones were plugged in.
 
-So clearly the buffer cannot be up-to-date.
+Tested-by: Hsin-Yi Chen <hychen@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Now, feel free to use *other* arguments for why we shouldn't clear the
-up-to-date bit, but using the disk contents as one is pure and utter
-garbage. And it is *obviously* pure and utter garbage.
+---
+ sound/pci/hda/patch_cirrus.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-                   Linus
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -916,16 +916,14 @@ static void cs_automute(struct hda_codec
+ 
+ 	/* mute speakers if spdif or hp jack is plugged in */
+ 	for (i = 0; i < cfg->speaker_outs; i++) {
++		int pin_ctl = hp_present ? 0 : PIN_OUT;
++		/* detect on spdif is specific to CS421x */
++		if (spdif_present && (spec->vendor_nid == CS421X_VENDOR_NID))
++			pin_ctl = 0;
++
+ 		nid = cfg->speaker_pins[i];
+ 		snd_hda_codec_write(codec, nid, 0,
+-				    AC_VERB_SET_PIN_WIDGET_CONTROL,
+-				    hp_present ? 0 : PIN_OUT);
+-		/* detect on spdif is specific to CS421x */
+-		if (spec->vendor_nid == CS421X_VENDOR_NID) {
+-			snd_hda_codec_write(codec, nid, 0,
+-					AC_VERB_SET_PIN_WIDGET_CONTROL,
+-					spdif_present ? 0 : PIN_OUT);
+-		}
++				    AC_VERB_SET_PIN_WIDGET_CONTROL, pin_ctl);
+ 	}
+ 	if (spec->board_config == CS420X_MBP53 ||
+ 	    spec->board_config == CS420X_MBP55 ||
+
+
