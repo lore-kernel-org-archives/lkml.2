@@ -1,122 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab2APHzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 02:55:22 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21032 "EHLO mga03.intel.com"
+	id S1753490Ab2APH46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 02:56:58 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38449 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752864Ab2APHzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 02:55:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="96230327"
-Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
-From: Shaohua Li <shaohua.li@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, jmoyer@redhat.com
-In-Reply-To: <20120116071132.GE3174@redhat.com>
-References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
-	 <20120104071931.GB17026@dastard> <1325746241.22361.503.camel@sli10-conroe>
-	 <1325826750.22361.533.camel@sli10-conroe> <20120108221615.GA4198@dastard>
-	 <1326071375.22361.543.camel@sli10-conroe>
-	 <20120115224532.GD3174@redhat.com>
-	 <1326688590.22361.578.camel@sli10-conroe>
-	 <20120116071132.GE3174@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Jan 2012 15:55:41 +0800
-Message-ID: <1326700541.22361.607.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753390Ab2APH45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 02:56:57 -0500
+Date: Mon, 16 Jan 2012 08:56:39 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: Update scheduler stat documentation.
+Message-ID: <20120116075639.GG15641@elte.hu>
+References: <1326389222.9115.2.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326389222.9115.2.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-16 at 02:11 -0500, Vivek Goyal wrote:
-> On Mon, Jan 16, 2012 at 12:36:30PM +0800, Shaohua Li wrote:
-> > On Sun, 2012-01-15 at 17:45 -0500, Vivek Goyal wrote:
-> > > On Mon, Jan 09, 2012 at 09:09:35AM +0800, Shaohua Li wrote:
-> > > 
-> > > [..]
-> > > > > You need to present raw numbers and give us some idea of how close
-> > > > > those numbers are to raw hardware capability for us to have any idea
-> > > > > what improvements these numbers actually demonstrate.
-> > > > Yes, your guess is right. The hardware has limitation. 12 SSD exceeds
-> > > > the jbod capability, for both throughput and IOPS, that's why only
-> > > > read/write mixed workload impacts. I'll use less SSD in later tests,
-> > > > which will demonstrate the performance better. I'll report both raw
-> > > > numbers and fiops/cfq numbers later.
-> > > 
-> > > If fiops number are better please explain why those numbers are better.
-> > > If you cut down on idling, it is obivious that you will get higher
-> > > throughput on these flash devices. CFQ does disable queue idling for
-> > > non rotational NCQ devices. If higher throughput is due to driving
-> > > deeper queue depths, then CFQ can do that too just by changing quantum
-> > > and disabling idling. 
-> > it's because of quantum. Surely you can change the quantum, and CFQ
-> > performance will increase, but you will find CFQ is very unfair then.
+
+* Rakib Mullick <rakib.mullick@gmail.com> wrote:
+
+> /proc/schedstat's second field reflect to # of time context switch happened not # of times switched to the expired queue.
 > 
-> Why increasing quantum leads to CFQ being unfair? In terms of time it
-> still tries to be fair. 
-we can dispatch a lot of requests to NCQ SSD with very small time
-interval. The disk can finish a lot of requests in small time interval
-too. The time is much smaller than 1 jiffy. Increasing quantum can lead
-a task dispatches request more faster and makes the accounting worse,
-because with small quantum the task needs wait to dispatch. you can
-easily verify this with a simple fio test.
-
-> That's a different thing that with NCQ, right
-> time measurement is not possible with requests from multiple queues
-> being in the driver/disk at the same time. So accouting in terms of
-> iops per queue might make sense.
-yes.
-
-> > > So I really don't understand that what are you doing fundamentally
-> > > different in FIOPS ioscheduler. 
-> > > 
-> > > The only thing I can think of more accurate accounting per queue in
-> > > terms of number of IOs instead of time. Which can just serve to improve
-> > > fairness a bit for certain workloads. In practice, I think it might
-> > > not matter much.
-> > If quantum is big, CFQ will have better performance, but it actually
-> > fallbacks to Noop, no any fairness. fairness is important and is why we
-> > introduce CFQ.
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> ---
 > 
-> It is not exactly noop. It still preempts writes and prioritizes reads
-> and direct writes. 
-sure, I mean fairness mostly here.
+> diff --git a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
+> index 1cd5d51..7d8e12c 100644
+> --- a/Documentation/scheduler/sched-stats.txt
+> +++ b/Documentation/scheduler/sched-stats.txt
+> @@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
+>       1) # of times sched_yield() was called
+>  
+>  Next three are schedule() statistics:
+> -     2) # of times we switched to the expired queue and reused it
+> +     2) # of times context switch happened. This field is not utilized these
+> +	days but kept for holding userspace tools integrity.
 
-> Also, what's the real life workload where you face issues with using
-> say deadline with these flash based storage.
-deadline doesn't provide fairness. mainly cgroup workload. workload with
-different ioprio has issues too, but I don't know which real workload
-uses ioprio.
-
-> > 
-> > In summary, CFQ isn't both fair and good performance. FIOPS is trying to
-> > be fair and have good performance. I didn't think any time based
-> > accounting can make the goal happen for NCQ and SSD (even cfq cgroup
-> > code has iops mode, so suppose you should already know this well).
-> > 
-> > Surely you can change CFQ to make it IOPS based, but this will mess the
-> > code a lot, and FIOPS shares a lot of code with CFQ. So I'd like to have
-> > a separate ioscheduler which is IOPS based.
-> 
-> I think writing a separate IO scheduler just to do accouting in IOPS while
-> retaining rest of the CFQ code is not a very good idea. Modifying CFQ code
-> to be able to deal with both time based as well as IOPS accounting might
-> turn out to be simpler.
-changing CFQ works, but I really want to avoid having something like
-if (iops) 
-   xxx
-else
-   xxx
-I plan adding scales for read/write, request size, etc, because
-read/write cost is different and request with different size has
-different cost in SSD. This can be added to CFQ too with pain. That said
-I didn't completely object to make CFQ support IOPS accounting, but my
-feeling is a separate ioscheduler is more clean.
+if it's not used by anything but kept for the ABI then we should 
+not put context switch number in there, but always keep it zero, 
+right?
 
 Thanks,
-Shaohua
 
+	Ingo
