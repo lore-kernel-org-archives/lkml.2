@@ -1,130 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab2APS2P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 13:28:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48569 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755736Ab2APS2O (ORCPT
+	id S1755893Ab2APSai (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 13:30:38 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:41164 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754593Ab2APSag convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 13:28:14 -0500
-Date: Mon, 16 Jan 2012 11:28:08 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: Pinmux bindings proposal
-Message-ID: <20120116182808.GG4223@ponder.secretlab.ca>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Jan 2012 13:30:36 -0500
+Date: Mon, 16 Jan 2012 10:30:32 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: =?ISO-8859-2?B?qXRlZmFu?= Gula <steweg@gmail.com>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v1, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+Message-ID: <20120116103032.03768d0d@nehalam.linuxnetplumber.net>
+In-Reply-To: <CAGsizzK-La0iqt8sOXBVcn4W+8KgxMnvQgFFozEqZzQY+hGpzA@mail.gmail.com>
+References: <CAGsizzJTbGGpwrn-P=SUtqBW=1AN6hCTVXKp_oKHPBAoGZ4ubA@mail.gmail.com>
+	<20120116083634.7b327c34@nehalam.linuxnetplumber.net>
+	<CAGsizzK-La0iqt8sOXBVcn4W+8KgxMnvQgFFozEqZzQY+hGpzA@mail.gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 12:39:42PM -0800, Stephen Warren wrote:
-> I thought a bit more about pinmux DT bindings. I came up with something
-> that I like well enough, and is pretty similar to the binding that Dong
-> posted recently. I think it'll work for both Tegra's and IMX's needs.
-> Please take a look!
+On Mon, 16 Jan 2012 18:26:57 +0100
+©tefan Gula <steweg@gmail.com> wrote:
+
+> Dòa 16. januára 2012 17:36, Stephen Hemminger <shemminger@vyatta.com> napísal/a:
+> > On Mon, 16 Jan 2012 13:13:19 +0100
+> > ©tefan Gula <steweg@gmail.com> wrote:
+> >
+> >> From: Stefan Gula <steweg@gmail.com
+> >>
+> >> This patch is an extension for current Ethernet over GRE
+> >> implementation, which allows user to create virtual bridge (multipoint
+> >> VPN) and forward traffic based on Ethernet MAC address informations in
+> >> it. It simulates the Bridge bahaviour learing mechanism, but instead
+> >> of learning port ID from which given MAC address comes, it learns IP
+> >> address of peer which encapsulated given packet. Multicast, Broadcast
+> >> and unknown-multicast traffic is send over network as multicast
+> >> enacapsulated GRE packet, so one Ethernet multipoint GRE tunnel can be
+> >> represented as one single virtual switch on logical level and be also
+> >> represented as one multicast IPv4 address on network level.
+> >>
+> >> Signed-off-by: Stefan Gula <steweg@gmail.com>
+> >
+> > Thanks for the effort, but it is duplicating existing functionality.
+> > It possible to do this already with existing gretap device and the
+> > current bridge.
+> >
+> > The same thing is also supported by OpenVswitch.
+> >
 > 
-> Note: I've used named constants below just to make this easier to read.
-> We still don't have a solution to actually use named constants in dtc yet.
+> gretap with bridge will not do the same as gretap allows you to only
+> encapsulate L2 frames inside the GRE - this one part is actually
+> utilized in my code. GRE multipoint implementation is also utilized in
+> my code as well. But what is missing is forwarding logic here, which
+> prevents the traffic going not optimal way. Scenario one - e.g. if you
+> connect through 3 sites with using 1 gretap multipoint VPN, it always
+> forwards frames between site 1 and site 2 even if they are unicast.
+> That represents waste of bandwidth for site 3. Now assume that there
+> will be more than 40 sites and I hope you see that single current
+> multipoint gretap is not also good solution here
 > 
-> tegra20.dtsi:
+> The second scenario - e.g. using 3 sites using point-to-point gretap
+> interfaces between each 2 sites (2 gretap VPN interfaces per site) and
+> bridging those interfaces with real ones results in looped topology
+> which needs to utilized STP inside to prevent loops. Once STP
+> converges the topology will looks like this, traffic from site 1 to
+> site 2 will go always directly by the way of unicast (on GRE level),
+> from site 2 to site 3 always directly by the way of unicast (on GRE
+> level) and from site 1 to site 3 will go indirectly through site 2 due
+> STP limitations, which results in another not optimalized traffic
+> flows. Now assume that the number of sites rises, so gretap+standard
+> bridge code is also not a good solution here.
 > 
-> / {
->         tegra_pmx: pinmux@70000000 {
->                 compatible = "nvidia,tegra20-pinmux";
->                 reg = <0x70000014 0x10   /* Tri-state registers */
->                        0x70000080 0x20   /* Mux registers */
->                        0x700000a0 0x14   /* Pull-up/down registers */
->                        0x70000868 0xa8>; /* Pad control registers */
->         };
-> 
->         sdhci@c8000200 {
->                 compatible = "nvidia,tegra20-sdhci";
->                 reg = <0xc8000200 0x200>;
->                 interrupts = <0 15 0x04>;
->         };
-> };
-> 
-> tegra-harmony.dts:
-> 
-> /{
->         sdhci@c8000200 {
->                 cd-gpios = <&gpio 69 0>; /* gpio PI5 */
->                 wp-gpios = <&gpio 57 0>; /* gpio PH1 */
->                 power-gpios = <&gpio 155 0>; /* gpio PT3 */
-> 
->                 /*
->                  * A list of named configurations that this device needs.
->                  * Format is a list of <"name" &phandle_of_pmx_configuration>
->                  *
->                  * Multiple "name"s are needed e.g. to support active/suspend,
->                  * or whatever device-defined states are appropriate. The
->                  * device defines which names are needed, just like a device
->                  * defines which regulators, clocks, GPIOs, interrupts, ...
->                  * it needs.
->                  *
->                  * This example shows a 1:1 relation between name and phandle.
->                  * We might want a 1:n relation, so that we can blend multiple
->                  * pre-defined sets of data together, e.g. one pre-defined set
->                  * for the pin mux configuration, another for the pin config
->                  * settings, both being put into the single "default" setting
->                  * for this one device.
->                  *
->                  * A pinmux controller can contain this property too, to
->                  * define "hogged" or "system" pin mux configuration.
->                  *
->                  * Note: Mixing strings and integers in a property seems
->                  * unusual. However, I have seen other bindings floating
->                  * around that are starting to do this...
->                  */
->                 pinmux =
->                         <"default" &pmx_sdhci_active>
->                         <"suspend" &pmx_sdhci_suspend>;
-> 
->                 /* 1:n example: */
->                 pinmux =
->                         <"default" &pmx_sdhci_mux_a>
->                         <"default" &pmx_sdhci_pincfg_a>
->                         <"suspend" &pmx_sdhci_mux_a>
->                         <"suspend" &pmx_sdhci_pincfg_a_suspend>;
+> My code utilizes it that way that I have extended the gretap
+> multipoint interface with the forwarding logic e.g. using 3 sites,
+> each site uses only one gretap VPN interface and if destination MAC
+> address is known to bridge code inside the gretap interface forwarding
+> logic, it forwards it towards only VPN endpoint that actually need
+> that by the way of unicasting on GRE level. On the other hand if the
+> destination MAC address is unknown or destination MAC address is L2
+> multicast or L2 broadcast than the frame is spread out through
+> multicasting on GRE level, providing delivery mechanism analogous to
+> standard switches on top of the multipoint GRE tunnels.
+
+Couldn't this be controlled from user space either by programming
+the FDB with netlink or doing alternative version of STP?
 
 
-Yeah, don't do this.  Mixing phandle, string and cell values in a
-property gets messy and could become troublesome to parse.  I've
-backed away from it in the clk binding.
+> I also get through briefly over OpenVswitch documentation and found
+> that it is more related to virtualization inside the box like VMware
+> switches or so and not to such technologies interconnecting two or
+> more separate segments over routed L3 infrastructure - there is a
+> mention about the CAPWAP UDP transport but this is more related to
+> WiFi implementations than generic ones. My patch also doesn't need any
+> special userspace api to be configured. It utilizes the existing one.
 
-pinumx-* is better, but I'm not thrilled with it and I avoided that
-pattern too for the latest iteration of the clk binding.  I prefer
-using a "pinmux" + "pinmux-names" pair of properties when dealing with
-an array of like objects (ie. reg, interrupts, clks, etc), but that
-might not fit well since each setting has multiple state nodes.
-
-> 
->                 /*
->                  * Alternative: One property for each required state. But,
->                  * how does pinctrl core know which properties to parse?
->                  * Every property named "pinctrl*" seems a little too far-
->                  * reaching. Perhaps if we used vendor-name "pinmux", that'd
->                  * be OK, i.e. pinmux,default and pinmux,suspend?
-
-It isn't actually a vendor name, so don't use a ','.  "pinmux-" prefix
-is fine.
-
-g.
