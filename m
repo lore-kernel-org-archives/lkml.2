@@ -1,94 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab2AQVcl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:32:41 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:33646 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560Ab2AQVck (ORCPT
+	id S1756017Ab2AQVdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:33:31 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:57704 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755210Ab2AQVd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:32:40 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-References: <20120117142759.GE16213@moon>
-	<CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
-	<20120117144452.GG16213@moon> <4F15C249.3000602@zytor.com>
-Date: Tue, 17 Jan 2012 13:35:00 -0800
-In-Reply-To: <4F15C249.3000602@zytor.com> (H. Peter Anvin's message of "Tue,
-	17 Jan 2012 10:47:37 -0800")
-Message-ID: <m1obu29fnf.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19U4Z0tt2SNo4viu45SAHS2RzCmqQ/Eldg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	Tue, 17 Jan 2012 16:33:29 -0500
+Subject: [GIT PULL] target: core updates for v3.3-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Jan 2012 13:33:20 -0800
+Message-ID: <1326836000.16983.37.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
+Hi Linus,
 
-> On 01/17/2012 06:44 AM, Cyrill Gorcunov wrote:
->> On Tue, Jan 17, 2012 at 04:38:14PM +0200, Alexey Dobriyan wrote:
->>> On 1/17/12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->>>> +#define KCMP_EQ		0
->>>> +#define KCMP_LT		1
->>>> +#define KCMP_GT		2
->>>
->>> LT and GT are meaningless.
->>>
->> 
->> I found symbolic names better than open-coded values. But sure,
->> if this is problem it could be dropped.
->> 
->> Or you mean that in general anything but 'equal' is useless?
->> 
->
-> Why on Earth would user space need to know which order in memory certain
-> kernel objects are?
+The following is the pull re-request for current pending target-core
+updates for v3.3-rc1.  Please go ahead and pull the target-core updates
+here:
 
-For checkpoint restart and for some other kinds of introspection what is
-needed is a comparison function to see if two processes share the same
-object.  The most interesting of these objects from a checkpoint restart case
-are file descriptors, and there can be a lot of file descriptors.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
 
-The order in memory does not matter.  What does matter is that the
-comparison function return some ordering between objects.  The algorithm
-for figuring out of N items which of them are duplicates is O(N^2) if
-the comparison function can only return equal or not equal.  The
-algorithm for finding duplications is only O(NlogN) if the comparison
-function will return an ordering among the objects.
+This series is made against the following commit:
 
-> Keep in mind that this is *exactly* the kind of information which makes
-> rootkits easier.
+commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50
+Author: Linus Torvalds <torvalds <at> linux-foundation.org>
+Date:   Fri Dec 9 15:09:32 2011 -0800
 
-I would be very surprised if basic in memory ordering information was
-not already available from simple creation ordering.
+    Linux 3.2-rc5
 
-If using the in memory ordering is a problem in practice there are a lot
-of other possible ways to order the kernel objects.  Allocating sequence
-numbers for the kernel objects, passing the pointers through a
-cryptographically secure hash before comparing them, etc.
+The original pull request was here:
 
-It does look like Cyrill's patch description lacked the important bit of
-information about the algorithm complexity requiring an ordering among
-kernel objects.  Cyrill you probably want to describe more prominently
-what is happening now and why in your patch description rather than give
-the history of different approaches.
+http://thread.gmane.org/gmane.linux.kernel/1237524/
 
-Eric
+This time around I'm sending two PULL requests, this one for the core
+updates and the other for the new ib_srpt fabric driver.
+
+Please pull ASAP.
+
+Thanks,
+
+--nab
+
+Christoph Hellwig (7):
+  target: reshuffle headers
+  target: header reshuffle, part2
+  target: fold se_task.task_sense into task_flags
+  target: remove the se_task task_error_status field
+  target: make the se_task task_state_active a normal bool
+  tcm_loop: bump max_sectors
+  target: remove overagressive ____cacheline_aligned annoations
+
+Jörn Engel (3):
+  target: Move core_scsi3_check_cdb_abort_and_preempt
+  target: simplify target_check_cdb_and_preempt
+  target: remove useless casts
+
+Nicholas Bellinger (11):
+  iscsi-target: fix chap identifier simple_strtoul usage
+  Documentation/target: Fix tcm_mod_builder.py build breakage
+  target: Make target_put_sess_cmd use target_release_cmd_kref
+  target: Add target_submit_cmd() for process context fabric submission
+  tcm_fc: Convert ft_send_work to use target_submit_cmd
+  target: Remove TFO->check_release_cmd() fabric API caller
+  target: Fix possible NULL pointer with __transport_execute_tasks
+  target: Drop se_device TCQ queue_depth usage from I/O path
+  target: Remove extra se_device->execute_task_lock access in fast path
+  target: Remove __transport_execute_tasks() for each processing
+    context
+  target: Remove legacy device status check from
+    transport_execute_tasks
+
+Roland Dreier (2):
+  target: Set response format in INQUIRY response
+  target: Set additional sense length field in sense data
+
+Sebastian Andrzej Siewior (3):
+  target: use \n as a separator for configuration
+  target/configs: remove trailing newline from udev_path and alias
+  target: tcm_mod_builder: small fixups
+
+ Documentation/target/tcm_mod_builder.py        |   60 +---
+ drivers/target/iscsi/iscsi_target.c            |   19 +-
+ drivers/target/iscsi/iscsi_target_auth.c       |   36 ++--
+ drivers/target/iscsi/iscsi_target_configfs.c   |   11 +-
+ drivers/target/iscsi/iscsi_target_device.c     |    3 +-
+ drivers/target/iscsi/iscsi_target_erl0.c       |    2 +-
+ drivers/target/iscsi/iscsi_target_erl1.c       |    2 +-
+ drivers/target/iscsi/iscsi_target_erl2.c       |    2 +-
+ drivers/target/iscsi/iscsi_target_login.c      |   23 +-
+ drivers/target/iscsi/iscsi_target_nego.c       |    4 +-
+ drivers/target/iscsi/iscsi_target_nodeattrib.c |    3 +-
+ drivers/target/iscsi/iscsi_target_stat.c       |   17 +-
+ drivers/target/iscsi/iscsi_target_tmr.c        |    2 +-
+ drivers/target/iscsi/iscsi_target_tpg.c        |    6 +-
+ drivers/target/iscsi/iscsi_target_util.c       |    8 +-
+ drivers/target/loopback/tcm_loop.c             |   33 +--
+ drivers/target/loopback/tcm_loop.h             |   11 +-
+ drivers/target/target_core_alua.c              |    7 +-
+ drivers/target/target_core_cdb.c               |   39 ++-
+ drivers/target/target_core_cdb.h               |   14 -
+ drivers/target/target_core_configfs.c          |   34 ++-
+ drivers/target/target_core_device.c            |   15 +-
+ drivers/target/target_core_fabric_configfs.c   |    8 +-
+ drivers/target/target_core_fabric_lib.c        |   13 +-
+ drivers/target/target_core_file.c              |   15 +-
+ drivers/target/target_core_hba.c               |    7 +-
+ drivers/target/target_core_hba.h               |    7 -
+ drivers/target/target_core_iblock.c            |    7 +-
+ drivers/target/target_core_internal.h          |  123 +++++++++
+ drivers/target/target_core_pr.c                |   24 +--
+ drivers/target/target_core_pr.h                |    2 -
+ drivers/target/target_core_pscsi.c             |   20 +-
+ drivers/target/target_core_rd.c                |    6 +-
+ drivers/target/target_core_stat.c              |    9 +-
+ drivers/target/target_core_stat.h              |    8 -
+ drivers/target/target_core_tmr.c               |   36 ++-
+ drivers/target/target_core_tpg.c               |    9 +-
+ drivers/target/target_core_transport.c         |  343 ++++++++++++++----------
+ drivers/target/target_core_ua.c                |    6 +-
+ drivers/target/tcm_fc/tfc_cmd.c                |   57 +---
+ drivers/target/tcm_fc/tfc_conf.c               |    6 +-
+ drivers/target/tcm_fc/tfc_io.c                 |    5 +-
+ drivers/target/tcm_fc/tfc_sess.c               |    5 +-
+ include/target/target_core_backend.h           |   65 +++++
+ include/target/target_core_base.h              |  169 +++++++++---
+ include/target/target_core_device.h            |   63 -----
+ include/target/target_core_fabric.h            |  187 +++++++++++++
+ include/target/target_core_fabric_lib.h        |   28 --
+ include/target/target_core_fabric_ops.h        |  105 -------
+ include/target/target_core_tmr.h               |   35 ---
+ include/target/target_core_tpg.h               |   35 ---
+ include/target/target_core_transport.h         |  287 --------------------
+ 52 files changed, 928 insertions(+), 1113 deletions(-)
+ delete mode 100644 drivers/target/target_core_cdb.h
+ delete mode 100644 drivers/target/target_core_hba.h
+ create mode 100644 drivers/target/target_core_internal.h
+ delete mode 100644 drivers/target/target_core_stat.h
+ create mode 100644 include/target/target_core_backend.h
+ delete mode 100644 include/target/target_core_device.h
+ create mode 100644 include/target/target_core_fabric.h
+ delete mode 100644 include/target/target_core_fabric_lib.h
+ delete mode 100644 include/target/target_core_fabric_ops.h
+ delete mode 100644 include/target/target_core_tmr.h
+ delete mode 100644 include/target/target_core_tpg.h
+ delete mode 100644 include/target/target_core_transport.h
+
+
