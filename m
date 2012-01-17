@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab2AQPTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 10:19:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754401Ab2AQPTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 10:19:04 -0500
-Date: Tue, 17 Jan 2012 16:12:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
-	condition
-Message-ID: <20120117151242.GA13290@redhat.com>
-References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com> <1326721082.2442.234.camel@twins> <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <20120117090605.GD7612@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117090605.GD7612@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754830Ab2AQPUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 10:20:36 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:36433 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab2AQPUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 10:20:34 -0500
+Message-ID: <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: Hung task when calling clone() due to netfilter/slab
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Date: Tue, 17 Jan 2012 16:20:30 +0100
+In-Reply-To: <alpine.DEB.2.00.1201170910130.4800@router.home>
+References: <1326558605.19951.7.camel@lappy>
+	  <1326561043.5287.24.camel@edumazet-laptop>
+	 <1326632384.11711.3.camel@lappy> <1326648305.5287.78.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1201170910130.4800@router.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17, Ingo Molnar wrote:
->
-> * Yasunori Goto <y-goto@jp.fujitsu.com> wrote:
->
-> > --- linux-3.2.orig/kernel/exit.c
-> > +++ linux-3.2/kernel/exit.c
-> > @@ -1038,6 +1038,22 @@ NORET_TYPE void do_exit(long code)
-> >
-> >  	preempt_disable();
-> >  	exit_rcu();
-> > +
-> > +	/*
-> > +	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
-> > +	 * when the following two conditions become true.
-> > +	 *   - There is race condition of mmap_sem (It is acquired by
-> > +	 *     exit_mm()), and
-> > +	 *   - SMI occurs before setting TASK_RUNINNG.
-> > +	 *     (or hypervisor of virtual machine switches to other guest)
-> > +	 *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
-> > +	 *
-> > +	 * To avoid it, we have to wait for releasing tsk->pi_lock which
-> > +	 * is held by try_to_wake_up()
-> > +	 */
-> > +	smp_mb();
-> > +	raw_spin_unlock_wait(&tsk->pi_lock);
->
-> Hm, unlock_wait() is really nasty. Wouldnt the adoption of the
-> -rt kernel's delayed task put logic solve most of these races?
+Le mardi 17 janvier 2012 à 09:12 -0600, Christoph Lameter a écrit :
+> On Sun, 15 Jan 2012, Eric Dumazet wrote:
+> 
+> > As soon as the slub_lock is released, another thread can come and find
+> > the new kmem_cache.
+> 
+> Slabs are not looked up by name. A pointer to kmem_cache is passed to slab
+> functions and that pointer is returned from kmem_cache_create(). The risk
+> is someone traversing the kmem_cach list which is only done from within slub.
+> 
+> 
+> Subject: slub: Do not hold slub_lock when calling sysfs_slab_add()
+> 
+> sysfs_slab_add() calls various sysfs functions that actually may
+> end up in userspace doing all sorts of things.
+> 
+> Release the slub_lock after adding the kmem_cache structure to the list.
+> At that point the address of the kmem_cache is not known so we are
+> guaranteed exlusive access to the following modifications to the
+> kmem_cache structure.
+> 
+> If the sysfs_slab_add fails then reacquire the slub_lock to
+> remove the kmem_cache structure from the list.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> ---
+>  mm/slub.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c	2012-01-17 03:07:11.140010438 -0600
+> +++ linux-2.6/mm/slub.c	2012-01-17 03:07:19.532010264 -0600
+> @@ -3929,13 +3929,15 @@ struct kmem_cache *kmem_cache_create(con
+>  		if (kmem_cache_open(s, n,
+>  				size, align, flags, ctor)) {
+>  			list_add(&s->list, &slab_caches);
+> +			up_write(&slub_lock);
+>  			if (sysfs_slab_add(s)) {
+> +				down_write(&slub_lock);
+>  				list_del(&s->list);
+> +				up_write(&slub_lock);
+>  				kfree(n);
+>  				kfree(s);
+>  				goto err;
+>  			}
+> -			up_write(&slub_lock);
+>  			return s;
+>  		}
+>  		kfree(n);
 
-How? The problem is that the exiting task can do the last schedule()
-in TASK_RUNNING state, this breaks the TASK_DEAD logic in
-finish_task_switch().
 
-Oleg.
+
+Buggy patch, since "goto err;" is going to up_write(&slub_lock) again.
+
+Also Christoph, you forgot to add the very much needed :
+
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+
+
 
