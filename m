@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab2AQG1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 01:27:41 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43113 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab2AQG1k convert rfc822-to-8bit (ORCPT
+	id S1752037Ab2AQGcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 01:32:45 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50356 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab2AQGcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 01:27:40 -0500
+	Tue, 17 Jan 2012 01:32:42 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6591"; a="153235529"
+Message-ID: <4F151605.4050700@codeaurora.org>
+Date: Tue, 17 Jan 2012 12:02:37 +0530
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20120110204415.GA31264@codeaurora.org>
-References: <20120109233439.GA13911@codeaurora.org>
-	<20120110204415.GA31264@codeaurora.org>
-Date: Mon, 16 Jan 2012 22:27:39 -0800
-Message-ID: <CAOesGMhubmu9+D+XzXpRpf3BD8XJ2BMgbN5tYGR3dQ4_HfX5eA@mail.gmail.com>
-Subject: Re: [GIT PULL] msm fix for v3.2-rc.
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: dan.j.williams@intel.com
+CC: linux-arch@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        vinod.koul@intel.com, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bryanh@codeaurora.org,
+        tsoni@qualcomm.com, Daniel Walker <dwalker@fifo99.com>,
+        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org,
+        johlstei@qualcomm.com
+Subject: Re: [PATCH v2 2/2] msm: DMAEngine: Add DMAEngine driver based on
+ old MSM DMA APIs
+References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org> <1325854052-21402-3-git-send-email-kumarrav@codeaurora.org> <1325901569.10425.14.camel@m0nster> <4F0ACB65.3040802@codeaurora.org>
+In-Reply-To: <4F0ACB65.3040802@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Jan 10, 2012 at 12:44 PM, David Brown <davidb@codeaurora.org> wrote:
-> On Mon, Jan 09, 2012 at 03:34:39PM -0800, David Brown wrote:
->> Subject: Re: [GIT PULL] msm fix for v3.2-rc.
+On 1/9/2012 4:41 PM, Ravi Kumar V wrote:
+> On 1/7/2012 7:29 AM, Daniel Walker wrote:
+>> On Fri, 2012-01-06 at 18:17 +0530, Ravi Kumar V wrote:
+>>> Add DMAEngine based driver using the old MSM DMA APIs internally.
+>>> The benefit of this approach is that not all the drivers
+>>> have to get converted to DMAEngine APIs simultaneosly while
+>>> both the drivers can stay enabled in the kernel. The client
+>>> drivers using the old MSM APIs directly can now convert to
+>>> DMAEngine one by one.
+>>>
+>>> Change-Id: I3647ed7b8c73b3078dfa8877a3560db3cb0a2373
+>>> Signed-off-by: Ravi Kumar V<kumarrav@codeaurora.org>
+>>> ---
 >
-> BTW, this is supposed to be for v3.3.  It's a one line fix, so it'd be
-> nice if it can make the merge window, but it's also appropriate for
-> rc2.
+> I will address the comments in next patch release, i will wait for
+> sometime for vinod comments and release new patch v3.
+>
+> Ravi
 
-Pulled. Thanks!
+Dan please can you review my patches and let me know your comments.
 
-
--Olof
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
