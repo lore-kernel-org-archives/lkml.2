@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab2AQRQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:16:32 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38245 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab2AQRQ3 (ORCPT
+	id S1752324Ab2AQRQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:16:58 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51113 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab2AQRQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:16:29 -0500
-Date: Tue, 17 Jan 2012 12:13:14 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Tian, Kevin" <kevin.tian@intel.com>
-Cc: liang tang <liang.tang@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "mike.mcclurg@citrix.com" <mike.mcclurg@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Yu, Ke" <ke.yu@intel.com>, "konrad@kernel.org" <konrad@kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Nakajima, Jun" <jun.nakajima@intel.com>
-Subject: Re: [Xen-devel] [PATCH 3/8] ACPI: processor: add
- __acpi_processor_[un]register_driver helpers.
-Message-ID: <20120117171314.GB5494@phenom.dumpdata.com>
-References: <20111219142626.GB27772@andromeda.dapyr.net>
- <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
- <20111220153145.GB13253@andromeda.dapyr.net>
- <625BA99ED14B2D499DC4E29D8138F1506E01AAC469@shsmsx502.ccr.corp.intel.com>
- <20111223030103.GA7218@andromeda.dapyr.net>
- <AADFC41AFE54684AB9EE6CBC0274A5D10145B9@SHSMSX102.ccr.corp.intel.com>
- <20120103205925.GI17472@phenom.dumpdata.com>
- <AADFC41AFE54684AB9EE6CBC0274A5D102D62B@SHSMSX102.ccr.corp.intel.com>
- <20120113222451.GA6922@phenom.dumpdata.com>
- <AADFC41AFE54684AB9EE6CBC0274A5D10FCD37A9@SHSMSX102.ccr.corp.intel.com>
+	Tue, 17 Jan 2012 12:16:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AADFC41AFE54684AB9EE6CBC0274A5D10FCD37A9@SHSMSX102.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4F15ACAC.0076,ss=1,re=0.000,fgs=0
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+Date: Tue, 17 Jan 2012 09:16:56 -0800
+Message-ID: <CAOesGMjgXMctGr3o=X3n2gx2_g990FzCPn88NQz8tN8m1aHsGQ@mail.gmail.com>
+Subject: Re: [RFC 0/3] low memory notify
+From: Olof Johansson <olof@lixom.net>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        leonid.moiseichuk@nokia.com, kamezawa.hiroyu@jp.fujitsu.com,
+        penberg@kernel.org, Rik van Riel <riel@redhat.com>, mel@csn.ul.ie,
+        rientjes@google.com, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I was trying to figure out how difficult it would be to just bring Pxx states to
-> > the Xen hypervisor using the existing ACPI interfaces. And while it did not pass
-> > all the _Pxx states (seems that all the _PCT, _PSS, _PSD, _PPC flags need to
-> > be enabled in the hypercall to make this work), it demonstrates what I had in
-> > mind. 
+Hi,
 
-.. snip..
-> > 	/* TODO: Under Xen, the C-states information is not present.
-> >  	 * Figure out why. */
-> 
-> it's possible related to this long thread:
-> 
-> http://lists.xen.org/archives/html/xen-devel/2011-08/msg00511.html
-> 
-> IOW, Xen doesn't export mwait capability to dom0, which impacts _PDC setting.
-> Final solution is to have a para-virtualized PDC call for that.
+On Tue, Jan 17, 2012 at 12:13 AM, Minchan Kim <minchan@kernel.org> wrote:
+> As you can see, it's respin of mem_notify core of KOSAKI and Marcelo.
+> (Of course, KOSAKI's original patchset includes more logics but I didn't
+> include all things intentionally because I want to start from beginning
+> again) Recently, there are some requirements of notification of system
+> memory pressure. It would be very useful for various cases.
+> For example, QEMU/JVM/Firefox like big memory hogger can release their memory
+> when memory pressure happens. Another example in embedded side,
+> they can close background application. For this, there are some trial but
+> we need more general one and not-hacked alloc/free hot path.
+>
+> I think most big problem of system slowness is swap-in operation.
+> Swap-in is a synchronous operation so application's latency would be
+> big. Solution for that is prevent swap-out itself. We couldn't prevent
+> swapout totally but could reduce it with this patch.
+>
+> In case of swapless system, code page is very important for system response.
+> So we have to keep code page, too. I used very naive heuristic in this patch
+> but welcome to any idea.
+>
+> I want to make kernel logic simple if possible and just notify to user space.
+> Of course, there are lots of thing we have to consider but for discussion
+> this simple patch would be a good start point.
 
-Aaah. Let me play with that a bit. Thanks for the pointer.
+This is almost exactly what we've been looking at doing for Chrome OS
+(which is swapless). In our case, the browser is by far the largest
+memory consumer on the system, and we have for quite a while been
+playing tricks with OOM scores trying to make the interaction between
+the VM and the application happen right such that if we're OOM, the
+"right" tab process gets killed, etc. But it's not enough (and it's
+not always accurate enough). Chrome definitely knows already what it
+would prefer to do to release memory, so having a simple notifier for
+low memory condition is preferred.
 
-.. snip..
-> the prerequisites for this module to work correctly, is that dom0 has the right
-> configurations to have all necessary Cx/Px information ready before this 
-> module is loaded. That may mean enabling full CONFIG_CPU_IDLE and CONFIG_CPUFREQ,
+We have considered doing it through cgroups but it adds a level of
+complexity that we don't need for this use case (we do already use
+cgroups for other reasons though). If this simpler solution is heading
+towards inclusion we'll probably use it instead.
 
-Right.
-> which in current form may add some negative impact, e.g. dom0 will try to control
-> Px/Cx to conflict with Xen. So some tweaks may be required in that part.
 
-Yup. Hadn't even looked at the cpufreq tries to do yet.
-> 
-> given our purpose now, is to come up a cleaner approach which tolerate some
-> assumptions (e.g. #VCPU of dom0 == #PCPU), there's another option following this
-> trend (perhaps compensate your idea). We can register a Xen-cpuidle and 
-> xen-cpufreq driver to current Linux cpuidle and cpufreq framework, which plays 
-> mainly two roles:
-> 	- a dummy driver to prevent dom0 touching actual Px/Cx
-> 	- parse ACPI Cx/Px information to Xen, in a similar way you did above
-
-Yeah, I like where you are heading.
-> 
-> there may have some other trickiness, but the majority code will be self-contained.
-
-<nods>
-> 
-> Thanks
-> Kevin
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-Olof
