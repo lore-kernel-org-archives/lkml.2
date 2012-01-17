@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab2AQDkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 22:40:05 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:37148 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab2AQDkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 22:40:03 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6591"; a="155528643"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH] regulator: Add devm_regulator_get()
-Date: Mon, 16 Jan 2012 19:39:58 -0800
-Message-Id: <1326771598-28124-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.rc1
+	id S1751546Ab2AQDnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 22:43:00 -0500
+Received: from gate.crashing.org ([63.228.1.57]:46455 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758Ab2AQDm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 22:42:58 -0500
+Message-ID: <1326771731.26116.29.camel@pasglop>
+Subject: Re: [RFC 13/14] irq_domain: Remove 'new' irq_domain in favour of
+ the ppc one
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Michael Bohan <mbohan@codeaurora.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, sfr@canb.auug.org.au,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org
+Date: Tue, 17 Jan 2012 14:42:11 +1100
+In-Reply-To: <4F14E05C.30207@codeaurora.org>
+References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
+	 <1326313337-24603-14-git-send-email-grant.likely@secretlab.ca>
+	 <4F0DFC0F.2090005@gmail.com>
+	 <CACxGe6vVSO0cTgPurr6jFoo9QF_W02UaABOFYadCTQGU9dcwmg@mail.gmail.com>
+	 <4F0F7B60.5040701@gmail.com> <4F14E05C.30207@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a resource managed regulator_get() to simplify regulator
-usage in drivers. This allows driver authors to "get and forget"
-about their regulators by automatically calling regulator_put()
-when the driver is detached.
+On Mon, 2012-01-16 at 18:43 -0800, Michael Bohan wrote:
+> 
+> I was planning on sending these patches out, but it seems like with 
+> Grant's patches, they may no longer be up to date. I was curious if any 
+> thought was given to supporting configurations like this the one I 
+> mentioned with the advent of these patches. I am happy to help test if 
+> you can steer me in the right direction.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- Documentation/driver-model/devres.txt |    3 +++
- drivers/regulator/core.c              |   33 +++++++++++++++++++++++++++++++++
- include/linux/regulator/consumer.h    |    7 +++++++
- 3 files changed, 43 insertions(+), 0 deletions(-)
+I haven't had a chance to look in detail at what Grant is doing in his
+latest series, but the ppc domain scheme that he's basing it on has the
+concept of sparse interrupt domains.
 
-diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-index 10c64c8..016fd2b 100644
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@ -267,3 +267,6 @@ IOMAP
-   pcim_iounmap()
-   pcim_iomap_table()	: array of mapped addresses indexed by BAR
-   pcim_iomap_regions()	: do request_region() and iomap() on multiple BARs
-+
-+REGULATOR
-+  devm_regulator_get()
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index ca86f39..b05b058 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1320,6 +1320,39 @@ struct regulator *regulator_get(struct device *dev, const char *id)
- }
- EXPORT_SYMBOL_GPL(regulator_get);
- 
-+static void devm_regulator_release(struct device *dev, void *res)
-+{
-+	regulator_put(*(struct regulator **)res);
-+}
-+
-+/**
-+ * devm_regulator_get - Resource managed regulator_get()
-+ * @dev: device for regulator "consumer"
-+ * @id: Supply name or regulator ID.
-+ *
-+ * Managed regulator_get(). Regulators returned from this function are
-+ * automatically regulator_put() on driver detach. See regulator_get() for more
-+ * information.
-+ */
-+struct regulator *devm_regulator_get(struct device *dev, const char *id)
-+{
-+	struct regulator **ptr, *regulator;
-+
-+	ptr = devres_alloc(devm_regulator_release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	regulator = regulator_get(dev, id);
-+	if (!IS_ERR(regulator)) {
-+		*ptr = regulator;
-+		devres_add(dev, ptr);
-+	} else
-+		devres_free(ptr);
-+
-+	return regulator;
-+}
-+EXPORT_SYMBOL_GPL(devm_regulator_get);
-+
- /**
-  * regulator_get_exclusive - obtain exclusive access to a regulator.
-  * @dev: device for regulator "consumer"
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index f2698a0..bbe45b0 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -132,6 +132,8 @@ struct regulator_bulk_data {
- /* regulator get and put */
- struct regulator *__must_check regulator_get(struct device *dev,
- 					     const char *id);
-+struct regulator *__must_check devm_regulator_get(struct device *dev,
-+					     const char *id);
- struct regulator *__must_check regulator_get_exclusive(struct device *dev,
- 						       const char *id);
- void regulator_put(struct regulator *regulator);
-@@ -200,6 +202,11 @@ static inline struct regulator *__must_check regulator_get(struct device *dev,
- 	 */
- 	return NULL;
- }
-+static inline struct regulator *__must_check
-+devm_regulator_get(struct device *dev, const char *id)
-+{
-+	return NULL;
-+}
- static inline void regulator_put(struct regulator *regulator)
- {
- }
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+For these, we use a radix tree for the reverse map (we do not rely on a
+linear range) and we "allocate" linux IRQ numbers on-demand as we create
+mapping for individual HW interrupts.
+
+Cheers,
+Ben.
+
 
