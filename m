@@ -1,127 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab2AQAca (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 19:32:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab2AQAc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 19:32:29 -0500
-Date: Mon, 16 Jan 2012 19:32:19 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Paolo Bonzini <pbonzini@redhat.com>
-cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>, stable@kernel.org,
-        Alasdair G Kergon <agk@redhat.com>, linux-scsi@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH stable 3/3] dm: do not forward ioctls from
- logical volumes to the underlying device
-In-Reply-To: <1326730380-7674-4-git-send-email-pbonzini@redhat.com>
-Message-ID: <Pine.LNX.4.64.1201161926190.26607@hs20-bc2-1.build.redhat.com>
-References: <1326730380-7674-1-git-send-email-pbonzini@redhat.com>
- <1326730380-7674-4-git-send-email-pbonzini@redhat.com>
+	id S1751906Ab2AQAd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 19:33:57 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:45210 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750788Ab2AQAd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 19:33:56 -0500
+X-WSS-ID: 0LXX2WH-0A-5WV-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Axel Lin" <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+cc: "Jeong, Daniel" <Daniel.Jeong@nsc.com>,
+        "Anton Vorontsov" <cbouatmailru@gmail.com>
+Date: Mon, 16 Jan 2012 16:33:43 -0800
+Subject: RE: [PATCH] power_supply: lp8727_charger: Add terminating entry
+ for i2c_device_id table
+Thread-Topic: [PATCH] power_supply: lp8727_charger: Add terminating
+ entry for i2c_device_id table
+Thread-Index: AczUEntzkbt5oKXGRtCsIrUGdOA4KgAmeM9w
+Message-ID: <B567DBAB974C0544994013492B949F8E3812BEF09C@EXMAIL03.scwf.nsc.com>
+References: <1326692900.12796.0.camel@phoenix>
+In-Reply-To: <1326692900.12796.0.camel@phoenix>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-WSS-ID: 630A1E561LS9723090-02-01
+Content-Type: text/plain;
+ charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0H0Y0u0014234
 
-Hi
+Thanks,
 
-You should put this test to a function or macro. Don't copy the same logic 
-to three different places. Think what happens if someone needs to change 
-it after few years --- it will be hard to find out what was copied where.
+I think Anton will apply this patch.
 
-Mikulas
+-----Original Message-----
+From: Axel Lin [mailto:axel.lin@gmail.com] 
+Sent: Monday, January 16, 2012 2:48 PM
+To: linux-kernel@vger.kernel.org
+Cc: Kim, Milo; Jeong, Daniel; Anton Vorontsov
+Subject: [PATCH] power_supply: lp8727_charger: Add terminating entry for i2c_device_id table
 
-On Mon, 16 Jan 2012, Paolo Bonzini wrote:
+The i2c_device_id table is supposed to be zero-terminated.
 
-> A logical volume can map to just part of underlying physical volume.
-> In this case, it must be treated like a partition.
-> 
-> Based on a patch from Alasdair G Kergon.
-> 
-> [ Cherry picked from 95113a17a2a1eb06151dc698dca9bcc4a29e4fbb ]
-> 
-> Cc: stable@kernel.org
-> Cc: Alasdair G Kergon <agk@redhat.com>
-> Cc: dm-devel@redhat.com
-> Cc: linux-scsi@vger.kernel.org
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> ---
->  drivers/md/dm-flakey.c |   11 ++++++++++-
->  drivers/md/dm-linear.c |   12 +++++++++++-
->  drivers/md/dm-mpath.c  |    6 ++++++
->  3 files changed, 27 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/md/dm-flakey.c b/drivers/md/dm-flakey.c
-> index f84c080..9fb18c1 100644
-> --- a/drivers/md/dm-flakey.c
-> +++ b/drivers/md/dm-flakey.c
-> @@ -368,8 +368,17 @@ static int flakey_status(struct dm_target *ti, status_type_t type,
->  static int flakey_ioctl(struct dm_target *ti, unsigned int cmd, unsigned long arg)
->  {
->  	struct flakey_c *fc = ti->private;
-> +	struct dm_dev *dev = fc->dev;
-> +	int r = 0;
->  
-> -	return __blkdev_driver_ioctl(fc->dev->bdev, fc->dev->mode, cmd, arg);
-> +	/*
-> +	 * Only pass ioctls through if the device sizes match exactly.
-> +	 */
-> +	if (fc->start ||
-> +	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
-> +		r = scsi_verify_blk_ioctl(NULL, cmd);
-> +
-> +	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
->  }
->  
->  static int flakey_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
-> diff --git a/drivers/md/dm-linear.c b/drivers/md/dm-linear.c
-> index 3921e3b..9728839 100644
-> --- a/drivers/md/dm-linear.c
-> +++ b/drivers/md/dm-linear.c
-> @@ -116,7 +116,17 @@ static int linear_ioctl(struct dm_target *ti, unsigned int cmd,
->  			unsigned long arg)
->  {
->  	struct linear_c *lc = (struct linear_c *) ti->private;
-> -	return __blkdev_driver_ioctl(lc->dev->bdev, lc->dev->mode, cmd, arg);
-> +	struct dm_dev *dev = lc->dev;
-> +	int r = 0;
-> +
-> +	/*
-> +	 * Only pass ioctls through if the device sizes match exactly.
-> +	 */
-> +	if (lc->start ||
-> +	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
-> +		r = scsi_verify_blk_ioctl(NULL, cmd);
-> +
-> +	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
->  }
->  
->  static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
-> diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
-> index 5e0090e..801d92d 100644
-> --- a/drivers/md/dm-mpath.c
-> +++ b/drivers/md/dm-mpath.c
-> @@ -1520,6 +1520,12 @@ static int multipath_ioctl(struct dm_target *ti, unsigned int cmd,
->  
->  	spin_unlock_irqrestore(&m->lock, flags);
->  
-> +	/*
-> +	 * Only pass ioctls through if the device sizes match exactly.
-> +	 */
-> +	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
-> +		r = scsi_verify_blk_ioctl(NULL, cmd);
-> +
->  	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
->  }
->  
-> -- 
-> 1.7.7.1
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
-> 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/power/lp8727_charger.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
+index b15b575..c53dd12 100644
+--- a/drivers/power/lp8727_charger.c
++++ b/drivers/power/lp8727_charger.c
+@@ -464,6 +464,7 @@ static int __devexit lp8727_remove(struct i2c_client *cl)
+ 
+ static const struct i2c_device_id lp8727_ids[] = {
+ 	{"lp8727", 0},
++	{ }
+ };
+ 
+ static struct i2c_driver lp8727_driver = {
+-- 
+1.7.5.4
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
