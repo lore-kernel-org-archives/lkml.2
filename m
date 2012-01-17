@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab2AQQvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 11:51:11 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36069 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969Ab2AQQvC (ORCPT
+	id S1755351Ab2AQQv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 11:51:59 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53056 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab2AQQv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 11:51:02 -0500
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-To: linux-kernel@vger.kernel.org
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Michal Marek <mmarek@suse.cz>,
-        linux-modules@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: [PATCH] kbuild: do not check for ancient modutils tools
-Date: Tue, 17 Jan 2012 14:50:51 -0200
-Message-Id: <1326819051-25712-1-git-send-email-lucas.demarchi@profusion.mobi>
-X-Mailer: git-send-email 1.7.8.3
+	Tue, 17 Jan 2012 11:51:57 -0500
+Message-ID: <4F15A729.4000600@garzik.org>
+Date: Tue, 17 Jan 2012 11:51:53 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Lin Ming <ming.m.lin@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates for 3.3
+References: <20120109003255.GA6598@havoc.gtf.org> <CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com> <4F12E57E.3090805@garzik.org> <1326676534.13517.3.camel@minggr> <1326691403.13517.21.camel@minggr> <CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com> <CA+55aFy+1DWUaOMormPHy7hCJxNfdxmiAnj8W0gqNTbeogNN4w@mail.gmail.com> <CA+55aFxvUvWHbJvconcjPmDhUVcCRGxxA-iD+HEngRSt4iox5g@mail.gmail.com> <1326777393.13517.39.camel@minggr> <CA+55aFzNpK0z2A8-0v2bLEX_Wma5f3tkeSVjAdwpkrW0=3V_Wg@mail.gmail.com>
+In-Reply-To: <CA+55aFzNpK0z2A8-0v2bLEX_Wma5f3tkeSVjAdwpkrW0=3V_Wg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scripts/depmod.sh checks for the output of '-V' expecting that it has
-module-init-tools in it. It's a hack to prevent users from using
-modutils instead of module-init-tools, that only works with 2.4.x
-kernels. This however prints an annoying warning for kmod tool, that is
-currently replacing module-init-tools.
+On 01/17/2012 12:19 AM, Linus Torvalds wrote:
+> On Mon, Jan 16, 2012 at 9:16 PM, Lin Ming<ming.m.lin@intel.com>  wrote:
+>>
+>> But ata port async suspend was not enabled in above patch.
+>> So I think this is a regression.
+>
+> Ok. Jeff? Should I take that patch directly, or will you take it?
 
-Rather than putting another check for kmod's version, just remove it
-since users of 2.4.x kernel are unlikely to upgrade to 3.x, and if they
-do, let depmod fail in that case because they should know what they are
-doing.
+Coming today, with at least one other change...  still keeping an eye 
+out for possible PM problems on older non-AHCI SATA hardware.
 
-Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
----
- scripts/depmod.sh |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+	Jeff
 
-diff --git a/scripts/depmod.sh b/scripts/depmod.sh
-index a272356..2ae4817 100755
---- a/scripts/depmod.sh
-+++ b/scripts/depmod.sh
-@@ -9,12 +9,6 @@ fi
- DEPMOD=$1
- KERNELRELEASE=$2
- 
--if ! "$DEPMOD" -V 2>/dev/null | grep -q module-init-tools; then
--	echo "Warning: you may need to install module-init-tools" >&2
--	echo "See http://www.codemonkey.org.uk/docs/post-halloween-2.6.txt" >&2
--	sleep 1
--fi
--
- if ! test -r System.map -a -x "$DEPMOD"; then
- 	exit 0
- fi
--- 
-1.7.8.3
+
+
 
