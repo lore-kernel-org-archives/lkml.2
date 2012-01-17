@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab2AQX0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 18:26:43 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7777 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252Ab2AQX0m (ORCPT
+	id S1756439Ab2AQX3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 18:29:47 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64732 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab2AQX3o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 18:26:42 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 17 Jan 2012 15:26:42 -0800
-From: Rakesh Iyer <riyer@nvidia.com>
-To: dmitry.torokhov@gmail.com
-Cc: swarren@nvidia.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rakesh Iyer <riyer@nvidia.com>
-Subject: [PATCH 1/1] Input: tegra-kbc - remove pre Tegra20 definitions
-Date: Tue, 17 Jan 2012 15:26:50 -0800
-Message-Id: <1326842810-12039-1-git-send-email-riyer@nvidia.com>
-X-Mailer: git-send-email 1.7.4.1
-X-NVConfidentiality: public
+	Tue, 17 Jan 2012 18:29:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <1326411506-16894-3-git-send-email-wad@chromium.org>
+References: <1326411506-16894-1-git-send-email-wad@chromium.org>
+	<1326411506-16894-3-git-send-email-wad@chromium.org>
+Date: Tue, 17 Jan 2012 18:29:43 -0500
+Message-ID: <CACLa4pthnooQn8-kecPxHw7nVdHfx+0Vx5BpucLugMc9XN+dqg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] Documentation: prctl/seccomp_filter
+From: Eric Paris <eparis@parisplace.org>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Tegra30 by correcting definitions. This is necessary to
-make driver useful in Tegra30.
+On Thu, Jan 12, 2012 at 6:38 PM, Will Drewry <wad@chromium.org> wrote:
 
-Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
----
- arch/arm/mach-tegra/include/mach/kbc.h |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+> +#ifndef PR_ATTACH_SECCOMP_FILTER
+> +#      define PR_ATTACH_SECCOMP_FILTER 36
+> +#endif
 
-diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
-index 4f3572a..3610568 100644
---- a/arch/arm/mach-tegra/include/mach/kbc.h
-+++ b/arch/arm/mach-tegra/include/mach/kbc.h
-@@ -24,13 +24,8 @@
- #include <linux/types.h>
- #include <linux/input/matrix_keypad.h>
- 
--#ifdef CONFIG_ARCH_TEGRA_2x_SOC
- #define KBC_MAX_GPIO	24
- #define KBC_MAX_KPENT	8
--#else
--#define KBC_MAX_GPIO	20
--#define KBC_MAX_KPENT	7
--#endif
- 
- #define KBC_MAX_ROW	16
- #define KBC_MAX_COL	8
--- 
-1.7.4.1
 
+The example code here uses 36, but the real code I believe uses 37.
+Can we get these in sync?  Thanks!
