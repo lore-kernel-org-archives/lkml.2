@@ -1,72 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab2AQCaH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 21:30:07 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:36486 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab2AQCaD (ORCPT
+	id S1751472Ab2AQCa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 21:30:27 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43380 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2AQCaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 21:30:03 -0500
-Subject: Re: [PATCH] target, iscsi: Fix up a few assignments
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andy Grover <agrover@redhat.com>,
-        Dan Carpenter <error27@gmail.com>, Roland Dreier <roland@kernel.org>,
-        Christoph Hellwig <hch@lst.de>
-In-Reply-To: <alpine.LNX.2.00.1201151929400.13069@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201151929400.13069@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Jan 2012 18:30:01 -0800
-Message-ID: <1326767401.3600.41.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 16 Jan 2012 21:30:25 -0500
+Message-ID: <4F14DD39.5000703@linux.vnet.ibm.com>
+Date: Tue, 17 Jan 2012 10:30:17 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
+References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EEC5.8050807@linux.vnet.ibm.com> <4F13F631.9010804@redhat.com>
+In-Reply-To: <4F13F631.9010804@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12011702-9574-0000-0000-000000F8CB44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-01-15 at 19:33 +0100, Jesper Juhl wrote:
-> A statement such as
->   struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
-> has undefined behaviour since there are two assignments to 'na', strictly 
-> speaking (the order in which side-effects from the assignments take place 
-> is undefined since there's no intervening sequence point), and it looks 
-> unintentional in any case.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/target/iscsi/iscsi_target_erl1.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
->  compile tested only.
-> 
-> diff --git a/drivers/target/iscsi/iscsi_target_erl1.c b/drivers/target/iscsi/iscsi_target_erl1.c
-> index 101b1be..af18cb8 100644
-> --- a/drivers/target/iscsi/iscsi_target_erl1.c
-> +++ b/drivers/target/iscsi/iscsi_target_erl1.c
-> @@ -1238,7 +1238,7 @@ void iscsit_mod_dataout_timer(struct iscsi_cmd *cmd)
->  {
->  	struct iscsi_conn *conn = cmd->conn;
->  	struct iscsi_session *sess = conn->sess;
-> -	struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
-> +	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
->  
->  	spin_lock_bh(&cmd->dataout_timeout_lock);
->  	if (!(cmd->dataout_timer_flags & ISCSI_TF_RUNNING)) {
-> @@ -1261,7 +1261,7 @@ void iscsit_start_dataout_timer(
->  	struct iscsi_conn *conn)
->  {
->  	struct iscsi_session *sess = conn->sess;
-> -	struct iscsi_node_attrib *na = na = iscsit_tpg_get_node_attrib(sess);
-> +	struct iscsi_node_attrib *na = iscsit_tpg_get_node_attrib(sess);
->  
->  	if (cmd->dataout_timer_flags & ISCSI_TF_RUNNING)
->  		return;
-> -- 
+On 01/16/2012 06:04 PM, Avi Kivity wrote:
 
-Copy and paste error.  :(
+> On 01/16/2012 11:32 AM, Xiao Guangrong wrote:
+>> Add 'perf kvm-events' support to analyze kvm vmexit/mmio/ioport smartly
+>>
+>> Usage:
+>> 	perf kvm-events record
+> 
+> Why not 'perf record -e kvm'?
 
-Applied to lio-core, and thanks for catching this Jesper!
 
+It works, many perf tools have this style, like:
+perf lock record,
+perf sched record,
+perf kmem record,
+
+I think the reason is that only enable the tracepoints we need to avoid
+unnecessary overload so that the result is more exacter.
+
+> 
+>> 	perf kvm-events report
+> 
+> 
+> 
+>> +static const char *get_exit_reason(long isa, u64 exit_code)
+>> +{
+>> +	int table_size = ARRAY_SIZE(svm_exit_reasons);
+>> +	struct exit_reasons_table *table = svm_exit_reasons;
+>> +
+>> +
+>> +	if (isa == 1) {
+>> +		table = vmx_exit_reasons;
+>> +		table_size = ARRAY_SIZE(vmx_exit_reasons);
+>> +	}
+>> +
+>> +	while (table_size--) {
+>> +		if (table->exit_code == exit_code)
+>> +			return table->reason;
+> 
+> ... table[exit_code] ...
+> 
+
+
+Actually, this array is not indexed by exit_code, it means:
+table[exit_code].exit_code != exit_code.
+
+>> +		table++;
+>> +	}
+>> +
+>> +	die("unkonw kvm exit code:%ld on %s\n", exit_code, isa == 1 ?
+>> +						"VMX" : "SVM");
+> 
+> "unknown"
+> 
+
+
+......
+
+>> +
+>> +struct kvm_events_ops {
+>> +	bool (*is_begain_event)(struct event *event, void *data);
+> 
+> begin
+> 
+
+
+Sorry for my careless.
+
+>> +	bool (*is_end_event)(struct event *event);
+>> +	struct event_key (*get_key)(struct event *event, void *data);
+>> +	void (*decode_key)(struct event_key *key, char decode[20]);
+>> +	const char *name;
+>> +};
+>> +
+>> +
+>> +static struct event_key exit_event_get_key(struct event *event, void *data)
+>> +{
+>> +	struct event_key key;
+>> +
+>> +	key.key = raw_field_value(event, "exit_reason", data);
+>> +	key.info = raw_field_value(event, "isa", data);
+> 
+> "isa" is not available on all kernel versions; need to fall back to
+> /proc/cpuid detection.
+> 
+
+
+Got it, will do it in the next version. Thanks Avi!
 
