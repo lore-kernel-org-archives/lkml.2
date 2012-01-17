@@ -1,130 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab2AQIk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 03:40:57 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45153 "EHLO
+	id S1752578Ab2AQIlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 03:41:23 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45176 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab2AQIkz (ORCPT
+	with ESMTP id S1752481Ab2AQIlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 03:40:55 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 17 Jan 2012 17:39:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        leonid.moiseichuk@nokia.com, penberg@kernel.org,
-        Rik van Riel <riel@redhat.com>, mel@csn.ul.ie, rientjes@google.com,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
-Subject: Re: [RFC 2/3] vmscan hook
-Message-Id: <20120117173932.1c058ba4.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1326788038-29141-3-git-send-email-minchan@kernel.org>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-	<1326788038-29141-3-git-send-email-minchan@kernel.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 17 Jan 2012 03:41:21 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Date: Tue, 17 Jan 2012 17:40:31 +0900
+From: Yasunori Goto <y-goto@jp.fujitsu.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1326721082.2442.234.camel@twins>
+References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com> <1326721082.2442.234.camel@twins>
+Message-Id: <20120117174031.3118.E1E9C6FF@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jan 2012 17:13:57 +0900
-Minchan Kim <minchan@kernel.org> wrote:
-
-> This patch insert memory pressure notify point into vmscan.c
-> Most problem in system slowness is swap-in. swap-in is a synchronous
-> opeartion so that it affects heavily system response.
+> On Mon, 2012-01-16 at 20:51 +0900, Yasunori Goto wrote:
 > 
-> This patch alert it when reclaimer start to reclaim inactive anon list.
-> It seems rather earlier but not bad than too late.
+> > try_to_wake_up() has a problem which may change status from TASK_DEAD to
+> > TASK_RUNNING in race condition with SMI or guest environment of virtual
+> > machine. (See: https://lkml.org/lkml/2011/12/21/523)
+> > As a result, exited task is scheduled() again and panic occurs.
+> > 
+> > By this patch, do_exit() waits for releasing task->pi_lock which is used
+> > in try_to_wake_up(). It guarantees the task becomes TASK_DEAD after
+> > waking up.
 > 
-> Other alert point is when there is few cache pages
-> In this implementation, if it is (cache < free pages),
-> memory pressure notify happens. It has to need more testing and tuning
-> or other hueristic. Any suggesion are welcome.
 > 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> This Changelog isn't very good. Please spell out the problem instead of
+> referring to it so that people using git-blame and the like don't then
+> have to go look up some (possibly non-existent) web-resource.
 
-In my 1st impression, isn't this too simple ?
+Ahh, Ok.
 
+I rewrote the description and comment in patch.
+Please check them.
 
-> ---
->  mm/vmscan.c |   28 ++++++++++++++++++++++++++++
->  1 files changed, 28 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 2880396..cfa2e2d 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -43,6 +43,7 @@
->  #include <linux/sysctl.h>
->  #include <linux/oom.h>
->  #include <linux/prefetch.h>
-> +#include <linux/low_mem_notify.h>
->  
->  #include <asm/tlbflush.h>
->  #include <asm/div64.h>
-> @@ -2082,16 +2083,43 @@ static void shrink_mem_cgroup_zone(int priority, struct mem_cgroup_zone *mz,
->  {
->  	unsigned long nr[NR_LRU_LISTS];
->  	unsigned long nr_to_scan;
-> +
->  	enum lru_list lru;
->  	unsigned long nr_reclaimed, nr_scanned;
->  	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
->  	struct blk_plug plug;
-> +#ifdef CONFIG_LOW_MEM_NOTIFY
-> +	bool low_mem = false;
-> +	unsigned long free, file;
-> +#endif
->  
->  restart:
->  	nr_reclaimed = 0;
->  	nr_scanned = sc->nr_scanned;
->  	get_scan_count(mz, sc, nr, priority);
-> +#ifdef CONFIG_LOW_MEM_NOTIFY
-> +	/* We want to avoid swapout */
-> +	if (nr[LRU_INACTIVE_ANON])
-> +		low_mem = true;
+-----
+try_to_wake_up() has a problem which may change status from TASK_DEAD to
+TASK_RUNNING in race condition with SMI or guest environment of virtual
+machine. As a result, exited task is scheduled() again and panic occurs.
 
-IIUC, nr[LRU_INACTIVE_ANON] can be easily > 0.
-And get_scan_count() now check per-memcg-lru. So, this only works when
-memcg is not used.
+Here is the sequence how it occurs.
 
+----------------------------------+-----------------------------
+                                  |
+           CPU A                  |             CPU B
+----------------------------------+-----------------------------
+TASK A calls exit()....
 
-> +	/*
-> +	 * We want to avoid dropping page cache excessively
-> +	 * in no swap system
-> +	 */
-> +	if (nr_swap_pages <= 0) {
-> +		free = zone_page_state(mz->zone, NR_FREE_PAGES);
-> +		file = zone_page_state(mz->zone, NR_ACTIVE_FILE) +
-> +			zone_page_state(mz->zone, NR_INACTIVE_FILE);
-> +		/*
-> +		 * If we have very few page cache pages,
-> +		 * notify to user
-> +		 */
-> +		if (file < free)
-> +			low_mem = true;
-> +	}
+do_exit()
 
-I can't understand why you think you can check lowmem condition by "file < free".
-And I don't think using per-zone data is good.
-(I'm not sure how many zones embeded guys using..)
+  exit_mm()
+    down_read(mm->mmap_sem);
+    
+    rwsem_down_failed_common()
 
-Another idea:
-1. can't we use some technique like cleancache to detect the condition ?
-2. can't we measure page-in/page-out distance by recording something ?
-3. NR_ANON + NR_FILE_MAPPED can't mean the amount of core memory if we can
-   ignore the data file cache ?
-4. how about checking kswapd's busy status ?
+      set TASK_UNINTERRUPTIBLE
+      set waiter.task <= task A
+      list_add to sem->wait_list
+           :
+      raw_spin_unlock_irq()
+      (I/O interruption occured)
+
+                                      __rwsem_do_wake(mmap_sem)
+
+                                        list_del(&waiter->list);
+                                        waiter->task = NULL
+                                        wake_up_process(task A)
+                                          try_to_wake_up()
+                                             (task is still
+                                               TASK_UNINTERRUPTIBLE)
+                                              p->on_rq is still 1.)
+
+                                              ttwu_do_wakeup()
+                                                 (*A)
+                                                   :
+     (I/O interruption handler finished)
+
+      if (!waiter.task) 
+          schedule() is not called
+          due to waiter.task is NULL.
+      
+      tsk->state = TASK_RUNNING
+
+          :
+                                              check_preempt_curr();
+                                                  :
+  task->state = TASK_DEAD
+                                              (*B)
+                                        <---    set TASK_RUNNING (*C)
 
 
 
-Thanks,
--Kame
+     schedule()
+     (exit task is running again)
+     BUG_ON() is called!
+--------------------------------------------------------
+
+
+The execution time between (*A) and (*B) is usually very short,
+because the interruption is disabled, and setting TASK_RUNNING at (*C)
+must be executed before setting TASK_DEAD.
+
+HOWEVER, if SMI is interrupted between (*A) and (*B), 
+(*C) is able to execute AFTER setting TASK_DEAD!
+Then, exited task is scheduled again, and BUG_ON() is called....
+
+If the system works on guest system of virtual machine, the time
+between (*A) and (*B) may be also long due to scheduling of hypervisor,
+and same phenomenon can occur.
+
+
+
+By this patch, do_exit() waits for releasing task->pi_lock which is used
+in try_to_wake_up(). It guarantees the task becomes TASK_DEAD after
+waking up.
+
+
+Signed-off-by: Yasunori Goto <y-goto@jp.fujitsu.com>
+
+---
+ kernel/exit.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+Index: linux-3.2/kernel/exit.c
+===================================================================
+--- linux-3.2.orig/kernel/exit.c
++++ linux-3.2/kernel/exit.c
+@@ -1038,6 +1038,22 @@ NORET_TYPE void do_exit(long code)
+ 
+ 	preempt_disable();
+ 	exit_rcu();
++
++	/*
++	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
++	 * when the following two conditions become true.
++	 *   - There is race condition of mmap_sem (It is acquired by
++	 *     exit_mm()), and
++	 *   - SMI occurs before setting TASK_RUNINNG.
++	 *     (or hypervisor of virtual machine switches to other guest)
++	 *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
++	 *
++	 * To avoid it, we have to wait for releasing tsk->pi_lock which
++	 * is held by try_to_wake_up()
++	 */
++	smp_mb();
++	raw_spin_unlock_wait(&tsk->pi_lock);
++
+ 	/* causes final put_task_struct in finish_task_switch(). */
+ 	tsk->state = TASK_DEAD;
+ 	schedule();
+-----
+
+
+-- 
+Yasunori Goto 
+
 
