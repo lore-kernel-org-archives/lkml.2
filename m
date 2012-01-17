@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab2AQGcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 01:32:45 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:50356 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab2AQGcm (ORCPT
+	id S1752084Ab2AQGha (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 01:37:30 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51306 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab2AQGh2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 01:32:42 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6591"; a="153235529"
-Message-ID: <4F151605.4050700@codeaurora.org>
-Date: Tue, 17 Jan 2012 12:02:37 +0530
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Tue, 17 Jan 2012 01:37:28 -0500
 MIME-Version: 1.0
-To: dan.j.williams@intel.com
-CC: linux-arch@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        vinod.koul@intel.com, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bryanh@codeaurora.org,
-        tsoni@qualcomm.com, Daniel Walker <dwalker@fifo99.com>,
-        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org,
-        johlstei@qualcomm.com
-Subject: Re: [PATCH v2 2/2] msm: DMAEngine: Add DMAEngine driver based on
- old MSM DMA APIs
-References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org> <1325854052-21402-3-git-send-email-kumarrav@codeaurora.org> <1325901569.10425.14.camel@m0nster> <4F0ACB65.3040802@codeaurora.org>
-In-Reply-To: <4F0ACB65.3040802@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAP=VYLqajuhNY1S3e7Nbw4DiyEDL1uGthC8VswJ9zJxzwy+wOQ@mail.gmail.com>
+References: <20120116184527.GA11972@kroah.com>
+	<20120116184518.205969311@clark.kroah.org>
+	<CAP=VYLqajuhNY1S3e7Nbw4DiyEDL1uGthC8VswJ9zJxzwy+wOQ@mail.gmail.com>
+Date: Tue, 17 Jan 2012 07:37:27 +0100
+Message-ID: <CANq1E4SmBNHnbs9EXoUUTzNf3QuHaLWfcFBO3cLmnOymMzsuQQ@mail.gmail.com>
+Subject: Re: [29/48] HID: wiimote: Select INPUT_FF_MEMLESS
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/9/2012 4:41 PM, Ravi Kumar V wrote:
-> On 1/7/2012 7:29 AM, Daniel Walker wrote:
->> On Fri, 2012-01-06 at 18:17 +0530, Ravi Kumar V wrote:
->>> Add DMAEngine based driver using the old MSM DMA APIs internally.
->>> The benefit of this approach is that not all the drivers
->>> have to get converted to DMAEngine APIs simultaneosly while
->>> both the drivers can stay enabled in the kernel. The client
->>> drivers using the old MSM APIs directly can now convert to
->>> DMAEngine one by one.
->>>
->>> Change-Id: I3647ed7b8c73b3078dfa8877a3560db3cb0a2373
->>> Signed-off-by: Ravi Kumar V<kumarrav@codeaurora.org>
->>> ---
+On Tue, Jan 17, 2012 at 2:55 AM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> On Mon, Jan 16, 2012 at 1:44 PM, Greg KH <gregkh@suse.de> wrote:
+>> 3.1-stable review patch.  If anyone has any objections, please let me know.
 >
-> I will address the comments in next patch release, i will wait for
-> sometime for vinod comments and release new patch v3.
+> This one looks like typical patch Makefile/Kconfig "oh, hey this fits anywhere"
+> nonsense, and is completely broken.  Original was for a Wiimote, not Wacom.
 >
-> Ravi
 
-Dan please can you review my patches and let me know your comments.
+Could someone explain to me where this came from? I cannot remember
+writing this patch. I wrote this one:
+http://git.kernel.org/?p=linux/kernel/git/jikos/hid.git;a=commitdiff;h=ef6f41157f3864d9bf42671b2ed66062dcafb72e
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+I don't know where you got this "From" line?
+
+Regards
+David
+
+>
+>>
+>> ------------------
+>>
+>> From: David Herrmann <dh.herrmann@googlemail.com>
+>>
+>> commit ef6f41157f3864d9bf42671b2ed66062dcafb72e upstream.
+>>
+>> We depend on memless force-feedback support, therefore correctly select the
+>> related config options.
+>>
+>> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+>> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+>> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>>
+>> ---
+>>  drivers/hid/Kconfig |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> --- a/drivers/hid/Kconfig
+>> +++ b/drivers/hid/Kconfig
+>> @@ -583,6 +583,7 @@ config HID_WACOM_POWER_SUPPLY
+>>        bool "Wacom Bluetooth devices power supply status support"
+>>        depends on HID_WACOM
+>>        select POWER_SUPPLY
+>> +       select INPUT_FF_MEMLESS
+>>        ---help---
+>>          Say Y here if you want to enable power supply status monitoring for
+>>          Wacom Bluetooth devices.
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
