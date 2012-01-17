@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab2AQHZt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 02:25:49 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44931 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab2AQHZp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 02:25:45 -0500
-X-AuditID: 9c93016f-b7c20ae000005067-36-4f152276263a
-Message-ID: <4F152276.2020403@lge.com>
-Date: Tue, 17 Jan 2012 16:25:42 +0900
-From: Namhyung Kim <namhyung.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1752239Ab2AQH3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 02:29:12 -0500
+Received: from mga14.intel.com ([143.182.124.37]:45816 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751423Ab2AQH3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 02:29:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="57156200"
+Message-ID: <4F152347.1060703@intel.com>
+Date: Tue, 17 Jan 2012 09:29:11 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Joerg Roedel <joerg.roedel@amd.com>, namhyung@gmail.com
-Subject: Re: [PATCH] perf: Fix broken build by rearranging some #includes
-References: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
-In-Reply-To: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+CC: Chris Ball <cjb@laptop.org>, patches@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: change mmc_delay() to use usleep_range()
+References: <1326696200-514-1-git-send-email-dmitry.antipov@linaro.org>
+In-Reply-To: <1326696200-514-1-git-send-email-dmitry.antipov@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, again.
+On 16/01/12 08:43, Dmitry Antipov wrote:
+> Use the usleep_range() to simplify mmc_delay() and give some more
+> accuracy to it - but with an exception of mmc_card_sleepawake():
+> for the hosts with very small (<100us) sleep/awake timeout, it's
+> value is rounded up to 100us so usleep_range() always makes sense.
+> ---
+>  drivers/mmc/core/core.h    |    8 ++------
+>  drivers/mmc/core/mmc_ops.c |    9 ++++++---
+>  2 files changed, 8 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
+> index 3bdafbc..fbd2cba 100644
+> --- a/drivers/mmc/core/core.h
+> +++ b/drivers/mmc/core/core.h
+> @@ -48,12 +48,8 @@ void mmc_power_off(struct mmc_host *host);
+>  
+>  static inline void mmc_delay(unsigned int ms)
+>  {
+> -	if (ms < 1000 / HZ) {
+> -		cond_resched();
+> -		mdelay(ms);
+> -	} else {
+> -		msleep(ms);
+> -	}
+> +	unsigned long us = ms * USEC_PER_MSEC;
+> +	usleep_range(us, us + 1000);
+>  }
+>  
+>  void mmc_rescan(struct work_struct *work);
+> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+> index 4d41fa9..457443a 100644
+> --- a/drivers/mmc/core/mmc_ops.c
+> +++ b/drivers/mmc/core/mmc_ops.c
+> @@ -82,9 +82,12 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
+>  	 * SEND_STATUS command to poll the status because that command (and most
+>  	 * others) is invalid while the card sleeps.
+>  	 */
+> -	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
+> -		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
+> -
+> +	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY)) {
+> +		/* JEDEC MMCA 4.41 specifies the timeout value is in 200ns..838.86ms
+> +		   range, which is rounded it up to 100us here. */
+> +		unsigned long us = DIV_ROUND_UP(card->ext_csd.sa_timeout, 1000);
 
-2012-01-17 11:01 AM, David Daney wrote:
-> From: David Daney<david.daney@cavium.com>
->
-> When building on my Debian/mips system, util/util.c fails to build
-> because commit 1aed2671738785e8f5aea663a6fda91aa7ef59b5 (perf kvm: Do
-> guest-only counting by default) indirectly includes stdio.h before the
-> feature selection in util.h is done.  This prevents _GNU_SOURCE in
-> util.h from enabling the declaration of getline(), from now second
-> inclusion of stdio.h, and the build is broken.
->
-> There is another breakage in util/evsel.c caused by include ordering,
-> but I didn't fully track down the commit that caused it.
->
-> Since the #include situation is a little convoluted throughout perf, I
-> did the following:
->
-> 1) Always include util/util.h before all other include files.
->
-> 2) Remove all #define _GNU_SOURCE, as it is already done in util.h.
->
-> 3) Remove all #undef _GNU_SOURCE, as they don't do what a naive person
->     might expect (or much of anything for that matter) and clutter up
->     the source.
->
-> 4) #include ctype.h in util.h, so that ctype things have uniform
->     definitions throughout perf.
->
-> 5) Remove #define of _FILE_OFFSET_BITS where util/util.h is already
->     providing it.
->
-> This gives me a clean build on x86_64 (fc12) and mips (Debian).
-
-Instead of reordering, how about adding -D_GNU_SOURCE on Makefile and 
-removing the line from util.h? If util.h would always be included at 
-first, the end result should be same, right? And this way, we don't need 
-to care about the ordering anymore.
+The divisor has changed from 10000 to 1000 but the change is from ms to us,
+so it ought to be 3 zeros different - unless it is a bug fix (which should
+be a separate patch)?
 
 
-Thanks,
-Namhyung
+> +		usleep_range(us, us + 100);
+> +	}
+>  	if (!sleep)
+>  		err = mmc_select_card(card);
+>  
+
