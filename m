@@ -1,70 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2AQShS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 13:37:18 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:49615 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750817Ab2AQShR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 13:37:17 -0500
-Message-ID: <1326825433.17202.6.camel@joe2Laptop>
-Subject: [PATCH] vsprintf: Prevent NULL dereference using %pNF
-From: Joe Perches <joe@perches.com>
-To: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 17 Jan 2012 10:37:13 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754627Ab2AQSkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 13:40:49 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:34630 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159Ab2AQSkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 13:40:45 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: avi@redhat.com
+Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
+        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4 V10] Add functions to check if the host has stopped the vm
+Date: Tue, 17 Jan 2012 13:40:39 -0500
+Message-Id: <1326825641-15765-3-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326825641-15765-1-git-send-email-emunson@mgebm.net>
+References: <1326825641-15765-1-git-send-email-emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passing NULL to %pNF is done in skb_gso_segment
-which could be dereferenced.
+When a host stops or suspends a VM it will set a flag to show this.  The
+watchdog will use these functions to determine if a softlockup is real, or the
+result of a suspended VM.
 
-Add noinline_for_stack to function.
-Make pointer argument the actual type.
-Check pointer for NULL and use 0 when so.
-
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+asm-generic changes Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: mingo@redhat.com
+Cc: hpa@zytor.com
+Cc: ryanh@linux.vnet.ibm.com
+Cc: aliguori@us.ibm.com
+Cc: mtosatti@redhat.com
+Cc: jeremy.fitzhardinge@citrix.com
+Cc: kvm@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- lib/vsprintf.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+Changes from V6:
+ Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 8e75003..0f1dfd9 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -777,16 +777,24 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
- 	return string(buf, end, uuid, spec);
+Changes from V5:
+ Collapse generic stubs into this patch
+ check_and_clear_guest_stopped() takes no args and uses __get_cpu_var()
+ Include individual definitions in ia64, s390, and powerpc
+
+ arch/ia64/include/asm/kvm_para.h    |    5 +++++
+ arch/powerpc/include/asm/kvm_para.h |    5 +++++
+ arch/s390/include/asm/kvm_para.h    |    5 +++++
+ arch/x86/include/asm/kvm_para.h     |    8 ++++++++
+ arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
+ include/asm-generic/kvm_para.h      |   14 ++++++++++++++
+ 6 files changed, 58 insertions(+), 0 deletions(-)
+ create mode 100644 include/asm-generic/kvm_para.h
+
+diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+index 1588aee..2019cb9 100644
+--- a/arch/ia64/include/asm/kvm_para.h
++++ b/arch/ia64/include/asm/kvm_para.h
+@@ -26,6 +26,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return 0;
  }
  
--static
--char *netdev_feature_string(char *buf, char *end, const u8 *addr,
--		      struct printf_spec spec)
-+static noinline_for_stack
-+char *netdev_feature_string(char *buf, char *end,
-+			    const netdev_features_t *features,
-+			    struct printf_spec spec)
- {
-+	unsigned long long num;
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
 +
-+	if (features)
-+		num = (unsigned long long)*features;
-+	else
-+		num = 0;
-+
- 	spec.flags |= SPECIAL | SMALL | ZEROPAD;
- 	if (spec.field_width == -1)
- 		spec.field_width = 2 + 2 * sizeof(netdev_features_t);
- 	spec.base = 16;
+ #endif
  
--	return number(buf, end, *(const netdev_features_t *)addr, spec);
-+	return number(buf, end, num, spec);
+ #endif
+diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+index 50533f9..1f80293 100644
+--- a/arch/powerpc/include/asm/kvm_para.h
++++ b/arch/powerpc/include/asm/kvm_para.h
+@@ -169,6 +169,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return r;
  }
  
- int kptr_restrict __read_mostly;
-
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* __POWERPC_KVM_PARA_H__ */
+diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+index 6964db2..a988329 100644
+--- a/arch/s390/include/asm/kvm_para.h
++++ b/arch/s390/include/asm/kvm_para.h
+@@ -149,6 +149,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return 0;
+ }
+ 
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++
+ #endif
+ 
+ #endif /* __S390_KVM_PARA_H */
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 734c376..99c4bbe 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -95,6 +95,14 @@ struct kvm_vcpu_pv_apf_data {
+ extern void kvmclock_init(void);
+ extern int kvm_register_clock(char *txt);
+ 
++#ifdef CONFIG_KVM_CLOCK
++bool kvm_check_and_clear_guest_paused(void);
++#else
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++#endif /* CONFIG_KVMCLOCK */
+ 
+ /* This instruction is vmcall.  On non-VT architectures, it will generate a
+  * trap that we will then rewrite to the appropriate instruction.
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index 44842d7..bdf6423 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -22,6 +22,7 @@
+ #include <asm/msr.h>
+ #include <asm/apic.h>
+ #include <linux/percpu.h>
++#include <linux/hardirq.h>
+ 
+ #include <asm/x86_init.h>
+ #include <asm/reboot.h>
+@@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
+ 	preset_lpj = lpj;
+ }
+ 
++bool kvm_check_and_clear_guest_paused(void)
++{
++	bool ret = false;
++	struct pvclock_vcpu_time_info *src;
++
++	/*
++	 * per_cpu() is safe here because this function is only called from
++	 * timer functions where preemption is already disabled.
++	 */
++	WARN_ON(!in_atomic());
++	src = &__get_cpu_var(hv_clock);
++	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
++		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
++		ret = true;
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
++
+ static struct clocksource kvm_clock = {
+ 	.name = "kvm-clock",
+ 	.read = kvm_clock_get_cycles,
+diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
+new file mode 100644
+index 0000000..05ef7e7
+--- /dev/null
++++ b/include/asm-generic/kvm_para.h
+@@ -0,0 +1,14 @@
++#ifndef _ASM_GENERIC_KVM_PARA_H
++#define _ASM_GENERIC_KVM_PARA_H
++
++
++/*
++ * This function is used by architectures that support kvm to avoid issuing
++ * false soft lockup messages.
++ */
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++
++#endif
+-- 
+1.7.5.4
 
