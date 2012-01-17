@@ -1,420 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab2AQUSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 15:18:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:21745 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755758Ab2AQUSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 15:18:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="97547188"
-Message-Id: <1e89d444cd527f11ff9c24ccca741a25cfab3962.1326831060.git.tony.luck@intel.com>
-From: Tony Luck <tony.luck@intel.com>
-Date: Tue, 17 Jan 2012 12:10:16 -0800
-Subject: [PATCH] acpi/apei/einj: Add extensions to EINJ from rev 5.0 of acpi spec
-To: Len Brown <len.brown@intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chen Gong <gong.chen@linux.intel.com>
+	id S1755736Ab2AQUTe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 15:19:34 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39691 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab2AQUTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 15:19:33 -0500
+Message-ID: <4F15D7D0.2040203@kernel.dk>
+Date: Tue, 17 Jan 2012 21:19:28 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Kernel crash in icq_free_icq_rcu
+References: <20120117201823.GD19223@redhat.com>
+In-Reply-To: <20120117201823.GD19223@redhat.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI 5.0 provides extensions to the EINJ mechanism to specify the
-target for the error injection - by APICID for cpu related errors,
-by address for memory related errors, and by segment/bus/device/function
-for PCIe related errors. Also extensions for vendor specific error
-injections.
+On 2012-01-17 21:18, Vivek Goyal wrote:
+> Hi Tejun,
+> 
+> With latest linus kernel, I see following crash. I was running some
+> scripts which create cgroups and launch fio jobs in those groups. In
+> a separate window I wrote a script to change the IO scheduler on the
+> device in a loop while IO was happening on the device. After few
+> seconds I see following. So far I tried it twice and reproduced it
+> both the times in first few seconds.
+> 
+> Thanks
+> Vivek
+> 
+> 
+> [   94.217015] BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
+> [   94.218004] IP: [<ffffffff81142fae>] kmem_cache_free+0x5e/0x200
+> [   94.218004] PGD 13abda067 PUD 137d52067 PMD 0 
+> [   94.218004] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+> [   94.218004] CPU 0 
+> [   94.218004] Modules linked in: [last unloaded: scsi_wait_scan]
+> [   94.218004] 
+> [   94.218004] Pid: 0, comm: swapper/0 Not tainted 3.2.0+ #16 Hewlett-Packard HP xw6600 Workstation/0A9Ch
+> [   94.218004] RIP: 0010:[<ffffffff81142fae>]  [<ffffffff81142fae>] kmem_cache_free+0x5e/0x200
+> [   94.218004] RSP: 0018:ffff88013fc03de0  EFLAGS: 00010006
+> [   94.218004] RAX: ffffffff81e0d020 RBX: ffff880138b3c680 RCX: 00000001801c001b
+> [   94.218004] RDX: 00000000003aac1d RSI: ffff880138b3c680 RDI: ffffffff81142fae
+> [   94.218004] RBP: ffff88013fc03e10 R08: ffff880137830238 R09: 0000000000000001
+> [   94.218004] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+> [   94.218004] R13: ffffea0004e2cf00 R14: ffffffff812f6eb6 R15: 0000000000000246
+> [   94.218004] FS:  0000000000000000(0000) GS:ffff88013fc00000(0000) knlGS:0000000000000000
+> [   94.218004] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [   94.218004] CR2: 000000000000001c CR3: 00000001395ab000 CR4: 00000000000006f0
+> [   94.218004] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   94.218004] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   94.218004] Process swapper/0 (pid: 0, threadinfo ffffffff81e00000, task ffffffff81e0d020)
+> [   94.218004] Stack:
+> [   94.218004]  0000000000000102 ffff88013fc0db20 ffffffff81e22700 ffff880139500f00
+> [   94.218004]  0000000000000001 000000000000000a ffff88013fc03e20 ffffffff812f6eb6
+> [   94.218004]  ffff88013fc03e90 ffffffff810c8da2 ffffffff81e01fd8 ffff880137830240
+> [   94.218004] Call Trace:
+> [   94.218004]  <IRQ> 
+> [   94.218004]  [<ffffffff812f6eb6>] icq_free_icq_rcu+0x16/0x20
+> [   94.218004]  [<ffffffff810c8da2>] __rcu_process_callbacks+0x1c2/0x420
+> [   94.218004]  [<ffffffff810c9038>] rcu_process_callbacks+0x38/0x250
+> [   94.218004]  [<ffffffff810405ee>] __do_softirq+0xce/0x3e0
+> [   94.218004]  [<ffffffff8108ed04>] ? clockevents_program_event+0x74/0x100
+> [   94.218004]  [<ffffffff81090104>] ? tick_program_event+0x24/0x30
+> [   94.218004]  [<ffffffff8183ed1c>] call_softirq+0x1c/0x30
+> [   94.218004]  [<ffffffff8100422d>] do_softirq+0x8d/0xc0
+> [   94.218004]  [<ffffffff81040c3e>] irq_exit+0xae/0xe0
+> [   94.218004]  [<ffffffff8183f4be>] smp_apic_timer_interrupt+0x6e/0x99
+> [   94.218004]  [<ffffffff8183e330>] apic_timer_interrupt+0x70/0x80
+> [   94.218004]  <EOI> 
+> [   94.218004]  [<ffffffff8100a806>] ? mwait_idle+0xb6/0x4c0
+> [   94.218004]  [<ffffffff8100a7fd>] ? mwait_idle+0xad/0x4c0
+> [   94.218004]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
+> [   94.218004]  [<ffffffff818064df>] rest_init+0x133/0x144
+> [   94.218004]  [<ffffffff81806425>] ? rest_init+0x79/0x144
+> [   94.218004]  [<ffffffff81ed4b51>] start_kernel+0x35b/0x366
+> [   94.218004]  [<ffffffff81ed4321>] x86_64_start_reservations+0x131/0x135
+> [   94.218004]  [<ffffffff81ed4415>] x86_64_start_kernel+0xf0/0xf7
+> [   94.218004] Code: f3 e8 97 cb ee ff 48 c1 e8 0c 48 c1 e0 06 49 01 c5 49 8b 45 00 f6 c4 80 0f 85 99 00 00 00 4c 8b 75 08 9c 41 5f fa e8 12 f8 f4 ff <49> 63 74 24 1c 48 89 df e8 e5 4b f5 ff 41 f7 c7 00 02 00 00 74 
+> [   94.218004] RIP  [<ffffffff81142fae>] kmem_cache_free+0x5e/0x200
+> [   94.218004]  RSP <ffff88013fc03de0>
+> [   94.218004] CR2: 000000000000001c
 
-Tested-by: Chen Gong <gong.chen@linux.intel.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
+Can you try this?
 
-Fix typo in Documentation and add examples (per Chen Gong) comment.
-Break long line in two (checkpatch appeasement)
-Provide stub "readq" definition so build on 32-bit will work [UNTESTED!!!]
 
- Documentation/acpi/apei/einj.txt |   55 ++++++++--
- drivers/acpi/apei/einj.c         |  225 ++++++++++++++++++++++++++++++++------
- include/acpi/actbl1.h            |    3 +-
- 3 files changed, 235 insertions(+), 48 deletions(-)
-
-diff --git a/Documentation/acpi/apei/einj.txt b/Documentation/acpi/apei/einj.txt
-index 5cc699b..7558b3b 100644
---- a/Documentation/acpi/apei/einj.txt
-+++ b/Documentation/acpi/apei/einj.txt
-@@ -47,20 +47,53 @@ directory apei/einj. The following files are provided.
- 
- - param1
-   This file is used to set the first error parameter value. Effect of
--  parameter depends on error_type specified. For memory error, this is
--  physical memory address.  Only available if param_extension module
--  parameter is specified.
-+  parameter depends on error_type specified.
- 
- - param2
-   This file is used to set the second error parameter value. Effect of
--  parameter depends on error_type specified. For memory error, this is
--  physical memory address mask.  Only available if param_extension
--  module parameter is specified.
-+  parameter depends on error_type specified.
-+
-+BIOS versions based in the ACPI 4.0 specification have limited options
-+to control where the errors are injected.  Your BIOS may support an
-+extension (enabled with the param_extension=1 module parameter, or
-+boot command line einj.param_extension=1). This allows the address
-+and mask for memory injections to be specified by the param1 and
-+param2 files in apei/einj.
-+
-+BIOS versions using the ACPI 5.0 specification have more control over
-+the target of the injection. For processor related errors (type 0x1,
-+0x2 and 0x4) the APICID of the target should be provided using the
-+param1 file in apei/einj. For memory errors (type 0x8, 0x10 and 0x20)
-+the address is set using param1 with a mask in param2 (0x0 is equivalent
-+to all ones). For PCI express errors (type 0x40, 0x80 and 0x100) the
-+segment, bus, device and function are specified using param1:
-+
-+         31     24 23    16 15    11 10      8  7        0
-+	+-------------------------------------------------+
-+	| segment |   bus  | device | function | reserved |
-+	+-------------------------------------------------+
-+
-+An ACPI 5.0 BIOS may also allow vendor specific errors to be injected.
-+In this case a file named vendor will contain identifying information
-+from the BIOS that hopefully will allow an application wishing to use
-+the vendor specific extension to tell that they are running on a BIOS
-+that supports it. All vendor extensions have the 0x80000000 bit set in
-+error_type. A file vendor_flags controls the interpretation of param1
-+and param2 (1 = PROCESSOR, 2 = MEMORY, 4 = PCI). See your BIOS vendor
-+documentation for details (and expect changes to this API if vendors
-+creativity in using this feature expands beyond our expectations).
-+
-+Example:
-+# cd /sys/kernel/debug/apei/einj
-+# cat available_error_type		# See which errors can be injected
-+0x00000002	Processor Uncorrectable non-fatal
-+0x00000008	Memory Correctable
-+0x00000010	Memory Uncorrectable non-fatal
-+# echo 0x12345000 > param1		# Set memory address for injection
-+# echo 0xfffffffffffff000 > param2	# Mask - anywhere in this page
-+# echo 0x8 > error_type			# Choose correctable memory error 
-+# echo 1 > error_inject			# Inject now
- 
--Injecting parameter support is a BIOS version specific extension, that
--is, it only works on some BIOS version.  If you want to use it, please
--make sure your BIOS version has the proper support and specify
--"param_extension=y" in module parameter.
- 
- For more information about EINJ, please refer to ACPI specification
--version 4.0, section 17.5.
-+version 4.0, section 17.5 and ACPI 5.0, section 18.6.
-diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
-index 589b96c..aacbf5e 100644
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -43,6 +43,42 @@
- #define FIRMWARE_TIMEOUT	(1 * NSEC_PER_MSEC)
- 
- /*
-+ * ACPI version 5 provides a SET_ERROR_TYPE_WITH_ADDRESS action.
-+ */
-+static int acpi5;
-+
-+struct set_error_type_with_address {
-+	u32	type;
-+	u32	vendor_extension;
-+	u32	flags;
-+	u32	apicid;
-+	u64	memory_address;
-+	u64	memory_address_range;
-+	u32	pcie_sbdf;
-+};
-+enum {
-+	SETWA_FLAGS_APICID = 1,
-+	SETWA_FLAGS_MEM = 2,
-+	SETWA_FLAGS_PCIE_SBDF = 4,
-+};
-+
-+/*
-+ * Vendor extensions for platform specific operations
-+ */
-+struct vendor_error_type_extension {
-+	u32	length;
-+	u32	pcie_sbdf;
-+	u16	vendor_id;
-+	u16	device_id;
-+	u8	rev_id;
-+	u8	reserved[3];
-+};
-+
-+static u32 vendor_flags;
-+static struct debugfs_blob_wrapper vendor_blob;
-+static char vendor_dev[64];
-+
-+/*
-  * Some BIOSes allow parameters to the SET_ERROR_TYPE entries in the
-  * EINJ table through an unpublished extension. Use with caution as
-  * most will ignore the parameter and make their own choice of address
-@@ -103,7 +139,14 @@ static struct apei_exec_ins_type einj_ins_type[] = {
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 163263d..ee55019 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3117,18 +3117,17 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
   */
- static DEFINE_MUTEX(einj_mutex);
- 
--static struct einj_parameter *einj_param;
-+static void *einj_param;
-+
-+#ifndef readq
-+static inline __u64 readq(volatile void __iomem *addr)
-+{
-+	return ((__u64)readl(addr+4) << 32) + readl(addr);
-+}
-+#endif
- 
- #ifndef writeq
- static inline void writeq(__u64 val, volatile void __iomem *addr)
-@@ -158,10 +201,32 @@ static int einj_timedout(u64 *t)
- 	return 0;
- }
- 
--static u64 einj_get_parameter_address(void)
-+static void check_vendor_extension(u64 paddr,
-+				   struct set_error_type_with_address *v5param)
-+{
-+	int	offset = readl(&v5param->vendor_extension);
-+	struct	vendor_error_type_extension *v;
-+	u32	sbdf;
-+
-+	if (!offset)
-+		return;
-+	v = ioremap(paddr + offset, sizeof(*v));
-+	if (!v)
-+		return;
-+	sbdf = readl(&v->pcie_sbdf);
-+	sprintf(vendor_dev, "%x:%x:%x.%x vendor_id=%x device_id=%x rev_id=%x\n",
-+		sbdf >> 24, (sbdf >> 16) & 0xff,
-+		(sbdf >> 11) & 0x1f, (sbdf >> 8) & 0x7,
-+		 readw(&v->vendor_id), readw(&v->device_id),
-+		readb(&v->rev_id));
-+	iounmap(v);
-+}
-+
-+static void *einj_get_parameter_address(void)
+ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
  {
- 	int i;
--	u64 paddr = 0;
-+	u64 paddrv4 = 0, paddrv5 = 0;
-+	void *param;
- 	struct acpi_whea_header *entry;
+-	struct cfq_queue *old_cfqq = cfqd->active_queue;
+-
+ 	cfq_log_cfqq(cfqd, cfqq, "preempt");
+-	cfq_slice_expired(cfqd, 1);
  
- 	entry = EINJ_TAB_ENTRY(einj_tab);
-@@ -170,12 +235,40 @@ static u64 einj_get_parameter_address(void)
- 		    entry->instruction == ACPI_EINJ_WRITE_REGISTER &&
- 		    entry->register_region.space_id ==
- 		    ACPI_ADR_SPACE_SYSTEM_MEMORY)
--			memcpy(&paddr, &entry->register_region.address,
--			       sizeof(paddr));
-+			memcpy(&paddrv4, &entry->register_region.address,
-+			       sizeof(paddrv4));
-+		if (entry->action == ACPI_EINJ_SET_ERROR_TYPE_WITH_ADDRESS &&
-+		    entry->instruction == ACPI_EINJ_WRITE_REGISTER &&
-+		    entry->register_region.space_id ==
-+		    ACPI_ADR_SPACE_SYSTEM_MEMORY)
-+			memcpy(&paddrv5, &entry->register_region.address,
-+			       sizeof(paddrv5));
- 		entry++;
- 	}
-+	if (paddrv5) {
-+		struct set_error_type_with_address *v5param;
+ 	/*
+ 	 * workload type is changed, don't save slice, otherwise preempt
+ 	 * doesn't happen
+ 	 */
+-	if (cfqq_type(old_cfqq) != cfqq_type(cfqq))
++	if (cfqq_type(cfqd->active_queue) != cfqq_type(cfqq))
+ 		cfqq->cfqg->saved_workload_slice = 0;
+ 
++	cfq_slice_expired(cfqd, 1);
 +
-+		v5param = ioremap(paddrv5, sizeof(*v5param));
-+		if (v5param) {
-+			acpi5 = 1;
-+			check_vendor_extension(paddrv5, v5param);
-+			return v5param;
-+		}
-+	}
-+	if (paddrv4) {
-+		struct einj_parameter *v4param;
-+
-+		v4param = ioremap(paddrv4, sizeof(*v4param));
-+		if (!v4param)
-+			return 0;
-+		if (readq(&v4param->reserved1) || readq(&v4param->reserved2)) {
-+			iounmap(param);
-+			return 0;
-+		}
-+		return v4param;
-+	}
- 
--	return paddr;
-+	return 0;
- }
- 
- /* do sanity check to trigger table */
-@@ -293,12 +386,56 @@ static int __einj_error_inject(u32 type, u64 param1, u64 param2)
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, type);
--	rc = apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE);
--	if (rc)
--		return rc;
--	if (einj_param) {
--		writeq(param1, &einj_param->param1);
--		writeq(param2, &einj_param->param2);
-+	if (acpi5) {
-+		struct set_error_type_with_address *v5param = einj_param;
-+
-+		writel(type, &v5param->type);
-+		if (type & 0x80000000) {
-+			switch (vendor_flags) {
-+			case SETWA_FLAGS_APICID:
-+				writel(param1, &v5param->apicid);
-+				break;
-+			case SETWA_FLAGS_MEM:
-+				writeq(param1, &v5param->memory_address);
-+				writeq(param2, &v5param->memory_address_range);
-+				break;
-+			case SETWA_FLAGS_PCIE_SBDF:
-+				writel(param1, &v5param->pcie_sbdf);
-+				break;
-+			}
-+			writel(vendor_flags, &v5param->flags);
-+		} else {
-+			switch (type) {
-+			case ACPI_EINJ_PROCESSOR_CORRECTABLE:
-+			case ACPI_EINJ_PROCESSOR_UNCORRECTABLE:
-+			case ACPI_EINJ_PROCESSOR_FATAL:
-+				writel(param1, &v5param->apicid);
-+				writel(SETWA_FLAGS_APICID, &v5param->flags);
-+				break;
-+			case ACPI_EINJ_MEMORY_CORRECTABLE:
-+			case ACPI_EINJ_MEMORY_UNCORRECTABLE:
-+			case ACPI_EINJ_MEMORY_FATAL:
-+				writeq(param1, &v5param->memory_address);
-+				writeq(param2, &v5param->memory_address_range);
-+				writel(SETWA_FLAGS_MEM, &v5param->flags);
-+				break;
-+			case ACPI_EINJ_PCIX_CORRECTABLE:
-+			case ACPI_EINJ_PCIX_UNCORRECTABLE:
-+			case ACPI_EINJ_PCIX_FATAL:
-+				writel(param1, &v5param->pcie_sbdf);
-+				writel(SETWA_FLAGS_PCIE_SBDF, &v5param->flags);
-+				break;
-+			}
-+		}
-+	} else {
-+		rc = apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE);
-+		if (rc)
-+			return rc;
-+		if (einj_param) {
-+			struct einj_parameter *v4param = einj_param;
-+			writeq(param1, &v4param->param1);
-+			writeq(param2, &v4param->param2);
-+		}
- 	}
- 	rc = apei_exec_run(&ctx, ACPI_EINJ_EXECUTE_OPERATION);
- 	if (rc)
-@@ -408,15 +545,25 @@ static int error_type_set(void *data, u64 val)
- {
- 	int rc;
- 	u32 available_error_type = 0;
-+	u32 tval, vendor;
-+
-+	/*
-+	 * Vendor defined types have 0x80000000 bit set, and
-+	 * are not enumerated by ACPI_EINJ_GET_ERROR_TYPE
-+	 */
-+	vendor = val & 0x80000000;
-+	tval = val & 0x7fffffff;
- 
- 	/* Only one error type can be specified */
--	if (val & (val - 1))
--		return -EINVAL;
--	rc = einj_get_available_error_type(&available_error_type);
--	if (rc)
--		return rc;
--	if (!(val & available_error_type))
-+	if (tval & (tval - 1))
- 		return -EINVAL;
-+	if (!vendor) {
-+		rc = einj_get_available_error_type(&available_error_type);
-+		if (rc)
-+			return rc;
-+		if (!(val & available_error_type))
-+			return -EINVAL;
-+	}
- 	error_type = val;
- 
- 	return 0;
-@@ -455,7 +602,6 @@ static int einj_check_table(struct acpi_table_einj *einj_tab)
- static int __init einj_init(void)
- {
- 	int rc;
--	u64 param_paddr;
- 	acpi_status status;
- 	struct dentry *fentry;
- 	struct apei_exec_context ctx;
-@@ -509,23 +655,30 @@ static int __init einj_init(void)
- 	rc = apei_exec_pre_map_gars(&ctx);
- 	if (rc)
- 		goto err_release;
--	if (param_extension) {
--		param_paddr = einj_get_parameter_address();
--		if (param_paddr) {
--			einj_param = ioremap(param_paddr, sizeof(*einj_param));
--			rc = -ENOMEM;
--			if (!einj_param)
--				goto err_unmap;
--			fentry = debugfs_create_x64("param1", S_IRUSR | S_IWUSR,
--						    einj_debug_dir, &error_param1);
--			if (!fentry)
--				goto err_unmap;
--			fentry = debugfs_create_x64("param2", S_IRUSR | S_IWUSR,
--						    einj_debug_dir, &error_param2);
--			if (!fentry)
--				goto err_unmap;
--		} else
--			pr_warn(EINJ_PFX "Parameter extension is not supported.\n");
-+
-+	einj_param = einj_get_parameter_address();
-+	if ((param_extension || acpi5) && einj_param) {
-+		fentry = debugfs_create_x64("param1", S_IRUSR | S_IWUSR,
-+					    einj_debug_dir, &error_param1);
-+		if (!fentry)
-+			goto err_unmap;
-+		fentry = debugfs_create_x64("param2", S_IRUSR | S_IWUSR,
-+					    einj_debug_dir, &error_param2);
-+		if (!fentry)
-+			goto err_unmap;
-+	}
-+
-+	if (vendor_dev[0]) {
-+		vendor_blob.data = vendor_dev;
-+		vendor_blob.size = strlen(vendor_dev);
-+		fentry = debugfs_create_blob("vendor", S_IRUSR,
-+					     einj_debug_dir, &vendor_blob);
-+		if (!fentry)
-+			goto err_unmap;
-+		fentry = debugfs_create_x32("vendor_flags", S_IRUSR | S_IWUSR,
-+					    einj_debug_dir, &vendor_flags);
-+		if (!fentry)
-+			goto err_unmap;
- 	}
- 
- 	pr_info(EINJ_PFX "Error INJection is initialized.\n");
-diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
-index 7504bc9..f25d7ef 100644
---- a/include/acpi/actbl1.h
-+++ b/include/acpi/actbl1.h
-@@ -228,7 +228,8 @@ enum acpi_einj_actions {
- 	ACPI_EINJ_EXECUTE_OPERATION = 5,
- 	ACPI_EINJ_CHECK_BUSY_STATUS = 6,
- 	ACPI_EINJ_GET_COMMAND_STATUS = 7,
--	ACPI_EINJ_ACTION_RESERVED = 8,	/* 8 and greater are reserved */
-+	ACPI_EINJ_SET_ERROR_TYPE_WITH_ADDRESS = 8,
-+	ACPI_EINJ_ACTION_RESERVED = 9,	/* 9 and greater are reserved */
- 	ACPI_EINJ_TRIGGER_ERROR = 0xFF	/* Except for this value */
- };
- 
+ 	/*
+ 	 * Put the new queue at the front of the of the current list,
+ 	 * so we know that it will be selected next.
+
 -- 
-1.7.3.1
+Jens Axboe
 
