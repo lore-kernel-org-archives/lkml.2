@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab2AQH5N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 02:57:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38776 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab2AQH5M (ORCPT
+	id S1752342Ab2AQIDK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 03:03:10 -0500
+Received: from relmlor2.renesas.com ([210.160.252.172]:62371 "EHLO
+	relmlor2.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab2AQIDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 02:57:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1201152124260.13389@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201152124260.13389@swampdragon.chaosbits.net>
-Date: Tue, 17 Jan 2012 08:57:11 +0100
-Message-ID: <CACRpkdbp=Z0VWwpEv_4KcDaRpAq8O09v=+yf=gtQ+J87i7P-bg@mail.gmail.com>
-Subject: Re: [PATCH] Don't needlessly include linux/version.h in drivers/mfd/ab5500-core.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        trivial@kernel.org, Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        Karl Komierowski <karl.komierowski@stericsson.com>,
-        Bibek Basu <bibek.basu@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 17 Jan 2012 03:03:08 -0500
+X-IronPort-AV: E=Sophos;i="4.71,522,1320591600";   d="scan'208";a="63617572"
+From: Miles Bader <miles@gnu.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nguyen Thai Ngoc Duy <pclouds@gmail.com>,
+        Junio C Hamano <gitster@pobox.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Git Mailing List <git@vger.kernel.org>
+Subject: Re: [PATCH] merge: Make merge strategy message follow the diffstat
+References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
+ <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
+ <20120110184530.GE7164@opensource.wolfsonmicro.com>
+ <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
+ <20120110222711.GK7164@opensource.wolfsonmicro.com>
+ <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
+ <20120111184026.GA23952@windriver.com>
+ <7vaa5rzaax.fsf_-_@alter.siamese.dyndns.org>
+ <CACsJy8BmFgssTAh=1U7JgBsGG-tSaWXQzZeODND3icXY3QUxug@mail.gmail.com>
+ <CA+55aFxw_-0h1FDmPRVif3LM03Qh3-6haA7=KYbae8pSFbpW2w@mail.gmail.com>
+System-Type: x86_64-unknown-linux-gnu
+Blat: Foop
+Date: Tue, 17 Jan 2012 17:03:03 +0900
+In-reply-to: <CA+55aFxw_-0h1FDmPRVif3LM03Qh3-6haA7=KYbae8pSFbpW2w@mail.gmail.com>
+Message-id: <buomx9mhi2w.fsf@dhlpc061.dev.necel.com>
+MIME-version: 1.0
+Content-type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 15, 2012 at 9:26 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+So ... "--shortish-diffthingy"
 
-> As 'make versioncheck' so nicely points out, there's no need for
-> drivers/mfd/ab5500-core.c to #include the linux/version.h header.
-> This patch removes the pointless include.
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+-miles
 
-Remnant of some kernelversion-specific code that is now
-deleted. Thanks Jesper!
-
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+-- 
+Zeal, n. A certain nervous disorder afflicting the young and inexperienced.
