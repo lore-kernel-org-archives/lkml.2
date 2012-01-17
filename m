@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab2AQAfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 19:35:41 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:37015 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab2AQAfk (ORCPT
+	id S1752253Ab2AQAgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 19:36:25 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:29076 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751223Ab2AQAgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 19:35:40 -0500
-X-AuditID: cbfee60e-b7c59ae000007ec6-c0-4f14c258a6d1
-Date: Tue, 17 Jan 2012 00:35:36 +0000 (GMT)
-From: =?euc-kr?B?w9bBvsiv?= <jhbird.choi@samsung.com>
-Subject: Re: Re: [PATCH] driver-core: Fix null reference in
- subsys_interface_unregister
-To: Greg KH <gregkh@suse.de>,
-        =?euc-kr?Q?=C3=D6=C1=BE=C8=AF?= <jhbird.choi@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?euc-kr?Q?=B1=E8=B1=B9=C1=F8?= <kgene.kim@samsung.com>
-Reply-to: jhbird.choi@samsung.com
-MIME-version: 1.0
-X-MTR: 20120117002241776@jhbird.choi
-Msgkey: 20120117002241776@jhbird.choi
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120117002241776@jhbird.choi
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <15905052.41411326760535818.JavaMail.weblogic@epv6ml08>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 16 Jan 2012 19:36:23 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AloVANK+FE95LbVq/2dsb2JhbABErDAHAYEDgQaBcgEBBAEyASMjBQsIAxguFCUDIROHerYQE4kYAQEICQ0LBgQBBQgFBBEFAQYBAQYBBQYJDRABAgEBCAEBAQECgngBBQECAwcBBAEBAQGDKmMElRCSVg
+Date: Tue, 17 Jan 2012 11:36:13 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+Message-ID: <20120117003613.GA28571@dastard>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
+ <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
+ <20120116160136.GC16431@quack.suse.cz>
+ <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0H0ZjwN014242
 
-Greg KH wrote:
-
->On Sat, Jan 14, 2012 at 11:06:03AM +0900, jhbird.choi@samsung.com wrote:
->> From: Jonghwan Choi 
+On Mon, Jan 16, 2012 at 10:55:55AM -0800, Linus Torvalds wrote:
+> On Mon, Jan 16, 2012 at 8:01 AM, Jan Kara <jack@suse.cz> wrote:
 > >
-> >Check if the sif is not NULL before de-referencing it
+> >  Hum, let me understand this. I understand the meaning of buffer_uptodate
+> > bit as "the buffer has at least as new content as what is on disk". Now
+> > when storage cannot write the block under the buffer, the contents of the
+> > buffer is still "at least as new as what is (was) on disk".
+> 
+> No.
+> 
+> Stop making crap up.
 
->Why would it be?  Have you hit this somehow?  If so, in what code?
+Jan is right, Linus. His definition of what up-to-date means for
+dirty buffers is correct, especially in the case of write errors.
 
-> thanks,
+> If the write fails, the buffer contents have *nothing* to do with what
+> is on disk.
 
-> greg k-h
+The dirty buffer contains what is *supposed* to be on disk. If we
+fail to write it, we corrupt some application's data.
 
+> You don't know what the disk contents are.
 
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 99dc592..4ddb38b 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -1193,13 +1193,15 @@ EXPORT_SYMBOL_GPL(subsys_interface_register);
+But *we don't care* what is on disk after a write error because
+there is no guarantee that after a write error we can even read the
+previous data that was on disk. IOWs, the contents of the region on
+disk where the write failed is -undefined- and cannot be trusted.
 
- void subsys_interface_unregister(struct subsys_interface *sif)
- {
--       struct bus_type *subsys = sif->subsys;   // -> Sif is already used, that means sif is not null
-+       struct bus_type *subsys;
-        struct subsys_dev_iter iter;
-        struct device *dev;
+> So clearly the buffer cannot be up-to-date.
 
--       if (!sif)  // -> Check whether sif is null 
-+       if (!sif || !sif->subsys)
-                return;
+What we have in memory is what is *supposed* to be on disk, and the
+error is telling us that the disk is failing to be made up-to-date.
+IOWs, the disk is stale after a write error, not what is in memory.
+So clearly the buffer contains the up-to-date version of the data
+after a write error.
 
-+       subsys = sif->subsys;
-+
-        mutex_lock(&subsys->p->mutex);
-        list_del_init(&sif->node);
-        if (sif->remove_dev) {
+How the filesystem handles that error is now up to the filesystem.
+For example, the filesystem can chose to allocate new blocks for the
+failed write and write the valid, up-to-date in-memory data to a
+different location and continue onwards without errors. From this
+example, it's pretty obvious that the data in memory contains the
+data that what we need to care about after a write error, not what
+is on disk.
+
+> Now, feel free to use *other* arguments for why we shouldn't clear the
+> up-to-date bit, but using the disk contents as one is pure and utter
+> garbage. And it is *obviously* pure and utter garbage.
+
+For the read case you are correct, but that logic (that the disk
+version is always correct) does not apply to handling write errors.
+It's an important distinction....
+
+Cheers,
+
+Dave.
 -- 
-
-sif is already used, but  null pointer check for sif later.
-so i think that sif should be checked before use it.
-
-
-Sorry about that, since my e-mail client has a problem,
- I couldn't send that to mailing list. I will send it to mailing list.
- Thanks.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Dave Chinner
+david@fromorbit.com
