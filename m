@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab2AQVMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:12:18 -0500
-Received: from rere.qmqm.pl ([89.167.52.164]:49991 "EHLO rere.qmqm.pl"
+	id S1755959Ab2AQVOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:14:11 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:44376 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755555Ab2AQVMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:12:17 -0500
-Date: Tue, 17 Jan 2012 22:12:15 +0100
-From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
-To: Joe Perches <joe@perches.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vsprintf: Prevent NULL dereference using %pNF
-Message-ID: <20120117211215.GA18268@rere.qmqm.pl>
-References: <1326825433.17202.6.camel@joe2Laptop>
- <20120117.134640.1673981737109339596.davem@davemloft.net>
- <1326826273.17202.11.camel@joe2Laptop>
- <20120117193910.GA17092@rere.qmqm.pl>
- <1326829420.17202.21.camel@joe2Laptop>
+	id S1755631Ab2AQVOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 16:14:10 -0500
+From: James Bottomley <jbottomley@parallels.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+CC: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Fix compile breakage with kref.h
+Thread-Topic: Fix compile breakage with kref.h
+Thread-Index: AQHM1VzxLNCfI82BwEKdqe1+VaxU0w==
+Date: Tue, 17 Jan 2012 21:14:05 +0000
+Message-ID: <1326834845.3020.36.camel@dabdike>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [194.186.187.194]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <9E0DB16776AF8B479083D49B9B5E685D@sw.swsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1326829420.17202.21.camel@joe2Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0HLEF7C020244
 
-On Tue, Jan 17, 2012 at 11:43:40AM -0800, Joe Perches wrote:
-> On Tue, 2012-01-17 at 20:39 +0100, Micha³ Miros³aw wrote:
-> > On Tue, Jan 17, 2012 at 10:51:13AM -0800, Joe Perches wrote:
-> > > On Tue, 2012-01-17 at 13:46 -0500, David Miller wrote:
-> > > > From: Joe Perches <joe@perches.com>
-> > > > Date: Tue, 17 Jan 2012 10:37:13 -0800
-> > > > > Passing NULL to %pNF is done in skb_gso_segment
-> > > > > which could be dereferenced.
-> > > > skb_gso_segment() should be fixed instead.
-> > > Maybe.  Dereferencing NULL is bad form.
-> > > Micha³ Miros³aw should fix that as it's his patch.
-> > Will do. This is in WARN() and easily fixed.
-> > 
-> > > noinline_for_stack should be added anyway.
-> > 
-> > Why? There are no local variables there and inlining this function would
-> > actually save stack space as no stack frame would be created for the call.
-> Isn't an additional copy of "struct printf_spec spec" on the stack
-> in function pointer() now?
+This set of build failures just started appearing on parisc:
 
-If the function is inlined then gcc should know that original is not needed
-after call and do no copy. Without inlining, gcc should too, optimize it
-because it's a tail call.
+In file included from drivers/input/serio/serio_raw.c:12:
+include/linux/kref.h: In function 'kref_get':
+include/linux/kref.h:40: error: 'TAINT_WARN' undeclared (first use in this function)
+include/linux/kref.h:40: error: (Each undeclared identifier is reported only once
+include/linux/kref.h:40: error: for each function it appears in.)
+include/linux/kref.h: In function 'kref_sub':
+include/linux/kref.h:65: error: 'TAINT_WARN' undeclared (first use in this function)
 
-We could read the generated assembly to be sure, of course.
+It happens because TAINT_WARN is defined in kernel.h and this particular
+compile doesn't seem to include it (no idea why it's just
+manifesting ... probably some #include file untangling exposed it).  Fix
+by adding #include <linux/kernel.h> to linux/kref.h
 
-Best Regards,
-Micha³ Miros³aw
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+
+---
+
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index abc0120..9c07dce 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/bug.h>
+ #include <linux/atomic.h>
++#include <linux/kernel.h>
+ 
+ struct kref {
+ 	atomic_t refcount;
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
