@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab2AQNQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 08:16:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53789 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753578Ab2AQNQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 08:16:05 -0500
-Date: Tue, 17 Jan 2012 14:16:01 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: memcg: remove checking reclaim order in soft limit
- reclaim
-Message-ID: <20120117131601.GB14907@tiehlicka.suse.cz>
-References: <CAJd=RBBdDriMhfetM2AWGzgxiJ1DDs-W4Ff9_1Z8DUgbyQmSkA@mail.gmail.com>
+	id S1754025Ab2AQNUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 08:20:24 -0500
+Received: from cc-smtpout3.netcologne.de ([89.1.8.213]:40750 "EHLO
+	cc-smtpout3.netcologne.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab2AQNUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 08:20:23 -0500
+X-AuthUser: garloff@garloff.de
+References: <20120115213005.GT12380@tpkurt2.garloff.de> <20120115213407.GU12380@tpkurt2.garloff.de> <4F153E53.6020108@kernel.org>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <4F153E53.6020108@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBBdDriMhfetM2AWGzgxiJ1DDs-W4Ff9_1Z8DUgbyQmSkA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/3]: Store SRAT revision
+From: Kurt Garloff <kurt@garloff.de>
+Date: Tue, 17 Jan 2012 14:20:11 +0100
+To: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "Luck, Tony" <tony.luck@intel.com>,
+        x86@vger.kernel.org
+Message-ID: <2cf343f2-24d6-4912-b4fe-121956cdd612@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Len,
 
-On Tue 17-01-12 20:47:59, Hillf Danton wrote:
-> If async order-O reclaim expected here, it is settled down when setting up scan
-> control, with scan priority hacked to be zero. Other than that, deny of reclaim
-> should be removed.
 
-Maybe I have misunderstood you but this is not right. The check is to
-protect from the _global_ reclaim with order > 0 when we prevent from
-memcg soft reclaim.
 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/mm/memcontrol.c	Tue Jan 17 20:41:36 2012
-> +++ b/mm/memcontrol.c	Tue Jan 17 20:47:48 2012
-> @@ -3512,9 +3512,6 @@ unsigned long mem_cgroup_soft_limit_recl
->  	unsigned long long excess;
->  	unsigned long nr_scanned;
-> 
-> -	if (order > 0)
-> -		return 0;
-> -
->  	mctz = soft_limit_tree_node_zone(zone_to_nid(zone), zone_idx(zone));
->  	/*
->  	 * This loop can run a while, specially if mem_cgroup's continuously
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Len Brown <lenb@kernel.org> schrieb:
 
+> looks fine to me.
+> as #2 (x86) and #3 (ia64) depend on #1, which is ACPI,
+> I can send this via the ACPI tree.
+
+Thanks for reviewing this!
+I'll wait for the git commits then and resubmit to stable (forgot to add a Cc line in the signed-off section, as GKH thankfully pointed out).
+
+Thx,
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Kurt Garloff <kurt@garloff.de>  [Köln/Greven]
+(Sent from Android phone with K-9 Mail.)
