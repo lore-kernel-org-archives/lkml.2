@@ -1,83 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab2AQMYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:24:39 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43521 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753809Ab2AQMYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 07:24:36 -0500
-Date: Tue, 17 Jan 2012 13:23:50 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v9 3.2 7/9] tracing: uprobes trace_event interface
-Message-ID: <20120117122350.GD4959@elte.hu>
-References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
- <20120110114943.17610.28293.sendpatchset@srdronam.in.ibm.com>
- <20120116131137.GB5265@m.brq.redhat.com>
- <20120117092838.GB10397@elte.hu>
- <20120117102231.GB15447@linux.vnet.ibm.com>
- <20120117112239.GA23859@elte.hu>
- <20120117115705.GD15447@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117115705.GD15447@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1753811Ab2AQMYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:24:50 -0500
+Received: from vms173003pub.verizon.net ([206.46.173.3]:51589 "EHLO
+	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab2AQMWZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 07:22:25 -0500
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 31/50] ACPI, Add RAM mapping support to ACPI atomic IO support
+Date: Tue, 17 Jan 2012 07:21:23 -0500
+Message-id: <76da3fb3575e39fb23b2c072997ccd1187a2ce9d.1326802230.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.9.rc1
+In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
+References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
+In-reply-to: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
+References: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
+Reply-to: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Huang Ying <ying.huang@intel.com>
 
-* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+On one of our testing machine, the following EINJ command lines:
 
-> > Srikar, rebased commits like this one:
-> > 
-> >   c5af743: rcu: Introduce raw SRCU read-side primitives
-> > 
-> > are absolutely inacceptable:
-> > 
-> 
-> Okay, I wasnt sure whats the best way for me to expose a tree 
-> such that people who just use my tree to try (without basing 
-> on any other trees except Linus) can build and use uprobes but 
-> people who already have this commit arent affected by me 
-> having this commit.
-> 
-> So couple of people did tell me that git was intelligent enuf 
-> that if the commit was already in, it would create a empty 
-> commit.
-> 
-> do you have suggestions on how to work around such situations 
-> in future?
+  # echo 0x10000000 > param1
+  # echo 0xfffffffffffff000 > param2
+  # echo 0x8 > error_type
+  # echo 1 > error_inject
 
-You can just apply it out of email, as a regular commit.
+Will get:
 
-Thanks,
+  echo: write error: Input/output error
 
-	Ingo
+The EIO comes from:
+
+    rc = apei_exec_pre_map_gars(&trigger_ctx);
+
+The root cause is as follow.  Normally, ACPI atomic IO support is used
+to access IO memory.  But in EINJ of that machine, it is used to
+access RAM to trigger the injected error.  And the ioremap() called by
+apei_exec_pre_map_gars() can not map the RAM.
+
+This patch add RAM mapping support to ACPI atomic IO support to
+satisfy EINJ requirement.
+
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Tested-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/atomicio.c |   41 +++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 37 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+index 1016f18..d4a5b3d 100644
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -32,6 +32,8 @@
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
++#include <linux/mm.h>
++#include <linux/highmem.h>
+ #include <acpi/atomicio.h>
+ 
+ #define ACPI_PFX "ACPI: "
+@@ -97,6 +99,37 @@ static void __iomem *__acpi_try_ioremap(phys_addr_t paddr,
+ 		return NULL;
+ }
+ 
++#ifndef CONFIG_IA64
++#define should_use_kmap(pfn)	page_is_ram(pfn)
++#else
++/* ioremap will take care of cache attributes */
++#define should_use_kmap(pfn)	0
++#endif
++
++static void __iomem *acpi_map(phys_addr_t pg_off, unsigned long pg_sz)
++{
++	unsigned long pfn;
++
++	pfn = pg_off >> PAGE_SHIFT;
++	if (should_use_kmap(pfn)) {
++		if (pg_sz > PAGE_SIZE)
++			return NULL;
++		return (void __iomem __force *)kmap(pfn_to_page(pfn));
++	} else
++		return ioremap(pg_off, pg_sz);
++}
++
++static void acpi_unmap(phys_addr_t pg_off, void __iomem *vaddr)
++{
++	unsigned long pfn;
++
++	pfn = pg_off >> PAGE_SHIFT;
++	if (page_is_ram(pfn))
++		kunmap(pfn_to_page(pfn));
++	else
++		iounmap(vaddr);
++}
++
+ /*
+  * Used to pre-map the specified IO memory area. First try to find
+  * whether the area is already pre-mapped, if it is, increase the
+@@ -119,7 +152,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 
+ 	pg_off = paddr & PAGE_MASK;
+ 	pg_sz = ((paddr + size + PAGE_SIZE - 1) & PAGE_MASK) - pg_off;
+-	vaddr = ioremap(pg_off, pg_sz);
++	vaddr = acpi_map(pg_off, pg_sz);
+ 	if (!vaddr)
+ 		return NULL;
+ 	map = kmalloc(sizeof(*map), GFP_KERNEL);
+@@ -135,7 +168,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 	vaddr = __acpi_try_ioremap(paddr, size);
+ 	if (vaddr) {
+ 		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+-		iounmap(map->vaddr);
++		acpi_unmap(pg_off, map->vaddr);
+ 		kfree(map);
+ 		return vaddr;
+ 	}
+@@ -144,7 +177,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 
+ 	return map->vaddr + (paddr - map->paddr);
+ err_unmap:
+-	iounmap(vaddr);
++	acpi_unmap(pg_off, vaddr);
+ 	return NULL;
+ }
+ 
+@@ -177,7 +210,7 @@ static void acpi_post_unmap(phys_addr_t paddr, unsigned long size)
+ 		return;
+ 
+ 	synchronize_rcu();
+-	iounmap(map->vaddr);
++	acpi_unmap(map->paddr, map->vaddr);
+ 	kfree(map);
+ }
+ 
+-- 
+1.7.9.rc1
+
