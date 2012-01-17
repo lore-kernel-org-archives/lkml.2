@@ -1,137 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab2AQUlB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 15:41:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41871 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755551Ab2AQUk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 15:40:58 -0500
-Date: Tue, 17 Jan 2012 15:40:53 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Kernel crash in icq_free_icq_rcu
-Message-ID: <20120117204053.GE19223@redhat.com>
-References: <20120117201823.GD19223@redhat.com>
- <4F15D7D0.2040203@kernel.dk>
+	id S1755639Ab2AQUmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 15:42:44 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61538 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab2AQUmn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 15:42:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F15D7D0.2040203@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5jJvjq5f7Qw1ADh120jAtUsH+L4BW6CY+uaD7GFN53nPBw@mail.gmail.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	<1326302710-9427-2-git-send-email-wad@chromium.org>
+	<20120112162231.GA23960@redhat.com>
+	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
+	<20120112172315.GA26295@redhat.com>
+	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
+	<addf0ca0d9cc381436209af3afdf878f.squirrel@webmail.greenhost.nl>
+	<CABqD9hbBu8cEbArJWhSr-exFUDrnLSXskP1RrTATBczH2MYzFA@mail.gmail.com>
+	<293e9587acd158b91d7d1793c7e16f7c.squirrel@webmail.greenhost.nl>
+	<CABqD9hY2Uhc2Gzy05+Q+_NrZAq+126+avAO0Kd81zDnEi3EXjQ@mail.gmail.com>
+	<9642e1197443efe9716f418c4883489e.squirrel@webmail.greenhost.nl>
+	<CAGXu5jJvjq5f7Qw1ADh120jAtUsH+L4BW6CY+uaD7GFN53nPBw@mail.gmail.com>
+Date: Tue, 17 Jan 2012 14:42:41 -0600
+Message-ID: <CABqD9hYP9TOhZLEXbTc-koba4x=z2wdkuNeh3AUmTWcw0+Ywxg@mail.gmail.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Indan Zupancic <indan@nul.nu>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org,
+        Roland McGrath <mcgrathr@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 09:19:28PM +0100, Jens Axboe wrote:
-> On 2012-01-17 21:18, Vivek Goyal wrote:
-> > Hi Tejun,
-> > 
-> > With latest linus kernel, I see following crash. I was running some
-> > scripts which create cgroups and launch fio jobs in those groups. In
-> > a separate window I wrote a script to change the IO scheduler on the
-> > device in a loop while IO was happening on the device. After few
-> > seconds I see following. So far I tried it twice and reproduced it
-> > both the times in first few seconds.
-> > 
-> > Thanks
-> > Vivek
-> > 
-> > 
-> > [   94.217015] BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
-> > [   94.218004] IP: [<ffffffff81142fae>] kmem_cache_free+0x5e/0x200
-> > [   94.218004] PGD 13abda067 PUD 137d52067 PMD 0 
-> > [   94.218004] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-> > [   94.218004] CPU 0 
-> > [   94.218004] Modules linked in: [last unloaded: scsi_wait_scan]
-> > [   94.218004] 
-> > [   94.218004] Pid: 0, comm: swapper/0 Not tainted 3.2.0+ #16 Hewlett-Packard HP xw6600 Workstation/0A9Ch
-> > [   94.218004] RIP: 0010:[<ffffffff81142fae>]  [<ffffffff81142fae>] kmem_cache_free+0x5e/0x200
-> > [   94.218004] RSP: 0018:ffff88013fc03de0  EFLAGS: 00010006
-> > [   94.218004] RAX: ffffffff81e0d020 RBX: ffff880138b3c680 RCX: 00000001801c001b
-> > [   94.218004] RDX: 00000000003aac1d RSI: ffff880138b3c680 RDI: ffffffff81142fae
-> > [   94.218004] RBP: ffff88013fc03e10 R08: ffff880137830238 R09: 0000000000000001
-> > [   94.218004] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-> > [   94.218004] R13: ffffea0004e2cf00 R14: ffffffff812f6eb6 R15: 0000000000000246
-> > [   94.218004] FS:  0000000000000000(0000) GS:ffff88013fc00000(0000) knlGS:0000000000000000
-> > [   94.218004] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [   94.218004] CR2: 000000000000001c CR3: 00000001395ab000 CR4: 00000000000006f0
-> > [   94.218004] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > [   94.218004] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > [   94.218004] Process swapper/0 (pid: 0, threadinfo ffffffff81e00000, task ffffffff81e0d020)
-> > [   94.218004] Stack:
-> > [   94.218004]  0000000000000102 ffff88013fc0db20 ffffffff81e22700 ffff880139500f00
-> > [   94.218004]  0000000000000001 000000000000000a ffff88013fc03e20 ffffffff812f6eb6
-> > [   94.218004]  ffff88013fc03e90 ffffffff810c8da2 ffffffff81e01fd8 ffff880137830240
-> > [   94.218004] Call Trace:
-> > [   94.218004]  <IRQ> 
-> > [   94.218004]  [<ffffffff812f6eb6>] icq_free_icq_rcu+0x16/0x20
-> > [   94.218004]  [<ffffffff810c8da2>] __rcu_process_callbacks+0x1c2/0x420
-> > [   94.218004]  [<ffffffff810c9038>] rcu_process_callbacks+0x38/0x250
-> > [   94.218004]  [<ffffffff810405ee>] __do_softirq+0xce/0x3e0
-> > [   94.218004]  [<ffffffff8108ed04>] ? clockevents_program_event+0x74/0x100
-> > [   94.218004]  [<ffffffff81090104>] ? tick_program_event+0x24/0x30
-> > [   94.218004]  [<ffffffff8183ed1c>] call_softirq+0x1c/0x30
-> > [   94.218004]  [<ffffffff8100422d>] do_softirq+0x8d/0xc0
-> > [   94.218004]  [<ffffffff81040c3e>] irq_exit+0xae/0xe0
-> > [   94.218004]  [<ffffffff8183f4be>] smp_apic_timer_interrupt+0x6e/0x99
-> > [   94.218004]  [<ffffffff8183e330>] apic_timer_interrupt+0x70/0x80
-> > [   94.218004]  <EOI> 
-> > [   94.218004]  [<ffffffff8100a806>] ? mwait_idle+0xb6/0x4c0
-> > [   94.218004]  [<ffffffff8100a7fd>] ? mwait_idle+0xad/0x4c0
-> > [   94.218004]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
-> > [   94.218004]  [<ffffffff818064df>] rest_init+0x133/0x144
-> > [   94.218004]  [<ffffffff81806425>] ? rest_init+0x79/0x144
-> > [   94.218004]  [<ffffffff81ed4b51>] start_kernel+0x35b/0x366
-> > [   94.218004]  [<ffffffff81ed4321>] x86_64_start_reservations+0x131/0x135
-> > [   94.218004]  [<ffffffff81ed4415>] x86_64_start_kernel+0xf0/0xf7
-> > [   94.218004] Code: f3 e8 97 cb ee ff 48 c1 e8 0c 48 c1 e0 06 49 01 c5 49 8b 45 00 f6 c4 80 0f 85 99 00 00 00 4c 8b 75 08 9c 41 5f fa e8 12 f8 f4 ff <49> 63 74 24 1c 48 89 df e8 e5 4b f5 ff 41 f7 c7 00 02 00 00 74 
-> > [   94.218004] RIP  [<ffffffff81142fae>] kmem_cache_free+0x5e/0x200
-> > [   94.218004]  RSP <ffff88013fc03de0>
-> > [   94.218004] CR2: 000000000000001c
-> 
-> Can you try this?
+On Tue, Jan 17, 2012 at 2:34 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Jan 16, 2012 at 10:46 PM, Indan Zupancic <indan@nul.nu> wrote:
+>> So call it once and store the value in a long. Then copy the low half
+>> to the right place and then the upper half when on 64 bits. It may not
+>> look too pretty, but the compiler should be able to optimise almost all
+>> overhead away and end up with 6 (or 12) int copies. Something like this:
+>>
+>> struct bpf_data {
+>>        uint32 syscall_nr;
+>>        uint32 arg_low[MAX_SC_ARGS];
+>>        uint32 arg_high[MAX_SC_ARGS];
+>> };
+>>
+>> void fill_bpf_data(struct task_struct *t, struct pt_regs *r, struct bpf_data *d)
+>> {
+>>        int i;
+>>        unsigned long arg;
+>>
+>>        d->syscall_nr = syscall_get_nr(t, r);
+>>        for (i = 0; i < MAX_SC_ARGS; ++i){
+>>                syscall_get_arguments(t, r, i, 1, &arg);
+>>                d->arg_low[i] = arg;
+>>                d->arg_high[i] = arg >> 32;
+>>        }
+>> }
+>
+> If this turns out to be expensive, it might be possible to break it up
+> and load the arguments on demand (and cache them); i.e. have
+> load_pointer() or similar notice when it is about to access something
+> other than bpf_data.syscall_nr.
 
-Nope, this does not help either. Can reproduce the issue with below
-patch applied.
+Makes perfect sense!  In theory (as a few other people pointed this
+out off list), it is entirely possible to never populate any data for
+load_pointer except an optional cache.  Just provide a custom
+load_pointer that knows to take the offset return the syscall nr or
+the args or some slice of the returned data.
 
-> 
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 163263d..ee55019 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -3117,18 +3117,17 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
->   */
->  static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  {
-> -	struct cfq_queue *old_cfqq = cfqd->active_queue;
-> -
->  	cfq_log_cfqq(cfqd, cfqq, "preempt");
-> -	cfq_slice_expired(cfqd, 1);
->  
->  	/*
->  	 * workload type is changed, don't save slice, otherwise preempt
->  	 * doesn't happen
->  	 */
-> -	if (cfqq_type(old_cfqq) != cfqq_type(cfqq))
-> +	if (cfqq_type(cfqd->active_queue) != cfqq_type(cfqq))
->  		cfqq->cfqg->saved_workload_slice = 0;
->  
-> +	cfq_slice_expired(cfqd, 1);
-> +
+This is even easier if the struct looks like:
+struct {
+  int nr;
+  union {
+    uint32_t args32[6];
+    uint64_t args64[6];
+  }
+};
 
-cfq_slice_expired() will overwrite the value of
-cfqq->cfqg->saved_workload_slice. So we need to set it to zero after
-cfq_slice_expired.
+since you can just use the offset without doing any endian-based
+splitting.  Another suggestion (thanks roland!) was to add
+  int syscall_arch;
+to the struct populated with the AUDIT_ARCH_* defines.  This would
+help the case Indan was worried about -- portable filter programs.
 
-I was thinking of just saving the workload type of cfqq before
-cfq_slice_expired() so that we don't access old cfqq after
-cfq_slice_expired(). But then I noticed that we don't drop a cfqq
-reference in cfq_slice_expired(). So not sure how cfq_slice_expired()
-can lead to freeing up of queue. It should happen only when process
-has exited and last request on the queue if finished. 
+It looks like there'd be some cross-arch plumbing to make the
+AUDIT_ARCH_ data available, but not too bad.
 
-Thanks
-Vivek
+Seem sane? I'm headed down this path now and I think it'll work out
+assuming there aren't major objections to the syscall_arch piece.
+
+thanks!
+will
