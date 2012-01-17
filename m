@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab2AQPCD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 10:02:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754547Ab2AQPCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 10:02:01 -0500
-Date: Tue, 17 Jan 2012 15:55:40 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
-Message-ID: <20120117145540.GA12626@redhat.com>
-References: <20120113182015.GA3902@redhat.com> <20120115182441.GA24694@redhat.com> <20120116074540.GE15641@elte.hu> <1326717070.7642.144.camel@gandalf.stny.rr.com> <20120116125329.GB31667@elte.hu> <1326729123.7642.146.camel@gandalf.stny.rr.com> <20120117100222.GH10397@elte.hu> <1326801811.7642.188.camel@gandalf.stny.rr.com> <20120117124023.GA13969@elte.hu> <1326811069.17534.46.camel@gandalf.stny.rr.com>
+	id S1754642Ab2AQPEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 10:04:30 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52907 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763Ab2AQPE3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 10:04:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326811069.17534.46.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1326811093.3467.41.camel@lenny>
+References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+	<1326811093.3467.41.camel@lenny>
+Date: Tue, 17 Jan 2012 17:04:28 +0200
+X-Google-Sender-Auth: 7i0QmhphMlM_T1kFc208ApsZ630
+Message-ID: <CAOJsxLG6Q=zr8kqcds7jWzpGqqy2GV10YERb9njMzM8y7kS55A@mail.gmail.com>
+Subject: Re: [RFC 0/3] low memory notify
+From: Pekka Enberg <penberg@kernel.org>
+To: Colin Walters <walters@verbum.org>
+Cc: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
+        kamezawa.hiroyu@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
+        mel@csn.ul.ie, rientjes@google.com,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17, Steven Rostedt wrote:
->
-> People are adding tracepoints all over the kernel without much thought.
+On Tue, Jan 17, 2012 at 4:38 PM, Colin Walters <walters@verbum.org> wrote:
+> So what you really want to be investigating here is integration between
+> a garbage collector and the system VM.  Your test program looks nothing
+> like a garbage collector.  I'd expect most of the performance tradeoffs
+> to be similar between these runtimes.  The Azul people have been doing
+> something like this: http://www.managedruntime.org/
 
-Including the tracepoints in __send_signal(). They are stupid and limited.
+The interraction isn't all that complex, really. I'd expect most VMs
+to simply wake up the GC thread when poll() returns. GCs that are able
+to compact the heap can madvise(MADV_DONTNEED) or even munmap() unused
+parts of the heap.
 
-Yes, I should blame myself in the first place. I was cc'ed, I participated
-in the discussion when they were added.
-
-> We take much more care when we add a system call. By making tracepoints
-> have as strict a ABI as system calls will cause a maintenance nightmare
-> in the future. I guarantee that!
-
-Personally I agree.
-
-That said, I am going to send the patch which adds the new tracepoint
-unless Ingo changes his mind. The new info was requested by users who
-actually use these events.
-
-Oleg.
-
+                                Pekka
