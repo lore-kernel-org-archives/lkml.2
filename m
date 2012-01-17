@@ -1,97 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab2AQXs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 18:48:28 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:56750 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932113Ab2AQXs0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 18:48:26 -0500
+	id S1752403Ab2AQXt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 18:49:27 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49815 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab2AQXtZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 18:49:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120117135921.3f68701e.akpm@linux-foundation.org>
-References: <20120107171516.GE2618@outflux.net>
-	<20120117135921.3f68701e.akpm@linux-foundation.org>
-Date: Tue, 17 Jan 2012 15:48:25 -0800
-X-Google-Sender-Auth: SPZbnxRNUZ4JiUmhkt-rHy4pOww
-Message-ID: <CAGXu5jJ_RWNKC7QgGXYgLFv6QCmkjw4z11WVcB=8BFacye0a3Q@mail.gmail.com>
-Subject: Re: [PATCH v4] ramoops: use pstore interface
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-X-System-Of-Record: true
+In-Reply-To: <CAJOA=zMgGsZKGQ-EfSnXDY_WoFrzG6XPZtuxANFKqdL8CAaYrw@mail.gmail.com>
+References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
+ <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
+ <74CDBE0F657A3D45AFBB94109FB122FF17801D2353@HQMAIL01.nvidia.com>
+ <CACxGe6vC7DBW0w6LhRTg_fi5bZ2aHxwFY2DNbT6KFcUmoYpNYA@mail.gmail.com> <CAJOA=zMgGsZKGQ-EfSnXDY_WoFrzG6XPZtuxANFKqdL8CAaYrw@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 17 Jan 2012 16:49:04 -0700
+X-Google-Sender-Auth: NIEO9LMfPGWlCuXMXht5JAzfpPU
+Message-ID: <CACxGe6sULSJAw1fOs5VTw=LGuST9DY3-h4oZbWZRz_LAr3sWqA@mail.gmail.com>
+Subject: Re: [RFC v2 4/9] of: add clock providers
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sascha Hauer <kernel@pengutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 1:59 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat, 7 Jan 2012 09:15:16 -0800
-> Kees Cook <keescook@chromium.org> wrote:
->
->> Instead of using /dev/mem directly, use the common pstore infrastructure
->> to handle Oops gathering and extraction.
->
-> um, why?  This changelog provides no reason for anyone to apply the
-> patch!
-
-Good point; this was lost as the patch cycled. I will expand this.
-
->> +     struct ramoops_context *cxt = (struct ramoops_context *)psi->data;
->
-> Unneeded and undesirable cast of void*.  Multiple instances of this.
-
-Ah yes; I will fix this.
-
->> +     /* TODO(kees): Bogus time for the moment. */
->
-> Is this hard to fix now?
-
-I felt it was out of scope for the moment. There was enough change
-happening for bolting it to pstore that adding a header with magic
-values, etc, seemed like a logically separate task. As such, I left
-this as TODO.
-
-> Note that pstore_get_records() will treat the -ve errno returns from
-> ->read() in the same manner as EOF.  IOW, your error codes will be
-> dropped on the floor.  This appears to be a bug in pstore_get_records().
-
-Well, IIUC, it just means the file doesn't get populated at all; there
-is no userspace interface to finding out why a file didn't appear in
-the pstore fliesystem. But yes, the specifics of the error are ignored
-by pstore_get_records(). It didn't seem wrong to produce meaningful
-codes in ramoops, though.
-
->> +     /* Only store dmesg dumps. */
->> +     if (type != PSTORE_TYPE_DMESG)
->> +             return -EINVAL;
->> +
->> +     /* Only store crash dumps. */
->>       if (reason != KMSG_DUMP_OOPS &&
->> -         reason != KMSG_DUMP_PANIC &&
->> -         reason != KMSG_DUMP_KEXEC)
->> -             return;
->> +         reason != KMSG_DUMP_PANIC)
->> +             return -EINVAL;
+On Tue, Jan 17, 2012 at 4:37 PM, Turquette, Mike <mturquette@ti.com> wrote:
+> On Tue, Jan 17, 2012 at 2:47 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> On Tue, Jan 17, 2012 at 1:44 PM, Stephen Warren <swarren@nvidia.com> wrote:
+>>> In other words, does the UART driver need to do something like:
+>>>
+>>> clk_reg = clk_get(dev, "register");
+>>> clk_parent = of_clk_get_by_name(np, "register);
+>>> clk_set_parent(clk_reg, clk_parent);
+>>>
+>>> Or will that all happen transparently within just the of_clk_get_by_name
+>>> call?
+>>>
+>>> (I suppose this question makes slightly more sense for the PLL itself,
+>>> since both the upstream and downstream clocks are represented in the PLL
+>>> node, whereas the UART's node only represents the clock consumer side,
+>>> so the above code isn't really possible automatically).
 >>
->>       /* Only dump oopses if dump_oops is set */
->>       if (reason == KMSG_DUMP_OOPS && !cxt->dump_oops)
+>> The intent is that device only interacts with the leaf device.  If the
+>> clocks are arranged into a hierarchy, then the clock driver is
+>> responsible for any interactions with the parent clock.  Requiring the
+>> driver to manipulate parent clocks directly defeats the purpose of
+>> having a clock abstraction.
 >
-> The above three comments describe what the code does, which was
-> obvious.  They failed to describe why it does this, which was
-> unobvious.  Sigh.
+> I don't think that we can get rid of all instances of drivers knowing
+> a bit about hierarchy.  I think we can get rid of most, but there are
+> cases where it is valid for a driver to know some of the details.
+> More on that below.
+>
+>>> Somewhat related to this: How does dynamic reparenting interact with
+>>> the DT clock binding; is the DT just the default/initial clock setup,
+>>> and anything beyond that needs a custom binding and code in the consumer?
+>>
+>> As far as the clock binding goes, it only describes provider/consumer
+>> relationships.  The fact that such relationships may resolve to a
+>> hierarchy is beyond what the binding describes.  If a clock has
+>> multiple possible parents, then that specific clock binding should
+>> document how the multiple parent clocks are described and the clock
+>> driver is responsible for implementing the correct behaviour.
+>
+> It also deserves to be said that the DT data says nothing about which
+> of the possible parents _should_ be the input to a mux clock.  It's
+> pretty common to want to make changes to hierarchy after taking a
+> device out of reset, since the reset values for a clock management IP
+> might be pretty conservative.  So someone, somewhere must know some
+> details about hierarchy and set things up correctly.  Maybe a "clock
+> driver" can do this, but for specific IPs such as the audio example
+> below it makes sense for that driver to have the knowledge.
+>
+>> Similarly, the DT clock binding provides no generic mechanism for
+>> walking up the clock tree.  That behaviour must also be implemented by
+>> each specific clock driver.
+>>
+>>> I'm thinking of say a system with 1 I2S controller, and both an internal
+>>> and external I2S clock source, where perhaps the internal source needs
+>>> to be used to capture from an I2S interface on one set of pins (e.g.
+>>> analog mic) but the other clock source needs to be used to capture from
+>>> I2S on another set of pins (e.g. digital baseband unit connection).
+>>> (This example is theoretical, but I'm sure there are other dynamic clock
+>>> cases in practice).
+>>
+>> That is a reasonable example.  In this case, the i2c controller would
+>> include both in its clocks property, and the binding would document
+>> when and why each clock source is used.
+>
+> I'm confused on this point.  How does the binding "document when and
+> why each clock is used"?  In the case where this I2S controller
+> expects to dynamically switch roles at run-time (analog mic versus
+> baseband) then clk_set_parent must still be invoked by the driver.  To
+> be clear I'm imagining the above example like:
+>
+> i_I2S   e_I2S
+>   \       /
+>    I2S_mux
+>        |
+> I2S controller IP
 
-They were terse; I will attempt to expand on them.
+>From the description, I assumed that the i2s_mux was part of the i2s
+controller driver which would select the appropriate clock based on
+the configured mode.  If it is better to implement it as a separate
+clock driver, then yes the i2s controller must have knowledge of that
+and call clk_set_parent appropriately.  Regardless, some driver needs
+to explicitly understand the relationship between pinmux and clock
+source.
 
-Thanks for the review! I will send v5 shortly...
-
--Kees
-
--- 
-Kees Cook
-ChromeOS Security
+g.
