@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab2AQQdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 11:33:46 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55775 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755009Ab2AQQdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 11:33:45 -0500
-Date: Tue, 17 Jan 2012 17:33:39 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Use kcalloc instead of kzalloc to allocate
- array
-Message-ID: <20120117163339.GR4093@phenom.ffwll.local>
-Mail-Followup-To: Thomas Meyer <thomas@m3y3r.de>, airlied@linux.ie,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <1322600880.1534.297.camel@localhost.localdomain>
+	id S1755291Ab2AQQgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 11:36:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1473 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755067Ab2AQQgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 11:36:17 -0500
+Message-ID: <4F15A34F.40808@redhat.com>
+Date: Tue, 17 Jan 2012 11:35:27 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322600880.1534.297.camel@localhost.localdomain>
-X-Operating-System: Linux phenom 3.2.0-rc6+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pekka Enberg <penberg@kernel.org>
+CC: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC 1/3] /dev/low_mem_notify
+References: <1326788038-29141-1-git-send-email-minchan@kernel.org> <1326788038-29141-2-git-send-email-minchan@kernel.org> <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
+In-Reply-To: <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 10:08:00PM +0100, Thomas Meyer wrote:
-> The advantage of kcalloc is, that will prevent integer overflows which could
-> result from the multiplication of number of elements and size and it is also
-> a bit nicer to read.
-> 
-> The semantic patch that makes this change is available
-> in https://lkml.org/lkml/2011/11/25/107
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+On 01/17/2012 04:27 AM, Pekka Enberg wrote:
+> On Tue, Jan 17, 2012 at 10:13 AM, Minchan Kim<minchan@kernel.org>  wrote:
+>> +static unsigned int low_mem_notify_poll(struct file *file, poll_table *wait)
+>> +{
+>> +        unsigned int ret = 0;
+>> +
+>> +        poll_wait(file,&low_mem_wait, wait);
+>> +
+>> +        if (atomic_read(&nr_low_mem) != 0) {
+>> +                ret = POLLIN;
+>> +                atomic_set(&nr_low_mem, 0);
+>> +        }
+>> +
+>> +        return ret;
+>> +}
+>
+> Doesn't this mean that only one application will receive the notification?
 
-Queued for -next, thanks for the patch.
--Daniel
+One at a time, which could be a good thing since the last
+thing we want to do when the system is under memory
+pressure is create a thundering herd.
 
-> ---
-> 
-> diff -u -p a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-> --- a/drivers/gpu/drm/i915/intel_bios.c 2011-11-13 11:07:23.820113543 +0100
-> +++ b/drivers/gpu/drm/i915/intel_bios.c 2011-11-28 19:49:51.443206904 +0100
-> @@ -572,7 +572,7 @@ parse_device_mapping(struct drm_i915_pri
->  		DRM_DEBUG_KMS("no child dev is parsed from VBT\n");
->  		return;
->  	}
-> -	dev_priv->child_dev = kzalloc(sizeof(*p_child) * count, GFP_KERNEL);
-> +	dev_priv->child_dev = kcalloc(count, sizeof(*p_child), GFP_KERNEL);
->  	if (!dev_priv->child_dev) {
->  		DRM_DEBUG_KMS("No memory space for child device\n");
->  		return;
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+OTOH, we do need to ensure that programs take turns getting
+the memory pressure notification.  I do not know whether
+poll_wait automatically takes care of that...
 
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+All rights reversed
