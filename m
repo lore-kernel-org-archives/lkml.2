@@ -1,90 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab2AQP1i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 10:27:38 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:29094 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754595Ab2AQP1g (ORCPT
+	id S1754856Ab2AQP2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 10:28:46 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:46633 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab2AQP2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 10:27:36 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: iOEJ550VM1n0mntCtH5_EknTYUTf47GeUHZFidWP2gS02Rl
- XJgLuj5hQtg2VhcvVZ8rw73..8rV_bPbrjCL8ok_MAbnXeODnAtKcp9VyZXg
- cxWUkln7DLUV0BOeTKIUqQnouYTgGOsiBA1paM.4MEVAQgysLCaOKfoAtHa0
- xrB8kVwaoD0JWMQAa.IKNiTGfmkVyFXu4NPXKuQWw3N75mcgIbgqna4wNbju
- C5kkcPvIN1iJztSYM.Pv0LoXeymCUB0LgvKDWhW4riOuCFE9hK4_srsmsf4C
- jjxzW4pEKKNAvyUYoMjlNLqk00weXo0pHdfaxnHA46zXLbZmxwySv9o.d4qm
- Qv1a3u6Ow6YvvC_TPRMUGEAPVSa.UpNZeTclXltLrDHE.V1jLFH3bxqn.h1J
- cYUzfEPf1Yku8jVeKzMwDfV7kF493psP4iiQv
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 17 Jan 2012 09:27:31 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Hung task when calling clone() due to netfilter/slab
-In-Reply-To: <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Message-ID: <alpine.DEB.2.00.1201170927020.4800@router.home>
-References: <1326558605.19951.7.camel@lappy>   <1326561043.5287.24.camel@edumazet-laptop>  <1326632384.11711.3.camel@lappy> <1326648305.5287.78.camel@edumazet-laptop>  <alpine.DEB.2.00.1201170910130.4800@router.home>
- <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 17 Jan 2012 10:28:45 -0500
+Message-ID: <4F159394.7040409@atmel.com>
+Date: Tue, 17 Jan 2012 16:28:20 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Nikolaus Voss <n.voss@weinmann.de>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+CC: linux-kernel@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] at_hdmac: bugfix for enabling channel irq
+References: <201201171023.q0HANwSE024485@gatekeeper.vosshq.de>
+In-Reply-To: <201201171023.q0HANwSE024485@gatekeeper.vosshq.de>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jan 2012, Eric Dumazet wrote:
+On 01/17/2012 10:28 AM, Nikolaus Voss :
+> commit 463894705e4089d0ff69e7d877312d496ac70e5b deleted redundant
+> chan_id and chancnt initialization in dma drivers as this is done
+> in dma_async_device_register().
+> 
+> However, atc_enable_irq() relied on chan_id set before registering
+> the device, what left only channel 0 functional for this driver.
+> 
+> This patch introduces atc_enable/disable_chan_irq() as a variant
+> of atc_enable/disable_irq() with the channel as explicit argument.
+> 
+> Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
 
-> Buggy patch, since "goto err;" is going to up_write(&slub_lock) again.
->
-> Also Christoph, you forgot to add the very much needed :
->
-> Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: stable <stable@vger.kernel.org>
+
+Vinod, can you please queue it in a "fixes" branch for 3.3. The stable
+tag is needed to address errors in 3.2 kernel series.
+
+Nikolaus, thanks for your fix.
+
+Best regards,
+
+> ---
+>  drivers/dma/at_hdmac.c      |    4 ++--
+>  drivers/dma/at_hdmac_regs.h |   17 ++++++++---------
+>  2 files changed, 10 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+> index fcfa0a8..a60adbf 100644
+> --- a/drivers/dma/at_hdmac.c
+> +++ b/drivers/dma/at_hdmac.c
+> @@ -1286,7 +1286,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>  
+>  		tasklet_init(&atchan->tasklet, atc_tasklet,
+>  				(unsigned long)atchan);
+> -		atc_enable_irq(atchan);
+> +		atc_enable_chan_irq(atdma, i);
+>  	}
+>  
+>  	/* set base routines */
+> @@ -1353,7 +1353,7 @@ static int __exit at_dma_remove(struct platform_device *pdev)
+>  		struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+>  
+>  		/* Disable interrupts */
+> -		atc_disable_irq(atchan);
+> +		atc_disable_chan_irq(atdma, chan->chan_id);
+>  		tasklet_disable(&atchan->tasklet);
+>  
+>  		tasklet_kill(&atchan->tasklet);
+> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+> index aa4c9ae..5aa82b4 100644
+> --- a/drivers/dma/at_hdmac_regs.h
+> +++ b/drivers/dma/at_hdmac_regs.h
+> @@ -326,28 +326,27 @@ static void atc_dump_lli(struct at_dma_chan *atchan, struct at_lli *lli)
+>  }
+>  
+>  
+> -static void atc_setup_irq(struct at_dma_chan *atchan, int on)
+> +static void atc_setup_irq(struct at_dma *atdma, int chan_id, int on)
+>  {
+> -	struct at_dma	*atdma = to_at_dma(atchan->chan_common.device);
+> -	u32		ebci;
+> +	u32 ebci;
+>  
+>  	/* enable interrupts on buffer transfer completion & error */
+> -	ebci =    AT_DMA_BTC(atchan->chan_common.chan_id)
+> -		| AT_DMA_ERR(atchan->chan_common.chan_id);
+> +	ebci =    AT_DMA_BTC(chan_id)
+> +		| AT_DMA_ERR(chan_id);
+>  	if (on)
+>  		dma_writel(atdma, EBCIER, ebci);
+>  	else
+>  		dma_writel(atdma, EBCIDR, ebci);
+>  }
+>  
+> -static inline void atc_enable_irq(struct at_dma_chan *atchan)
+> +static void atc_enable_chan_irq(struct at_dma *atdma, int chan_id)
+>  {
+> -	atc_setup_irq(atchan, 1);
+> +	atc_setup_irq(atdma, chan_id, 1);
+>  }
+>  
+> -static inline void atc_disable_irq(struct at_dma_chan *atchan)
+> +static void atc_disable_chan_irq(struct at_dma *atdma, int chan_id)
+>  {
+> -	atc_setup_irq(atchan, 0);
+> +	atc_setup_irq(atdma, chan_id, 0);
+>  }
+>  
+>  
 
 
-Subject: slub: Do not hold slub_lock when calling sysfs_slab_add()
-
-sysfs_slab_add() calls various sysfs functions that actually may
-end up in userspace doing all sorts of things.
-
-Release the slub_lock after adding the kmem_cache structure to the list.
-At that point the address of the kmem_cache is not known so we are
-guaranteed exlusive access to the following modifications to the
-kmem_cache structure.
-
-If the sysfs_slab_add fails then reacquire the slub_lock to
-remove the kmem_cache structure from the list.
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
----
- mm/slub.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2012-01-17 03:07:11.140010438 -0600
-+++ linux-2.6/mm/slub.c	2012-01-17 03:26:06.799986908 -0600
-@@ -3929,13 +3929,14 @@ struct kmem_cache *kmem_cache_create(con
- 		if (kmem_cache_open(s, n,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
-+			up_write(&slub_lock);
- 			if (sysfs_slab_add(s)) {
-+				down_write(&slub_lock);
- 				list_del(&s->list);
- 				kfree(n);
- 				kfree(s);
- 				goto err;
- 			}
--			up_write(&slub_lock);
- 			return s;
- 		}
- 		kfree(n);
+-- 
+Nicolas Ferre
