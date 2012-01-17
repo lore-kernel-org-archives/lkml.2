@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab2AQMYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:24:22 -0500
-Received: from vms173007pub.verizon.net ([206.46.173.7]:43948 "EHLO
-	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab2AQMW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 07:22:26 -0500
-From: Len Brown <lenb@kernel.org>
-To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Mingming Zhang <mingmingx.zhang@intel.com>,
+	id S1753886Ab2AQMYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:24:39 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43521 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753809Ab2AQMYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 07:24:36 -0500
+Date: Tue, 17 Jan 2012 13:23:50 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 45/50] intel_idle: remove redundant local_irq_disable() call
-Date: Tue, 17 Jan 2012 07:21:37 -0500
-Message-id: <44bea1c45390ec0dc7ef5e1017c014498a580abb.1326802230.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.9.rc1
-In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
-References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
-In-reply-to: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
-References: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
-Reply-to: Len Brown <lenb@kernel.org>
-Organization: Intel Open Source Technology Center
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v9 3.2 7/9] tracing: uprobes trace_event interface
+Message-ID: <20120117122350.GD4959@elte.hu>
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
+ <20120110114943.17610.28293.sendpatchset@srdronam.in.ibm.com>
+ <20120116131137.GB5265@m.brq.redhat.com>
+ <20120117092838.GB10397@elte.hu>
+ <20120117102231.GB15447@linux.vnet.ibm.com>
+ <20120117112239.GA23859@elte.hu>
+ <20120117115705.GD15447@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120117115705.GD15447@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
 
-irq disabling happens earlier in process_32.c:cpu_idle.  Basically,
-cpuidle_state->enter is called, cpu irq is disabled.  cpuidle_state->enter
-would turn on irq when exiting.
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
-intel_idle doesn't follow this assumption.  Although it doesn't cause real
-issue, it misleads developers.  Remove the call to local_irq_disable() at
-entry.
+> > Srikar, rebased commits like this one:
+> > 
+> >   c5af743: rcu: Introduce raw SRCU read-side primitives
+> > 
+> > are absolutely inacceptable:
+> > 
+> 
+> Okay, I wasnt sure whats the best way for me to expose a tree 
+> such that people who just use my tree to try (without basing 
+> on any other trees except Linus) can build and use uprobes but 
+> people who already have this commit arent affected by me 
+> having this commit.
+> 
+> So couple of people did tell me that git was intelligent enuf 
+> that if the commit was already in, it would create a empty 
+> commit.
+> 
+> do you have suggestions on how to work around such situations 
+> in future?
 
-[akpm@linux-foundation.org: add comment]
-Signed-off-by: Mingming Zhang <mingmingx.zhang@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/idle/intel_idle.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+You can just apply it out of email, as a regular commit.
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 38da9f8..27e41cc 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -232,6 +232,7 @@ static int get_driver_data(int cstate)
-  * @drv: cpuidle driver
-  * @index: index of cpuidle state
-  *
-+ * Must be called under local_irq_disable().
-  */
- static int intel_idle(struct cpuidle_device *dev,
- 		struct cpuidle_driver *drv, int index)
-@@ -247,8 +248,6 @@ static int intel_idle(struct cpuidle_device *dev,
- 
- 	cstate = (((eax) >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1;
- 
--	local_irq_disable();
--
- 	/*
- 	 * leave_mm() to avoid costly and often unnecessary wakeups
- 	 * for flushing the user TLB's associated with the active mm.
--- 
-1.7.9.rc1
+Thanks,
 
+	Ingo
