@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab2AQXrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 18:47:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43582 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab2AQXrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 18:47:09 -0500
-Date: Tue, 17 Jan 2012 15:47:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "AnilKumar, Chimata" <anilkumar@ti.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>, "greg@kroah.com" <greg@kroah.com>,
-        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>
-Subject: Re: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
-Message-Id: <20120117154702.d009df12.akpm@linux-foundation.org>
-In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com>
-References: <1324617892-14576-1-git-send-email-anilkumar@ti.com>
-	<331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932150Ab2AQXs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 18:48:28 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:56750 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932113Ab2AQXs0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 18:48:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120117135921.3f68701e.akpm@linux-foundation.org>
+References: <20120107171516.GE2618@outflux.net>
+	<20120117135921.3f68701e.akpm@linux-foundation.org>
+Date: Tue, 17 Jan 2012 15:48:25 -0800
+X-Google-Sender-Auth: SPZbnxRNUZ4JiUmhkt-rHy4pOww
+Message-ID: <CAGXu5jJ_RWNKC7QgGXYgLFv6QCmkjw4z11WVcB=8BFacye0a3Q@mail.gmail.com>
+Subject: Re: [PATCH v4] ramoops: use pstore interface
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jan 2012 07:32:47 +0000
-"AnilKumar, Chimata" <anilkumar@ti.com> wrote:
-
-> Hi All,
-> 
-> Recalling the patch, provide the comments if there are any if not please include
-> this patch to v3.3 kernel.
-
-The patch is all mangled by someone's email client.  Wordwrapping, mime
-crap which my MUA can't decrypt, etc.
-
-> -----Original Message-----
-> From: AnilKumar, Chimata 
-> Sent: Friday, December 23, 2011 10:55 AM
-> To: arnd@arndb.de; greg@kroah.com; eric.piel@tremplin-utc.net; akpm@linux-foundation.org; broonie@opensource.wolfsonmicro.com; linux-kernel@vger.kernel.org
-> Cc: linux-omap@vger.kernel.org; Nori, Sekhar; AnilKumar, Chimata
-
-A pet peeve which I haven't told anyone about.  If you've cc'ed someone
-on a patch then I want to cc them on the patch too.  That means I have
-to add their Cc: lines to the changelog.  But such Cc: lines include
-their real names.  By omitting their real names in the above fashion,
-you cause extra hassle for me.  Ideally, you should add their Cc: to
-the changelog as well as to the mail headers, to give thsoe people the
-best chance of seeing what is happening with the patch.
-
+On Tue, Jan 17, 2012 at 1:59 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sat, 7 Jan 2012 09:15:16 -0800
+> Kees Cook <keescook@chromium.org> wrote:
 >
-> ..
+>> Instead of using /dev/mem directly, use the common pstore infrastructure
+>> to handle Oops gathering and extraction.
 >
-> +static ssize_t lis3lv02d_range_show(struct device *dev,
-> +			       struct device_attribute *attr, char *buf)
-> +{
-> +	lis3lv02d_sysfs_poweron(&lis3_dev);
-> +	return sprintf(buf, "%d\n", lis3_dev.g_range);
-> +}
+> um, why?  This changelog provides no reason for anyone to apply the
+> patch!
 
-Are these interfaces documented anywhere?  If so, please update that
-documentation.  If not, why not ;)
+Good point; this was lost as the patch cycled. I will expand this.
 
-> @@ -809,15 +881,33 @@ static ssize_t lis3lv02d_rate_set(struct device *dev,
->  	return count;
->  }
->  
-> +static ssize_t lis3lv02d_range_set(struct device *dev,
-> +				struct device_attribute *attr, const char *buf,
-> +				size_t count)
-> +{
-> +	unsigned long range;
-> +
-> +	if (strict_strtoul(buf, 0, &range))
+>> +     struct ramoops_context *cxt = (struct ramoops_context *)psi->data;
+>
+> Unneeded and undesirable cast of void*.  Multiple instances of this.
 
-checkpatch would have told you that strict_strtoul() is deprecated. 
-Please always use checkpatch.
+Ah yes; I will fix this.
 
+>> +     /* TODO(kees): Bogus time for the moment. */
+>
+> Is this hard to fix now?
+
+I felt it was out of scope for the moment. There was enough change
+happening for bolting it to pstore that adding a header with magic
+values, etc, seemed like a logically separate task. As such, I left
+this as TODO.
+
+> Note that pstore_get_records() will treat the -ve errno returns from
+> ->read() in the same manner as EOF.  IOW, your error codes will be
+> dropped on the floor.  This appears to be a bug in pstore_get_records().
+
+Well, IIUC, it just means the file doesn't get populated at all; there
+is no userspace interface to finding out why a file didn't appear in
+the pstore fliesystem. But yes, the specifics of the error are ignored
+by pstore_get_records(). It didn't seem wrong to produce meaningful
+codes in ramoops, though.
+
+>> +     /* Only store dmesg dumps. */
+>> +     if (type != PSTORE_TYPE_DMESG)
+>> +             return -EINVAL;
+>> +
+>> +     /* Only store crash dumps. */
+>>       if (reason != KMSG_DUMP_OOPS &&
+>> -         reason != KMSG_DUMP_PANIC &&
+>> -         reason != KMSG_DUMP_KEXEC)
+>> -             return;
+>> +         reason != KMSG_DUMP_PANIC)
+>> +             return -EINVAL;
+>>
+>>       /* Only dump oopses if dump_oops is set */
+>>       if (reason == KMSG_DUMP_OOPS && !cxt->dump_oops)
+>
+> The above three comments describe what the code does, which was
+> obvious.  They failed to describe why it does this, which was
+> unobvious.  Sigh.
+
+They were terse; I will attempt to expand on them.
+
+Thanks for the review! I will send v5 shortly...
+
+-Kees
+
+-- 
+Kees Cook
+ChromeOS Security
