@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab2AQPQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 10:16:21 -0500
-Received: from mx2.gd-ms.com ([153.11.250.41]:54676 "EHLO mx2.gd-ms.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306Ab2AQPQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 10:16:19 -0500
-To: Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Michael D Labriola <mlabriol@gdeb.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
-        michael.d.labriola@gmail.com, support@versalogic.com,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+	id S1754765Ab2AQPRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 10:17:32 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51129 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754306Ab2AQPRb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 10:17:31 -0500
+X-Sasl-enc: bpNjVw9SuWB2WUtC65cTYmUqq7VbUoUw3ETY3DxSXL+V 1326813450
+Date: Tue, 17 Jan 2012 07:14:23 -0800
+From: Greg KH <greg@kroah.com>
+To: Praveen kumar <chatpravi@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        kernelnewbies@kernelnewbies.org
+Subject: Re: USB controller status
+Message-ID: <20120117151423.GA11094@kroah.com>
+References: <CAOzqYK6+6ML=HqYOk_gJaAzB=5v_wDEzMs7C_YDgMHmB2LtWHw@mail.gmail.com>
+ <20120116173726.GA18147@kroah.com>
+ <CAOzqYK5-W8L8oDwY4iF8kpGAxLOiVTu2vA20sEvzBtkrTk79-A@mail.gmail.com>
 MIME-Version: 1.0
-Subject: [PATCH] x86, reboot: remove VersaLogic Menlow reboot quirk
-X-KeepSent: 403557D6:D9E7AB81-85257988:00536641;
- type=4; name=$KeepSent
-Message-ID: <OF403557D6.D9E7AB81-ON85257988.00536641-85257988.0053E284@gdeb.com>
-From: Michael D Labriola <mlabriol@gdeb.com>
-Date: Tue, 17 Jan 2012 10:16:14 -0500
-X-GDMEncrypt: FALSE
-X-GDMMarking: NOT_SENSITIVE
-Content-Type: text/plain; charset="US-ASCII"
-X-GDM-MESSAGE-ID: X-GDM-MESSAGE-ID mx2.gd-ms.com 1RnAlk-0007Fc-2k
-X-GDM-EVAL: score: /30; hits: 
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOzqYK5-W8L8oDwY4iF8kpGAxLOiVTu2vA20sEvzBtkrTk79-A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit removes the reboot quirk originally added by commit e19e074
-(x86: Fix reboot problem on VersaLogic Menlow boards).
+On Tue, Jan 17, 2012 at 07:26:24PM +0530, Praveen kumar wrote:
+> Hi Greg,
+> 
+> What type of diagnostics are you trying to do?
+>            I am trying to is to make communication to all the chips present on
+> board (from kernel) and make sure all the input/output lines are working on
+> that chip and the status of the configuration.
+> As I am doing with the other chips like video controller ,audio controller etc
+> ,I want to make sure the working condition of the USB controller and some tests
+> to prove input and output lines are working and if possible loop back data
+> test.
 
-Testing with a VersaLogic Ocelot (VL-EPMs-21a rev 1.00 w/ BIOS 6.5.102)
-revealed the following regarding the reboot hang problem:
+Good luck with that, it might be hard to do from within the kernel :)
 
-- v2.6.37 reboot=bios was needed.
+> How can it not be configured correctly?
+> 
+> I am not sure in which condition the configuration of controller may fail but
+> just I want to make sure the controller is configured properly.
+> 
+> You have looked at the debugfs files for the usb controllers for this
+> type of thing already, right?
+> 
+> I have seen debugfs where I can dump all the configuration reg values ,but not
+> sure to see which reg values to confirm  controller is configured properly.
+> 
+> Also I was trying to get the linux-usb project (http://sourceforge.net/apps/
+> trac/sourceforge/wiki/Git) through git to make use of some code in there for
+> some of the tests but I am not able to get it.
+> Is there any alternative link from where I can get the code (like lsusb.c etc
+> )..
 
-- v2.6.38-rc1: behavior changed, reboot=acpi is needed, reboot=kbd and
-  reboot=bios result in system hang.
+usbutils are on github, look in your distro for the location of the
+source.
 
-- v2.6.38: VersaLogic patch (e19e074 x86: Fix reboot problem on
-  VersaLogic Menlow boards) was applied prior to v2.6.38-rc7.  This
-  patch sets a quirk for VersaLogic Menlow boards that forces the use
-  of reboot=bios, which doesn't work anymore.
-
-- v3.2: It seems that commit 660e34c (x86: Reorder reboot method
-  preferences) changed the default reboot method to acpi prior to
-  v3.0-rc1, which means the default behavior is appropriate for the
-  Ocelot.  No VersaLogic quirk is required.
-
-The Ocelot board used for testing can successfully reboot w/out having to
-pass any reboot= arguments for all 3 current versions of the BIOS.
-
-Signed-off-by: Michael D Labriola <mlabriol@gdeb.com>
----
- arch/x86/kernel/reboot.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 4240d58..c584291 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -301,14 +301,6 @@ static struct dmi_system_id __initdata 
-reboot_dmi_table[] = {
-                        DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
-                },
-        },
--       {       /* Handle problems with rebooting on VersaLogic Menlow 
-boards */
--               .callback = set_bios_reboot,
--               .ident = "VersaLogic Menlow based board",
--               .matches = {
--                       DMI_MATCH(DMI_BOARD_VENDOR, "VersaLogic 
-Corporation"),
--                       DMI_MATCH(DMI_BOARD_NAME, "VersaLogic Menlow 
-board"),
--               },
--       },
-        { /* Handle reboot issue on Acer Aspire one */
-                .callback = set_kbd_reboot,
-                .ident = "Acer Aspire One A110",
--- 
-1.6.0.3
-
-
-
-
- 
+greg k-h
