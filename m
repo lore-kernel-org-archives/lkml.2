@@ -1,49 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab2AQHa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 02:30:28 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:58806 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab2AQHa0 (ORCPT
+	id S1752220Ab2AQHdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 02:33:08 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51050 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751886Ab2AQHdF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 02:30:26 -0500
-Date: Tue, 17 Jan 2012 10:30:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch 2/2] [media] ds3000: off by one in ds3000_read_snr()
-Message-ID: <20120117073021.GB11358@elgon.mountain>
+	Tue, 17 Jan 2012 02:33:05 -0500
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: "arnd@arndb.de" <arnd@arndb.de>, "greg@kroah.com" <greg@kroah.com>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+Subject: RE: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
+Thread-Topic: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
+Thread-Index: AQHMwTM0PN2tPvWpKkmNhYqSj7+eyZYQT2Hw
+Date: Tue, 17 Jan 2012 07:32:47 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com>
+References: <1324617892-14576-1-git-send-email-anilkumar@ti.com>
+In-Reply-To: <1324617892-14576-1-git-send-email-anilkumar@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: BPuj BnR4 DUXv K7xm MJcZ RYrD R4NA UOh+ UzVH fHU0 koQE
+ lfTa 0wNg AACeqA== ABodbA==
+ ADn3Gg==;7;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGEAcgBuAGQAQABhAHIAbgBkAGIALgBkAGUAOwBiAHIAbwBvAG4AaQBlAEAAbwBwAGUAbgBzAG8AdQByAGMAZQAuAHcAbwBsAGYAcwBvAG4AbQBpAGMAcgBvAC4AYwBvAG0AOwBlAHIAaQBjAC4AcABpAGUAbABAAHQAcgBlAG0AcABsAGkAbgAtAHUAdABjAC4AbgBlAHQAOwBnAHIAZQBnAEAAawByAG8AYQBoAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AbwBtAGEAcABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{9B05F986-7AE9-49E1-A831-C751BBA2141C};YQBuAGkAbABrAHUAbQBhAHIAQAB0AGkALgBjAG8AbQA=;Tue,
+ 17 Jan 2012 07:32:33
+ GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAbABpAHMAMwBsAHYAMAAyAGQAOgAgAEEAZABkACAAUwBUAE0AaQBjAHIAbwBlAGwAZQBjAHQAcgBvAG4AaQBjAHMAIABsAGkAcwAzADMAbABkAGwAaAAgAGQAaQBnAGkAdABhAGwA
+x-cr-puzzleid: {9B05F986-7AE9-49E1-A831-C751BBA2141C}
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4F15238E.0029,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a static checker patch and I don't have the hardware to test
-this, so please review it carefully.  The dvbs2_snr_tab[] array has 80
-elements so when we cap it at 80, that's off by one.  I would have
-assumed that the test was wrong but in the lines right before we have
-the same test but use "snr_reading - 1" as the array offset.  I've done
-the same thing here.
+Hi All,
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Recalling the patch, provide the comments if there are any if not please include
+this patch to v3.3 kernel.
 
-diff --git a/drivers/media/dvb/frontends/ds3000.c b/drivers/media/dvb/frontends/ds3000.c
-index af65d01..3f5ae0a 100644
---- a/drivers/media/dvb/frontends/ds3000.c
-+++ b/drivers/media/dvb/frontends/ds3000.c
-@@ -681,7 +681,7 @@ static int ds3000_read_snr(struct dvb_frontend *fe, u16 *snr)
- 			snr_reading = dvbs2_noise_reading / tmp;
- 			if (snr_reading > 80)
- 				snr_reading = 80;
--			*snr = -(dvbs2_snr_tab[snr_reading] / 1000);
-+			*snr = -(dvbs2_snr_tab[snr_reading - 1] / 1000);
+-----Original Message-----
+From: AnilKumar, Chimata 
+Sent: Friday, December 23, 2011 10:55 AM
+To: arnd@arndb.de; greg@kroah.com; eric.piel@tremplin-utc.net; akpm@linux-foundation.org; broonie@opensource.wolfsonmicro.com; linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org; Nori, Sekhar; AnilKumar, Chimata
+Subject: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
+
+This patch adds support for lis33ldlh digital accelerometer to the
+lis3lv02d driver family. Adds ID field for detecting the lis33ldlh
+module, based on this ID field lis3lv02d driver will export the
+lis33ldlh module functionality.
+
+Also exports g_range parameter to user space for run-time value
+change. User must give 2/4/8 value depends on requirement.
+
+Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+---
+ drivers/misc/lis3lv02d/lis3lv02d.c     |  111 ++++++++++++++++++++++++++++++-
+ drivers/misc/lis3lv02d/lis3lv02d.h     |   59 +++++++++++++++++
+ drivers/misc/lis3lv02d/lis3lv02d_i2c.c |    6 ++-
+ include/linux/lis3lv02d.h              |    2 +
+ 4 files changed, 173 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
+index 29d12a7..2381220 100644
+--- a/drivers/misc/lis3lv02d/lis3lv02d.c
++++ b/drivers/misc/lis3lv02d/lis3lv02d.c
+@@ -80,6 +80,17 @@
+ #define LIS3_SENSITIVITY_12B		((LIS3_ACCURACY * 1000) / 1024)
+ #define LIS3_SENSITIVITY_8B		(18 * LIS3_ACCURACY)
+ 
++/* Sensitivity values for -2G, -4G, -8G and +2G, +4G, +8G scale */
++#define LIS3DLH_SENSITIVITY_2G		(LIS3_ACCURACY * 1)
++#define LIS3DLH_SENSITIVITY_4G		(LIS3_ACCURACY * 2)
++#define LIS3DLH_SENSITIVITY_8G		((LIS3_ACCURACY * 39)/10)
++
++#define SHIFT_ADJ_2G			4
++#define SHIFT_ADJ_4G			3
++#define SHIFT_ADJ_8G			2
++
++#define FS_MASK				(0x3 << 4)
++
+ #define LIS3_DEFAULT_FUZZ_12B		3
+ #define LIS3_DEFAULT_FLAT_12B		3
+ #define LIS3_DEFAULT_FUZZ_8B		1
+@@ -148,6 +159,12 @@ static inline int lis3lv02d_get_axis(s8 axis, int hw_values[3])
+ 		return -hw_values[-axis - 1];
+ }
+ 
++static int lis3lv02d_decode(u8 pl, u8 ph, int adj)
++{
++	s16 v = pl | ph << 8;
++	return (int) v >> adj;
++}
++
+ /**
+  * lis3lv02d_get_xyz - Get X, Y and Z axis values from the accelerometer
+  * @lis3: pointer to the device struct
+@@ -176,9 +193,24 @@ static void lis3lv02d_get_xyz(struct lis3lv02d *lis3, int *x, int *y, int *z)
+ 				position[i] = (s8)data[i * 2];
  		}
- 		dprintk("%s: raw / cooked = 0x%02x / 0x%04x\n", __func__,
- 				snr_reading, *snr);
+ 	} else {
+-		position[0] = lis3->read_data(lis3, OUTX);
+-		position[1] = lis3->read_data(lis3, OUTY);
+-		position[2] = lis3->read_data(lis3, OUTZ);
++		if (lis3_dev.whoami == WAI_3DLH) {
++			position[0] =
++				lis3lv02d_decode(lis3->read_data(lis3, OUTX_L),
++				lis3->read_data(lis3, OUTX_H),
++				lis3_dev.shift_adj);
++			position[1] =
++				lis3lv02d_decode(lis3->read_data(lis3, OUTY_L),
++				lis3->read_data(lis3, OUTY_H),
++				lis3_dev.shift_adj);
++			position[2] =
++				lis3lv02d_decode(lis3->read_data(lis3, OUTZ_L),
++				lis3->read_data(lis3, OUTZ_H),
++				lis3_dev.shift_adj);
++		} else {
++			position[0] = lis3->read_data(lis3, OUTX);
++			position[1] = lis3->read_data(lis3, OUTY);
++			position[2] = lis3->read_data(lis3, OUTZ);
++		}
+ 	}
+ 
+ 	for (i = 0; i < 3; i++)
+@@ -193,6 +225,7 @@ static void lis3lv02d_get_xyz(struct lis3lv02d *lis3, int *x, int *y, int *z)
+ static int lis3_12_rates[4] = {40, 160, 640, 2560};
+ static int lis3_8_rates[2] = {100, 400};
+ static int lis3_3dc_rates[16] = {0, 1, 10, 25, 50, 100, 200, 400, 1600, 5000};
++static int lis3_3dlh_rates[4] = {50, 100, 400, 1000};
+ 
+ /* ODR is Output Data Rate */
+ static int lis3lv02d_get_odr(struct lis3lv02d *lis3)
+@@ -265,7 +298,7 @@ static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
+ 				(LIS3_IRQ1_DATA_READY | LIS3_IRQ2_DATA_READY));
+ 	}
+ 
+-	if (lis3->whoami == WAI_3DC) {
++	if ((lis3_dev.whoami == WAI_3DC) || (lis3_dev.whoami == WAI_3DLH)) {
+ 		ctlreg = CTRL_REG4;
+ 		selftest = CTRL4_ST0;
+ 	} else {
+@@ -396,6 +429,8 @@ int lis3lv02d_poweron(struct lis3lv02d *lis3)
+ 		lis3->read(lis3, CTRL_REG2, &reg);
+ 		if (lis3->whoami ==  WAI_12B)
+ 			reg |= CTRL2_BDU | CTRL2_BOOT;
++		else if (lis3->whoami ==  WAI_3DLH)
++			reg |= CTRL2_BOOT_3DLH;
+ 		else
+ 			reg |= CTRL2_BOOT_8B;
+ 		lis3->write(lis3, CTRL_REG2, reg);
+@@ -724,6 +759,36 @@ void lis3lv02d_joystick_disable(struct lis3lv02d *lis3)
+ }
+ EXPORT_SYMBOL_GPL(lis3lv02d_joystick_disable);
+ 
++static void lis3lv02d_update_g_range(struct lis3lv02d *lis3)
++{
++	u8 reg;
++	u8 val;
++	u8 shift;
++
++	switch (lis3->g_range) {
++	case 8:
++		val = FS_8G_REGVAL;
++		shift = SHIFT_ADJ_8G;
++		lis3->scale = LIS3DLH_SENSITIVITY_8G;
++		break;
++	case 4:
++		val = FS_4G_REGVAL;
++		shift = SHIFT_ADJ_4G;
++		lis3->scale = LIS3DLH_SENSITIVITY_4G;
++		break;
++	case 2:
++	default:
++		val = FS_2G_REGVAL;
++		shift = SHIFT_ADJ_2G;
++		lis3->scale = LIS3DLH_SENSITIVITY_2G;
++		break;
++	}
++
++	lis3->shift_adj = shift;
++	lis3->read(lis3, CTRL_REG4, &reg);
++	lis3->write(lis3, CTRL_REG4, ((reg & ~FS_MASK) | val));
++}
++
+ /* Sysfs stuff */
+ static void lis3lv02d_sysfs_poweron(struct lis3lv02d *lis3)
+ {
+@@ -792,6 +857,13 @@ static ssize_t lis3lv02d_rate_show(struct device *dev,
+ 	return sprintf(buf, "%d\n", lis3lv02d_get_odr(lis3));
+ }
+ 
++static ssize_t lis3lv02d_range_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	lis3lv02d_sysfs_poweron(&lis3_dev);
++	return sprintf(buf, "%d\n", lis3_dev.g_range);
++}
++
+ static ssize_t lis3lv02d_rate_set(struct device *dev,
+ 				struct device_attribute *attr, const char *buf,
+ 				size_t count)
+@@ -809,15 +881,33 @@ static ssize_t lis3lv02d_rate_set(struct device *dev,
+ 	return count;
+ }
+ 
++static ssize_t lis3lv02d_range_set(struct device *dev,
++				struct device_attribute *attr, const char *buf,
++				size_t count)
++{
++	unsigned long range;
++
++	if (strict_strtoul(buf, 0, &range))
++		return -EINVAL;
++
++	lis3_dev.g_range = range;
++	lis3lv02d_update_g_range(&lis3_dev);
++
++	return count;
++}
++
+ static DEVICE_ATTR(selftest, S_IRUSR, lis3lv02d_selftest_show, NULL);
+ static DEVICE_ATTR(position, S_IRUGO, lis3lv02d_position_show, NULL);
+ static DEVICE_ATTR(rate, S_IRUGO | S_IWUSR, lis3lv02d_rate_show,
+ 					    lis3lv02d_rate_set);
++static DEVICE_ATTR(range, S_IRUGO | S_IWUSR, lis3lv02d_range_show,
++					    lis3lv02d_range_set);
+ 
+ static struct attribute *lis3lv02d_attributes[] = {
+ 	&dev_attr_selftest.attr,
+ 	&dev_attr_position.attr,
+ 	&dev_attr_rate.attr,
++	&dev_attr_range.attr,
+ 	NULL
+ };
+ 
+@@ -954,6 +1044,19 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
+ 		lis3->odr_mask = CTRL1_ODR0|CTRL1_ODR1|CTRL1_ODR2|CTRL1_ODR3;
+ 		lis3->scale = LIS3_SENSITIVITY_8B;
+ 		break;
++	case WAI_3DLH:
++		pr_info("8 bits 3DLH sensor found\n");
++		lis3->read_data = lis3lv02d_read_8;
++		lis3->mdps_max_val = 128;
++		lis3->pwron_delay = LIS3_PWRON_DELAY_WAI_8B;
++		lis3->odrs = lis3_3dlh_rates;
++		lis3->odr_mask = CTRL1_DR0 | CTRL1_DR1;
++		if (lis3->pdata) {
++			lis3->g_range = lis3->pdata->g_range;
++			lis3lv02d_update_g_range(lis3);
++		} else
++			lis3->scale = LIS3DLH_SENSITIVITY_2G;
++		break;
+ 	default:
+ 		pr_err("unknown sensor type 0x%X\n", lis3->whoami);
+ 		return -EINVAL;
+diff --git a/drivers/misc/lis3lv02d/lis3lv02d.h b/drivers/misc/lis3lv02d/lis3lv02d.h
+index 2b1482a..0e6fe06 100644
+--- a/drivers/misc/lis3lv02d/lis3lv02d.h
++++ b/drivers/misc/lis3lv02d/lis3lv02d.h
+@@ -95,13 +95,29 @@ enum lis3lv02d_reg {
+ 	DD_THSE_H	= 0x3F,
+ };
+ 
++enum lis331dlh_reg {
++	CTRL_REG5	= 0x24,
++	HP_FILTER_RESET_3DLH	= 0x25,
++	REFERENCE	= 0x26,
++};
++
+ enum lis3_who_am_i {
++	WAI_3DLH	= 0x32,	/* 8 bits: LIS331DLH */
+ 	WAI_3DC		= 0x33,	/* 8 bits: LIS3DC, HP3DC */
+ 	WAI_12B		= 0x3A, /* 12 bits: LIS3LV02D[LQ]... */
+ 	WAI_8B		= 0x3B, /* 8 bits: LIS[23]02D[LQ]... */
+ 	WAI_6B		= 0x52, /* 6 bits: LIS331DLF - not supported */
+ };
+ 
++enum lis3_type {
++	LIS3DC,
++	HP3DC,
++	LIS3LV02D,
++	LIS2302D,
++	LIS331DLF,
++	LIS331DLH,
++};
++
+ enum lis3lv02d_ctrl1_12b {
+ 	CTRL1_Xen	= 0x01,
+ 	CTRL1_Yen	= 0x02,
+@@ -129,6 +145,32 @@ enum lis3lv02d_ctrl1_3dc {
+ 	CTRL1_ODR3	= 0x80,
+ };
+ 
++enum lis331dlh_ctrl1 {
++	CTRL1_DR0	= 0x08,
++	CTRL1_DR1	= 0x10,
++	CTRL1_PM0	= 0x20,
++	CTRL1_PM1	= 0x40,
++	CTRL1_PM2	= 0x80,
++};
++
++enum lis331dlh_ctrl2 {
++	CTRL2_HPEN1	= 0x04,
++	CTRL2_HPEN2	= 0x08,
++	CTRL2_FDS_3DLH	= 0x10,
++	CTRL2_BOOT_3DLH	= 0x80,
++};
++
++enum lis331dlh_ctrl4 {
++	CTRL4_STSIGN	= 0x08,
++	CTRL4_BLE	= 0x40,
++	CTRL4_BDU	= 0x80,
++};
++
++enum lis331dlh_ctrl5 {
++	CTRL5_TURNON0	= 0x01,
++	CTRL5_TURNON1	= 0x20,
++};
++
+ enum lis3lv02d_ctrl2 {
+ 	CTRL2_DAS	= 0x01,
+ 	CTRL2_SIM	= 0x02,
+@@ -148,6 +190,13 @@ enum lis3lv02d_ctrl4_3dc {
+ 	CTRL4_FS1	= 0x20,
+ };
+ 
++/* Measurement Range */
++enum lis3lv02d_fs {
++	FS_2G_REGVAL = 0x00,
++	FS_4G_REGVAL = 0x10,
++	FS_8G_REGVAL = 0x30,
++};
++
+ enum lis302d_ctrl2 {
+ 	HP_FF_WU2	= 0x08,
+ 	HP_FF_WU1	= 0x04,
+@@ -185,6 +234,10 @@ enum lis3lv02d_ff_wu_cfg {
+ 	FF_WU_CFG_AOI	= 0x80,
+ };
+ 
++enum lis331dlh_ff_wu_cfg {
++	FF_WU_CFG_6D	= 0x40,
++};
++
+ enum lis3lv02d_ff_wu_src {
+ 	FF_WU_SRC_XL	= 0x01,
+ 	FF_WU_SRC_XH	= 0x02,
+@@ -206,6 +259,10 @@ enum lis3lv02d_dd_cfg {
+ 	DD_CFG_IEND	= 0x80,
+ };
+ 
++enum lis331dlh_dd_cfg {
++	DD_CFG_6D	= 0x40,
++};
++
+ enum lis3lv02d_dd_src {
+ 	DD_SRC_XL	= 0x01,
+ 	DD_SRC_XH	= 0x02,
+@@ -282,6 +339,8 @@ struct lis3lv02d {
+ 
+ 	struct lis3lv02d_platform_data *pdata;	/* for passing board config */
+ 	struct mutex		mutex;     /* Serialize poll and selftest */
++	u8			g_range; /* Hold the g range */
++	u8			shift_adj;
+ };
+ 
+ int lis3lv02d_init_device(struct lis3lv02d *lis3);
+diff --git a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
+index c02fea0..32b322f 100644
+--- a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
++++ b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
+@@ -90,7 +90,10 @@ static int lis3_i2c_init(struct lis3lv02d *lis3)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	reg |= CTRL1_PD0 | CTRL1_Xen | CTRL1_Yen | CTRL1_Zen;
++	if (lis3->whoami == WAI_3DLH)
++		reg |= CTRL1_PM0 | CTRL1_Xen | CTRL1_Yen | CTRL1_Zen;
++	else
++		reg |= CTRL1_PD0 | CTRL1_Xen | CTRL1_Yen | CTRL1_Zen;
+ 	return lis3->write(lis3, CTRL_REG1, reg);
+ }
+ 
+@@ -232,6 +235,7 @@ static int lis3_i2c_runtime_resume(struct device *dev)
+ 
+ static const struct i2c_device_id lis3lv02d_id[] = {
+ 	{"lis3lv02d", 0 },
++	{"lis331dlh", LIS331DLH},
+ 	{}
+ };
+ 
+diff --git a/include/linux/lis3lv02d.h b/include/linux/lis3lv02d.h
+index f1664c6..32d4912 100644
+--- a/include/linux/lis3lv02d.h
++++ b/include/linux/lis3lv02d.h
+@@ -25,6 +25,7 @@
+  * @axis_x:		Sensor orientation remapping for x-axis
+  * @axis_y:		Sensor orientation remapping for y-axis
+  * @axis_z:		Sensor orientation remapping for z-axis
++ * @g_range:		Value contains the acceleration range, +/-2, +/-4 and +/-8
+  * @driver_features:	Enable bits for different features. Disabled by default
+  * @default_rate:	Default sampling rate. 0 means reset default
+  * @setup_resources:	Interrupt line setup call back function
+@@ -113,6 +114,7 @@ struct lis3lv02d_platform_data {
+ 	s8 axis_x;
+ 	s8 axis_y;
+ 	s8 axis_z;
++	u8 g_range;
+ #define LIS3_USE_BLOCK_READ	0x02
+ 	u16 driver_features;
+ 	int default_rate;
+-- 
+1.7.0.4
+
+Thanks
+AnilKumar
