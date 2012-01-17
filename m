@@ -1,150 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab2AQKbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 05:31:45 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52802 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab2AQKbn (ORCPT
+	id S1753044Ab2AQKcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 05:32:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47461 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab2AQKcH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 05:31:43 -0500
-Date: Tue, 17 Jan 2012 15:52:32 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v9 3.2 7/9] tracing: uprobes trace_event interface
-Message-ID: <20120117102231.GB15447@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
- <20120110114943.17610.28293.sendpatchset@srdronam.in.ibm.com>
- <20120116131137.GB5265@m.brq.redhat.com>
- <20120117092838.GB10397@elte.hu>
+	Tue, 17 Jan 2012 05:32:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120117092838.GB10397@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12011710-3270-0000-0000-00000343FBB5
+In-Reply-To: <20120113044757.GB6004@mgross-G62>
+References: <1326276130-4042-1-git-send-email-myungjoo.ham@samsung.com>
+	<CAJOA=zMkRxx=PhznO5VSb3H4bSx7oTYiazesasYY_X7SzSf48A@mail.gmail.com>
+	<CAJ0PZbRKknwF1LwJP6M93-GPXJ9xKuzZnDjZMF8C1id026-X4A@mail.gmail.com>
+	<20120113044757.GB6004@mgross-G62>
+Date: Tue, 17 Jan 2012 19:32:05 +0900
+Message-ID: <CAJ0PZbTMuJfBL4iZyc=R4TkdfFuh1_XzV-KQr73330PUt6fcNQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PM / devfreq: add min/max_freq limit requested by users.
+From: MyungJoo Ham <myungjoo.ham@gmail.com>
+To: markgross@thegnar.org
+Cc: "Turquette, Mike" <mturquette@ti.com>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > and commands like:
-> >         perf record -a -e probe_libc:free  --filter "common_pid == 1127"
-> >         perf record -e probe_libc:free --filter "arg1 == 0xa" ls
-> > 
-> > got me proper results.
-> 
-> Btw., Srikar, if that's the primary UI today then we'll need to 
-> make it a *lot* more user-friendly than the above usage 
-> workflow.
-> 
-> In particular this line:
-> 
-> >         echo "p:probe_libc/free /lib64/libc-2.13.so:0x7a4f0 %ax" > ./uprobe_events
-> 
-> is not something a mere mortal will be able to figure out.
-
-Agree, perf probe is the primary interface to use uprobes.
-
-> 
-> There needs to be perf probe integration, that allows intuitive 
-> usage, such as:
-> 
->    perf probe add libc:free
-
-Current usage is like perf probe -x <executable> -a <func1> -a <func2>
-So we could use
-perf probe -x /lib64/libc.so.6 free
-
-or 
-perf probe -x /lib64/libc.so.6 -a free -a malloc -a strcpy
-
-The -x option helps perf to identify  that its a user space based probing.
-This currently restricts that all probes defined per "perf probe"
-invocation to just one executable. This usage was suggested by Masami.
-
-Earlier we used perf probe free@/lib/libc.so.6 malloc@/lib/libc.so.6
-The objection for this was that perf was already using @ to signify
-source file. Similarly : is already used for Relative line number.
-
-This also goes with perf probe -F -x /lib64/libc.so to list the
-available probes in libc.
-
-> 
-> Using the perf symbols code it should first search a libc*so DSO 
-> in the system, finding say /lib64/libc-2.15.so. The 'free' 
-> symbol is readily available there:
-
-While I understand the ease of using a libc instead of the full path, I
-think it does have few issues.
-- Do we need to keep checking if the new files created in the system
-  match the pattern and if they match the pattern, dynamically add the
-  files?
-
-- Also the current model helps if the user wants to restrict his trace
-  to particular executable where there are more that one executable with
-  the same name.
-
-> 
->   aldebaran:~> eu-readelf -s /lib64/libc-2.15.so  | grep ' free$'
->   7186: 00000039ff47f080    224 FUNC    GLOBAL DEFAULT       12 free
-> 
-> then the tool can automatically turn that symbol information 
-> into the specific probe.
-> 
-
-Given a function in an executable, we are 
-
-> Will it all work with DSO randomization, prelinking and default 
-> placement as well?
-
-Works with DSO randomization, I havent tried with prelinking.  did you
-mean http://en.wikipedia.org/wiki/Placement_syntax#Default_placement
-when you said default placement?
+On Fri, Jan 13, 2012 at 1:47 PM, mark gross <markgross@thegnar.org> wrote:
+> On Thu, Jan 12, 2012 at 11:08:44AM +0900, MyungJoo Ham wrote:
+>>
+>> In practice, we have been using min/max to test DVFS behaviors and its
+>> side effects. And we are going to use them to 1. restrict power
+>> consumption forcibly by the platform software if it is too hot or the
+>> battery is low, and to 2. guarantee the minimum performance for
+>> specific tasks controlled by the platform software.
+>>
+>> Anyway, the reason 2 could be tackled by pm-qos if we allow more
+>> options in pm-qos with 1. pm qos type to enforce DVFS response time.
+> what would pm_qos do with DVFS response time?  What power management
+> knob would it enable a constraint for?
+>
+> pm_qos doesn't do anything but enable power throttling code to consider
+> a constraint on how far to throttle "something".  pm_qos has no
+> enforcement power.
 
 
-> 
-> Users should not be expected to enter magic hexa numbers to get 
-> a trivial usecase going ...
+- The control knob: polling interval of ondemand-like DVFS mechanisms
+- It's ok to have no enforcement power. The DVFS mechanism only needs
+an interface (PM QoS seems fine for this) from user space / device
+drivers to get the response-time requirement.
 
-yes, that why we dont allow perf probe -x /lib/libc.so.6 0x1234
+With some events, we need to adjust DVFS polling interval.
 
-> 
-> this bit:
-> 
-> >         perf record -a -e probe_libc:free  --filter "common_pid == 1127"
-> >         perf record -e probe_libc:free --filter "arg1 == 0xa" ls
-> 
-> looks good and intuitive and 'perf list' should list all the 
-> available uprobes.
+For now, we do this in our devices for user input events (key input,
+touchscreen input, ...). And some peripheral device drivers want to
+get "guaranteed response time" depending on their operational modes
+from memory and bus at the start of their operations.
 
-Currently "perf probe -F -x /bin/zsh" lists all available functions in
-zsh. perf probe --list has been enhanced to show uprobes that are
-already registered.
+With user input events, user may (doing something heavy) or may not
+(doing something light) want fast reaction from CPU/MEM/GPU/... in
+many occasions, and we cannot determine it until the DVFS polling has
+been done.
 
-Similar to kprobes based probes, available user space probes are not
-part of "perf list".
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+In average, with near 100% threshold, ondemand-like governors will
+take 1.5 x polling interval to response. In a system with 100ms
+polling interval, DVFS mechanism will take usuallly 150ms (and up to
+200ms) to react and this is significantly noticable to human users.
+With 60Hz display system, this is loss of almost 10 frames.
 
+In order to address this, a touch event handler (or any
+thread/callback or anything deals with it) may request QoS with an
+incoming event to reduce polling interval temporarily.
+
+Although PM-QoS does not have the QoS Type for this kind of metric;
+however, DVFS response time seems to be another QoS metric candidate.
+
+
+
+>
+>> 2. pm qos type to enforce graphics performance. And adding a duration
+>> option to pm-qos requests will be helpful (sort of a helper function):
+>> i.e., pm_qos_timed_request(struct pm_qos_request *req, int
+>> pm_qos_class, s32 value, unsigned long duration_ms);
+>
+> What would be good units for graphics throughput?
+> Where in the graphics driver would you insert the equivalent of cpufreq?
+> to control the GPU core frequency?
+
+I've not thought about this much yet. I've just seen the need for QoS
+requirements from GPU people because DVFS mechanism loses a frame or
+frames often during GPU usage without QoS information.
+
+I'm not so familiar with GPUs, so I can't be sure about the metric for
+graphics throughput. However, could it be "FLOPS", "triangles per
+second", or GPU clock speed?
+
+We have GPU DVFS drivers in linux/drivers/media/video/..., which
+controls GPU core frequency and measures GPU usage. However, they can
+be implemented with devfreq framework and move into drivers/devfreq/
+later.
+
+
+
+Cheers!
+MyungJoo.
+
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
