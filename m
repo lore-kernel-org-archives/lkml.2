@@ -1,76 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab2AQUed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 15:34:33 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35807 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab2AQUec convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 15:34:32 -0500
+	id S1755646Ab2AQUjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 15:39:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755158Ab2AQUjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 15:39:49 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/3] KEYS: Add missing smp_rmb() primitives to the keyring
+ search code
+To: jmorris@namei.org
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Tue, 17 Jan 2012 20:39:40 +0000
+Message-ID: <20120117203940.14882.56709.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <9642e1197443efe9716f418c4883489e.squirrel@webmail.greenhost.nl>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	<1326302710-9427-2-git-send-email-wad@chromium.org>
-	<20120112162231.GA23960@redhat.com>
-	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
-	<20120112172315.GA26295@redhat.com>
-	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
-	<addf0ca0d9cc381436209af3afdf878f.squirrel@webmail.greenhost.nl>
-	<CABqD9hbBu8cEbArJWhSr-exFUDrnLSXskP1RrTATBczH2MYzFA@mail.gmail.com>
-	<293e9587acd158b91d7d1793c7e16f7c.squirrel@webmail.greenhost.nl>
-	<CABqD9hY2Uhc2Gzy05+Q+_NrZAq+126+avAO0Kd81zDnEi3EXjQ@mail.gmail.com>
-	<9642e1197443efe9716f418c4883489e.squirrel@webmail.greenhost.nl>
-Date: Tue, 17 Jan 2012 12:34:31 -0800
-X-Google-Sender-Auth: 94fzApIXHoNIaw18mEpiDyJVo_M
-Message-ID: <CAGXu5jJvjq5f7Qw1ADh120jAtUsH+L4BW6CY+uaD7GFN53nPBw@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Kees Cook <keescook@chromium.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Will Drewry <wad@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 10:46 PM, Indan Zupancic <indan@nul.nu> wrote:
-> So call it once and store the value in a long. Then copy the low half
-> to the right place and then the upper half when on 64 bits. It may not
-> look too pretty, but the compiler should be able to optimise almost all
-> overhead away and end up with 6 (or 12) int copies. Something like this:
->
-> struct bpf_data {
->        uint32 syscall_nr;
->        uint32 arg_low[MAX_SC_ARGS];
->        uint32 arg_high[MAX_SC_ARGS];
-> };
->
-> void fill_bpf_data(struct task_struct *t, struct pt_regs *r, struct bpf_data *d)
-> {
->        int i;
->        unsigned long arg;
->
->        d->syscall_nr = syscall_get_nr(t, r);
->        for (i = 0; i < MAX_SC_ARGS; ++i){
->                syscall_get_arguments(t, r, i, 1, &arg);
->                d->arg_low[i] = arg;
->                d->arg_high[i] = arg >> 32;
->        }
-> }
+Add missing smp_rmb() primitives to the keyring search code.
 
-If this turns out to be expensive, it might be possible to break it up
-and load the arguments on demand (and cache them); i.e. have
-load_pointer() or similar notice when it is about to access something
-other than bpf_data.syscall_nr.
+When keyring payloads are appended to without replacement (thus using up spare
+slots in the key pointer array), an smp_wmb() is issued between the pointer
+assignment and the increment of the key count (nkeys).
 
--Kees
+There should be corresponding read barriers between the read of nkeys and
+dereferences of keys[n] when n is dependent on the value of nkeys.
 
--- 
-Kees Cook
-ChromeOS Security
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+
+ security/keys/gc.c      |    4 +++-
+ security/keys/keyring.c |   22 +++++++++++++++-------
+ 2 files changed, 18 insertions(+), 8 deletions(-)
+
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index bf4d8da..a42b455 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -145,7 +145,9 @@ static void key_gc_keyring(struct key *keyring, time_t limit)
+ 	if (!klist)
+ 		goto unlock_dont_gc;
+ 
+-	for (loop = klist->nkeys - 1; loop >= 0; loop--) {
++	loop = klist->nkeys;
++	smp_rmb();
++	for (loop--; loop >= 0; loop--) {
+ 		key = klist->keys[loop];
+ 		if (test_bit(KEY_FLAG_DEAD, &key->flags) ||
+ 		    (key->expiry > 0 && key->expiry <= limit))
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 37a7f3b..d605f75 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -319,7 +319,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+ 	struct key *keyring, *key;
+ 	key_ref_t key_ref;
+ 	long err;
+-	int sp, kix;
++	int sp, nkeys, kix;
+ 
+ 	keyring = key_ref_to_ptr(keyring_ref);
+ 	possessed = is_key_possessed(keyring_ref);
+@@ -380,7 +380,9 @@ descend:
+ 		goto not_this_keyring;
+ 
+ 	/* iterate through the keys in this keyring first */
+-	for (kix = 0; kix < keylist->nkeys; kix++) {
++	nkeys = keylist->nkeys;
++	smp_rmb();
++	for (kix = 0; kix < nkeys; kix++) {
+ 		key = keylist->keys[kix];
+ 		kflags = key->flags;
+ 
+@@ -421,7 +423,9 @@ descend:
+ 	/* search through the keyrings nested in this one */
+ 	kix = 0;
+ ascend:
+-	for (; kix < keylist->nkeys; kix++) {
++	nkeys = keylist->nkeys;
++	smp_rmb();
++	for (; kix < nkeys; kix++) {
+ 		key = keylist->keys[kix];
+ 		if (key->type != &key_type_keyring)
+ 			continue;
+@@ -515,7 +519,7 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
+ 	struct keyring_list *klist;
+ 	unsigned long possessed;
+ 	struct key *keyring, *key;
+-	int loop;
++	int nkeys, loop;
+ 
+ 	keyring = key_ref_to_ptr(keyring_ref);
+ 	possessed = is_key_possessed(keyring_ref);
+@@ -524,7 +528,9 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
+ 
+ 	klist = rcu_dereference(keyring->payload.subscriptions);
+ 	if (klist) {
+-		for (loop = 0; loop < klist->nkeys; loop++) {
++		nkeys = klist->nkeys;
++		smp_rmb();
++		for (loop = 0; loop < nkeys ; loop++) {
+ 			key = klist->keys[loop];
+ 
+ 			if (key->type == ktype &&
+@@ -622,7 +628,7 @@ static int keyring_detect_cycle(struct key *A, struct key *B)
+ 
+ 	struct keyring_list *keylist;
+ 	struct key *subtree, *key;
+-	int sp, kix, ret;
++	int sp, nkeys, kix, ret;
+ 
+ 	rcu_read_lock();
+ 
+@@ -645,7 +651,9 @@ descend:
+ 
+ ascend:
+ 	/* iterate through the remaining keys in this keyring */
+-	for (; kix < keylist->nkeys; kix++) {
++	nkeys = keylist->nkeys;
++	smp_rmb();
++	for (; kix < nkeys; kix++) {
+ 		key = keylist->keys[kix];
+ 
+ 		if (key == A)
+
