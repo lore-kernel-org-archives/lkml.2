@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab2AQH3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 02:29:12 -0500
-Received: from mga14.intel.com ([143.182.124.37]:45816 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab2AQH3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 02:29:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="57156200"
-Message-ID: <4F152347.1060703@intel.com>
-Date: Tue, 17 Jan 2012 09:29:11 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752278Ab2AQHa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 02:30:28 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:58806 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab2AQHa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 02:30:26 -0500
+Date: Tue, 17 Jan 2012 10:30:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch 2/2] [media] ds3000: off by one in ds3000_read_snr()
+Message-ID: <20120117073021.GB11358@elgon.mountain>
 MIME-Version: 1.0
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-CC: Chris Ball <cjb@laptop.org>, patches@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: change mmc_delay() to use usleep_range()
-References: <1326696200-514-1-git-send-email-dmitry.antipov@linaro.org>
-In-Reply-To: <1326696200-514-1-git-send-email-dmitry.antipov@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F15238E.0029,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/01/12 08:43, Dmitry Antipov wrote:
-> Use the usleep_range() to simplify mmc_delay() and give some more
-> accuracy to it - but with an exception of mmc_card_sleepawake():
-> for the hosts with very small (<100us) sleep/awake timeout, it's
-> value is rounded up to 100us so usleep_range() always makes sense.
-> ---
->  drivers/mmc/core/core.h    |    8 ++------
->  drivers/mmc/core/mmc_ops.c |    9 ++++++---
->  2 files changed, 8 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
-> index 3bdafbc..fbd2cba 100644
-> --- a/drivers/mmc/core/core.h
-> +++ b/drivers/mmc/core/core.h
-> @@ -48,12 +48,8 @@ void mmc_power_off(struct mmc_host *host);
->  
->  static inline void mmc_delay(unsigned int ms)
->  {
-> -	if (ms < 1000 / HZ) {
-> -		cond_resched();
-> -		mdelay(ms);
-> -	} else {
-> -		msleep(ms);
-> -	}
-> +	unsigned long us = ms * USEC_PER_MSEC;
-> +	usleep_range(us, us + 1000);
->  }
->  
->  void mmc_rescan(struct work_struct *work);
-> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-> index 4d41fa9..457443a 100644
-> --- a/drivers/mmc/core/mmc_ops.c
-> +++ b/drivers/mmc/core/mmc_ops.c
-> @@ -82,9 +82,12 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
->  	 * SEND_STATUS command to poll the status because that command (and most
->  	 * others) is invalid while the card sleeps.
->  	 */
-> -	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
-> -		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
-> -
-> +	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY)) {
-> +		/* JEDEC MMCA 4.41 specifies the timeout value is in 200ns..838.86ms
-> +		   range, which is rounded it up to 100us here. */
-> +		unsigned long us = DIV_ROUND_UP(card->ext_csd.sa_timeout, 1000);
+This is a static checker patch and I don't have the hardware to test
+this, so please review it carefully.  The dvbs2_snr_tab[] array has 80
+elements so when we cap it at 80, that's off by one.  I would have
+assumed that the test was wrong but in the lines right before we have
+the same test but use "snr_reading - 1" as the array offset.  I've done
+the same thing here.
 
-The divisor has changed from 10000 to 1000 but the change is from ms to us,
-so it ought to be 3 zeros different - unless it is a bug fix (which should
-be a separate patch)?
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-
-> +		usleep_range(us, us + 100);
-> +	}
->  	if (!sleep)
->  		err = mmc_select_card(card);
->  
-
+diff --git a/drivers/media/dvb/frontends/ds3000.c b/drivers/media/dvb/frontends/ds3000.c
+index af65d01..3f5ae0a 100644
+--- a/drivers/media/dvb/frontends/ds3000.c
++++ b/drivers/media/dvb/frontends/ds3000.c
+@@ -681,7 +681,7 @@ static int ds3000_read_snr(struct dvb_frontend *fe, u16 *snr)
+ 			snr_reading = dvbs2_noise_reading / tmp;
+ 			if (snr_reading > 80)
+ 				snr_reading = 80;
+-			*snr = -(dvbs2_snr_tab[snr_reading] / 1000);
++			*snr = -(dvbs2_snr_tab[snr_reading - 1] / 1000);
+ 		}
+ 		dprintk("%s: raw / cooked = 0x%02x / 0x%04x\n", __func__,
+ 				snr_reading, *snr);
