@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2AQMDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:03:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35624 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab2AQMDf (ORCPT
+	id S1753412Ab2AQMG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:06:28 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:35319 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab2AQMGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 07:03:35 -0500
-X-Authority-Analysis: v=2.0 cv=Hf6Wv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=KHR86nk1PkcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Xzg2R8yLFMHD5Fx3ua8A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326801811.7642.188.camel@gandalf.stny.rr.com>
-Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
-From: Steven Rostedt <rostedt@goodmis.org>
+	Tue, 17 Jan 2012 07:06:25 -0500
+Date: Tue, 17 Jan 2012 17:27:05 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Oleg Nesterov <oleg@redhat.com>,
+Cc: "Paul E. McKenney" <paulmck@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Tue, 17 Jan 2012 07:03:31 -0500
-In-Reply-To: <20120117100222.GH10397@elte.hu>
-References: <20120110174509.GA30802@redhat.com>
-	 <20120113182015.GA3902@redhat.com> <20120115182441.GA24694@redhat.com>
-	 <20120116074540.GE15641@elte.hu>
-	 <1326717070.7642.144.camel@gandalf.stny.rr.com>
-	 <20120116125329.GB31667@elte.hu>
-	 <1326729123.7642.146.camel@gandalf.stny.rr.com>
-	 <20120117100222.GH10397@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v9 3.2 7/9] tracing: uprobes trace_event interface
+Message-ID: <20120117115705.GD15447@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
+ <20120110114943.17610.28293.sendpatchset@srdronam.in.ibm.com>
+ <20120116131137.GB5265@m.brq.redhat.com>
+ <20120117092838.GB10397@elte.hu>
+ <20120117102231.GB15447@linux.vnet.ibm.com>
+ <20120117112239.GA23859@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120117112239.GA23859@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12011712-6148-0000-0000-000002AFED0E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 11:02 +0100, Ingo Molnar wrote:
-
-> That is not true *AT ALL* in such an unqualified manner. Steve, 
-> stop being stupid.
+> Srikar, rebased commits like this one:
 > 
-> The kernel syscall ABI may indeed sometimes expand *INPUT* 
-> structures (if via some mechanism it's possible to make sure 
-> that old ABI uses don't cause the kernel to read undefined 
-> data), but the trace events are *OUTPUT* structures.
+>   c5af743: rcu: Introduce raw SRCU read-side primitives
+> 
+> are absolutely inacceptable:
+> 
 
-The difference between syscalls and tracepoints is that a tracepoint
-always reports the size of the structure that was read, where a syscall
-does not. So I do consider this similar to reading the /proc/stat file
-as the user can see how much was read. The backwards compatibility
-should be easy to write. Old tools should not break, because it wont be
-reading the new fields, and new tools can determine which tracepoint is
-there because it is trivial to see which version of the tracepoint is
-there because of the size read.
+Okay, I wasnt sure whats the best way for me to expose a tree such that
+people who just use my tree to try (without basing on any other trees
+except Linus) can build and use uprobes but people who already have this
+commit arent affected by me having this commit.
 
-But as I'm stupid, I'll shut up now.
+So couple of people did tell me that git was intelligent enuf that if
+the commit was already in, it would create a empty commit. 
 
--- Steve
+do you have suggestions on how to work around such situations in future?
 
+>  commit c5af7439f322db86e347991e184b95dd80676967
+>  Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>  Date:   Sun Oct 9 15:13:11 2011 -0700
+> 
+>     rcu: Introduce raw SRCU read-side primitives
+> 
+>     ...
+> 
+>     Requested-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>     Tested-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> If you pull a commit from Paul into your tree then you must 
+> never rebase it. If you applied Paul's commit out of email then 
+> you should add a Signed-off-by, not a Tested-by tag at the end.
+
+I actually cherry-picked commit from your tree i.e -tip. 
+The Tested-by tag was added by Paul after I confirmed to him that it
+works.  Even the commit 0c53dd8b3140: that you refer has the same tags.
+
+> 
+> Also, please test whether it works when merged to latest -tip, 
+> there's been various RCU changes in this area. AFAICS these 
+> read-side primitives are already upstream via:
+> 
+>   0c53dd8b3140: rcu: Introduce raw SRCU read-side primitives
+> 
+> so pulling your tree would break the build.
+
+I had used v3.2 as a base for my tree and 0c53dd8b3140: was not part of
+that tag. Now that its gone into mainline, I will drop the commit.
+
+-- 
+Thanks and Regards
+Srikar
 
