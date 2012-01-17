@@ -1,31 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab2AQNGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 08:06:00 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:52583 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab2AQNF7 (ORCPT
+	id S1753818Ab2AQNKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 08:10:07 -0500
+Received: from caiajhbdcagg.dreamhost.com ([208.97.132.66]:45425 "EHLO
+	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753487Ab2AQNKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 08:05:59 -0500
-Message-ID: <4F157233.2010503@kernel.org>
-Date: Tue, 17 Jan 2012 08:05:55 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ying.huang@intel.com, Chen Gong <gong.chen@linux.intel.com>
-Subject: Re: [PATCH] acpi/apei/einj: Add extensions to EINJ from rev 5.0 of
- acpi spec
-References: <212c4cabb390880e855be9509e7d2be002699907.1325716284.git.tony.luck@intel.com>
-In-Reply-To: <212c4cabb390880e855be9509e7d2be002699907.1325716284.git.tony.luck@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Tue, 17 Jan 2012 08:10:06 -0500
+Subject: [PATCH v2] KVM: SVM: comment nested paging and virtualization
+ module parameters
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Tue, 17 Jan 2012 14:09:50 +0100
+Message-ID: <1326805790.3269.1.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch doesn't build in 32-bit mode:
+From: Davidlohr Bueso <dave@gnu.org>
 
-drivers/acpi/apei/einj.c:256:3: error: implicit declaration of function ‘readq’ [-Werror=implicit-function-declaration]
+Also use true instead of 1 for enabling by default.
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ arch/x86/kvm/svm.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index fce3ba0..7bbd17c 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -182,11 +182,13 @@ static bool npt_enabled = true;
+ #else
+ static bool npt_enabled;
+ #endif
+-static int npt = 1;
+ 
++/* allow nested paging (virtualized MMU) for all guests */
++static int npt = true;
+ module_param(npt, int, S_IRUGO);
+ 
+-static int nested = 1;
++/* allow nested virtualization in KVM/SVM */
++static int nested = true;
+ module_param(nested, int, S_IRUGO);
+ 
+ static void svm_flush_tlb(struct kvm_vcpu *vcpu);
+-- 
+1.7.4.1
+
+
 
