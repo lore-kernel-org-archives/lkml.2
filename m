@@ -1,105 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab2AQKea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 05:34:30 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:50505 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab2AQKe2 (ORCPT
+	id S1753195Ab2AQKfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 05:35:14 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.180]:46612 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab2AQKfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 05:34:28 -0500
-Message-ID: <4F154EAB.8080008@kernel.org>
-Date: Tue, 17 Jan 2012 05:34:19 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
-To: =?UTF-8?B?QXJrYWRpdXN6IE1pxZtraWV3aWN6?= <a.miskiewicz@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: intel_idle causing 3.0.8 system reboot
-References: <201110272327.14891.a.miskiewicz@gmail.com> <201110281954.39191.a.miskiewicz@gmail.com> <CAJvTdKmCgbebEOY7Ly=cE1ZV2GVG7hL5fE8LmK9nz7r8+BNPJQ@mail.gmail.com> <201111130854.56201.a.miskiewicz@gmail.com>
-In-Reply-To: <201111130854.56201.a.miskiewicz@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 17 Jan 2012 05:35:10 -0500
+X-Greylist: delayed 655 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 05:35:10 EST
+X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
+X-RZG-CLASS-ID: mo05
+Message-Id: <201201171023.q0HANwSE024485@gatekeeper.vosshq.de>
+From: Nikolaus Voss <n.voss@weinmann.de>
+Date: Tue, 17 Jan 2012 10:28:33 +0100
+Subject: [PATCH] at_hdmac: bugfix for enabling channel irq
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2011 02:54 AM, Arkadiusz Miśkiewicz wrote:
+commit 463894705e4089d0ff69e7d877312d496ac70e5b deleted redundant
+chan_id and chancnt initialization in dma drivers as this is done
+in dma_async_device_register().
 
-> On Sunday 13 of November 2011, Len Brown wrote:
->>> intel_idle.max_cstate=2 also makes the problem go away.
->>
->> Is the system running with BIOS SETUP defaults?
-> 
-> Tried also with "safe defaults (F8)" but that didn't help.
-> 
->> Are there any BIOS SETUP options related to CPU idle states?
-> 
-> Yes, there are
-> 
-> "C state package limit setting" with values possible: Auto, C1, C3, C6, C7 
-> (set to "Auto" here)
-> "Intel EIST technology" -> Enabled
-> "C1E support" -> Enabled
-> "Intel C-STATE tech" -> Enabled
-> "C1 Auto Demotion" -> Enabled
-> "C3 Auto Demotion" -> Enabled
-> 
->> please boot with intel_idle.max_cstate=0
->> and send the output of these two commands:
->>
->> dmesg |grep idle
->> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
-> 
-> [root@berta ~]# dmesg |grep idle
-> [    0.000000] Command line: auto BOOT_IMAGE=pld3.0.8test ro root=812 
-> console=tty0 console=ttyS2,38400n81 panic=60 selinux=0 intel_idle.max_cstate=0
-> [    0.000000] Kernel command line: auto BOOT_IMAGE=pld3.0.8test ro root=812 
-> console=tty0 console=ttyS2,38400n81 panic=60 selinux=0 intel_idle.max_cstate=0
-> [    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
-> [    0.278494] using mwait in idle threads.
-> [    4.330321] intel_idle: disabled
-> [    5.794456] cpuidle: using governor ladder
-> [    5.806755] cpuidle: using governor menu
-> [root@berta ~]# LC_ALL=C grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
-> grep: /sys/devices/system/cpu/cpu0/cpuidle/*/*: No such file or directory
-> 
-> There are only:
-> [root@berta ~]# LC_ALL=C grep . /sys/devices/system/cpu/cpuidle/*
-> /sys/devices/system/cpu/cpuidle/current_driver:none
-> /sys/devices/system/cpu/cpuidle/current_governor_ro:menu
+However, atc_enable_irq() relied on chan_id set before registering
+the device, what left only channel 0 functional for this driver.
 
-very strange.
-now that it is back up...
-Please file a bug report at bugzilla.kernel.org against idle/intel_idle
-and assign it to me.
+This patch introduces atc_enable/disable_chan_irq() as a variant
+of atc_enable/disable_irq() with the channel as explicit argument.
 
-Please attach the complete output from dmesg -s 64000
-and attach your .config
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+ drivers/dma/at_hdmac.c      |    4 ++--
+ drivers/dma/at_hdmac_regs.h |   17 ++++++++---------
+ 2 files changed, 10 insertions(+), 11 deletions(-)
 
-It appears that you have no acpi_idle driver installed.
-
-If your kernel is missing
-CONFIG_ACPI_PROCESSOR=y
-please add it and collect the info above.
-
-thanks,
--Len
-
-
-
->>
->> thanks,
->> Len Brown, Intel Open Source Technology Center
->>
->>>> # cat /proc/cpuinfo
->>>> processor       : 0
->>>> vendor_id       : GenuineIntel
->>>> cpu family      : 6
->>>> model           : 30
->>>> model name      : Intel(R) Xeon(R) CPU           X3430  @ 2.40GHz
->>>> stepping        : 5
-> 
-> 
-
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index fcfa0a8..a60adbf 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -1286,7 +1286,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+ 
+ 		tasklet_init(&atchan->tasklet, atc_tasklet,
+ 				(unsigned long)atchan);
+-		atc_enable_irq(atchan);
++		atc_enable_chan_irq(atdma, i);
+ 	}
+ 
+ 	/* set base routines */
+@@ -1353,7 +1353,7 @@ static int __exit at_dma_remove(struct platform_device *pdev)
+ 		struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+ 
+ 		/* Disable interrupts */
+-		atc_disable_irq(atchan);
++		atc_disable_chan_irq(atdma, chan->chan_id);
+ 		tasklet_disable(&atchan->tasklet);
+ 
+ 		tasklet_kill(&atchan->tasklet);
+diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+index aa4c9ae..5aa82b4 100644
+--- a/drivers/dma/at_hdmac_regs.h
++++ b/drivers/dma/at_hdmac_regs.h
+@@ -326,28 +326,27 @@ static void atc_dump_lli(struct at_dma_chan *atchan, struct at_lli *lli)
+ }
+ 
+ 
+-static void atc_setup_irq(struct at_dma_chan *atchan, int on)
++static void atc_setup_irq(struct at_dma *atdma, int chan_id, int on)
+ {
+-	struct at_dma	*atdma = to_at_dma(atchan->chan_common.device);
+-	u32		ebci;
++	u32 ebci;
+ 
+ 	/* enable interrupts on buffer transfer completion & error */
+-	ebci =    AT_DMA_BTC(atchan->chan_common.chan_id)
+-		| AT_DMA_ERR(atchan->chan_common.chan_id);
++	ebci =    AT_DMA_BTC(chan_id)
++		| AT_DMA_ERR(chan_id);
+ 	if (on)
+ 		dma_writel(atdma, EBCIER, ebci);
+ 	else
+ 		dma_writel(atdma, EBCIDR, ebci);
+ }
+ 
+-static inline void atc_enable_irq(struct at_dma_chan *atchan)
++static void atc_enable_chan_irq(struct at_dma *atdma, int chan_id)
+ {
+-	atc_setup_irq(atchan, 1);
++	atc_setup_irq(atdma, chan_id, 1);
+ }
+ 
+-static inline void atc_disable_irq(struct at_dma_chan *atchan)
++static void atc_disable_chan_irq(struct at_dma *atdma, int chan_id)
+ {
+-	atc_setup_irq(atchan, 0);
++	atc_setup_irq(atdma, chan_id, 0);
+ }
+ 
+ 
+-- 
+1.7.5.4
 
