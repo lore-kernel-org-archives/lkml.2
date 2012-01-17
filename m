@@ -1,118 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab2AQXt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 18:49:27 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49815 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab2AQXtZ convert rfc822-to-8bit (ORCPT
+	id S1753450Ab2AQXyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 18:54:00 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60328 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab2AQXx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 18:49:25 -0500
+	Tue, 17 Jan 2012 18:53:59 -0500
+From: Karsten Wiese <fzuuzf@googlemail.com>
+To: John Kacur <jkacur@redhat.com>
+Subject: Re: rt-kernel 3.0.14-rt31: BUG: sleeping function called from invalid context
+Date: Wed, 18 Jan 2012 00:53:51 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.35.14-106.fc14.x86_64; KDE/4.6.5; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+References: <CAONaPpFjfGiKKGAzrQNk+MF4k50nRf+wMU8H9491NgHyJrUkyw@mail.gmail.com>
+In-Reply-To: <CAONaPpFjfGiKKGAzrQNk+MF4k50nRf+wMU8H9491NgHyJrUkyw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJOA=zMgGsZKGQ-EfSnXDY_WoFrzG6XPZtuxANFKqdL8CAaYrw@mail.gmail.com>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
- <74CDBE0F657A3D45AFBB94109FB122FF17801D2353@HQMAIL01.nvidia.com>
- <CACxGe6vC7DBW0w6LhRTg_fi5bZ2aHxwFY2DNbT6KFcUmoYpNYA@mail.gmail.com> <CAJOA=zMgGsZKGQ-EfSnXDY_WoFrzG6XPZtuxANFKqdL8CAaYrw@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 17 Jan 2012 16:49:04 -0700
-X-Google-Sender-Auth: NIEO9LMfPGWlCuXMXht5JAzfpPU
-Message-ID: <CACxGe6sULSJAw1fOs5VTw=LGuST9DY3-h4oZbWZRz_LAr3sWqA@mail.gmail.com>
-Subject: Re: [RFC v2 4/9] of: add clock providers
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201180053.52617.fzuuzf@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 4:37 PM, Turquette, Mike <mturquette@ti.com> wrote:
-> On Tue, Jan 17, 2012 at 2:47 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Tue, Jan 17, 2012 at 1:44 PM, Stephen Warren <swarren@nvidia.com> wrote:
->>> In other words, does the UART driver need to do something like:
->>>
->>> clk_reg = clk_get(dev, "register");
->>> clk_parent = of_clk_get_by_name(np, "register);
->>> clk_set_parent(clk_reg, clk_parent);
->>>
->>> Or will that all happen transparently within just the of_clk_get_by_name
->>> call?
->>>
->>> (I suppose this question makes slightly more sense for the PLL itself,
->>> since both the upstream and downstream clocks are represented in the PLL
->>> node, whereas the UART's node only represents the clock consumer side,
->>> so the above code isn't really possible automatically).
->>
->> The intent is that device only interacts with the leaf device.  If the
->> clocks are arranged into a hierarchy, then the clock driver is
->> responsible for any interactions with the parent clock.  Requiring the
->> driver to manipulate parent clocks directly defeats the purpose of
->> having a clock abstraction.
->
-> I don't think that we can get rid of all instances of drivers knowing
-> a bit about hierarchy.  I think we can get rid of most, but there are
-> cases where it is valid for a driver to know some of the details.
-> More on that below.
->
->>> Somewhat related to this: How does dynamic reparenting interact with
->>> the DT clock binding; is the DT just the default/initial clock setup,
->>> and anything beyond that needs a custom binding and code in the consumer?
->>
->> As far as the clock binding goes, it only describes provider/consumer
->> relationships.  The fact that such relationships may resolve to a
->> hierarchy is beyond what the binding describes.  If a clock has
->> multiple possible parents, then that specific clock binding should
->> document how the multiple parent clocks are described and the clock
->> driver is responsible for implementing the correct behaviour.
->
-> It also deserves to be said that the DT data says nothing about which
-> of the possible parents _should_ be the input to a mux clock.  It's
-> pretty common to want to make changes to hierarchy after taking a
-> device out of reset, since the reset values for a clock management IP
-> might be pretty conservative.  So someone, somewhere must know some
-> details about hierarchy and set things up correctly.  Maybe a "clock
-> driver" can do this, but for specific IPs such as the audio example
-> below it makes sense for that driver to have the knowledge.
->
->> Similarly, the DT clock binding provides no generic mechanism for
->> walking up the clock tree.  That behaviour must also be implemented by
->> each specific clock driver.
->>
->>> I'm thinking of say a system with 1 I2S controller, and both an internal
->>> and external I2S clock source, where perhaps the internal source needs
->>> to be used to capture from an I2S interface on one set of pins (e.g.
->>> analog mic) but the other clock source needs to be used to capture from
->>> I2S on another set of pins (e.g. digital baseband unit connection).
->>> (This example is theoretical, but I'm sure there are other dynamic clock
->>> cases in practice).
->>
->> That is a reasonable example.  In this case, the i2c controller would
->> include both in its clocks property, and the binding would document
->> when and why each clock source is used.
->
-> I'm confused on this point.  How does the binding "document when and
-> why each clock is used"?  In the case where this I2S controller
-> expects to dynamically switch roles at run-time (analog mic versus
-> baseband) then clk_set_parent must still be invoked by the driver.  To
-> be clear I'm imagining the above example like:
->
-> i_I2S   e_I2S
->   \       /
->    I2S_mux
->        |
-> I2S controller IP
+Am Mittwoch 18 Januar 2012 schrieb John Kacur:
+> I got a whole bunch of these in 3.0.14-rt31 that basically look alike.
+> Will try to drill deeper down. In the meantime, I'm happy to provide
+> more information if anyone would like.
+> Thanks, John
+> 
+> [ 4251.928097] BUG: sleeping function called from invalid context at
+> /home/jkacur/rt.linux.git/kernel/rtmutex.c:645
+> [ 4251.928100] in_atomic(): 1, irqs_disabled(): 1, pid: 168, name: irq/9-acpi
+> [ 4251.928102] INFO: lockdep is turned off.
+> [ 4251.928103] irq event stamp: 5888
+> [ 4251.928104] hardirqs last  enabled at (5887): [<ffffffff810b2a69>]
+> rcu_preempt_note_context_switch+0x1c8/0x1d9
+> [ 4251.928109] hardirqs last disabled at (5888): [<ffffffff813e4326>]
+> _raw_spin_lock_irq+0x19/0x79
+> [ 4251.928113] softirqs last  enabled at (0): [<ffffffff81041c88>]
+> copy_process+0x517/0xfbd
+> [ 4251.928116] softirqs last disabled at (0): [<          (null)>]
+>       (null)
+> [ 4251.928119] Pid: 168, comm: irq/9-acpi Not tainted
+> 3.0.14-rt31-debug-00322-g6aaac97b #1
+> [ 4251.928121] Call Trace:
+> [ 4251.928125]  [<ffffffff81037b06>] __might_sleep+0xf4/0xf9
+> [ 4251.928128]  [<ffffffff8107e4f5>] rt_spin_lock_fastlock.clone.0+0x24/0x31
+> [ 4251.928130]  [<ffffffff813e3b33>] rt_spin_lock+0x16/0x40
+> [ 4251.928133]  [<ffffffff8103eb60>] __wake_up+0x28/0x50
+> [ 4251.928136]  [<ffffffff8122ca51>] acpi_ec_gpe_handler+0x72/0xc4
+> [ 4251.928145]  [<ffffffff81238443>] acpi_ev_gpe_dispatch+0xbd/0x12e
+> [ 4251.928147]  [<ffffffff81238727>] acpi_ev_gpe_detect+0xbb/0x110
 
->From the description, I assumed that the i2s_mux was part of the i2s
-controller driver which would select the appropriate clock based on
-the configured mode.  If it is better to implement it as a separate
-clock driver, then yes the i2s controller must have knowledge of that
-and call clk_set_parent appropriately.  Regardless, some driver needs
-to explicitly understand the relationship between pinmux and clock
-source.
-
-g.
+The bug happens because acpi_ev_gpe_detect does
+raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags) before it calls
+acpi_ev_gpe_dispatch.
