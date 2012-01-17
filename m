@@ -1,45 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab2AQOe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 09:34:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56524 "EHLO mga02.intel.com"
+	id S1754605Ab2AQOgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 09:36:39 -0500
+Received: from mx1.gd-ms.com ([153.11.250.40]:33031 "EHLO mx1.gd-ms.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754502Ab2AQOex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 09:34:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="99556095"
-Subject: Re: [PATCH v2 2/2] msm: DMAEngine: Add DMAEngine driver based on
- old MSM DMA APIs
-From: Vinod Koul <vinod.koul@intel.com>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Ravi Kumar V <kumarrav@codeaurora.org>, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, arnd@arndb.de, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bryanh@codeaurora.org,
-        tsoni@qualcomm.com, dan.j.williams@intel.com, davidb@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, johlstei@qualcomm.com
-In-Reply-To: <1325901569.10425.14.camel@m0nster>
-References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org>
-	 <1325854052-21402-3-git-send-email-kumarrav@codeaurora.org>
-	 <1325901569.10425.14.camel@m0nster>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Jan 2012 20:05:35 +0530
-Message-ID: <1326810935.1540.162.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754306Ab2AQOgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 09:36:38 -0500
+X-Greylist: delayed 840 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 09:36:38 EST
+In-Reply-To: <20120117085756.GB7612@elte.hu>
+References: <OFE7865F25.43E4BFD2-ON85257984.0057CD12-85257984.0058D31D@gdeb.com> <20120116075348.GF15641@elte.hu> <OF8925048E.BDB4D255-ON85257987.005AFEB7-85257987.005C9188@LocalDomain> <OFFD8ED65D.E1B7CD3D-ON85257987.005EE0A9-85257987.005F48CD@gdeb.com> <20120116212938.GB6313@srcf.ucam.org> <20120117085756.GB7612@elte.hu>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Kushal Koolwal <kushalkoolwal@gmail.com>,
+        linux-kernel@vger.kernel.org, michael.d.labriola@gmail.com,
+        Matthew Garrett <mjg59@srcf.ucam.org>, support@versalogic.com,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+MIME-Version: 1.0
+Subject: Re: Reboot hangs on VersaLogic Ocelot
+X-KeepSent: E7567546:E048E2ED-85257988:004E1300;
+ type=4; name=$KeepSent
+Message-ID: <OFE7567546.E048E2ED-ON85257988.004E1300-85257988.004EF54C@gdeb.com>
+From: Michael D Labriola <mlabriol@gdeb.com>
+Date: Tue, 17 Jan 2012 09:22:25 -0500
+X-GDMEncrypt: FALSE
+X-GDMMarking: NOT_SENSITIVE
+Content-Type: text/plain; charset="US-ASCII"
+X-GDM-EVAL: score: /30; hits: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-06 at 17:59 -0800, Daniel Walker wrote:
-> > +
-> > +#define FORCED_FLUSH         0
-> > +#define GRACEFUL_FLUSH          1
-> 
-> Could be an enum ..
-Along with proper namespace...
+Ingo Molnar <mingo@elte.hu> wrote on 01/17/2012 03:57:56 AM:
 
--- 
-~Vinod
+> From: Ingo Molnar <mingo@elte.hu>
+> To: Matthew Garrett <mjg59@srcf.ucam.org>
+> Cc: Michael D Labriola <mlabriol@gdeb.com>, "H. Peter Anvin" 
+> <hpa@zytor.com>, Kushal Koolwal <kushalkoolwal@gmail.com>, linux-
+> kernel@vger.kernel.org, michael.d.labriola@gmail.com, 
+> support@versalogic.com, Thomas Gleixner <tglx@linutronix.de>, 
+x86@kernel.org
+> Date: 01/17/2012 04:04 AM
+> Subject: Re: Reboot hangs on VersaLogic Ocelot
+> 
+> 
+> * Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> 
+> > On Mon, Jan 16, 2012 at 12:20:45PM -0500, Michael D Labriola wrote:
+> 
+> > > Actually, assuming we fix the bios= argument ignored by DMI 
+> > > scan problem, would it be better to change the VersaLogic 
+> > > quirk to acpi even though it's not necessary right now?  If 
+> > > the default reboot method ever switches from acpi to kbd or 
+> > > bios, these boards will hang on reboot again...
+> > 
+> > A lot of hardware relies on the acpi method being used. I 
+> > don't see us changing the default for x86 when booted via 
+> > BIOS.
+> 
+> Yeah, i don't think we'll ever again switch away from ACPI being 
+> the default for currently existing hardware.
+> 
+> (Far-)future hardware might have different defaults, but that 
+> won't affect hardware that exists today.
+> 
+> Thanks,
+> 
+>    Ingo
+
+Ingo,
+
+I sent the aforementioned patches last night using git-send-email... but 
+I'm not sure they went through correctly.  I got the email at my home 
+account, but not my work account, and they don't seem to be in the LKML 
+archives.  Did anyone get them?  I listed all the addresses on this 
+email's distro with separate --to and --cc arguments and tried to use an 
+appropriate In-Reply-To Message-Id when prompted, but maybe I messed it 
+up.
+
+Also, how does the sign-off work?  Does the appropriate person (Matthew?) 
+review the patches and re-submit with a sign-off field?
+
+---
+Michael D Labriola
+Electric Boat
+mlabriol@gdeb.com
+401-848-8871 (desk)
+401-848-8513 (lab)
+401-316-9844 (cell)
+
+
+
+
+ 
+
 
