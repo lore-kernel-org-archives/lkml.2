@@ -1,321 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab2AQO2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 09:28:25 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53595 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab2AQO2K (ORCPT
+	id S1754511Ab2AQO3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 09:29:38 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:32025 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754405Ab2AQO3g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 09:28:10 -0500
-Date: Tue, 17 Jan 2012 18:27:59 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
-Subject: [RFC] syscalls, x86: Add __NR_kcmp syscall
-Message-ID: <20120117142759.GE16213@moon>
+	Tue, 17 Jan 2012 09:29:36 -0500
+From: <leonid.moiseichuk@nokia.com>
+To: <penberg@kernel.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <cesarb@cesarb.net>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <emunson@mgebm.net>,
+        <aarcange@redhat.com>, <riel@redhat.com>, <mel@csn.ul.ie>,
+        <rientjes@google.com>, <dima@android.com>, <gregkh@suse.de>,
+        <rebecca@android.com>, <san@google.com>, <akpm@linux-foundation.org>,
+        <vesa.jaaskelainen@nokia.com>
+Subject: RE: [PATCH v2 2/2] Memory notification pseudo-device module
+Thread-Topic: [PATCH v2 2/2] Memory notification pseudo-device module
+Thread-Index: AQHM1Rx+OvEMeHtKAEm6KWeO1Y1MiJYQkA4w///1OgCAABKHwA==
+Date: Tue, 17 Jan 2012 14:28:28 +0000
+Message-ID: <84FF21A720B0874AA94B46D76DB98269045593DE@008-AM1MPN1-003.mgdnok.nokia.com>
+References: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
+	<5b429d6c4d0a3ad06ec01193eab7edc98a03e0de.1326803859.git.leonid.moiseichuk@nokia.com>
+	<CAOJsxLFCbF8azY48_SHhYQ0oRDrf2-rEvGMKHBne2Znpj0XL4g@mail.gmail.com>
+	<84FF21A720B0874AA94B46D76DB9826904559397@008-AM1MPN1-003.mgdnok.nokia.com>
+ <CAOJsxLEtuzEYVUtukrA1JeJnuOJ6OsOHOj=j2gs=-0NHYVPzLQ@mail.gmail.com>
+In-Reply-To: <CAOJsxLEtuzEYVUtukrA1JeJnuOJ6OsOHOj=j2gs=-0NHYVPzLQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.23.171]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 17 Jan 2012 14:28:30.0124 (UTC) FILETIME=[48A566C0:01CCD524]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+> -----Original Message-----
+> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
+> Pekka Enberg
+> Sent: 17 January, 2012 15:59
+...
+> If you're serious about making this a generic thing, it must live in
+> mm/mem_notify.c. No ifs or buts about it.
+> I'm also not completely convinced we need to put memnotify policy in the
+> kernel. Why can't we extend Minchan's patch to report the relevant
+> numbers and let the userspace figure out when pressure is above some
+> interesting threshold?
 
-while general-object-id patch series were reviewed and commented
-(see https://lkml.org/lkml/2012/1/11/220 the thread) it seems we have
-ended up in conclusion that a syscall which do compare kernel members
-internally and provide the result back to user space is a way more
-secure than exporting (even strongly encrypted) kernel pointers in form
-of some general IDs.
+I do not insist to have it as a part mm, but if you have 1-2-3 items what should be done in this or Minchan's patch I can participate.
+>From my point of view Minchan's patch is not ideal due to required:
+1. depends on cgroups (at least as I see it from patch in shrink_mem_cgroup_zone()part)
+2. reports only memory pressure based on relation in between free and file pages which is means by active file IO you may get lowmem 
+3. swapping should not produce lowmem, but active swapping - must, is  it checked there?
++	if (nr[LRU_INACTIVE_ANON])
++		low_mem = true;
+4. required changes in vmscan
 
-So here is a really early and draft version of how can it be done I think.
-Please review and comment. I've tested it on x86-64 platform only for a while.
-And it seems I missed to export header to user-space but it could be fixed
-later once things are settle.
+I think, due to everyone based on his experience/working area profile has own understanding what is "low memory"  (or similar situation which needs to be tracked) 
+it should be  some generic or extendable API, not like ON/OFF trigger for something happened inside VM. From another point of view it should not be too generic due 
+to tasks could be solved using memcg, ionice, OOM killer or variations of soft-OOM-patches.
 
-p.s. hope I didn't miss anyone in CC who were involved in previous discussion ;)
 
-Thanks,
-	Cyrill
----
-syscalls, x86: Add __NR_kcmp syscall
 
-While doing the checkpoint-restore in the userspace one need to determine
-whether various kernel objects (like mm_struct-s of file_struct-s) are shared
-between tasks and restore this state.
-
-The 2nd step can be solved by using appropriate CLONE_ flags and the unshare
-syscall, while there's currently no ways for solving the 1st one.
-
-One of the ways for checking whether two tasks share e.g. mm_struct is to
-provide some mm_struct ID of a task to its proc file, but showing such
-info considered to be not that good for security reasons.
-
-Thus after some debates we end up in conclusion that using that named
-'comparision' syscall might be the best candidate. So here is it --
-__NR_kcmp.
-
-It takes up to 5 agruments - the pids of the two tasks (which
-characteristics should be compared), the comparision type and
-(in case of comparision of files) two file descriptors.
-
-At moment only x86 is supported.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Andrey Vagin <avagin@openvz.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: H. Peter Anvin <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Glauber Costa <glommer@parallels.com>
-CC: Andi Kleen <andi@firstfloor.org>
-CC: Tejun Heo <tj@kernel.org>
-CC: Matt Helsley <matthltc@us.ibm.com>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Vasiliy Kulikov <segoon@openwall.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Valdis.Kletnieks@vt.edu
----
- arch/x86/include/asm/kcmp.h        |   21 ++++++
- arch/x86/include/asm/syscalls.h    |    4 +
- arch/x86/include/asm/unistd_32.h   |    1 
- arch/x86/include/asm/unistd_64.h   |    2 
- arch/x86/kernel/Makefile           |    1 
- arch/x86/kernel/kcmp.c             |  127 +++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/syscall_table_32.S |    1 
- 7 files changed, 157 insertions(+)
-
-Index: linux-2.6.git/arch/x86/include/asm/kcmp.h
-===================================================================
---- /dev/null
-+++ linux-2.6.git/arch/x86/include/asm/kcmp.h
-@@ -0,0 +1,21 @@
-+#ifndef _LINUX_KCMP_H
-+#define _LINUX_KCMP_H
-+
-+/* Comparision type */
-+enum {
-+	KCMP_FILE,
-+	KCMP_VM,
-+	KCMP_FILES,
-+	KCMP_FS,
-+	KCMP_SIGHAND,
-+	KCMP_IO,
-+	KCMP_SYSVSEM,
-+
-+	KCMP_TYPES,
-+};
-+
-+#define KCMP_EQ		0
-+#define KCMP_LT		1
-+#define KCMP_GT		2
-+
-+#endif /* _LINUX_KCMP_H */
-Index: linux-2.6.git/arch/x86/include/asm/syscalls.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/syscalls.h
-+++ linux-2.6.git/arch/x86/include/asm/syscalls.h
-@@ -42,6 +42,10 @@ long sys_sigaltstack(const stack_t __use
- asmlinkage int sys_set_thread_area(struct user_desc __user *);
- asmlinkage int sys_get_thread_area(struct user_desc __user *);
- 
-+/* kenrel/kcmp.c */
-+asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
-+			 unsigned long idx1, unsigned long idx2);
-+
- /* X86_32 only */
- #ifdef CONFIG_X86_32
- 
-Index: linux-2.6.git/arch/x86/include/asm/unistd_32.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/unistd_32.h
-+++ linux-2.6.git/arch/x86/include/asm/unistd_32.h
-@@ -354,6 +354,7 @@
- #define __NR_setns		346
- #define __NR_process_vm_readv	347
- #define __NR_process_vm_writev	348
-+#define __NR_kcmp		349
- 
- #ifdef __KERNEL__
- 
-Index: linux-2.6.git/arch/x86/include/asm/unistd_64.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/unistd_64.h
-+++ linux-2.6.git/arch/x86/include/asm/unistd_64.h
-@@ -686,6 +686,8 @@ __SYSCALL(__NR_getcpu, sys_getcpu)
- __SYSCALL(__NR_process_vm_readv, sys_process_vm_readv)
- #define __NR_process_vm_writev			311
- __SYSCALL(__NR_process_vm_writev, sys_process_vm_writev)
-+#define __NR_kcmp				312
-+__SYSCALL(__NR_kcmp, sys_kcmp)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-Index: linux-2.6.git/arch/x86/kernel/Makefile
-===================================================================
---- linux-2.6.git.orig/arch/x86/kernel/Makefile
-+++ linux-2.6.git/arch/x86/kernel/Makefile
-@@ -33,6 +33,7 @@ obj-y			+= alternative.o i8253.o pci-nom
- obj-y			+= tsc.o io_delay.o rtc.o
- obj-y			+= pci-iommu_table.o
- obj-y			+= resource.o
-+obj-y			+= kcmp.o
- 
- obj-y				+= trampoline.o trampoline_$(BITS).o
- obj-y				+= process.o
-Index: linux-2.6.git/arch/x86/kernel/kcmp.c
-===================================================================
---- /dev/null
-+++ linux-2.6.git/arch/x86/kernel/kcmp.c
-@@ -0,0 +1,127 @@
-+#include <linux/kernel.h>
-+#include <linux/syscalls.h>
-+#include <linux/fdtable.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/cache.h>
-+#include <linux/bug.h>
-+#include <linux/err.h>
-+
-+#include <linux/syscalls.h>
-+#include <asm/unistd.h>
-+#include <asm/kcmp.h>
-+
-+#define KCMP_PTR(ptr1, ptr2)						\
-+({									\
-+	long ___r = (long)ptr1 - (long)ptr2;				\
-+	(___r == 0 ? KCMP_EQ : (___r < 0 ? KCMP_LT : KCMP_GT));		\
-+})
-+
-+#define KCMP_TASK_PTR(task1, task2, member)				\
-+	KCMP_PTR((task1)->member, (task2)->member)
-+
-+/* A caller must be sure the task is presented in memory */
-+static struct file *
-+get_file_raw_ptr(struct task_struct *task, unsigned int idx)
-+{
-+	struct fdtable *fdt;
-+	struct file *file;
-+
-+	spin_lock(&task->files->file_lock);
-+	fdt = files_fdtable(task->files);
-+	if (idx < fdt->max_fds)
-+		file = fdt->fd[idx];
-+	else
-+		file = NULL;
-+	spin_unlock(&task->files->file_lock);
-+
-+	return file;
-+}
-+
-+SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
-+		unsigned long, idx1, unsigned long, idx2)
-+{
-+	struct task_struct *task1;
-+	struct task_struct *task2;
-+	int ret = 0;
-+
-+	rcu_read_lock();
-+
-+	task1 = find_task_by_vpid(pid1);
-+	if (!task1) {
-+		rcu_read_unlock();
-+		return -ESRCH;
-+	}
-+
-+	task2 = find_task_by_vpid(pid2);
-+	if (!task2) {
-+		put_task_struct(task1);
-+		rcu_read_unlock();
-+		return -ESRCH;
-+	}
-+
-+	get_task_struct(task1);
-+	get_task_struct(task2);
-+
-+	rcu_read_unlock();
-+
-+	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
-+	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
-+		ret = -EACCES;
-+		goto err;
-+	}
-+
-+	/*
-+	 * Note for all cases but the KCMP_FILE we
-+	 * don't take any locks and do a plain pointer
-+	 * comparision in a sake of speed.
-+	 */
-+
-+	switch (type) {
-+	case KCMP_FILE: {
-+		struct file *filp1, *filp2;
-+
-+		filp1 = get_file_raw_ptr(task1, idx1);
-+		filp2 = get_file_raw_ptr(task2, idx2);
-+
-+		if (filp1 && filp2)
-+			ret = KCMP_PTR(filp1, filp2);
-+		else
-+			ret = -ENOENT;
-+		break;
-+	}
-+	case KCMP_VM:
-+		ret = KCMP_TASK_PTR(task1, task2, mm);
-+		break;
-+	case KCMP_FILES:
-+		ret = KCMP_TASK_PTR(task1, task2, files);
-+		break;
-+	case KCMP_FS:
-+		ret = KCMP_TASK_PTR(task1, task2, fs);
-+		break;
-+	case KCMP_SIGHAND:
-+		ret = KCMP_TASK_PTR(task1, task2, sighand);
-+		break;
-+	case KCMP_IO:
-+		ret = KCMP_TASK_PTR(task1, task2, io_context);
-+		break;
-+	case KCMP_SYSVSEM:
-+#ifdef CONFIG_SYSVIPC
-+		ret = KCMP_TASK_PTR(task1, task2, sysvsem.undo_list);
-+#else
-+		ret = -ENOENT;
-+		goto err;
-+#endif
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+err:
-+	put_task_struct(task1);
-+	put_task_struct(task2);
-+
-+	return ret;
-+}
-Index: linux-2.6.git/arch/x86/kernel/syscall_table_32.S
-===================================================================
---- linux-2.6.git.orig/arch/x86/kernel/syscall_table_32.S
-+++ linux-2.6.git/arch/x86/kernel/syscall_table_32.S
-@@ -348,3 +348,4 @@ ENTRY(sys_call_table)
- 	.long sys_setns
- 	.long sys_process_vm_readv
- 	.long sys_process_vm_writev
-+	.long sys_kcmp
