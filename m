@@ -1,197 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab2AQVlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:41:11 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42680 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979Ab2AQVlJ (ORCPT
+	id S1756076Ab2AQVml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:42:41 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40115 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756006Ab2AQVmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:41:09 -0500
-From: David Daney <ddaney.cavm@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Cc: David Daney <david.daney@cavium.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] perf: Fix broken build by defining _GNU_SOURCE in Makefile
-Date: Tue, 17 Jan 2012 13:41:01 -0800
-Message-Id: <1326836461-11952-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Tue, 17 Jan 2012 16:42:39 -0500
+Message-ID: <4F15EB3E.3060700@oracle.com>
+Date: Tue, 17 Jan 2012 13:42:22 -0800
+From: Tina Yang <tina.yang@oracle.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gurudas.pai@oracle.com" <gurudas.pai@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH] add netconsole support for xen-netfront
+References: <1326271956-25565-1-git-send-email-zhenzhong.duan@oracle.com>  <20120112141745.GA7685@phenom.dumpdata.com> <1326452769.17210.331.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1326452769.17210.331.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090208.4F15EB4A.0080,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
-
-When building on my Debian/mips system, util/util.c fails to build
-because commit 1aed2671738785e8f5aea663a6fda91aa7ef59b5 (perf kvm: Do
-guest-only counting by default) indirectly includes stdio.h before the
-feature selection in util.h is done.  This prevents _GNU_SOURCE in
-util.h from enabling the declaration of getline(), from now second
-inclusion of stdio.h, and the build is broken.
-
-There is another breakage in util/evsel.c caused by include ordering,
-but I didn't fully track down the commit that caused it.
-
-The root cause of all this is an inconsistent definition of
-_GNU_SOURCE, so I move the definition into the Makefile so that it is
-passed to all invocations of the compiler and used uniformly for all
-system header files.  All other #define and #undef of _GNU_SOURCE are
-removed as they cause conflicts with the definition passed to the
-compiler.
-
-All the features.h definitions (_LARGEFILE64_SOURCE
-_FILE_OFFSET_BITS=64 and _GNU_SOURCE) are needed by the python glue
-code too, so they are moved to BASIC_CFLAGS, and the misleading
-comments about BASIC_CFLAGS are removed.
-
-This gives me a clean build on x86_64 (fc12) and mips (Debian).
-
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/Makefile                 |    7 ++-----
- tools/perf/builtin-probe.c          |    2 --
- tools/perf/util/probe-event.c       |    2 --
- tools/perf/util/symbol.c            |    1 -
- tools/perf/util/trace-event-parse.c |    3 +--
- tools/perf/util/ui/browsers/hists.c |    2 --
- tools/perf/util/ui/helpline.c       |    1 -
- tools/perf/util/util.h              |    1 -
- 8 files changed, 3 insertions(+), 16 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index ac86d67..7c12650 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -104,7 +104,7 @@ endif
- 
- CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
--ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
-+ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
- STRIP ?= strip
- 
-@@ -168,10 +168,7 @@ endif
- 
- ### --- END CONFIGURATION SECTION ---
- 
--# Those must not be GNU-specific; they are shared with perl/ which may
--# be built by a different compiler. (Note that this is an artifact now
--# but it still might be nice to keep that distinction.)
--BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include
-+BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- BASIC_LDFLAGS =
- 
- # Guard against environment variables
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 59d43ab..fb85661 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -20,7 +20,6 @@
-  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  *
-  */
--#define _GNU_SOURCE
- #include <sys/utsname.h>
- #include <sys/types.h>
- #include <sys/stat.h>
-@@ -31,7 +30,6 @@
- #include <stdlib.h>
- #include <string.h>
- 
--#undef _GNU_SOURCE
- #include "perf.h"
- #include "builtin.h"
- #include "util/util.h"
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index eb25900..29cb654 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -19,7 +19,6 @@
-  *
-  */
- 
--#define _GNU_SOURCE
- #include <sys/utsname.h>
- #include <sys/types.h>
- #include <sys/stat.h>
-@@ -33,7 +32,6 @@
- #include <limits.h>
- #include <elf.h>
- 
--#undef _GNU_SOURCE
- #include "util.h"
- #include "event.h"
- #include "string.h"
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 215d50f..0975438 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1,4 +1,3 @@
--#define _GNU_SOURCE
- #include <ctype.h>
- #include <dirent.h>
- #include <errno.h>
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 6c164dc..1a8d4dc 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -21,14 +21,13 @@
-  *  The parts for function graph printing was taken and modified from the
-  *  Linux Kernel that were written by Frederic Weisbecker.
-  */
--#define _GNU_SOURCE
-+
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
- #include <ctype.h>
- #include <errno.h>
- 
--#undef _GNU_SOURCE
- #include "../perf.h"
- #include "util.h"
- #include "trace-event.h"
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 1212a38..e81aef1 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -1,6 +1,4 @@
--#define _GNU_SOURCE
- #include <stdio.h>
--#undef _GNU_SOURCE
- #include "../libslang.h"
- #include <stdlib.h>
- #include <string.h>
-diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
-index 6ef3c56..4f48f59 100644
---- a/tools/perf/util/ui/helpline.c
-+++ b/tools/perf/util/ui/helpline.c
-@@ -1,4 +1,3 @@
--#define _GNU_SOURCE
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index b9c530c..ecf9898 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -40,7 +40,6 @@
- #define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
- 
- #define _ALL_SOURCE 1
--#define _GNU_SOURCE 1
- #define _BSD_SOURCE 1
- #define HAS_BOOL
- 
--- 
-1.7.2.3
+On 1/13/2012 3:06 AM, Ian Campbell wrote:
+> On Thu, 2012-01-12 at 14:17 +0000, Konrad Rzeszutek Wilk wrote:
+>> On Wed, Jan 11, 2012 at 04:52:36PM +0800, Zhenzhong Duan wrote:
+>>> add polling interface to xen-netfront device to support netconsole
+>>>
+>> Ian, any thoughts on the spinlock changes?
+> What are they for?
+When I did this patch back in 2008, both netconsole and netdump
+were supported.  Spin_lock w/o irqsave and irqrestore would cause
+netdump hang due to the unexpected change of the irq status.
+Although netdump is now obsolete, I think it's always a good practice
+to preserve caller's irq status as we had a very bad experience
+chasing a similar problem caused by such a irq change in RDS
+in the not too long ago past.
+> At a guess they are a necessary consequence of the new calling context.
+> However not all the drivers I looked at which supported netpool were
+> using the irqsave variants in this context so I guess it must be some
+> secondary effect.
+>
+> Anyway, the upshot is that I think the changelog needs to explain the
+> rationale for the locking change.
+>
+> Ian.
+>
+>>> Signed-off-by: Tina.Yang<tina.yang@oracle.com>
+>>> Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
+>>> Cc: Jeremy Fitzhardinge<jeremy@goop.org>
+>>> Signed-off-by: Zhenzhong.Duan<zhenzhong.duan@oracle.com>
+>>> Tested-by: gurudas.pai<gurudas.pai@oracle.com>
+>>> ---
+>>>   drivers/net/xen-netfront.c |   57 ++++++++++++++++++++++++++-----------------
+>>>   1 files changed, 34 insertions(+), 23 deletions(-)
+>>>
+>>> diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+>>> index fa67905..db638b4 100644
+>>> --- a/drivers/net/xen-netfront.c
+>>> +++ b/drivers/net/xen-netfront.c
+>>> @@ -489,6 +489,7 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>>>   	int frags = skb_shinfo(skb)->nr_frags;
+>>>   	unsigned int offset = offset_in_page(data);
+>>>   	unsigned int len = skb_headlen(skb);
+>>> +	unsigned long flags;
+>>>
+>>>   	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
+>>>   	if (unlikely(frags>  MAX_SKB_FRAGS + 1)) {
+>>> @@ -498,12 +499,12 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>>>   		goto drop;
+>>>   	}
+>>>
+>>> -	spin_lock_irq(&np->tx_lock);
+>>> +	spin_lock_irqsave(&np->tx_lock, flags);
+>>>
+>>>   	if (unlikely(!netif_carrier_ok(dev) ||
+>>>   		     (frags>  1&&  !xennet_can_sg(dev)) ||
+>>>   		     netif_needs_gso(skb, netif_skb_features(skb)))) {
+>>> -		spin_unlock_irq(&np->tx_lock);
+>>> +		spin_unlock_irqrestore(&np->tx_lock, flags);
+>>>   		goto drop;
+>>>   	}
+>>>
+>>> @@ -574,7 +575,7 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>>>   	if (!netfront_tx_slot_available(np))
+>>>   		netif_stop_queue(dev);
+>>>
+>>> -	spin_unlock_irq(&np->tx_lock);
+>>> +	spin_unlock_irqrestore(&np->tx_lock, flags);
+>>>
+>>>   	return NETDEV_TX_OK;
+>>>
+>>> @@ -1228,6 +1229,33 @@ static int xennet_set_features(struct net_device *dev,
+>>>   	return 0;
+>>>   }
+>>>
+>>> +static irqreturn_t xennet_interrupt(int irq, void *dev_id)
+>>> +{
+>>> +	struct net_device *dev = dev_id;
+>>> +	struct netfront_info *np = netdev_priv(dev);
+>>> +	unsigned long flags;
+>>> +
+>>> +	spin_lock_irqsave(&np->tx_lock, flags);
+>>> +
+>>> +	if (likely(netif_carrier_ok(dev))) {
+>>> +		xennet_tx_buf_gc(dev);
+>>> +		/* Under tx_lock: protects access to rx shared-ring indexes. */
+>>> +		if (RING_HAS_UNCONSUMED_RESPONSES(&np->rx))
+>>> +			napi_schedule(&np->napi);
+>>> +	}
+>>> +
+>>> +	spin_unlock_irqrestore(&np->tx_lock, flags);
+>>> +
+>>> +	return IRQ_HANDLED;
+>>> +}
+>>> +
+>>> +#ifdef CONFIG_NET_POLL_CONTROLLER
+>>> +static void xennet_poll_controller(struct net_device *dev)
+>>> +{
+>>> +	xennet_interrupt(0, dev);
+>>> +}
+>>> +#endif
+>>> +
+>>>   static const struct net_device_ops xennet_netdev_ops = {
+>>>   	.ndo_open            = xennet_open,
+>>>   	.ndo_uninit          = xennet_uninit,
+>>> @@ -1239,6 +1267,9 @@ static const struct net_device_ops xennet_netdev_ops = {
+>>>   	.ndo_validate_addr   = eth_validate_addr,
+>>>   	.ndo_fix_features    = xennet_fix_features,
+>>>   	.ndo_set_features    = xennet_set_features,
+>>> +#ifdef CONFIG_NET_POLL_CONTROLLER
+>>> +	.ndo_poll_controller = xennet_poll_controller,
+>>> +#endif
+>>>   };
+>>>
+>>>   static struct net_device * __devinit xennet_create_dev(struct xenbus_device *dev)
+>>> @@ -1448,26 +1479,6 @@ static int xen_net_read_mac(struct xenbus_device *dev, u8 mac[])
+>>>   	return 0;
+>>>   }
+>>>
+>>> -static irqreturn_t xennet_interrupt(int irq, void *dev_id)
+>>> -{
+>>> -	struct net_device *dev = dev_id;
+>>> -	struct netfront_info *np = netdev_priv(dev);
+>>> -	unsigned long flags;
+>>> -
+>>> -	spin_lock_irqsave(&np->tx_lock, flags);
+>>> -
+>>> -	if (likely(netif_carrier_ok(dev))) {
+>>> -		xennet_tx_buf_gc(dev);
+>>> -		/* Under tx_lock: protects access to rx shared-ring indexes. */
+>>> -		if (RING_HAS_UNCONSUMED_RESPONSES(&np->rx))
+>>> -			napi_schedule(&np->napi);
+>>> -	}
+>>> -
+>>> -	spin_unlock_irqrestore(&np->tx_lock, flags);
+>>> -
+>>> -	return IRQ_HANDLED;
+>>> -}
+>>> -
+>>>   static int setup_netfront(struct xenbus_device *dev, struct netfront_info *info)
+>>>   {
+>>>   	struct xen_netif_tx_sring *txs;
+>>> -- 
+>>> 1.7.3
+>
 
