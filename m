@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab2AQCrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 21:47:39 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39993 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab2AQCrg convert rfc822-to-8bit (ORCPT
+	id S1751528Ab2AQCvS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 21:51:18 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43392 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab2AQCvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 21:47:36 -0500
+	Mon, 16 Jan 2012 21:51:17 -0500
+Message-ID: <4F14DFBC.7050908@linux.vnet.ibm.com>
+Date: Tue, 17 Jan 2012 10:41:00 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <1326744932.16150.9.camel@sbsiddha-desk.sc.intel.com>
-References: <1326744932.16150.9.camel@sbsiddha-desk.sc.intel.com>
-Date: Mon, 16 Jan 2012 18:47:36 -0800
-X-Google-Sender-Auth: AcO7lmvotPWJI4EyHIH2KkrcvVU
-Message-ID: <CAE9FiQU9uja8JU0CyzU2wDxTqo41ZY45aTLiT6y2538Yt7PhiA@mail.gmail.com>
-Subject: Re: [patch] x86, tsc: fix SMI induced variation in quick_pit_calibrate()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, asit.k.mallick@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: David Ahern <dsahern@gmail.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] KVM: perf: a smart tool to analyse kvm events
+References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F14AA60.1040904@gmail.com>
+In-Reply-To: <4F14AA60.1040904@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011616-0260-0000-0000-000000633B82
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 12:15 PM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
-> Linus, We are seeing NTP failures on a big cluster as a result of big
-> variation in calibrated TSC values. Our debug showed that it is indeed
-> because of the SMI and its effect on quick pit calibration. Appended
-> patch helps fix it. It ran over the weekend boot tests with out any
-> failures.
->
->
->  [ As far as the SMI source is concerned, this is a periodic SMI that gets
->    disabled after ACPI is enabled by the OS. But the TSC calibration happens
->    before the ACPI is enabled. ]
->
+On 01/17/2012 06:53 AM, David Ahern wrote:
 
-Hi, Suresh
+> 
+> 
+> On 01/16/2012 02:30 AM, Xiao Guangrong wrote:
+>> This tool is very like xenoprof(if i remember correctly), and traces kvm events
+>> smartly. currently, it supports vmexit/mmio/ioport events.
+>>
+>> Usage:
+>> - to trace kvm events:
+>> # ./perf kvm-events record
+>>
+>> - show the result
+>> # ./perf kvm-events report
+>>
+>> Some output are as follow:
+>> # ./perf kvm-events report
+>>   Warning: Error: expected type 5 but read 4
+>>   Warning: Error: expected type 5 but read 0
+>>   Warning: unknown op '}'
+> 
+> Integrating the trace-cmd plugins into perf will remedy the above errors:
+> https://lkml.org/lkml/2011/8/16/352
+> 
 
-Do you know what is SMI doing at that time ? with USB legacy emulating?
 
-I have some patches that will do USB hand off early.
-Wonder if that would help.
-please check those patches at
+Yes, it is great!
 
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-usb_smi_disable_early
+> Unfortunately, that effort is stalled at the moment.
+> 
+>>
+>>
+>> Analyze events for all VCPUs:
+>>
+>>              VM-EXIT    Samples      Samples%         Time%        Avg time
+>>
+>>          APIC_ACCESS     438107        44.89%         6.20%        17.91us
+>>   EXTERNAL_INTERRUPT     219226        22.46%         8.01%        46.20us
+>>       IO_INSTRUCTION     122651        12.57%         1.88%        19.44us
+>>        EPT_VIOLATION      83110         8.52%         1.36%        20.75us
+>>    PENDING_INTERRUPT      37055         3.80%         0.16%         5.38us
+>>                CPUID      32718         3.35%         0.08%         3.15us
+>>        EXCEPTION_NMI      23601         2.42%         0.17%         8.87us
+>>                  HLT      15424         1.58%        82.12%      6735.06us
+>>            CR_ACCESS       4089         0.42%         0.02%         6.08us
+>>
+>> Total Samples:975981, Total events handled time:126502464.88us.
+> 
+> Have you thought about dumping a time history -- something similar to
+> what perf-script can do with dumping events but adding in kvm-specific
+> analysis like what you are doing in these examples?
+> 
 
-Thanks
 
-Yinghai Lu
+I will look into it and put it to my todo list if it is possible.
+Thanks, David!
+
