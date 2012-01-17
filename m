@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab2AQNc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 08:32:28 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:41126 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab2AQNc1 (ORCPT
+	id S1754117Ab2AQNch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 08:32:37 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42737 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab2AQNcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 08:32:27 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wBu39ZheO1YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=pLhl1wleAU47_697t_8A:9 a=kZYn86wrPLKQ2mrb9aYA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326807145.17534.26.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH][GIT PULL][v3.3] tracing: Add header wrappers
- event_headers_start.h and event_headers_end.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Tue, 17 Jan 2012 08:32:25 -0500
-In-Reply-To: <20120117095418.GG10397@elte.hu>
-References: <1326754637.7642.177.camel@gandalf.stny.rr.com>
-	 <20120117095418.GG10397@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 17 Jan 2012 08:32:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <5b429d6c4d0a3ad06ec01193eab7edc98a03e0de.1326803859.git.leonid.moiseichuk@nokia.com>
+References: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
+	<5b429d6c4d0a3ad06ec01193eab7edc98a03e0de.1326803859.git.leonid.moiseichuk@nokia.com>
+Date: Tue, 17 Jan 2012 15:32:35 +0200
+X-Google-Sender-Auth: vtfysn9Yc0q7ytACn6ZZK6tUdRs
+Message-ID: <CAOJsxLFCbF8azY48_SHhYQ0oRDrf2-rEvGMKHBne2Znpj0XL4g@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] Memory notification pseudo-device module
+From: Pekka Enberg <penberg@kernel.org>
+To: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cesarb@cesarb.net,
+        kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net, aarcange@redhat.com,
+        riel@redhat.com, mel@csn.ul.ie, rientjes@google.com, dima@android.com,
+        gregkh@suse.de, rebecca@android.com, san@google.com,
+        akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 10:54 +0100, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
+On Tue, Jan 17, 2012 at 3:22 PM, Leonid Moiseichuk
+<leonid.moiseichuk@nokia.com> wrote:
+> The memory notification (memnotify) device tracks level of memory utilization,
+> active page set and notifies subscribed processes when consumption crossed
+> specified threshold(s) up or down. It could be used on embedded devices to
+> implementation of performance-cheap memory reacting by using
+> e.g. libmemnotify or similar user-space component.
+>
+> The minimal (250 ms) and maximal (15s) periods of reaction and granularity
+> (~1.4% of memory size) could be tuned using module options.
+>
+> Signed-off-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
 
-> Hm, i don't really like the extra complexity - this code 
-> *really* does not need any more complexity ...
+Is the point of making this a misc device to keep the ABI compatible
+with N9? Is the ABI documented?
 
-I agree.
-
-> 
-> How about the low-tech solution of adding some text between
-> '/* */' markers to warns that these headers should not be 
-> included in ordinary headers?
-
-The problem is that they currently are. For example:
-
-include/linux/interrupt.h
-
-has one to add a tracepoint in __raise_softirq_irqoff()
-
-Which is fine, as long as no other tracepoint header includes
-linux/interrupt.h.
-
-There's also one in module.h.
-
-> 
-> The build error will pinpoint the bug anyway, it's not like the 
-> kernel can be broken in any dangerous way.
-
-OK, I'll put away these patches. For now we can try to keep all
-tracepoints out of header files as much as possible. They really
-shouldn't be in static inline functions anyway, because they tend to
-bloat the kernel, as we saw when it was included in slab_def.h
-
--- Steve
-
-
+                        Pekka
