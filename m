@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab2AQTwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 14:52:42 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:24934 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab2AQTwk (ORCPT
+	id S1755056Ab2AQTxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 14:53:01 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33775 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2AQTxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 14:52:40 -0500
-Date: Tue, 17 Jan 2012 14:50:31 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: kay.sievers@vrfy.org, linux@eikelenboom.it
-Subject: [GIT PULL] (xen) stable/for-linus-fixes-3.3 bug-fix for rc1.
-Message-ID: <20120117195031.GA21666@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4F15D184.0088,ss=1,re=0.000,fgs=0
+	Tue, 17 Jan 2012 14:53:00 -0500
+X-Authority-Analysis: v=2.0 cv=Hf6Wv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=KHR86nk1PkcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Spp0eDKftHELShrFBo0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326829977.17534.65.camel@gandalf.stny.rr.com>
+Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Tue, 17 Jan 2012 14:52:57 -0500
+In-Reply-To: <20120117100222.GH10397@elte.hu>
+References: <20120110174509.GA30802@redhat.com>
+	 <20120113182015.GA3902@redhat.com> <20120115182441.GA24694@redhat.com>
+	 <20120116074540.GE15641@elte.hu>
+	 <1326717070.7642.144.camel@gandalf.stny.rr.com>
+	 <20120116125329.GB31667@elte.hu>
+	 <1326729123.7642.146.camel@gandalf.stny.rr.com>
+	 <20120117100222.GH10397@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-01-17 at 11:02 +0100, Ingo Molnar wrote:
+>  
+> > The kernel does this all the time. We have syscalls that may 
+> > extend the data structure. [...]
+> 
+> That is not true *AT ALL* in such an unqualified manner. Steve, 
+> stop being stupid.
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, Ingo I think we had a little miscommunication here.
 
-Hey Linus,
+I forgot what I originally wrote, and you cut off too much in your
+reply. What I originally said:
 
-Please pull this branch, which has one fix:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-lin=
-us-fixes-3.3
+"The kernel does this all the time. We have syscalls that may extend the
+data structure. This is a common practice. Any app that depends on a
+data structure remaining the same size for no good reason is broken by
+design."
 
-which is a fix to Kay Sievers global "convert sysdev_class -> device/subsys=
-tem" patchset
-which inadvertly missed the proper subsystem in the balloon code. The negat=
-ive effect
-of his patch is that the xen tool stack can't now properly balloon the memo=
-ry hence
-we can't launch the guests.
- =20
-The patch is based on 070680218379e15c1901f4bf21b98e3cbf12b527, which
-was the "xen-balloon: convert sysdev_class to a regular subsystem"
+If you took the "Any app that depends on a data structure remaining the
+same size for no good reason is broken by design" was suppose to mean,
+any app that depends on syscall data structures is broken by design, I
+would agree, that statement is stupid. I didn't write that well, as my
+thought process switched back to reading tracepoints and wasn't meant to
+be about syscalls there. I didn't articulate that properly.
 
-Konrad Rzeszutek Wilk (1):
-      xen/balloon: Move the registration from device to subsystem.
+As you can tell, I was a little upset at being called stupid this
+morning. If you took that statement to mean about syscalls, I understand
+your calling me stupid, and I apologize for being a bit snippy. I like
+to keep LKML discussions technical and not something for name calling.
 
- drivers/xen/xen-balloon.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+-- Steve
 
-And the bug-fix:
 
-Thanks!!
-
-diff --git a/drivers/xen/xen-balloon.c b/drivers/xen/xen-balloon.c
-index 3832e30..596e6a7 100644
---- a/drivers/xen/xen-balloon.c
-+++ b/drivers/xen/xen-balloon.c
-@@ -221,7 +221,7 @@ static int register_balloon(struct device *dev)
- {
- 	int i, error;
-=20
--	error =3D bus_register(&balloon_subsys);
-+	error =3D subsys_system_register(&balloon_subsys, NULL);
- 	if (error)
- 		return error;
-=20
-
---17pEHd4RhPHOinZp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPFdDZAAoJEFjIrFwIi8fJWYgIALQ5djnoHXsWzaHpJCBpimqI
-5R8+f/2BrhHDyFQt2Mtal20p9n4jIBWcdaAeUT+m1aglAdymRwJxU+vfEK01JShT
-ZIMT0ys/uPYpEjHpEbJDLQkFTxWnDSUubF/PGz89ojsQrwHkV8nh1qJXllDcsMlZ
-Zh1+yd8T4/qqa9nD9o8FuEOCznDO67uM5qHG0AX1WMXaC4s/ZssLzJ6zR9hE+O+p
-EZSXcE1WKTUm7ihv4Zb17+2wZ68UJWGdiM+YRD64MQpQe18Y2qU2MiQRU1gF4PR6
-qoXlWyJS60r8vkbg3hik6qumzfVuAdtxEdBpXzKMT3hF0Tp66zAkG9sc2oS/Zdg=
-=ajWd
------END PGP SIGNATURE-----
-
---17pEHd4RhPHOinZp--
