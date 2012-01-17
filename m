@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346Ab2AQXRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 18:17:49 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54106 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab2AQXRs (ORCPT
+	id S1756368Ab2AQXUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 18:20:08 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:28020 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756307Ab2AQXUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 18:17:48 -0500
-Message-ID: <1326842262.2606.31.camel@edumazet-laptop>
-Subject: Re: [patch v3, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stefan Gula <steweg@ynet.sk>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 18 Jan 2012 00:17:42 +0100
-In-Reply-To: <31531575.2671326838849345.JavaMail.root@5-MeO-DMT.ynet.sk>
-References: <31531575.2671326838849345.JavaMail.root@5-MeO-DMT.ynet.sk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 17 Jan 2012 18:20:06 -0500
+Date: Wed, 18 Jan 2012 00:20:03 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] intel, gma500, lvds: Fix use after free and mem leak in
+ psb_intel_lvds_init()
+In-Reply-To: <CAMeQTsZqG5u46Ht+vew+idC-ZPwLM+K_OtEfpD0pmiobXzWNig@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1201180019260.23966@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1201142056190.11547@swampdragon.chaosbits.net> <alpine.LNX.2.00.1201142156220.11547@swampdragon.chaosbits.net> <alpine.LNX.2.00.1201142211370.11547@swampdragon.chaosbits.net>
+ <CAMeQTsZqG5u46Ht+vew+idC-ZPwLM+K_OtEfpD0pmiobXzWNig@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 17 janvier 2012 à 23:20 +0100, Stefan Gula a écrit :
-> From: Stefan Gula <steweg@gmail.com>
+On Tue, 17 Jan 2012, Patrik Jakobsson wrote:
+
+> On Sat, Jan 14, 2012 at 10:15 PM, Jesper Juhl wrote:
+> > In psb_intel_lvds_init(), if we fail to allocate memory for
+> > 'psb_intel_connector' we free the memory we previously allocated for
+> > 'psb_intel_encoder', but we then proceed to use that free'd pointer
+> > when we do 'psb_intel_encoder->dev_priv = lvds_priv;'.
+> >
+> > We may also leak the memory we allocated for 'psb_intel_encoder' if we
+> > 'goto failed_connector;' and the variable goes out of scope.
+> >
+> > While I was there anyway, I also removed the pointless 'if
+> > (psb_intel_connector)' before freeing it at the 'failed_connector:'
+> > label - kfree() deals gracefully with NULL pointers, so it is not
+> > needed.
 > 
-> This patch is an extension for current Ethernet over GRE
-> implementation, which allows user to create virtual bridge (multipoint
-> VPN) and forward traffic based on Ethernet MAC address information in
-> it. It simulates the Bridge behavior learning mechanism, but instead
-> of learning port ID from which given MAC address comes, it learns IP
-> address of peer which encapsulated given packet. Multicast, Broadcast
-> and unknown-multicast traffic is send over network as multicast
-> encapsulated GRE packet, so one Ethernet multipoint GRE tunnel can be
-> represented as one single virtual switch on logical level and be also
-> represented as one multicast IPv4 address on network level.
-> 
-> Signed-off-by: Stefan Gula <steweg@gmail.com>
-> 
-> ---
-> 
-> code was merged with Eric Dumazet proposal (all except the reordering
-> of orig_source as that needed to be previous value), tested and fixed
-> with additional lines in ipgre_tap_netdev_ops struct
-> 
+> My bad, thanks for fixing
 
-Sorry, this is buggy (again...)
+No problem :-) Now I just hope that it will get merged :-)
 
-Its even clearly commented in the code :
-
-/* Warning: All skb pointers will be invalidated! */
-
->  
->          if (!pskb_may_pull(skb, 16))
->                  goto drop_nolock;
-> @@ -659,10 +836,38 @@ static int ipgre_rcv(struct sk_buff *skb
->                                  tunnel->dev->stats.rx_errors++;
->                                  goto drop;
->                          }
-
-At this point, iph can point to freed memory and its dereference can
-crash, since pskb_may_pull() can reallocate skb head.
-
-> -
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +                        orig_source = iph->saddr;
-> +#endif
-
-Without any doubt, you know here there is a bug.
-
->                          iph = ip_hdr(skb);
->                          skb->protocol = eth_type_trans(skb, tunnel->dev);
->                          skb_postpull_rcsum(skb, eth_hdr(skb), ETH_HLEN);
-
-
-So if you need orig_source as the previous iph->saddr value, you must
-fetch it _before_ the pskb_may_pull()
-
-
-/* Warning: All skb pointers will be invalidated! */
-if (tunnel->dev->type == ARPHRD_ETHER) {
-#ifdef CONFIG_NET_IPGRE_BRIDGE
- 	orig_source = iph->saddr; /* must be done before pskb_may_pull() */
-#endif
-	if (!pskb_may_pull(skb, ETH_HLEN)) {
-		tunnel->dev->stats.rx_length_errors++;
-		tunnel->dev->stats.rx_errors++;
-		goto drop;
-	}
-
-	iph = ip_hdr(skb);
-	...
-
-
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
