@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab2AQRox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:44:53 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:56059 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab2AQRov (ORCPT
+	id S1753133Ab2AQRp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:45:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62145 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab2AQRpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:44:51 -0500
-Date: Tue, 17 Jan 2012 12:44:49 -0500 (EST)
-Message-Id: <20120117.124449.1065919030248165158.davem@davemloft.net>
-To: fruggeri@aristanetworks.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net: race condition in ipv6 forwarding and
- disable_ipv6 parameters
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+HUmGgLmsHsTUbKb=XB_Ow+BPajpu75B18Um0zRZRkof8rQmw@mail.gmail.com>
-References: <CA+HUmGgLmsHsTUbKb=XB_Ow+BPajpu75B18Um0zRZRkof8rQmw@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 17 Jan 2012 09:44:50 -0800 (PST)
+	Tue, 17 Jan 2012 12:45:25 -0500
+Date: Tue, 17 Jan 2012 09:45:20 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Namhyung Kim <namhyung@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] block: prevent duplicated bio completion report
+Message-ID: <20120117174520.GB6762@google.com>
+References: <1326763928-1972-1-git-send-email-namhyung.kim@lge.com>
+ <1326763928-1972-2-git-send-email-namhyung.kim@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326763928-1972-2-git-send-email-namhyung.kim@lge.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Francesco Ruggeri <fruggeri@aristanetworks.com>
-Date: Mon, 16 Jan 2012 12:40:10 -0800
+Hello,
 
-> -static int addrconf_fixup_forwarding(struct ctl_table *table, int *p, int old)
-> +static int addrconf_fixup_forwarding(struct ctl_table *table, int *p, int newf)
- ...
-> @@ -4257,9 +4259,17 @@ int addrconf_sysctl_forward(ctl_table *c
->  	int *valp = ctl->data;
->  	int val = *valp;
->  	loff_t pos = *ppos;
-> +	ctl_table lctl;
->  	int ret;
+On Tue, Jan 17, 2012 at 10:32:07AM +0900, Namhyung Kim wrote:
+> Since previous patch make block_bio_complete TP working,
+> it will generate duplicated BLK_TA_COMPLETEs for bounced
+> bios. Fix it.
 > 
-> -	ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
-> +	/*
-> +	 * ctl->data points to idev->cnf.forwarding, we should
-> +	 * not modify it until we get the rtnl lock.
-> +	 */
-> +	lctl = *ctl;
-> +	lctl.data = &val;
-> +
-> +	ret = proc_dointvec(&lctl, write, buffer, lenp, ppos);
-> 
->  	if (write)
->  		ret = addrconf_fixup_forwarding(ctl, valp, val);
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> Cc: Tejun Heo <tj@kernel.org>
 
-I don't understand this at all.
+This and the third patch should probably be merged to the first patch.
+As it currently stands, it introduces window where spurious events are
+generated.
 
-"val" is still the old value, before proc_dointvec() runs, after your
-changes.  So renaming the argument to addrconf_fixup_forwarding() as
-"newf" and treating it as the new value doesn't make any sense at all.
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 4053cbd4490e..45cd0074a1c8 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -97,6 +97,9 @@ struct bio {
+>  #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
+>  #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+>  
+> +/* masked bio's won't report its completion via tracepoint */
+> +#define BIO_COMPLETE_MASK	(1 << BIO_BOUNCED)
 
-Did you really test this patch?
+And, who's setting this flag?
+
+>  /*
+>   * top 4 bits of bio flags indicate the pool this bio came from
+>   */
+> diff --git a/include/trace/events/block.h b/include/trace/events/block.h
+> index 96955f4828b3..72888542e186 100644
+> --- a/include/trace/events/block.h
+> +++ b/include/trace/events/block.h
+> @@ -219,7 +219,8 @@ TRACE_EVENT_CONDITION(block_bio_complete,
+>  
+>  	TP_ARGS(q, bio, error),
+>  
+> -	TP_CONDITION(bio->bi_bdev != NULL),
+> +	TP_CONDITION(bio->bi_bdev != NULL &&
+> +		     !(bio->bi_flags & BIO_COMPLETE_MASK)),
+
+Bounced bio's are separate bio's too and I don't think masking its
+completion from the TP itself is a good idea.  As I wrote before, why
+not do this from blktrace code?
+
+Thanks.
+
+-- 
+tejun
