@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab2AQRxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:53:30 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58004 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2AQRx3 (ORCPT
+	id S1753213Ab2AQR44 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:56:56 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35770 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752387Ab2AQR4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:53:29 -0500
-Date: Tue, 17 Jan 2012 09:53:22 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] cgroup: add xattr support
-Message-ID: <20120117175322.GC6762@google.com>
-References: <4F13DA90.2000603@cn.fujitsu.com>
- <4F13DAA9.4070703@cn.fujitsu.com>
+	Tue, 17 Jan 2012 12:56:54 -0500
+X-Sasl-enc: d95xoaIn1nN9NJKkzKMBGn3fp9CyeeWozfekT+xgkmES 1326823013
+Date: Tue, 17 Jan 2012 09:47:19 -0800
+From: Greg KH <greg@kroah.com>
+To: David Miller <davem@davemloft.net>
+Cc: nbowler@elliptictech.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/40] 3.0.17-stable review
+Message-ID: <20120117174719.GB10051@kroah.com>
+References: <20120110214630.GA14384@kroah.com>
+ <20120111222158.GA20915@elliptictech.com>
+ <20120112230133.GC3360@kroah.com>
+ <20120112.151548.979442119186542472.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F13DAA9.4070703@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120112.151548.979442119186542472.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Jan 16, 2012 at 04:07:05PM +0800, Li Zefan wrote:
-> This is one of the items in the plumber's wish list.
+On Thu, Jan 12, 2012 at 03:15:48PM -0800, David Miller wrote:
+> From: Greg KH <greg@kroah.com>
+> Date: Thu, 12 Jan 2012 15:01:33 -0800
 > 
-> For use cases:
+> > On Wed, Jan 11, 2012 at 05:21:58PM -0500, Nick Bowler wrote:
+> >> Hi Greg,
+> >> 
+> >> On 2012-01-10 13:46 -0800, Greg KH wrote:
+> >> > This is the start of the stable review cycle for the 3.0.17 release.
+> >> > There are 40 patches in this series, all will be posted as a response
+> >> > to this one.  If anyone has any issues with these being applied, please
+> >> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> >> > wants to add a Signed-off-by: line to the patch, please respond with it.
+> >> 
+> >> These upstream commits (in 3.2):
+> >> 
+> >>   b7ea81a58adc ("ah: Read nexthdr value before overwriting it in ahash input callback.")
+> >>   069294e813ed ("ah: Correctly pass error codes in ahash output callback.")
+> >> 
+> >> made it into the 3.1.y series but they appear to not have made it into
+> >> 3.0.y, where they're also applicable.  Also, the following one fixes a
+> >> real bug so it may be 3.0.y material, although I'm not sure if any
+> >> in-tree drivers can trigger it (this one requires a real ahash driver
+> >> for real hardware to trigger; unlike the previous two, cryptd won't do):
+> >> 
+> >>   4b90a603a1b2 ("ah: Don't return NET_XMIT_DROP on input")
+> > 
+> > I rely on the networking maintainer (i.e. David) to send me network
+> > patches.  If he acks these, I'll be glad to queue them up for the next
+> > 3.0-stable release.
 > 
-> >> What would the use case be for this?
-> >
-> > Attaching meta information to services, in an easily discoverable
-> > way. For example, in systemd we create one cgroup for each service, and
-> > could then store data like the main pid of the specific service as an
-> > xattr on the cgroup itself. That way we'd have almost all service state
-> > in the cgroupfs, which would make it possible to terminate systemd and
-> > later restart it without losing any state information. But there's more:
-> > for example, some very peculiar services cannot be terminated on
-> > shutdown (i.e. fakeraid DM stuff) and it would be really nice if the
-> > services in question could just mark that on their cgroup, by setting an
-> > xattr. On the more desktopy side of things there are other
-> > possibilities: for example there are plans defining what an application
-> > is along the lines of a cgroup (i.e. an app being a collection of
-> > processes). With xattrs one could then attach an icon or human readable
-> > program name on the cgroup.
-> >
-> > The key idea is that this would allow attaching runtime meta information
-> > to cgroups and everything they model (services, apps, vms), that doesn't
-> > need any complex userspace infrastructure, has good access control
-> > (i.e. because the file system enforces that anyway, and there's the
-> > "trusted." xattr namespace), notifications (inotify), and can easily be
-> > shared among applications.
-> >
-> > Lennart
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Ummm... I don't feel too good about this.  Why can't those extra
-information be kept somewhere else?  Overloading cgroupfs as storage
-for essentially opaque userland information doesn't seem like a good
-idea to me.
+Thanks, now applied.
 
-Thanks.
-
--- 
-tejun
+greg k-h
