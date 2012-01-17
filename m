@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab2AQNZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 08:25:58 -0500
-Received: from vms173017pub.verizon.net ([206.46.173.17]:43625 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab2AQNWN (ORCPT
+	id S1754093Ab2AQNWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 08:22:09 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:42929 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab2AQNWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 08:22:13 -0500
-X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 08:22:13 EST
+	Tue, 17 Jan 2012 08:22:06 -0500
+X-Greylist: delayed 3605 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 08:22:06 EST
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
 Cc: Bob Moore <robert.moore@intel.com>, Lin Ming <ming.m.lin@intel.com>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 07/50] ACPICA: Do not abort table load on invalid space ID
-Date: Tue, 17 Jan 2012 07:20:59 -0500
-Message-id: <ec4636669bf9c6ff157121ab42709650a9e0cc2a.1326802229.git.len.brown@intel.com>
+Subject: [PATCH 08/50] ACPI 5.0: Basic support for FADT version 5
+Date: Tue, 17 Jan 2012 07:21:00 -0500
+Message-id: <2355e10f07b2c550c671f98b68aedf323c299aeb.1326802229.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.9.rc1
 In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
 References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
@@ -29,167 +29,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bob Moore <robert.moore@intel.com>
 
-Ignore an invalid space ID during a table load. Instead, detect it
-if a control method attempts access - then abort the method.
-
-http://www.acpica.org/bugzilla/show_bug.cgi?id=925
-
 Signed-off-by: Bob Moore <robert.moore@intel.com>
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/acinterp.h |    2 ++
- drivers/acpi/acpica/excreate.c |   23 +++++++++++++----------
- drivers/acpi/acpica/exfldio.c  |   16 ++++++++++++++--
- drivers/acpi/acpica/exutils.c  |   25 +++++++++++++++++++++++++
- 4 files changed, 54 insertions(+), 12 deletions(-)
+ drivers/acpi/acpica/tbfadt.c |    4 ++--
+ include/acpi/actbl.h         |   22 ++++++++++++++++------
+ 2 files changed, 18 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/acpi/acpica/acinterp.h b/drivers/acpi/acpica/acinterp.h
-index 3731e1c..4ee9058 100644
---- a/drivers/acpi/acpica/acinterp.h
-+++ b/drivers/acpi/acpica/acinterp.h
-@@ -468,6 +468,8 @@ void acpi_ex_eisa_id_to_string(char *dest, u64 compressed_id);
- 
- void acpi_ex_integer_to_string(char *dest, u64 value);
- 
-+u8 acpi_is_valid_space_id(u8 space_id);
-+
- /*
-  * exregion - default op_region handlers
-  */
-diff --git a/drivers/acpi/acpica/excreate.c b/drivers/acpi/acpica/excreate.c
-index 8a06dc5..c66562b 100644
---- a/drivers/acpi/acpica/excreate.c
-+++ b/drivers/acpi/acpica/excreate.c
-@@ -267,7 +267,7 @@ acpi_status acpi_ex_create_mutex(struct acpi_walk_state *walk_state)
-  *
-  * PARAMETERS:  aml_start           - Pointer to the region declaration AML
-  *              aml_length          - Max length of the declaration AML
-- *              region_space        - space_iD for the region
-+ *              space_id            - Address space ID for the region
-  *              walk_state          - Current state
-  *
-  * RETURN:      Status
-@@ -279,7 +279,7 @@ acpi_status acpi_ex_create_mutex(struct acpi_walk_state *walk_state)
- acpi_status
- acpi_ex_create_region(u8 * aml_start,
- 		      u32 aml_length,
--		      u8 region_space, struct acpi_walk_state *walk_state)
-+		      u8 space_id, struct acpi_walk_state *walk_state)
+diff --git a/drivers/acpi/acpica/tbfadt.c b/drivers/acpi/acpica/tbfadt.c
+index 6f5588e..536fd2b 100644
+--- a/drivers/acpi/acpica/tbfadt.c
++++ b/drivers/acpi/acpica/tbfadt.c
+@@ -277,12 +277,12 @@ void acpi_tb_create_local_fadt(struct acpi_table_header *table, u32 length)
  {
- 	acpi_status status;
- 	union acpi_operand_object *obj_desc;
-@@ -304,16 +304,19 @@ acpi_ex_create_region(u8 * aml_start,
- 	 * Space ID must be one of the predefined IDs, or in the user-defined
- 	 * range
- 	 */
--	if ((region_space >= ACPI_NUM_PREDEFINED_REGIONS) &&
--	    (region_space < ACPI_USER_REGION_BEGIN) &&
--	    (region_space != ACPI_ADR_SPACE_DATA_TABLE)) {
--		ACPI_ERROR((AE_INFO, "Invalid AddressSpace type 0x%X",
--			    region_space));
--		return_ACPI_STATUS(AE_AML_INVALID_SPACE_ID);
-+	if (!acpi_is_valid_space_id(space_id)) {
-+		/*
-+		 * Print an error message, but continue. We don't want to abort
-+		 * a table load for this exception. Instead, if the region is
-+		 * actually used at runtime, abort the executing method.
-+		 */
-+		ACPI_ERROR((AE_INFO,
-+			    "Invalid/unknown Address Space ID: 0x%2.2X",
-+			    space_id));
- 	}
- 
- 	ACPI_DEBUG_PRINT((ACPI_DB_LOAD, "Region Type - %s (0x%X)\n",
--			  acpi_ut_get_region_name(region_space), region_space));
-+			  acpi_ut_get_region_name(space_id), space_id));
- 
- 	/* Create the region descriptor */
- 
-@@ -339,7 +342,7 @@ acpi_ex_create_region(u8 * aml_start,
- 
- 	/* Init the region from the operands */
- 
--	obj_desc->region.space_id = region_space;
-+	obj_desc->region.space_id = space_id;
- 	obj_desc->region.address = 0;
- 	obj_desc->region.length = 0;
- 	obj_desc->region.node = node;
-diff --git a/drivers/acpi/acpica/exfldio.c b/drivers/acpi/acpica/exfldio.c
-index 19df8ce..2a524fc 100644
---- a/drivers/acpi/acpica/exfldio.c
-+++ b/drivers/acpi/acpica/exfldio.c
-@@ -86,6 +86,7 @@ acpi_ex_setup_region(union acpi_operand_object *obj_desc,
- {
- 	acpi_status status = AE_OK;
- 	union acpi_operand_object *rgn_desc;
-+	u8 space_id;
- 
- 	ACPI_FUNCTION_TRACE_U32(ex_setup_region, field_datum_byte_offset);
- 
-@@ -101,6 +102,17 @@ acpi_ex_setup_region(union acpi_operand_object *obj_desc,
- 		return_ACPI_STATUS(AE_AML_OPERAND_TYPE);
- 	}
- 
-+	space_id = rgn_desc->region.space_id;
-+
-+	/* Validate the Space ID */
-+
-+	if (!acpi_is_valid_space_id(space_id)) {
-+		ACPI_ERROR((AE_INFO,
-+			    "Invalid/unknown Address Space ID: 0x%2.2X",
-+			    space_id));
-+		return_ACPI_STATUS(AE_AML_INVALID_SPACE_ID);
-+	}
-+
  	/*
- 	 * If the Region Address and Length have not been previously evaluated,
- 	 * evaluate them now and save the results.
-@@ -122,8 +134,8 @@ acpi_ex_setup_region(union acpi_operand_object *obj_desc,
- 	 * Exit now for SMBus or IPMI address space, it has a non-linear
- 	 * address space and the request cannot be directly validated
+ 	 * Check if the FADT is larger than the largest table that we expect
+-	 * (the ACPI 2.0/3.0 version). If so, truncate the table, and issue
++	 * (the ACPI 5.0 version). If so, truncate the table, and issue
+ 	 * a warning.
  	 */
--	if (rgn_desc->region.space_id == ACPI_ADR_SPACE_SMBUS ||
--	    rgn_desc->region.space_id == ACPI_ADR_SPACE_IPMI) {
-+	if (space_id == ACPI_ADR_SPACE_SMBUS ||
-+	    space_id == ACPI_ADR_SPACE_IPMI) {
+ 	if (length > sizeof(struct acpi_table_fadt)) {
+ 		ACPI_WARNING((AE_INFO,
+-			      "FADT (revision %u) is longer than ACPI 2.0 version, "
++			      "FADT (revision %u) is longer than ACPI 5.0 version, "
+ 			      "truncating length %u to %u",
+ 			      table->revision, length,
+ 			      (u32)sizeof(struct acpi_table_fadt)));
+diff --git a/include/acpi/actbl.h b/include/acpi/actbl.h
+index f138028..7d0e051 100644
+--- a/include/acpi/actbl.h
++++ b/include/acpi/actbl.h
+@@ -255,6 +255,8 @@ struct acpi_table_fadt {
+ 	struct acpi_generic_address xpm_timer_block;	/* 64-bit Extended Power Mgt Timer Ctrl Reg Blk address */
+ 	struct acpi_generic_address xgpe0_block;	/* 64-bit Extended General Purpose Event 0 Reg Blk address */
+ 	struct acpi_generic_address xgpe1_block;	/* 64-bit Extended General Purpose Event 1 Reg Blk address */
++	struct acpi_generic_address sleep_control;	/* 64-bit Sleep Control register */
++	struct acpi_generic_address sleep_status;	/* 64-bit Sleep Status register */
+ };
  
- 		/* SMBus or IPMI has a non-linear address space */
+ /* Masks for FADT Boot Architecture Flags (boot_flags) */
+@@ -264,6 +266,7 @@ struct acpi_table_fadt {
+ #define ACPI_FADT_NO_VGA            (1<<2)	/* 02: [V4] It is not safe to probe for VGA hardware */
+ #define ACPI_FADT_NO_MSI            (1<<3)	/* 03: [V4] Message Signaled Interrupts (MSI) must not be enabled */
+ #define ACPI_FADT_NO_ASPM           (1<<4)	/* 04: [V4] PCIe ASPM control must not be enabled */
++#define ACPI_FADT_NO_CMOS_RTC       (1<<5)	/* 05: [V5] No CMOS real-time clock present */
  
-diff --git a/drivers/acpi/acpica/exutils.c b/drivers/acpi/acpica/exutils.c
-index 8ad9314..3993aa5 100644
---- a/drivers/acpi/acpica/exutils.c
-+++ b/drivers/acpi/acpica/exutils.c
-@@ -435,4 +435,29 @@ void acpi_ex_integer_to_string(char *out_string, u64 value)
- 	}
- }
+ #define FADT2_REVISION_ID               3
  
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_is_valid_space_id
-+ *
-+ * PARAMETERS:  space_id            - ID to be validated
-+ *
-+ * RETURN:      TRUE if valid/supported ID.
-+ *
-+ * DESCRIPTION: Validate an operation region space_iD.
-+ *
-+ ******************************************************************************/
-+
-+u8 acpi_is_valid_space_id(u8 space_id)
-+{
-+
-+	if ((space_id >= ACPI_NUM_PREDEFINED_REGIONS) &&
-+	    (space_id < ACPI_USER_REGION_BEGIN) &&
-+	    (space_id != ACPI_ADR_SPACE_DATA_TABLE) &&
-+	    (space_id != ACPI_ADR_SPACE_FIXED_HARDWARE)) {
-+		return (FALSE);
-+	}
-+
-+	return (TRUE);
-+}
-+
- #endif
+@@ -289,6 +292,8 @@ struct acpi_table_fadt {
+ #define ACPI_FADT_REMOTE_POWER_ON   (1<<17)	/* 17: [V4] System is compatible with remote power on (ACPI 3.0) */
+ #define ACPI_FADT_APIC_CLUSTER      (1<<18)	/* 18: [V4] All local APICs must use cluster model (ACPI 3.0) */
+ #define ACPI_FADT_APIC_PHYSICAL     (1<<19)	/* 19: [V4] All local x_aPICs must use physical dest mode (ACPI 3.0) */
++#define ACPI_FADT_HW_REDUCED        (1<<20)	/* 20: [V5] ACPI hardware is not implemented (ACPI 5.0) */
++#define ACPI_FADT_LOW_POWER_S0      (1<<21)	/* 21: [V5] S0 power savings are equal or better than S3 (ACPI 5.0) */
+ 
+ /* Values for preferred_profile (Preferred Power Management Profiles) */
+ 
+@@ -299,14 +304,16 @@ enum acpi_prefered_pm_profiles {
+ 	PM_WORKSTATION = 3,
+ 	PM_ENTERPRISE_SERVER = 4,
+ 	PM_SOHO_SERVER = 5,
+-	PM_APPLIANCE_PC = 6
++	PM_APPLIANCE_PC = 6,
++	PM_PERFORMANCE_SERVER = 7,
++	PM_TABLET = 8
+ };
+ 
+ /* Reset to default packing */
+ 
+ #pragma pack()
+ 
+-#define ACPI_FADT_OFFSET(f)             (u8) ACPI_OFFSET (struct acpi_table_fadt, f)
++#define ACPI_FADT_OFFSET(f)             (u16) ACPI_OFFSET (struct acpi_table_fadt, f)
+ 
+ /*
+  * Internal table-related structures
+@@ -351,12 +358,15 @@ struct acpi_table_desc {
+  * FADT is the bottom line as to what the version really is.
+  *
+  * For reference, the values below are as follows:
+- *     FADT V1  size: 0x74
+- *     FADT V2  size: 0x84
+- *     FADT V3+ size: 0xF4
++ *     FADT V1  size: 0x074
++ *     FADT V2  size: 0x084
++ *     FADT V3  size: 0x0F4
++ *     FADT V4  size: 0x0F4
++ *     FADT V5  size: 0x10C
+  */
+ #define ACPI_FADT_V1_SIZE       (u32) (ACPI_FADT_OFFSET (flags) + 4)
+ #define ACPI_FADT_V2_SIZE       (u32) (ACPI_FADT_OFFSET (reserved4[0]) + 3)
+-#define ACPI_FADT_V3_SIZE       (u32) (sizeof (struct acpi_table_fadt))
++#define ACPI_FADT_V3_SIZE       (u32) (ACPI_FADT_OFFSET (sleep_control))
++#define ACPI_FADT_V5_SIZE       (u32) (sizeof (struct acpi_table_fadt))
+ 
+ #endif				/* __ACTBL_H__ */
 -- 
 1.7.9.rc1
 
