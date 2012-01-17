@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2AQM2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:28:17 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35459 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753659Ab2AQM2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 07:28:10 -0500
-Date: Tue, 17 Jan 2012 13:27:41 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v9 3.2 7/9] tracing: uprobes trace_event interface
-Message-ID: <20120117122741.GA19219@elte.hu>
-References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
- <20120110114943.17610.28293.sendpatchset@srdronam.in.ibm.com>
- <20120116131137.GB5265@m.brq.redhat.com>
- <20120117092838.GB10397@elte.hu>
- <20120117102231.GB15447@linux.vnet.ibm.com>
- <20120117112239.GA23859@elte.hu>
- <20120117115705.GD15447@linux.vnet.ibm.com>
- <20120117122350.GD4959@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117122350.GD4959@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753919Ab2AQM2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:28:40 -0500
+Received: from vms173005pub.verizon.net ([206.46.173.5]:56487 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635Ab2AQMWO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 07:22:14 -0500
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 26/50] ACPI, APEI, GHES: Add PCIe AER recovery support
+Date: Tue, 17 Jan 2012 07:21:18 -0500
+Message-id: <a654e5ee4f2213844d23361eda4955fe9efaf35f.1326802230.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.9.rc1
+In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
+References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
+In-reply-to: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
+References: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
+Reply-to: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Huang Ying <ying.huang@intel.com>
 
-a couple of other 'perf probe' suggestions:
+aer_recover_queue() is called when recoverable PCIe AER errors are
+notified by firmware to do the recovery work.
 
-i think the 'perf probe' UI should be streamlined.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/apei/ghes.c |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
-Right now we have kprobes assumptions like this syntax:
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index b8e08cb..511b971 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -45,6 +45,8 @@
+ #include <linux/irq_work.h>
+ #include <linux/llist.h>
+ #include <linux/genalloc.h>
++#include <linux/pci.h>
++#include <linux/aer.h>
+ #include <acpi/apei.h>
+ #include <acpi/atomicio.h>
+ #include <acpi/hed.h>
+@@ -476,6 +478,27 @@ static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+ 			}
+ #endif
+ 		}
++#ifdef CONFIG_ACPI_APEI_PCIEAER
++		else if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
++				      CPER_SEC_PCIE)) {
++			struct cper_sec_pcie *pcie_err;
++			pcie_err = (struct cper_sec_pcie *)(gdata+1);
++			if (sev == GHES_SEV_RECOVERABLE &&
++			    sec_sev == GHES_SEV_RECOVERABLE &&
++			    pcie_err->validation_bits & CPER_PCIE_VALID_DEVICE_ID &&
++			    pcie_err->validation_bits & CPER_PCIE_VALID_AER_INFO) {
++				unsigned int devfn;
++				int aer_severity;
++				devfn = PCI_DEVFN(pcie_err->device_id.device,
++						  pcie_err->device_id.function);
++				aer_severity = cper_severity_to_aer(sev);
++				aer_recover_queue(pcie_err->device_id.segment,
++						  pcie_err->device_id.bus,
++						  devfn, aer_severity);
++			}
++
++		}
++#endif
+ 	}
+ }
+ 
+-- 
+1.7.9.rc1
 
-  perf probe <kernel_symbol>
-
-will add a probe.
-
-That is nonsensical once we merge uprobes, as i'd expect much 
-more developers to be interested in user-space symbols than 
-kernel-space symbols.
-
-So we could change this syntax and add the more intuitive:
-
-  perf probe add ...
-  perf probe del ...
-  perf probe list
-
-Variants. Also, the -x syntax isnt particularly intuitive either 
-- it should be a 'perf probe add ...' variant.
-
-If someone uses the old syntax it will produce a meaningful 
-error message.
-
-Thanks,
-
-	Ingo
