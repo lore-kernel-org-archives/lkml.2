@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab2AQPYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 10:24:22 -0500
-Received: from mx2.gd-ms.com ([153.11.250.41]:57215 "EHLO mx2.gd-ms.com"
+	id S1754837Ab2AQP0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 10:26:52 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:41341 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754547Ab2AQPYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 10:24:21 -0500
-In-Reply-To: <OFE7567546.E048E2ED-ON85257988.004E1300-85257988.004EF54C@LocalDomain>
-References: <OFE7865F25.43E4BFD2-ON85257984.0057CD12-85257984.0058D31D@gdeb.com> <20120116075348.GF15641@elte.hu> <OF8925048E.BDB4D255-ON85257987.005AFEB7-85257987.005C9188@LocalDomain> <OFFD8ED65D.E1B7CD3D-ON85257987.005EE0A9-85257987.005F48CD@gdeb.com> <20120116212938.GB6313@srcf.ucam.org> <20120117085756.GB7612@elte.hu> <OFE7567546.E048E2ED-ON85257988.004E1300-85257988.004EF54C@LocalDomain>
-To: Michael D Labriola <mlabriol@gdeb.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
-        michael.d.labriola@gmail.com, Matthew Garrett <mjg59@srcf.ucam.org>,
-        support@versalogic.com, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
+	id S1754613Ab2AQP0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 10:26:51 -0500
+Date: Tue, 17 Jan 2012 07:24:34 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH 00/07] DA9052 patch series
+Message-ID: <20120117152433.GA12653@ericsson.com>
+References: <1326806748.3542.338.camel@dhruva>
 MIME-Version: 1.0
-Subject: Re: Reboot hangs on VersaLogic Ocelot
-X-KeepSent: A8FD2B04:C1CDB53C-85257988:0054783B;
- type=4; name=$KeepSent
-Message-ID: <OFA8FD2B04.C1CDB53C-ON85257988.0054783B-85257988.00549E58@gdeb.com>
-From: Michael D Labriola <mlabriol@gdeb.com>
-Date: Tue, 17 Jan 2012 10:24:15 -0500
-X-GDMEncrypt: FALSE
-X-GDMMarking: NOT_SENSITIVE
-Content-Type: text/plain; charset="US-ASCII"
-X-GDM-MESSAGE-ID: X-GDM-MESSAGE-ID mx2.gd-ms.com 1RnAtV-0007pS-Gp
-X-GDM-EVAL: score: /30; hits: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1326806748.3542.338.camel@dhruva>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael D Labriola/EB/GDYN wrote on 01/17/2012 09:22:25 AM:
-
-> From: Michael D Labriola/EB/GDYN
-> To: Ingo Molnar <mingo@elte.hu>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>, Kushal Koolwal 
-> <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org, 
-> michael.d.labriola@gmail.com, Matthew Garrett <mjg59@srcf.ucam.org>,
-> support@versalogic.com, Thomas Gleixner <tglx@linutronix.de>, 
-x86@kernel.org
-> Date: 01/17/2012 09:22 AM
-> Subject: Re: Reboot hangs on VersaLogic Ocelot
+On Tue, Jan 17, 2012 at 08:25:48AM -0500, Ashish Jangam wrote:
+> The following patch series adds support for the features of Dialog Semiconductor
+> DA9052/53 PMICs.
 > 
-> Ingo Molnar <mingo@elte.hu> wrote on 01/17/2012 03:57:56 AM:
+> The DA9052/53 PMICs support many functionalities like GPIOs, regulators,
+> power-supply, touchscreen, rtc, backlight, etc. So these patches are applicable
+> to different sub-systems of the kernel separately.
 > 
-> > From: Ingo Molnar <mingo@elte.hu>
-> > To: Matthew Garrett <mjg59@srcf.ucam.org>
-> > Cc: Michael D Labriola <mlabriol@gdeb.com>, "H. Peter Anvin" 
-> > <hpa@zytor.com>, Kushal Koolwal <kushalkoolwal@gmail.com>, linux-
-> > kernel@vger.kernel.org, michael.d.labriola@gmail.com, 
-> > support@versalogic.com, Thomas Gleixner <tglx@linutronix.de>, 
-x86@kernel.org
-> > Date: 01/17/2012 04:04 AM
-> > Subject: Re: Reboot hangs on VersaLogic Ocelot
-> > 
-> > 
-> > * Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > 
-> > > On Mon, Jan 16, 2012 at 12:20:45PM -0500, Michael D Labriola wrote:
-> > 
-> > > > Actually, assuming we fix the bios= argument ignored by DMI 
-> > > > scan problem, would it be better to change the VersaLogic 
-> > > > quirk to acpi even though it's not necessary right now?  If 
-> > > > the default reboot method ever switches from acpi to kbd or 
-> > > > bios, these boards will hang on reboot again...
-> > > 
-> > > A lot of hardware relies on the acpi method being used. I 
-> > > don't see us changing the default for x86 when booted via 
-> > > BIOS.
-> > 
-> > Yeah, i don't think we'll ever again switch away from ACPI being 
-> > the default for currently existing hardware.
-> > 
-> > (Far-)future hardware might have different defaults, but that 
-> > won't affect hardware that exists today.
-> > 
-> > Thanks,
-> > 
-> >    Ingo
+> This patch series adds support for RTC, HWMON, Watchdog, Touch screen interface,
+> Backlight, LEDs and On-Key.
 > 
-> Ingo,
+> All of these patches depend on the MFD module for DA9052/53. There is no
+> other interdependence of patches.
 > 
-> I sent the aforementioned patches last night using git-send-email...
-> but I'm not sure they went through correctly.  I got the email at my
-> home account, but not my work account, and they don't seem to be in 
-> the LKML archives.  Did anyone get them?  I listed all the addresses
-> on this email's distro with separate --to and --cc arguments and 
-> tried to use an appropriate In-Reply-To Message-Id when prompted, 
-> but maybe I messed it up.
+> Ashish Jangam (7):
+> 	[RTC]: RTC module of DA9052/53 PMICs with time and alarm support.
+> 	[HWMON]: Support for ADC of DA9052/53 PMICs.
+> 	[Watchdog]: Watchdog support for DA9052/53 PMICs.
+> 	[Touchscreen]: Driver for touch screen interface of DA9052/53 PMICs.
+> 	[Backlight]: Backlight module for DA9052/53 PMICs.
+> 	[LEDS]: Support for DA9052/53 LEDs.
+> 	[On-Key]: Support for DA9052/53 on-key.
 > 
-> Also, how does the sign-off work?  Does the appropriate person 
-> (Matthew?) review the patches and re-submit with a sign-off field?
+Where are the patches ? I see some of them on the kernel kernel mailing list,
+but not the hwmon driver.
 
-OK, I've resent the patches from my work email (Lotus Notes! Fingers 
-crossed!!).  New patches include sign-off from myself.
-
----
-Michael D Labriola
-Electric Boat
-mlabriol@gdeb.com
-401-848-8871 (desk)
-401-848-8513 (lab)
-401-316-9844 (cell)
-
-
-
-
- 
-
-
-
+Guenter
