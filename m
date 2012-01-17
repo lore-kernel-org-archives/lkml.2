@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab2AQTWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 14:22:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54004 "EHLO mail.zytor.com"
+	id S1755545Ab2AQTWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 14:22:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22810 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755514Ab2AQTWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 14:22:11 -0500
-Message-ID: <4F15CA4F.9060005@zytor.com>
-Date: Tue, 17 Jan 2012 11:21:51 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1755274Ab2AQTWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 14:22:52 -0500
+Message-ID: <4F15CA8A.5020400@redhat.com>
+Date: Tue, 17 Jan 2012 14:22:50 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Ulrich Drepper <drepper@gmail.com>
-CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, pp-manager@sdl.hitachi.co.jp
-Subject: Re: ANDN and Group 17 in x86-opcode-map.txt
-References: <CAOPLpQdq5SuVo9=023CYhbFLAX9rONyjmYq7jJkqc5xwctW5eA@mail.gmail.com>
-In-Reply-To: <CAOPLpQdq5SuVo9=023CYhbFLAX9rONyjmYq7jJkqc5xwctW5eA@mail.gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] Fix c-state transitions when !NOHZ (nohz=off kernel parameter)
+References: <1326823968-3482-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <1326823968-3482-1-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 11:14 AM, Ulrich Drepper wrote:
-> The Intel documentation at
+
+
+On 01/17/2012 01:12 PM, Prarit Bhargava wrote:
+> Some users do still boot with "nohz=off" which re-enables the old "tickfull"
+> kernel and still want the (diminished) power savings of c-states.
 > 
-> http://software.intel.com/file/36945
+> When examining the c-state transitions for !NOHZ it was noticed that the
+> processors never leaving the polling state.
 > 
-> shows the ANDN opcode and Group 17 with encoding f2 and f3 encoding
-> respectively.  The current version of x86-opcode-map.txt shows them
-> with f3 and f4.  Unless someone can point to documentation which shows
-> the currently used encoding the following patch be applied.
+> ie) powertop shows 98-99% residency in POLLING for all cpus
 > 
-> Signed-off-by: Ulrich Drepper <drepper@gmail.com>
+> This occurs  because the value of the current tick_sched's sleep_length
+> is never updated from its initialized value if !NOHZ.  sleep_length is used
+> by the cpuidle code (via a call to tick_nohz_get_sleep_length()) to determine
+> how long a cpu should sleep for and in what c-state.
 > 
+> Admittedly I am not overly familiar with this code and there may be some
+> unknown repercussion from doing this.  I can say that experimentally across
+> several systems I do see the cpus going into deeper c-states after making
+> this change, and there does not appear to be anything wrong with the system.
+> 
+> ----8<----
+> 
+> Fix c-state transitions when !NOHZ (nohz=off kernel parameter)
+> 
+> The value of sleep_length needs to be updated for the !NOHZ case in
+> order for processor c-state transitions to work.
+> 
+> Cc: Len Brown <len.brown@intel.com>
 
-Looks right to me.  Masami, I assume this was just a transcription error?
+Nuts -- I completely forgot
 
-Acked-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 
+(Thanks Len)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+P.
 
+> ---
+>  kernel/time/tick-sched.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 7656642..d2e2782 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -300,8 +300,10 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
+>  			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
+>  	}
+>  
+> -	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
+> +	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE)) {
+> +		ts->sleep_length = ktime_sub(dev->next_event, now);
+>  		return;
+> +	}
+>  
+>  	if (need_resched())
+>  		return;
