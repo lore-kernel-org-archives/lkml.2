@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab2AQHSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 02:18:44 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53337 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab2AQHSm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 02:18:42 -0500
-Message-ID: <1326784710.16397.1.camel@phoenix>
-Subject: [PATCH] gpio: Add missing spin_lock_init in gpio-ml-ioh driver
-From: Axel Lin <axel.lin@gmail.com>
+	id S1752200Ab2AQHZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 02:25:24 -0500
+Received: from lo.gmane.org ([80.91.229.12]:52405 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459Ab2AQHZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 02:25:23 -0500
+X-Injected-Via-Gmane: http://gmane.org/
 To: linux-kernel@vger.kernel.org
-Cc: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Date: Tue, 17 Jan 2012 15:18:30 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+From: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH] perf: Fix broken build by rearranging some #includes
+Date: Tue, 17 Jan 2012 16:25:09 +0900
+Message-ID: <4F152255.4080409@gmail.com>
+References: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Joerg Roedel <joerg.roedel@amd.com>, namhyung@gmail.com
+X-Gmane-NNTP-Posting-Host: 121.50.20.41
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+In-Reply-To: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this bug was introduced by commit 54be5663
-"gpio-ml-ioh: Support interrupt function" which adds a spinlock to struct
-ioh_gpio but never init the spinlock.
+Hi, again
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/gpio/gpio-ml-ioh.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+2012-01-17 11:01 AM, David Daney wrote:
+> From: David Daney<david.daney@cavium.com>
+>
+> When building on my Debian/mips system, util/util.c fails to build
+> because commit 1aed2671738785e8f5aea663a6fda91aa7ef59b5 (perf kvm: Do
+> guest-only counting by default) indirectly includes stdio.h before the
+> feature selection in util.h is done.  This prevents _GNU_SOURCE in
+> util.h from enabling the declaration of getline(), from now second
+> inclusion of stdio.h, and the build is broken.
+>
+> There is another breakage in util/evsel.c caused by include ordering,
+> but I didn't fully track down the commit that caused it.
+>
+> Since the #include situation is a little convoluted throughout perf, I
+> did the following:
+>
+> 1) Always include util/util.h before all other include files.
+>
+> 2) Remove all #define _GNU_SOURCE, as it is already done in util.h.
+>
+> 3) Remove all #undef _GNU_SOURCE, as they don't do what a naive person
+>     might expect (or much of anything for that matter) and clutter up
+>     the source.
+>
+> 4) #include ctype.h in util.h, so that ctype things have uniform
+>     definitions throughout perf.
+>
+> 5) Remove #define of _FILE_OFFSET_BITS where util/util.h is already
+>     providing it.
+>
+> This gives me a clean build on x86_64 (fc12) and mips (Debian).
 
-diff --git a/drivers/gpio/gpio-ml-ioh.c b/drivers/gpio/gpio-ml-ioh.c
-index 461958f..271fd49 100644
---- a/drivers/gpio/gpio-ml-ioh.c
-+++ b/drivers/gpio/gpio-ml-ioh.c
-@@ -448,6 +448,7 @@ static int __devinit ioh_gpio_probe(struct pci_dev *pdev,
- 		chip->reg = chip->base;
- 		chip->ch = i;
- 		mutex_init(&chip->lock);
-+		spin_lock_init(&chip->spinlock);
- 		ioh_gpio_setup(chip, num_ports[i]);
- 		ret = gpiochip_add(&chip->gpio);
- 		if (ret) {
--- 
-1.7.5.4
+Instead of reordering, how about adding -D_GNU_SOURCE on Makefile and 
+removing the line from util.h? If util.h would always be included at 
+first, the end result should be same, right? And this way, we don't need 
+to care about the ordering anymore.
 
 
+Thanks,
+Namhyung
 
