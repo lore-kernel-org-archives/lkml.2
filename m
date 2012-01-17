@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab2AQDnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 22:43:00 -0500
-Received: from gate.crashing.org ([63.228.1.57]:46455 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758Ab2AQDm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 22:42:58 -0500
-Message-ID: <1326771731.26116.29.camel@pasglop>
-Subject: Re: [RFC 13/14] irq_domain: Remove 'new' irq_domain in favour of
- the ppc one
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michael Bohan <mbohan@codeaurora.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>, sfr@canb.auug.org.au,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org
-Date: Tue, 17 Jan 2012 14:42:11 +1100
-In-Reply-To: <4F14E05C.30207@codeaurora.org>
-References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
-	 <1326313337-24603-14-git-send-email-grant.likely@secretlab.ca>
-	 <4F0DFC0F.2090005@gmail.com>
-	 <CACxGe6vVSO0cTgPurr6jFoo9QF_W02UaABOFYadCTQGU9dcwmg@mail.gmail.com>
-	 <4F0F7B60.5040701@gmail.com> <4F14E05C.30207@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1751714Ab2AQDz7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 22:55:59 -0500
+Received: from fnarfbargle.com ([93.93.131.224]:41049 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750855Ab2AQDz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 22:55:57 -0500
+Message-ID: <4F14F13D.2000407@fnarfbargle.com>
+Date: Tue, 17 Jan 2012 11:55:41 +0800
+From: Brad Campbell <brad@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: thomas@fjellstrom.ca
+CC: linux-kernel@vger.kernel.org,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        ayan@marvell.com, andy yan <andyysj@gmail.com>,
+        linux-raid <linux-raid@vger.kernel.org>
+Subject: Re: mvsas with 3.1 (mdraid+xfs locked up, single drive w/xfs not
+ locked up)
+References: <201201131144.58044.thomas@fjellstrom.ca> <201201162000.54940.thomas@fjellstrom.ca>
+In-Reply-To: <201201162000.54940.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.2.80
+X-SA-Exim-Mail-From: brad@fnarfbargle.com
+X-SA-Exim-Scanned: No (on localhost); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-16 at 18:43 -0800, Michael Bohan wrote:
-> 
-> I was planning on sending these patches out, but it seems like with 
-> Grant's patches, they may no longer be up to date. I was curious if any 
-> thought was given to supporting configurations like this the one I 
-> mentioned with the advent of these patches. I am happy to help test if 
-> you can steer me in the right direction.
+On 17/01/12 11:00, Thomas Fjellstrom wrote:
+>
+> Here's something interesting though, I just tried writing to the one disk on
+> the card that isn't part of the mdraid raid5 volume. It is fine. I can read
+> from it and write to it. So something to do with mdraid, or the XFS filesystem
+> (or both) is causing a bad interaction with the card itself.
 
-I haven't had a chance to look in detail at what Grant is doing in his
-latest series, but the ppc domain scheme that he's basing it on has the
-concept of sparse interrupt domains.
+Try doing IO to multiple drives simultaneously. I had a SIL card that would corrupt data when used 
+in RAID, but not single drive IO tests. I could make it fail by doing multiple dd/cp/md5sum to two 
+drives simultaneously.
 
-For these, we use a radix tree for the reverse map (we do not rely on a
-linear range) and we "allocate" linux IRQ numbers on-demand as we create
-mapping for individual HW interrupts.
+Do yourself a favour. Whack it on fleabay and sell it to a Windows user, then get something 
+supported. Leave enough scatter around that people thinking of buying a card with that Marvell 
+chipset will stay clear.
 
-Cheers,
-Ben.
-
-
+Regards,
+Brad
