@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab2AQWHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 17:07:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755728Ab2AQWHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 17:07:20 -0500
-Date: Tue, 17 Jan 2012 17:07:15 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: Kernel crash in icq_free_icq_rcu
-Message-ID: <20120117220715.GB23527@redhat.com>
-References: <20120117201823.GD19223@redhat.com>
- <20120117214834.GD26207@google.com>
+	id S1756049Ab2AQWJN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 17:09:13 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44877 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820Ab2AQWJL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 17:09:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117214834.GD26207@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120117212639.GA17297@kroah.com>
+References: <1326834845.3020.36.camel@dabdike>
+	<20120117212639.GA17297@kroah.com>
+Date: Tue, 17 Jan 2012 17:09:10 -0500
+X-Google-Sender-Auth: ZNWACQtya1-pD23CpuFXi3e-yKU
+Message-ID: <CAP=VYLpsdy5ws6PA-DREx-Z6MQP-7djcB3d31kRhR+KT-a74CQ@mail.gmail.com>
+Subject: Re: Fix compile breakage with kref.h
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 01:48:34PM -0800, Tejun Heo wrote:
-> On Tue, Jan 17, 2012 at 03:18:23PM -0500, Vivek Goyal wrote:
-> > Hi Tejun,
-> > 
-> > With latest linus kernel, I see following crash. I was running some
-> > scripts which create cgroups and launch fio jobs in those groups. In
-> > a separate window I wrote a script to change the IO scheduler on the
-> > device in a loop while IO was happening on the device. After few
-> > seconds I see following. So far I tried it twice and reproduced it
-> > both the times in first few seconds.
-> 
-> Does the following patch make any difference?
+On Tue, Jan 17, 2012 at 4:26 PM, Greg Kroah-Hartman <greg@kroah.com> wrote:
+> On Tue, Jan 17, 2012 at 09:14:05PM +0000, James Bottomley wrote:
+>> This set of build failures just started appearing on parisc:
+>>
+>> In file included from drivers/input/serio/serio_raw.c:12:
+>> include/linux/kref.h: In function 'kref_get':
+>> include/linux/kref.h:40: error: 'TAINT_WARN' undeclared (first use in this function)
+>> include/linux/kref.h:40: error: (Each undeclared identifier is reported only once
+>> include/linux/kref.h:40: error: for each function it appears in.)
+>> include/linux/kref.h: In function 'kref_sub':
+>> include/linux/kref.h:65: error: 'TAINT_WARN' undeclared (first use in this function)
+>>
+>> It happens because TAINT_WARN is defined in kernel.h and this particular
+>> compile doesn't seem to include it (no idea why it's just
+>> manifesting ... probably some #include file untangling exposed it).  Fix
+>> by adding #include <linux/kernel.h> to linux/kref.h
+>
+> Does adding <linux/bug.h> fix it instead?  We are using WARN_ON() here.
+> Hm, but that needs kernel.h as well, ugh, what a mess.
 
-Nope. Still can reproduce the issue.
+I've got some work done already towards cleaning this up; aiming for
+getting it done and in linux-next for the 3.4 cycle.
 
-Thanks
-Vivek
+https://lkml.org/lkml/2012/1/4/455
 
-> 
-> diff --git a/block/elevator.c b/block/elevator.c
-> index 91e18f8..b5a94ed 100644
-> --- a/block/elevator.c
-> +++ b/block/elevator.c
-> @@ -105,6 +105,7 @@ int elv_rq_merge_ok(struct request *rq, struct bio *bio)
->  	if (bio_integrity(bio) != blk_integrity_rq(rq))
->  		return 0;
->  
-> +	return 0;
->  	if (!elv_iosched_allow_merge(rq, bio))
->  		return 0;
->  
+Paul.
+---
+
+>
+>> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+>
+> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
