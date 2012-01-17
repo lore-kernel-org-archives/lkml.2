@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714Ab2AQDz7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 22:55:59 -0500
-Received: from fnarfbargle.com ([93.93.131.224]:41049 "EHLO fnarfbargle.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750855Ab2AQDz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 22:55:57 -0500
-Message-ID: <4F14F13D.2000407@fnarfbargle.com>
-Date: Tue, 17 Jan 2012 11:55:41 +0800
-From: Brad Campbell <brad@fnarfbargle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	id S1751772Ab2AQD61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 22:58:27 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62468 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab2AQD6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 22:58:25 -0500
 MIME-Version: 1.0
-To: thomas@fjellstrom.ca
-CC: linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        ayan@marvell.com, andy yan <andyysj@gmail.com>,
-        linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: mvsas with 3.1 (mdraid+xfs locked up, single drive w/xfs not
- locked up)
-References: <201201131144.58044.thomas@fjellstrom.ca> <201201162000.54940.thomas@fjellstrom.ca>
-In-Reply-To: <201201162000.54940.thomas@fjellstrom.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 192.168.2.80
-X-SA-Exim-Mail-From: brad@fnarfbargle.com
-X-SA-Exim-Scanned: No (on localhost); SAEximRunCond expanded to false
+In-Reply-To: <CANuKePk9LWEuFe3zrh0RiKtau85DAEBHbd+Qow10Py80xzYYtg@mail.gmail.com>
+References: <CANuKePk9LWEuFe3zrh0RiKtau85DAEBHbd+Qow10Py80xzYYtg@mail.gmail.com>
+Date: Tue, 17 Jan 2012 11:58:25 +0800
+Message-ID: <CANuKePmkw3=aXoB-y4m_ULnePR-PsYH2yUApd3K7fs4Qxt4FBw@mail.gmail.com>
+Subject: Re: how to Identify and determine NMI sourcing in GHES.c ? for
+ example , knowing a NMI error is caused by pcie error
+From: Lin-Bao Zhang <2004.zhang@gmail.com>
+To: ying.huang@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/01/12 11:00, Thomas Fjellstrom wrote:
->
-> Here's something interesting though, I just tried writing to the one disk on
-> the card that isn't part of the mdraid raid5 volume. It is fine. I can read
-> from it and write to it. So something to do with mdraid, or the XFS filesystem
-> (or both) is causing a bad interaction with the card itself.
+> In firmware first mode (BIOS hold AER service control), AER will be reported via
+> APEI HEST Generic Hardware Error Source, AER will be logged by kernel there.
+> AER recovery can be triggered there too, but the code has not been merged by
+> Linux kernel upstream yet.
 
-Try doing IO to multiple drives simultaneously. I had a SIL card that would corrupt data when used 
-in RAID, but not single drive IO tests. I could make it fail by doing multiple dd/cp/md5sum to two 
-drives simultaneously.
+Wow! ,from LKML , I have found your patches here :
+http://www.spinics.net/lists/linux-acpi/msg34003.html
+I check the latest code from
+http://lxr.linux.no/linux+v3.2.1/drivers/acpi/apei/ghes.c ,this patch
+has been not adopted by upstream.
 
-Do yourself a favour. Whack it on fleabay and sell it to a Windows user, then get something 
-supported. Leave enough scatter around that people thinking of buying a card with that Marvell 
-chipset will stay clear.
+another question :
+for corrected error , hardware can correct it.
+but for uncorrected error, especially fatal error , machines need to
+be restarted immediately, but for OS ,for different error (NMI
+sourcing) ,OS needs to do different ready works before restarting
+machine ?
 
-Regards,
-Brad
+thanks .
+
+-Bob Zhang
