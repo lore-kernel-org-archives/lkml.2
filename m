@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab2AQMWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:22:32 -0500
-Received: from vms173005pub.verizon.net ([206.46.173.5]:56487 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab2AQMWW (ORCPT
+	id S1754038Ab2AQMWr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:22:47 -0500
+Received: from vms173003pub.verizon.net ([206.46.173.3]:51799 "EHLO
+	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab2AQMWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 07:22:22 -0500
+	Tue, 17 Jan 2012 07:22:45 -0500
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 28/50] ACPI, APEI, Remove table not found message
-Date: Tue, 17 Jan 2012 07:21:20 -0500
-Message-id: <ad6861547b52ad7c31eacc336b79ac91d7fded75.1326802230.git.len.brown@intel.com>
+Cc: David Howells <dhowells@redhat.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 48/50] intel_idle: Fix a cast to pointer from integer of
+ different size warning in intel_idle
+Date: Tue, 17 Jan 2012 07:21:40 -0500
+Message-id: <441f30f24edbc7ed35107472fd0be2ce86b70aee.1326802230.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.9.rc1
 In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
 References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
@@ -25,73 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Ying <ying.huang@intel.com>
+From: David Howells <dhowells@redhat.com>
 
-Because APEI tables are optional, these message may confuse users, for
-example,
+Fix the following warning:
 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/599715
+drivers/idle/intel_idle.c: In function 'intel_idle_cpuidle_devices_init':
+drivers/idle/intel_idle.c:518:5: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
 
-Reported-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
+By making get_driver_data() return a long instead of an int.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/apei/einj.c |    5 ++---
- drivers/acpi/apei/erst.c |    5 ++---
- drivers/acpi/apei/hest.c |    5 ++---
- 3 files changed, 6 insertions(+), 9 deletions(-)
+ drivers/idle/intel_idle.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
-index d253902..43eeb2e 100644
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -466,10 +466,9 @@ static int __init einj_init(void)
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 27e41cc..6a3d91d 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -197,7 +197,7 @@ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 		.enter = &intel_idle },
+ };
  
- 	status = acpi_get_table(ACPI_SIG_EINJ, 0,
- 				(struct acpi_table_header **)&einj_tab);
--	if (status == AE_NOT_FOUND) {
--		pr_info(EINJ_PFX "Table is not found!\n");
-+	if (status == AE_NOT_FOUND)
- 		return -ENODEV;
--	} else if (ACPI_FAILURE(status)) {
-+	else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
- 		pr_err(EINJ_PFX "Failed to get table, %s\n", msg);
- 		return -EINVAL;
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 631b947..8e8d786 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -1125,10 +1125,9 @@ static int __init erst_init(void)
- 
- 	status = acpi_get_table(ACPI_SIG_ERST, 0,
- 				(struct acpi_table_header **)&erst_tab);
--	if (status == AE_NOT_FOUND) {
--		pr_info(ERST_PFX "Table is not found!\n");
-+	if (status == AE_NOT_FOUND)
- 		goto err;
--	} else if (ACPI_FAILURE(status)) {
-+	else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
- 		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
- 		rc = -EINVAL;
-diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
-index 05fee06..f709269 100644
---- a/drivers/acpi/apei/hest.c
-+++ b/drivers/acpi/apei/hest.c
-@@ -221,10 +221,9 @@ void __init acpi_hest_init(void)
- 
- 	status = acpi_get_table(ACPI_SIG_HEST, 0,
- 				(struct acpi_table_header **)&hest_tab);
--	if (status == AE_NOT_FOUND) {
--		pr_info(HEST_PFX "Table not found.\n");
-+	if (status == AE_NOT_FOUND)
- 		goto err;
--	} else if (ACPI_FAILURE(status)) {
-+	else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
- 		pr_err(HEST_PFX "Failed to get table, %s\n", msg);
- 		rc = -EINVAL;
+-static int get_driver_data(int cstate)
++static long get_driver_data(int cstate)
+ {
+ 	int driver_data;
+ 	switch (cstate) {
 -- 
 1.7.9.rc1
 
