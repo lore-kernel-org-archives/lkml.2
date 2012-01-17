@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587Ab2AQCr3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 21:47:29 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42960 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab2AQCrZ (ORCPT
+	id S1751730Ab2AQCrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 21:47:39 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39993 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab2AQCrg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 21:47:25 -0500
-Message-ID: <4F14DED7.3030002@linux.vnet.ibm.com>
-Date: Tue, 17 Jan 2012 10:37:11 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Mon, 16 Jan 2012 21:47:36 -0500
 MIME-Version: 1.0
-To: Stefan Hajnoczi <stefanha@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
-References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EEC5.8050807@linux.vnet.ibm.com> <CAJSP0QVxR9sYYh_Vr6ZKAU-YrWpjgL5jpiKz2zt7eJxV_kgaOg@mail.gmail.com>
-In-Reply-To: <CAJSP0QVxR9sYYh_Vr6ZKAU-YrWpjgL5jpiKz2zt7eJxV_kgaOg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-x-cbid: 12011702-9574-0000-0000-000000F8D11A
+In-Reply-To: <1326744932.16150.9.camel@sbsiddha-desk.sc.intel.com>
+References: <1326744932.16150.9.camel@sbsiddha-desk.sc.intel.com>
+Date: Mon, 16 Jan 2012 18:47:36 -0800
+X-Google-Sender-Auth: AcO7lmvotPWJI4EyHIH2KkrcvVU
+Message-ID: <CAE9FiQU9uja8JU0CyzU2wDxTqo41ZY45aTLiT6y2538Yt7PhiA@mail.gmail.com>
+Subject: Re: [patch] x86, tsc: fix SMI induced variation in quick_pit_calibrate()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, asit.k.mallick@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2012 06:08 PM, Stefan Hajnoczi wrote:
+On Mon, Jan 16, 2012 at 12:15 PM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> Linus, We are seeing NTP failures on a big cluster as a result of big
+> variation in calibrated TSC values. Our debug showed that it is indeed
+> because of the SMI and its effect on quick pit calibration. Appended
+> patch helps fix it. It ran over the weekend boot tests with out any
+> failures.
+>
+>
+>  [ As far as the SMI source is concerned, this is a periodic SMI that gets
+>    disabled after ACPI is enabled by the OS. But the TSC calibration happens
+>    before the ACPI is enabled. ]
+>
 
-> On Mon, Jan 16, 2012 at 9:32 AM, Xiao Guangrong
-> <xiaoguangrong@linux.vnet.ibm.com> wrote:
->> +DESCRIPTION
->> +-----------
->> +You can analyze some crucial events and statistics with this
->> +'perf kvm-events' command.
-> 
-> This line is very general and does not explain which events/statistics
-> can be collected or how you can use that information.  I suggest
-> making this description more specific.  Explain that this subcommand
-> observers kvm.ko tracepoints and annotates/decodes them with
-> additional information (this is why I would use this command and not
-> raw perf record -e kvm:\*).
-> 
+Hi, Suresh
 
+Do you know what is SMI doing at that time ? with USB legacy emulating?
 
-Okay.
+I have some patches that will do USB hand off early.
+Wonder if that would help.
+please check those patches at
 
->> + ï¿½ ï¿½ ï¿½ { SVM_EXIT_MONITOR, ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ "monitor" }, \
->> + ï¿½ ï¿½ ï¿½ { SVM_EXIT_MWAIT, ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ "mwait" }, \
->> + ï¿½ ï¿½ ï¿½ { SVM_EXIT_XSETBV, ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½"xsetbv" }, \
->> + ï¿½ ï¿½ ï¿½ { SVM_EXIT_NPF, ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ "npf" }
-> 
-> All this copy-paste could be avoided by sharing this stuff with the
-> arch/x86/kvm/ code.
-> 
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+usb_smi_disable_early
 
+Thanks
 
-I will try to combine them in the next version.
-
->> +static void exit_event_decode_key(struct event_key *key, char decode[20])
->> +{
->> + ï¿½ ï¿½ ï¿½ const char *exit_reason = get_exit_reason(key->info, key->key);
->> +
->> + ï¿½ ï¿½ ï¿½ memset(decode, 0, 20);
->> + ï¿½ ï¿½ ï¿½ strncpy(decode, exit_reason, 20);
-> 
-> This is a bad pattern to follow when using strncpy(3) because if there
-> was a strlen(exit_reason) == 20 string then decode[] would not be
-> NUL-terminated.  Right now it's safe but it's better to just use
-> strlcpy() and drop the memset(3).
-> 
-
-
-Good point.
-
->> +static void mmio_event_decode_key(struct event_key *key, char decode[20])
->> +{
->> + ï¿½ ï¿½ ï¿½ memset(decode, 0, 20);
->> + ï¿½ ï¿½ ï¿½ sprintf(decode, "%#lx:%s", key->key,
->> + ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ key->info == KVM_TRACE_MMIO_READ ? "R" : "W");
-> 
-> Please drop the memset and use snprintf(3) instead of sprintf(3).  It
-> places the NUL-terminator and ensures you don't exceed the buffer
-> size.
-> 
-> Same pattern below.
-> 
-
-
-Will do, thanks Stefan! :)
-
-
-
+Yinghai Lu
