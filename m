@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961Ab2AQFNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 00:13:44 -0500
+	id S1752077Ab2AQFNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 00:13:50 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:62467 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab2AQFNk (ORCPT
+	with ESMTP id S1751155Ab2AQFNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 00:13:40 -0500
+	Tue, 17 Jan 2012 00:13:48 -0500
 From: Kelvin Cheung <keguang.zhang@gmail.com>
 To: ralf@linux-mips.org, linux-mips@linux-mips.org, stern@rowland.harvard.edu,
         linux-usb@vger.kernel.org
 Cc: gregkh@suse.de, zhzhl555@gmail.com, peppe.cavallaro@st.com,
         wuzhangjin@gmail.com, linux-kernel@vger.kernel.org,
         Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH V6 3/5] MIPS: Add Makefile and Kconfig for Loongson1B
-Date: Tue, 17 Jan 2012 13:12:38 +0800
-Message-Id: <1326777160-9930-4-git-send-email-keguang.zhang@gmail.com>
+Subject: [PATCH V6 4/5] USB: Add EHCI bus glue for Loongson1x SoCs
+Date: Tue, 17 Jan 2012 13:12:39 +0800
+Message-Id: <1326777160-9930-5-git-send-email-keguang.zhang@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1326777160-9930-1-git-send-email-keguang.zhang@gmail.com>
 References: <1326777160-9930-1-git-send-email-keguang.zhang@gmail.com>
@@ -23,185 +23,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Makefile and Kconfig related to Loongson1B.
+The Loongson1x SoCs have a built-in EHCI controller.
+This patch adds the necessary glue code to make the generic EHCI
+driver usable for them.
 
 Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
 ---
- arch/mips/Kbuild.platforms          |    1 +
- arch/mips/Kconfig                   |   31 +++++++++++++++++++++++++++++++
- arch/mips/loongson1/Kconfig         |   21 +++++++++++++++++++++
- arch/mips/loongson1/Makefile        |   11 +++++++++++
- arch/mips/loongson1/Platform        |    7 +++++++
- arch/mips/loongson1/common/Makefile |    5 +++++
- arch/mips/loongson1/ls1b/Makefile   |    5 +++++
- 7 files changed, 81 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/loongson1/Kconfig
- create mode 100644 arch/mips/loongson1/Makefile
- create mode 100644 arch/mips/loongson1/Platform
- create mode 100644 arch/mips/loongson1/common/Makefile
- create mode 100644 arch/mips/loongson1/ls1b/Makefile
+ drivers/usb/Kconfig          |    1 +
+ drivers/usb/host/ehci-hcd.c  |    5 +
+ drivers/usb/host/ehci-ls1x.c |  170 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 176 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/usb/host/ehci-ls1x.c
 
-diff --git a/arch/mips/Kbuild.platforms b/arch/mips/Kbuild.platforms
-index 5ce8029..d64786d 100644
---- a/arch/mips/Kbuild.platforms
-+++ b/arch/mips/Kbuild.platforms
-@@ -14,6 +14,7 @@ platforms += jz4740
- platforms += lantiq
- platforms += lasat
- platforms += loongson
-+platforms += loongson1
- platforms += mipssim
- platforms += mti-malta
- platforms += netlogic
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index d9b8ea8..4c6ad4f 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -262,6 +262,17 @@ config MACH_LOONGSON
- 	  Chinese Academy of Sciences (CAS) in the People's Republic
- 	  of China. The chief architect is Professor Weiwu Hu.
+diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+index 85d5a01..78ac78b 100644
+--- a/drivers/usb/Kconfig
++++ b/drivers/usb/Kconfig
+@@ -68,6 +68,7 @@ config USB_ARCH_HAS_EHCI
+ 	default y if ARCH_MSM
+ 	default y if MICROBLAZE
+ 	default y if SPARC_LEON
++	default y if MACH_LOONGSON1
+ 	default PCI
  
-+config MACH_LOONGSON1
-+	bool "Loongson1 family of machines"
-+	select SYS_SUPPORTS_ZBOOT
-+	help
-+	  This enables the support of Loongson1 family of machines.
+ # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 47aa22d..d38bd7c 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1291,6 +1291,11 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_grlib_driver
+ #endif
+ 
++#ifdef CONFIG_MACH_LOONGSON1
++#include "ehci-ls1x.c"
++#define PLATFORM_DRIVER		ehci_ls1x_driver
++#endif
 +
-+	  Loongson1 is a family of 32-bit MIPS-compatible SoCs.
-+	  developed at Institute of Computing Technology (ICT),
-+	  Chinese Academy of Sciences (CAS) in the People's Republic
-+	  of China.
-+
- config MIPS_MALTA
- 	bool "MIPS Malta board"
- 	select ARCH_MAY_HAVE_PC_FDC
-@@ -808,6 +819,7 @@ source "arch/mips/txx9/Kconfig"
- source "arch/mips/vr41xx/Kconfig"
- source "arch/mips/cavium-octeon/Kconfig"
- source "arch/mips/loongson/Kconfig"
-+source "arch/mips/loongson1/Kconfig"
- source "arch/mips/netlogic/Kconfig"
- 
- endmenu
-@@ -1201,6 +1213,14 @@ config CPU_LOONGSON2F
- 	  have a similar programming interface with FPGA northbridge used in
- 	  Loongson2E.
- 
-+config CPU_LOONGSON1B
-+	bool "Loongson 1B"
-+	depends on SYS_HAS_CPU_LOONGSON1B
-+	select CPU_LOONGSON1
-+	help
-+	  The Loongson 1B is a 32-bit SoC, which implements the MIPS32
-+	  release 2 instruction set.
-+
- config CPU_MIPS32_R1
- 	bool "MIPS32 Release 1"
- 	depends on SYS_HAS_CPU_MIPS32_R1
-@@ -1529,6 +1549,14 @@ config CPU_LOONGSON2
- 	select CPU_SUPPORTS_64BIT_KERNEL
- 	select CPU_SUPPORTS_HIGHMEM
- 
-+config CPU_LOONGSON1
-+	bool
-+	select CPU_MIPS32
-+	select CPU_MIPSR2
-+	select CPU_HAS_PREFETCH
-+	select CPU_SUPPORTS_32BIT_KERNEL
-+	select CPU_SUPPORTS_HIGHMEM
-+
- config SYS_HAS_CPU_LOONGSON2E
- 	bool
- 
-@@ -1538,6 +1566,9 @@ config SYS_HAS_CPU_LOONGSON2F
- 	select CPU_SUPPORTS_ADDRWINCFG if 64BIT
- 	select CPU_SUPPORTS_UNCACHED_ACCELERATED
- 
-+config SYS_HAS_CPU_LOONGSON1B
-+	bool
-+
- config SYS_HAS_CPU_MIPS32_R1
- 	bool
- 
-diff --git a/arch/mips/loongson1/Kconfig b/arch/mips/loongson1/Kconfig
+ #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
+     !defined(PS3_SYSTEM_BUS_DRIVER) && !defined(OF_PLATFORM_DRIVER) && \
+     !defined(XILINX_OF_PLATFORM_DRIVER)
+diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
 new file mode 100644
-index 0000000..237fa21
+index 0000000..d3b6720
 --- /dev/null
-+++ b/arch/mips/loongson1/Kconfig
-@@ -0,0 +1,21 @@
-+if MACH_LOONGSON1
++++ b/drivers/usb/host/ehci-ls1x.c
+@@ -0,0 +1,170 @@
++/*
++ *  Bus Glue for Loongson LS1X built-in EHCI controller.
++ *
++ *  Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under the terms of the GNU General Public License version 2 as published
++ *  by the Free Software Foundation.
++ */
 +
-+choice
-+	prompt "Machine Type"
 +
-+config LOONGSON1_LS1B
-+	bool "Loongson LS1B board"
-+	select CEVT_R4K
-+	select CSRC_R4K
-+	select SYS_HAS_CPU_LOONGSON1B
-+	select DMA_NONCOHERENT
-+	select BOOT_ELF32
-+	select IRQ_CPU
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+	select SYS_SUPPORTS_LITTLE_ENDIAN
-+	select SYS_SUPPORTS_HIGHMEM
-+	select SYS_HAS_EARLY_PRINTK
++#include <linux/platform_device.h>
 +
-+endchoice
++static int ehci_ls1x_setup(struct usb_hcd *hcd)
++{
++	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
++	int ret;
 +
-+endif # MACH_LOONGSON1
-diff --git a/arch/mips/loongson1/Makefile b/arch/mips/loongson1/Makefile
-new file mode 100644
-index 0000000..e9123c2
---- /dev/null
-+++ b/arch/mips/loongson1/Makefile
-@@ -0,0 +1,11 @@
-+#
-+# Common code for all Loongson1 based systems
-+#
++	ehci->caps = hcd->regs;
++	ehci->regs = hcd->regs +
++		HC_LENGTH(ehci, ehci_readl(ehci, &ehci->caps->hc_capbase));
++	dbg_hcs_params(ehci, "reset");
++	dbg_hcc_params(ehci, "reset");
 +
-+obj-$(CONFIG_MACH_LOONGSON1) += common/
++	/* cache this readonly data; minimize chip reads */
++	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
++	ehci->sbrn = 0x20;
 +
-+#
-+# Loongson LS1B board
-+#
++	ehci_reset(ehci);
 +
-+obj-$(CONFIG_LOONGSON1_LS1B)  += ls1b/
-diff --git a/arch/mips/loongson1/Platform b/arch/mips/loongson1/Platform
-new file mode 100644
-index 0000000..92804c6
---- /dev/null
-+++ b/arch/mips/loongson1/Platform
-@@ -0,0 +1,7 @@
-+cflags-$(CONFIG_CPU_LOONGSON1)  += \
-+	$(call cc-option,-march=mips32r2,-mips32r2 -U_MIPS_ISA -D_MIPS_ISA=_MIPS_ISA_MIPS32) \
-+	-Wa,-mips32r2 -Wa,--trap
++	/* data structure init */
++	ret = ehci_init(hcd);
++	if (ret)
++		return ret;
 +
-+platform-$(CONFIG_MACH_LOONGSON1)	+= loongson1/
-+cflags-$(CONFIG_MACH_LOONGSON1)		+= -I$(srctree)/arch/mips/include/asm/mach-loongson1
-+load-$(CONFIG_LOONGSON1_LS1B)		+= 0xffffffff80010000
-diff --git a/arch/mips/loongson1/common/Makefile b/arch/mips/loongson1/common/Makefile
-new file mode 100644
-index 0000000..b279770
---- /dev/null
-+++ b/arch/mips/loongson1/common/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for common code of loongson1 based machines.
-+#
++	ehci_port_power(ehci, 0);
 +
-+obj-y	+= clock.o irq.o platform.o prom.o reset.o setup.o
-diff --git a/arch/mips/loongson1/ls1b/Makefile b/arch/mips/loongson1/ls1b/Makefile
-new file mode 100644
-index 0000000..891eac4
---- /dev/null
-+++ b/arch/mips/loongson1/ls1b/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for loongson1B based machines.
-+#
++	return 0;
++}
 +
-+obj-y += board.o
++static const struct hc_driver ehci_ls1x_hc_driver = {
++	.description		= hcd_name,
++	.product_desc		= "LOONGSON1 EHCI",
++	.hcd_priv_size		= sizeof(struct ehci_hcd),
++
++	/*
++	 * generic hardware linkage
++	 */
++	.irq			= ehci_irq,
++	.flags			= HCD_MEMORY | HCD_USB2,
++
++	/*
++	 * basic lifecycle operations
++	 */
++	.reset			= ehci_ls1x_setup,
++	.start			= ehci_run,
++	.stop			= ehci_stop,
++	.shutdown		= ehci_shutdown,
++
++	/*
++	 * managing i/o requests and associated device resources
++	 */
++	.urb_enqueue		= ehci_urb_enqueue,
++	.urb_dequeue		= ehci_urb_dequeue,
++	.endpoint_disable	= ehci_endpoint_disable,
++	.endpoint_reset		= ehci_endpoint_reset,
++
++	/*
++	 * scheduling support
++	 */
++	.get_frame_number	= ehci_get_frame,
++
++	/*
++	 * root hub support
++	 */
++	.hub_status_data	= ehci_hub_status_data,
++	.hub_control		= ehci_hub_control,
++	.relinquish_port	= ehci_relinquish_port,
++	.port_handed_over	= ehci_port_handed_over,
++
++	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
++};
++
++static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd;
++	struct resource *res;
++	int irq;
++	int ret;
++
++	pr_debug("initializing loongson1 ehci USB Controller\n");
++
++	if (usb_disabled())
++		return -ENODEV;
++
++	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!res) {
++		dev_err(&pdev->dev,
++			"Found HC with no IRQ. Check %s setup!\n",
++			dev_name(&pdev->dev));
++		return -ENODEV;
++	}
++	irq = res->start;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev,
++			"Found HC with no register addr. Check %s setup!\n",
++			dev_name(&pdev->dev));
++		return -ENODEV;
++	}
++
++	hcd = usb_create_hcd(&ehci_ls1x_hc_driver, &pdev->dev,
++				dev_name(&pdev->dev));
++	if (!hcd)
++		return -ENOMEM;
++	hcd->rsrc_start	= res->start;
++	hcd->rsrc_len	= resource_size(res);
++
++	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
++		dev_dbg(&pdev->dev, "controller already in use\n");
++		ret = -EBUSY;
++		goto err_put_hcd;
++	}
++
++	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
++	if (hcd->regs == NULL) {
++		dev_dbg(&pdev->dev, "error mapping memory\n");
++		ret = -EFAULT;
++		goto err_release_region;
++	}
++
++	ret = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
++	if (ret)
++		goto err_iounmap;
++
++	return ret;
++
++err_iounmap:
++	iounmap(hcd->regs);
++err_release_region:
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++err_put_hcd:
++	usb_put_hcd(hcd);
++	return ret;
++}
++
++static int ehci_hcd_ls1x_remove(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++
++	usb_remove_hcd(hcd);
++	iounmap(hcd->regs);
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++	usb_put_hcd(hcd);
++
++	return 0;
++}
++
++static struct platform_driver ehci_ls1x_driver = {
++	.probe = ehci_hcd_ls1x_probe,
++	.remove = ehci_hcd_ls1x_remove,
++	.shutdown = usb_hcd_platform_shutdown,
++	.driver = {
++		.name = "ls1x-ehci",
++		.owner	= THIS_MODULE,
++	},
++};
++
++MODULE_ALIAS(PLATFORM_MODULE_PREFIX "ls1x-ehci");
 -- 
 1.7.1
 
