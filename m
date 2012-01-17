@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2AQWuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 17:50:17 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33705 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138Ab2AQWuP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 17:50:15 -0500
+	id S1756207Ab2AQWvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 17:51:22 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38840 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755964Ab2AQWvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 17:51:21 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] PM / Hibernate: Correct additional page calculation
+Date: Tue, 17 Jan 2012 23:54:49 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
+Cc: Namhyung Kim <namhyung@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1326768189-13074-1-git-send-email-namhyung.kim@lge.com>
+In-Reply-To: <1326768189-13074-1-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZEZ6X20mtP5reAq2UaG5f0DS_hMBN9L8LpV1O0tBkb-w@mail.gmail.com>
-References: <4F12AB38.5040009@freemail.hu> <CACRpkdZ0osKrjTXsV96J5ckj=wC=OieHL7UTfjtm8ibHRuL6=A@mail.gmail.com>
- <4F153221.3080509@freemail.hu> <CACRpkdZEZ6X20mtP5reAq2UaG5f0DS_hMBN9L8LpV1O0tBkb-w@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 17 Jan 2012 15:49:54 -0700
-X-Google-Sender-Auth: MlRq-_Q0YoGds_WcM2K07zthDBs
-Message-ID: <CACxGe6t2xtm-T43cBcbaqTrnPST9+R8E7dhq1rJnC+4P2__JRQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio-pch: cleanup __iomem annotation usage
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201172354.49708.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/17 Linus Walleij <linus.walleij@linaro.org>:
-> 2012/1/17 Németh Márton <nm127@freemail.hu>:
->
->> Hi Linux,
->
-> :-)
->
-> Common mistake, as are our brother Kubys who also
-> appear on the lists sometimes...
->
->> You are right, the correct one should be "void __iomem *im_reg;" .
->>
->> Should I resend a patch for this?
->
-> Yep just send it with subject [PATCH 1/2 v2] atleast
-> that's what I usually do.
+On Tuesday, January 17, 2012, Namhyung Kim wrote:
+> The struct bm_block is allocated by chain_alloc(),
+> so it'd better counting it in LINKED_PAGE_DATA_SIZE.
 
-Actually, I've already applied it.  Send a follow-on patch.  It is
-logically a separate change anyway since the existing code already
-uses u32.
+Yes, good catch, thanks!
 
-g.
+I'm going to push this to Linus in the next round of fixes.
+
+Thanks,
+Rafael
+
+
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> ---
+>  kernel/power/snapshot.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+> index cbe2c1441392..7196d3c023e1 100644
+> --- a/kernel/power/snapshot.c
+> +++ b/kernel/power/snapshot.c
+> @@ -812,7 +812,8 @@ unsigned int snapshot_additional_pages(struct zone *zone)
+>  	unsigned int res;
+>  
+>  	res = DIV_ROUND_UP(zone->spanned_pages, BM_BITS_PER_BLOCK);
+> -	res += DIV_ROUND_UP(res * sizeof(struct bm_block), PAGE_SIZE);
+> +	res += DIV_ROUND_UP(res * sizeof(struct bm_block),
+> +			    LINKED_PAGE_DATA_SIZE);
+>  	return 2 * res;
+>  }
+>  
+> 
+
