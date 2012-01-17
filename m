@@ -1,60 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2AQJU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 04:20:57 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:55792 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751340Ab2AQJUy (ORCPT
+	id S1752645Ab2AQJYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 04:24:47 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:60013 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab2AQJYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 04:20:54 -0500
-Message-ID: <4F153D39.50206@st.com>
-Date: Tue, 17 Jan 2012 14:49:53 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Tue, 17 Jan 2012 04:24:42 -0500
+Message-ID: <4F153E53.6020108@kernel.org>
+Date: Tue, 17 Jan 2012 04:24:35 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Bhavna YADAV <bhavna.yadav@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>
-Subject: Re: [PATCH 8/8] dmaengine/dw_dmac: Add support for DMA_SLAVE_CONFIG
-References: <cover.1326707233.git.viresh.kumar@st.com> <7c1e6fd573d5cd348b22f8363c9960fe5efcd658.1326707233.git.viresh.kumar@st.com> <4F140D25.1000309@st.com> <CACRpkdbY7ZOwY6GR4t+GODYL4yAdH-PXExmwp84R+Gz2W19X7w@mail.gmail.com> <4F153C33.5060805@st.com>
-In-Reply-To: <4F153C33.5060805@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Kurt Garloff <kurt@garloff.de>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "Luck, Tony" <tony.luck@intel.com>,
+        x86@vger.kernel.org
+Subject: Re: [PATCH 1/3]: Store SRAT revision
+References: <20120115213005.GT12380@tpkurt2.garloff.de> <20120115213407.GU12380@tpkurt2.garloff.de>
+In-Reply-To: <20120115213407.GU12380@tpkurt2.garloff.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/17/2012 2:45 PM, Viresh Kumar wrote:
->>>>>> >>> >> +      * Fix sconfig's burst size according to dw_dmac. We need to convert
->>>>>> >>> >> +      * them as: 1 -> 0, 2 -> 1, 4 -> 2, 8 -> 3, 16 -> 4.
-> I need above conversion. i.e. finding bit no. of first bit set.
+looks fine to me.
+as #2 (x86) and #3 (ia64) depend on #1, which is ACPI,
+I can send this via the ACPI tree.
 
-Something like:
-
-unsigned int v; // 32-bit word
-unsigned int r = 0;
-
-while (v >>= 1)
-{
-  r++;
-}
-
-Probably find_first_bit() suits it.
-
--- 
-viresh
+thanks,
+-Len Brown, Intel Open Source Technology Center
