@@ -1,119 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab2AQG6C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 01:58:02 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62660 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab2AQG6B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 01:58:01 -0500
-Date: Mon, 16 Jan 2012 22:58:04 -0800
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linuxfoundation.org
-Cc: arnd@arndb.de, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm-soc fixes for 3.3-rc1
-Message-ID: <20120117065804.GA31953@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752207Ab2AQHIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 02:08:35 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:52003 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab2AQHId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 02:08:33 -0500
+From: Corentin Chary <corentincj@iksaif.net>
+To: platform-driver-x86@vger.kernel.org
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
+        Andrzej Prochyra <andrzej@prochyra.name>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        =?UTF-8?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>,
+        Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, Corentin Chary <corentincj@iksaif.net>
+Subject: [PATCH] ACPI / Video: blacklist some samsung laptops
+Date: Tue, 17 Jan 2012 08:08:18 +0100
+Message-Id: <1326784098-3244-1-git-send-email-corentincj@iksaif.net>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On these laptops, the ACPI video is not functional, and very unlikely
+to be fixed by the vendor. Note that intel_backlight works for some
+of these laptops, and the backlight from samsung-laptop always work.
 
-Once the dmaengine pull request that was sent this morning lands, the remaining
-dependencies for arm-soc pull requests should be resolved.
+The good news is that newer laptops have functional ACPI video device
+and won't end up growing this list.
 
-Until then, here is a batch of fixes for -rc1.
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+---
+ drivers/acpi/video_detect.c |   49 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 49 insertions(+), 0 deletions(-)
 
-Thanks!
+diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+index 45d8097..66be45e 100644
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -132,6 +132,53 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	return AE_OK;
+ }
+ 
++/* Force to use vendor driver when the ACPI device is known to be
++ * buggy */
++static int video_detect_force_vendor(const struct dmi_system_id *d)
++{
++	acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
++	return 0;
++}
++
++static struct dmi_system_id video_detect_dmi_table[] = {
++	{
++	 .callback = video_detect_force_vendor,
++	 .ident = "N150P",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
++		DMI_MATCH(DMI_BOARD_NAME, "N150P"),
++		},
++	},
++	{
++	 .callback = video_detect_force_vendor,
++	 .ident = "N145P/N250P/N260P",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
++		DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
++		},
++	},
++	{
++	 .callback = video_detect_force_vendor,
++	 .ident = "N150/N210/N220",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
++		DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
++		},
++	},
++	{
++	 .callback = video_detect_force_vendor,
++	 .ident = "NF110/NF210/NF310",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
++		DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
++		},
++	},
++};
++
+ /*
+  * Returns the video capabilities of a specific ACPI graphics device
+  *
+@@ -164,6 +211,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
+ 		 *		ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
+ 		 *}
+ 		 */
++
++		dmi_check_system(video_detect_dmi_table);
+ 	} else {
+ 		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
+ 		if (ACPI_FAILURE(status)) {
+-- 
+1.7.5.4
 
--Olof
-
-
-
-The following changes since commit c2bc3a316a7281f67e36b34dac2802cbe36a9128:
-
-  Merge branch 'x86/rdrand' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2012-01-16 18:23:09 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git arm-soc-fixes-20120116
-
-for you to fetch changes up to 090e648a20a43d71fc2d63e0d8ff8ec6822e2396:
-
-  Merge branch 'samsung-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into fixes (2012-01-16 22:46:19 -0800)
-
-----------------------------------------------------------------
-
-ARM: fixes for ARM platforms
-
-Some fallout from the 3.3. merge window as well as a couple bug fixes
-for older preexisting bugs that seem valid to include at this time:
-
-* sched_clock changes broke picoxcell, fix included
-* BSYM bugs causing issues with thumb2-built kernels on SMP
-* Missing module.h include on msm.
-* A collection of bugfixes for samsung platforms that didn't make it into
-  the first pull requests.
-
-----------------------------------------------------------------
-David Brown (1):
-      ARM: msm: vreg is a module and so needs module.h
-
-Jamie Iles (1):
-      ARM: picoxcell: fix sched_clock() cleanup fallout
-
-Mark Brown (7):
-      ARM: SAMSUNG: Guard against multiple inclusion of plat/dma.h
-      ARM: SAMSUNG: dma-ops.h needs mach/dma.h
-      ARM: SAMSUNG: Declare struct platform_device in plat/s3c64xx-spi.h
-      ARM: S3C64XX: Remove unconditional power domain disables
-      ARM: S3C64XX: Remove hsmmc1 from Cragganmore
-      ARM: S3C64XX: Fix the memory mapped GPIOs on Cragganmore
-      ARM: S3C64XX: Fix interrupt configuration for PCA935x on Cragganmore
-
-Olof Johansson (4):
-      Merge branch 'picoxcell-fixes' of git://github.com/jamieiles/linux-2.6-ji into fixes
-      Merge branch 'msm-fix' of git://codeaurora.org/quic/kernel/davidb/linux-msm into fixes
-      Merge branch 'fixes-for-arm-soc' of git://sources.calxeda.com/kernel/linux into fixes
-      Merge branch 'samsung-fixes' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-
-Pawel Moll (1):
-      ARM: versatile: Add missing ENDPROC to headsmp.S
-
-Rob Herring (6):
-      ARM: msm: Add missing ENDPROC to headsmp.S
-      ARM: ux500: add missing ENDPROC to headsmp.S
-      ARM: exynos: remove incorrect BSYM usage
-      ARM: imx: remove incorrect BSYM usage
-      ARM: highbank: remove incorrect BSYM usage
-      ARM: make BSYM macro assembly only
-
-Tushar Behera (1):
-      ARM: EXYNOS: Invert VCLK polarity for framebuffer on ORIGEN
-
- arch/arm/include/asm/unified.h                   |    4 ++--
- arch/arm/mach-exynos/headsmp.S                   |    2 ++
- arch/arm/mach-exynos/mach-origen.c               |    3 ++-
- arch/arm/mach-exynos/platsmp.c                   |    5 ++---
- arch/arm/mach-highbank/highbank.c                |    3 +--
- arch/arm/mach-imx/src.c                          |    3 +--
- arch/arm/mach-msm/headsmp.S                      |    1 +
- arch/arm/mach-msm/vreg.c                         |    1 +
- arch/arm/mach-picoxcell/time.c                   |    2 +-
- arch/arm/mach-realview/platsmp.c                 |    3 +--
- arch/arm/mach-s3c64xx/include/mach/crag6410.h    |    1 +
- arch/arm/mach-s3c64xx/mach-crag6410.c            |   13 +++----------
- arch/arm/mach-s3c64xx/pm.c                       |   13 -------------
- arch/arm/mach-ux500/headsmp.S                    |    2 ++
- arch/arm/mach-vexpress/platsmp.c                 |    4 +---
- arch/arm/plat-samsung/include/plat/dma-ops.h     |    1 +
- arch/arm/plat-samsung/include/plat/dma.h         |    6 +++++-
- arch/arm/plat-samsung/include/plat/s3c64xx-spi.h |    2 ++
- arch/arm/plat-versatile/headsmp.S                |    1 +
- 19 files changed, 30 insertions(+), 40 deletions(-)
