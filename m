@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab2AQIwR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 03:52:17 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:53936 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752012Ab2AQIwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 03:52:16 -0500
+	id S1752601Ab2AQIx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 03:53:58 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:52061 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752012Ab2AQIx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 03:53:56 -0500
+Message-ID: <4F1537B8.1030706@cn.fujitsu.com>
+Date: Tue, 17 Jan 2012 16:56:24 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <4F140DB7.3060300@st.com>
-References: <cover.1326707233.git.viresh.kumar@st.com>
-	<5e5d0fcff79b9b78e64c7424317d6b77736eca43.1326707233.git.viresh.kumar@st.com>
-	<20120116105448.GT1068@n2100.arm.linux.org.uk>
-	<4F140DB7.3060300@st.com>
-Date: Tue, 17 Jan 2012 09:52:15 +0100
-Message-ID: <CACRpkdY-4wWeD=3mJiChi6+4=iBMcd3kVh3h4JmDZ5ySXY3KCA@mail.gmail.com>
-Subject: Re: [PATCH 7/8] dmaengine/dw_dmac: Unmap all memory buffers after
- completion of slave transfers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>, Bhavna YADAV <bhavna.yadav@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: Updated btrfs/crypto snappy interface ready for merging
+References: <1326414530-10789-1-git-send-email-andi@firstfloor.org> <20120116135442.GA28487@shiny> <4F1534FD.30707@cn.fujitsu.com> <20120117084650.GP11715@one.firstfloor.org>
+In-Reply-To: <20120117084650.GP11715@one.firstfloor.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-17 16:52:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-17 16:52:45,
+	Serialize complete at 2012-01-17 16:52:45
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 12:44 PM, Viresh Kumar <viresh.kumar@st.com> wrote:
-> On 1/16/2012 4:24 PM, Russell King - ARM Linux wrote:
->> Note that DMA engine drivers are not responsible for unmapping the buffers
->> when the transfer completes - that is the responsibility of the caller.
+Andi Kleen wrote:
+>> It's because decompressing inline extents always fails. I've fixed it
+>> and will send the patch out in a new mail thread.
+> 
+> Thanks for fixing.
+> 
 >>
->> The automatic buffer unmapping is required for the async_tx APIs and
->> offload APIs.
->
-> In dw_dmac, it is only done for slave transfers. Is this Okay ??
+>> But seems there's bug in lib snappy code, which makes the decompressed
+>> data doesn't quite match the original data.
+>>
+>> Simply copy a file to a btrfs filesystem with snappy enabled, and clear
+>> page cache, and check the file:
+> 
+> Hmm weird, I have never seen this. Do you have a reproducer?
+> 
 
-Basically the driver using the dmaengine shall map/unmap buffers
-used for slave transfers, not the driver.
+Just use some randomly chosen text files. For example:
 
-I usually map them before setting up a transfer and unmaps them
-when egtting the callback from the DMA engine that the transfer is
-complete.
+	# mount -t btrfs -o compress=snappy /dev/xxx /mnt
+	# cp -r btrfs-progs-unstable/ /mnt
+	# sync
+	# echo 3 > /proc/sys/vm/drop_caches
+	# diff -Nurp btrfs-progs-unstable /mnt/btrfs-progs-unstable
 
-Why do you want to do this?
+I've tested on both x86_32 and x86_64.
 
-Yours,
-Linus Walleij
+> The basic compression code is quite well tested, I have a reasonable
+> unit test.
+> 
