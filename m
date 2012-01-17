@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab2AQR5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:57:32 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61885 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab2AQR5b (ORCPT
+	id S1753186Ab2AQR7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:59:19 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:61655 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab2AQR7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:57:31 -0500
-Date: Tue, 17 Jan 2012 21:57:25 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
- v6
-Message-ID: <20120117175725.GJ16213@moon>
-References: <20120116153231.GF2998@moon>
- <20120116161114.GA17727@redhat.com>
- <20120116162021.GH2998@moon>
- <20120117174049.GA19268@redhat.com>
+	Tue, 17 Jan 2012 12:59:18 -0500
+Date: Tue, 17 Jan 2012 12:59:10 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: cfq crashing on boot with CONFIG_DEBUG_PAGE_ALLOC (linus master)
+Message-ID: <20120117175910.GA3658@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120117161024.GC30322@shiny>
+ <20120117173500.GA6762@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120117174049.GA19268@redhat.com>
+In-Reply-To: <20120117173500.GA6762@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F15B6F2.0029,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 06:40:49PM +0100, Oleg Nesterov wrote:
-...
-> > >
-> > > But this is not enough. exit_ptrace() can do list_move() without
-> > > changing ->real_parent.
-> > >
-> > > I'll try to think. At first glance we can rely on EXIT_DEAD, but
-> > > I'd like to avoid this, I think EXIT_DEAD should die.
-> >
-> > Ouch! Thanks for catching this Oleg. I'll try to come with something
-> > to show as well.
+On Tue, Jan 17, 2012 at 09:35:00AM -0800, Tejun Heo wrote:
+> On Tue, Jan 17, 2012 at 11:10:24AM -0500, Chris Mason wrote:
+> > Hi everyone,
+> > 
+> > Looks like cfq is using stale pages, I'm getting crashes on boot with
+> > CONFIG_DEBUG_PAGE_ALLOC enabled.  The oops leads to crashing in
+> > cfqq_type, and if you add some fuzz for inlining, it looks like we're
+> > here:
+> > 
+> > (gdb) list *cfq_insert_request+0x3f5
+> > 0xffffffff812683d8 is in cfq_insert_request (block/cfq-iosched.c:3131).
+> > 3126	
+> > 3127		/*
+> > 3128		 * workload type is changed, don't save slice, otherwise preempt
+> > 3129		 * doesn't happen
+> > 3130		 */
+> > 3131		if (cfqq_type(old_cfqq) != cfqq_type(cfqq))
+> > 3132			cfqq->cfqg->saved_workload_slice = 0;
+> > 3133	
+> > 3134		/*
+> > 3135		 * Put the new queue at the front of the of the current list,
+> > 
+> > It seems like the most likely reason is that old_cfqq was previously
+> > freed:
+> > 
+> >         struct cfq_queue *old_cfqq = cfqd->active_queue;
 > 
-> Do you see another approach? I don't, so I'd suggest to check
-> "task->exit_state != EXIT_DEAD" instead of !list_empty().
+> Does the following patch resolve the problem?
 > 
+>   http://article.gmane.org/gmane.linux.kernel.next/20340/raw
 
-Well, I thought what if I can find another way without EXIT_DEAD
-but seems there is no luck.
+Sorry, same oops with this applied.
 
-> Just in case, we can also check "start->exit_state == 0" instead
-> of "task->real_parent == start" with the same effect, up to you.
-> 
+-chris
 
-real_parent == start somehow more informative for me so if you allow
-(and noone against) I would leave the current form.
-
-> It would be nice to add the comment explaining these checks...
-> 
-
-Yeah, I'll add ones. Sure.
-
-> And I forgot to mention, the comment below
-> 
-> 	> +			/*
-> 	> +			 * We might miss some freshly created children
-> 	> +			 * here, but it was never promised to be
-> 	> +			 * accurate.
-> 	> +			 */
-> 	> +			if (list_is_last(&task->sibling, &start->children))
-> 	> +				goto out;
-> 
-> looks misleading. Contrary to the slow path, we can't miss the
-> freshly forked child here, copy_process() does list_add_tail().
-> 
-
-Ah, crap, indeed!
-
-> But the slow path obviously can skip much more than needed and
-> miss children (freshly forked or not), probably it would be better
-> to move the comment down and remove the "freshly created" part.
-> 
-> What do you think?
-> 
-> 
-
-Yeah, thanks a lot, Oleg. I'll update it an post for review (I hope
-to finish it tonight ;)
-
-	Cyrill
