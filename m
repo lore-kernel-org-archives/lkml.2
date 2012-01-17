@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab2AQOHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 09:07:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57703 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753487Ab2AQOHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 09:07:14 -0500
-Date: Tue, 17 Jan 2012 15:07:12 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: memcg: remove checking reclaim order in soft limit
- reclaim
-Message-ID: <20120117140712.GC14907@tiehlicka.suse.cz>
-References: <CAJd=RBBdDriMhfetM2AWGzgxiJ1DDs-W4Ff9_1Z8DUgbyQmSkA@mail.gmail.com>
- <20120117131601.GB14907@tiehlicka.suse.cz>
- <CAJd=RBBcL5RuW1wC_Yh=gy2Ja8wqJ6jhf28zNi1n6MJ=+0=m2Q@mail.gmail.com>
+	id S1754338Ab2AQOIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 09:08:35 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52905 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763Ab2AQOId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 09:08:33 -0500
+Message-ID: <4F1580DE.1060002@kernel.org>
+Date: Tue, 17 Jan 2012 09:08:30 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBBcL5RuW1wC_Yh=gy2Ja8wqJ6jhf28zNi1n6MJ=+0=m2Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, linux-acpi@vger.kernel.org,
+        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pjones@redhat.com
+Subject: Re: Re-add ibft tree to linux-next please
+References: <20111212145330.GA16278@andromeda.dapyr.net> <4EE68D57.7030603@zytor.com> <20111213021536.GC2730@konrad-lan>
+In-Reply-To: <20111213021536.GC2730@konrad-lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-01-12 21:29:52, Hillf Danton wrote:
-> On Tue, Jan 17, 2012 at 9:16 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > Hi,
-> >
-> > On Tue 17-01-12 20:47:59, Hillf Danton wrote:
-> >> If async order-O reclaim expected here, it is settled down when setting up scan
-> >> control, with scan priority hacked to be zero. Other than that, deny of reclaim
-> >> should be removed.
-> >
-> > Maybe I have misunderstood you but this is not right. The check is to
-> > protect from the _global_ reclaim with order > 0 when we prevent from
-> > memcg soft reclaim.
-> >
-> need to bear mm hog in this way?
 
-Could you be more specific? Are you trying to fix any particular
-problem?
+> The trick is that we also have to retain the code functionality if
+> "# CONFIG_ACPI is not set" to scan the memory for the iBFT. That part
+> should definitly _not_ be moved to drivers/acpi. It could be moved to
+> arch/x86/ .. but it could also stay in drivers/firmware. <shrugs>
 
-Global reclaim should take are of the global memory pressure. Soft
-reclaim is intended just to make its job easier. Btw. softlimit reclaim
-is on its way out of the kernel but this will not happen in 3.3.
 
-> 
-> Thanks
-> Hillf
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Are there really hardware/firmware configurations that support IBFT
+and do not support ACPI?
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+If yes, do they require an OS that has CONFIG_ACPI=n?
+Or would finding the table with CONFIG_ACPI=y and acpi_disabled=1
+be sufficient?
+
+-Len
+
