@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab2AQWKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 17:10:43 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38782 "EHLO ogre.sisk.pl"
+	id S1756106Ab2AQWN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 17:13:59 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38794 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755234Ab2AQWKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 17:10:42 -0500
+	id S1755897Ab2AQWN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 17:13:58 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Subject: Re: [Regression] Commit "tpm: Introduce function to poll for result of self test" breaks suspend
-Date: Tue, 17 Jan 2012 23:13:55 +0100
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH 0/3] PM / Sleep: Introduce new phases of device suspend/resume
+Date: Tue, 17 Jan 2012 23:17:25 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-References: <201201160022.07176.rjw@sisk.pl> <201201162350.02165.rjw@sisk.pl> <4F14B7AC.9090708@linux.vnet.ibm.com>
-In-Reply-To: <4F14B7AC.9090708@linux.vnet.ibm.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <201112230029.20174.rjw@sisk.pl> <201201162321.38279.rjw@sisk.pl> <20120116235903.GA6280@suse.de>
+In-Reply-To: <20120116235903.GA6280@suse.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201172313.55950.rjw@sisk.pl>
+Message-Id: <201201172317.26196.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 17, 2012, Stefan Berger wrote:
-> On 01/16/2012 05:50 PM, Rafael J. Wysocki wrote:
-> > On Monday, January 16, 2012, Stefan Berger wrote:
-> >> On 01/16/2012 05:05 PM, Rafael J. Wysocki wrote:
-> > Yes, there are.  Below is the result of grepping tpm in dmesg output (the
-> > entire dmesg log from that box is attached).
-> >
-> > [    5.066807] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
-> > [    7.167236] tpm_tis 00:0a: Adjusting TPM timeout parameters.
-> > [    7.893190] tpm_tis 00:0a: A TPM error (7) occurred attempting to read a pcr value
-> > [    7.897202] tpm_tis 00:0a: TPM self test failed
-> > [    7.907599] tpm_inf_pnp 00:0a: Found TPM with ID IFX0102
-> > [    7.909745] tpm_inf_pnp 00:0a: TPM found: config base 0x4e, data base 0x680, chip version 0x000b, vendor id 0x15d1 (Infineon), product id 0x000b (SLB 9635 TT 1.2)
-> > [   96.386200] tpm_inf_pnp 00:0a: saving TPM state
-> > [   96.407630] tpm_inf_pnp 00:0a: Timeout while clearing FIFO
-> > [   96.407634] tpm_inf_pnp 00:0a: error while saving TPM state
-> >
-> > Thanks,
-> > Rafael
-> If possible, I'd like the patch to stick a little longer. Can you try 
-> the following and tell me whether this solves the problem with the 
-> suspend/resume.
+On Tuesday, January 17, 2012, Greg KH wrote:
+> On Mon, Jan 16, 2012 at 11:21:37PM +0100, Rafael J. Wysocki wrote:
+> > Hi,
+> > 
+> > On Friday, December 23, 2011, Rafael J. Wysocki wrote:
+> > > Hi,
+> > > 
+> > > On the request of some driver PM developers, that appears to have been quite
+> > > popular lately, this series of patches adds new system suspend/resume (and
+> > > hibernation/restore) callbacks to struct dev_pm_ops and makes the PM core
+> > > use them during system power transitions.
+> > > 
+> > > [1/2] - Introduce "late suspend" and "early resume" of devices.
+> > > [2/2] - Introduce generic callbacks for new device PM phases.
+> > > 
+> > > The series is on top of the linux-next branch of the linux-pm tree.
+> > > 
+> > > These patches have been tested on Toshiba Portege R500 with openSUSE 12.1
+> > > without crashing the box in the process, which looks promising.  Also,
+> > > they shouldn't actually have any impact on the existing setups other than
+> > > adding a very short delay to the system suspend/resume code paths.
+> > 
+> > The patches have received some more testing since the were first posted and
+> > I've added a PM domains patch on top of them:
+> > 
+> > [3/3] - Make generic PM domains use the new device suspend/resume phases.
+> > 
+> > The series applies on top of linux-pm/pm-for-linus (although it should
+> > apply on top of the current mainline too).
+> > 
+> > I'm considering these patches as v3.4 material, if there are no objections.
+> 
+> No objection from me.
 
-Yes, the patch below helps.
+Thanks!
 
-Thanks,
 Rafael
-
-
-> This patch handles the error codes reading of a PCR may cause when a TPM 
-> is disabled and/or deactivated. They would not be a reason for the 
-> tpm_do_selftest function to fail.
-> 
-> Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
-> 
-> ---
->   drivers/char/tpm/tpm.c |    9 +++++++++
->   drivers/char/tpm/tpm.h |    3 +++
->   2 files changed, 12 insertions(+)
-> 
-> Index: linux-2.6/drivers/char/tpm/tpm.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/char/tpm/tpm.c
-> +++ linux-2.6/drivers/char/tpm/tpm.c
-> @@ -846,6 +846,15 @@ int tpm_do_selftest(struct tpm_chip *chi
-> 
->       do {
->           rc = __tpm_pcr_read(chip, 0, digest);
-> +        if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
-> +            dev_info(chip->dev,
-> +                 "TPM is disabled/deactivated (0x%X)\n", rc);
-> +            /* TPM is disabled and/or deactivated; driver can proceed
-> +             * and TPM does handle commands during suspend/resume
-> +             */
-> +            rc = 0;
-> +            break;
-> +        }
->           if (rc != TPM_WARN_DOING_SELFTEST)
->               return rc;
->           msleep(delay_msec);
-> Index: linux-2.6/drivers/char/tpm/tpm.h
-> ===================================================================
-> --- linux-2.6.orig/drivers/char/tpm/tpm.h
-> +++ linux-2.6/drivers/char/tpm/tpm.h
-> @@ -39,6 +39,9 @@ enum tpm_addr {
->   };
-> 
->   #define TPM_WARN_DOING_SELFTEST 0x802
-> +#define TPM_ERR_DEACTIVATED     0x6
-> +#define TPM_ERR_DISABLED        0x7
-> +
->   #define TPM_HEADER_SIZE        10
->   extern ssize_t tpm_show_pubek(struct device *, struct device_attribute 
-> *attr,
->                   char *);
