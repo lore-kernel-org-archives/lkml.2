@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab2AQSs3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 13:48:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53735 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754697Ab2AQSs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 13:48:28 -0500
-Message-ID: <4F15C249.3000602@zytor.com>
-Date: Tue, 17 Jan 2012 10:47:37 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1754993Ab2AQStP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 13:49:15 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33978 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab2AQStO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 13:49:14 -0500
+Message-ID: <4F15C2A6.3010708@gmail.com>
+Date: Tue, 17 Jan 2012 10:49:10 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-References: <20120117142759.GE16213@moon> <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com> <20120117144452.GG16213@moon>
-In-Reply-To: <20120117144452.GG16213@moon>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
+To: Namhyung Kim <namhyung@gmail.com>
+CC: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH] perf: Fix broken build by rearranging some #includes
+References: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com> <4F152255.4080409@gmail.com>
+In-Reply-To: <4F152255.4080409@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 06:44 AM, Cyrill Gorcunov wrote:
-> On Tue, Jan 17, 2012 at 04:38:14PM +0200, Alexey Dobriyan wrote:
->> On 1/17/12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->>> +#define KCMP_EQ		0
->>> +#define KCMP_LT		1
->>> +#define KCMP_GT		2
+On 01/16/2012 11:25 PM, Namhyung Kim wrote:
+> Hi, again
+>
+> 2012-01-17 11:01 AM, David Daney wrote:
+>> From: David Daney<david.daney@cavium.com>
 >>
->> LT and GT are meaningless.
+>> When building on my Debian/mips system, util/util.c fails to build
+>> because commit 1aed2671738785e8f5aea663a6fda91aa7ef59b5 (perf kvm: Do
+>> guest-only counting by default) indirectly includes stdio.h before the
+>> feature selection in util.h is done. This prevents _GNU_SOURCE in
+>> util.h from enabling the declaration of getline(), from now second
+>> inclusion of stdio.h, and the build is broken.
 >>
-> 
-> I found symbolic names better than open-coded values. But sure,
-> if this is problem it could be dropped.
-> 
-> Or you mean that in general anything but 'equal' is useless?
-> 
+>> There is another breakage in util/evsel.c caused by include ordering,
+>> but I didn't fully track down the commit that caused it.
+>>
+>> Since the #include situation is a little convoluted throughout perf, I
+>> did the following:
+>>
+>> 1) Always include util/util.h before all other include files.
+>>
+>> 2) Remove all #define _GNU_SOURCE, as it is already done in util.h.
+>>
+>> 3) Remove all #undef _GNU_SOURCE, as they don't do what a naive person
+>> might expect (or much of anything for that matter) and clutter up
+>> the source.
+>>
+>> 4) #include ctype.h in util.h, so that ctype things have uniform
+>> definitions throughout perf.
+>>
+>> 5) Remove #define of _FILE_OFFSET_BITS where util/util.h is already
+>> providing it.
+>>
+>> This gives me a clean build on x86_64 (fc12) and mips (Debian).
+>
+> Instead of reordering, how about adding -D_GNU_SOURCE on Makefile and
+> removing the line from util.h? If util.h would always be included at
+> first, the end result should be same, right? And this way, we don't need
+> to care about the ordering anymore.
+>
 
-Why on Earth would user space need to know which order in memory certain
-kernel objects are?
+Yeah, that is better.  I had tried it first, but then reversed course as 
+I found so many random #define _GNU_SOURCE, that I thought there must 
+have been a reason.
 
-Keep in mind that this is *exactly* the kind of information which makes
-rootkits easier.
+Upon further thought on the subject, I think you are right.  We need to 
+present a consistent set of features.h defines to the entire perf program.
 
-	-hpa
+I withdraw this patch from consideration, and will send a new one soon, 
+that does the -D_GNU_SOURCE.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+David Daney
