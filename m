@@ -1,32 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab2AQUZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 15:25:34 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:54922 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab2AQUZc convert rfc822-to-8bit (ORCPT
+	id S1755643Ab2AQUed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 15:34:33 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35807 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab2AQUec convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 15:25:32 -0500
+	Tue, 17 Jan 2012 15:34:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120117145348.GA3144@cmpxchg.org>
-References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
-	<1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
-	<CALWz4izwNBN_qcSsqg-qYw-Esc9vBL3=4cv3Wsg1jf6001_fWQ@mail.gmail.com>
-	<20120112085904.GG24386@cmpxchg.org>
-	<CALWz4iz3sQX+pCr19rE3_SwV+pRFhDJ7Lq-uJuYBq6u3mRU3AQ@mail.gmail.com>
-	<20120113224424.GC1653@cmpxchg.org>
-	<4F158418.2090509@gmail.com>
-	<20120117145348.GA3144@cmpxchg.org>
-Date: Tue, 17 Jan 2012 12:25:31 -0800
-Message-ID: <CALWz4iwYpkP6Dfz+3NFXQK9ToaKdm8WCsbBmHRLVwRjVp0wjOQ@mail.gmail.com>
-Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Sha <handai.szj@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <9642e1197443efe9716f418c4883489e.squirrel@webmail.greenhost.nl>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	<1326302710-9427-2-git-send-email-wad@chromium.org>
+	<20120112162231.GA23960@redhat.com>
+	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
+	<20120112172315.GA26295@redhat.com>
+	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
+	<addf0ca0d9cc381436209af3afdf878f.squirrel@webmail.greenhost.nl>
+	<CABqD9hbBu8cEbArJWhSr-exFUDrnLSXskP1RrTATBczH2MYzFA@mail.gmail.com>
+	<293e9587acd158b91d7d1793c7e16f7c.squirrel@webmail.greenhost.nl>
+	<CABqD9hY2Uhc2Gzy05+Q+_NrZAq+126+avAO0Kd81zDnEi3EXjQ@mail.gmail.com>
+	<9642e1197443efe9716f418c4883489e.squirrel@webmail.greenhost.nl>
+Date: Tue, 17 Jan 2012 12:34:31 -0800
+X-Google-Sender-Auth: 94fzApIXHoNIaw18mEpiDyJVo_M
+Message-ID: <CAGXu5jJvjq5f7Qw1ADh120jAtUsH+L4BW6CY+uaD7GFN53nPBw@mail.gmail.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Kees Cook <keescook@chromium.org>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Will Drewry <wad@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org
 X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
@@ -34,190 +39,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 6:53 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Tue, Jan 17, 2012 at 10:22:16PM +0800, Sha wrote:
->> On 01/14/2012 06:44 AM, Johannes Weiner wrote:
->> >On Fri, Jan 13, 2012 at 01:31:16PM -0800, Ying Han wrote:
->> >>On Thu, Jan 12, 2012 at 12:59 AM, Johannes Weiner<hannes@cmpxchg.org>  wrote:
->> >>>On Wed, Jan 11, 2012 at 01:42:31PM -0800, Ying Han wrote:
->> >>>>On Tue, Jan 10, 2012 at 7:02 AM, Johannes Weiner<hannes@cmpxchg.org>  wrote:
->> >>>>>@@ -1318,6 +1123,36 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
->> >>>>>        return margin>>  PAGE_SHIFT;
->> >>>>>  }
->> >>>>>
->> >>>>>+/**
->> >>>>>+ * mem_cgroup_over_softlimit
->> >>>>>+ * @root: hierarchy root
->> >>>>>+ * @memcg: child of @root to test
->> >>>>>+ *
->> >>>>>+ * Returns %true if @memcg exceeds its own soft limit or contributes
->> >>>>>+ * to the soft limit excess of one of its parents up to and including
->> >>>>>+ * @root.
->> >>>>>+ */
->> >>>>>+bool mem_cgroup_over_softlimit(struct mem_cgroup *root,
->> >>>>>+                              struct mem_cgroup *memcg)
->> >>>>>+{
->> >>>>>+       if (mem_cgroup_disabled())
->> >>>>>+               return false;
->> >>>>>+
->> >>>>>+       if (!root)
->> >>>>>+               root = root_mem_cgroup;
->> >>>>>+
->> >>>>>+       for (; memcg; memcg = parent_mem_cgroup(memcg)) {
->> >>>>>+               /* root_mem_cgroup does not have a soft limit */
->> >>>>>+               if (memcg == root_mem_cgroup)
->> >>>>>+                       break;
->> >>>>>+               if (res_counter_soft_limit_excess(&memcg->res))
->> >>>>>+                       return true;
->> >>>>>+               if (memcg == root)
->> >>>>>+                       break;
->> >>>>>+       }
->> >>>>Here it adds pressure on a cgroup if one of its parents exceeds soft
->> >>>>limit, although the cgroup itself is under soft limit. It does change
->> >>>>my understanding of soft limit, and might introduce regression of our
->> >>>>existing use cases.
->> >>>>
->> >>>>Here is an example:
->> >>>>
->> >>>>Machine capacity 32G and we over-commit by 8G.
->> >>>>
->> >>>>root
->> >>>>   ->  A (hard limit 20G, soft limit 15G, usage 16G)
->> >>>>        ->  A1 (soft limit 5G, usage 4G)
->> >>>>        ->  A2 (soft limit 10G, usage 12G)
->> >>>>   ->  B (hard limit 20G, soft limit 10G, usage 16G)
->> >>>>
->> >>>>under global reclaim, we don't want to add pressure on A1 although its
->> >>>>parent A exceeds its soft limit. Assume that if we set the soft limit
->> >>>>corresponding to each cgroup's working set size (hot memory), and it
->> >>>>will introduce regression to A1 in that case.
->> >>>>
->> >>>>In my existing implementation, i am checking the cgroup's soft limit
->> >>>>standalone w/o looking its ancestors.
->> >>>Why do you set the soft limit of A in the first place if you don't
->> >>>want it to be enforced?
->> >>The soft limit should be enforced under certain condition, not always.
->> >>The soft limit of A is set to be enforced when the parent of A and B
->> >>is under memory pressure. For example:
->> >>
->> >>Machine capacity 32G and we over-commit by 8G
->> >>
->> >>root
->> >>->  A (hard limit 20G, soft limit 12G, usage 20G)
->> >>        ->  A1 (soft limit 2G, usage 1G)
->> >>        ->  A2 (soft limit 10G, usage 19G)
->> >>->  B (hard limit 20G, soft limit 10G, usage 0G)
->> >>
->> >>Now, A is under memory pressure since the total usage is hitting its
->> >>hard limit. Then we start hierarchical reclaim under A, and each
->> >>cgroup under A also takes consideration of soft limit. In this case,
->> >>we should only set priority = 0 to A2 since it contributes to A's
->> >>charge as well as exceeding its own soft limit. Why punishing A1 (set
->> >>priority = 0) also which has usage under its soft limit ? I can
->> >>imagine it will introduce regression to existing environment which the
->> >>soft limit is set based on the working set size of the cgroup.
->> >>
->> >>To answer the question why we set soft limit to A, it is used to
->> >>over-commit the host while sharing the resource with its sibling (B in
->> >>this case). If the machine is under memory contention, we would like
->> >>to push down memory to A or B depends on their usage and soft limit.
->> >D'oh, I think the problem is just that we walk up the hierarchy one
->> >too many when checking whether a group exceeds a soft limit.  The soft
->> >limit is a signal to distribute pressure that comes from above, it's
->> >meaningless and should indeed be ignored on the level the pressure
->> >originates from.
->> >
->> >Say mem_cgroup_over_soft_limit(root, memcg) would check everyone up to
->> >but not including root, wouldn't that do exactly what we both want?
->> >
->> >Example:
->> >
->> >1. If global memory is short, we reclaim with root=root_mem_cgroup.
->> >    A1 and A2 get soft limit reclaimed because of A's soft limit
->> >    excess, just like the current kernel would do.
->> >
->> >2. If A hits its hard limit, we reclaim with root=A, so we only mind
->> >    the soft limits of A1 and A2.  A1 is below its soft limit, all
->> >    good.  A2 is above its soft limit, gets treated accordingly.  This
->> >    is new behaviour, the current kernel would just reclaim them
->> >    equally.
->> >
->> >Code:
->> >
->> >bool mem_cgroup_over_soft_limit(struct mem_cgroup *root,
->> >                             struct mem_cgroup *memcg)
->> >{
->> >     if (mem_cgroup_disabled())
->> >             return false;
->> >
->> >     if (!root)
->> >             root = root_mem_cgroup;
->> >
->> >     for (; memcg; memcg = parent_mem_cgroup(memcg)) {
->> >             if (memcg == root)
->> >                     break;
->> >             if (res_counter_soft_limit_excess(&memcg->res))
->> >                     return true;
->> >     }
->> >     return false;
->> >}
->> Hi Johannes,
->>
->> I don't think it solve the root of the problem, example:
->> root
->> -> A (hard limit 20G, soft limit 12G, usage 20G)
->>     -> A1 ( soft limit 2G,   usage 1G)
->>     -> A2 ( soft limit 10G, usage 19G)
->>            ->B1 (soft limit 5G, usage 4G)
->>            ->B2 (soft limit 5G, usage 15G)
->>
->> Now A is hitting its hard limit and start hierarchical reclaim under A.
->> If we choose B1 to go through mem_cgroup_over_soft_limit, it will
->> return true because its parent A2 has a large usage and will lead to
->> priority=0 reclaiming. But in fact it should be B2 to be punished.
+On Mon, Jan 16, 2012 at 10:46 PM, Indan Zupancic <indan@nul.nu> wrote:
+> So call it once and store the value in a long. Then copy the low half
+> to the right place and then the upper half when on 64 bits. It may not
+> look too pretty, but the compiler should be able to optimise almost all
+> overhead away and end up with 6 (or 12) int copies. Something like this:
 >
-> Because A2 is over its soft limit, the whole hierarchy below it should
-> be preferred over A1, so both B1 and B2 should be soft limit reclaimed
-> to be consistent with behaviour at the root level.
+> struct bpf_data {
+>        uint32 syscall_nr;
+>        uint32 arg_low[MAX_SC_ARGS];
+>        uint32 arg_high[MAX_SC_ARGS];
+> };
 >
->> IMHO, it may checking the cgroup's soft limit standalone without
->> looking up its ancestors just as Ying said.
+> void fill_bpf_data(struct task_struct *t, struct pt_regs *r, struct bpf_data *d)
+> {
+>        int i;
+>        unsigned long arg;
 >
-> Again, this would be a regression as soft limits have been applied
-> hierarchically forever.
+>        d->syscall_nr = syscall_get_nr(t, r);
+>        for (i = 0; i < MAX_SC_ARGS; ++i){
+>                syscall_get_arguments(t, r, i, 1, &arg);
+>                d->arg_low[i] = arg;
+>                d->arg_high[i] = arg >> 32;
+>        }
+> }
 
-If we are comparing it to the current implementation, agree that the
-soft reclaim is applied hierarchically. In the example above, A2 will
-be picked for soft reclaim while A is hitting its hard limit, which in
-turns reclaim from B1 and B2 regardless of their soft limit setting.
-However, I haven't convinced myself this is how we are gonna use the
-soft limit.
+If this turns out to be expensive, it might be possible to break it up
+and load the arguments on demand (and cache them); i.e. have
+load_pointer() or similar notice when it is about to access something
+other than bpf_data.syscall_nr.
 
-The soft limit setting for each cgroup is a hit for applying pressure
-under memory contention. One way of setting the soft limit is based on
-the cgroup's working set size. Thus, we allow cgroup to grow above its
-soft limit with cold page cache unless there is a memory pressure
-comes from above. Under the hierarchical reclaim, we will exam the
-soft limit and only apply extra pressure to the ones above their soft
-limit. Here the same example:
+-Kees
 
-root
--> A (hard limit 20G, soft limit 12G, usage 20G)
-   -> A1 ( soft limit 2G,   usage 1G)
-   -> A2 ( soft limit 10G, usage 19G)
-
-          ->B1 (soft limit 5G, usage 4G)
-          ->B2 (soft limit 5G, usage 15G)
-
-If A is hitting its hard limit, we will reclaim all the children under
-A hierarchically but only adding extra pressure to the ones above
-their soft limits (A2, B2). Adding extra pressure to B1 will introduce
-known regression based on customer expectation since the 4G usage are
-hot memory.
-
-I am not aware of how the existing soft reclaim being used, i bet
-there are not a lot. If we are making changes on the current
-implementation, we should also take the opportunity to think about the
-initial design as well. Thoughts?
-
---Ying
+-- 
+Kees Cook
+ChromeOS Security
