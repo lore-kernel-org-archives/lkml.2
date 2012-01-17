@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab2AQIOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 03:14:24 -0500
+	id S1752496Ab2AQIOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 03:14:37 -0500
 Received: from mail-vw0-f46.google.com ([209.85.212.46]:47117 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab2AQIOU (ORCPT
+	with ESMTP id S1752460Ab2AQIO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 03:14:20 -0500
+	Tue, 17 Jan 2012 03:14:28 -0500
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
@@ -16,11 +16,10 @@ Cc: LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
         Johannes Weiner <hannes@cmpxchg.org>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [RFC 1/3] /dev/low_mem_notify
-Date: Tue, 17 Jan 2012 17:13:56 +0900
-Message-Id: <1326788038-29141-2-git-send-email-minchan@kernel.org>
+        Minchan Kim <minchan@kernel.org>
+Subject: [RFC 3/3] test program
+Date: Tue, 17 Jan 2012 17:13:58 +0900
+Message-Id: <1326788038-29141-4-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <1326788038-29141-1-git-send-email-minchan@kernel.org>
 References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
@@ -28,154 +27,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes new device file "/dev/low_mem_notify".
-If application polls it, it can receive event when system
-memory pressure happens.
+This test program allocates 10M per second and when
+memory pressure notify happens, it releases 20M.
 
-This patch is based on KOSAKI and Marcelo's long time ago work.
-http://lwn.net/Articles/268732/
+I tested this patch on 512M qemu machine with 3 test program.
+I saw some swapout but not too many and even didn't see OOM.
+It obviously reduces swap out.
 
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/char/mem.c             |    7 ++++
- include/linux/low_mem_notify.h |    6 ++++
- mm/Kconfig                     |    7 ++++
- mm/Makefile                    |    1 +
- mm/low_mem_notify.c            |   61 ++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 82 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/low_mem_notify.h
- create mode 100644 mm/low_mem_notify.c
+ poll.c |  121 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 121 insertions(+), 0 deletions(-)
+ create mode 100644 poll.c
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index d6e9d08..72bc12b 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -35,6 +35,10 @@
- # include <linux/efi.h>
- #endif
- 
-+#ifdef CONFIG_LOW_MEM_NOTIFY
-+extern struct file_operations low_mem_notify_fops;
-+#endif
-+
- static inline unsigned long size_inside_page(unsigned long start,
- 					     unsigned long size)
- {
-@@ -867,6 +871,9 @@ static const struct memdev {
- #ifdef CONFIG_CRASH_DUMP
- 	[12] = { "oldmem", 0, &oldmem_fops, NULL },
- #endif
-+#ifdef CONFIG_LOW_MEM_NOTIFY
-+	[13] = { "low_mem_notify",0666, &low_mem_notify_fops, NULL},
-+#endif
- };
- 
- static int memory_open(struct inode *inode, struct file *filp)
-diff --git a/include/linux/low_mem_notify.h b/include/linux/low_mem_notify.h
+diff --git a/poll.c b/poll.c
 new file mode 100644
-index 0000000..bc0fc89
+index 0000000..3215f8b
 --- /dev/null
-+++ b/include/linux/low_mem_notify.h
-@@ -0,0 +1,6 @@
-+#ifndef _LINUX_LOW_MEM_NOTIFY_H
-+#define _LINUX_LOW_MEM_NOTIFY_H
++++ b/poll.c
+@@ -0,0 +1,121 @@
++#include <poll.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <pthread.h>
++#include <stdbool.h>
++#include <stdlib.h>
++#include <string.h>
 +
-+void low_memory_pressure(void);
++#define ALLOC_UNIT	10 /* MB */
++#define FREE_UNIT	20 /* MB */
 +
-+#endif
-diff --git a/mm/Kconfig b/mm/Kconfig
-index e338407..a2f48c6 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -379,3 +379,10 @@ config CLEANCACHE
- 	  in a negligible performance hit.
- 
- 	  If unsure, say Y to enable cleancache
++void alloc_memory();
++void free_memory();
 +
-+config LOW_MEM_NOTIFY
-+	bool "Enable low memory notification"
-+	default n
-+	help
-+	  If system suffer from low memory, kernel can notify it to user through
-+	  /dev/low_mem_notify.
-diff --git a/mm/Makefile b/mm/Makefile
-index 50ec00e..7856357 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -51,3 +51,4 @@ obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
- obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
- obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
- obj-$(CONFIG_CLEANCACHE) += cleancache.o
-+obj-$(CONFIG_LOW_MEM_NOTIFY) += low_mem_notify.o
-diff --git a/mm/low_mem_notify.c b/mm/low_mem_notify.c
-new file mode 100644
-index 0000000..7432307
---- /dev/null
-+++ b/mm/low_mem_notify.c
-@@ -0,0 +1,61 @@
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/wait.h>
-+#include <linux/poll.h>
-+#include <linux/slab.h>
++unsigned int total_memory = 0; /* MB */
 +
-+static DECLARE_WAIT_QUEUE_HEAD(low_mem_wait);
-+static atomic_t nr_low_mem = ATOMIC_INIT(0);
++pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; 
 +
-+struct low_mem_notify_file_info {
-+        unsigned long last_proc_notify;
++/*
++ * If total memory is higher than 200M
++ */
++bool memory_full()
++{
++	return total_memory >= 400 ? true : false;
++}
++
++struct alloc_chunk {
++	void *ptr;
++	struct alloc_chunk *next;
 +};
 +
-+void low_memory_pressure(void)
++struct alloc_chunk head_chunk;
++
++void init_alloc_chunk(void)
 +{
-+       	atomic_inc(&nr_low_mem);
-+       	wake_up(&low_mem_wait);
++	head_chunk.ptr = NULL;
++	head_chunk.next = NULL;
 +}
 +
-+static int low_mem_notify_open(struct inode *inode, struct file *file)
++void add_memory(void *ptr)
 +{
-+        struct low_mem_notify_file_info *info;
-+        int err = 0;
++	struct alloc_chunk *new_chunk = malloc(sizeof(struct alloc_chunk));
++	new_chunk->ptr = ptr;
 +
-+        info = kmalloc(sizeof(*info), GFP_KERNEL);
-+        if (!info) {
-+                err = -ENOMEM;
-+                goto out;
-+        }
++	pthread_mutex_lock(&mutex);
++	new_chunk->next = head_chunk.next;
++	head_chunk.next = new_chunk;
++	total_memory += ALLOC_UNIT;
++	pthread_mutex_unlock(&mutex);
 +
-+        file->private_data = info;
-+out:
-+        return err;
++	printf("[%d] Add total memory %d(MB)\n", getpid(), total_memory);
 +}
 +
-+static int low_mem_notify_release(struct inode *inode, struct file *file)
++void alloc_memory(void)
 +{
-+        kfree(file->private_data);
-+        return 0;
++	while(1) {
++		if (memory_full()) {
++			sleep(10);
++			continue;
++		}
++
++		void *new = malloc(ALLOC_UNIT*1024*1024);
++		memset(new, 0, ALLOC_UNIT*1024*1024);
++		add_memory(new);
++		sleep(1);
++	}
 +}
 +
-+static unsigned int low_mem_notify_poll(struct file *file, poll_table *wait)
++void free_memory(void)
 +{
-+        unsigned int ret = 0;
++	int count = FREE_UNIT / ALLOC_UNIT;
++	while(count--) {
++		struct alloc_chunk *chunk = head_chunk.next;
++		if (chunk == NULL)
++			break;
 +
-+        poll_wait(file, &low_mem_wait, wait);
++		pthread_mutex_lock(&mutex);
++		head_chunk.next = chunk->next;
++		total_memory -= ALLOC_UNIT;
++		pthread_mutex_unlock(&mutex);
 +
-+        if (atomic_read(&nr_low_mem) != 0) {
-+                ret = POLLIN;
-+                atomic_set(&nr_low_mem, 0);
-+        }
++		free(chunk->ptr);
++		free(chunk);
 +
-+        return ret;
++		printf("[%d] Free total memory %d(MB)\n", getpid(), total_memory);
++	}
 +}
 +
-+struct file_operations low_mem_notify_fops = {
-+        .open = low_mem_notify_open,
-+        .release = low_mem_notify_release,
-+        .poll = low_mem_notify_poll,
-+};
-+EXPORT_SYMBOL(low_mem_notify_fops);
++void *poll_thread(void *dummy)
++{
++	struct pollfd pfd;	
++	int fd = open("/dev/low_mem_notify", O_RDONLY); 
++	if (fd == -1) {
++		fprintf(stderr, "Fail to open\n");
++		return;
++	}
++
++	pfd.fd = fd;
++	pfd.events = POLLIN;
++
++	while(1) {
++		poll(&pfd, 1, -1);
++		free_memory();
++	}
++}
++
++int main()
++{
++	pthread_t threadid;
++	init_alloc_chunk();
++
++	if (pthread_create(&threadid, NULL, poll_thread, NULL)) {
++		fprintf(stderr, "pthread create fail\n");
++		return 1;
++	}
++
++	alloc_memory();
++	return 0;
++}
 -- 
 1.7.7.5
 
