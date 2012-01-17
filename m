@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751111Ab2AQCWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 21:22:37 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60937 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab2AQCWg (ORCPT
+	id S1751196Ab2AQC2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 21:28:20 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46881 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab2AQC2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 21:22:36 -0500
-Date: Tue, 17 Jan 2012 03:22:31 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org,
-        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
-        dhsharp@google.com, linux-kernel@vger.kernel.org, winget@google.com,
-        namhyung@gmail.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 8/9] stacktrace: implement save_stack_trace_quick()
-Message-ID: <20120117022227.GD24200@somewhere.redhat.com>
-References: <1326220106-5765-1-git-send-email-tj@kernel.org>
- <1326220106-5765-9-git-send-email-tj@kernel.org>
- <20120111162642.GC7991@somewhere.redhat.com>
- <20120111163826.GC26832@google.com>
+	Mon, 16 Jan 2012 21:28:18 -0500
+Message-ID: <4F14DCBB.3060207@linux.vnet.ibm.com>
+Date: Tue, 17 Jan 2012 10:28:11 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120111163826.GC26832@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: improve trace events of vmexit/mmio/ioport
+References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EE9B.9020901@linux.vnet.ibm.com> <4F13EFFB.90706@redhat.com>
+In-Reply-To: <4F13EFFB.90706@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011702-9574-0000-0000-000000F8C97D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 08:38:26AM -0800, Tejun Heo wrote:
-> Hello, Frederic.
+On 01/16/2012 05:38 PM, Avi Kivity wrote:
+
+> On 01/16/2012 11:32 AM, Xiao Guangrong wrote:
+>> - trace vcpu_id for these events
 > 
-> On Wed, Jan 11, 2012 at 05:26:44PM +0100, Frederic Weisbecker wrote:
-> > On Tue, Jan 10, 2012 at 10:28:25AM -0800, Tejun Heo wrote:
-> > > Implement save_stack_trace_quick() which only considers the usual
-> > > contexts (ie. thread and irq) and doesn't handle links between
-> > > different contexts - if %current is in irq context, only backtrace in
-> > > the irq stack is considered.
-> > 
-> > The thing I don't like is the duplication that involves not only on
-> > stack unwinding but also on the safety checks.
+> We can infer the vcpu id from the kvm_entry tracepoints, no?
 > 
-> I'm not entirely convinced that this is necessary or we can just add
-> more features to the existing backtrace facility (and maybe make that
-> more efficient) and be done with it.
 
-Yeah probably we can do that.
+
+Thanks for your review, Avi!
+
+Hmm. i think it is hard to do since the vcpu thread can be scheduled
+anytime, one example is as follow:
+
+CPU 0
+
+kvm_entry vcpu 0
+......
+kvm_entry vcpu 1
+......
+event1 occurs
+......
+event2 occurs
+
+It is hard to know the event belong to which kvm_entry?
+
+>> - add kvm_mmio_done to trace the time when mmio/ioport emulation is completed
+> 
+> ditto?
+> 
+
+
+I think is ok to get the event end time by using kvm_entry.
 
 > 
-> > > This is subset of dump_trace() done in much simpler way.  It's
-> > > intended to be used in hot paths where the overhead of dump_trace()
-> > > can be too heavy.
-> > 
-> > Is it? Have you found a measurable impact (outside the fact you record only
-> > one stack).
+> Relying on the existing tracepoints will make the tool work on older
+> kernels.
 > 
-> As I wrote in the head message, I haven't done comparative test yet
-> but in the preliminary tests the CPU overhead against memory backed
-> device is quite visible (roughly ~20%), so I expect it to matter.
-> Note that testing against memory backed device is actually relevant,
-> on faster SSDs, CPU is already a bottleneck.
-> 
-> It would be best if we can extend the existing one to cover all the
-> cases with acceptable overhead.  I needed to write this minimal
-> version anyway for comparison so it's posted together but no matter
-> how it turns out switching them isn't difficult.
 
-Right. So there are two major differences that may affect performances
-between save_stack_trace() and save_stack_trace_quick():
 
-- save_stack_trace() does a full walk through the stack, but it rejects
-unreliable entries. So to begin with, it should use print_context_stack_bp()
-that does a frame pointer walk only (in CONFIG_FRAME_POINTER case).
+We can drop all new events, but unfortunately, the information of the origin
+tracepoints is not enough, at least vcpu_id need be traced in theses events
+to match its events. Yes?
 
-- It links between stacks. Doing the ->stack() that returns a value should
-help in this regard.
-
-- And dump_stack() does various more checks, perhaps we can simplify
-it a bit.
