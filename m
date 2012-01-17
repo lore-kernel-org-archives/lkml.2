@@ -1,116 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab2AQPQO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 10:16:14 -0500
-Received: from mx2.gd-ms.com ([153.11.250.41]:54627 "EHLO mx2.gd-ms.com"
+	id S1754782Ab2AQPQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 10:16:21 -0500
+Received: from mx2.gd-ms.com ([153.11.250.41]:54676 "EHLO mx2.gd-ms.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306Ab2AQPQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 10:16:13 -0500
+	id S1754306Ab2AQPQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 10:16:19 -0500
 To: Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: Michael D Labriola <mlabriol@gdeb.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
         michael.d.labriola@gmail.com, support@versalogic.com,
         Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
 MIME-Version: 1.0
-Subject: [PATCH] x86, reboot: skip DMI checks if reboot set by user
-X-KeepSent: 70B406E9:8D4A6789-85257988:0052C104;
+Subject: [PATCH] x86, reboot: remove VersaLogic Menlow reboot quirk
+X-KeepSent: 403557D6:D9E7AB81-85257988:00536641;
  type=4; name=$KeepSent
-Message-ID: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>
+Message-ID: <OF403557D6.D9E7AB81-ON85257988.00536641-85257988.0053E284@gdeb.com>
 From: Michael D Labriola <mlabriol@gdeb.com>
-Date: Tue, 17 Jan 2012 10:16:03 -0500
+Date: Tue, 17 Jan 2012 10:16:14 -0500
 X-GDMEncrypt: FALSE
 X-GDMMarking: NOT_SENSITIVE
 Content-Type: text/plain; charset="US-ASCII"
-X-GDM-MESSAGE-ID: X-GDM-MESSAGE-ID mx2.gd-ms.com 1RnAlc-0007DW-W7
+X-GDM-MESSAGE-ID: X-GDM-MESSAGE-ID mx2.gd-ms.com 1RnAlk-0007Fc-2k
 X-GDM-EVAL: score: /30; hits: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit causes DMI checks for vendor specific reboot
-quirks to be skipped if the user passed in a reboot= arg
-on the command line.
+This commit removes the reboot quirk originally added by commit e19e074
+(x86: Fix reboot problem on VersaLogic Menlow boards).
+
+Testing with a VersaLogic Ocelot (VL-EPMs-21a rev 1.00 w/ BIOS 6.5.102)
+revealed the following regarding the reboot hang problem:
+
+- v2.6.37 reboot=bios was needed.
+
+- v2.6.38-rc1: behavior changed, reboot=acpi is needed, reboot=kbd and
+  reboot=bios result in system hang.
+
+- v2.6.38: VersaLogic patch (e19e074 x86: Fix reboot problem on
+  VersaLogic Menlow boards) was applied prior to v2.6.38-rc7.  This
+  patch sets a quirk for VersaLogic Menlow boards that forces the use
+  of reboot=bios, which doesn't work anymore.
+
+- v3.2: It seems that commit 660e34c (x86: Reorder reboot method
+  preferences) changed the default reboot method to acpi prior to
+  v3.0-rc1, which means the default behavior is appropriate for the
+  Ocelot.  No VersaLogic quirk is required.
+
+The Ocelot board used for testing can successfully reboot w/out having to
+pass any reboot= arguments for all 3 current versions of the BIOS.
 
 Signed-off-by: Michael D Labriola <mlabriol@gdeb.com>
 ---
- arch/x86/kernel/reboot.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+ arch/x86/kernel/reboot.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
 diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 37a458b..4240d58 100644
+index 4240d58..c584291 100644
 --- a/arch/x86/kernel/reboot.c
 +++ b/arch/x86/kernel/reboot.c
-@@ -38,6 +38,7 @@ static const struct desc_ptr no_idt = {};
- static int reboot_mode;
- enum reboot_type reboot_type = BOOT_ACPI;
- int reboot_force;
-+int reboot_user;
- 
- #if defined(CONFIG_X86_32) && defined(CONFIG_SMP)
- static int reboot_cpu = -1;
-@@ -70,10 +71,12 @@ static int __init reboot_setup(char *str)
-                switch (*str) {
-                case 'w':
-                        reboot_mode = 0x1234;
-+                       reboot_user = 1;
-                        break;
- 
-                case 'c':
-                        reboot_mode = 0;
-+                       reboot_user = 1;
-                        break;
- 
- #ifdef CONFIG_X86_32
-@@ -87,6 +90,7 @@ static int __init reboot_setup(char *str)
-                                /* we will leave sorting out the final 
-value
-                                   when we are ready to reboot, since we 
-might not
-                                   have detected BSP APIC ID or 
-smp_num_cpu */
-+                       reboot_user = 1;
-                        break;
- #endif /* CONFIG_SMP */
- 
-@@ -98,10 +102,12 @@ static int __init reboot_setup(char *str)
-                case 'e':
-                case 'p':
-                        reboot_type = *str;
-+                       reboot_user = 1;
-                        break;
- 
-                case 'f':
-                        reboot_force = 1;
-+                       reboot_user = 1;
-                        break;
-                }
- 
-@@ -316,7 +322,10 @@ static struct dmi_system_id __initdata 
+@@ -301,14 +301,6 @@ static struct dmi_system_id __initdata 
 reboot_dmi_table[] = {
- 
- static int __init reboot_init(void)
- {
--       dmi_check_system(reboot_dmi_table);
-+       /* Skip the DMI check if user set reboot= on the command line */
-+       if (!reboot_user) {
-+               dmi_check_system(reboot_dmi_table);
-+       }
-        return 0;
- }
- core_initcall(reboot_init);
-@@ -465,7 +474,10 @@ static struct dmi_system_id __initdata 
-pci_reboot_dmi_table[] = {
- 
- static int __init pci_reboot_init(void)
- {
--       dmi_check_system(pci_reboot_dmi_table);
-+       /* Skip the DMI check if user set reboot= on the command line */
-+       if (!reboot_user) {
-+               dmi_check_system(pci_reboot_dmi_table);
-+       }
-        return 0;
- }
- core_initcall(pci_reboot_init);
+                        DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
+                },
+        },
+-       {       /* Handle problems with rebooting on VersaLogic Menlow 
+boards */
+-               .callback = set_bios_reboot,
+-               .ident = "VersaLogic Menlow based board",
+-               .matches = {
+-                       DMI_MATCH(DMI_BOARD_VENDOR, "VersaLogic 
+Corporation"),
+-                       DMI_MATCH(DMI_BOARD_NAME, "VersaLogic Menlow 
+board"),
+-               },
+-       },
+        { /* Handle reboot issue on Acer Aspire one */
+                .callback = set_kbd_reboot,
+                .ident = "Acer Aspire One A110",
 -- 
 1.6.0.3
 
