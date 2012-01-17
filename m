@@ -1,40 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964Ab2AQBtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 20:49:32 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40235 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab2AQBtb (ORCPT
+	id S1752023Ab2AQB4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 20:56:01 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38632 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab2AQBz7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 20:49:31 -0500
-Date: Tue, 17 Jan 2012 02:49:27 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Fubo Chen <fubo.chen@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] selftests: New very basic kernel selftests directory
-Message-ID: <20120117014924.GC24200@somewhere.redhat.com>
-References: <1322840475-19553-1-git-send-email-fweisbec@gmail.com>
- <CAJAFBLCP=4_nuExevTsyuVOBw4BH0h7Gk=qQqaOFxohZafwRbA@mail.gmail.com>
+	Mon, 16 Jan 2012 20:55:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJAFBLCP=4_nuExevTsyuVOBw4BH0h7Gk=qQqaOFxohZafwRbA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120116184518.205969311@clark.kroah.org>
+References: <20120116184527.GA11972@kroah.com>
+	<20120116184518.205969311@clark.kroah.org>
+Date: Mon, 16 Jan 2012 20:55:59 -0500
+X-Google-Sender-Auth: F3MOxCSSBjcEViUCQYk4oGYmgdY
+Message-ID: <CAP=VYLqajuhNY1S3e7Nbw4DiyEDL1uGthC8VswJ9zJxzwy+wOQ@mail.gmail.com>
+Subject: Re: [29/48] HID: wiimote: Select INPUT_FF_MEMLESS
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, David Herrmann <dh.herrmann@googlemail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 06:54:27PM +0000, Fubo Chen wrote:
-> On Fri, Dec 2, 2011 at 3:41 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > Bring a new kernel selftests directory in tools/testing/selftests.
-> 
-> Interesting ... but why to invent a test framework from scratch while
-> there already exists stuff like googletest or TAP::Harness ?
+On Mon, Jan 16, 2012 at 1:44 PM, Greg KH <gregkh@suse.de> wrote:
+> 3.1-stable review patch.  If anyone has any objections, please let me know.
 
-We wanted to start with something very simple that just launch
-selftests in batch.
+This one looks like typical patch Makefile/Kconfig "oh, hey this fits anywhere"
+nonsense, and is completely broken.  Original was for a Wiimote, not Wacom.
 
-Let's see first where this goes, if this becomes a useful subsystem that
-grows up, then if it makes sense to rely on some more elaborated selftest
-framework we can think about it.
+P.
+
+>
+> ------------------
+>
+> From: David Herrmann <dh.herrmann@googlemail.com>
+>
+> commit ef6f41157f3864d9bf42671b2ed66062dcafb72e upstream.
+>
+> We depend on memless force-feedback support, therefore correctly select the
+> related config options.
+>
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>
+> ---
+>  drivers/hid/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -583,6 +583,7 @@ config HID_WACOM_POWER_SUPPLY
+>        bool "Wacom Bluetooth devices power supply status support"
+>        depends on HID_WACOM
+>        select POWER_SUPPLY
+> +       select INPUT_FF_MEMLESS
+>        ---help---
+>          Say Y here if you want to enable power supply status monitoring for
+>          Wacom Bluetooth devices.
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
