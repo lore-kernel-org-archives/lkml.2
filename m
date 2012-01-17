@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab2AQHIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 02:08:35 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:52003 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348Ab2AQHId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 02:08:33 -0500
-From: Corentin Chary <corentincj@iksaif.net>
-To: platform-driver-x86@vger.kernel.org
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
-        Andrzej Prochyra <andrzej@prochyra.name>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        =?UTF-8?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>,
-        Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, Corentin Chary <corentincj@iksaif.net>
-Subject: [PATCH] ACPI / Video: blacklist some samsung laptops
-Date: Tue, 17 Jan 2012 08:08:18 +0100
-Message-Id: <1326784098-3244-1-git-send-email-corentincj@iksaif.net>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752218Ab2AQHSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 02:18:05 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60242 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2AQHSD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 02:18:03 -0500
+X-AuditID: 9c93016f-b7c20ae000005067-5a-4f1520a7e222
+Message-ID: <4F1520A6.7070908@lge.com>
+Date: Tue, 17 Jan 2012 16:17:58 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: David Daney <ddaney.cavm@gmail.com>
+CC: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Joerg Roedel <joerg.roedel@amd.com>, namhyung@gmail.com
+Subject: Re: [PATCH] perf: Fix broken build by rearranging some #includes
+References: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On these laptops, the ACPI video is not functional, and very unlikely
-to be fixed by the vendor. Note that intel_backlight works for some
-of these laptops, and the backlight from samsung-laptop always work.
+Hi,
 
-The good news is that newer laptops have functional ACPI video device
-and won't end up growing this list.
+2012-01-17 11:01 AM, David Daney wrote:
+> From: David Daney<david.daney@cavium.com>
+>
+> When building on my Debian/mips system, util/util.c fails to build
+> because commit 1aed2671738785e8f5aea663a6fda91aa7ef59b5 (perf kvm: Do
+> guest-only counting by default) indirectly includes stdio.h before the
+> feature selection in util.h is done.  This prevents _GNU_SOURCE in
+> util.h from enabling the declaration of getline(), from now second
+> inclusion of stdio.h, and the build is broken.
 
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
----
- drivers/acpi/video_detect.c |   49 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 49 insertions(+), 0 deletions(-)
+I've experienced similar problem wrt pwrite() last week. The fix was 
+simply removing ctype.h from inclusion for my case.
 
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index 45d8097..66be45e 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -132,6 +132,53 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK;
- }
- 
-+/* Force to use vendor driver when the ACPI device is known to be
-+ * buggy */
-+static int video_detect_force_vendor(const struct dmi_system_id *d)
-+{
-+	acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
-+	return 0;
-+}
-+
-+static struct dmi_system_id video_detect_dmi_table[] = {
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N150P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N150P"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N145P/N250P/N260P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N150/N210/N220",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "NF110/NF210/NF310",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
-+		DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
-+		},
-+	},
-+};
-+
- /*
-  * Returns the video capabilities of a specific ACPI graphics device
-  *
-@@ -164,6 +211,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
- 		 *		ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
- 		 *}
- 		 */
-+
-+		dmi_check_system(video_detect_dmi_table);
- 	} else {
- 		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
- 		if (ACPI_FAILURE(status)) {
--- 
-1.7.5.4
 
+>
+> There is another breakage in util/evsel.c caused by include ordering,
+> but I didn't fully track down the commit that caused it.
+>
+> Since the #include situation is a little convoluted throughout perf, I
+> did the following:
+>
+> 1) Always include util/util.h before all other include files.
+>
+> 2) Remove all #define _GNU_SOURCE, as it is already done in util.h.
+>
+> 3) Remove all #undef _GNU_SOURCE, as they don't do what a naive person
+>     might expect (or much of anything for that matter) and clutter up
+>     the source.
+>
+> 4) #include ctype.h in util.h, so that ctype things have uniform
+>     definitions throughout perf.
+
+Among other things, ctype.h isn't needed at all since util.h redefines 
+all of ctype macros anyway. I've posted a patch which removes ctype.h 
+inclusions as Ingo's suggestion.
+
+https://lkml.org/lkml/2012/1/16/510
+
+
+Thanks,
+Namhyung Kim
