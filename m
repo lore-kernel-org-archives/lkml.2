@@ -1,107 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab2AQVzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:55:16 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56979 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab2AQVzM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:55:12 -0500
+	id S1756080Ab2AQV4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:56:41 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:49086 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755118Ab2AQV4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 16:56:40 -0500
+Date: Tue, 17 Jan 2012 22:56:26 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: Sha <handai.szj@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
+Message-ID: <20120117215626.GA2380@cmpxchg.org>
+References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
+ <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
+ <CALWz4izwNBN_qcSsqg-qYw-Esc9vBL3=4cv3Wsg1jf6001_fWQ@mail.gmail.com>
+ <20120112085904.GG24386@cmpxchg.org>
+ <CALWz4iz3sQX+pCr19rE3_SwV+pRFhDJ7Lq-uJuYBq6u3mRU3AQ@mail.gmail.com>
+ <20120113224424.GC1653@cmpxchg.org>
+ <4F158418.2090509@gmail.com>
+ <20120117145348.GA3144@cmpxchg.org>
+ <CALWz4iwYpkP6Dfz+3NFXQK9ToaKdm8WCsbBmHRLVwRjVp0wjOQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1325162352-24709-5-git-send-email-m.szyprowski@samsung.com>
-References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com> <1325162352-24709-5-git-send-email-m.szyprowski@samsung.com>
-From: sandeep patil <psandeep.s@gmail.com>
-Date: Tue, 17 Jan 2012 13:54:28 -0800
-Message-ID: <CA+K6fF6A1kPUW-2Mw5+W_QaTuLfU0_m0aMYRLOg98mFKwZOhtQ@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 04/11] mm: page_alloc: introduce alloc_contig_range()
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALWz4iwYpkP6Dfz+3NFXQK9ToaKdm8WCsbBmHRLVwRjVp0wjOQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marek,
+On Tue, Jan 17, 2012 at 12:25:31PM -0800, Ying Han wrote:
+> On Tue, Jan 17, 2012 at 6:53 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Tue, Jan 17, 2012 at 10:22:16PM +0800, Sha wrote:
+> >> IMHO, it may checking the cgroup's soft limit standalone without
+> >> looking up its ancestors just as Ying said.
+> >
+> > Again, this would be a regression as soft limits have been applied
+> > hierarchically forever.
+> 
+> If we are comparing it to the current implementation, agree that the
+> soft reclaim is applied hierarchically. In the example above, A2 will
+> be picked for soft reclaim while A is hitting its hard limit, which in
+> turns reclaim from B1 and B2 regardless of their soft limit setting.
+> However, I haven't convinced myself this is how we are gonna use the
+> soft limit.
 
-I am running a CMA test where I keep allocating from a CMA region as long
-as the allocation fails due to lack of space.
+Of course I'm comparing it to the current implementation, this is what
+I'm changing!
 
-However, I am seeing failures much before I expect them to happen.
-When the allocation fails, I see a warning coming from __alloc_contig_range(),
-because test_pages_isolated() returned "true".
+> The soft limit setting for each cgroup is a hit for applying pressure
+> under memory contention. One way of setting the soft limit is based on
+> the cgroup's working set size. Thus, we allow cgroup to grow above its
+> soft limit with cold page cache unless there is a memory pressure
+> comes from above. Under the hierarchical reclaim, we will exam the
+> soft limit and only apply extra pressure to the ones above their soft
+> limit. Here the same example:
+> 
+> root
+> -> A (hard limit 20G, soft limit 12G, usage 20G)
+>    -> A1 ( soft limit 2G,   usage 1G)
+>    -> A2 ( soft limit 10G, usage 19G)
+> 
+>           ->B1 (soft limit 5G, usage 4G)
+>           ->B2 (soft limit 5G, usage 15G)
+> 
+> If A is hitting its hard limit, we will reclaim all the children under
+> A hierarchically but only adding extra pressure to the ones above
+> their soft limits (A2, B2). Adding extra pressure to B1 will introduce
+> known regression based on customer expectation since the 4G usage are
+> hot memory.
 
-The new retry code does try a new range and eventually succeeds.
+I can only repeat myself: A has a soft limit set, so the customer
+expects global pressure to arise sooner or later.  If that happens, A
+will be soft-limit reclaimed hierarchically in the _existing code_.
+That's how the soft limit currently works and I don't mean to change
+it _with this patch_.  The customer has to expect that B1 can be
+reclaimed as a consequence of the soft limit in A or A2 today, so I
+don't know where this expectation of different behaviour should even
+come from.  How can this be a regression?!
 
+> I am not aware of how the existing soft reclaim being used, i bet
+> there are not a lot. If we are making changes on the current
+> implementation, we should also take the opportunity to think about the
+> initial design as well. Thoughts?
 
-> +
-> +static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-> +{
-> +
-> +done:
-> +       /* Make sure all pages are isolated. */
-> +       if (!ret) {
-> +               lru_add_drain_all();
-> +               drain_all_pages();
-> +               if (WARN_ON(test_pages_isolated(start, end)))
-> +                       ret = -EBUSY;
-> +       }
+I agree that these semantics should be up for debate.  And I think
+changing it to something like you have in mind is indeed a good idea;
+to not have soft limits apply hierarchically but instead follow down
+the whole chain and only soft limit reclaim those that are themselves
+above their soft limit.  But it's an entirely different matter!
 
-I tried to find out why this happened and added in a debug print inside
-__test_page_isolated_in_pageblock(). Here's the resulting log ..
+This patch is supposed to do only two things: 1. refactor the soft
+limit implementation, staying as close as possible/practical to the
+current semantics and 2. fix the inconsistency that soft limits are
+ignored when pressure does not originate at the root_mem_cgroup.  If
+that is too much change in semantics I can easily ditch 2., I just
+didn't see the use of maintaining an inconsistency that resulted
+purely from the limitations of the current implementation by re-adding
+more code and because I think that this would not be surprising
+behaviour.  It would be as simple as adding an extra check in reclaim
+that only minds soft limits upon global pressure:
 
----
-[  133.563140] !!! Found unexpected page(pfn=9aaab), (count=0),
-(isBuddy=no), (private=0x00000004), (flags=0x00000000), (_mapcount=0)
-!!!
-[  133.576690] ------------[ cut here ]------------
-[  133.582489] WARNING: at mm/page_alloc.c:5804 alloc_contig_range+0x1a4/0x2c4()
-[  133.594757] [<c003e814>] (unwind_backtrace+0x0/0xf0) from
-[<c0079c7c>] (warn_slowpath_common+0x4c/0x64)
-[  133.605468] [<c0079c7c>] (warn_slowpath_common+0x4c/0x64) from
-[<c0079cac>] (warn_slowpath_null+0x18/0x1c)
-[  133.616424] [<c0079cac>] (warn_slowpath_null+0x18/0x1c) from
-[<c00e0e84>] (alloc_contig_range+0x1a4/0x2c4)
-[  133.627471] EXT4-fs (mmcblk0p25): re-mounted. Opts: (null)
-[  133.633728] [<c00e0e84>] (alloc_contig_range+0x1a4/0x2c4) from
-[<c0266690>] (dma_alloc_from_contiguous+0x114/0x1c8)
-[  133.697113] !!! Found unexpected page(pfn=9aaac), (count=0),
-(isBuddy=no), (private=0x00000004), (flags=0x00000000), (_mapcount=0)
-!!!
-[  133.710510] EXT4-fs (mmcblk0p26): re-mounted. Opts: (null)
-[  133.716766] ------------[ cut here ]------------
-[  133.721954] WARNING: at mm/page_alloc.c:5804 alloc_contig_range+0x1a4/0x2c4()
-[  133.734100] Emergency Remount complete
-[  133.742584] [<c003e814>] (unwind_backtrace+0x0/0xf0) from
-[<c0079c7c>] (warn_slowpath_common+0x4c/0x64)
-[  133.753448] [<c0079c7c>] (warn_slowpath_common+0x4c/0x64) from
-[<c0079cac>] (warn_slowpath_null+0x18/0x1c)
-[  133.764373] [<c0079cac>] (warn_slowpath_null+0x18/0x1c) from
-[<c00e0e84>] (alloc_contig_range+0x1a4/0x2c4)
-[  133.775299] [<c00e0e84>] (alloc_contig_range+0x1a4/0x2c4) from
-[<c0266690>] (dma_alloc_from_contiguous+0x114/0x1c8)
----
+	if (global_reclaim(sc) && mem_cgroup_over_soft_limit(root, memcg))
+		/* resulting action */
 
->From the log it looks like the warning showed up because page->private
-is set to MIGRATE_CMA instead of MIGRATE_ISOLATED.
-I've also had a test case where it failed because (page_count() != 0)
+and it would have nothing to do how soft limits are actually applied
+once triggered.  I can include this in the next version, but it won't
+fix the problem you seem to be having with the _existing_ behaviour.
 
-Have you or anyone else seen this during the CMA testing?
+I also don't think that my patch will get in the way of what you are
+planning to do: in fact, you already have code that easily turns
+mem_cgroup_over_soft_limit() into a non-hierarchical predicate.
 
-Also, could this be because we are finding a page within (start, end)
-that actually belongs
-to a higher order Buddy block ?
+Even more will change when you invert the soft limits to become actual
+guarantees and skip reclaiming memcgs that are below their soft limits
+but I don't think this patch is in the way of doing that, either.
 
+I feel that these are all orthogonal changes.  So if possible, could
+we take just one step at a time and leave hypothetical behaviour out
+of it unless the proposed changes clearly get in the way of where we
+agreed we want to go?
 
-Thanks,
-Sandeep
+If I misunderstood everything completely and you actually believe this
+patch will get in the way, could you tell me where and how?
+
+Thanks.
