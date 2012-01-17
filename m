@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2AQBAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 20:00:06 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:54795 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab2AQBAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 20:00:04 -0500
+	id S1752398Ab2AQBAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 20:00:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54374 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752315Ab2AQBAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 20:00:18 -0500
+Date: Mon, 16 Jan 2012 16:59:44 -0800
+From: Greg KH <gregkh@suse.de>
+To: =?utf-8?B?7LWc7KKF7ZmY?= <jhbird.choi@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>
+Subject: Re: Re: [PATCH] driver-core: Fix null reference in
+ subsys_interface_unregister
+Message-ID: <20120117005944.GA14863@suse.de>
+References: <15905052.41411326760535818.JavaMail.weblogic@epv6ml08>
 MIME-Version: 1.0
-In-Reply-To: <20120117003613.GA28571@dastard>
-References: <1325774407-28531-1-git-send-email-jack@suse.cz>
- <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
- <20120116160136.GC16431@quack.suse.cz> <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
- <20120117003613.GA28571@dastard>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 16 Jan 2012 16:59:41 -0800
-X-Google-Sender-Auth: GTv7KOHxqVbwqktVoaRE5QtmQcU
-Message-ID: <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Edward Shishkin <edward@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <15905052.41411326760535818.JavaMail.weblogic@epv6ml08>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 4:36 PM, Dave Chinner <david@fromorbit.com> wrote:
->
-> Jan is right, Linus. His definition of what up-to-date means for
-> dirty buffers is correct, especially in the case of write errors.
+On Tue, Jan 17, 2012 at 12:35:35AM +0000, 최종환 wrote:
+> Greg KH wrote:
+> 
+> >On Sat, Jan 14, 2012 at 11:06:03AM +0900, jhbird.choi@samsung.com wrote:
+> >> From: Jonghwan Choi 
+> > >
+> > >Check if the sif is not NULL before de-referencing it
+> 
+> >Why would it be?  Have you hit this somehow?  If so, in what code?
+> 
+> > thanks,
+> 
+> > greg k-h
+> 
+> 
+> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+> index 99dc592..4ddb38b 100644
+> --- a/drivers/base/bus.c
+> +++ b/drivers/base/bus.c
+> @@ -1193,13 +1193,15 @@ EXPORT_SYMBOL_GPL(subsys_interface_register);
+> 
+>  void subsys_interface_unregister(struct subsys_interface *sif)
+>  {
+> -       struct bus_type *subsys = sif->subsys;   // -> Sif is already used, that means sif is not null
+> +       struct bus_type *subsys;
+>         struct subsys_dev_iter iter;
+>         struct device *dev;
+> 
+> -       if (!sif)  // -> Check whether sif is null 
+> +       if (!sif || !sif->subsys)
+>                 return;
+> 
+> +       subsys = sif->subsys;
+> +
+>         mutex_lock(&subsys->p->mutex);
+>         list_del_init(&sif->node);
+>         if (sif->remove_dev) {
+> -- 
+> 
+> sif is already used, but  null pointer check for sif later.
+> so i think that sif should be checked before use it.
 
-It's not a dirty buffer any more.
+Yes, you are right, I missed the previous usage.  I'll queue this up for
+3.4.
 
-Go look. We've long since cleared the dirty bit.
+thanks,
 
-So stop spouting garbage.
-
-My argument is simple: the contents ARE NOT CORRECT ENOUGH to be
-called "up-to-date and clean".
-
-And I outlined the two choices:
-
- - mark it dirty and continue trying to write it out forever
-
- - invalidate it.
-
-Anything else is crazy talk. And marking it dirty forever isn't really
-an option. So..
-
-               Linus
+greg k-h
