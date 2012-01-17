@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab2AQSBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 13:01:53 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42496 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab2AQSBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 13:01:52 -0500
-Message-ID: <4F15B78A.2090700@monstr.eu>
-Date: Tue, 17 Jan 2012 19:01:46 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze changes for 3.3 fixes
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753913Ab2AQSEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 13:04:54 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:34388 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752393Ab2AQSEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 13:04:52 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: avi@redhat.com
+Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
+        jeremy.fitzhardinge@citrix.com, levinsasha928@gmail.com,
+        Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4 V9] Avoid soft lockup message when KVM is stopped by host
+Date: Tue, 17 Jan 2012 13:04:44 -0500
+Message-Id: <1326823488-11413-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Changes from V8:
+Make KVM_GUEST_PAUSED a per vm ioctl instead of per vcpu
 
-Please pull two following two patches to your tree.
+Changes from V7:
+Define KVM_CAP_GUEST_PAUSED and support check
+Call mark_page_dirty () after setting PVCLOCK_GUEST_STOPPED
 
-The first patch init topology and fix problem with default microblaze configuration
-and the second is out of tree NO_IRQ patch for xilinx ehci driver.
-I have also got ACK from Alan Stern (USB ehci driver maintainer).
+Changes from V6:
+Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
 
-Thanks,
-Michal
+Changes from V5:
+Collapse generic check_and_clear_guest_stopped into patch 2
+Include check_and_clear_guest_stopped defintion to ia64, s390, and powerpc
+Change check_and_clear_guest_stopped to use __get_cpu_var instead of taking the
+ cpuid arg.
+Protect check_and_clear_guest_stopped declaration with CONFIG_KVM_CLOCK check
 
-The following changes since commit e343a895a9f342f239c5e3c5ffc6c0b1707e6244:
-   Linus Torvalds (1):
-         Merge tag 'for-linus' of git://git.kernel.org/.../mst/vhost
+Changes from V4:
+Rename KVM_GUEST_PAUSED to KVMCLOCK_GUEST_PAUSED
+Add description of KVMCLOCK_GUEST_PAUSED ioctl to api.txt
 
-are available in the git repository at:
+Changes from V3:
+Include CC's on patch 3
+Drop clear flag ioctl and have the watchdog clear the flag when it is reset
 
-   git://git.monstr.eu/linux-2.6-microblaze.git next
+Changes from V2:
+A new kvm functions defined in kvm_para.h, the only change to pvclock is the
+initial flag definition
 
-Michal Simek (2):
-       microblaze: Add topology init
-       USB: EHCI: Don't use NO_IRQ in xilinx ehci driver
+Changes from V1:
+(Thanks Marcelo)
+Host code has all been moved to arch/x86/kvm/x86.c
+KVM_PAUSE_GUEST was renamed to KVM_GUEST_PAUSED
 
-  arch/microblaze/kernel/setup.c    |   21 ++++++++++++++++++++-
-  drivers/usb/host/ehci-xilinx-of.c |    2 +-
-  2 files changed, 21 insertions(+), 2 deletions(-)
+When a guest kernel is stopped by the host hypervisor it can look like a soft
+lockup to the guest kernel.  This false warning can mask later soft lockup
+warnings which may be real.  This patch series adds a method for a host
+hypervisor to communicate to a guest kernel that it is being stopped.  The
+final patch in the series has the watchdog check this flag when it goes to
+issue a soft lockup warning and skip the warning if the guest knows it was
+stopped.
 
+It was attempted to solve this in Qemu, but the side effects of saving and
+restoring the clock and tsc for each vcpu put the wall clock of the guest behind
+by the amount of time of the pause.  This forces a guest to have ntp running
+in order to keep the wall clock accurate.
+
+Cc: mingo@redhat.com
+Cc: hpa@zytor.com
+Cc: ryanh@linux.vnet.ibm.com
+Cc: aliguori@us.ibm.com
+Cc: mtosatti@redhat.com
+Cc: jeremy.fitzhardinge@citrix.com
+Cc: levinsasha928@gmail.com
+Cc: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: kvm@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+
+Eric B Munson (4):
+  Add flag to indicate that a vm was stopped by the host
+  Add functions to check if the host has stopped the vm
+  Add ioctl for KVMCLOCK_GUEST_STOPPED
+  Add check for suspended vm in softlockup detector
+
+ Documentation/virtual/kvm/api.txt   |   13 +++++++++++++
+ arch/ia64/include/asm/kvm_para.h    |    5 +++++
+ arch/powerpc/include/asm/kvm_para.h |    5 +++++
+ arch/s390/include/asm/kvm_para.h    |    5 +++++
+ arch/x86/include/asm/kvm_para.h     |    8 ++++++++
+ arch/x86/include/asm/pvclock-abi.h  |    1 +
+ arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
+ arch/x86/kvm/x86.c                  |   26 ++++++++++++++++++++++++++
+ include/asm-generic/kvm_para.h      |   14 ++++++++++++++
+ include/linux/kvm.h                 |    3 +++
+ kernel/watchdog.c                   |   12 ++++++++++++
+ 11 files changed, 113 insertions(+), 0 deletions(-)
+ create mode 100644 include/asm-generic/kvm_para.h
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+1.7.5.4
+
