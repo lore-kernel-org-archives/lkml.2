@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab2AQSEy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 13:04:54 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:34388 "EHLO mail.mgebm.net"
+	id S1754244Ab2AQSFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 13:05:10 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:34422 "EHLO mail.mgebm.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab2AQSEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 13:04:52 -0500
+	id S1753688Ab2AQSEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 13:04:53 -0500
 From: Eric B Munson <emunson@mgebm.net>
 To: avi@redhat.com
 Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
         ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
-        jeremy.fitzhardinge@citrix.com, levinsasha928@gmail.com,
-        Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
+        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
         linux-arch@vger.kernel.org, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4 V9] Avoid soft lockup message when KVM is stopped by host
-Date: Tue, 17 Jan 2012 13:04:44 -0500
-Message-Id: <1326823488-11413-1-git-send-email-emunson@mgebm.net>
+Subject: [PATCH 4/4 V9] Add check for suspended vm in softlockup detector
+Date: Tue, 17 Jan 2012 13:04:48 -0500
+Message-Id: <1326823488-11413-5-git-send-email-emunson@mgebm.net>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326823488-11413-1-git-send-email-emunson@mgebm.net>
+References: <1326823488-11413-1-git-send-email-emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from V8:
-Make KVM_GUEST_PAUSED a per vm ioctl instead of per vcpu
+A suspended VM can cause spurious soft lockup warnings.  To avoid these, the
+watchdog now checks if the kernel knows it was stopped by the host and skips
+the warning if so.  When the watchdog is reset successfully, clear the guest
+paused flag.
 
-Changes from V7:
-Define KVM_CAP_GUEST_PAUSED and support check
-Call mark_page_dirty () after setting PVCLOCK_GUEST_STOPPED
-
-Changes from V6:
-Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
-
-Changes from V5:
-Collapse generic check_and_clear_guest_stopped into patch 2
-Include check_and_clear_guest_stopped defintion to ia64, s390, and powerpc
-Change check_and_clear_guest_stopped to use __get_cpu_var instead of taking the
- cpuid arg.
-Protect check_and_clear_guest_stopped declaration with CONFIG_KVM_CLOCK check
-
-Changes from V4:
-Rename KVM_GUEST_PAUSED to KVMCLOCK_GUEST_PAUSED
-Add description of KVMCLOCK_GUEST_PAUSED ioctl to api.txt
-
-Changes from V3:
-Include CC's on patch 3
-Drop clear flag ioctl and have the watchdog clear the flag when it is reset
-
-Changes from V2:
-A new kvm functions defined in kvm_para.h, the only change to pvclock is the
-initial flag definition
-
-Changes from V1:
-(Thanks Marcelo)
-Host code has all been moved to arch/x86/kvm/x86.c
-KVM_PAUSE_GUEST was renamed to KVM_GUEST_PAUSED
-
-When a guest kernel is stopped by the host hypervisor it can look like a soft
-lockup to the guest kernel.  This false warning can mask later soft lockup
-warnings which may be real.  This patch series adds a method for a host
-hypervisor to communicate to a guest kernel that it is being stopped.  The
-final patch in the series has the watchdog check this flag when it goes to
-issue a soft lockup warning and skip the warning if the guest knows it was
-stopped.
-
-It was attempted to solve this in Qemu, but the side effects of saving and
-restoring the clock and tsc for each vcpu put the wall clock of the guest behind
-by the amount of time of the pause.  This forces a guest to have ntp running
-in order to keep the wall clock accurate.
-
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
 Cc: mingo@redhat.com
 Cc: hpa@zytor.com
 Cc: ryanh@linux.vnet.ibm.com
 Cc: aliguori@us.ibm.com
 Cc: mtosatti@redhat.com
 Cc: jeremy.fitzhardinge@citrix.com
-Cc: levinsasha928@gmail.com
-Cc: Jan Kiszka <jan.kiszka@siemens.com>
 Cc: kvm@vger.kernel.org
 Cc: linux-arch@vger.kernel.org
 Cc: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org
+---
+Changes from V3:
+ Clear the PAUSED flag when the watchdog is reset
 
-Eric B Munson (4):
-  Add flag to indicate that a vm was stopped by the host
-  Add functions to check if the host has stopped the vm
-  Add ioctl for KVMCLOCK_GUEST_STOPPED
-  Add check for suspended vm in softlockup detector
+ kernel/watchdog.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
- Documentation/virtual/kvm/api.txt   |   13 +++++++++++++
- arch/ia64/include/asm/kvm_para.h    |    5 +++++
- arch/powerpc/include/asm/kvm_para.h |    5 +++++
- arch/s390/include/asm/kvm_para.h    |    5 +++++
- arch/x86/include/asm/kvm_para.h     |    8 ++++++++
- arch/x86/include/asm/pvclock-abi.h  |    1 +
- arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
- arch/x86/kvm/x86.c                  |   26 ++++++++++++++++++++++++++
- include/asm-generic/kvm_para.h      |   14 ++++++++++++++
- include/linux/kvm.h                 |    3 +++
- kernel/watchdog.c                   |   12 ++++++++++++
- 11 files changed, 113 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/kvm_para.h
-
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 1d7bca7..91485e5 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -25,6 +25,7 @@
+ #include <linux/sysctl.h>
+ 
+ #include <asm/irq_regs.h>
++#include <linux/kvm_para.h>
+ #include <linux/perf_event.h>
+ 
+ int watchdog_enabled = 1;
+@@ -280,6 +281,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 			__this_cpu_write(softlockup_touch_sync, false);
+ 			sched_clock_tick();
+ 		}
++
++		/* Clear the guest paused flag on watchdog reset */
++		kvm_check_and_clear_guest_paused();
+ 		__touch_watchdog();
+ 		return HRTIMER_RESTART;
+ 	}
+@@ -292,6 +296,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	 */
+ 	duration = is_softlockup(touch_ts);
+ 	if (unlikely(duration)) {
++		/*
++		 * If a virtual machine is stopped by the host it can look to
++		 * the watchdog like a soft lockup, check to see if the host
++		 * stopped the vm before we issue the warning
++		 */
++		if (kvm_check_and_clear_guest_paused())
++			return HRTIMER_RESTART;
++
+ 		/* only warn once */
+ 		if (__this_cpu_read(soft_watchdog_warn) == true)
+ 			return HRTIMER_RESTART;
 -- 
 1.7.5.4
 
