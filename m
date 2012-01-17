@@ -1,198 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab2AQVxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:53:11 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33516 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab2AQVxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:53:10 -0500
-Date: Tue, 17 Jan 2012 16:51:00 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Tina Yang <tina.yang@oracle.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gurudas.pai@oracle.com" <gurudas.pai@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH] add netconsole support for xen-netfront
-Message-ID: <20120117215100.GA25367@phenom.dumpdata.com>
-References: <1326271956-25565-1-git-send-email-zhenzhong.duan@oracle.com>
- <20120112141745.GA7685@phenom.dumpdata.com>
- <1326452769.17210.331.camel@zakaz.uk.xensource.com>
- <4F15EB3E.3060700@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F15EB3E.3060700@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F15EDC1.0098,ss=1,re=0.000,fgs=0
+	id S1756066Ab2AQVzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:55:09 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:39420 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755118Ab2AQVzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 16:55:07 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.3
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20120117215505.8978A426DA7@whiskey.americas.sgi.com>
+Date: Tue, 17 Jan 2012 15:55:05 -0600 (CST)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 01:42:22PM -0800, Tina Yang wrote:
-> On 1/13/2012 3:06 AM, Ian Campbell wrote:
-> >On Thu, 2012-01-12 at 14:17 +0000, Konrad Rzeszutek Wilk wrote:
-> >>On Wed, Jan 11, 2012 at 04:52:36PM +0800, Zhenzhong Duan wrote:
-> >>>add polling interface to xen-netfront device to support netconsole
-> >>>
-> >>Ian, any thoughts on the spinlock changes?
-> >What are they for?
-> When I did this patch back in 2008, both netconsole and netdump
-> were supported.  Spin_lock w/o irqsave and irqrestore would cause
-> netdump hang due to the unexpected change of the irq status.
+Hi Linus,
 
-Hm, that might have been due to the bug that was lurking in there since
-2.6.27: d198d499148a0c64a41b3aba9e7dd43772832b91 "xen: x86_32: do not enable iterrupts when returning from exception in interrupt context"
+   Please pull the following XFS changes for 3.3.
 
-> Although netdump is now obsolete, I think it's always a good practice
-> to preserve caller's irq status as we had a very bad experience
-> chasing a similar problem caused by such a irq change in RDS
+Thanks,
+	Ben
 
-Did you find the culprit of it? Was there a patch for that in the
-upstream kernel?
+The following changes since commit c2bc3a316a7281f67e36b34dac2802cbe36a9128:
+  Linus Torvalds (1):
+        Merge branch 'x86/rdrand' of git://git.kernel.org/.../tip/tip
 
-> in the not too long ago past.
+are available in the git repository at:
 
-OK, it sounds like it was issues in the past but might not be the
-case anymore.
+  git://oss.sgi.com/xfs/xfs for-linus
 
-Could please re-test it without that spinlock irqsave patch using
-the upstream kernel (or just UEK2 since it is an 3.0 type kernel).
+Christoph Hellwig (11):
+      xfs: remove xfs_itruncate_data
+      xfs: cleanup xfs_iomap_eof_align_last_fsb
+      xfs: remove the unused dm_attrs structure
+      xfs: remove the if_ext_max field in struct xfs_ifork
+      xfs: make i_flags an unsigned long
+      xfs: replace i_flock with a sleeping bitlock
+      xfs: replace i_pin_wait with a bit waitqueue
+      xfs: remove the i_size field in struct xfs_inode
+      xfs: remove the i_new_size field in struct xfs_inode
+      xfs: always return with the iolock held from xfs_file_aio_write_checks
+      xfs: cleanup xfs_file_aio_write
 
-Thanks.
-
-> >At a guess they are a necessary consequence of the new calling context.
-> >However not all the drivers I looked at which supported netpool were
-> >using the irqsave variants in this context so I guess it must be some
-> >secondary effect.
-> >
-> >Anyway, the upshot is that I think the changelog needs to explain the
-> >rationale for the locking change.
-> >
-> >Ian.
-> >
-> >>>Signed-off-by: Tina.Yang<tina.yang@oracle.com>
-> >>>Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
-> >>>Cc: Jeremy Fitzhardinge<jeremy@goop.org>
-> >>>Signed-off-by: Zhenzhong.Duan<zhenzhong.duan@oracle.com>
-> >>>Tested-by: gurudas.pai<gurudas.pai@oracle.com>
-> >>>---
-> >>>  drivers/net/xen-netfront.c |   57 ++++++++++++++++++++++++++-----------------
-> >>>  1 files changed, 34 insertions(+), 23 deletions(-)
-> >>>
-> >>>diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-> >>>index fa67905..db638b4 100644
-> >>>--- a/drivers/net/xen-netfront.c
-> >>>+++ b/drivers/net/xen-netfront.c
-> >>>@@ -489,6 +489,7 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
-> >>>  	int frags = skb_shinfo(skb)->nr_frags;
-> >>>  	unsigned int offset = offset_in_page(data);
-> >>>  	unsigned int len = skb_headlen(skb);
-> >>>+	unsigned long flags;
-> >>>
-> >>>  	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
-> >>>  	if (unlikely(frags>  MAX_SKB_FRAGS + 1)) {
-> >>>@@ -498,12 +499,12 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
-> >>>  		goto drop;
-> >>>  	}
-> >>>
-> >>>-	spin_lock_irq(&np->tx_lock);
-> >>>+	spin_lock_irqsave(&np->tx_lock, flags);
-> >>>
-> >>>  	if (unlikely(!netif_carrier_ok(dev) ||
-> >>>  		     (frags>  1&&  !xennet_can_sg(dev)) ||
-> >>>  		     netif_needs_gso(skb, netif_skb_features(skb)))) {
-> >>>-		spin_unlock_irq(&np->tx_lock);
-> >>>+		spin_unlock_irqrestore(&np->tx_lock, flags);
-> >>>  		goto drop;
-> >>>  	}
-> >>>
-> >>>@@ -574,7 +575,7 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
-> >>>  	if (!netfront_tx_slot_available(np))
-> >>>  		netif_stop_queue(dev);
-> >>>
-> >>>-	spin_unlock_irq(&np->tx_lock);
-> >>>+	spin_unlock_irqrestore(&np->tx_lock, flags);
-> >>>
-> >>>  	return NETDEV_TX_OK;
-> >>>
-> >>>@@ -1228,6 +1229,33 @@ static int xennet_set_features(struct net_device *dev,
-> >>>  	return 0;
-> >>>  }
-> >>>
-> >>>+static irqreturn_t xennet_interrupt(int irq, void *dev_id)
-> >>>+{
-> >>>+	struct net_device *dev = dev_id;
-> >>>+	struct netfront_info *np = netdev_priv(dev);
-> >>>+	unsigned long flags;
-> >>>+
-> >>>+	spin_lock_irqsave(&np->tx_lock, flags);
-> >>>+
-> >>>+	if (likely(netif_carrier_ok(dev))) {
-> >>>+		xennet_tx_buf_gc(dev);
-> >>>+		/* Under tx_lock: protects access to rx shared-ring indexes. */
-> >>>+		if (RING_HAS_UNCONSUMED_RESPONSES(&np->rx))
-> >>>+			napi_schedule(&np->napi);
-> >>>+	}
-> >>>+
-> >>>+	spin_unlock_irqrestore(&np->tx_lock, flags);
-> >>>+
-> >>>+	return IRQ_HANDLED;
-> >>>+}
-> >>>+
-> >>>+#ifdef CONFIG_NET_POLL_CONTROLLER
-> >>>+static void xennet_poll_controller(struct net_device *dev)
-> >>>+{
-> >>>+	xennet_interrupt(0, dev);
-> >>>+}
-> >>>+#endif
-> >>>+
-> >>>  static const struct net_device_ops xennet_netdev_ops = {
-> >>>  	.ndo_open            = xennet_open,
-> >>>  	.ndo_uninit          = xennet_uninit,
-> >>>@@ -1239,6 +1267,9 @@ static const struct net_device_ops xennet_netdev_ops = {
-> >>>  	.ndo_validate_addr   = eth_validate_addr,
-> >>>  	.ndo_fix_features    = xennet_fix_features,
-> >>>  	.ndo_set_features    = xennet_set_features,
-> >>>+#ifdef CONFIG_NET_POLL_CONTROLLER
-> >>>+	.ndo_poll_controller = xennet_poll_controller,
-> >>>+#endif
-> >>>  };
-> >>>
-> >>>  static struct net_device * __devinit xennet_create_dev(struct xenbus_device *dev)
-> >>>@@ -1448,26 +1479,6 @@ static int xen_net_read_mac(struct xenbus_device *dev, u8 mac[])
-> >>>  	return 0;
-> >>>  }
-> >>>
-> >>>-static irqreturn_t xennet_interrupt(int irq, void *dev_id)
-> >>>-{
-> >>>-	struct net_device *dev = dev_id;
-> >>>-	struct netfront_info *np = netdev_priv(dev);
-> >>>-	unsigned long flags;
-> >>>-
-> >>>-	spin_lock_irqsave(&np->tx_lock, flags);
-> >>>-
-> >>>-	if (likely(netif_carrier_ok(dev))) {
-> >>>-		xennet_tx_buf_gc(dev);
-> >>>-		/* Under tx_lock: protects access to rx shared-ring indexes. */
-> >>>-		if (RING_HAS_UNCONSUMED_RESPONSES(&np->rx))
-> >>>-			napi_schedule(&np->napi);
-> >>>-	}
-> >>>-
-> >>>-	spin_unlock_irqrestore(&np->tx_lock, flags);
-> >>>-
-> >>>-	return IRQ_HANDLED;
-> >>>-}
-> >>>-
-> >>>  static int setup_netfront(struct xenbus_device *dev, struct netfront_info *info)
-> >>>  {
-> >>>  	struct xen_netif_tx_sring *txs;
-> >>>-- 
-> >>>1.7.3
-> >
+ fs/xfs/xfs_aops.c        |   29 ++++---
+ fs/xfs/xfs_attr.c        |    4 -
+ fs/xfs/xfs_attr_leaf.c   |    9 --
+ fs/xfs/xfs_bmap.c        |  116 +++++++++++++---------------
+ fs/xfs/xfs_dfrag.c       |   43 +++++-----
+ fs/xfs/xfs_file.c        |  184 ++++++++++++-------------------------------
+ fs/xfs/xfs_fs_subr.c     |    2 +-
+ fs/xfs/xfs_iget.c        |   24 ++++--
+ fs/xfs/xfs_inode.c       |  193 +++++++++++-----------------------------------
+ fs/xfs/xfs_inode.h       |  114 ++++++++++++++++-----------
+ fs/xfs/xfs_inode_item.c  |    8 +-
+ fs/xfs/xfs_iomap.c       |   46 ++++++------
+ fs/xfs/xfs_iops.c        |   46 +++++++----
+ fs/xfs/xfs_qm_syscalls.c |    8 ++-
+ fs/xfs/xfs_super.c       |    8 --
+ fs/xfs/xfs_sync.c        |    9 +-
+ fs/xfs/xfs_trace.h       |   29 ++-----
+ fs/xfs/xfs_vnodeops.c    |   44 +++++++----
+ 18 files changed, 374 insertions(+), 542 deletions(-)
