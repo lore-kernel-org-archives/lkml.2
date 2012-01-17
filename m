@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab2AQM1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:27:18 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:39595 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662Ab2AQMWS (ORCPT
+	id S1754016Ab2AQM1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:27:15 -0500
+Received: from vms173007pub.verizon.net ([206.46.173.7]:43854 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab2AQMWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jan 2012 07:22:18 -0500
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 32/50] ACPI, APEI, EINJ, Fix resource conflict on some machine
-Date: Tue, 17 Jan 2012 07:21:24 -0500
-Message-id: <fdea163d8c17ba08814142259a467ba3e899010d.1326802230.git.len.brown@intel.com>
+Cc: Kurt Garloff <kurt@garloff.de>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 36/50] ACPI: Store SRAT table revision
+Date: Tue, 17 Jan 2012 07:21:28 -0500
+Message-id: <8df0eb7c9d96f9e82f233ee8b74e0f0c8471f868.1326802230.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.9.rc1
 In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
 References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
@@ -25,114 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Ying <ying.huang@intel.com>
+From: Kurt Garloff <kurt@garloff.de>
 
-Some APEI firmware implementation will access injected address
-specified in param1 to trigger the error when injecting memory error.
-This will cause resource conflict with RAM.
+In SRAT v1, we had 8bit proximity domain (PXM) fields; SRAT v2 provides
+32bits for these. The new fields were reserved before.
+According to the ACPI spec, the OS must disregrard reserved fields.
+In order to know whether or not, we must know what version the SRAT
+table has.
 
-On one of our testing machine, if injecting at memory address
-0x10000000, the following error will be reported in dmesg:
+This patch stores the SRAT table revision for later consumption
+by arch specific __init functions.
 
-  APEI: Can not request iomem region <0000000010000000-0000000010000008> for GARs.
-
-This patch removes the injecting memory address range from trigger
-table resources to avoid conflict.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Tested-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Kurt Garloff <kurt@garloff.de>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/apei/apei-base.c     |   11 +++++++++++
- drivers/acpi/apei/apei-internal.h |    3 +++
- drivers/acpi/apei/einj.c          |   24 ++++++++++++++++++++++--
- 3 files changed, 36 insertions(+), 2 deletions(-)
+ drivers/acpi/numa.c      |    6 ++++++
+ include/acpi/acpi_numa.h |    1 +
+ 2 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-index 3492896..f2c5062 100644
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -421,6 +421,17 @@ static int apei_resources_merge(struct apei_resources *resources1,
- 	return 0;
- }
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index 3b5c318..e56f3be 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -45,6 +45,8 @@ static int pxm_to_node_map[MAX_PXM_DOMAINS]
+ static int node_to_pxm_map[MAX_NUMNODES]
+ 			= { [0 ... MAX_NUMNODES - 1] = PXM_INVAL };
  
-+int apei_resources_add(struct apei_resources *resources,
-+		       unsigned long start, unsigned long size,
-+		       bool iomem)
-+{
-+	if (iomem)
-+		return apei_res_add(&resources->iomem, start, size);
-+	else
-+		return apei_res_add(&resources->ioport, start, size);
-+}
-+EXPORT_SYMBOL_GPL(apei_resources_add);
++unsigned char acpi_srat_revision __initdata;
 +
- /*
-  * EINJ has two groups of GARs (EINJ table entry and trigger table
-  * entry), so common resources are subtracted from the trigger table
-diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
-index f57050e..d778edd 100644
---- a/drivers/acpi/apei/apei-internal.h
-+++ b/drivers/acpi/apei/apei-internal.h
-@@ -95,6 +95,9 @@ static inline void apei_resources_init(struct apei_resources *resources)
- }
- 
- void apei_resources_fini(struct apei_resources *resources);
-+int apei_resources_add(struct apei_resources *resources,
-+		       unsigned long start, unsigned long size,
-+		       bool iomem);
- int apei_resources_sub(struct apei_resources *resources1,
- 		       struct apei_resources *resources2);
- int apei_resources_request(struct apei_resources *resources,
-diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
-index 43eeb2e..4fdc8a3 100644
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -195,7 +195,8 @@ static int einj_check_trigger_header(struct acpi_einj_trigger *trigger_tab)
- }
- 
- /* Execute instructions in trigger error action table */
--static int __einj_error_trigger(u64 trigger_paddr)
-+static int __einj_error_trigger(u64 trigger_paddr, u32 type,
-+				u64 param1, u64 param2)
+ int pxm_to_node(int pxm)
  {
- 	struct acpi_einj_trigger *trigger_tab = NULL;
- 	struct apei_exec_context trigger_ctx;
-@@ -256,6 +257,25 @@ static int __einj_error_trigger(u64 trigger_paddr)
- 	rc = apei_resources_sub(&trigger_resources, &einj_resources);
- 	if (rc)
- 		goto out_fini;
-+	/*
-+	 * Some firmware will access target address specified in
-+	 * param1 to trigger the error when injecting memory error.
-+	 * This will cause resource conflict with regular memory.  So
-+	 * remove it from trigger table resources.
-+	 */
-+	if (param_extension && (type & 0x0038) && param2) {
-+		struct apei_resources addr_resources;
-+		apei_resources_init(&addr_resources);
-+		rc = apei_resources_add(&addr_resources,
-+					param1 & param2,
-+					~param2 + 1, true);
-+		if (rc)
-+			goto out_fini;
-+		rc = apei_resources_sub(&trigger_resources, &addr_resources);
-+		apei_resources_fini(&addr_resources);
-+		if (rc)
-+			goto out_fini;
-+	}
- 	rc = apei_resources_request(&trigger_resources, "APEI EINJ Trigger");
- 	if (rc)
- 		goto out_fini;
-@@ -325,7 +345,7 @@ static int __einj_error_inject(u32 type, u64 param1, u64 param2)
- 	if (rc)
- 		return rc;
- 	trigger_paddr = apei_exec_ctx_get_output(&ctx);
--	rc = __einj_error_trigger(trigger_paddr);
-+	rc = __einj_error_trigger(trigger_paddr, type, param1, param2);
- 	if (rc)
- 		return rc;
- 	rc = apei_exec_run_optional(&ctx, ACPI_EINJ_END_OPERATION);
+ 	if (pxm < 0)
+@@ -255,9 +257,13 @@ acpi_parse_memory_affinity(struct acpi_subtable_header * header,
+ 
+ static int __init acpi_parse_srat(struct acpi_table_header *table)
+ {
++	struct acpi_table_srat *srat;
+ 	if (!table)
+ 		return -EINVAL;
+ 
++	srat = (struct acpi_table_srat *)table;
++	acpi_srat_revision = srat->header.revision;
++
+ 	/* Real work done in acpi_table_parse_srat below. */
+ 
+ 	return 0;
+diff --git a/include/acpi/acpi_numa.h b/include/acpi/acpi_numa.h
+index 1739726..451823c 100644
+--- a/include/acpi/acpi_numa.h
++++ b/include/acpi/acpi_numa.h
+@@ -15,6 +15,7 @@ extern int pxm_to_node(int);
+ extern int node_to_pxm(int);
+ extern void __acpi_map_pxm_to_node(int, int);
+ extern int acpi_map_pxm_to_node(int);
++extern unsigned char acpi_srat_revision;
+ 
+ #endif				/* CONFIG_ACPI_NUMA */
+ #endif				/* __ACP_NUMA_H */
 -- 
 1.7.9.rc1
 
