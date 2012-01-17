@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab2AQTO0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 14:14:26 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40738 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab2AQTOZ (ORCPT
+	id S1755505Ab2AQTOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 14:14:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19012 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755440Ab2AQTOh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 14:14:25 -0500
+	Tue, 17 Jan 2012 14:14:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="99666015"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Len Brown <lenb@kernel.org>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>
+Subject: RE: [PATCH] acpi/apei/einj: Add extensions to EINJ from rev 5.0 of
+ acpi spec
+Thread-Topic: [PATCH] acpi/apei/einj: Add extensions to EINJ from rev 5.0 of
+ acpi spec
+Thread-Index: AQHM1Ri/Yh+MLXk+5EaQRwUucjIPRJYQ7Y0A
+Date: Tue, 17 Jan 2012 19:14:35 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F01CB41@ORSMSX104.amr.corp.intel.com>
+References: <212c4cabb390880e855be9509e7d2be002699907.1325716284.git.tony.luck@intel.com>
+ <4F157233.2010503@kernel.org>
+In-Reply-To: <4F157233.2010503@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Tue, 17 Jan 2012 14:14:02 -0500
-Message-ID: <CAOPLpQdq5SuVo9=023CYhbFLAX9rONyjmYq7jJkqc5xwctW5eA@mail.gmail.com>
-Subject: ANDN and Group 17 in x86-opcode-map.txt
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        pp-manager@sdl.hitachi.co.jp
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Intel documentation at
+> drivers/acpi/apei/einj.c:256:3: error: implicit declaration of function 'readq' [-Werror=implicit-function-declaration]
 
-http://software.intel.com/file/36945
+Ah - einj.c has a special version of writeq ... I guess it needs a "readq" too.
 
-shows the ANDN opcode and Group 17 with encoding f2 and f3 encoding
-respectively.  The current version of x86-opcode-map.txt shows them
-with f3 and f4.  Unless someone can point to documentation which shows
-the currently used encoding the following patch be applied.
+I'll respin the patch (needs to fix a typo and add some Examples to the Documentation,
+plus fix a line too long for checkpatch).
 
-Signed-off-by: Ulrich Drepper <drepper@gmail.com>
-
-diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
-index 5b83c51..4c8010d 100644
---- a/arch/x86/lib/x86-opcode-map.txt
-+++ b/arch/x86/lib/x86-opcode-map.txt
-@@ -729,8 +729,8 @@ de: VAESDEC Vdq,Hdq,Wdq (66),(v1)
- df: VAESDECLAST Vdq,Hdq,Wdq (66),(v1)
- f0: MOVBE Gy,My | MOVBE Gw,Mw (66) | CRC32 Gd,Eb (F2)
- f1: MOVBE My,Gy | MOVBE Mw,Gw (66) | CRC32 Gd,Ey (F2)
--f3: ANDN Gy,By,Ey (v)
--f4: Grp17 (1A)
-+f2: ANDN Gy,By,Ey (v)
-+f3: Grp17 (1A)
- f5: BZHI Gy,Ey,By (v) | PEXT Gy,By,Ey (F3),(v) | PDEP Gy,By,Ey (F2),(v)
- f6: MULX By,Gy,rDX,Ey (F2),(v)
- f7: BEXTR Gy,Ey,By (v) | SHLX Gy,Ey,By (66),(v) | SARX Gy,Ey,By
-(F3),(v) | SHRX Gy,Ey,By (F2),(v)
+-Tony
