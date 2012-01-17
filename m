@@ -1,72 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2AQKDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 05:03:43 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:55422 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201Ab2AQKDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 05:03:42 -0500
-X-Greylist: delayed 3324 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 05:03:42 EST
-Date: Tue, 17 Jan 2012 10:07:46 +0100
-From: David Sterba <dave@jikos.cz>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: chris.mason@oracle.com, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: Updated btrfs/crypto snappy interface ready for merging
-Message-ID: <20120117090746.GD7322@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Andi Kleen <andi@firstfloor.org>, chris.mason@oracle.com,
-	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-References: <1326414530-10789-1-git-send-email-andi@firstfloor.org>
+	id S1752812Ab2AQKGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 05:06:37 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46566 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab2AQKGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 05:06:36 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 17 Jan 2012 19:05:12 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        leonid.moiseichuk@nokia.com, penberg@kernel.org,
+        Rik van Riel <riel@redhat.com>, mel@csn.ul.ie, rientjes@google.com,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
+Subject: Re: [RFC 2/3] vmscan hook
+Message-Id: <20120117190512.047d3a03.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120117091356.GA29736@barrios-desktop.redhat.com>
+References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+	<1326788038-29141-3-git-send-email-minchan@kernel.org>
+	<20120117173932.1c058ba4.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120117091356.GA29736@barrios-desktop.redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326414530-10789-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 04:28:47PM -0800, Andi Kleen wrote:
-> Here's a slightly updated version of the BTRFS snappy interface.
-> snappy is a faster compression algorithm that provides similar
-> compression as LZO, but generally better performance.
+On Tue, 17 Jan 2012 18:13:56 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
-Recently the LZ4 method showed up on the real-time compression scene
+> On Tue, Jan 17, 2012 at 05:39:32PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Tue, 17 Jan 2012 17:13:57 +0900
+> > Minchan Kim <minchan@kernel.org> wrote:
+> > 
+> > 
+> > > +	/*
+> > > +	 * We want to avoid dropping page cache excessively
+> > > +	 * in no swap system
+> > > +	 */
+> > > +	if (nr_swap_pages <= 0) {
+> > > +		free = zone_page_state(mz->zone, NR_FREE_PAGES);
+> > > +		file = zone_page_state(mz->zone, NR_ACTIVE_FILE) +
+> > > +			zone_page_state(mz->zone, NR_INACTIVE_FILE);
+> > > +		/*
+> > > +		 * If we have very few page cache pages,
+> > > +		 * notify to user
+> > > +		 */
+> > > +		if (file < free)
+> > > +			low_mem = true;
+> > > +	}
+> > 
+> > I can't understand why you think you can check lowmem condition by "file < free".
+> 
+> The reason I thought so is I want to maintain some page cache to some degree.
+> But I admit It's very naive heuristic and should be improved.
+> 
+> > And I don't think using per-zone data is good.
+> > (I'm not sure how many zones embeded guys using..)
+> 
+> Agree. In case of swapless system, we need another heuristic.
+> 
+> > 
+> > Another idea:
+> > 1. can't we use some technique like cleancache to detect the condition ?
+> 
+> I totally forgot cleancache approach. Could you remind that?
+> 
 
-http://fastcompression.blogspot.com/p/lz4.html (homepage)
-http://code.google.com/p/lz4/ (source repo)
+Similar to 'victim cache'. Then, cache some clean pages somewhere when
+vmscan pageout it.
 
-it has comparable performance and compression ratio to snappy. Quoting
-from the source repo main page:
+   page -> vmscan's pageout -> cleancache  -> may be discarded.
 
-Name            Ratio   C.speed D.speed
-LZ4 (r41)       2.08    319     1070
-LZO 2.05 1x_1   2.07    318      466
-Snappy 1.0.4    2.02    242      683
-
-My own benchmarking confirms that lz4 is has a bit faster decompression,
-but what is a big difference from snappy is it's memory consumption for
-compression:
-* 32kb for unbounded chunksize
-* 16kb for chunksize < 64k (a tuned compression)
-
-No additional memory is needed for decompression in both snappy and lz4.
-With a minor tweak and chunksize < 4G the context size could be reduced
-to 16k as well.
-
-There is also LZ4HC, "high compression" mode, which maintains same
-binary format, but the compression ratio is better.
-
-http://code.google.com/p/lz4hc/
-
-Usecase:
-There could be the fast version used transparently and the -hc version
-could be allowed for the 'fi defrag' command in order to recompress
-selected files.
-
-LZ4 is written in C and it's BSD, LZ4HC is L-GPL. There is some space
-for improvements in the code, but as it's good already as it stands now.
+If a filesystem look up a page which is in a cleancache, cache-hit and
+bring it back to radix-tree. If not, read from disk again.
+And cleancache for swap(frontswap) was posted, too.
 
 
-david
+> > 2. can't we measure page-in/page-out distance by recording something ?
+> 
+> I can't understand your point. What's relation does it with swapout prevent?
+> 
+
+If distance between pageout -> pagein is short, it means thrashing.
+For example, recoding the timestamp when the page(mapping, index) was
+paged-out, and check it at page-in.
+
+
+> > 3. NR_ANON + NR_FILE_MAPPED can't mean the amount of core memory if we can
+> >    ignore the data file cache ?
+> 
+> It's good but how do we define some amount?
+> It's very vague but I guess we can get a good idea from that.
+> Perhaps, you already has it.
+> 
+
+Hm, a rough idea is...
+
+  - we now have rss counter per mm.
+    - mapped anon
+    - mapped file
+    - swapents
+ 
+Ok, here, add one more counter.
+
+    - paged-out file. (I think this can be recorded in pte.)
+      +1 when try_to_unmap_file() unmaps it.
+      -1 when a page is back or unmapped.
+
+Then, scanning all tasks. Then,
+
+                                 mapped_anon + mapped_file
+active_map_ratio =   ----------------------------------------------------- * 100
+                     mapped_anon + mapped_file + swapents + paged_out_file
+
+Ok, how to use this value...
+
+Like memcg's threshold notify interface, you can change the mem_notify interface
+to use eventfd() as
+
+   <event_fd, fd of /dev/mem_notify, threshold of active_map_ratio>
+
+This will inform you an event when active_map_ratio crosses passed threshold.
+
+complicated ? 
+
+
+> > 4. how about checking kswapd's busy status ?
+> 
+> Could you elaborate on your idea?
+> 
+
+I just thought kswapd may not stop when the situation is very bad.
+
+Thanks,
+-Kame
+
+
+
