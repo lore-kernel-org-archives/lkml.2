@@ -1,191 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2ARAFe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 19:05:34 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11705 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab2ARAFd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 19:05:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 17 Jan 2012 16:05:31 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: "Turquette, Mike" <mturquette@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Date: Tue, 17 Jan 2012 16:05:28 -0800
-Subject: RE: [RFC v2 4/9] of: add clock providers
-Thread-Topic: [RFC v2 4/9] of: add clock providers
-Thread-Index: AczVcP1lwU0cARvqQySoUkXZz/ywlgAAapXA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17801D2439@HQMAIL01.nvidia.com>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
- <74CDBE0F657A3D45AFBB94109FB122FF17801D2353@HQMAIL01.nvidia.com>
- <CACxGe6vC7DBW0w6LhRTg_fi5bZ2aHxwFY2DNbT6KFcUmoYpNYA@mail.gmail.com>
- <CAJOA=zMgGsZKGQ-EfSnXDY_WoFrzG6XPZtuxANFKqdL8CAaYrw@mail.gmail.com>
-In-Reply-To: <CAJOA=zMgGsZKGQ-EfSnXDY_WoFrzG6XPZtuxANFKqdL8CAaYrw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1754831Ab2ARAG4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 19:06:56 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:35225 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751018Ab2ARAGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 19:06:54 -0500
+Date: Tue, 17 Jan 2012 15:58:52 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5] ramoops: use pstore interface
+Message-ID: <20120117235852.GA4877@www.outflux.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Turquette, Mike wrote at Tuesday, January 17, 2012 4:37 PM:
-> On Tue, Jan 17, 2012 at 2:47 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > On Tue, Jan 17, 2012 at 1:44 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> >> In other words, does the UART driver need to do something like:
-> >>
-> >> clk_reg = clk_get(dev, "register");
-> >> clk_parent = of_clk_get_by_name(np, "register);
-> >> clk_set_parent(clk_reg, clk_parent);
-> >>
-> >> Or will that all happen transparently within just the of_clk_get_by_name
-> >> call?
-> >>
-> >> (I suppose this question makes slightly more sense for the PLL itself,
-> >> since both the upstream and downstream clocks are represented in the PLL
-> >> node, whereas the UART's node only represents the clock consumer side,
-> >> so the above code isn't really possible automatically).
-> >
-> > The intent is that device only interacts with the leaf device.  If the
-> > clocks are arranged into a hierarchy, then the clock driver is
-> > responsible for any interactions with the parent clock.  Requiring the
-> > driver to manipulate parent clocks directly defeats the purpose of
-> > having a clock abstraction.
+Instead of using /dev/mem directly and forcing userspace to know (or
+extract) where the platform has defined persistent memory, how many
+slots it has, the sizes, etc, use the common pstore infrastructure to
+handle Oops gathering and extraction. This presents a much easier to
+use filesystem-based view to the memory region. This also means that any
+other tools that are written to understand pstore will automatically be
+able to process ramoops too.
 
-Ah OK, so the clock bindings are purely a way of naming the clocks that
-devices use; nothing beyond that.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v5:
+ - Rebased.
+ - Updated with changes based on feedback from Andrew Morton:
+   - Increased changelog verbosity.
+   - Dropped needless casts from void *.
+   - Clarified ramoops_pstore_write() comments.
+v4:
+ - Rebased to Linus's tree.
+v3:
+ - Added more documentation about which memory regions it would be
+   used with.
+v2:
+ - General reworking.
+---
+ Documentation/ramoops.txt |    8 +-
+ drivers/char/Kconfig      |    1 +
+ drivers/char/ramoops.c    |  203 ++++++++++++++++++++++++++++++++++----------
+ 3 files changed, 162 insertions(+), 50 deletions(-)
 
-> I don't think that we can get rid of all instances of drivers knowing
-> a bit about hierarchy.  I think we can get rid of most, but there are
-> cases where it is valid for a driver to know some of the details.
-> More on that below.
-> 
-> >> Somewhat related to this: How does dynamic reparenting interact with
-> >> the DT clock binding; is the DT just the default/initial clock setup,
-> >> and anything beyond that needs a custom binding and code in the consumer?
-> >
-> > As far as the clock binding goes, it only describes provider/consumer
-> > relationships.  The fact that such relationships may resolve to a
-> > hierarchy is beyond what the binding describes.  If a clock has
-> > multiple possible parents, then that specific clock binding should
-> > document how the multiple parent clocks are described and the clock
-> > driver is responsible for implementing the correct behaviour.
-> 
-> It also deserves to be said that the DT data says nothing about which
-> of the possible parents _should_ be the input to a mux clock.  It's
-> pretty common to want to make changes to hierarchy after taking a
-> device out of reset, since the reset values for a clock management IP
-> might be pretty conservative.  So someone, somewhere must know some
-> details about hierarchy and set things up correctly.  Maybe a "clock
-> driver" can do this, but for specific IPs such as the audio example
-> below it makes sense for that driver to have the knowledge.
-> 
-> > Similarly, the DT clock binding provides no generic mechanism for
-> > walking up the clock tree.  That behaviour must also be implemented by
-> > each specific clock driver.
-> >
-> >> I'm thinking of say a system with 1 I2S controller, and both an internal
-> >> and external I2S clock source, where perhaps the internal source needs
-> >> to be used to capture from an I2S interface on one set of pins (e.g.
-> >> analog mic) but the other clock source needs to be used to capture from
-> >> I2S on another set of pins (e.g. digital baseband unit connection).
-> >> (This example is theoretical, but I'm sure there are other dynamic clock
-> >> cases in practice).
-> >
-> > That is a reasonable example.  In this case, the i2c controller would
-> > include both in its clocks property, and the binding would document
-> > when and why each clock source is used.
-> 
-> I'm confused on this point.  How does the binding "document when and
-> why each clock is used"?  In the case where this I2S controller
-> expects to dynamically switch roles at run-time (analog mic versus
-> baseband) then clk_set_parent must still be invoked by the driver.  To
-> be clear I'm imagining the above example like:
-> 
-> i_I2S   e_I2S
->    \       /
->     I2S_mux
->         |
-> I2S controller IP
-
-Here's how I envisage this working specifically for the case of some
-of Tegra's audio clocking:
-
-There's an oscillator on the board:
-
-osc: pclk {
-    compatible = "fixed-clock";
-    #clock-cells = <0>;
-    clock-frequency = <32768>;
-};
-
-(that part might not be quite right, but it's not too important)
-
-The Tegra CAR (Clock And Reset) controller is pretty bare; we rely on
-the driver internally defining what all the clocks are, and at most
-listing all the clocks that this block imports/exports:
-
-    tegra_car: car@60006000 {
-        compatible = "nvidia,tegra20-car";
-        reg = < 0x60006000 0x1000 >;
-        #clock-cells = <1>;
-        clocks = <&osc 0>;
-        clock-names = "osc";
-        clock-output-names = "pll_a", "audio_2x", "audio", "i2s1", ...;
-    };
-
-The I2S controller is pretty dumb, and just receives a single clock that
-it enables/disables based on when registers are being touched or audio
-is streaming:
-
-tegra_i2s1: i2s@70002800 {
-    compatible = "nvidia,tegra20-i2s";
-    reg = <0x70002800 0x200>;
-    clocks = <&tegra_car 3>;
-    clock-names = "clk";
-};
-
-So in fact, zero clock /tree/ knowledge there really.
-
-All the clock tree setup is already handled by the ASoC machine driver.
-I've already posted a binding for this for the Tegra-with-WM8903-codec
-case. Right now, that driver hard-codes the clock names (it's the same
-driver from before the days of device tree), but I'll update it to
-extract them from device tree using this new binding. Since it touches
-the audio PLL, an audio-specific mux, and the I2S clocks, that module
-needs references to all of those:
-
-sound {
-    compatible = "nvidia,tegra-audio-wm8903-harmony",
-                 "nvidia,tegra-audio-wm8903";
-    clocks = <&tegra_car 0 &tegra_car 1 &tegra_car 2 &tegra_car 3>;
-    clock-names = "pll_a", "audio_2x", "audio", "i2s1";
-};
-
-When this top-level sound driver probes, it'll call of_clk_get_by_name()
-on each of those, and call clk_set_parent() on the appropriate pairs.
-The binding for nvidia,tegra-audio-wm8903 will define the list of
-clocks/clock-names that it requires to make this work. Later on, this
-top-level driver also calls clk_set_rate() on pll_a to switch between
-44.1KHz/48KHz-based audio, etc.
-
-
-If the clock mux were inside the I2C controller for some other HW, the
-I2C node would contain both those clocks and operate on them in a similar
-fashion, and the binding would need to say what it expected those two
-clocks to represent.
-
+diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+index 8fb1ba7..a0b9d8e 100644
+--- a/Documentation/ramoops.txt
++++ b/Documentation/ramoops.txt
+@@ -3,7 +3,7 @@ Ramoops oops/panic logger
+ 
+ Sergiu Iordache <sergiu@chromium.org>
+ 
+-Updated: 8 August 2011
++Updated: 17 November 2011
+ 
+ 0. Introduction
+ 
+@@ -71,6 +71,6 @@ timestamp and a new line. The dump then continues with the actual data.
+ 
+ 4. Reading the data
+ 
+-The dump data can be read from memory (through /dev/mem or other means).
+-Getting the module parameters, which are needed in order to parse the data, can
+-be done through /sys/module/ramoops/parameters/* .
++The dump data can be read from the pstore filesystem. The format for these
++files is "dmesg-ramoops-N", where N is the record number in memory. To delete
++a stored record from RAM, simply unlink the respective pstore file.
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 4364303..f166499 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -603,6 +603,7 @@ source "drivers/s390/char/Kconfig"
+ config RAMOOPS
+ 	tristate "Log panic/oops to a RAM buffer"
+ 	depends on HAS_IOMEM
++	depends on PSTORE
+ 	default n
+ 	help
+ 	  This enables panic and oops messages to be logged to a circular
+diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+index 9fec323..5a75d70 100644
+--- a/drivers/char/ramoops.c
++++ b/drivers/char/ramoops.c
+@@ -2,6 +2,7 @@
+  * RAM Oops/Panic logger
+  *
+  * Copyright (C) 2010 Marco Stornelli <marco.stornelli@gmail.com>
++ * Copyright (C) 2011 Kees Cook <keescook@chromium.org>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -24,7 +25,7 @@
+ #include <linux/kernel.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+-#include <linux/kmsg_dump.h>
++#include <linux/pstore.h>
+ #include <linux/time.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
+@@ -56,73 +57,156 @@ module_param(dump_oops, int, 0600);
+ MODULE_PARM_DESC(dump_oops,
+ 		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
+ 
+-static struct ramoops_context {
+-	struct kmsg_dumper dump;
++struct ramoops_context {
+ 	void *virt_addr;
+ 	phys_addr_t phys_addr;
+ 	unsigned long size;
+-	unsigned long record_size;
++	size_t record_size;
+ 	int dump_oops;
+-	int count;
+-	int max_count;
+-} oops_cxt;
++	unsigned int count;
++	unsigned int max_count;
++	unsigned int read_count;
++	struct pstore_info pstore;
++};
+ 
+ static struct platform_device *dummy;
+ static struct ramoops_platform_data *dummy_data;
+ 
+-static void ramoops_do_dump(struct kmsg_dumper *dumper,
+-		enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
+-		const char *s2, unsigned long l2)
++static int ramoops_pstore_open(struct pstore_info *psi)
++{
++	struct ramoops_context *cxt = psi->data;
++
++	cxt->read_count = 0;
++	return 0;
++}
++
++static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
++				   struct timespec *time,
++				   char **buf,
++				   struct pstore_info *psi)
+ {
+-	struct ramoops_context *cxt = container_of(dumper,
+-			struct ramoops_context, dump);
+-	unsigned long s1_start, s2_start;
+-	unsigned long l1_cpy, l2_cpy;
+-	int res, hdr_size;
+-	char *buf, *buf_orig;
++	ssize_t size;
++	char *rambuf;
++	struct ramoops_context *cxt = psi->data;
++
++	if (cxt->read_count >= cxt->max_count)
++		return -EINVAL;
++	*id = cxt->read_count++;
++	/* Only supports dmesg output so far. */
++	*type = PSTORE_TYPE_DMESG;
++	/* TODO(kees): Bogus time for the moment. */
++	time->tv_sec = 0;
++	time->tv_nsec = 0;
++
++	rambuf = cxt->virt_addr + (*id * cxt->record_size);
++	size = strnlen(rambuf, cxt->record_size);
++	*buf = kmalloc(size, GFP_KERNEL);
++	if (*buf == NULL)
++		return -ENOMEM;
++	memcpy(*buf, rambuf, size);
++
++	return size;
++}
++
++static int ramoops_pstore_write(enum pstore_type_id type,
++				enum kmsg_dump_reason reason,
++				u64 *id,
++				unsigned int part,
++				size_t size, struct pstore_info *psi)
++{
++	char *buf;
++	size_t res;
+ 	struct timeval timestamp;
++	struct ramoops_context *cxt = psi->data;
++	size_t available = cxt->record_size;
++
++	/* Currently ramoops is designed to only store dmesg dumps. */
++	if (type != PSTORE_TYPE_DMESG)
++		return -EINVAL;
+ 
++	/* Out of the various dmesg dump types, ramoops is currently designed
++	 * to only store crash logs, rather than storing general kernel logs.
++	 */
+ 	if (reason != KMSG_DUMP_OOPS &&
+ 	    reason != KMSG_DUMP_PANIC)
+-		return;
++		return -EINVAL;
+ 
+-	/* Only dump oopses if dump_oops is set */
++	/* Skip Oopes when configured to do so. */
+ 	if (reason == KMSG_DUMP_OOPS && !cxt->dump_oops)
+-		return;
++		return -EINVAL;
++
++	/* Explicitly only take the first part of any new crash.
++	 * If our buffer is larger than kmsg_bytes, this can never happen,
++	 * and if our buffer is smaller than kmsg_bytes, we don't want the
++	 * report split across multiple records.
++	 */
++	if (part != 1)
++		return -ENOSPC;
+ 
+ 	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
+-	buf_orig = buf;
+ 
+-	memset(buf, '\0', cxt->record_size);
+ 	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
+ 	buf += res;
++	available -= res;
++
+ 	do_gettimeofday(&timestamp);
+ 	res = sprintf(buf, "%lu.%lu\n", (long)timestamp.tv_sec, (long)timestamp.tv_usec);
+ 	buf += res;
++	available -= res;
+ 
+-	hdr_size = buf - buf_orig;
+-	l2_cpy = min(l2, cxt->record_size - hdr_size);
+-	l1_cpy = min(l1, cxt->record_size - hdr_size - l2_cpy);
++	if (size > available)
++		size = available;
+ 
+-	s2_start = l2 - l2_cpy;
+-	s1_start = l1 - l1_cpy;
+-
+-	memcpy(buf, s1 + s1_start, l1_cpy);
+-	memcpy(buf + l1_cpy, s2 + s2_start, l2_cpy);
++	memcpy(buf, cxt->pstore.buf, size);
++	memset(buf + size, '\0', available - size);
+ 
+ 	cxt->count = (cxt->count + 1) % cxt->max_count;
++
++	return 0;
++}
++
++static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
++				struct pstore_info *psi)
++{
++	char *buf;
++	struct ramoops_context *cxt = psi->data;
++
++	if (id >= cxt->max_count)
++		return -EINVAL;
++
++	buf = cxt->virt_addr + (id * cxt->record_size);
++	memset(buf, '\0', cxt->record_size);
++
++	return 0;
+ }
+ 
++static struct ramoops_context oops_cxt = {
++	.pstore = {
++		.owner	= THIS_MODULE,
++		.name	= "ramoops",
++		.open	= ramoops_pstore_open,
++		.read	= ramoops_pstore_read,
++		.write	= ramoops_pstore_write,
++		.erase	= ramoops_pstore_erase,
++	},
++};
++
+ static int __init ramoops_probe(struct platform_device *pdev)
+ {
+ 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
+ 	struct ramoops_context *cxt = &oops_cxt;
+ 	int err = -EINVAL;
+ 
++	/* Only a single ramoops area allowed at a time, so fail extra
++	 * probes.
++	 */
++	if (cxt->max_count)
++		goto fail_out;
++
+ 	if (!pdata->mem_size || !pdata->record_size) {
+ 		pr_err("The memory size and the record size must be "
+ 			"non-zero\n");
+-		goto fail3;
++		goto fail_out;
+ 	}
+ 
+ 	pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
+@@ -131,14 +215,15 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	/* Check for the minimum memory size */
+ 	if (pdata->mem_size < MIN_MEM_SIZE &&
+ 			pdata->record_size < MIN_MEM_SIZE) {
+-		pr_err("memory size too small, minium is %lu\n", MIN_MEM_SIZE);
+-		goto fail3;
++		pr_err("memory size too small, minimum is %lu\n",
++			MIN_MEM_SIZE);
++		goto fail_out;
+ 	}
+ 
+ 	if (pdata->mem_size < pdata->record_size) {
+ 		pr_err("The memory size must be larger than the "
+ 			"records size\n");
+-		goto fail3;
++		goto fail_out;
+ 	}
+ 
+ 	cxt->max_count = pdata->mem_size / pdata->record_size;
+@@ -148,23 +233,32 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	cxt->record_size = pdata->record_size;
+ 	cxt->dump_oops = pdata->dump_oops;
+ 
++	cxt->pstore.data = cxt;
++	cxt->pstore.bufsize = cxt->record_size;
++	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
++	spin_lock_init(&cxt->pstore.buf_lock);
++	if (!cxt->pstore.buf) {
++		pr_err("cannot allocate pstore buffer\n");
++		goto fail_clear;
++	}
++
+ 	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
+-		pr_err("request mem region failed\n");
++		pr_err("request mem region (0x%lx@0x%llx) failed\n",
++			cxt->size, cxt->phys_addr);
+ 		err = -EINVAL;
+-		goto fail3;
++		goto fail_buf;
+ 	}
+ 
+ 	cxt->virt_addr = ioremap(cxt->phys_addr,  cxt->size);
+ 	if (!cxt->virt_addr) {
+ 		pr_err("ioremap failed\n");
+-		goto fail2;
++		goto fail_mem_region;
+ 	}
+ 
+-	cxt->dump.dump = ramoops_do_dump;
+-	err = kmsg_dump_register(&cxt->dump);
++	err = pstore_register(&cxt->pstore);
+ 	if (err) {
+-		pr_err("registering kmsg dumper failed\n");
+-		goto fail1;
++		pr_err("registering with pstore failed\n");
++		goto fail_iounmap;
+ 	}
+ 
+ 	/*
+@@ -176,26 +270,43 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	record_size = pdata->record_size;
+ 	dump_oops = pdata->dump_oops;
+ 
++	pr_info("attached 0x%lx@0x%llx (%ux0x%zx)\n",
++		cxt->size, cxt->phys_addr, cxt->max_count, cxt->record_size);
++
+ 	return 0;
+ 
+-fail1:
++fail_iounmap:
+ 	iounmap(cxt->virt_addr);
+-fail2:
++fail_mem_region:
+ 	release_mem_region(cxt->phys_addr, cxt->size);
+-fail3:
++fail_buf:
++	kfree(cxt->pstore.buf);
++fail_clear:
++	cxt->pstore.bufsize = 0;
++	cxt->max_count = 0;
++fail_out:
+ 	return err;
+ }
+ 
+ static int __exit ramoops_remove(struct platform_device *pdev)
+ {
++#if 0
++	/* TODO(kees): We cannot unload ramoops since pstore doesn't support
++	 * unregistering yet.
++	 */
+ 	struct ramoops_context *cxt = &oops_cxt;
+ 
+-	if (kmsg_dump_unregister(&cxt->dump) < 0)
+-		pr_warn("could not unregister kmsg_dumper\n");
+-
+ 	iounmap(cxt->virt_addr);
+ 	release_mem_region(cxt->phys_addr, cxt->size);
++	cxt->max_count = 0;
++
++	/* TODO(kees): When pstore supports unregistering, call it here. */
++	kfree(cxt->pstore.buf);
++	cxt->pstore.bufsize = 0;
++
+ 	return 0;
++#endif
++	return -EBUSY;
+ }
+ 
+ static struct platform_driver ramoops_driver = {
 -- 
-nvpublic
+1.7.0.4
 
