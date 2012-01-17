@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab2AQASY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 19:18:24 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:60860 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab2AQASX (ORCPT
+	id S1752151Ab2AQATK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 19:19:10 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36933 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab2AQATI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 19:18:23 -0500
-Date: Tue, 17 Jan 2012 00:18:12 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jeff Garzik <jeff@garzik.org>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 3.3
-Message-ID: <20120117001812.GA9588@srcf.ucam.org>
-References: <1326691403.13517.21.camel@minggr>
- <CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com>
- <20120116194211.2cd09fb3@pyramind.ukuu.org.uk>
- <CA+55aFxNcAtCmzEejS=3+_L_rp-MOBS0yLS061YgiCsFw_Mt5Q@mail.gmail.com>
- <20120116195427.64edd96f@pyramind.ukuu.org.uk>
- <CA+55aFzXFyHTUv=8NtSmXA2UY_qO5P=HXdGnhUmF9YoA5vpX1g@mail.gmail.com>
- <CA+55aFxUyBvkAhQZFKDuiJrMx9sR2Nb3s5F3P8wDLa4eNspJ1Q@mail.gmail.com>
- <4F14881C.8040601@garzik.org>
- <20120116235427.168e13f2@pyramind.ukuu.org.uk>
- <CA+55aFyafh6cCiV=mMA6Z7qtWqBrJ_pGPev09PP14nJ8Hc=vmg@mail.gmail.com>
+	Mon, 16 Jan 2012 19:19:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFyafh6cCiV=mMA6Z7qtWqBrJ_pGPev09PP14nJ8Hc=vmg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1326744932.16150.9.camel@sbsiddha-desk.sc.intel.com>
+References: <1326744932.16150.9.camel@sbsiddha-desk.sc.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 16 Jan 2012 16:18:46 -0800
+X-Google-Sender-Auth: 2pLDLE-D-kAx5Sfz7Vj76yxZnWs
+Message-ID: <CA+55aFys9zddHAoKURGAeu0QYD_MC11uEyOQGU_4Ybsf200NkQ@mail.gmail.com>
+Subject: Re: [patch] x86, tsc: fix SMI induced variation in quick_pit_calibrate()
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, asit.k.mallick@intel.com
+Content-Type: multipart/mixed; boundary=f46d043748f383e60604b6ae4788
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 04:02:31PM -0800, Linus Torvalds wrote:
-> On Mon, Jan 16, 2012 at 3:54 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> >> Part of the problem with force-enable is that the MMIO BAR may need a
-> >> value, and not have it.  That, and an expectations mismatch between BIOS
-> >
-> > That's fine - we can happily assign one at boot time.
-> 
-> Actually, I think the reason that Matthews patch doesn't work for me
-> is that on my device, BAR #5 really is a _port_ BAR.
-> 
-> I didn't play with it much - busy merging and looking at various other
-> issues - but I'm starting to wonder whether maybe that 8086:1c01 chip
-> doesn't support AHCI at all. Or maybe it does something differently.
-> 
-> Other reports of this have BAR#5 either clear, or an MMIO BAR.   That
-> 
->    Region 5: I/O ports at ffe0 [size=16]
-> 
-> looks really odd. Matthew's patch uses
-> 
->   pci_assign_resource(pdev, 5);
-> 
-> but if it is a PIO region, that won't help anything..
+--f46d043748f383e60604b6ae4788
+Content-Type: text/plain; charset=ISO-8859-1
 
-More recent ICHs may need different setup here. The datasheet should 
-have enough to figure it out, but I can take a look once I get back from 
-LCA.
+On Mon, Jan 16, 2012 at 12:15 PM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> Linus, We are seeing NTP failures on a big cluster as a result of big
+> variation in calibrated TSC values. Our debug showed that it is indeed
+> because of the SMI and its effect on quick pit calibration. Appended
+> patch helps fix it. It ran over the weekend boot tests with out any
+> failures.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Ok, I think your patch is wrong.
+
+HOWEVER.
+
+I think it may be *close* to right.
+
+So what happens is that right now we calculate the "deltatsc" over the
+last PIT read - the one that returned the new MSB.
+
+But what we *should* do is to calculate deltatsc over the *two* last
+PIT reads - so that we have the time delay over seeing both the old
+MSB _and_ seeign the new one. That's the true measure of how precisely
+we caught the "MSB changed" thing, after all!
+
+So I think your patch is a total hack that just compares the two last
+TSC deltas, but it's actually close to the "correct' thing in that it
+does start taking the time to see the last of the previous MSB into
+account.
+
+So this patch changes pit_expect_msb() so that
+
+ - the 'tsc' is the TSC in between the two reads that read the MSB
+change from the PIT (same as before)
+
+ - the 'delta' is the difference in TSC from *before* the MSB changed
+to *after* the MSB changed.
+
+Now the delta is twice as big as before (it covers four PIT accesses,
+roughly 4us), so the comments might have to be updated to match, but
+the rest of the code should "just work" (except it might loop a bit
+longer, and maybe it gives closer to 250 ppm precision).
+
+Does this fix it for you? I have NOT tested it in any way.
+
+                     Linus
+
+--f46d043748f383e60604b6ae4788
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gxi6d0av0
+
+IGFyY2gveDg2L2tlcm5lbC90c2MuYyB8ICAgIDUgKysrLS0KIDEgZmlsZXMgY2hhbmdlZCwgMyBp
+bnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L2tlcm5l
+bC90c2MuYyBiL2FyY2gveDg2L2tlcm5lbC90c2MuYwppbmRleCBjMGRkNWI2MDM3NDkuLjZiNzQy
+ZGE0MTMwNCAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2VybmVsL3RzYy5jCisrKyBiL2FyY2gveDg2
+L2tlcm5lbC90c2MuYwpAQCAtMjkwLDE0ICsyOTAsMTUgQEAgc3RhdGljIGlubGluZSBpbnQgcGl0
+X3ZlcmlmeV9tc2IodW5zaWduZWQgY2hhciB2YWwpCiBzdGF0aWMgaW5saW5lIGludCBwaXRfZXhw
+ZWN0X21zYih1bnNpZ25lZCBjaGFyIHZhbCwgdTY0ICp0c2NwLCB1bnNpZ25lZCBsb25nICpkZWx0
+YXApCiB7CiAJaW50IGNvdW50OwotCXU2NCB0c2MgPSAwOworCXU2NCB0c2MgPSAwLCBwcmV2X3Rz
+YyA9IDA7CiAKIAlmb3IgKGNvdW50ID0gMDsgY291bnQgPCA1MDAwMDsgY291bnQrKykgewogCQlp
+ZiAoIXBpdF92ZXJpZnlfbXNiKHZhbCkpCiAJCQlicmVhazsKKwkJcHJldl90c2MgPSB0c2M7CiAJ
+CXRzYyA9IGdldF9jeWNsZXMoKTsKIAl9Ci0JKmRlbHRhcCA9IGdldF9jeWNsZXMoKSAtIHRzYzsK
+KwkqZGVsdGFwID0gZ2V0X2N5Y2xlcygpIC0gcHJldl90c2M7CiAJKnRzY3AgPSB0c2M7CiAKIAkv
+Kgo=
+--f46d043748f383e60604b6ae4788--
