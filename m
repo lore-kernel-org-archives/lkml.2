@@ -1,34 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab2AQUqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 15:46:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52062 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab2AQUqM (ORCPT
+	id S1755936Ab2AQUwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 15:52:31 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:56103 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755469Ab2AQUw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 15:46:12 -0500
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Tue, 17 Jan 2012 12:40:35 -0800
-X-Google-Sender-Auth: 4cOgcKLFE5Zo2YY5TgQM9HjI_dE
-Message-ID: <CAB=NE6WnEwD58OXS0uqd_emdS+YhPaP+KKKbfGwCdNCCHZdLyA@mail.gmail.com>
-Subject: atl1c, etc bugs
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: nic-devel@qualcomm.com, "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        Kathy Giori <kgiori@qca.qualcomm.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jan 2012 15:52:28 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, x86@kernel.org, joseph.cihula@intel.com,
+        linux-acpi@vger.kernel.org, tboot-devel@lists.sourceforge.net,
+        len.brown@intel.com, rjw@sisk.pl, mingo@redhat.com
+Subject: [PATCH] cleanups in ACPI - removing tboot_ calls for 3.4 (v1)
+Date: Tue, 17 Jan 2012 15:50:06 -0500
+Message-Id: <1326833408-23685-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4F15DF80.0030,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please Cc nic-devel@qualcomm.com in future atl1c and atl1x driver bug
-reports on bugzilla.kernel.org, whether or not they will be looked at
-will depend but moving forward we are trying to get more attention to
-these from QCA (Qualcomm Atheros). Baby steps. I considered adding
-that address to the MAINTAINERS file but it seemed rather
-inappropriate. In the meantime we are reviewing a new driver that also
-supports some older chipsets but that the team may be willing to
-commit to supporting and reviewing all bugs for. We'll see..
+I am not really sure if these patches should go through the ACPI or x86 tree.
+I think they are more x86-ish related and earlier patches for tboot went through
+tip.. Thoughts?
 
-  Luis
+Theset two patches cleanup the ACPI code by removing the 'tboot_sleep'
+function call within the ACPI call and instead use a function call.
+
+The function call is set if Intel TXT is detected, otherwise we just skip over
+and continue on in hwsleep.c.
+
+Tested on AMD, Intel w/TXT and w/o TXT. Also compile tested on IA64 which has
+some reference to tboot but does not use it.
+
+The diff-stat:
+ arch/x86/kernel/tboot.c       |    9 ++++++---
+ drivers/acpi/acpica/hwsleep.c |   10 +++++++---
+ drivers/acpi/osl.c            |   24 ++++++++++++++++++++++++
+ include/acpi/acexcep.h        |    1 +
+ include/linux/acpi.h          |   10 ++++++++++
+ include/linux/tboot.h         |    1 -
+ 6 files changed, 48 insertions(+), 7 deletions(-)
+
+
+The purpose of this cleanup is two-fold:
+ 1). Cleanup the call a bit - that 'tboot_sleep' in ACPICA, which is suppose to be
+     OS-agnostic code looks odd.
+ 2). Piggy-back on the function call if running under Xen [https://lkml.org/lkml/2011/12/16/447].
+     Those patches are still going through review, but the cleanup patches
+     can be submitted as standalone.
+
+Thanks! 
