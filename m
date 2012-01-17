@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2AQTf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 14:35:58 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16526 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab2AQTf5 convert rfc822-to-8bit (ORCPT
+	id S1755589Ab2AQTgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 14:36:06 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59623 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755179Ab2AQTgB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 14:35:57 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 17 Jan 2012 11:35:51 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-CC: Dong Aisheng <dongas86@gmail.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        "Shawn Guo (shawn.guo@linaro.org)" <shawn.guo@linaro.org>
-Date: Tue, 17 Jan 2012 11:35:50 -0800
-Subject: RE: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Thread-Topic: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Thread-Index: AczSV8oRQaMVNJmbRC6br/RpiSxt+gC9zzpw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17801D22FB@HQMAIL01.nvidia.com>
-References: <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
- <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788508AC65@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE3A76A@HQMAIL01.nvidia.com>
- <CAA+hA=RCmctmQJU4-k7YhzQDMi8KuyisBqOFhuMd3RV4_E=gCA@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17801D1FAB@HQMAIL01.nvidia.com>
- <20120114011029.GC1810@S2101-09.ap.freescale.net>
-In-Reply-To: <20120114011029.GC1810@S2101-09.ap.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Jan 2012 14:36:01 -0500
 MIME-Version: 1.0
+In-Reply-To: <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
+References: <1326302710-9427-2-git-send-email-wad@chromium.org>
+	<20120112162231.GA23960@redhat.com>
+	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
+	<20120112172315.GA26295@redhat.com>
+	<CABqD9hZg4sKiVMS-g5ed7-HKOaiUb06y05TL=QkfBkm9kVmquA@mail.gmail.com>
+	<20120113173153.GA24273@redhat.com>
+	<CABqD9hYYJMNtupTiD48sE5wz6RKaFi9J3DpVRyV4X2FpnT3Mnw@mail.gmail.com>
+	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
+	<20120116183730.GB21112@redhat.com>
+	<CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
+	<20120117164523.GA17070@redhat.com>
+	<CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
+Date: Tue, 17 Jan 2012 13:35:59 -0600
+Message-ID: <CABqD9hYG0HsQfp2SBZ7URvw+VZy3PePkMwng9ND_Z3pqfkqBWA@mail.gmail.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>, Indan Zupancic <indan@nul.nu>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shawn Guo wrote at Friday, January 13, 2012 6:11 PM:
-> On Fri, Jan 13, 2012 at 10:33:21AM -0800, Stephen Warren wrote:
-> > So of_device_alloc(), which is called by of_platform_populate() for each
-> > device, already parses basic DT content such as reg and interrupts, and
-> > converts them to Linux resources. I'd consider parsing any pinmux properties
-> > and registering them with the pinctrl subsystem to be of a similar nature,
-> > so adding some code to of_device_alloc() that calls a core pinmux function
-> > to parse the DT node seems reasonable to me.
+On Tue, Jan 17, 2012 at 10:56 AM, Will Drewry <wad@chromium.org> wrote:
+> On Tue, Jan 17, 2012 at 10:45 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 01/16, Will Drewry wrote:
+>>>
+>>> On Mon, Jan 16, 2012 at 12:37 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>> >
+>>> > Yes, thanks, I forgot about compat tasks again. But this is easy, just
+>>> > we need regs_64_to_32().
+>>>
+>>> Yup - we could make the assumption that is_compat_task is always
+>>> 32-bit and the pt_regs is always 64-bit, then copy_and_truncate with
+>>> regs_64_to_32.  Seems kinda wonky though :/
+>>
+>> much simpler/faster than what regset does to create the artificial
+>> user_regs_struct32.
 >
-> I hardly believe that device tree maintainers would agree here.
-> Grant, Rob?
+> True, I could collapse pt_regs to looks like the exported ABI pt_regs.
+>  Then only compat processes would get the copy overhead.  That could
+> be tidy and not break ABI.  It would mean that I have to assume that
+> if unsigned long == 64-bit and is_compat_task(), then the task is
+> 32-bit.  Do you think if we ever add a crazy 128-bit "supercomputer"
+> arch that we will add a is_compat64_task() so that I could properly
+> collapse? :)
+>
+> I like this idea!
 
-I'm explicitly putting Grant and Rob on the To line here to make this
-question stand out to them.
+Ouch, so a few issues:
+- pt_regs isn't exported for most arches
+- is_compat_task arches would need custom fixups
 
--- 
-nvpublic
+I think Indan takes this round :) I'll being integrating a
+syscall_get_arguments approach.  Hopefully it can be quite efficient.
 
+cheers!
+will
