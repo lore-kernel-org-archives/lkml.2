@@ -1,151 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab2AQVFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:05:46 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8609 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab2AQVFo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:05:44 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 17 Jan 2012 13:05:43 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Mike Turquette <mturquette@ti.com>
-Date: Tue, 17 Jan 2012 13:05:42 -0800
-Subject: RE: [RFC v2 7/9] arm/dt: Common plat-versatile support for icst and
- sp804 based system clocks
-Thread-Topic: [RFC v2 7/9] arm/dt: Common plat-versatile support for icst
- and sp804 based system clocks
-Thread-Index: Acy5GdbOUKzQA3TkSOiq7GHfcAOohAcPydSw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17801D2363@HQMAIL01.nvidia.com>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-7-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1323727329-4989-7-git-send-email-grant.likely@secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756043Ab2AQVFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:05:51 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:45967 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755898Ab2AQVFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 16:05:47 -0500
+Date: Tue, 17 Jan 2012 15:05:41 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        eric.dumazet@gmail.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        jkosina@suse.cz, avi@redhat.com, linux-fsdevel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] Fix panic in __d_lookup with high dentry hashtable
+ counts
+Message-ID: <20120117210541.GA21940@sgi.com>
+References: <20120113155237.GA25103@sgi.com>
+ <20120113162236.GK23916@ZenIV.linux.org.uk>
+ <20120117171352.GA18738@sgi.com>
+ <20120117.122229.323838457367599504.davem@davemloft.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120117.122229.323838457367599504.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote at Monday, December 12, 2011 3:02 PM:
-...
-> diff --git a/arch/arm/plat-versatile/clock.c b/arch/arm/plat-versatile/clock.c
-...
-> +void __init versatile_dt_icst_clk_setup(struct device_node *np)
-> +{
-> +	const struct of_device_id *match;
-> +	struct icst_of_clk *icst;
-> +	const struct icst_params *params;
-> +	u32 ref, vd_range[2], rd_range[2], vco_offset, lock_offset;
-> +	__iomem void * base;
-> +
-> +	/*
-> +	 * Only try to drive clocks that we know how to control.
-> +	 * ie. attached to an ARM Versatile block of system registers
-> +	 */
-> +	if (!of_device_is_compatible(np->parent, "arm,versatile-sys-regs"))
-> +		return;
-...
-> +	base = of_iomap(np->parent, 0);
+On Tue, Jan 17, 2012 at 12:22:29PM -0500, David Miller wrote:
+> To be honest I think this is overkill.
+> 
+> Supporting anything larger than a 32-bit hash mask is not even close
+> to being reasonable.  Nobody needs a 4GB hash table, not for anything.
+>
+Here is a patch that keeps the 32-bit hash mask.
 
-Is this pattern (that of "re-using" a parent node's registers) something
-legitimate that you'd expect to see wide-spread use?
 
-I ask because Tegra's CAR (Clock And Reset) HW module controls all the
-clocks in the system. The registers for the various clocks are often
-inter-mingled, so it's not possible to give each clock a node with a
-reg property, since they'd all overlap and conflict. Instead, should we
-do something like the following, coupled with the above pattern in the
-per-clock drivers:
+ 
+When the number of dentry cache hash table entries gets too high
+(2147483648 entries), as happens by default on a 16TB system, use
+of a signed integer in the dcache_init() initialization loop prevents
+the dentry_hashtable from getting initialized, causing a panic in
+__d_lookup().  Fix this in dcache_init() and similar areas.
 
-car@60006000 {
-    compatible = "nvidia,tegra20-car";
-    reg = < 0x60006000 0x1000 >;
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ fs/dcache.c     |    8 ++++----
+ fs/inode.c      |    8 ++++----
+ kernel/pid.c    |    4 ++--
+ mm/page_alloc.c |    1 +
+ net/ipv4/tcp.c  |    5 +++--
+ 5 files changed, 14 insertions(+), 12 deletions(-)
 
-    osc@0 {
-        compatible = "nvidia,tegra20-clk-osc";
-    };
-    pll_p@1 {
-        compatible = "nvidia,tegra20-clk-pll";
-        pll_id = <0>;
-    };
-    pll_c@2 {
-        compatible = "nvidia,tegra20-clk-pll";
-        pll_id = <1>;
-    };
-    ...
-};
-
-Similar, we have many "peripheral" clocks; leaf nodes that are the clocks
-for UART, I2C, SPI, ... that are all controlled in a very similar fashion.
-I can see a couple of alternative ways of representing this:
-
-a)
-
-One big node with a ton of clock inputs and outputs:
-
-    periphclk {
-        compatible = "nvidia,tegra20-clk-periphs";
-        #clock-cells = <1>;
-        /*
-         * This ends up listing almost all clocks in the system;
-         * most are usable as a source for /some/ peripheral clock
-         */
-        clocks = <&pll_p 0> <&pll_c 0> <&pll_m 0 ...>;
-        clock-names = "pll_p", "pll_c", "pll_m", ...;
-        /* And there are maybe 50 of these */
-        clock-output-names = "uart1", "uart2", "i2c1", "i2c2", "spi1", ...;
-    };
-
-Simon Glass proposed something similar to this on the U-Boot mailing
-list for Tegra's peripheral clocks (since he's working on upstreaming
-Tegra USB support and adding device tree at the same time, and needs
-to parameterize clock IDs in the device tree, since he's not using
-AUXDATA). I'm worried that the huge number of peripheral clocks in the
-above binding would be unwieldy. I'm also unclear how to know which of
-the "clock-names" is the parent for each of the "clock-output-names",
-or if this isn't something the current clock bindings are supports to
-address. Each peripclk is an independent mux, divider, and gate.
-
-b)
-
-A node for each peripheral clock:
-
-    uart1@0 {
-        compatible = "nvidia,tegra20-clk-uart";
-        clocks = <&pll_p 0>;
-        clock-names = "clk";
-    };
-
-    uart2@1 {
-        compatible = "nvidia,tegra20-clk-uart";
-        clocks = <&pll_p 0>;
-        clock-names = "clk";
-    };
-
-    i2s@2 {
-        compatible = "nvidia,tegra20-clk-i2s";
-        clocks = <&audio_clk 0>;
-        clock-names = "clk";
-    };
-
-etc.
-
-Thanks for cluing me in!
-
--- 
-nvpublic
-
+Index: linux/fs/dcache.c
+===================================================================
+--- linux.orig/fs/dcache.c
++++ linux/fs/dcache.c
+@@ -2968,7 +2968,7 @@ __setup("dhash_entries=", set_dhash_entr
+ 
+ static void __init dcache_init_early(void)
+ {
+-	int loop;
++	unsigned int loop;
+ 
+ 	/* If hashes are distributed across NUMA nodes, defer
+ 	 * hash allocation until vmalloc space is available.
+@@ -2986,13 +2986,13 @@ static void __init dcache_init_early(voi
+ 					&d_hash_mask,
+ 					0);
+ 
+-	for (loop = 0; loop < (1 << d_hash_shift); loop++)
++	for (loop = 0; loop < (1U << d_hash_shift); loop++)
+ 		INIT_HLIST_BL_HEAD(dentry_hashtable + loop);
+ }
+ 
+ static void __init dcache_init(void)
+ {
+-	int loop;
++	unsigned int loop;
+ 
+ 	/* 
+ 	 * A constructor could be added for stable state like the lists,
+@@ -3016,7 +3016,7 @@ static void __init dcache_init(void)
+ 					&d_hash_mask,
+ 					0);
+ 
+-	for (loop = 0; loop < (1 << d_hash_shift); loop++)
++	for (loop = 0; loop < (1U << d_hash_shift); loop++)
+ 		INIT_HLIST_BL_HEAD(dentry_hashtable + loop);
+ }
+ 
+Index: linux/fs/inode.c
+===================================================================
+--- linux.orig/fs/inode.c
++++ linux/fs/inode.c
+@@ -1654,7 +1654,7 @@ __setup("ihash_entries=", set_ihash_entr
+  */
+ void __init inode_init_early(void)
+ {
+-	int loop;
++	unsigned int loop;
+ 
+ 	/* If hashes are distributed across NUMA nodes, defer
+ 	 * hash allocation until vmalloc space is available.
+@@ -1672,13 +1672,13 @@ void __init inode_init_early(void)
+ 					&i_hash_mask,
+ 					0);
+ 
+-	for (loop = 0; loop < (1 << i_hash_shift); loop++)
++	for (loop = 0; loop < (1U << i_hash_shift); loop++)
+ 		INIT_HLIST_HEAD(&inode_hashtable[loop]);
+ }
+ 
+ void __init inode_init(void)
+ {
+-	int loop;
++	unsigned int loop;
+ 
+ 	/* inode slab cache */
+ 	inode_cachep = kmem_cache_create("inode_cache",
+@@ -1702,7 +1702,7 @@ void __init inode_init(void)
+ 					&i_hash_mask,
+ 					0);
+ 
+-	for (loop = 0; loop < (1 << i_hash_shift); loop++)
++	for (loop = 0; loop < (1U << i_hash_shift); loop++)
+ 		INIT_HLIST_HEAD(&inode_hashtable[loop]);
+ }
+ 
+Index: linux/mm/page_alloc.c
+===================================================================
+--- linux.orig/mm/page_alloc.c
++++ linux/mm/page_alloc.c
+@@ -5258,6 +5258,7 @@ void *__init alloc_large_system_hash(con
+ 		max = ((unsigned long long)nr_all_pages << PAGE_SHIFT) >> 4;
+ 		do_div(max, bucketsize);
+ 	}
++	max = min(max, 0x80000000ULL);
+ 
+ 	if (numentries > max)
+ 		numentries = max;
+Index: linux/kernel/pid.c
+===================================================================
+--- linux.orig/kernel/pid.c
++++ linux/kernel/pid.c
+@@ -543,12 +543,12 @@ struct pid *find_ge_pid(int nr, struct p
+  */
+ void __init pidhash_init(void)
+ {
+-	int i, pidhash_size;
++	unsigned int i, pidhash_size;
+ 
+ 	pid_hash = alloc_large_system_hash("PID", sizeof(*pid_hash), 0, 18,
+ 					   HASH_EARLY | HASH_SMALL,
+ 					   &pidhash_shift, NULL, 4096);
+-	pidhash_size = 1 << pidhash_shift;
++	pidhash_size = 1U << pidhash_shift;
+ 
+ 	for (i = 0; i < pidhash_size; i++)
+ 		INIT_HLIST_HEAD(&pid_hash[i]);
+Index: linux/net/ipv4/tcp.c
+===================================================================
+--- linux.orig/net/ipv4/tcp.c
++++ linux/net/ipv4/tcp.c
+@@ -3220,7 +3220,8 @@ void __init tcp_init(void)
+ {
+ 	struct sk_buff *skb = NULL;
+ 	unsigned long limit;
+-	int i, max_share, cnt;
++	int max_share, cnt;
++	unsigned int i;
+ 	unsigned long jiffy = jiffies;
+ 
+ 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
+@@ -3263,7 +3264,7 @@ void __init tcp_init(void)
+ 					&tcp_hashinfo.bhash_size,
+ 					NULL,
+ 					64 * 1024);
+-	tcp_hashinfo.bhash_size = 1 << tcp_hashinfo.bhash_size;
++	tcp_hashinfo.bhash_size = 1U << tcp_hashinfo.bhash_size;
+ 	for (i = 0; i < tcp_hashinfo.bhash_size; i++) {
+ 		spin_lock_init(&tcp_hashinfo.bhash[i].lock);
+ 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);
