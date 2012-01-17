@@ -1,188 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab2AQVFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:05:51 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:45967 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755898Ab2AQVFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:05:47 -0500
-Date: Tue, 17 Jan 2012 15:05:41 -0600
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        eric.dumazet@gmail.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        jkosina@suse.cz, avi@redhat.com, linux-fsdevel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] Fix panic in __d_lookup with high dentry hashtable
- counts
-Message-ID: <20120117210541.GA21940@sgi.com>
-References: <20120113155237.GA25103@sgi.com>
- <20120113162236.GK23916@ZenIV.linux.org.uk>
- <20120117171352.GA18738@sgi.com>
- <20120117.122229.323838457367599504.davem@davemloft.net>
+	id S1755877Ab2AQVJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:09:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45255 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab2AQVJU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 16:09:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117.122229.323838457367599504.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CABqD9hYP9TOhZLEXbTc-koba4x=z2wdkuNeh3AUmTWcw0+Ywxg@mail.gmail.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	<1326302710-9427-2-git-send-email-wad@chromium.org>
+	<20120112162231.GA23960@redhat.com>
+	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
+	<20120112172315.GA26295@redhat.com>
+	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
+	<addf0ca0d9cc381436209af3afdf878f.squirrel@webmail.greenhost.nl>
+	<CABqD9hbBu8cEbArJWhSr-exFUDrnLSXskP1RrTATBczH2MYzFA@mail.gmail.com>
+	<293e9587acd158b91d7d1793c7e16f7c.squirrel@webmail.greenhost.nl>
+	<CABqD9hY2Uhc2Gzy05+Q+_NrZAq+126+avAO0Kd81zDnEi3EXjQ@mail.gmail.com>
+	<9642e1197443efe9716f418c4883489e.squirrel@webmail.greenhost.nl>
+	<CAGXu5jJvjq5f7Qw1ADh120jAtUsH+L4BW6CY+uaD7GFN53nPBw@mail.gmail.com>
+	<CABqD9hYP9TOhZLEXbTc-koba4x=z2wdkuNeh3AUmTWcw0+Ywxg@mail.gmail.com>
+Date: Tue, 17 Jan 2012 15:09:18 -0600
+Message-ID: <CABqD9hbKPBmdRz8taASiBoB22bKK2AFVRcX7-VUNg9d3JYMufQ@mail.gmail.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Indan Zupancic <indan@nul.nu>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org,
+        Roland McGrath <mcgrathr@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 12:22:29PM -0500, David Miller wrote:
-> To be honest I think this is overkill.
-> 
-> Supporting anything larger than a 32-bit hash mask is not even close
-> to being reasonable.  Nobody needs a 4GB hash table, not for anything.
+On Tue, Jan 17, 2012 at 2:42 PM, Will Drewry <wad@chromium.org> wrote:
+> On Tue, Jan 17, 2012 at 2:34 PM, Kees Cook <keescook@chromium.org> wrote:
+>> On Mon, Jan 16, 2012 at 10:46 PM, Indan Zupancic <indan@nul.nu> wrote:
+>>> So call it once and store the value in a long. Then copy the low half
+>>> to the right place and then the upper half when on 64 bits. It may not
+>>> look too pretty, but the compiler should be able to optimise almost all
+>>> overhead away and end up with 6 (or 12) int copies. Something like this:
+>>>
+>>> struct bpf_data {
+>>>        uint32 syscall_nr;
+>>>        uint32 arg_low[MAX_SC_ARGS];
+>>>        uint32 arg_high[MAX_SC_ARGS];
+>>> };
+>>>
+>>> void fill_bpf_data(struct task_struct *t, struct pt_regs *r, struct bpf_data *d)
+>>> {
+>>>        int i;
+>>>        unsigned long arg;
+>>>
+>>>        d->syscall_nr = syscall_get_nr(t, r);
+>>>        for (i = 0; i < MAX_SC_ARGS; ++i){
+>>>                syscall_get_arguments(t, r, i, 1, &arg);
+>>>                d->arg_low[i] = arg;
+>>>                d->arg_high[i] = arg >> 32;
+>>>        }
+>>> }
+>>
+>> If this turns out to be expensive, it might be possible to break it up
+>> and load the arguments on demand (and cache them); i.e. have
+>> load_pointer() or similar notice when it is about to access something
+>> other than bpf_data.syscall_nr.
 >
-Here is a patch that keeps the 32-bit hash mask.
+> Makes perfect sense!  In theory (as a few other people pointed this
+> out off list), it is entirely possible to never populate any data for
+> load_pointer except an optional cache.  Just provide a custom
+> load_pointer that knows to take the offset return the syscall nr or
+> the args or some slice of the returned data.
+>
+> This is even easier if the struct looks like:
+> struct {
+>  int nr;
+>  union {
+>    uint32_t args32[6];
+>    uint64_t args64[6];
+>  }
+> };
+>
+> since you can just use the offset without doing any endian-based
+> splitting.  Another suggestion (thanks roland!) was to add
+>  int syscall_arch;
+> to the struct populated with the AUDIT_ARCH_* defines.  This would
+> help the case Indan was worried about -- portable filter programs.
+>
+> It looks like there'd be some cross-arch plumbing to make the
+> AUDIT_ARCH_ data available, but not too bad.
+>
+> Seem sane? I'm headed down this path now and I think it'll work out
+> assuming there aren't major objections to the syscall_arch piece.
 
+Hrm. I'm still not so sure about the arch bit.  Without it, BPF
+programs aren't directly share-able, but they could be as long as the
+values for k and syscall numbers are being adapted.  By putting arch
+in the program, it makes it more likely that every system call will
+have a bpf preamble that has to check the syscall_arch.  It could
+easily add 100s of nanoseconds to every call (on slower arches).
 
- 
-When the number of dentry cache hash table entries gets too high
-(2147483648 entries), as happens by default on a 16TB system, use
-of a signed integer in the dcache_init() initialization loop prevents
-the dentry_hashtable from getting initialized, causing a panic in
-__d_lookup().  Fix this in dcache_init() and similar areas.
+I'll probably do the next patch series without arch-checking support
+then I can add if it is seems needed.  Nothing forces a filter program
+to check it, so it could be that we let the author make the decision.
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
----
- fs/dcache.c     |    8 ++++----
- fs/inode.c      |    8 ++++----
- kernel/pid.c    |    4 ++--
- mm/page_alloc.c |    1 +
- net/ipv4/tcp.c  |    5 +++--
- 5 files changed, 14 insertions(+), 12 deletions(-)
-
-Index: linux/fs/dcache.c
-===================================================================
---- linux.orig/fs/dcache.c
-+++ linux/fs/dcache.c
-@@ -2968,7 +2968,7 @@ __setup("dhash_entries=", set_dhash_entr
- 
- static void __init dcache_init_early(void)
- {
--	int loop;
-+	unsigned int loop;
- 
- 	/* If hashes are distributed across NUMA nodes, defer
- 	 * hash allocation until vmalloc space is available.
-@@ -2986,13 +2986,13 @@ static void __init dcache_init_early(voi
- 					&d_hash_mask,
- 					0);
- 
--	for (loop = 0; loop < (1 << d_hash_shift); loop++)
-+	for (loop = 0; loop < (1U << d_hash_shift); loop++)
- 		INIT_HLIST_BL_HEAD(dentry_hashtable + loop);
- }
- 
- static void __init dcache_init(void)
- {
--	int loop;
-+	unsigned int loop;
- 
- 	/* 
- 	 * A constructor could be added for stable state like the lists,
-@@ -3016,7 +3016,7 @@ static void __init dcache_init(void)
- 					&d_hash_mask,
- 					0);
- 
--	for (loop = 0; loop < (1 << d_hash_shift); loop++)
-+	for (loop = 0; loop < (1U << d_hash_shift); loop++)
- 		INIT_HLIST_BL_HEAD(dentry_hashtable + loop);
- }
- 
-Index: linux/fs/inode.c
-===================================================================
---- linux.orig/fs/inode.c
-+++ linux/fs/inode.c
-@@ -1654,7 +1654,7 @@ __setup("ihash_entries=", set_ihash_entr
-  */
- void __init inode_init_early(void)
- {
--	int loop;
-+	unsigned int loop;
- 
- 	/* If hashes are distributed across NUMA nodes, defer
- 	 * hash allocation until vmalloc space is available.
-@@ -1672,13 +1672,13 @@ void __init inode_init_early(void)
- 					&i_hash_mask,
- 					0);
- 
--	for (loop = 0; loop < (1 << i_hash_shift); loop++)
-+	for (loop = 0; loop < (1U << i_hash_shift); loop++)
- 		INIT_HLIST_HEAD(&inode_hashtable[loop]);
- }
- 
- void __init inode_init(void)
- {
--	int loop;
-+	unsigned int loop;
- 
- 	/* inode slab cache */
- 	inode_cachep = kmem_cache_create("inode_cache",
-@@ -1702,7 +1702,7 @@ void __init inode_init(void)
- 					&i_hash_mask,
- 					0);
- 
--	for (loop = 0; loop < (1 << i_hash_shift); loop++)
-+	for (loop = 0; loop < (1U << i_hash_shift); loop++)
- 		INIT_HLIST_HEAD(&inode_hashtable[loop]);
- }
- 
-Index: linux/mm/page_alloc.c
-===================================================================
---- linux.orig/mm/page_alloc.c
-+++ linux/mm/page_alloc.c
-@@ -5258,6 +5258,7 @@ void *__init alloc_large_system_hash(con
- 		max = ((unsigned long long)nr_all_pages << PAGE_SHIFT) >> 4;
- 		do_div(max, bucketsize);
- 	}
-+	max = min(max, 0x80000000ULL);
- 
- 	if (numentries > max)
- 		numentries = max;
-Index: linux/kernel/pid.c
-===================================================================
---- linux.orig/kernel/pid.c
-+++ linux/kernel/pid.c
-@@ -543,12 +543,12 @@ struct pid *find_ge_pid(int nr, struct p
-  */
- void __init pidhash_init(void)
- {
--	int i, pidhash_size;
-+	unsigned int i, pidhash_size;
- 
- 	pid_hash = alloc_large_system_hash("PID", sizeof(*pid_hash), 0, 18,
- 					   HASH_EARLY | HASH_SMALL,
- 					   &pidhash_shift, NULL, 4096);
--	pidhash_size = 1 << pidhash_shift;
-+	pidhash_size = 1U << pidhash_shift;
- 
- 	for (i = 0; i < pidhash_size; i++)
- 		INIT_HLIST_HEAD(&pid_hash[i]);
-Index: linux/net/ipv4/tcp.c
-===================================================================
---- linux.orig/net/ipv4/tcp.c
-+++ linux/net/ipv4/tcp.c
-@@ -3220,7 +3220,8 @@ void __init tcp_init(void)
- {
- 	struct sk_buff *skb = NULL;
- 	unsigned long limit;
--	int i, max_share, cnt;
-+	int max_share, cnt;
-+	unsigned int i;
- 	unsigned long jiffy = jiffies;
- 
- 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
-@@ -3263,7 +3264,7 @@ void __init tcp_init(void)
- 					&tcp_hashinfo.bhash_size,
- 					NULL,
- 					64 * 1024);
--	tcp_hashinfo.bhash_size = 1 << tcp_hashinfo.bhash_size;
-+	tcp_hashinfo.bhash_size = 1U << tcp_hashinfo.bhash_size;
- 	for (i = 0; i < tcp_hashinfo.bhash_size; i++) {
- 		spin_lock_init(&tcp_hashinfo.bhash[i].lock);
- 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);
+cheers!
+will
