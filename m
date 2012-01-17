@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2AQPUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 10:20:36 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:36433 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab2AQPUe (ORCPT
+	id S1754834Ab2AQPWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 10:22:53 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:40748 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754703Ab2AQPWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 10:20:34 -0500
-Message-ID: <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: Hung task when calling clone() due to netfilter/slab
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Tue, 17 Jan 2012 16:20:30 +0100
-In-Reply-To: <alpine.DEB.2.00.1201170910130.4800@router.home>
-References: <1326558605.19951.7.camel@lappy>
-	  <1326561043.5287.24.camel@edumazet-laptop>
-	 <1326632384.11711.3.camel@lappy> <1326648305.5287.78.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1201170910130.4800@router.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 17 Jan 2012 10:22:52 -0500
+Date: Tue, 17 Jan 2012 10:22:50 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Kelvin Cheung <keguang.zhang@gmail.com>
+cc: ralf@linux-mips.org, <linux-mips@linux-mips.org>,
+        <linux-usb@vger.kernel.org>, <gregkh@suse.de>, <zhzhl555@gmail.com>,
+        <peppe.cavallaro@st.com>, <wuzhangjin@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V6 4/5] USB: Add EHCI bus glue for Loongson1x SoCs
+In-Reply-To: <1326777160-9930-5-git-send-email-keguang.zhang@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1201171021320.1818-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 17 janvier 2012 à 09:12 -0600, Christoph Lameter a écrit :
-> On Sun, 15 Jan 2012, Eric Dumazet wrote:
-> 
-> > As soon as the slub_lock is released, another thread can come and find
-> > the new kmem_cache.
-> 
-> Slabs are not looked up by name. A pointer to kmem_cache is passed to slab
-> functions and that pointer is returned from kmem_cache_create(). The risk
-> is someone traversing the kmem_cach list which is only done from within slub.
-> 
-> 
-> Subject: slub: Do not hold slub_lock when calling sysfs_slab_add()
-> 
-> sysfs_slab_add() calls various sysfs functions that actually may
-> end up in userspace doing all sorts of things.
-> 
-> Release the slub_lock after adding the kmem_cache structure to the list.
-> At that point the address of the kmem_cache is not known so we are
-> guaranteed exlusive access to the following modifications to the
-> kmem_cache structure.
-> 
-> If the sysfs_slab_add fails then reacquire the slub_lock to
-> remove the kmem_cache structure from the list.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> ---
->  mm/slub.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2012-01-17 03:07:11.140010438 -0600
-> +++ linux-2.6/mm/slub.c	2012-01-17 03:07:19.532010264 -0600
-> @@ -3929,13 +3929,15 @@ struct kmem_cache *kmem_cache_create(con
->  		if (kmem_cache_open(s, n,
->  				size, align, flags, ctor)) {
->  			list_add(&s->list, &slab_caches);
-> +			up_write(&slub_lock);
->  			if (sysfs_slab_add(s)) {
-> +				down_write(&slub_lock);
->  				list_del(&s->list);
-> +				up_write(&slub_lock);
->  				kfree(n);
->  				kfree(s);
->  				goto err;
->  			}
-> -			up_write(&slub_lock);
->  			return s;
->  		}
->  		kfree(n);
+On Tue, 17 Jan 2012, Kelvin Cheung wrote:
 
+> The Loongson1x SoCs have a built-in EHCI controller.
+> This patch adds the necessary glue code to make the generic EHCI
+> driver usable for them.
 
+> --- /dev/null
+> +++ b/drivers/usb/host/ehci-ls1x.c
+> @@ -0,0 +1,170 @@
+> +/*
+> + *  Bus Glue for Loongson LS1X built-in EHCI controller.
+> + *
+> + *  Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify it
+> + *  under the terms of the GNU General Public License version 2 as published
+> + *  by the Free Software Foundation.
+> + */
+> +
+> +
+> +#include <linux/platform_device.h>
+> +
+> +static int ehci_ls1x_setup(struct usb_hcd *hcd)
+> +{
+> +	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+> +	int ret;
+> +
+> +	ehci->caps = hcd->regs;
+> +	ehci->regs = hcd->regs +
+> +		HC_LENGTH(ehci, ehci_readl(ehci, &ehci->caps->hc_capbase));
+> +	dbg_hcs_params(ehci, "reset");
+> +	dbg_hcc_params(ehci, "reset");
+> +
+> +	/* cache this readonly data; minimize chip reads */
+> +	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
+> +	ehci->sbrn = 0x20;
+> +
+> +	ehci_reset(ehci);
+> +
+> +	/* data structure init */
+> +	ret = ehci_init(hcd);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ehci_port_power(ehci, 0);
+> +
+> +	return 0;
+> +}
 
-Buggy patch, since "goto err;" is going to up_write(&slub_lock) again.
+Most of this routine should be replaced with a call to ehci_setup().
 
-Also Christoph, you forgot to add the very much needed :
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-
-
+Alan Stern
 
