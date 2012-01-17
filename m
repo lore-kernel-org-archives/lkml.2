@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2AQOih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 09:38:37 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51455 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754395Ab2AQOif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 09:38:35 -0500
-X-Sasl-enc: Buv3FIJB1RQZ5tNx3pe89yqR6FiazW+2PYYJcnlsXZOI 1326811114
-Subject: Re: [RFC 0/3] low memory notify
-From: Colin Walters <walters@verbum.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        leonid.moiseichuk@nokia.com, kamezawa.hiroyu@jp.fujitsu.com,
-        penberg@kernel.org, Rik van Riel <riel@redhat.com>, mel@csn.ul.ie,
-        rientjes@google.com, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
-Date: Tue, 17 Jan 2012 09:38:10 -0500
-In-Reply-To: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+	id S1754711Ab2AQOit (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 09:38:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44898 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754559Ab2AQOis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 09:38:48 -0500
+Message-ID: <1326811122.2937.4.camel@localhost>
+Subject: Re: [GIT] Security updates for 3.3: SELinux
+From: Eric Paris <eparis@redhat.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        w41ter@gmail.com
+Date: Tue, 17 Jan 2012 09:38:42 -0500
+In-Reply-To: <12887.1326810483@jrobl>
+References: <alpine.LRH.2.00.1201151322240.1430@tundra.namei.org>
+	 <12887.1326810483@jrobl>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1326811093.3467.41.camel@lenny>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 17:13 +0900, Minchan Kim wrote:
-> As you can see, it's respin of mem_notify core of KOSAKI and Marcelo.
-> (Of course, KOSAKI's original patchset includes more logics but I didn't
-> include all things intentionally because I want to start from beginning
-> again) Recently, there are some requirements of notification of system
-> memory pressure.
+On Tue, 2012-01-17 at 23:28 +0900, J. R. Okajima wrote:
+> James Morris:
+> > Eric Paris (12):
+> 	:::
+> >       capabitlies: ns_capable can use the cap helpers rather than lsm call
+> 
+> After this commit, I am afraid access(2) on NFS may not work correctly.
+> The scenario based upon my guess.
+> - access(2) overrides the credentials.
+> - calls inode_permission() -- ... -- generic_permission() --
+>   ns_capable().
+> - while the old ns_capable() calls security_capable(current_cred()), the
+>   new ns_capable() calls has_ns_capability(current) --
+>   security_capable(__task_cred(t)).
+> 
+> current_cred() returns current->cred which is effective (overridden)
+> credentials, but __task_cred(current) returns current->real_cred (the
+> NFSD's credential). And the overridden credentials by access(2) lost.
+> 
+> Is my guess correct?
 
-How does this relate to the existing cgroups memory notifications?  See
-Documentation/cgroups/memory.txt under "10. OOM Control"
+Linus please revert d2a7009f0bb03fa22ad08dd25472efa0568126b9
 
->  It would be very useful for various cases.
-> For example, QEMU/JVM/Firefox like big memory hogger can release their memory
-> when memory pressure happens.
+Your explanation seems plausible.  I will review the rest and make sure
+a similar problem was not introduced elsewhere.
 
-I don't know about QEMU, but the key characteristic of the JVM and
-Firefox is that they use garbage collection.  Which also applies to
-Python, Ruby, Google Go, Haskell, OCaml...
-
-So what you really want to be investigating here is integration between
-a garbage collector and the system VM.  Your test program looks nothing
-like a garbage collector.  I'd expect most of the performance tradeoffs
-to be similar between these runtimes.  The Azul people have been doing
-something like this: http://www.managedruntime.org/
-
-In Firefox' case though it can also drop other caches, e.g.:
-
-http://people.gnome.org/~federico/news-2007-09.html#firefox-memory-1
-
-As far as the desktop goes, I want to get notified if we're going to hit
-swap, not if we're close to exhausting the total of RAM+swap.  While
-swap may make sense for servers that care about throughput mainly, I
-care a lot about latency.
-
+-Eric
 
