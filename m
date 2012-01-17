@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab2AQIO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 03:14:29 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52374 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab2AQIOY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752454Ab2AQIOY (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 17 Jan 2012 03:14:24 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47117 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab2AQIOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 03:14:20 -0500
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
@@ -16,10 +16,11 @@ Cc: LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
         Johannes Weiner <hannes@cmpxchg.org>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [RFC 2/3] vmscan hook
-Date: Tue, 17 Jan 2012 17:13:57 +0900
-Message-Id: <1326788038-29141-3-git-send-email-minchan@kernel.org>
+        Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [RFC 1/3] /dev/low_mem_notify
+Date: Tue, 17 Jan 2012 17:13:56 +0900
+Message-Id: <1326788038-29141-2-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <1326788038-29141-1-git-send-email-minchan@kernel.org>
 References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
@@ -27,79 +28,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch insert memory pressure notify point into vmscan.c
-Most problem in system slowness is swap-in. swap-in is a synchronous
-opeartion so that it affects heavily system response.
+This patch makes new device file "/dev/low_mem_notify".
+If application polls it, it can receive event when system
+memory pressure happens.
 
-This patch alert it when reclaimer start to reclaim inactive anon list.
-It seems rather earlier but not bad than too late.
+This patch is based on KOSAKI and Marcelo's long time ago work.
+http://lwn.net/Articles/268732/
 
-Other alert point is when there is few cache pages
-In this implementation, if it is (cache < free pages),
-memory pressure notify happens. It has to need more testing and tuning
-or other hueristic. Any suggesion are welcome.
-
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- mm/vmscan.c |   28 ++++++++++++++++++++++++++++
- 1 files changed, 28 insertions(+), 0 deletions(-)
+ drivers/char/mem.c             |    7 ++++
+ include/linux/low_mem_notify.h |    6 ++++
+ mm/Kconfig                     |    7 ++++
+ mm/Makefile                    |    1 +
+ mm/low_mem_notify.c            |   61 ++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 82 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/low_mem_notify.h
+ create mode 100644 mm/low_mem_notify.c
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2880396..cfa2e2d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -43,6 +43,7 @@
- #include <linux/sysctl.h>
- #include <linux/oom.h>
- #include <linux/prefetch.h>
-+#include <linux/low_mem_notify.h>
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index d6e9d08..72bc12b 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -35,6 +35,10 @@
+ # include <linux/efi.h>
+ #endif
  
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -2082,16 +2083,43 @@ static void shrink_mem_cgroup_zone(int priority, struct mem_cgroup_zone *mz,
- {
- 	unsigned long nr[NR_LRU_LISTS];
- 	unsigned long nr_to_scan;
++#ifdef CONFIG_LOW_MEM_NOTIFY
++extern struct file_operations low_mem_notify_fops;
++#endif
 +
- 	enum lru_list lru;
- 	unsigned long nr_reclaimed, nr_scanned;
- 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
- 	struct blk_plug plug;
+ static inline unsigned long size_inside_page(unsigned long start,
+ 					     unsigned long size)
+ {
+@@ -867,6 +871,9 @@ static const struct memdev {
+ #ifdef CONFIG_CRASH_DUMP
+ 	[12] = { "oldmem", 0, &oldmem_fops, NULL },
+ #endif
 +#ifdef CONFIG_LOW_MEM_NOTIFY
-+	bool low_mem = false;
-+	unsigned long free, file;
++	[13] = { "low_mem_notify",0666, &low_mem_notify_fops, NULL},
 +#endif
+ };
  
- restart:
- 	nr_reclaimed = 0;
- 	nr_scanned = sc->nr_scanned;
- 	get_scan_count(mz, sc, nr, priority);
-+#ifdef CONFIG_LOW_MEM_NOTIFY
-+	/* We want to avoid swapout */
-+	if (nr[LRU_INACTIVE_ANON])
-+		low_mem = true;
-+	/*
-+	 * We want to avoid dropping page cache excessively
-+	 * in no swap system
-+	 */
-+	if (nr_swap_pages <= 0) {
-+		free = zone_page_state(mz->zone, NR_FREE_PAGES);
-+		file = zone_page_state(mz->zone, NR_ACTIVE_FILE) +
-+			zone_page_state(mz->zone, NR_INACTIVE_FILE);
-+		/*
-+		 * If we have very few page cache pages,
-+		 * notify to user
-+		 */
-+		if (file < free)
-+			low_mem = true;
-+	}
- 
-+	if (low_mem)
-+		low_memory_pressure();
+ static int memory_open(struct inode *inode, struct file *filp)
+diff --git a/include/linux/low_mem_notify.h b/include/linux/low_mem_notify.h
+new file mode 100644
+index 0000000..bc0fc89
+--- /dev/null
++++ b/include/linux/low_mem_notify.h
+@@ -0,0 +1,6 @@
++#ifndef _LINUX_LOW_MEM_NOTIFY_H
++#define _LINUX_LOW_MEM_NOTIFY_H
++
++void low_memory_pressure(void);
++
 +#endif
- 	blk_start_plug(&plug);
- 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
- 					nr[LRU_INACTIVE_FILE]) {
+diff --git a/mm/Kconfig b/mm/Kconfig
+index e338407..a2f48c6 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -379,3 +379,10 @@ config CLEANCACHE
+ 	  in a negligible performance hit.
+ 
+ 	  If unsure, say Y to enable cleancache
++
++config LOW_MEM_NOTIFY
++	bool "Enable low memory notification"
++	default n
++	help
++	  If system suffer from low memory, kernel can notify it to user through
++	  /dev/low_mem_notify.
+diff --git a/mm/Makefile b/mm/Makefile
+index 50ec00e..7856357 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -51,3 +51,4 @@ obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
+ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+ obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
+ obj-$(CONFIG_CLEANCACHE) += cleancache.o
++obj-$(CONFIG_LOW_MEM_NOTIFY) += low_mem_notify.o
+diff --git a/mm/low_mem_notify.c b/mm/low_mem_notify.c
+new file mode 100644
+index 0000000..7432307
+--- /dev/null
++++ b/mm/low_mem_notify.c
+@@ -0,0 +1,61 @@
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/wait.h>
++#include <linux/poll.h>
++#include <linux/slab.h>
++
++static DECLARE_WAIT_QUEUE_HEAD(low_mem_wait);
++static atomic_t nr_low_mem = ATOMIC_INIT(0);
++
++struct low_mem_notify_file_info {
++        unsigned long last_proc_notify;
++};
++
++void low_memory_pressure(void)
++{
++       	atomic_inc(&nr_low_mem);
++       	wake_up(&low_mem_wait);
++}
++
++static int low_mem_notify_open(struct inode *inode, struct file *file)
++{
++        struct low_mem_notify_file_info *info;
++        int err = 0;
++
++        info = kmalloc(sizeof(*info), GFP_KERNEL);
++        if (!info) {
++                err = -ENOMEM;
++                goto out;
++        }
++
++        file->private_data = info;
++out:
++        return err;
++}
++
++static int low_mem_notify_release(struct inode *inode, struct file *file)
++{
++        kfree(file->private_data);
++        return 0;
++}
++
++static unsigned int low_mem_notify_poll(struct file *file, poll_table *wait)
++{
++        unsigned int ret = 0;
++
++        poll_wait(file, &low_mem_wait, wait);
++
++        if (atomic_read(&nr_low_mem) != 0) {
++                ret = POLLIN;
++                atomic_set(&nr_low_mem, 0);
++        }
++
++        return ret;
++}
++
++struct file_operations low_mem_notify_fops = {
++        .open = low_mem_notify_open,
++        .release = low_mem_notify_release,
++        .poll = low_mem_notify_poll,
++};
++EXPORT_SYMBOL(low_mem_notify_fops);
 -- 
 1.7.7.5
 
