@@ -1,112 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab2AQRZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:25:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57575 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab2AQRZT (ORCPT
+	id S1752918Ab2AQRZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:25:40 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49597 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab2AQRZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:25:19 -0500
-Date: Tue, 17 Jan 2012 09:24:54 -0800
-From: tip-bot for Randy Dunlap <rdunlap@xenotime.net>
-Message-ID: <tip-5ee71535440f034de1196b11f78cef81c4025c2b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, rientjes@google.com, linux-mm@kvack.org,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, rientjes@google.com, linux-mm@kvack.org,
-        mingo@elte.hu
-In-Reply-To: <4F14811E.6090107@xenotime.net>
-References: <4F14811E.6090107@xenotime.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/kconfig: Move the ZONE_DMA entry under a menu
-Git-Commit-ID: 5ee71535440f034de1196b11f78cef81c4025c2b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 17 Jan 2012 12:25:39 -0500
+Date: Tue, 17 Jan 2012 17:25:27 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dimitri Sivanich <sivanich@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Avi Kivity <avi@redhat.com>,
+        linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] Fix panic in __d_lookup with high dentry hashtable counts
+Message-ID: <20120117172527.GQ23916@ZenIV.linux.org.uk>
+References: <20120113155237.GA25103@sgi.com>
+ <20120113162236.GK23916@ZenIV.linux.org.uk>
+ <20120117171352.GA18738@sgi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 17 Jan 2012 09:25:03 -0800 (PST)
+In-Reply-To: <20120117171352.GA18738@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5ee71535440f034de1196b11f78cef81c4025c2b
-Gitweb:     http://git.kernel.org/tip/5ee71535440f034de1196b11f78cef81c4025c2b
-Author:     Randy Dunlap <rdunlap@xenotime.net>
-AuthorDate: Mon, 16 Jan 2012 11:57:18 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 17 Jan 2012 10:41:36 +0100
+On Tue, Jan 17, 2012 at 11:13:52AM -0600, Dimitri Sivanich wrote:
+> When the number of dentry cache hash table entries gets too high
+> (2147483648 entries), as happens by default on a 16TB system, use
+> of a signed integer in the dcache_init() initialization loop prevents
+> the dentry_hashtable from getting initialized, causing a panic in
+> __d_lookup().
+> 
+> In addition, the _hash_mask returned from alloc_large_system_hash() does
+> not support more than a 32 bit hash table size.
+> 
+> Changing the _hash_mask size returned from alloc_large_system_hash() to
+> support larger hash table sizes in the future, and changing loop counter
+> sizes appropriately.
 
-x86/kconfig: Move the ZONE_DMA entry under a menu
-
-Move the ZONE_DMA kconfig symbol under a menu item instead
-of having it listed before everything else in
-"make {xconfig | gconfig | nconfig | menuconfig}".
-
-This drops the first line of the top-level kernel config menu
-(in 3.2) below and moves it under "Processor type and features".
-
-          [*] DMA memory allocation support
-              General setup  --->
-          [*] Enable loadable module support  --->
-          [*] Enable the block layer  --->
-              Processor type and features  --->
-              Power management and ACPI options  --->
-              Bus options (PCI etc.)  --->
-              Executable file formats / Emulations  --->
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mm@kvack.org <linux-mm@kvack.org>
-Link: http://lkml.kernel.org/r/4F14811E.6090107@xenotime.net
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Cc: David Rientjes <rientjes@google.com>
----
- arch/x86/Kconfig |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5731eb7..db190fa 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -120,16 +120,6 @@ config HAVE_LATENCYTOP_SUPPORT
- config MMU
- 	def_bool y
- 
--config ZONE_DMA
--	bool "DMA memory allocation support" if EXPERT
--	default y
--	help
--	  DMA memory allocation support allows devices with less than 32-bit
--	  addressing to allocate within the first 16MB of address space.
--	  Disable if no such devices will be used.
--
--	  If unsure, say Y.
--
- config SBUS
- 	bool
- 
-@@ -253,6 +243,16 @@ source "kernel/Kconfig.freezer"
- 
- menu "Processor type and features"
- 
-+config ZONE_DMA
-+	bool "DMA memory allocation support" if EXPERT
-+	default y
-+	help
-+	  DMA memory allocation support allows devices with less than 32-bit
-+	  addressing to allocate within the first 16MB of address space.
-+	  Disable if no such devices will be used.
-+
-+	  If unsure, say Y.
-+
- source "kernel/time/Kconfig"
- 
- config SMP
+... and I still would like to see somebody familiar with uses of other
+hashes to comment on the desirability of such monsters.  For dcache and
+icache it's absolutely certain to be worse than useless.  We are talking
+about 4Gbuckets here...
