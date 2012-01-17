@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab2AQWJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 17:09:13 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44877 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab2AQWJL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 17:09:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120117212639.GA17297@kroah.com>
-References: <1326834845.3020.36.camel@dabdike>
-	<20120117212639.GA17297@kroah.com>
-Date: Tue, 17 Jan 2012 17:09:10 -0500
-X-Google-Sender-Auth: ZNWACQtya1-pD23CpuFXi3e-yKU
-Message-ID: <CAP=VYLpsdy5ws6PA-DREx-Z6MQP-7djcB3d31kRhR+KT-a74CQ@mail.gmail.com>
-Subject: Re: Fix compile breakage with kref.h
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: James Bottomley <jbottomley@parallels.com>,
+	id S1756090Ab2AQWKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 17:10:43 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38782 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755234Ab2AQWKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 17:10:42 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Subject: Re: [Regression] Commit "tpm: Introduce function to poll for result of self test" breaks suspend
+Date: Tue, 17 Jan 2012 23:13:55 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+References: <201201160022.07176.rjw@sisk.pl> <201201162350.02165.rjw@sisk.pl> <4F14B7AC.9090708@linux.vnet.ibm.com>
+In-Reply-To: <4F14B7AC.9090708@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201172313.55950.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 4:26 PM, Greg Kroah-Hartman <greg@kroah.com> wrote:
-> On Tue, Jan 17, 2012 at 09:14:05PM +0000, James Bottomley wrote:
->> This set of build failures just started appearing on parisc:
->>
->> In file included from drivers/input/serio/serio_raw.c:12:
->> include/linux/kref.h: In function 'kref_get':
->> include/linux/kref.h:40: error: 'TAINT_WARN' undeclared (first use in this function)
->> include/linux/kref.h:40: error: (Each undeclared identifier is reported only once
->> include/linux/kref.h:40: error: for each function it appears in.)
->> include/linux/kref.h: In function 'kref_sub':
->> include/linux/kref.h:65: error: 'TAINT_WARN' undeclared (first use in this function)
->>
->> It happens because TAINT_WARN is defined in kernel.h and this particular
->> compile doesn't seem to include it (no idea why it's just
->> manifesting ... probably some #include file untangling exposed it).  Fix
->> by adding #include <linux/kernel.h> to linux/kref.h
->
-> Does adding <linux/bug.h> fix it instead?  We are using WARN_ON() here.
-> Hm, but that needs kernel.h as well, ugh, what a mess.
+On Tuesday, January 17, 2012, Stefan Berger wrote:
+> On 01/16/2012 05:50 PM, Rafael J. Wysocki wrote:
+> > On Monday, January 16, 2012, Stefan Berger wrote:
+> >> On 01/16/2012 05:05 PM, Rafael J. Wysocki wrote:
+> > Yes, there are.  Below is the result of grepping tpm in dmesg output (the
+> > entire dmesg log from that box is attached).
+> >
+> > [    5.066807] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
+> > [    7.167236] tpm_tis 00:0a: Adjusting TPM timeout parameters.
+> > [    7.893190] tpm_tis 00:0a: A TPM error (7) occurred attempting to read a pcr value
+> > [    7.897202] tpm_tis 00:0a: TPM self test failed
+> > [    7.907599] tpm_inf_pnp 00:0a: Found TPM with ID IFX0102
+> > [    7.909745] tpm_inf_pnp 00:0a: TPM found: config base 0x4e, data base 0x680, chip version 0x000b, vendor id 0x15d1 (Infineon), product id 0x000b (SLB 9635 TT 1.2)
+> > [   96.386200] tpm_inf_pnp 00:0a: saving TPM state
+> > [   96.407630] tpm_inf_pnp 00:0a: Timeout while clearing FIFO
+> > [   96.407634] tpm_inf_pnp 00:0a: error while saving TPM state
+> >
+> > Thanks,
+> > Rafael
+> If possible, I'd like the patch to stick a little longer. Can you try 
+> the following and tell me whether this solves the problem with the 
+> suspend/resume.
 
-I've got some work done already towards cleaning this up; aiming for
-getting it done and in linux-next for the 3.4 cycle.
+Yes, the patch below helps.
 
-https://lkml.org/lkml/2012/1/4/455
+Thanks,
+Rafael
 
-Paul.
----
 
->
->> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
->
-> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> This patch handles the error codes reading of a PCR may cause when a TPM 
+> is disabled and/or deactivated. They would not be a reason for the 
+> tpm_do_selftest function to fail.
+> 
+> Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+> 
+> ---
+>   drivers/char/tpm/tpm.c |    9 +++++++++
+>   drivers/char/tpm/tpm.h |    3 +++
+>   2 files changed, 12 insertions(+)
+> 
+> Index: linux-2.6/drivers/char/tpm/tpm.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/char/tpm/tpm.c
+> +++ linux-2.6/drivers/char/tpm/tpm.c
+> @@ -846,6 +846,15 @@ int tpm_do_selftest(struct tpm_chip *chi
+> 
+>       do {
+>           rc = __tpm_pcr_read(chip, 0, digest);
+> +        if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
+> +            dev_info(chip->dev,
+> +                 "TPM is disabled/deactivated (0x%X)\n", rc);
+> +            /* TPM is disabled and/or deactivated; driver can proceed
+> +             * and TPM does handle commands during suspend/resume
+> +             */
+> +            rc = 0;
+> +            break;
+> +        }
+>           if (rc != TPM_WARN_DOING_SELFTEST)
+>               return rc;
+>           msleep(delay_msec);
+> Index: linux-2.6/drivers/char/tpm/tpm.h
+> ===================================================================
+> --- linux-2.6.orig/drivers/char/tpm/tpm.h
+> +++ linux-2.6/drivers/char/tpm/tpm.h
+> @@ -39,6 +39,9 @@ enum tpm_addr {
+>   };
+> 
+>   #define TPM_WARN_DOING_SELFTEST 0x802
+> +#define TPM_ERR_DEACTIVATED     0x6
+> +#define TPM_ERR_DISABLED        0x7
+> +
+>   #define TPM_HEADER_SIZE        10
+>   extern ssize_t tpm_show_pubek(struct device *, struct device_attribute 
+> *attr,
+>                   char *);
