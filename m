@@ -1,169 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab2AQXIQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 18:08:16 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58626 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756185Ab2AQXIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 18:08:15 -0500
-Date: Wed, 18 Jan 2012 08:08:01 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        leonid.moiseichuk@nokia.com, penberg@kernel.org,
-        Rik van Riel <riel@redhat.com>, mel@csn.ul.ie, rientjes@google.com,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
-Subject: Re: [RFC 2/3] vmscan hook
-Message-ID: <20120117230801.GA903@barrios-desktop.redhat.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
- <1326788038-29141-3-git-send-email-minchan@kernel.org>
- <20120117173932.1c058ba4.kamezawa.hiroyu@jp.fujitsu.com>
- <20120117091356.GA29736@barrios-desktop.redhat.com>
- <20120117190512.047d3a03.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1756319Ab2AQXM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 18:12:29 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38866 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756236Ab2AQXM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 18:12:28 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [Update][PATCH] PM / Hibernate: Fix s2disk regression related to unlock_system_sleep()
+Date: Wed, 18 Jan 2012 00:15:56 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201201172345.15010.rjw@sisk.pl>
+In-Reply-To: <201201172345.15010.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117190512.047d3a03.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201180015.56510.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 07:05:12PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Tue, 17 Jan 2012 18:13:56 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > On Tue, Jan 17, 2012 at 05:39:32PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > On Tue, 17 Jan 2012 17:13:57 +0900
-> > > Minchan Kim <minchan@kernel.org> wrote:
-> > > 
-> > > 
-> > > > +	/*
-> > > > +	 * We want to avoid dropping page cache excessively
-> > > > +	 * in no swap system
-> > > > +	 */
-> > > > +	if (nr_swap_pages <= 0) {
-> > > > +		free = zone_page_state(mz->zone, NR_FREE_PAGES);
-> > > > +		file = zone_page_state(mz->zone, NR_ACTIVE_FILE) +
-> > > > +			zone_page_state(mz->zone, NR_INACTIVE_FILE);
-> > > > +		/*
-> > > > +		 * If we have very few page cache pages,
-> > > > +		 * notify to user
-> > > > +		 */
-> > > > +		if (file < free)
-> > > > +			low_mem = true;
-> > > > +	}
-> > > 
-> > > I can't understand why you think you can check lowmem condition by "file < free".
-> > 
-> > The reason I thought so is I want to maintain some page cache to some degree.
-> > But I admit It's very naive heuristic and should be improved.
-> > 
-> > > And I don't think using per-zone data is good.
-> > > (I'm not sure how many zones embeded guys using..)
-> > 
-> > Agree. In case of swapless system, we need another heuristic.
-> > 
-> > > 
-> > > Another idea:
-> > > 1. can't we use some technique like cleancache to detect the condition ?
-> > 
-> > I totally forgot cleancache approach. Could you remind that?
-> > 
-> 
-> Similar to 'victim cache'. Then, cache some clean pages somewhere when
-> vmscan pageout it.
-> 
->    page -> vmscan's pageout -> cleancache  -> may be discarded.
-> 
-> If a filesystem look up a page which is in a cleancache, cache-hit and
-> bring it back to radix-tree. If not, read from disk again.
-> And cleancache for swap(frontswap) was posted, too.
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Hibernate: Fix s2disk regression related to unlock_system_sleep()
 
-I am not sure this can prevent swapout.
-I think it ends up evicting pages into swap devices.
+Commit bcda53faf5814c0c6025a0bd47108adfcbe9f199, "PM / Sleep: Replace
+mutex_[un]lock(&pm_mutex) with [un]lock_system_sleep()", modified
+snapshot_read() and snapshot_write() in kernel/power/user.c, among
+other things, by making them use lock_system_sleep() and
+unlock_system_sleep() instead of just locking and unlocking pm_mutex.
+Unfortunately, however, this was a mistake, because these routines
+are supposed to be executed after processes have been frozen
+(i.e. when system_freezing_cnt is nonzero), so when
+unlock_system_sleep() is executed by one of them, this causes the
+caller to execute try_to_freeze() and go into the refrigerator as
+a result.  This, in turn, deadlocks the suspend process and locks up
+the system.
 
-> 
-> 
-> > > 2. can't we measure page-in/page-out distance by recording something ?
-> > 
-> > I can't understand your point. What's relation does it with swapout prevent?
-> > 
-> 
-> If distance between pageout -> pagein is short, it means thrashing.
-> For example, recoding the timestamp when the page(mapping, index) was
-> paged-out, and check it at page-in.
+Fix the problem by reverting the part of commit bcda53faf5814c0c6025a
+that changed snapshot_read() and snapshot_write().
 
-Our goal is prevent swapout. When we found thrashing, it's too late.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-> 
-> 
-> > > 3. NR_ANON + NR_FILE_MAPPED can't mean the amount of core memory if we can
-> > >    ignore the data file cache ?
-> > 
-> > It's good but how do we define some amount?
-> > It's very vague but I guess we can get a good idea from that.
-> > Perhaps, you already has it.
-> > 
-> 
-> Hm, a rough idea is...
-> 
->   - we now have rss counter per mm.
->     - mapped anon
->     - mapped file
->     - swapents
->  
-> Ok, here, add one more counter.
-> 
->     - paged-out file. (I think this can be recorded in pte.)
->       +1 when try_to_unmap_file() unmaps it.
->       -1 when a page is back or unmapped.
-> 
-> Then, scanning all tasks. Then,
-> 
->                                  mapped_anon + mapped_file
-> active_map_ratio =   ----------------------------------------------------- * 100
->                      mapped_anon + mapped_file + swapents + paged_out_file
-> 
-> Ok, how to use this value...
-> 
-> Like memcg's threshold notify interface, you can change the mem_notify interface
-> to use eventfd() as
-> 
->    <event_fd, fd of /dev/mem_notify, threshold of active_map_ratio>
-> 
-> This will inform you an event when active_map_ratio crosses passed threshold.
-> 
-> complicated ? 
+Well, it wasn't a good idea to make snapshot_write() check
+system_freezing_cnt, because the resume process doesn't freeze tasks.
+So, it's better to simply revert the changes that introduced the
+original regression.
 
-Yes. :)
-I want to make simple if possible.
+Thanks,
+Rafael
 
-> 
-> 
-> > > 4. how about checking kswapd's busy status ?
-> > 
-> > Could you elaborate on your idea?
-> > 
-> 
-> I just thought kswapd may not stop when the situation is very bad.
+---
+ kernel/power/user.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-As I said eariler, the goal is prevent swap.
-When we found kswapd is busy, it might many pages are already swapped-out so it's too late.
-
-> 
-> Thanks,
-> -Kame
-> 
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Index: linux/kernel/power/user.c
+===================================================================
+--- linux.orig/kernel/power/user.c
++++ linux/kernel/power/user.c
+@@ -137,7 +137,7 @@ static ssize_t snapshot_read(struct file
+ 	ssize_t res;
+ 	loff_t pg_offp = *offp & ~PAGE_MASK;
+ 
+-	lock_system_sleep();
++	mutex_lock(&pm_mutex);
+ 
+ 	data = filp->private_data;
+ 	if (!data->ready) {
+@@ -158,7 +158,7 @@ static ssize_t snapshot_read(struct file
+ 		*offp += res;
+ 
+  Unlock:
+-	unlock_system_sleep();
++	mutex_unlock(&pm_mutex);
+ 
+ 	return res;
+ }
+@@ -170,7 +170,7 @@ static ssize_t snapshot_write(struct fil
+ 	ssize_t res;
+ 	loff_t pg_offp = *offp & ~PAGE_MASK;
+ 
+-	lock_system_sleep();
++	mutex_lock(&pm_mutex);
+ 
+ 	data = filp->private_data;
+ 
+@@ -187,7 +187,7 @@ static ssize_t snapshot_write(struct fil
+ 	if (res > 0)
+ 		*offp += res;
+ unlock:
+-	unlock_system_sleep();
++	mutex_unlock(&pm_mutex);
+ 
+ 	return res;
+ }
