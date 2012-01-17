@@ -1,166 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab2AQSWg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 13:22:36 -0500
-Received: from david.siemens.de ([192.35.17.14]:26542 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361Ab2AQSWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753779Ab2AQSWb (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 17 Jan 2012 13:22:31 -0500
-Message-ID: <4F15BBE3.4090800@siemens.com>
-Date: Tue, 17 Jan 2012 19:20:19 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+Received: from acsinet15.oracle.com ([141.146.126.227]:63981 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab2AQSW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 13:22:29 -0500
+Date: Tue, 17 Jan 2012 13:19:22 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Tian, Kevin" <kevin.tian@intel.com>
+Cc: liang tang <liang.tang@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "mike.mcclurg@citrix.com" <mike.mcclurg@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Yu, Ke" <ke.yu@intel.com>, "konrad@kernel.org" <konrad@kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>
+Subject: Re: [Xen-devel] [PATCH 3/8] ACPI: processor: add
+ __acpi_processor_[un]register_driver helpers.
+Message-ID: <20120117181922.GA12900@phenom.dumpdata.com>
+References: <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
+ <20111220153145.GB13253@andromeda.dapyr.net>
+ <625BA99ED14B2D499DC4E29D8138F1506E01AAC469@shsmsx502.ccr.corp.intel.com>
+ <20111223030103.GA7218@andromeda.dapyr.net>
+ <AADFC41AFE54684AB9EE6CBC0274A5D10145B9@SHSMSX102.ccr.corp.intel.com>
+ <20120103205925.GI17472@phenom.dumpdata.com>
+ <AADFC41AFE54684AB9EE6CBC0274A5D102D62B@SHSMSX102.ccr.corp.intel.com>
+ <20120113222451.GA6922@phenom.dumpdata.com>
+ <AADFC41AFE54684AB9EE6CBC0274A5D10FCD37A9@SHSMSX102.ccr.corp.intel.com>
+ <20120117171314.GB5494@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Eric B Munson <emunson@mgebm.net>
-CC: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, mtosatti@redhat.com,
-        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4 V9] Add ioctl for KVMCLOCK_GUEST_STOPPED
-References: <1326823488-11413-1-git-send-email-emunson@mgebm.net> <1326823488-11413-4-git-send-email-emunson@mgebm.net>
-In-Reply-To: <1326823488-11413-4-git-send-email-emunson@mgebm.net>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120117171314.GB5494@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4F15BC2C.0074,ss=1,re=-2.300,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-17 19:04, Eric B Munson wrote:
-> Now that we have a flag that will tell the guest it was suspended, create an
-> interface for that communication using a KVM ioctl.
+On Tue, Jan 17, 2012 at 12:13:14PM -0500, Konrad Rzeszutek Wilk wrote:
+> > > I was trying to figure out how difficult it would be to just bring Pxx states to
+> > > the Xen hypervisor using the existing ACPI interfaces. And while it did not pass
+> > > all the _Pxx states (seems that all the _PCT, _PSS, _PSD, _PPC flags need to
+> > > be enabled in the hypercall to make this work), it demonstrates what I had in
+> > > mind. 
 > 
-> Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> .. snip..
+> > > 	/* TODO: Under Xen, the C-states information is not present.
+> > >  	 * Figure out why. */
+> > 
+> > it's possible related to this long thread:
+> > 
+> > http://lists.xen.org/archives/html/xen-devel/2011-08/msg00511.html
+> > 
+> > IOW, Xen doesn't export mwait capability to dom0, which impacts _PDC setting.
+> > Final solution is to have a para-virtualized PDC call for that.
 > 
-> Cc: mingo@redhat.com
-> Cc: hpa@zytor.com
-> Cc: ryanh@linux.vnet.ibm.com
-> Cc: aliguori@us.ibm.com
-> Cc: mtosatti@redhat.com
-> Cc: jeremy.fitzhardinge@citrix.com
-> Cc: kvm@vger.kernel.org
-> Cc: linux-arch@vger.kernel.org
-> Cc: x86@kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
-> Changes from V8:
->  Make KVM_GUEST_PAUSED a per vm ioctl instead of per vcpu
+> Aaah. Let me play with that a bit. Thanks for the pointer.
 > 
-> Changes from V7:
->  Define KVM_CAP_GUEST_PAUSED and support check
->  Call mark_page_dirty () after setting PVCLOCK_GUEST_STOPPED
+> .. snip..
+> > the prerequisites for this module to work correctly, is that dom0 has the right
+> > configurations to have all necessary Cx/Px information ready before this 
+> > module is loaded. That may mean enabling full CONFIG_CPU_IDLE and CONFIG_CPUFREQ,
 > 
-> Changes from V4:
->  Rename KVM_GUEST_PAUSED to KVMCLOCK_GUEST_PAUSED
->  Add new ioctl description to api.txt
+> Right.
+> > which in current form may add some negative impact, e.g. dom0 will try to control
+> > Px/Cx to conflict with Xen. So some tweaks may be required in that part.
 > 
->  Documentation/virtual/kvm/api.txt |   13 +++++++++++++
->  arch/x86/kvm/x86.c                |   26 ++++++++++++++++++++++++++
->  include/linux/kvm.h               |    3 +++
->  3 files changed, 42 insertions(+), 0 deletions(-)
+> Yup. Hadn't even looked at the cpufreq tries to do yet.
+> > 
+> > given our purpose now, is to come up a cleaner approach which tolerate some
+> > assumptions (e.g. #VCPU of dom0 == #PCPU), there's another option following this
+> > trend (perhaps compensate your idea). We can register a Xen-cpuidle and 
+> > xen-cpufreq driver to current Linux cpuidle and cpufreq framework, which plays 
+> > mainly two roles:
+> > 	- a dummy driver to prevent dom0 touching actual Px/Cx
+> > 	- parse ACPI Cx/Px information to Xen, in a similar way you did above
 > 
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index e1d94bf..1931e5c 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -1491,6 +1491,19 @@ following algorithm:
->  Some guests configure the LINT1 NMI input to cause a panic, aiding in
->  debugging.
->  
-> +4.65 KVMCLOCK_GUEST_PAUSED
-> +
-> +Capability: KVM_CAP_GUEST_PAUSED
-> +Architechtures: Any that implement pvclocks (currently x86 only)
-> +Type: vcpu ioctl
-> +Parameters: None
-> +Returns: 0 on success, -1 on error
-> +
-> +This signals to the host kernel that the specified guest is being paused by
-> +userspace.  The host will set a flag in the pvclock structure that is checked
-> +from the soft lockup watchdog.  This ioctl can be called during pause or
-> +unpause.
-> +
->  5. The kvm_run structure
->  
->  Application code obtains a pointer to the kvm_run structure by
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 14d6cad..4661abe 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2056,6 +2056,7 @@ int kvm_dev_ioctl_check_extension(long ext)
->  	case KVM_CAP_X86_ROBUST_SINGLESTEP:
->  	case KVM_CAP_XSAVE:
->  	case KVM_CAP_ASYNC_PF:
-> +	case KVM_CAP_GUEST_PAUSED:
->  	case KVM_CAP_GET_TSC_KHZ:
->  		r = 1;
->  		break;
-> @@ -3061,6 +3062,27 @@ out:
->  	return r;
->  }
->  
-> +/*
-> + * kvm_set_guest_paused() indicates to the guest kernel that it has been
-> + * stopped by the hypervisor.  This function will be called from the host only.
-> + */
-> +static int kvm_set_guest_paused(struct kvm *kvm)
-> +{
-> +	struct kvm_vcpu *vcpu;
-> +	struct pvclock_vcpu_time_info *src;
-> +	int i;
-> +
-> +	for (i = 0; i < atomic_read(&kvm->online_vcpus); i++) {
-> +		vcpu = kvm->vcpus[i];
+> Yeah, I like where you are heading.
+> > 
+> > there may have some other trickiness, but the majority code will be self-contained.
+> 
+> <nods>
 
-kvm_for_each_vcpu?
+For reference, the attached module does end up programming the Pxx states in the
+hypervisor. The issues that I hit on a Core i3 box (some MSI motherboard) it would fail
+on the PCT, but I hadn't really dug into this. And did not look any further in the
+Cxx states issue either. On a old Core 2 Duo it looked to have programmed the hypervisor
+fine, but the machine afterwards started to act very weird so I am sure there is
+something extra that needs to be done (like maybe not using memcpy in this module).
 
-> +		if (!vcpu->arch.time_page)
-> +			continue;
-> +		src = &vcpu->arch.hv_clock;
-> +		src->flags |= PVCLOCK_GUEST_STOPPED;
-> +		mark_page_dirty(vcpu->kvm, vcpu->arch.time >> PAGE_SHIFT);
-> +	}
-> +	return 0;
-> +}
-> +
->  long kvm_arch_vm_ioctl(struct file *filp,
->  		       unsigned int ioctl, unsigned long arg)
->  {
-> @@ -3351,6 +3373,10 @@ long kvm_arch_vm_ioctl(struct file *filp,
->  		r = 0;
->  		break;
->  	}
-> +	case KVMCLOCK_GUEST_PAUSED: {
-> +		r = kvm_set_guest_paused(kvm);
-> +		break;
-> +	}
->  
->  	default:
->  		;
-> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> index 68e67e5..4ffe0df 100644
-> --- a/include/linux/kvm.h
-> +++ b/include/linux/kvm.h
-> @@ -558,6 +558,7 @@ struct kvm_ppc_pvinfo {
->  #define KVM_CAP_PPC_PAPR 68
->  #define KVM_CAP_S390_GMAP 71
->  #define KVM_CAP_TSC_DEADLINE_TIMER 72
-> +#define KVM_CAP_GUEST_PAUSED 73
->  
->  #ifdef KVM_CAP_IRQ_ROUTING
->  
-> @@ -763,6 +764,8 @@ struct kvm_clock_data {
->  #define KVM_CREATE_SPAPR_TCE	  _IOW(KVMIO,  0xa8, struct kvm_create_spapr_tce)
->  /* Available with KVM_CAP_RMA */
->  #define KVM_ALLOCATE_RMA	  _IOR(KVMIO,  0xa9, struct kvm_allocate_rma)
-> +/* VM is being stopped by host */
-> +#define KVMCLOCK_GUEST_PAUSED	  _IO(KVMIO,   0xaa)
->  
->  #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1 << 0)
->  
+#include <linux/device.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/types.h>
+#include <acpi/acpi_bus.h>
+#include <acpi/acpi_drivers.h>
+#include <acpi/processor.h>
+#include <linux/cpumask.h>
 
-Jan
+#include <xen/interface/platform.h>
+#include <asm/xen/hypercall.h>
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+#define DRV_NAME	"ACPI_PXX"
+#define DRV_CLASS	"ACPI_PXX_CLASS"
+MODULE_AUTHOR("Konrad Rzeszutek Wilk");
+MODULE_DESCRIPTION("ACPI Processor Driver to send data to Xen hypervisor");
+MODULE_LICENSE("GPL");
+
+static int parse_acpi_cxx(struct acpi_processor *_pr)
+{
+	struct acpi_processor_cx *cx;
+	int i;
+
+	for (i = 1; i <= _pr->power.count; i++) {
+		cx = &_pr->power.states[i];
+		if (!cx->valid)
+			continue;
+		pr_info("%s: %d %d %d 0x%x\n", __func__,
+			cx->type, cx->latency, cx->power, (u32)cx->address);
+	}
+	/* TODO: Under Xen, the C-states information is not present.
+ 	 * Figure out why.
+ 	 * Kevin thinks it might be: http://lists.xen.org/archives/html/xen-devel/2011-08/msg00511.html
+ 	 * But perhaps it is http://lists.xen.org/archives/html/xen-devel/2011-08/msg00521.html?
+ 	 */
+	return 0;
+}
+static struct xen_processor_px *xen_copy_pss_data(struct acpi_processor *_pr,
+		  				  struct xen_processor_performance *xen_perf)
+{
+	struct xen_processor_px *xen_states = NULL;
+	int i;
+
+	xen_states = kzalloc(_pr->performance->state_count *
+			     sizeof(struct xen_processor_px), GFP_KERNEL);
+	if (!xen_states)
+		return ERR_PTR(-ENOMEM);
+
+	xen_perf->state_count = _pr->performance->state_count;
+	for (i = 0; i < _pr->performance->state_count; i++) {
+		/* Figure out if the lack of __packed is bad */
+		memcpy(&(xen_states[i]), &(_pr->performance->states[i]),
+		       sizeof(struct acpi_processor_px));
+	}
+	return xen_states;
+}
+static int
+xen_copy_psd_data(struct acpi_processor *_pr,
+		  struct xen_processor_performance *xen_perf)
+{
+	/* Figure out if the lack of __packed is bad */
+	printk(KERN_INFO "psd: %ld\n",
+		offsetof(struct xen_processor_performance, domain_info.num_entries));
+
+	xen_perf->shared_type = _pr->performance->shared_type;
+	memcpy(&(xen_perf->domain_info), &(_pr->performance->domain_info),
+	       sizeof(struct acpi_psd_package));
+
+	return 0;
+}
+static int push_pxx_to_hypervisor(struct acpi_processor *_pr)
+{
+	int ret = -EINVAL;
+	struct xen_platform_op op = {
+		.cmd			= XENPF_set_processor_pminfo,
+		.interface_version	= XENPF_INTERFACE_VERSION,
+		.u.set_pminfo.id	= _pr->acpi_id,
+		.u.set_pminfo.type	= XEN_PM_PX,
+	};
+	struct xen_processor_performance *xen_perf;
+	struct xen_processor_px *xen_states = NULL;
+
+	if (!_pr->performance)
+		return -ENODEV;
+
+	xen_perf = &op.u.set_pminfo.perf;
+
+	/* PPC */
+	xen_perf->platform_limit = _pr->performance_platform_limit;
+	xen_perf->flags |= XEN_PX_PPC;
+	/* PCT */
+	/* Mmight need to copy them individually as there are no __packed
+	 * so the offset might be wrong on a 32-bit host with 64-bit hypervisor. */
+	printk(KERN_INFO "address: %ld\n", offsetof(struct xen_processor_performance, control_register.address));
+	printk(KERN_INFO "address: %ld\n", offsetof(struct xen_processor_performance, status_register.address));
+	printk(KERN_INFO "state_count: %ld\n", offsetof(struct xen_processor_performance, state_count));
+	memcpy(&xen_perf->control_register, &(_pr->performance->control_register),
+	       sizeof(struct acpi_pct_register));
+	memcpy(&xen_perf->status_register, &(_pr->performance->status_register),
+	       sizeof(struct acpi_pct_register));
+	xen_perf->flags |= XEN_PX_PCT;
+	/* PSS */
+	xen_states = xen_copy_pss_data(_pr, xen_perf);
+	if (!IS_ERR_OR_NULL(xen_states)) {
+		set_xen_guest_handle(xen_perf->states, xen_states);
+		xen_perf->flags |= XEN_PX_PSS;
+	}
+	/* PSD */
+	if (!xen_copy_psd_data(_pr, xen_perf)) {
+		xen_perf->flags |= XEN_PX_PSD;
+	}
+	printk(KERN_INFO "Sending %x\n", xen_perf->flags);
+
+	ret = HYPERVISOR_dom0_op(&op);
+	if (!IS_ERR_OR_NULL(xen_states))
+		kfree(xen_states);
+	return ret;
+}
+static int parse_acpi_pxx(struct acpi_processor *_pr)
+{
+/*
+	struct acpi_processor_px *px;
+	int i;
+
+	for (i = 0; i < _pr->performance->state_count;i++) {
+		px = &(_pr->performance->states[i]);
+		pr_info("%s: [%d]: %d, %d, %d, %d, %d, %d\n", __func__,
+			i, (u32)px->core_frequency, (u32)px->power,
+			(u32)px->transition_latency,
+			(u32)px->bus_master_latency,
+			(u32)px->control, (u32)px->status);
+	}
+*/
+	if (xen_initial_domain())
+		return push_pxx_to_hypervisor(_pr);
+	return 0;
+}
+static int parse_acpi_data(void)
+{
+	int cpu;
+	int err = -ENODEV;
+	struct acpi_processor *_pr;
+	struct cpuinfo_x86 *c = &cpu_data(0);
+
+	/* TODO: Under AMD, the information is populated
+	 * using the powernow-k8 driver which does an MSR_PSTATE_CUR_LIMIT
+	 * MSR which returns the wrong value so the population of 'processors'
+	 * has bogus data. So only run this under Intel for right now. */
+	if (!cpu_has(c, X86_FEATURE_EST))
+		return -ENODEV;
+	for_each_possible_cpu(cpu) {
+		_pr = per_cpu(processors, cpu);
+		if (!_pr)
+			continue;
+
+		if (_pr->flags.power)
+			(void)parse_acpi_cxx(_pr);
+
+		if (_pr->performance->states)
+			err = parse_acpi_pxx(_pr);
+		if (err)
+			break;
+	}
+	return -ENODEV; /* force it to unload */
+}
+static int __init acpi_pxx_init(void)
+{
+	return parse_acpi_data();
+}
+static void __exit acpi_pxx_exit(void)
+{
+}
+module_init(acpi_pxx_init);
+module_exit(acpi_pxx_exit);
