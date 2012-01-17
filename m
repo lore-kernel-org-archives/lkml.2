@@ -1,156 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab2AQSGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 13:06:06 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:34409 "EHLO mail.mgebm.net"
+	id S1753164Ab2AQSMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 13:12:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31281 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab2AQSEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 13:04:52 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
-        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4 V9] Add ioctl for KVMCLOCK_GUEST_STOPPED
-Date: Tue, 17 Jan 2012 13:04:47 -0500
-Message-Id: <1326823488-11413-4-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1326823488-11413-1-git-send-email-emunson@mgebm.net>
-References: <1326823488-11413-1-git-send-email-emunson@mgebm.net>
+	id S1750949Ab2AQSMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 13:12:54 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH] Fix c-state transitions when !NOHZ (nohz=off kernel parameter)
+Date: Tue, 17 Jan 2012 13:12:48 -0500
+Message-Id: <1326823968-3482-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have a flag that will tell the guest it was suspended, create an
-interface for that communication using a KVM ioctl.
+Some users do still boot with "nohz=off" which re-enables the old "tickfull"
+kernel and still want the (diminished) power savings of c-states.
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
+When examining the c-state transitions for !NOHZ it was noticed that the
+processors never leaving the polling state.
 
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: jeremy.fitzhardinge@citrix.com
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
+ie) powertop shows 98-99% residency in POLLING for all cpus
+
+This occurs  because the value of the current tick_sched's sleep_length
+is never updated from its initialized value if !NOHZ.  sleep_length is used
+by the cpuidle code (via a call to tick_nohz_get_sleep_length()) to determine
+how long a cpu should sleep for and in what c-state.
+
+Admittedly I am not overly familiar with this code and there may be some
+unknown repercussion from doing this.  I can say that experimentally across
+several systems I do see the cpus going into deeper c-states after making
+this change, and there does not appear to be anything wrong with the system.
+
+----8<----
+
+Fix c-state transitions when !NOHZ (nohz=off kernel parameter)
+
+The value of sleep_length needs to be updated for the !NOHZ case in
+order for processor c-state transitions to work.
+
+Cc: Len Brown <len.brown@intel.com>
 ---
-Changes from V8:
- Make KVM_GUEST_PAUSED a per vm ioctl instead of per vcpu
+ kernel/time/tick-sched.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Changes from V7:
- Define KVM_CAP_GUEST_PAUSED and support check
- Call mark_page_dirty () after setting PVCLOCK_GUEST_STOPPED
-
-Changes from V4:
- Rename KVM_GUEST_PAUSED to KVMCLOCK_GUEST_PAUSED
- Add new ioctl description to api.txt
-
- Documentation/virtual/kvm/api.txt |   13 +++++++++++++
- arch/x86/kvm/x86.c                |   26 ++++++++++++++++++++++++++
- include/linux/kvm.h               |    3 +++
- 3 files changed, 42 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index e1d94bf..1931e5c 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1491,6 +1491,19 @@ following algorithm:
- Some guests configure the LINT1 NMI input to cause a panic, aiding in
- debugging.
- 
-+4.65 KVMCLOCK_GUEST_PAUSED
-+
-+Capability: KVM_CAP_GUEST_PAUSED
-+Architechtures: Any that implement pvclocks (currently x86 only)
-+Type: vcpu ioctl
-+Parameters: None
-+Returns: 0 on success, -1 on error
-+
-+This signals to the host kernel that the specified guest is being paused by
-+userspace.  The host will set a flag in the pvclock structure that is checked
-+from the soft lockup watchdog.  This ioctl can be called during pause or
-+unpause.
-+
- 5. The kvm_run structure
- 
- Application code obtains a pointer to the kvm_run structure by
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 14d6cad..4661abe 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2056,6 +2056,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_X86_ROBUST_SINGLESTEP:
- 	case KVM_CAP_XSAVE:
- 	case KVM_CAP_ASYNC_PF:
-+	case KVM_CAP_GUEST_PAUSED:
- 	case KVM_CAP_GET_TSC_KHZ:
- 		r = 1;
- 		break;
-@@ -3061,6 +3062,27 @@ out:
- 	return r;
- }
- 
-+/*
-+ * kvm_set_guest_paused() indicates to the guest kernel that it has been
-+ * stopped by the hypervisor.  This function will be called from the host only.
-+ */
-+static int kvm_set_guest_paused(struct kvm *kvm)
-+{
-+	struct kvm_vcpu *vcpu;
-+	struct pvclock_vcpu_time_info *src;
-+	int i;
-+
-+	for (i = 0; i < atomic_read(&kvm->online_vcpus); i++) {
-+		vcpu = kvm->vcpus[i];
-+		if (!vcpu->arch.time_page)
-+			continue;
-+		src = &vcpu->arch.hv_clock;
-+		src->flags |= PVCLOCK_GUEST_STOPPED;
-+		mark_page_dirty(vcpu->kvm, vcpu->arch.time >> PAGE_SHIFT);
-+	}
-+	return 0;
-+}
-+
- long kvm_arch_vm_ioctl(struct file *filp,
- 		       unsigned int ioctl, unsigned long arg)
- {
-@@ -3351,6 +3373,10 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 		r = 0;
- 		break;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 7656642..d2e2782 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -300,8 +300,10 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
+ 			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
  	}
-+	case KVMCLOCK_GUEST_PAUSED: {
-+		r = kvm_set_guest_paused(kvm);
-+		break;
+ 
+-	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
++	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE)) {
++		ts->sleep_length = ktime_sub(dev->next_event, now);
+ 		return;
 +	}
  
- 	default:
- 		;
-diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 68e67e5..4ffe0df 100644
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -558,6 +558,7 @@ struct kvm_ppc_pvinfo {
- #define KVM_CAP_PPC_PAPR 68
- #define KVM_CAP_S390_GMAP 71
- #define KVM_CAP_TSC_DEADLINE_TIMER 72
-+#define KVM_CAP_GUEST_PAUSED 73
- 
- #ifdef KVM_CAP_IRQ_ROUTING
- 
-@@ -763,6 +764,8 @@ struct kvm_clock_data {
- #define KVM_CREATE_SPAPR_TCE	  _IOW(KVMIO,  0xa8, struct kvm_create_spapr_tce)
- /* Available with KVM_CAP_RMA */
- #define KVM_ALLOCATE_RMA	  _IOR(KVMIO,  0xa9, struct kvm_allocate_rma)
-+/* VM is being stopped by host */
-+#define KVMCLOCK_GUEST_PAUSED	  _IO(KVMIO,   0xaa)
- 
- #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1 << 0)
- 
+ 	if (need_resched())
+ 		return;
 -- 
-1.7.5.4
+1.7.1
 
