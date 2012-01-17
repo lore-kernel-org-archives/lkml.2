@@ -1,131 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab2AQV4l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:56:41 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:49086 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755118Ab2AQV4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:56:40 -0500
-Date: Tue, 17 Jan 2012 22:56:26 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: Sha <handai.szj@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
-Message-ID: <20120117215626.GA2380@cmpxchg.org>
-References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
- <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
- <CALWz4izwNBN_qcSsqg-qYw-Esc9vBL3=4cv3Wsg1jf6001_fWQ@mail.gmail.com>
- <20120112085904.GG24386@cmpxchg.org>
- <CALWz4iz3sQX+pCr19rE3_SwV+pRFhDJ7Lq-uJuYBq6u3mRU3AQ@mail.gmail.com>
- <20120113224424.GC1653@cmpxchg.org>
- <4F158418.2090509@gmail.com>
- <20120117145348.GA3144@cmpxchg.org>
- <CALWz4iwYpkP6Dfz+3NFXQK9ToaKdm8WCsbBmHRLVwRjVp0wjOQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALWz4iwYpkP6Dfz+3NFXQK9ToaKdm8WCsbBmHRLVwRjVp0wjOQ@mail.gmail.com>
+	id S1755979Ab2AQV7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:59:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42752 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755118Ab2AQV7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 16:59:22 -0500
+Date: Tue, 17 Jan 2012 13:59:21 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Tony Luck <tony.luck@intel.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] ramoops: use pstore interface
+Message-Id: <20120117135921.3f68701e.akpm@linux-foundation.org>
+In-Reply-To: <20120107171516.GE2618@outflux.net>
+References: <20120107171516.GE2618@outflux.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 12:25:31PM -0800, Ying Han wrote:
-> On Tue, Jan 17, 2012 at 6:53 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Tue, Jan 17, 2012 at 10:22:16PM +0800, Sha wrote:
-> >> IMHO, it may checking the cgroup's soft limit standalone without
-> >> looking up its ancestors just as Ying said.
-> >
-> > Again, this would be a regression as soft limits have been applied
-> > hierarchically forever.
-> 
-> If we are comparing it to the current implementation, agree that the
-> soft reclaim is applied hierarchically. In the example above, A2 will
-> be picked for soft reclaim while A is hitting its hard limit, which in
-> turns reclaim from B1 and B2 regardless of their soft limit setting.
-> However, I haven't convinced myself this is how we are gonna use the
-> soft limit.
+On Sat, 7 Jan 2012 09:15:16 -0800
+Kees Cook <keescook@chromium.org> wrote:
 
-Of course I'm comparing it to the current implementation, this is what
-I'm changing!
+> Instead of using /dev/mem directly, use the common pstore infrastructure
+> to handle Oops gathering and extraction.
 
-> The soft limit setting for each cgroup is a hit for applying pressure
-> under memory contention. One way of setting the soft limit is based on
-> the cgroup's working set size. Thus, we allow cgroup to grow above its
-> soft limit with cold page cache unless there is a memory pressure
-> comes from above. Under the hierarchical reclaim, we will exam the
-> soft limit and only apply extra pressure to the ones above their soft
-> limit. Here the same example:
-> 
-> root
-> -> A (hard limit 20G, soft limit 12G, usage 20G)
->    -> A1 ( soft limit 2G,   usage 1G)
->    -> A2 ( soft limit 10G, usage 19G)
-> 
->           ->B1 (soft limit 5G, usage 4G)
->           ->B2 (soft limit 5G, usage 15G)
-> 
-> If A is hitting its hard limit, we will reclaim all the children under
-> A hierarchically but only adding extra pressure to the ones above
-> their soft limits (A2, B2). Adding extra pressure to B1 will introduce
-> known regression based on customer expectation since the 4G usage are
-> hot memory.
+um, why?  This changelog provides no reason for anyone to apply the
+patch!
 
-I can only repeat myself: A has a soft limit set, so the customer
-expects global pressure to arise sooner or later.  If that happens, A
-will be soft-limit reclaimed hierarchically in the _existing code_.
-That's how the soft limit currently works and I don't mean to change
-it _with this patch_.  The customer has to expect that B1 can be
-reclaimed as a consequence of the soft limit in A or A2 today, so I
-don't know where this expectation of different behaviour should even
-come from.  How can this be a regression?!
+>
+> ...
+>
+> -static void ramoops_do_dump(struct kmsg_dumper *dumper,
+> -		enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
+> -		const char *s2, unsigned long l2)
+> +static int ramoops_pstore_open(struct pstore_info *psi)
+> +{
+> +	struct ramoops_context *cxt = (struct ramoops_context *)psi->data;
 
-> I am not aware of how the existing soft reclaim being used, i bet
-> there are not a lot. If we are making changes on the current
-> implementation, we should also take the opportunity to think about the
-> initial design as well. Thoughts?
+Unneeded and undesirable cast of void*.  Multiple instances of this.
 
-I agree that these semantics should be up for debate.  And I think
-changing it to something like you have in mind is indeed a good idea;
-to not have soft limits apply hierarchically but instead follow down
-the whole chain and only soft limit reclaim those that are themselves
-above their soft limit.  But it's an entirely different matter!
+> +	cxt->read_count = 0;
+> +	return 0;
+> +}
+> +
+> +static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+> +				   struct timespec *time,
+> +				   char **buf,
+> +				   struct pstore_info *psi)
+> +{
+> +	ssize_t size;
+> +	char *rambuf;
+> +	struct ramoops_context *cxt = (struct ramoops_context *)psi->data;
+> +
+> +	if (cxt->read_count >= cxt->max_count)
+> +		return -EINVAL;
+> +	*id = cxt->read_count++;
+> +	/* Only supports dmesg output so far. */
+> +	*type = PSTORE_TYPE_DMESG;
+> +	/* TODO(kees): Bogus time for the moment. */
 
-This patch is supposed to do only two things: 1. refactor the soft
-limit implementation, staying as close as possible/practical to the
-current semantics and 2. fix the inconsistency that soft limits are
-ignored when pressure does not originate at the root_mem_cgroup.  If
-that is too much change in semantics I can easily ditch 2., I just
-didn't see the use of maintaining an inconsistency that resulted
-purely from the limitations of the current implementation by re-adding
-more code and because I think that this would not be surprising
-behaviour.  It would be as simple as adding an extra check in reclaim
-that only minds soft limits upon global pressure:
+Is this hard to fix now?
 
-	if (global_reclaim(sc) && mem_cgroup_over_soft_limit(root, memcg))
-		/* resulting action */
+> +	time->tv_sec = 0;
+> +	time->tv_nsec = 0;
+> +
+> +	rambuf = cxt->virt_addr + (*id * cxt->record_size);
+> +	size = strnlen(rambuf, cxt->record_size);
+> +	*buf = kmalloc(size, GFP_KERNEL);
+> +	if (*buf == NULL)
+> +		return -ENOMEM;
+> +	memcpy(*buf, rambuf, size);
+> +
+> +	return size;
+> +}
 
-and it would have nothing to do how soft limits are actually applied
-once triggered.  I can include this in the next version, but it won't
-fix the problem you seem to be having with the _existing_ behaviour.
+Note that pstore_get_records() will treat the -ve errno returns from
+->read() in the same manner as EOF.  IOW, your error codes will be
+dropped on the floor.  This appears to be a bug in pstore_get_records().
 
-I also don't think that my patch will get in the way of what you are
-planning to do: in fact, you already have code that easily turns
-mem_cgroup_over_soft_limit() into a non-hierarchical predicate.
+> +static int ramoops_pstore_write(enum pstore_type_id type,
+> +				enum kmsg_dump_reason reason,
+> +				u64 *id,
+> +				unsigned int part,
+> +				size_t size, struct pstore_info *psi)
+>  {
+> -	struct ramoops_context *cxt = container_of(dumper,
+> -			struct ramoops_context, dump);
+> -	unsigned long s1_start, s2_start;
+> -	unsigned long l1_cpy, l2_cpy;
+> -	int res, hdr_size;
+> -	char *buf, *buf_orig;
+> +	char *buf;
+> +	size_t res;
+>  	struct timeval timestamp;
+> +	struct ramoops_context *cxt = (struct ramoops_context *)psi->data;
+> +	size_t available = cxt->record_size;
+>  
+> +	/* Only store dmesg dumps. */
+> +	if (type != PSTORE_TYPE_DMESG)
+> +		return -EINVAL;
+> +
+> +	/* Only store crash dumps. */
+>  	if (reason != KMSG_DUMP_OOPS &&
+> -	    reason != KMSG_DUMP_PANIC &&
+> -	    reason != KMSG_DUMP_KEXEC)
+> -		return;
+> +	    reason != KMSG_DUMP_PANIC)
+> +		return -EINVAL;
+>  
+>  	/* Only dump oopses if dump_oops is set */
+>  	if (reason == KMSG_DUMP_OOPS && !cxt->dump_oops)
 
-Even more will change when you invert the soft limits to become actual
-guarantees and skip reclaiming memcgs that are below their soft limits
-but I don't think this patch is in the way of doing that, either.
+The above three comments describe what the code does, which was
+obvious.  They failed to describe why it does this, which was
+unobvious.  Sigh.
 
-I feel that these are all orthogonal changes.  So if possible, could
-we take just one step at a time and leave hypothetical behaviour out
-of it unless the proposed changes clearly get in the way of where we
-agreed we want to go?
+> -		return;
+> +		return -EINVAL;
+> +
+> +	/* Explicitly only take the first part of any new crash.
+> +	 * If our buffer is larger than kmsg_bytes, this can never happen,
+> +	 * and if our buffer is smaller than kmsg_bytes, we don't want the
+> +	 * report split across multiple records. */
+> +	if (part != 1)
+> +		return -ENOSPC;
+>  
+>  	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
+> -	buf_orig = buf;
+>  
+> -	memset(buf, '\0', cxt->record_size);
+>  	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
+>  	buf += res;
+> +	available -= res;
+> +
+>  	do_gettimeofday(&timestamp);
+>
+> ...
+>
 
-If I misunderstood everything completely and you actually believe this
-patch will get in the way, could you tell me where and how?
-
-Thanks.
