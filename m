@@ -1,59 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2AQQgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 11:36:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1473 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755067Ab2AQQgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 11:36:17 -0500
-Message-ID: <4F15A34F.40808@redhat.com>
-Date: Tue, 17 Jan 2012 11:35:27 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1755301Ab2AQQhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 11:37:22 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36556 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184Ab2AQQhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 11:37:20 -0500
+Message-ID: <4F15A3A7.5020901@linux.vnet.ibm.com>
+Date: Tue, 17 Jan 2012 22:06:55 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC 1/3] /dev/low_mem_notify
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org> <1326788038-29141-2-git-send-email-minchan@kernel.org> <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
-In-Reply-To: <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        justinmattock@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mgorman@suse.de>, Gilad Ben-Yossef <gilad@benyossef.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com> <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com> <4F10BDF7.8030306@linux.vnet.ibm.com> <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com> <4F10EB5B.5060804@linux.vnet.ibm.com> <1326766892.16150.21.camel@sbsiddha-desk.sc.intel.com> <4F1544EA.5060907@linux.vnet.ibm.com> <CAAJw_ZtPZLPgi2z-0zB0n3hk9xzEbTnb1QGi1LjM5DC02t_W7A@mail.gmail.com>
+In-Reply-To: <CAAJw_ZtPZLPgi2z-0zB0n3hk9xzEbTnb1QGi1LjM5DC02t_W7A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12011716-5816-0000-0000-000000E8A462
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 04:27 AM, Pekka Enberg wrote:
-> On Tue, Jan 17, 2012 at 10:13 AM, Minchan Kim<minchan@kernel.org>  wrote:
->> +static unsigned int low_mem_notify_poll(struct file *file, poll_table *wait)
->> +{
->> +        unsigned int ret = 0;
->> +
->> +        poll_wait(file,&low_mem_wait, wait);
->> +
->> +        if (atomic_read(&nr_low_mem) != 0) {
->> +                ret = POLLIN;
->> +                atomic_set(&nr_low_mem, 0);
->> +        }
->> +
->> +        return ret;
->> +}
+On 01/17/2012 09:45 PM, Jeff Chua wrote:
+
+> On Tue, Jan 17, 2012 at 5:52 PM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> On 01/17/2012 07:51 AM, Suresh Siddha wrote:
+>>
+>>> On Sat, 2012-01-14 at 08:11 +0530, Srivatsa S. Bhat wrote:
+>>>> Of course, the warnings at drivers/base/core.c: device_release()
+>>>> as well as the IPI to offline cpu warnings still appear but are rather
+>>>> unrelated and harmless to the issue being discussed.
+>>>
+>>> As far the IPI offline cpu warnings are concerned, appended patch should
+>>> fix it. Can you please give it a try? Peterz, can you please review and
+>>> queue it after Srivatsa confirms that it works? Thanks.
+>>
+>>
+>> Hi Suresh,
+>>
+>> Thanks for the patch, but unfortunately it doesn't fix the problem!
+>> Exactly the same stack traces are seen during a CPU Hotplug stress test.
+>> (I didn't even have to stress it - it is so fragile that just a script
+>> to offline all cpus except the boot cpu was good enough to reproduce the
+>> problem easily.)
+> 
+> Works for me. But I'm still seeing this only during boot. Related?
+> Shall I bisect?
+> 
+> 
+> Freeing unused kernel memory: 520k freed
+> Write protecting the kernel read-only data: 8192k
+> Freeing unused kernel memory: 1140k freed
+> Freeing unused kernel memory: 464k freed
+> Adding 8290300k swap on /dev/sda3.  Priority:-1 extents:1 across:8290300k SS
+> vmalloc: allocation failure: 0 bytes
+
+
+This is a different problem. Not the same as the one Suresh's patch
+intended to fix. Your case has something to do with memory allocation
+failures. The problem I am facing is Inter-Processor Interrupts (IPIs)
+being sent to CPUs that are going offline, after selecting them as the
+new ilb (Idle load balancer).
+
+> modprobe: page allocation failure: order:0, mode:0xd2
+> Pid: 1914, comm: modprobe Not tainted 3.2.0 #6
+> Call Trace:
+> [<ffffffff8107c1ff>] ? 0xffffffff8107c1ff
+> [<ffffffff81061fec>] ? 0xffffffff81061fec
+> [<ffffffff8109ab6c>] ? 0xffffffff8109ab6c
+> [<ffffffff81061fec>] ? 0xffffffff81061fec
+> [<ffffffff8101bacc>] ? 0xffffffff8101bacc
+> [<ffffffff81061fec>] ? 0xffffffff81061fec
+> [<ffffffff81061fec>] ? 0xffffffff81061fec
+> [<ffffffff81062ec8>] ? 0xffffffff81062ec8
+> [<ffffffff810637c1>] ? 0xffffffff810637c1
+> [<ffffffff814d9cb9>] ? 0xffffffff814d9cb9
+> Mem-Info:
+> Node 0 DMA per-cpu:
+> CPU    0: hi:    0, btch:   1 usd:   0
+> CPU    1: hi:    0, btch:   1 usd:   0
+> CPU    2: hi:    0, btch:   1 usd:   0
+> CPU    3: hi:    0, btch:   1 usd:   0
+> Node 0 DMA32 per-cpu:
+> CPU    0: hi:  186, btch:  31 usd: 158
+> CPU    1: hi:  186, btch:  31 usd:  25
+> CPU    2: hi:  186, btch:  31 usd:   0
+> CPU    3: hi:  186, btch:  31 usd:   0
+> Node 0 Normal per-cpu:
+> CPU    0: hi:  186, btch:  31 usd:  93
+> CPU    1: hi:  186, btch:  31 usd:  74
+> CPU    2: hi:  186, btch:  31 usd: 170
+> CPU    3: hi:  186, btch:  31 usd:  60
+> active_anon:6162 inactive_anon:1 isolated_anon:0
+> active_file:1782 inactive_file:5164 isolated_file:0
+> unevictable:0 dirty:0 writeback:0 unstable:0
+> free:1963131 slab_reclaimable:818 slab_unreclaimable:2728
+> mapped:1639 shmem:3 pagetables:292 bounce:0
+> 
 >
-> Doesn't this mean that only one application will receive the notification?
 
-One at a time, which could be a good thing since the last
-thing we want to do when the system is under memory
-pressure is create a thundering herd.
 
-OTOH, we do need to ensure that programs take turns getting
-the memory pressure notification.  I do not know whether
-poll_wait automatically takes care of that...
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
--- 
-All rights reversed
