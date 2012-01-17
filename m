@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2AQIhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 03:37:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65335 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2AQIhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 03:37:15 -0500
+	id S1752447Ab2AQIjT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 03:39:19 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55813 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751822Ab2AQIjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 03:39:18 -0500
+Date: Tue, 17 Jan 2012 09:38:43 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Greg KH <gregkh@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Sergei Trofimovich <slyich@gmail.com>, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>, justinmattock@gmail.com,
+        Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: [PATCH] mce: fix warning messages about static struct mce_device
+Message-ID: <20120117083843.GC13181@elte.hu>
+References: <20120116224028.GA5072@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <5f9ec59562e86536c4123f61891b95590293030f.1326707233.git.viresh.kumar@st.com>
-References: <cover.1326707233.git.viresh.kumar@st.com>
-	<5f9ec59562e86536c4123f61891b95590293030f.1326707233.git.viresh.kumar@st.com>
-Date: Tue, 17 Jan 2012 09:37:14 +0100
-Message-ID: <CACRpkdY4QQK6wtB5aPU+FwdyyGq-owsDxMmxdwJVnkzdJTRs_Q@mail.gmail.com>
-Subject: Re: [PATCH 2/8] dmaengine: Add flow controller information to dma_slave_config
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
-        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
-        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
-        viresh.linux@gmail.com, bhavna.yadav@st.com, vincenzo.frascino@st.com,
-        mirko.gardi@st.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120116224028.GA5072@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 10:50 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
 
-> Flow controller is programmable for few controllers and there are few
-> intelligent peripherals like, Synopsys JPEG controller, that needs to be a flow
-> controller of DMA transfers on dest side.
->
-> For this, currently two drivers, pl08x and dw_dmac, support flow controller to
-> be passed from platform to these drivers.
+* Greg KH <gregkh@suse.de> wrote:
 
-OK
+> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+> index f35ce43..6aefb14 100644
+> --- a/arch/x86/include/asm/mce.h
+> +++ b/arch/x86/include/asm/mce.h
+> @@ -151,7 +151,7 @@ static inline void enable_p5_mce(void) {}
+>  
+>  void mce_setup(struct mce *m);
+>  void mce_log(struct mce *m);
+> -DECLARE_PER_CPU(struct device, mce_device);
+> +extern struct device *mce_device[CONFIG_NR_CPUS];
 
-> Perhaps, this should be a part of struct dma_slave_config. This patch adds
-> another field device_fc to this structure. User drivers must pass this as true
-> if they want to be flow controller of certain transfers.
+Minor nit, i don't think we have any other such [CONFIG_NR_CPUS] 
+pattern in the kernel.
 
-I dma_slave_config is supposed to be about info that
+This should be something like:
 
-1) Must to be set-up at runtime
-2) All DMA controllers need to know
+  DECLARE_PER_CPU(struct device *, mce_device);
 
-So if it doesn't *have* to be set up by drivers at runtime, please keep it in
-platform data.
+Or the pointer should be attached to the CPU info structure.
 
-If it is (1), so you have a use case where you have to switch a certain channel
-between DMA master and device flow control at run-time it looks like it could
-be useful for others as well, but I doubt this so I'd like some back-up on
-that.
+Thanks,
 
-Yours,
-Linus Walleij
+	Ingo
