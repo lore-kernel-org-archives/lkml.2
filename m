@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab2AQO3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 09:29:38 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:32025 "EHLO mgw-da01.nokia.com"
+	id S1754519Ab2AQOaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 09:30:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27629 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754405Ab2AQO3g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 09:29:36 -0500
-From: <leonid.moiseichuk@nokia.com>
-To: <penberg@kernel.org>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <cesarb@cesarb.net>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <emunson@mgebm.net>,
-        <aarcange@redhat.com>, <riel@redhat.com>, <mel@csn.ul.ie>,
-        <rientjes@google.com>, <dima@android.com>, <gregkh@suse.de>,
-        <rebecca@android.com>, <san@google.com>, <akpm@linux-foundation.org>,
-        <vesa.jaaskelainen@nokia.com>
-Subject: RE: [PATCH v2 2/2] Memory notification pseudo-device module
-Thread-Topic: [PATCH v2 2/2] Memory notification pseudo-device module
-Thread-Index: AQHM1Rx+OvEMeHtKAEm6KWeO1Y1MiJYQkA4w///1OgCAABKHwA==
-Date: Tue, 17 Jan 2012 14:28:28 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045593DE@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-	<5b429d6c4d0a3ad06ec01193eab7edc98a03e0de.1326803859.git.leonid.moiseichuk@nokia.com>
-	<CAOJsxLFCbF8azY48_SHhYQ0oRDrf2-rEvGMKHBne2Znpj0XL4g@mail.gmail.com>
-	<84FF21A720B0874AA94B46D76DB9826904559397@008-AM1MPN1-003.mgdnok.nokia.com>
- <CAOJsxLEtuzEYVUtukrA1JeJnuOJ6OsOHOj=j2gs=-0NHYVPzLQ@mail.gmail.com>
-In-Reply-To: <CAOJsxLEtuzEYVUtukrA1JeJnuOJ6OsOHOj=j2gs=-0NHYVPzLQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.23.171]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754163Ab2AQOad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 09:30:33 -0500
+Date: Tue, 17 Jan 2012 15:27:39 +0100
+From: Andrew Jones <drjones@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, david.woodhouse@intel.com,
+        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, holt@sgi.com,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
+        dhowells@redhat.com, takata@linux-m32r.org, geert@linux-m68k.org,
+        yasutake.koichi@jp.panasonic.com, jonas@southpole.se, kyle@mcmartin.ca,
+        deller@gmx.de, jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
+        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
+        mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+Message-ID: <20120117142738.GB3188@turtle.usersys.redhat.com>
+References: <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com>
+ <201201120918.53026.arnd@arndb.de>
+ <20120112101805.GA2375@turtle.usersys.redhat.com>
+ <alpine.DEB.2.00.1201121259270.17287@chino.kir.corp.google.com>
+ <20120113085125.GA2452@turtle.usersys.redhat.com>
+ <alpine.DEB.2.00.1201130230320.15417@chino.kir.corp.google.com>
+ <20120113122202.GB2452@turtle.usersys.redhat.com>
+ <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com>
+ <20120116091832.GA2401@turtle.usersys.redhat.com>
+ <alpine.DEB.2.00.1201161521240.16270@chino.kir.corp.google.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 17 Jan 2012 14:28:30.0124 (UTC) FILETIME=[48A566C0:01CCD524]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1201161521240.16270@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
-> Pekka Enberg
-> Sent: 17 January, 2012 15:59
-...
-> If you're serious about making this a generic thing, it must live in
-> mm/mem_notify.c. No ifs or buts about it.
-> I'm also not completely convinced we need to put memnotify policy in the
-> kernel. Why can't we extend Minchan's patch to report the relevant
-> numbers and let the userspace figure out when pressure is above some
-> interesting threshold?
+On Mon, Jan 16, 2012 at 03:28:02PM -0800, David Rientjes wrote:
+> > even notice this problem? As you say, EMBEDDED does nothing more than
+> > select EXPERT, which does exactly the same thing as EMBEDDED did.
+> 
+> Except now it can be extended for its original semantics, as I've 
+> explained to you multiple times.
 
-I do not insist to have it as a part mm, but if you have 1-2-3 items what should be done in this or Minchan's patch I can participate.
->From my point of view Minchan's patch is not ideal due to required:
-1. depends on cgroups (at least as I see it from patch in shrink_mem_cgroup_zone()part)
-2. reports only memory pressure based on relation in between free and file pages which is means by active file IO you may get lowmem 
-3. swapping should not produce lowmem, but active swapping - must, is  it checked there?
-+	if (nr[LRU_INACTIVE_ANON])
-+		low_mem = true;
-4. required changes in vmscan
+Extend yes, but you could have done that without introducing EXPERT. To
+extend you simply use it in more places.
 
-I think, due to everyone based on his experience/working area profile has own understanding what is "low memory"  (or similar situation which needs to be tracked) 
-it should be  some generic or extendable API, not like ON/OFF trigger for something happened inside VM. From another point of view it should not be too generic due 
-to tasks could be solved using memcg, ionice, OOM killer or variations of soft-OOM-patches.
+Now changing it, i.e. making it conform more closely to its name and only
+affect embedded related options, you can't do. If you were to do so, then
+you would lose backward compatibility. How do you know there aren't users
+that started using EMBEDDED for the non-embedded side effects? If EMBEDDED
+is ever corrected, and then stops selecting EXPERT, then you risk causing
+them problems.
 
+If you didn't catch the irony in the last paragraph, then please read it
+again.
 
+> You may be underestimating how popular CONFIG_EXPERT is.
+
+I doubt it. I don't doubt that it's used through EMBEDDED. EMBEDDED has
+been around a long time, so is likely widely used. Since EMBEDDED is used,
+then yes, EXPERT is used (EMBEDDED selects EXPERT). However, I really
+doubt anybody has opted to use EXPERT by itself for the purpose advertised
+in its help text. If they had, then they very likely would have complained
+about it turning off default values, and/or they would have posted a patch
+very similar to this one. Hint, I wanted to use EXPERT, but immediately
+discovered that it's broken, and then immediately posted this patch.
+
+> That's the only way you can extend CONFIG_EMBEDDED to actually mean 
+> something and is exactly what we wanted to do when the patch was merged: 
+> allow it to identify options that embedded users will want to configure 
+> without exposing all of CONFIG_EXPERT.
+
+Fine. It's not in the scope of this patch.
+
+> more concerning that you don't care that they'll now silently lose config 
+> options next time they run make oldconfig with your patch.
+
+If they have CONFIG_EMBEDDED=y, then nothing changes for them. If they
+only have CONFIG_EXPERT=y, then they *DON'T* silently lose config options
+*ANYMORE*. This patch fixes that silent disabling of options!
 
