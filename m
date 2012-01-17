@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab2AQBAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 20:00:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54374 "EHLO mx2.suse.de"
+	id S1752520Ab2AQBA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 20:00:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54387 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752315Ab2AQBAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 20:00:18 -0500
-Date: Mon, 16 Jan 2012 16:59:44 -0800
+	id S1752372Ab2AQBAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 20:00:23 -0500
+Date: Mon, 16 Jan 2012 17:00:06 -0800
 From: Greg KH <gregkh@suse.de>
-To: =?utf-8?B?7LWc7KKF7ZmY?= <jhbird.choi@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>
-Subject: Re: Re: [PATCH] driver-core: Fix null reference in
- subsys_interface_unregister
-Message-ID: <20120117005944.GA14863@suse.de>
-References: <15905052.41411326760535818.JavaMail.weblogic@epv6ml08>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Sergei Trofimovich <slyich@gmail.com>, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        Borislav Petkov <bp@amd64.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        Ming Lei <tom.leiming@gmail.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>, justinmattock@gmail.com,
+        Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: [PATCH] mce: fix warning messages about static struct mce_device
+Message-ID: <20120117010006.GB14863@suse.de>
+References: <20120116224028.GA5072@suse.de>
+ <20120117001403.GC18875@dztty>
+ <20120117001548.GA6884@suse.de>
+ <CA+55aFzCsRM-w3JY13VUxmbZYGKAs0qrFS28QjHsTW9+5BuZJQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <15905052.41411326760535818.JavaMail.weblogic@epv6ml08>
+In-Reply-To: <CA+55aFzCsRM-w3JY13VUxmbZYGKAs0qrFS28QjHsTW9+5BuZJQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 12:35:35AM +0000, 최종환 wrote:
-> Greg KH wrote:
+On Mon, Jan 16, 2012 at 04:21:20PM -0800, Linus Torvalds wrote:
+> On Mon, Jan 16, 2012 at 4:15 PM, Greg KH <gregkh@suse.de> wrote:
+> >
+> > Linus, do you want to take this directly from the email, or do you want
+> > me to put it in a tree to pull from?
 > 
-> >On Sat, Jan 14, 2012 at 11:06:03AM +0900, jhbird.choi@samsung.com wrote:
-> >> From: Jonghwan Choi 
-> > >
-> > >Check if the sif is not NULL before de-referencing it
+> Do you have anything else pending before I close the merge window? If
+> so, put it in a tree with those.
 > 
-> >Why would it be?  Have you hit this somehow?  If so, in what code?
-> 
-> > thanks,
-> 
-> > greg k-h
-> 
-> 
-> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-> index 99dc592..4ddb38b 100644
-> --- a/drivers/base/bus.c
-> +++ b/drivers/base/bus.c
-> @@ -1193,13 +1193,15 @@ EXPORT_SYMBOL_GPL(subsys_interface_register);
-> 
->  void subsys_interface_unregister(struct subsys_interface *sif)
->  {
-> -       struct bus_type *subsys = sif->subsys;   // -> Sif is already used, that means sif is not null
-> +       struct bus_type *subsys;
->         struct subsys_dev_iter iter;
->         struct device *dev;
-> 
-> -       if (!sif)  // -> Check whether sif is null 
-> +       if (!sif || !sif->subsys)
->                 return;
-> 
-> +       subsys = sif->subsys;
-> +
->         mutex_lock(&subsys->p->mutex);
->         list_del_init(&sif->node);
->         if (sif->remove_dev) {
-> -- 
-> 
-> sif is already used, but  null pointer check for sif later.
-> so i think that sif should be checked before use it.
+> If not, let me know, and I'll just take the patch as-is.
 
-Yes, you are right, I missed the previous usage.  I'll queue this up for
-3.4.
+Nope, nothing else from me for the big 3.3-rc1 merge, so please take it
+as-is.
 
 thanks,
 
