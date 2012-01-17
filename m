@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab2AQM3Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:29:24 -0500
-Received: from vms173007pub.verizon.net ([206.46.173.7]:43729 "EHLO
-	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab2AQMWI (ORCPT
+	id S1753883Ab2AQM3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:29:22 -0500
+Received: from vms173005pub.verizon.net ([206.46.173.5]:56401 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab2AQMWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 07:22:08 -0500
+	Tue, 17 Jan 2012 07:22:09 -0500
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Cc: Bob Moore <robert.moore@intel.com>, Lin Ming <ming.m.lin@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 06/50] ACPICA: Add error msg for Index/Bank field registers
- out-of-range
-Date: Tue, 17 Jan 2012 07:20:58 -0500
-Message-id: <46dfb09c024a1a92ead63b40f6993dcb5eb7d153.1326802229.git.len.brown@intel.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Bob Moore <robert.moore@intel.com>,
+        Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 18/50] ACPI 5.0: Allow _AEI method in walk resources
+Date: Tue, 17 Jan 2012 07:21:10 -0500
+Message-id: <25169b77f7c33b363db7d099d67491e977cdefc7.1326802229.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.9.rc1
 In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
 References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
@@ -27,42 +26,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Moore <robert.moore@intel.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-Supplement the exception code with an actual message.
+_AEI contains a resource template, this change adds support for
+the walk resources function.
 
-Found during ACPICA debugging.
-
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Bob Moore <robert.moore@intel.com>
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/exfldio.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/acpi/acpica/rsxface.c |   10 ++++++----
+ include/acpi/acnames.h        |    1 +
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/acpica/exfldio.c b/drivers/acpi/acpica/exfldio.c
-index f915a7f..19df8ce 100644
---- a/drivers/acpi/acpica/exfldio.c
-+++ b/drivers/acpi/acpica/exfldio.c
-@@ -316,6 +316,7 @@ acpi_ex_access_region(union acpi_operand_object *obj_desc,
- static u8
- acpi_ex_register_overflow(union acpi_operand_object *obj_desc, u64 value)
- {
-+	ACPI_FUNCTION_NAME(ex_register_overflow);
+diff --git a/drivers/acpi/acpica/rsxface.c b/drivers/acpi/acpica/rsxface.c
+index 45a9e5e..f6cceac 100644
+--- a/drivers/acpi/acpica/rsxface.c
++++ b/drivers/acpi/acpica/rsxface.c
+@@ -526,8 +526,9 @@ acpi_rs_match_vendor_resource(struct acpi_resource *resource, void *context)
+  *
+  * PARAMETERS:  device_handle   - Handle to the device object for the
+  *                                device we are querying
+- *              Name            - Method name of the resources we want
+- *                                (METHOD_NAME__CRS or METHOD_NAME__PRS)
++ *              Name            - Method name of the resources we want.
++ *                                (METHOD_NAME__CRS, METHOD_NAME__PRS, or
++ *                                METHOD_NAME__AEI)
+  *              user_function   - Called for each resource
+  *              Context         - Passed to user_function
+  *
+@@ -554,11 +555,12 @@ acpi_walk_resources(acpi_handle device_handle,
  
- 	if (obj_desc->common_field.bit_length >= ACPI_INTEGER_BIT_SIZE) {
- 		/*
-@@ -330,6 +331,11 @@ acpi_ex_register_overflow(union acpi_operand_object *obj_desc, u64 value)
- 		 * The Value is larger than the maximum value that can fit into
- 		 * the register.
- 		 */
-+		ACPI_ERROR((AE_INFO,
-+			    "Index value 0x%8.8X%8.8X overflows field width 0x%X",
-+			    ACPI_FORMAT_UINT64(value),
-+			    obj_desc->common_field.bit_length));
-+
- 		return (TRUE);
+ 	if (!device_handle || !user_function || !name ||
+ 	    (!ACPI_COMPARE_NAME(name, METHOD_NAME__CRS) &&
+-	     !ACPI_COMPARE_NAME(name, METHOD_NAME__PRS))) {
++	     !ACPI_COMPARE_NAME(name, METHOD_NAME__PRS) &&
++	     !ACPI_COMPARE_NAME(name, METHOD_NAME__AEI))) {
+ 		return_ACPI_STATUS(AE_BAD_PARAMETER);
  	}
+ 
+-	/* Get the _CRS or _PRS resource list */
++	/* Get the _CRS/_PRS/_AEI resource list */
+ 
+ 	buffer.length = ACPI_ALLOCATE_LOCAL_BUFFER;
+ 	status = acpi_rs_get_method_data(device_handle, name, &buffer);
+diff --git a/include/acpi/acnames.h b/include/acpi/acnames.h
+index fc1575f..5b5af0d 100644
+--- a/include/acpi/acnames.h
++++ b/include/acpi/acnames.h
+@@ -58,6 +58,7 @@
+ #define METHOD_NAME__PRT        "_PRT"
+ #define METHOD_NAME__CRS        "_CRS"
+ #define METHOD_NAME__PRS        "_PRS"
++#define METHOD_NAME__AEI        "_AEI"
+ #define METHOD_NAME__PRW        "_PRW"
+ #define METHOD_NAME__SRS        "_SRS"
  
 -- 
 1.7.9.rc1
