@@ -1,91 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2AQVdr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:33:47 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:57710 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756023Ab2AQVdo (ORCPT
+	id S1756013Ab2AQVec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:34:32 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44923 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755210Ab2AQVeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:33:44 -0500
-Subject: [GIT PULL]: ib_srpt: Initial SRP target merge for v3.3-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+	Tue, 17 Jan 2012 16:34:31 -0500
+Date: Tue, 17 Jan 2012 21:34:29 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Bart Van Assche <bvanassche@acm.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Jan 2012 13:33:41 -0800
-Message-ID: <1326836021.16983.38.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org
+Subject: [git pull] aush^H^Hdit queue
+Message-ID: <20120117213429.GS23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+	By all rights it's Eric's stuff; I hadn't got around to resurrecting
+audit.git until the end of December and this is what was in his tree (minus
+a couple of things obsoleted by Miklos' "fsnotify: don't BUG in
+fsnotify_destroy_mark()").  Please, pull from
+git://git.kernel.org:/pub/scm/linux/kernel/git/viro/audit.git for-linus
 
-This is the PULL request for an initial merge of the ib_srpt driver
-using mainline target infrastructure into v3.3-rc1.  Please go ahead and
-pull from:
+Shortlog:
+Eric Paris (23):
+      audit: make filetype matching consistent with other filters
+      audit: dynamically allocate audit_names when not enough space is in the names array
+      audit: drop the meaningless and format breaking word 'user'
+      audit: check current inode and containing object when filtering on major and minor
+      seccomp: audit abnormal end to a process due to seccomp
+      Audit: push audit success and retcode into arch ptrace.h
+      audit: ia32entry.S sign extend error codes when calling 64 bit code
+      audit: inline audit_syscall_entry to reduce burden on archs
+      audit: remove AUDIT_SETUP_CONTEXT as it isn't used
+      audit: drop some potentially inadvisable likely notations
+      audit: inline checks for not needing to collect aux records
+      audit: drop audit_set_macxattr as it doesn't do anything
+      audit: inline audit_free to simplify the look of generic code
+      audit: reject entry,always rules
+      audit: remove audit_finish_fork as it can't be called
+      audit: allow matching on obj_uid
+      audit: allow audit matching on inode gid
+      audit: remove task argument to audit_set_loginuid
+      audit: only allow tasks to set their loginuid if it is -1
+      audit: do not call audit_getname on error
+      audit: allow interfield comparison in audit rules
+      audit: complex interfield comparison helper
+      audit: allow interfield comparison between gid and ogid
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next-merge
+Kees Cook (2):
+      audit: treat s_id as an untrusted string
+      audit: no leading space in audit_log_d_path prefix
 
-Note that 'target: core updates for v3.3-rc1' should be pulled
-first via target-pending.git/for-next, and has gone out in a separate
-PULL request. 
+Nathaniel Husted (1):
+      Kernel: Audit Support For The ARM Platform
 
-Here are full set of review changes from Roland and Bart that have been
-made:
+Peter Moody (2):
+      audit: implement all object interfield comparisons
+      audit: comparison on interprocess fields
 
-v1 -> v2 review changes:
+Xi Wang (1):
+      audit: fix signedness bug in audit_log_execve_info()
 
-ib_srpt: Fix potential out-of-bounds array access
-ib_srpt: Avoid failed multipart RDMA transfers
-ib_srpt: Fix srpt_alloc_fabric_acl failure case return value
-ib_srpt: Update comments to reference $driver/$port layout
-ib_srpt: Fix sport->port_guid formatting code
-ib_srpt: Remove legacy use_port_guid_in_session_name module parameter
-ib_srpt: Convert srp_max_rdma_size into per port configfs attribute
-ib_srpt: Convert srp_max_rsp_size into per port configfs attribute
-ib_srpt: Convert srpt_sq_size into per port configfs attribute
-
-v2 -> v3 review changes:
-
-ib_srpt: Fix possible race with srp_sq_size in srpt_create_ch_ib
-ib_srpt: Fix possible race with srp_max_rsp_size in srpt_release_channel_work
-ib_srpt: Fix up MAX_SRPT_RDMA_SIZE define
-ib_srpt: Make srpt_map_sg_to_ib_sge() failure case return -EAGAIN
-ib_srpt: Convert port_guid to use subnet_prefix + interface_id formatting
-ib_srpt: Make srpt_check_stop_free return kref_put status
-ib_srpt: Make compilation with BUG=n proceed`
-ib_srpt: Use new target_core_fabric.h include
-ib_srpt: Check hex2bin() return code to silence build warning
-
-Please pull ASAP.
-
-Thanks,
-
---nab
-
-Bart Van Assche (1):
-  ib_srpt: Initial SRP Target merge for v3.3-rc1
-
- drivers/infiniband/Kconfig              |    1 +
- drivers/infiniband/Makefile             |    1 +
- drivers/infiniband/ulp/srpt/Kconfig     |   12 +
- drivers/infiniband/ulp/srpt/Makefile    |    2 +
- drivers/infiniband/ulp/srpt/ib_dm_mad.h |  139 ++
- drivers/infiniband/ulp/srpt/ib_srpt.c   | 4073 +++++++++++++++++++++++++++++++
- drivers/infiniband/ulp/srpt/ib_srpt.h   |  444 ++++
- 7 files changed, 4672 insertions(+), 0 deletions(-)
- create mode 100644 drivers/infiniband/ulp/srpt/Kconfig
- create mode 100644 drivers/infiniband/ulp/srpt/Makefile
- create mode 100644 drivers/infiniband/ulp/srpt/ib_dm_mad.h
- create mode 100644 drivers/infiniband/ulp/srpt/ib_srpt.c
- create mode 100644 drivers/infiniband/ulp/srpt/ib_srpt.h
-
-
+Diffstat:
+ arch/arm/include/asm/kprobes.h       |    1 -
+ arch/arm/include/asm/ptrace.h        |    5 +
+ arch/arm/include/asm/thread_info.h   |    6 +
+ arch/arm/kernel/entry-common.S       |    4 +-
+ arch/arm/kernel/ptrace.c             |   16 +-
+ arch/ia64/include/asm/ptrace.h       |   13 +-
+ arch/ia64/kernel/ptrace.c            |   18 +-
+ arch/microblaze/include/asm/ptrace.h |    5 +
+ arch/microblaze/kernel/ptrace.c      |    9 +-
+ arch/mips/include/asm/ptrace.h       |   14 +-
+ arch/mips/kernel/ptrace.c            |   11 +-
+ arch/powerpc/include/asm/ptrace.h    |   13 +-
+ arch/powerpc/kernel/ptrace.c         |   30 +-
+ arch/s390/include/asm/ptrace.h       |    6 +-
+ arch/s390/kernel/ptrace.c            |   15 +-
+ arch/sh/include/asm/ptrace_32.h      |    5 +-
+ arch/sh/include/asm/ptrace_64.h      |    5 +-
+ arch/sh/kernel/ptrace_32.c           |   11 +-
+ arch/sh/kernel/ptrace_64.c           |   11 +-
+ arch/sparc/include/asm/ptrace.h      |   10 +-
+ arch/sparc/kernel/ptrace_64.c        |   28 +-
+ arch/um/kernel/ptrace.c              |   20 +-
+ arch/x86/ia32/ia32entry.S            |   14 +-
+ arch/x86/kernel/entry_32.S           |   10 +-
+ arch/x86/kernel/entry_64.S           |   14 +-
+ arch/x86/kernel/ptrace.c             |   25 +-
+ arch/x86/kernel/vm86_32.c            |    4 +-
+ arch/x86/um/shared/sysdep/ptrace.h   |    5 +
+ arch/xtensa/kernel/ptrace.c          |    3 +-
+ fs/namei.c                           |   28 +-
+ fs/proc/base.c                       |    5 +-
+ include/linux/audit.h                |  116 +++++-
+ include/linux/ptrace.h               |   10 +
+ init/Kconfig                         |   16 +-
+ kernel/audit.c                       |    4 +-
+ kernel/audit.h                       |    6 +-
+ kernel/auditfilter.c                 |   17 +-
+ kernel/auditsc.c                     |  735 +++++++++++++++++++++-------------
+ kernel/exit.c                        |    3 +-
+ kernel/fork.c                        |    2 -
+ kernel/seccomp.c                     |    2 +
+ security/integrity/ima/ima_audit.c   |    8 +-
+ security/lsm_audit.c                 |   27 +-
+ 43 files changed, 810 insertions(+), 500 deletions(-)
