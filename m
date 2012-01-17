@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab2AQRpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:45:49 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:64431 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752707Ab2AQRpr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:45:47 -0500
+	id S1752992Ab2AQRrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:47:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab2AQRrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 12:47:09 -0500
+Date: Tue, 17 Jan 2012 18:40:49 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+	entry v6
+Message-ID: <20120117174049.GA19268@redhat.com>
+References: <20120116153231.GF2998@moon> <20120116161114.GA17727@redhat.com> <20120116162021.GH2998@moon>
 MIME-Version: 1.0
-In-Reply-To: <20120117170512.GB17070@redhat.com>
-References: <20120112172315.GA26295@redhat.com> <CABqD9hZg4sKiVMS-g5ed7-HKOaiUb06y05TL=QkfBkm9kVmquA@mail.gmail.com>
- <20120113173153.GA24273@redhat.com> <CABqD9hYYJMNtupTiD48sE5wz6RKaFi9J3DpVRyV4X2FpnT3Mnw@mail.gmail.com>
- <CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
- <20120116183730.GB21112@redhat.com> <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
- <20120117164523.GA17070@redhat.com> <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
- <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com> <20120117170512.GB17070@redhat.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 17 Jan 2012 09:45:25 -0800
-X-Google-Sender-Auth: gVJrXdVKBVXVreP5iU_WzIz000w
-Message-ID: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, indan@nul.nu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120116162021.GH2998@moon>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 9:05 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 01/17, Andrew Lutomirski wrote:
->>
->> (is_compat_task says whether the executable was marked as 32-bit.  The
->> actual execution mode is determined by the cs register, which the user
->> can control.
+On 01/16, Cyrill Gorcunov wrote:
 >
-> Confused... Afaics, TIF_IA32 says that the binary is 32-bit (this comes
-> along with TS_COMPAT).
+> On Mon, Jan 16, 2012 at 05:11:14PM +0100, Oleg Nesterov wrote:
+> > On 01/16, Cyrill Gorcunov wrote:
+> > >
+> > > +get_children_pid(struct proc_pid_children_iter *iter, struct pid *pid_prev, loff_t pos)
+> > > +{
+> > > +	struct task_struct *start, *task;
+> > > +	struct pid *pid = NULL;
+> > > +
+> > > +	read_lock(&tasklist_lock);
+> > > +
+> > > +	start = pid_task(iter->pid_start, PIDTYPE_PID);
+> > > +	if (!start)
+> > > +		goto out;
+> > > +
+> > > +	/*
+> > > +	 * Lets try to continue searching first, this gives
+> > > +	 * us significant speedup on children-rich processes.
+> > > +	 */
+> > > +	if (pid_prev) {
+> > > +		task = pid_task(pid_prev, PIDTYPE_PID);
+> > > +		if (task && task->real_parent == start &&
+> > > +		    !(list_empty(&task->sibling))) {
+> >
+> > Damn. No, this is wrong.
+> >
+> > Damn! Yes, it was we who told you to check list_empty(sibling) ;)
+> >
+> > But this is not enough. exit_ptrace() can do list_move() without
+> > changing ->real_parent.
+> >
+> > I'll try to think. At first glance we can rely on EXIT_DEAD, but
+> > I'd like to avoid this, I think EXIT_DEAD should die.
 >
-> TS_COMPAT says that, say, the task did "int 80" to enters the kernel.
-> 64-bit or not, we should treat is as 32-bit in this case.
+> Ouch! Thanks for catching this Oleg. I'll try to come with something
+> to show as well.
 
-I think you're right, and checking which entry was used is better than
-checking the cs register (since 64-bit code can use int80).  That's
-what I get for insufficiently careful reading of the assembly.  (And
-for going from memory from when I wrote the vsyscall emulation code --
-that code is entered from a page fault, so the entry point used is
-irrelevant.)
+Do you see another approach? I don't, so I'd suggest to check
+"task->exit_state != EXIT_DEAD" instead of !list_empty().
 
---Andy
+Just in case, we can also check "start->exit_state == 0" instead
+of "task->real_parent == start" with the same effect, up to you.
+
+It would be nice to add the comment explaining these checks...
+
+And I forgot to mention, the comment below
+
+	> +			/*
+	> +			 * We might miss some freshly created children
+	> +			 * here, but it was never promised to be
+	> +			 * accurate.
+	> +			 */
+	> +			if (list_is_last(&task->sibling, &start->children))
+	> +				goto out;
+
+looks misleading. Contrary to the slow path, we can't miss the
+freshly forked child here, copy_process() does list_add_tail().
+
+But the slow path obviously can skip much more than needed and
+miss children (freshly forked or not), probably it would be better
+to move the comment down and remove the "freshly created" part.
+
+What do you think?
+
+Oleg.
+
