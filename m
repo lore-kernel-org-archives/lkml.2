@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab2AQUjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 15:39:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48648 "EHLO mx1.redhat.com"
+	id S1755863Ab2AQUkb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 15:40:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39661 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab2AQUjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 15:39:49 -0500
+	id S1755820Ab2AQUkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 15:40:19 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/3] KEYS: Add missing smp_rmb() primitives to the keyring
- search code
+Subject: [PATCH 3/3] encrypted-keys: fix rcu and sparse messages
 To: jmorris@namei.org
 Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, stable@kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Tue, 17 Jan 2012 20:39:40 +0000
-Message-ID: <20120117203940.14882.56709.stgit@warthog.procyon.org.uk>
+        Mimi Zohar <zohar@us.ibm.com>, David Howells <dhowells@redhat.com>
+Date: Tue, 17 Jan 2012 20:40:02 +0000
+Message-ID: <20120117204002.14882.4097.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120117203940.14882.56709.stgit@warthog.procyon.org.uk>
+References: <20120117203940.14882.56709.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,111 +28,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing smp_rmb() primitives to the keyring search code.
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-When keyring payloads are appended to without replacement (thus using up spare
-slots in the key pointer array), an smp_wmb() is issued between the pointer
-assignment and the increment of the key count (nkeys).
+Enabling CONFIG_PROVE_RCU and CONFIG_SPARSE_RCU_POINTER resulted in
+"suspicious rcu_dereference_check() usage!" and "incompatible types
+in comparison expression (different address spaces)" messages.
 
-There should be corresponding read barriers between the read of nkeys and
-dereferences of keys[n] when n is dependent on the value of nkeys.
+Access the masterkey directly when holding the rwsem.
 
+Changelog v1:
+- Use either rcu_read_lock()/rcu_derefence_key()/rcu_read_unlock()
+or remove the unnecessary rcu_derefence() - David Howells
+
+Reported-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
 
- security/keys/gc.c      |    4 +++-
- security/keys/keyring.c |   22 +++++++++++++++-------
- 2 files changed, 18 insertions(+), 8 deletions(-)
+ security/keys/encrypted-keys/encrypted.c         |    2 +-
+ security/keys/encrypted-keys/masterkey_trusted.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/security/keys/gc.c b/security/keys/gc.c
-index bf4d8da..a42b455 100644
---- a/security/keys/gc.c
-+++ b/security/keys/gc.c
-@@ -145,7 +145,9 @@ static void key_gc_keyring(struct key *keyring, time_t limit)
- 	if (!klist)
- 		goto unlock_dont_gc;
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index d91efb6..2d1bb8a 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -314,7 +314,7 @@ static struct key *request_user_key(const char *master_desc, u8 **master_key,
+ 		goto error;
  
--	for (loop = klist->nkeys - 1; loop >= 0; loop--) {
-+	loop = klist->nkeys;
-+	smp_rmb();
-+	for (loop--; loop >= 0; loop--) {
- 		key = klist->keys[loop];
- 		if (test_bit(KEY_FLAG_DEAD, &key->flags) ||
- 		    (key->expiry > 0 && key->expiry <= limit))
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 37a7f3b..d605f75 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -319,7 +319,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
- 	struct key *keyring, *key;
- 	key_ref_t key_ref;
- 	long err;
--	int sp, kix;
-+	int sp, nkeys, kix;
+ 	down_read(&ukey->sem);
+-	upayload = rcu_dereference(ukey->payload.data);
++	upayload = ukey->payload.data;
+ 	*master_key = upayload->data;
+ 	*master_keylen = upayload->datalen;
+ error:
+diff --git a/security/keys/encrypted-keys/masterkey_trusted.c b/security/keys/encrypted-keys/masterkey_trusted.c
+index 8c16c3e..013f7e5 100644
+--- a/security/keys/encrypted-keys/masterkey_trusted.c
++++ b/security/keys/encrypted-keys/masterkey_trusted.c
+@@ -39,7 +39,7 @@ struct key *request_trusted_key(const char *trusted_desc,
+ 		goto error;
  
- 	keyring = key_ref_to_ptr(keyring_ref);
- 	possessed = is_key_possessed(keyring_ref);
-@@ -380,7 +380,9 @@ descend:
- 		goto not_this_keyring;
- 
- 	/* iterate through the keys in this keyring first */
--	for (kix = 0; kix < keylist->nkeys; kix++) {
-+	nkeys = keylist->nkeys;
-+	smp_rmb();
-+	for (kix = 0; kix < nkeys; kix++) {
- 		key = keylist->keys[kix];
- 		kflags = key->flags;
- 
-@@ -421,7 +423,9 @@ descend:
- 	/* search through the keyrings nested in this one */
- 	kix = 0;
- ascend:
--	for (; kix < keylist->nkeys; kix++) {
-+	nkeys = keylist->nkeys;
-+	smp_rmb();
-+	for (; kix < nkeys; kix++) {
- 		key = keylist->keys[kix];
- 		if (key->type != &key_type_keyring)
- 			continue;
-@@ -515,7 +519,7 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
- 	struct keyring_list *klist;
- 	unsigned long possessed;
- 	struct key *keyring, *key;
--	int loop;
-+	int nkeys, loop;
- 
- 	keyring = key_ref_to_ptr(keyring_ref);
- 	possessed = is_key_possessed(keyring_ref);
-@@ -524,7 +528,9 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
- 
- 	klist = rcu_dereference(keyring->payload.subscriptions);
- 	if (klist) {
--		for (loop = 0; loop < klist->nkeys; loop++) {
-+		nkeys = klist->nkeys;
-+		smp_rmb();
-+		for (loop = 0; loop < nkeys ; loop++) {
- 			key = klist->keys[loop];
- 
- 			if (key->type == ktype &&
-@@ -622,7 +628,7 @@ static int keyring_detect_cycle(struct key *A, struct key *B)
- 
- 	struct keyring_list *keylist;
- 	struct key *subtree, *key;
--	int sp, kix, ret;
-+	int sp, nkeys, kix, ret;
- 
- 	rcu_read_lock();
- 
-@@ -645,7 +651,9 @@ descend:
- 
- ascend:
- 	/* iterate through the remaining keys in this keyring */
--	for (; kix < keylist->nkeys; kix++) {
-+	nkeys = keylist->nkeys;
-+	smp_rmb();
-+	for (; kix < nkeys; kix++) {
- 		key = keylist->keys[kix];
- 
- 		if (key == A)
+ 	down_read(&tkey->sem);
+-	tpayload = rcu_dereference(tkey->payload.data);
++	tpayload = tkey->payload.data;
+ 	*master_key = tpayload->key;
+ 	*master_keylen = tpayload->key_len;
+ error:
 
