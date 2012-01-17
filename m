@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab2AQQv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 11:51:59 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53056 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab2AQQv5 (ORCPT
+	id S1755354Ab2AQQw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 11:52:28 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:50701 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab2AQQw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 11:51:57 -0500
-Message-ID: <4F15A729.4000600@garzik.org>
-Date: Tue, 17 Jan 2012 11:51:53 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Tue, 17 Jan 2012 11:52:27 -0500
+Date: Tue, 17 Jan 2012 11:49:20 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, linux-acpi@vger.kernel.org,
+        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pjones@redhat.com
+Subject: Re: Re-add ibft tree to linux-next please
+Message-ID: <20120117164920.GA5111@phenom.dumpdata.com>
+References: <20111212145330.GA16278@andromeda.dapyr.net>
+ <4EE68D57.7030603@zytor.com>
+ <20111213021536.GC2730@konrad-lan>
+ <4F1580DE.1060002@kernel.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Lin Ming <ming.m.lin@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 3.3
-References: <20120109003255.GA6598@havoc.gtf.org> <CA+55aFwcBQSoWfqdT9CxV=GAr5ex0=RnqtBDFty+=_Lua2VXGw@mail.gmail.com> <4F12E57E.3090805@garzik.org> <1326676534.13517.3.camel@minggr> <1326691403.13517.21.camel@minggr> <CA+55aFzqECJjbtgyOXy_H1smh09SsfgrAuVY7hK2sC-xj1GZHg@mail.gmail.com> <CA+55aFy+1DWUaOMormPHy7hCJxNfdxmiAnj8W0gqNTbeogNN4w@mail.gmail.com> <CA+55aFxvUvWHbJvconcjPmDhUVcCRGxxA-iD+HEngRSt4iox5g@mail.gmail.com> <1326777393.13517.39.camel@minggr> <CA+55aFzNpK0z2A8-0v2bLEX_Wma5f3tkeSVjAdwpkrW0=3V_Wg@mail.gmail.com>
-In-Reply-To: <CA+55aFzNpK0z2A8-0v2bLEX_Wma5f3tkeSVjAdwpkrW0=3V_Wg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F1580DE.1060002@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F15A70E.0024,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 12:19 AM, Linus Torvalds wrote:
-> On Mon, Jan 16, 2012 at 9:16 PM, Lin Ming<ming.m.lin@intel.com>  wrote:
->>
->> But ata port async suspend was not enabled in above patch.
->> So I think this is a regression.
->
-> Ok. Jeff? Should I take that patch directly, or will you take it?
+On Tue, Jan 17, 2012 at 09:08:30AM -0500, Len Brown wrote:
+> 
+> > The trick is that we also have to retain the code functionality if
+> > "# CONFIG_ACPI is not set" to scan the memory for the iBFT. That part
+> > should definitly _not_ be moved to drivers/acpi. It could be moved to
+> > arch/x86/ .. but it could also stay in drivers/firmware. <shrugs>
+> 
+> 
+> Are there really hardware/firmware configurations that support IBFT
+> and do not support ACPI?
 
-Coming today, with at least one other change...  still keeping an eye 
-out for possible PM problems on older non-AHCI SATA hardware.
+gPXE can be used in legacy environments. And it (gPXE) does not update
+the ACPI tables.
 
-	Jeff
+> 
+> If yes, do they require an OS that has CONFIG_ACPI=n?
+
+I can't think of anybody nowadays doing CONFIG_ACPI=n for x86.
+Is there anybody doing it?
 
 
+> Or would finding the table with CONFIG_ACPI=y and acpi_disabled=1
+> be sufficient?
 
-
+I think that would work. And also if 'acpi_disabled=0' as you might
+have an IBFT table in memory that is _not_ hooked up to the ACPI tables.
