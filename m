@@ -1,96 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab2AQD7E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 22:59:04 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53090 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751356Ab2AQD7C (ORCPT
+	id S1751876Ab2AQD7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 22:59:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39432 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab2AQD7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 22:59:02 -0500
-Message-ID: <1326772723.2819.167.camel@deadeye>
-Subject: Re: [PATCH v2 2/3] block: fail SCSI passthrough ioctls on partition
- devices
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>, stable@vger.kernel.org
-Date: Tue, 17 Jan 2012 03:58:43 +0000
-In-Reply-To: <4F13E4FD.3070500@redhat.com>
-References: <1326380489-9044-1-git-send-email-pbonzini@redhat.com>
-	 <1326380489-9044-3-git-send-email-pbonzini@redhat.com>
-	 <CA+55aFxuEzfAOL=pH1m7KQxdO1yzz=nGb2fU80AbysFd3J4Dvg@mail.gmail.com>
-	 <4F13E4FD.3070500@redhat.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-W7KKVG6eRrG7Z4jkp/AY"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 16 Jan 2012 22:59:41 -0500
+MIME-Version: 1.0
+Date: Tue, 17 Jan 2012 09:29:40 +0530
+Message-ID: <CAP4BhhKNXm6W9z+skQ2FYjito11D0Gk=n791xPkB8pBh6=TnSQ@mail.gmail.com>
+Subject: 
+From: aru Kernel <arun.kernel@gmail.com>
+To: free_beer_for_all@yahoo.com, ghaskins@novell.com, hpa@zytor.com,
+        hugh@veritas.com, mingo@elte.hu, james.bottomley@hansenpartnership.com,
+        jeremy@goop.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-W7KKVG6eRrG7Z4jkp/AY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 2012-01-16 at 09:51 +0100, Paolo Bonzini wrote:
-> On 01/15/2012 12:43 AM, Linus Torvalds wrote:
-> > Anyway, with the changes to print out warnings and still allow it for
-> > root, this all looked safe and nice, so they are in my tree now. I
-> > only noticed after applying them that you hadn't marked them with 'cc:
-> > stable@kernel.org', so we should probably point Greg at them. They are
-> > commits
-> >
-> >    577ebb374c78 block: add and use scsi_blk_cmd_ioctl
-> >    0bfc96cb7722 block: fail SCSI passthrough ioctls on partition device=
-s
-> >    ec8013beddd7 dm: do not forward ioctls from logical volumes to the
-> > underlying device
-> >
-> > in my tree now.
->=20
-> I'll tweak them myself for stable based on what you committed, so that=
-=20
-> they do not require your ENOTTY/ENOIOCTLCMD change (i.e. with the uglier=
-=20
-> v1 implementation).
->=20
-> Thanks very much.
-
-Paolo, I've just done this for Debian's stable kernel based on 2.6.32.
-I'll send them as a follow-up to this.
-
-Ben.
-
---=20
-Ben Hutchings
-When in doubt, use brute force. - Ken Thompson
-
---=-W7KKVG6eRrG7Z4jkp/AY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATxTx8+e/yOyVhhEJAQrH4w/7BYOD35Ixmnzsu86KS4vIEGO6BcebzyPm
-JHffaXnTb/NNZTIYizw1DWJjKDS0eytHbbocb1Co7Qoa/j2cT9gFOwYglE0/9GwX
-+bsm60TuqDB9wDpvLgr0VRog/ZMxvTshSdNbRy8Zp8D/ktoSsrJMn5JoPI84ljsU
-UaF1hkwd6aYAz9DDgPANA5UfFAPMRA6lq77+fYeVPvIxsg4GuaTVTHZH07tXsMP9
-Hy75I7bEdc1hMFrcnEhIN1KnPZd0xAGrBcG5TTrHaeHJwNXfz5hqU+8GVafn3qZ3
-AzPrsv5gCyl+n1ev6LsteUUjUP07hJ6yyar5EwmgYBUMSEHT3DkFpGRxg+tWQzAa
-wn70xtQjmaWo4BaEzaDBN70xo0vZTdTLO59ugUpGYWTTvhYrJigI6hI+Js37f0Kt
-IwkjZkpmg/xt4myjKE8dfzUBdy0RP7U0tzxCaHthcvNVaOvMObI+WfEpKnLCMNoo
-NEEMHDaQm+1qs/IfeJKw0QVswYUmL2PaCRZ9693sV3RtNXDBspGTqEPZGEGMg1H7
-0GPAC7G5qqGjUsAMLDP2Bi6Ig0R3GFs1Pan4uzd1iB17XpGzWyofIjvtMbr2Fszy
-6U1/peWd5GLxADc5OHIAw3YzsC05E4LBYVDWJSPgpmTaVETY0EzzTuYJ3vCC8eme
-kZLX9l5GsoM=
-=w7F9
------END PGP SIGNATURE-----
-
---=-W7KKVG6eRrG7Z4jkp/AY--
+...   http://romebytredy.com/work.link.php?morlink_friend_id=39o1
