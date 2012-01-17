@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab2AQRbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:31:50 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:55851 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab2AQRbt (ORCPT
+	id S1753063Ab2AQRcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:32:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46387 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab2AQRcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:31:49 -0500
-Date: Tue, 17 Jan 2012 12:28:00 -0500 (EST)
-Message-Id: <20120117.122800.466698184519541715.davem@davemloft.net>
-To: viro@ZenIV.linux.org.uk
-Cc: sivanich@sgi.com, linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, paulmck@linux.vnet.ibm.com,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        jkosina@suse.cz, avi@redhat.com, linux-fsdevel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] Fix panic in __d_lookup with high dentry hashtable
- counts
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120117172527.GQ23916@ZenIV.linux.org.uk>
-References: <20120113162236.GK23916@ZenIV.linux.org.uk>
-	<20120117171352.GA18738@sgi.com>
-	<20120117172527.GQ23916@ZenIV.linux.org.uk>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 17 Jan 2012 12:32:02 -0500
+Message-ID: <4F15B08D.5090000@gmail.com>
+Date: Tue, 17 Jan 2012 10:31:57 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: improve trace events of vmexit/mmio/ioport
+References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EE9B.9020901@linux.vnet.ibm.com> <4F13EFFB.90706@redhat.com> <4F14DCBB.3060207@linux.vnet.ibm.com> <20120117115558.GB17420@amt.cnet>
+In-Reply-To: <20120117115558.GB17420@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 17 Jan 2012 09:28:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
-Date: Tue, 17 Jan 2012 17:25:27 +0000
-
-> On Tue, Jan 17, 2012 at 11:13:52AM -0600, Dimitri Sivanich wrote:
->> When the number of dentry cache hash table entries gets too high
->> (2147483648 entries), as happens by default on a 16TB system, use
->> of a signed integer in the dcache_init() initialization loop prevents
->> the dentry_hashtable from getting initialized, causing a panic in
->> __d_lookup().
->> 
->> In addition, the _hash_mask returned from alloc_large_system_hash() does
->> not support more than a 32 bit hash table size.
->> 
->> Changing the _hash_mask size returned from alloc_large_system_hash() to
->> support larger hash table sizes in the future, and changing loop counter
->> sizes appropriately.
+On 01/17/2012 04:55 AM, Marcelo Tosatti wrote:
+> On Tue, Jan 17, 2012 at 10:28:11AM +0800, Xiao Guangrong wrote:
+>> On 01/16/2012 05:38 PM, Avi Kivity wrote:
+>>
+>>> On 01/16/2012 11:32 AM, Xiao Guangrong wrote:
+>>>> - trace vcpu_id for these events
+>>>
+>>> We can infer the vcpu id from the kvm_entry tracepoints, no?
+>>>
+>>
+>>
+>> Thanks for your review, Avi!
+>>
+>> Hmm. i think it is hard to do since the vcpu thread can be scheduled
+>> anytime, one example is as follow:
+>>
+>> CPU 0
+>>
+>> kvm_entry vcpu 0
+>> ......
+>> kvm_entry vcpu 1
+>> ......
+>> event1 occurs
+>> ......
+>> event2 occurs
+>>
+>> It is hard to know the event belong to which kvm_entry?
+>>
+>>>> - add kvm_mmio_done to trace the time when mmio/ioport emulation is completed
+>>>
+>>> ditto?
+>>>
+>>
+>>
+>> I think is ok to get the event end time by using kvm_entry.
+>>
+>>>
+>>> Relying on the existing tracepoints will make the tool work on older
+>>> kernels.
+>>>
+>>
+>>
+>> We can drop all new events, but unfortunately, the information of the origin
+>> tracepoints is not enough, at least vcpu_id need be traced in theses events
+>> to match its events. Yes?
 > 
-> ... and I still would like to see somebody familiar with uses of other
-> hashes to comment on the desirability of such monsters.  For dcache and
-> icache it's absolutely certain to be worse than useless.  We are talking
-> about 4Gbuckets here...
+> Yes, and if you don't add completed events, you'll have to use kvm_entry 
+> whose collection adds a lot of overhead.
 
-It's wrong in networking too.
+
+vcpus run as threads and hence have their own tid which is available in
+the perf samples.
+
+There is an ongoing 'discussion' about modifying existing tracepoints
+which your proposed patch violates. This is the start of it:
+
+https://lkml.org/lkml/2012/1/16/41
+
+David
