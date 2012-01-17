@@ -1,125 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab2AQQhW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 11:37:22 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36556 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184Ab2AQQhU (ORCPT
+	id S1755320Ab2AQQjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 11:39:03 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:40800 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755086Ab2AQQjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 11:37:20 -0500
-Message-ID: <4F15A3A7.5020901@linux.vnet.ibm.com>
-Date: Tue, 17 Jan 2012 22:06:55 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Tue, 17 Jan 2012 11:39:02 -0500
+Date: Tue, 17 Jan 2012 11:39:00 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <greg@kroah.com>
+cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Documentation update for the driver model core
+Message-ID: <Pine.LNX.4.44L0.1201171137430.1818-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        justinmattock@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mgorman@suse.de>, Gilad Ben-Yossef <gilad@benyossef.com>
-Subject: Re: x86/mce: machine check warning during poweroff
-References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com> <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com> <4F10BDF7.8030306@linux.vnet.ibm.com> <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com> <4F10EB5B.5060804@linux.vnet.ibm.com> <1326766892.16150.21.camel@sbsiddha-desk.sc.intel.com> <4F1544EA.5060907@linux.vnet.ibm.com> <CAAJw_ZtPZLPgi2z-0zB0n3hk9xzEbTnb1QGi1LjM5DC02t_W7A@mail.gmail.com>
-In-Reply-To: <CAAJw_ZtPZLPgi2z-0zB0n3hk9xzEbTnb1QGi1LjM5DC02t_W7A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011716-5816-0000-0000-000000E8A462
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 09:45 PM, Jeff Chua wrote:
+This patch (as1509) documents two important points regarding the use
+of device structures in the driver model:
 
-> On Tue, Jan 17, 2012 at 5:52 PM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> On 01/17/2012 07:51 AM, Suresh Siddha wrote:
->>
->>> On Sat, 2012-01-14 at 08:11 +0530, Srivatsa S. Bhat wrote:
->>>> Of course, the warnings at drivers/base/core.c: device_release()
->>>> as well as the IPI to offline cpu warnings still appear but are rather
->>>> unrelated and harmless to the issue being discussed.
->>>
->>> As far the IPI offline cpu warnings are concerned, appended patch should
->>> fix it. Can you please give it a try? Peterz, can you please review and
->>> queue it after Srivatsa confirms that it works? Thanks.
->>
->>
->> Hi Suresh,
->>
->> Thanks for the patch, but unfortunately it doesn't fix the problem!
->> Exactly the same stack traces are seen during a CPU Hotplug stress test.
->> (I didn't even have to stress it - it is so fragile that just a script
->> to offline all cpus except the boot cpu was good enough to reproduce the
->> problem easily.)
-> 
-> Works for me. But I'm still seeing this only during boot. Related?
-> Shall I bisect?
-> 
-> 
-> Freeing unused kernel memory: 520k freed
-> Write protecting the kernel read-only data: 8192k
-> Freeing unused kernel memory: 1140k freed
-> Freeing unused kernel memory: 464k freed
-> Adding 8290300k swap on /dev/sda3.  Priority:-1 extents:1 across:8290300k SS
-> vmalloc: allocation failure: 0 bytes
+	Structures must be initialized to all 0's before they are
+	passed to device_initialize().
 
+	Structures must not be passed to device_add() or
+	device_register() more than once.
 
-This is a different problem. Not the same as the one Suresh's patch
-intended to fix. Your case has something to do with memory allocation
-failures. The problem I am facing is Inter-Processor Interrupts (IPIs)
-being sent to CPUs that are going offline, after selecting them as the
-new ilb (Idle load balancer).
+Although these restrictions have applied ever since the driver model
+was first created, they have not been mentioned anywhere.
 
-> modprobe: page allocation failure: order:0, mode:0xd2
-> Pid: 1914, comm: modprobe Not tainted 3.2.0 #6
-> Call Trace:
-> [<ffffffff8107c1ff>] ? 0xffffffff8107c1ff
-> [<ffffffff81061fec>] ? 0xffffffff81061fec
-> [<ffffffff8109ab6c>] ? 0xffffffff8109ab6c
-> [<ffffffff81061fec>] ? 0xffffffff81061fec
-> [<ffffffff8101bacc>] ? 0xffffffff8101bacc
-> [<ffffffff81061fec>] ? 0xffffffff81061fec
-> [<ffffffff81061fec>] ? 0xffffffff81061fec
-> [<ffffffff81062ec8>] ? 0xffffffff81062ec8
-> [<ffffffff810637c1>] ? 0xffffffff810637c1
-> [<ffffffff814d9cb9>] ? 0xffffffff814d9cb9
-> Mem-Info:
-> Node 0 DMA per-cpu:
-> CPU    0: hi:    0, btch:   1 usd:   0
-> CPU    1: hi:    0, btch:   1 usd:   0
-> CPU    2: hi:    0, btch:   1 usd:   0
-> CPU    3: hi:    0, btch:   1 usd:   0
-> Node 0 DMA32 per-cpu:
-> CPU    0: hi:  186, btch:  31 usd: 158
-> CPU    1: hi:  186, btch:  31 usd:  25
-> CPU    2: hi:  186, btch:  31 usd:   0
-> CPU    3: hi:  186, btch:  31 usd:   0
-> Node 0 Normal per-cpu:
-> CPU    0: hi:  186, btch:  31 usd:  93
-> CPU    1: hi:  186, btch:  31 usd:  74
-> CPU    2: hi:  186, btch:  31 usd: 170
-> CPU    3: hi:  186, btch:  31 usd:  60
-> active_anon:6162 inactive_anon:1 isolated_anon:0
-> active_file:1782 inactive_file:5164 isolated_file:0
-> unevictable:0 dirty:0 writeback:0 unstable:0
-> free:1963131 slab_reclaimable:818 slab_unreclaimable:2728
-> mapped:1639 shmem:3 pagetables:292 bounce:0
-> 
->
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 
+---
 
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
+ drivers/base/core.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+Index: usb-3.2/drivers/base/core.c
+===================================================================
+--- usb-3.2.orig/drivers/base/core.c
++++ usb-3.2/drivers/base/core.c
+@@ -582,6 +582,11 @@ static void klist_children_put(struct kl
+  * may be used for reference counting of @dev after calling this
+  * function.
+  *
++ * All fields in @dev must be initialized by the caller to 0, except
++ * for those explicitly set to some other value.  The simplest
++ * approach is to use kzalloc() to allocate the structure containing
++ * @dev.
++ *
+  * NOTE: Use put_device() to give up your reference instead of freeing
+  * @dev directly once you have called this function.
+  */
+@@ -884,6 +889,13 @@ int device_private_init(struct device *d
+  * to the global and sibling lists for the device, then
+  * adds it to the other relevant subsystems of the driver model.
+  *
++ * Do not call this routine or device_register() more than once for
++ * any device structure.  The driver model core is not designed to work
++ * with devices that get unregistered and then spring back to life.
++ * (Among other things, it's very hard to guarantee that all references
++ * to the previous incarnation of @dev have been dropped.)  Allocate
++ * and register a fresh new struct device instead.
++ *
+  * NOTE: _Never_ directly free @dev after calling this function, even
+  * if it returned an error! Always use put_device() to give up your
+  * reference instead.
+@@ -1037,6 +1049,9 @@ name_error:
+  * have a clearly defined need to use and refcount the device
+  * before it is added to the hierarchy.
+  *
++ * For more information, see the kerneldoc for device_initialize()
++ * and device_add().
++ *
+  * NOTE: _Never_ directly free @dev after calling this function, even
+  * if it returned an error! Always use put_device() to give up the
+  * reference initialized in this function instead.
 
