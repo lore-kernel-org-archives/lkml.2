@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2AQOiS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 09:38:18 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61927 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754395Ab2AQOiP (ORCPT
+	id S1754690Ab2AQOih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 09:38:37 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51455 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754395Ab2AQOif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 09:38:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120117142759.GE16213@moon>
-References: <20120117142759.GE16213@moon>
-Date: Tue, 17 Jan 2012 16:38:14 +0200
-Message-ID: <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 17 Jan 2012 09:38:35 -0500
+X-Sasl-enc: Buv3FIJB1RQZ5tNx3pe89yqR6FiazW+2PYYJcnlsXZOI 1326811114
+Subject: Re: [RFC 0/3] low memory notify
+From: Colin Walters <walters@verbum.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        leonid.moiseichuk@nokia.com, kamezawa.hiroyu@jp.fujitsu.com,
+        penberg@kernel.org, Rik van Riel <riel@redhat.com>, mel@csn.ul.ie,
+        rientjes@google.com, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
+Date: Tue, 17 Jan 2012 09:38:10 -0500
+In-Reply-To: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1326811093.3467.41.camel@lenny>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/17/12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> +#define KCMP_EQ		0
-> +#define KCMP_LT		1
-> +#define KCMP_GT		2
+On Tue, 2012-01-17 at 17:13 +0900, Minchan Kim wrote:
+> As you can see, it's respin of mem_notify core of KOSAKI and Marcelo.
+> (Of course, KOSAKI's original patchset includes more logics but I didn't
+> include all things intentionally because I want to start from beginning
+> again) Recently, there are some requirements of notification of system
+> memory pressure.
 
-LT and GT are meaningless.
+How does this relate to the existing cgroups memory notifications?  See
+Documentation/cgroups/memory.txt under "10. OOM Control"
+
+>  It would be very useful for various cases.
+> For example, QEMU/JVM/Firefox like big memory hogger can release their memory
+> when memory pressure happens.
+
+I don't know about QEMU, but the key characteristic of the JVM and
+Firefox is that they use garbage collection.  Which also applies to
+Python, Ruby, Google Go, Haskell, OCaml...
+
+So what you really want to be investigating here is integration between
+a garbage collector and the system VM.  Your test program looks nothing
+like a garbage collector.  I'd expect most of the performance tradeoffs
+to be similar between these runtimes.  The Azul people have been doing
+something like this: http://www.managedruntime.org/
+
+In Firefox' case though it can also drop other caches, e.g.:
+
+http://people.gnome.org/~federico/news-2007-09.html#firefox-memory-1
+
+As far as the desktop goes, I want to get notified if we're going to hit
+swap, not if we're close to exhausting the total of RAM+swap.  While
+swap may make sense for servers that care about throughput mainly, I
+care a lot about latency.
+
+
