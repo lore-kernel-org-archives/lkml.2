@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab2AQBQT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 20:16:19 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:48568 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab2AQBQR (ORCPT
+	id S1751283Ab2AQBX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 20:23:29 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62587 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2AQBX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 20:16:17 -0500
-Date: Mon, 16 Jan 2012 20:15:07 -0500 (EST)
-Message-Id: <20120116.201507.597966888285215358.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-01-16
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120116195435.GB12733@tuxdriver.com>
-References: <20120116195435.GB12733@tuxdriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 16 Jan 2012 17:15:12 -0800 (PST)
+	Mon, 16 Jan 2012 20:23:27 -0500
+X-AuditID: 9c930179-b7b98ae000000791-99-4f14cd8c8f22
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/3] block: prevent duplicated bio completion report
+Date: Tue, 17 Jan 2012 10:32:07 +0900
+Message-Id: <1326763928-1972-2-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.rc1.dirty
+In-Reply-To: <1326763928-1972-1-git-send-email-namhyung.kim@lge.com>
+References: <1326763928-1972-1-git-send-email-namhyung.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 16 Jan 2012 14:54:35 -0500
+Since previous patch make block_bio_complete TP working,
+it will generate duplicated BLK_TA_COMPLETEs for bounced
+bios. Fix it.
 
-> Here is a set of fixes for 3.3 that I let cook over the weekend...
-> 
-> Included is a fix for a signedness bug in ipw2x00 from Dan Carpenter, a
-> fix for an oops when ejecting a b43 card from Guennadi Liakhovetski
-> (with a minor modification by me as noted in the changelog), a mac80211
-> regresion fix from Johannes Berg for a bug related to station
-> management, and a final fix for the rt2800pci spurious interrupt issue
-> from Stanislaw Gruszka.
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ include/linux/blk_types.h    |    3 +++
+ include/trace/events/block.h |    3 ++-
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
-And Linus's patches to fix the brcmsmac driver aren't in here because?
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 4053cbd4490e..45cd0074a1c8 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -97,6 +97,9 @@ struct bio {
+ #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
+ #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 
++/* masked bio's won't report its completion via tracepoint */
++#define BIO_COMPLETE_MASK	(1 << BIO_BOUNCED)
++
+ /*
+  * top 4 bits of bio flags indicate the pool this bio came from
+  */
+diff --git a/include/trace/events/block.h b/include/trace/events/block.h
+index 96955f4828b3..72888542e186 100644
+--- a/include/trace/events/block.h
++++ b/include/trace/events/block.h
+@@ -219,7 +219,8 @@ TRACE_EVENT_CONDITION(block_bio_complete,
+ 
+ 	TP_ARGS(q, bio, error),
+ 
+-	TP_CONDITION(bio->bi_bdev != NULL),
++	TP_CONDITION(bio->bi_bdev != NULL &&
++		     !(bio->bi_flags & BIO_COMPLETE_MASK)),
+ 
+ 	TP_STRUCT__entry(
+ 		__field( dev_t,		dev		)
+-- 
+1.7.9.rc1.dirty
 
-If you don't integrate them, Linus is going to integrate them on his
-own before -rc1 is cut, so whatever you're "waiting for" is entirely
-and utterly pointless.
-
-Merge his bug fixes now, don't delay this kind of stuff, ever.
