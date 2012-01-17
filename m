@@ -1,96 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2AQKxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 05:53:38 -0500
-Received: from natasha.panasas.com ([67.152.220.90]:48209 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab2AQKxg (ORCPT
+	id S1753369Ab2AQKyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 05:54:45 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56942 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752960Ab2AQKyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 05:53:36 -0500
-Message-ID: <4F155170.5000206@panasas.com>
-Date: Tue, 17 Jan 2012 12:46:08 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Tue, 17 Jan 2012 05:54:44 -0500
+Date: Tue, 17 Jan 2012 10:54:42 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "AnilKumar, Chimata" <anilkumar@ti.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>, "greg@kroah.com" <greg@kroah.com>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+Subject: Re: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
+Message-ID: <20120117105441.GC2944@opensource.wolfsonmicro.com>
+References: <1324617892-14576-1-git-send-email-anilkumar@ti.com>
+ <331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        <linux-fsdevel@vger.kernel.org>, <linux-ext4@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Edward Shishkin <edward@redhat.com>
-Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
-References: <1325774407-28531-1-git-send-email-jack@suse.cz> <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com> <20120116160136.GC16431@quack.suse.cz> <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com> <20120117003613.GA28571@dastard> <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
-In-Reply-To: <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 02:59 AM, Linus Torvalds wrote:
-> On Mon, Jan 16, 2012 at 4:36 PM, Dave Chinner <david@fromorbit.com> wrote:
->>
->> Jan is right, Linus. His definition of what up-to-date means for
->> dirty buffers is correct, especially in the case of write errors.
-> 
-> It's not a dirty buffer any more.
-> 
-> Go look. We've long since cleared the dirty bit.
-> 
-> So stop spouting garbage.
-> 
-> My argument is simple: the contents ARE NOT CORRECT ENOUGH to be
-> called "up-to-date and clean".
-> 
-> And I outlined the two choices:
-> 
->  - mark it dirty and continue trying to write it out forever
-> 
->  - invalidate it.
-> 
-> Anything else is crazy talk. And marking it dirty forever isn't really
-> an option. So..
-> 
->                Linus
+On Tue, Jan 17, 2012 at 07:32:47AM +0000, AnilKumar, Chimata wrote:
 
-I think this conversation is an hint to the fact that the page_cache-page
-state machine is clear as mud. And I thought it was only me. For years
-I want to catch some VFS guru to sit down and finally explain to me all
-the stages and how they are expressed in page-flag bits.
+> Recalling the patch, provide the comments if there are any if not please include
+> this patch to v3.3 kernel.
 
-Back to the conversation. The way I understood it (Which is probably wrong)
-1. The application dirties a page it is in a *dirty* state.
-2. Write-out begins, page goes into that in-write-out state (Am I correct)
-
-Now the page comes back from write-out with an error. As Linus stated we can
-not put it back to *dirty* state because it will probably never clear.
-(We did bunch of retrys on the block level). And we can't keep it in-write-out
-surly. But I think we should surly *not* put it in *not-clean* state. Because
-that one implies reading and the worse we can do is read that page as it is
-now.
-
-Therefor I agree with Jan. That the best is to use that extra error bit
-to indicate an *error-state*, which is up to the FS to handle.
-If it was a read error - error-is-set clean-is-cleared
-If it was a write err  - error-is-set clean-is-set.
-
-All the rest of the Kernel should consider these as a they are error-sate
-and I really like Jan's patch of inspecting for error-bit and not the
-not-clean in a write-out which is darn confusing. (Regardless of the meaning
-of the clean-bit)
-
-Now the filesystem needs to do something about these pages like put them in a Jurnal,
-shove them in a recovery workQ or whatever. All the VFS/MM can do is like Linus
-said wait until they are plain removed which is effectively like invalidating them.
-(In the case the FS did nothing to fix it)
-
-I wish there was some heavy logging when the VFS/MM trashes error-set but clean-set
-pages (Write-errors), even a write-out of these buffers to some global journal, of
-which tools can extract and amend later. (Like the USB snatched too soon example)
-
-So I see Linus point of "we can't go back to any of the old states" but let's not
-overload the clean-bit and use the proper error-bit like Jan suggested.
-
-My $0.017
-Boaz
+There's no way this is going to make it into the 3.3 kernel at this
+point, we're almost at the end of the merge window.
