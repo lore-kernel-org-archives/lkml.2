@@ -1,193 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab2AQUwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 15:52:55 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:16697 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755830Ab2AQUw3 (ORCPT
+	id S1755881Ab2AQUyJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 15:54:09 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63891 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396Ab2AQUyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 15:52:29 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, joseph.cihula@intel.com,
-        linux-acpi@vger.kernel.org, tboot-devel@lists.sourceforge.net,
-        len.brown@intel.com, rjw@sisk.pl, mingo@redhat.com
-Cc: Tang Liang <liang.tang@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/2] x86, acpi, tboot: Have a ACPI os prepare sleep instead of calling tboot_sleep.
-Date: Tue, 17 Jan 2012 15:50:07 -0500
-Message-Id: <1326833408-23685-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <1326833408-23685-1-git-send-email-konrad.wilk@oracle.com>
-References: <1326833408-23685-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4F15DF80.0076,ss=1,re=0.000,fgs=0
+	Tue, 17 Jan 2012 15:54:07 -0500
+Date: Tue, 17 Jan 2012 12:54:01 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Jones <drjones@redhat.com>
+cc: Jerome Marchand <jmarchan@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        david.woodhouse@intel.com, gregkh@suse.de, davem@davemloft.net,
+        axboe@kernel.dk, holt@sgi.com, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, hskinnemoen@gmail.com, egtvedt@samfundet.no,
+        msalter@redhat.com, a-jacquiot@ti.com, starvik@axis.com,
+        jesper.nilsson@axis.com, dhowells@redhat.com, takata@linux-m32r.org,
+        geert@linux-m68k.org, yasutake.koichi@jp.panasonic.com,
+        jonas@southpole.se, kyle@mcmartin.ca, deller@gmx.de,
+        jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
+        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
+        mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+In-Reply-To: <20120117144644.GC3188@turtle.usersys.redhat.com>
+Message-ID: <alpine.DEB.2.00.1201171246280.2595@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com> <201201120918.53026.arnd@arndb.de> <20120112101805.GA2375@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201121259270.17287@chino.kir.corp.google.com> <20120113085125.GA2452@turtle.usersys.redhat.com>
+ <alpine.DEB.2.00.1201130230320.15417@chino.kir.corp.google.com> <20120113122202.GB2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com> <4F1442C5.70500@redhat.com> <alpine.DEB.2.00.1201161530170.16270@chino.kir.corp.google.com>
+ <20120117144644.GC3188@turtle.usersys.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tang Liang <liang.tang@oracle.com>
+On Tue, 17 Jan 2012, Andrew Jones wrote:
 
-The ACPI suspend path makes a call to tboot_sleep right before
-it writes the PM1A, PM1B values. We replace the direct call to
-tboot via an registration callback similar to __acpi_register_gsi.
+> > > For instance, Why would CONFIG_EXPERT disable by default some HID devices?
+> > > I could understand why it is done for CONFIG_EMBEDDED, but certainly not
+> > > for an general EXPERT option.
+> > > 
+> > 
+> > Then this is a prime example that you've identified were it would make 
+> > sense to have the default value be dependant on EMBEDDED rather than 
+> > EXPERT.  Feel free to send a patch to the HID maintainers.
+> > 
+> 
+> How would you propose to write this patch? You say the default value
+> should be dependant on EMBEDDED, instead of EXPERT? So maybe something
+> like
+> 
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index a421abd..73c2d39 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -63,7 +63,7 @@ menu "Special HID drivers"
+>  config HID_A4TECH
+>         tristate "A4 tech mice" if EXPERT
+>         depends on USB_HID
+> -       default !EXPERT
+> +       default !EMBEDDED
+>         ---help---
+>         Support for A4 tech X5 and WOP-35 / Trust 450L mice.
+> 
+> and the other HID drivers...
+> 
 
-Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
-CC: Len Brown <len.brown@intel.com>
-Acked-by: Joseph Cihula <joseph.cihula@intel.com>
-[v1: Added __attribute__ ((unused))]
-[v2: Introduced a wrapper instead of changing tboot_sleep return values]
-[v3: Added return value AE_CTRL_SKIP for acpi_os_sleep_prepare]
-Signed-off-by: Tang Liang <liang.tang@oracle.com>
-[v1: Fix compile issues on IA64 and PPC64]
-[v2: Fix where __acpi_os_prepare_sleep==NULL and did not go in sleep properly]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/kernel/tboot.c       |    8 ++++++++
- drivers/acpi/acpica/hwsleep.c |   10 +++++++---
- drivers/acpi/osl.c            |   24 ++++++++++++++++++++++++
- include/acpi/acexcep.h        |    1 +
- include/linux/acpi.h          |   10 ++++++++++
- include/linux/tboot.h         |    1 -
- 6 files changed, 50 insertions(+), 4 deletions(-)
+Um, no, HID_A4TECH is still only configurable for CONFIG_EXPERT with this 
+patch.  Jerome's premise is that this should be configurable for 
+CONFIG_EMBEDDED instead.  Please read what he wrote.
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index e2410e2..1a4ab7d 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -297,6 +297,12 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
- 
- 	tboot_shutdown(acpi_shutdown_map[sleep_state]);
- }
-+static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
-+			       u32 pm1b_control)
-+{
-+	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
-+	return 0;
-+}
- 
- static atomic_t ap_wfs_count;
- 
-@@ -345,6 +351,8 @@ static __init int tboot_late_init(void)
- 
- 	atomic_set(&ap_wfs_count, 0);
- 	register_hotcpu_notifier(&tboot_cpu_notifier);
-+
-+	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
- 	return 0;
- }
- 
-diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
-index d52da30..992359a 100644
---- a/drivers/acpi/acpica/hwsleep.c
-+++ b/drivers/acpi/acpica/hwsleep.c
-@@ -43,9 +43,9 @@
-  */
- 
- #include <acpi/acpi.h>
-+#include <linux/acpi.h>
- #include "accommon.h"
- #include "actables.h"
--#include <linux/tboot.h>
- #include <linux/module.h>
- 
- #define _COMPONENT          ACPI_HARDWARE
-@@ -344,8 +344,12 @@ acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
- 
- 	ACPI_FLUSH_CPU_CACHE();
- 
--	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
--
-+	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
-+				       pm1b_control);
-+	if (ACPI_SKIP(status))
-+		return_ACPI_STATUS(AE_OK);
-+	if (ACPI_FAILURE(status))
-+		return_ACPI_STATUS(status);
- 	/* Write #2: Write both SLP_TYP + SLP_EN */
- 
- 	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index f31c5c5..f3aae4b 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -76,6 +76,9 @@ EXPORT_SYMBOL(acpi_in_debugger);
- extern char line_buf[80];
- #endif				/*ENABLE_DEBUGGER */
- 
-+static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
-+				      u32 pm1b_ctrl);
-+
- static acpi_osd_handler acpi_irq_handler;
- static void *acpi_irq_context;
- static struct workqueue_struct *kacpid_wq;
-@@ -1659,3 +1662,24 @@ acpi_status acpi_os_terminate(void)
- 
- 	return AE_OK;
- }
-+
-+acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
-+				  u32 pm1b_control)
-+{
-+	int rc = 0;
-+	if (__acpi_os_prepare_sleep)
-+		rc = __acpi_os_prepare_sleep(sleep_state,
-+					     pm1a_control, pm1b_control);
-+	if (rc < 0)
-+		return AE_ERROR;
-+	else if (rc > 0)
-+		return AE_CTRL_SKIP;
-+
-+	return AE_OK;
-+}
-+
-+void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
-+			       u32 pm1a_ctrl, u32 pm1b_ctrl))
-+{
-+	__acpi_os_prepare_sleep = func;
-+}
-diff --git a/include/acpi/acexcep.h b/include/acpi/acexcep.h
-index 5b6c391..fa0d22c 100644
---- a/include/acpi/acexcep.h
-+++ b/include/acpi/acexcep.h
-@@ -57,6 +57,7 @@
- #define ACPI_SUCCESS(a)                 (!(a))
- #define ACPI_FAILURE(a)                 (a)
- 
-+#define ACPI_SKIP(a)                    (a == AE_CTRL_SKIP)
- #define AE_OK                           (acpi_status) 0x0000
- 
- /*
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 6001b4da..fccd017 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -359,4 +359,14 @@ static inline int suspend_nvs_register(unsigned long a, unsigned long b)
- }
- #endif
- 
-+#ifdef CONFIG_ACPI
-+void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
-+			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
-+
-+acpi_status acpi_os_prepare_sleep(u8 sleep_state,
-+				  u32 pm1a_control, u32 pm1b_control);
-+#else
-+#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
-+#endif
-+
- #endif	/*_LINUX_ACPI_H*/
-diff --git a/include/linux/tboot.h b/include/linux/tboot.h
-index 1dba6ee..c75128b 100644
---- a/include/linux/tboot.h
-+++ b/include/linux/tboot.h
-@@ -143,7 +143,6 @@ static inline int tboot_enabled(void)
- 
- extern void tboot_probe(void);
- extern void tboot_shutdown(u32 shutdown_type);
--extern void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control);
- extern struct acpi_table_header *tboot_get_dmar_table(
- 				      struct acpi_table_header *dmar_tbl);
- extern int tboot_force_iommu(void);
--- 
-1.7.7.4
+When it's configurable only for CONFIG_EMBEDDED, then you can propose that 
+to the HID maintainers.  If they agree, then we don't care if users 
+currently with CONFIG_EXPERT=y and CONFIG_EMBEDDED=n lose the option, but 
+that needs to be handled on a case-by-case basis when breaking backwards 
+compatibility.
 
+> I guess it could be changed to 'if EXPERT || EMBEDDED', but at the moment
+> EMBEDDED selects EXPERT, so that's not currently necessary. I guess what's
+> above should be sufficient then. Oh, wait! That's exactly what this patch
+> does! And anybody who actually read it would have seen that.
+> 
+
+One of many reasons why it's completely wrong, and is nacked.
+
+> BTW, the HID maintainer, Jiri Kosina, is already on cc, since I cc'ed
+> every maintainer of the files that this patch touches.
+> 
+
+That type of attitude is a great way for your patches to be lost in 
+oblivion, you can't expect everyone on the cc list to be actively reading 
+this thread.  I've considered not reading it myself since it's pretty 
+pointless.  If you wish to submit kconfig patches for options that touch 
+specific subsystems, you'll need to separate them out and propose them to 
+the individual subsystem maintainers.
