@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab2AQJ5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 04:57:14 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38316 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab2AQJ5M convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 04:57:12 -0500
+	id S1752772Ab2AQKCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 05:02:50 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43681 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752201Ab2AQKCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 05:02:49 -0500
+Date: Tue, 17 Jan 2012 11:02:22 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
+Message-ID: <20120117100222.GH10397@elte.hu>
+References: <20120110174509.GA30802@redhat.com>
+ <20120113182015.GA3902@redhat.com>
+ <20120115182441.GA24694@redhat.com>
+ <20120116074540.GE15641@elte.hu>
+ <1326717070.7642.144.camel@gandalf.stny.rr.com>
+ <20120116125329.GB31667@elte.hu>
+ <1326729123.7642.146.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <20120117095049.GG1077372@jupiter.n2.diac24.net>
-References: <CAGsizz+x1GVNR9Pz=b7wO0ELx29=FMosfvhQWL5K26EpkwsUCg@mail.gmail.com>
- <20120116202907.GF1077372@jupiter.n2.diac24.net> <CAGsizz+NuyPHtau3b2LjCqdAGyrPf1-08v2uD0xJBSJS9qs5Fg@mail.gmail.com>
- <20120117095049.GG1077372@jupiter.n2.diac24.net>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Tue, 17 Jan 2012 10:56:51 +0100
-X-Google-Sender-Auth: ApgnGfYT2vu192-NR0mbdy3HH18
-Message-ID: <CAGsizz+irKwP5VVmL3_0et+c9YwrHYZ6843dowZmMzA0osXNYg@mail.gmail.com>
-Subject: Re: [patch v2, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: David Lamparter <equinox@diac24.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326729123.7642.146.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dòa 17. januára 2012 10:50, David Lamparter <equinox@diac24.net> napísal/a:
-> On Mon, Jan 16, 2012 at 11:52:25PM +0100, ©tefan Gula wrote:
->> Dòa 16. januára 2012 21:29, David Lamparter <equinox@diac24.net> napísal/a:
->> > At the risk of repeating myself, Linux GRE support already has
->> > provisions for multipoint tunnels. And unlike your code, those reuse the
->> > existing neighbor table infrastructure, including all of its user
->> > interface and introspection capabilities.
->> >
->> > It's actually slightly visible in your patch:
->> >
->> > On Mon, Jan 16, 2012 at 08:45:14PM +0100, ©tefan Gula wrote:
->> >> +++ linux-3.2.1-my/net/ipv4/ip_gre.c  2012-01-16 20:42:03.000000000 +0100
->> >> @@ -716,7 +942,19 @@ static netdev_tx_t ipgre_tunnel_xmit(str
->> > [...]
->> >>               /* NBMA tunnel */
->> >>
->> >>               if (skb_dst(skb) == NULL) {
->> >
->> >
->> > -David
->>
->> That code you are referring to is used only for routed traffic inside
->> GRE - L3 traffic over L3 routed infrastructure. My patch is dealing
->> with L2 traffic over L3 routed infrastructure - so the decision here
->> is based on destination MAC addresses and not based on IPv4/IPv6
->> addresses.
->
-> Yes, it currently only does IPv4/IPv6 -> IPv4 through the neighbor
-> table. That doesn't mean it can't be extended to handle ethernet
-> addresses the same way.
->
->
-> -David
 
-Routing mechanisms and switching mechanisms works completely
-different, in switching you simply don't have anything like next-hop
-from routing, which can be resolved by utilizing modified ARP message
-and there is also absolutely no hierarchy in MAC address (like you
-have in routing table), so I seriously doubt that it can be done the
-same way, but I am opened to ideas here. So how would you do like to
-do that?
+* Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Mon, 2012-01-16 at 13:53 +0100, Ingo Molnar wrote:
+> > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > Say if an app relies on the smaller data structure, it sure 
+> > might get surprised by the kernel writing a wider record ...
+> 
+> Ingo,
+> 
+> The kernel does this all the time. We have syscalls that may 
+> extend the data structure. [...]
+
+That is not true *AT ALL* in such an unqualified manner. Steve, 
+stop being stupid.
+
+The kernel syscall ABI may indeed sometimes expand *INPUT* 
+structures (if via some mechanism it's possible to make sure 
+that old ABI uses don't cause the kernel to read undefined 
+data), but the trace events are *OUTPUT* structures.
+
+The kernel ABI never ever expands output structures, unless the 
+ABI itself is expanded in a safe way that makes it impossible 
+for old apps to trigger the new output logic, i.e. which makes 
+sure that all old apps work as well. We never ever write beyond 
+an already existing 40 byte ABI structure and corrupt the 41th 
+byte for an existing app!
+
+In this case we simply don't know whether such an app exists. It 
+might be OK to do it, or it might be not so ok.
+
+Thanks,
+
+	Ingo
