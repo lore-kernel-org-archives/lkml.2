@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab2AQEHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 23:07:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53166 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751752Ab2AQEHd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 23:07:33 -0500
-Message-ID: <1326773251.2819.173.camel@deadeye>
-Subject: [PATCH stable 4/4] dm: do not forward ioctls from logical volumes
- to the underlying device
-From: Ben Hutchings <ben@decadent.org.uk>
-To: stable@vger.kernel.org
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>
-Date: Tue, 17 Jan 2012 04:07:31 +0000
-In-Reply-To: <1326772723.2819.167.camel@deadeye>
-References: <1326772723.2819.167.camel@deadeye>
+	id S1751834Ab2AQErb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 23:47:31 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52597 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab2AQEra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 23:47:30 -0500
+Message-ID: <1326775643.2564.36.camel@edumazet-laptop>
+Subject: Re: [patch v2, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?UTF-8?Q?=C5=A0tefan?= Gula <steweg@ynet.sk>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 17 Jan 2012 05:47:23 +0100
+In-Reply-To: <CAGsizz+2nH+Sx+7TjZwEeKBiHbio0BxoN7CgT4Sspp0EzRN6Ug@mail.gmail.com>
+References: <CAGsizz+x1GVNR9Pz=b7wO0ELx29=FMosfvhQWL5K26EpkwsUCg@mail.gmail.com>
+	 <1326745733.2564.14.camel@edumazet-laptop>
+	 <CAGsizz+2nH+Sx+7TjZwEeKBiHbio0BxoN7CgT4Sspp0EzRN6Ug@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2-1 
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+Le mardi 17 janvier 2012 à 00:11 +0100, Štefan Gula a écrit :
 
-commit ec8013beddd717d1740cfefb1a9b900deef85462 upstream.
+> I agree with you, but for the start of this feature I believe static
+> slots size is enough here - same limitation is inside the original
+> linux bridge code. I have merged hopefully all your comments and here
+> is the newest patch:
 
-A logical volume can map to just part of underlying physical volume.
-In this case, it must be treated like a partition.
 
-Based on a patch from Alasdair G Kergon.
 
-Cc: Alasdair G Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backport to 2.6.32 - drop change to drivers/md/dm-flakey.c]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/md/dm-linear.c |   12 +++++++++++-
- drivers/md/dm-mpath.c  |    6 ++++++
- 2 files changed, 17 insertions(+), 1 deletions(-)
+1) Before sending a new version of your patch, please fix your mailer,
+you can read Documentation/email-clients.txt for hints.
 
-diff --git a/drivers/md/dm-linear.c b/drivers/md/dm-linear.c
-index 82f7d6e..7ab302d 100644
---- a/drivers/md/dm-linear.c
-+++ b/drivers/md/dm-linear.c
-@@ -116,7 +116,17 @@ static int linear_ioctl(struct dm_target *ti, unsigned int cmd,
- 			unsigned long arg)
- {
- 	struct linear_c *lc = (struct linear_c *) ti->private;
--	return __blkdev_driver_ioctl(lc->dev->bdev, lc->dev->mode, cmd, arg);
-+	struct dm_dev *dev = lc->dev;
-+	int r = 0;
-+
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (lc->start ||
-+	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
-+	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
- }
- 
- static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
-diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
-index b03cd39..4ec5fe2 100644
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1464,6 +1464,12 @@ static int multipath_ioctl(struct dm_target *ti, unsigned int cmd,
- 
- 	spin_unlock_irqrestore(&m->lock, flags);
- 
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
- 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
- }
- 
--- 
-1.7.8.2
+Send it to you and check you can apply it.
+Then, once you are confident its OK, you can send it to netdev.
+
+Right now, it doesnt apply, because of unexpected line wraps.
+
+# cd next-next
+# cat /tmp/patch | patch -p1
+patching file include/net/ipip.h
+patching file net/ipv4/Kconfig
+patching file net/ipv4/ip_gre.c
+patch: **** malformed patch at line 495: ipgre_tap_bridge_entry *entry)
+
+
+2) You call ipgre_tap_bridge_fini() from ipgre_exit_net() and
+ipgre_init_net(), thats completely bogus if CONFIG_NET_NS=y
+
+Just remove the struct kmem_cache *ipgre_tap_bridge_cache
+and use instead kmalloc(sizeof(...))/kfree(ptr) instead.
+
+3) ipgre_tap_bridge_init() should not be __net_init, but __init
+
+
+4) I cant find why you store 'struct net_device *dev;' in a
+ipgre_tap_bridge_entry, it seems you never read it ?
+
+5) Also please add an empty line between variable declaration and
+function body. Also, we prefer an alignement of parameters.
+
+For example :
+
+static __be32 ipgre_tap_bridge_get_raddr(struct ip_tunnel *tunnel,
+	const unsigned char *addr)
+{
+	__be32 raddr;
+	struct ipgre_tap_bridge_entry *entry;
+	rcu_read_lock();
+	entry = __ipgre_tap_bridge_get(tunnel, addr);
+	if (entry == NULL)
+		raddr = 0;
+	else
+		raddr = entry->raddr;
+	rcu_read_unlock();
+ 	return raddr;
+}
+
+should be :
+
+static __be32 ipgre_tap_bridge_get_raddr(struct ip_tunnel *tunnel,
+					 const unsigned char *addr)
+{
+	__be32 raddr = 0;
+	struct ipgre_tap_bridge_entry *entry;
+
+	rcu_read_lock();
+	entry = __ipgre_tap_bridge_get(tunnel, addr);
+	if (entry)
+		raddr = entry->raddr;
+	rcu_read_unlock();
+
+	return raddr;
+}
+
+
+
+
 
 
