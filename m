@@ -1,95 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab2AQOgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 09:36:39 -0500
-Received: from mx1.gd-ms.com ([153.11.250.40]:33031 "EHLO mx1.gd-ms.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306Ab2AQOgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 09:36:38 -0500
-X-Greylist: delayed 840 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 09:36:38 EST
-In-Reply-To: <20120117085756.GB7612@elte.hu>
-References: <OFE7865F25.43E4BFD2-ON85257984.0057CD12-85257984.0058D31D@gdeb.com> <20120116075348.GF15641@elte.hu> <OF8925048E.BDB4D255-ON85257987.005AFEB7-85257987.005C9188@LocalDomain> <OFFD8ED65D.E1B7CD3D-ON85257987.005EE0A9-85257987.005F48CD@gdeb.com> <20120116212938.GB6313@srcf.ucam.org> <20120117085756.GB7612@elte.hu>
+	id S1754580Ab2AQOhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 09:37:53 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43179 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395Ab2AQOhw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 09:37:52 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=KHR86nk1PkcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Euhhyv0r5AZiZoB-3pcA:9 a=eh2XkXn2RNeatvm_6l0A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=KjaEQMvDZaXeJHUU:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326811069.17534.46.camel@gandalf.stny.rr.com>
+Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
+From: Steven Rostedt <rostedt@goodmis.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kushal Koolwal <kushalkoolwal@gmail.com>,
-        linux-kernel@vger.kernel.org, michael.d.labriola@gmail.com,
-        Matthew Garrett <mjg59@srcf.ucam.org>, support@versalogic.com,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-MIME-Version: 1.0
-Subject: Re: Reboot hangs on VersaLogic Ocelot
-X-KeepSent: E7567546:E048E2ED-85257988:004E1300;
- type=4; name=$KeepSent
-Message-ID: <OFE7567546.E048E2ED-ON85257988.004E1300-85257988.004EF54C@gdeb.com>
-From: Michael D Labriola <mlabriol@gdeb.com>
-Date: Tue, 17 Jan 2012 09:22:25 -0500
-X-GDMEncrypt: FALSE
-X-GDMMarking: NOT_SENSITIVE
-Content-Type: text/plain; charset="US-ASCII"
-X-GDM-EVAL: score: /30; hits: 
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Tue, 17 Jan 2012 09:37:49 -0500
+In-Reply-To: <20120117124023.GA13969@elte.hu>
+References: <20120110174509.GA30802@redhat.com>
+	 <20120113182015.GA3902@redhat.com> <20120115182441.GA24694@redhat.com>
+	 <20120116074540.GE15641@elte.hu>
+	 <1326717070.7642.144.camel@gandalf.stny.rr.com>
+	 <20120116125329.GB31667@elte.hu>
+	 <1326729123.7642.146.camel@gandalf.stny.rr.com>
+	 <20120117100222.GH10397@elte.hu>
+	 <1326801811.7642.188.camel@gandalf.stny.rr.com>
+	 <20120117124023.GA13969@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@elte.hu> wrote on 01/17/2012 03:57:56 AM:
+On Tue, 2012-01-17 at 13:40 +0100, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> From: Ingo Molnar <mingo@elte.hu>
-> To: Matthew Garrett <mjg59@srcf.ucam.org>
-> Cc: Michael D Labriola <mlabriol@gdeb.com>, "H. Peter Anvin" 
-> <hpa@zytor.com>, Kushal Koolwal <kushalkoolwal@gmail.com>, linux-
-> kernel@vger.kernel.org, michael.d.labriola@gmail.com, 
-> support@versalogic.com, Thomas Gleixner <tglx@linutronix.de>, 
-x86@kernel.org
-> Date: 01/17/2012 04:04 AM
-> Subject: Re: Reboot hangs on VersaLogic Ocelot
+> Any tool that requests the signal trace event, and copies the 
+> full (and now larger) record it got in the ring-buffer, without 
+> expanding the target record's size accordingly will *BREAK*. 
+
+I'm curious to where it gets the size?
+
+This is not like the kernel writing to a pointer in userspace memory,
+where it can indeed break code by writing too much. This is the
+userspace program writing from a shared memory location.
+
+
 > 
+> I do not claim that tools will break in practice - i'm raising 
+> the *possibility* out of caution and i'm frustrated that you 
+> *STILL* don't understand how ABIs are maintained in Linux. 
+
+You are defending code that would do:
+
+	size = read_size(ring_buffer_event);
+	memcpy(data, buffer, size);
+
+over code that would most likely do:
+
+	memcpy(data, buffer, sizeof(*data));
+
+???
+
+According to this logic, we should never increase the size
+of /proc/stat, because someone might do:
+
+	i = 0;
+	fd = open("/proc/stat", O_RDONLY);
+	do {
+		r = read(fd, buff+i, BUFSIZ);
+		i += r;
+	} while (r > 0);
+
+
+
 > 
-> * Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> 
-> > On Mon, Jan 16, 2012 at 12:20:45PM -0500, Michael D Labriola wrote:
-> 
-> > > Actually, assuming we fix the bios= argument ignored by DMI 
-> > > scan problem, would it be better to change the VersaLogic 
-> > > quirk to acpi even though it's not necessary right now?  If 
-> > > the default reboot method ever switches from acpi to kbd or 
-> > > bios, these boards will hang on reboot again...
-> > 
-> > A lot of hardware relies on the acpi method being used. I 
-> > don't see us changing the default for x86 when booted via 
-> > BIOS.
-> 
-> Yeah, i don't think we'll ever again switch away from ACPI being 
-> the default for currently existing hardware.
-> 
-> (Far-)future hardware might have different defaults, but that 
-> won't affect hardware that exists today.
-> 
-> Thanks,
-> 
->    Ingo
+> You arguing about defined semantics is *MEANINGLESS*. What 
+> matters is what the apps do in practice.
 
-Ingo,
-
-I sent the aforementioned patches last night using git-send-email... but 
-I'm not sure they went through correctly.  I got the email at my home 
-account, but not my work account, and they don't seem to be in the LKML 
-archives.  Did anyone get them?  I listed all the addresses on this 
-email's distro with separate --to and --cc arguments and tried to use an 
-appropriate In-Reply-To Message-Id when prompted, but maybe I messed it 
-up.
-
-Also, how does the sign-off work?  Does the appropriate person (Matthew?) 
-review the patches and re-submit with a sign-off field?
-
----
-Michael D Labriola
-Electric Boat
-mlabriol@gdeb.com
-401-848-8871 (desk)
-401-848-8513 (lab)
-401-316-9844 (cell)
+Exactly, to depend on the ring buffer size to do all copies to fixed
+size data structures seems to be backwards to what would be done in
+practice.
 
 
+>  If the apps we know 
+> about do it robustly and adapt (or don't care) about the 
+> expansion, and if no-one reports a regression in tools we don't 
+> know about, then it's probably fine.
+
+It's not about robustness, it's about the easy way to copy.
+
+	memcpy(data, buffer, sizeof(*data));
+
+wont break.
 
 
- 
+> But your argument that expansion is somehow part of the ABI is 
+> patently false and misses the point. Seeing your arguments make 
+> me *very* nervous about applying any ABI affecting patch from 
+> you.
+
+Well you already think I'm stupid, I wont change the ABI anymore.
+Obviously I know nothing, because I created a flexible interface that's
+not used by anything except perf and trace-cmd, but because there's no
+library, we are stuck with fixed tracepoints, which will come to haunt
+us in the not so distant future.
+
+This will bloat the kernel. Tracepoints are not free. They bloat the
+kernel's text section. Every tracepoint still adds a bit of code in the
+"unlikely" part inlined where they are called. So they do have an affect
+on icache, as well as the code to process the tracepoint (around 5k per
+tracepoint).
+
+People are adding tracepoints all over the kernel without much thought.
+We take much more care when we add a system call. By making tracepoints
+have as strict a ABI as system calls will cause a maintenance nightmare
+in the future. I guarantee that!
+
+
+           compiled in my box       in include/trace/events  in rest of kernel
+In v3.0:         250                        259                  330
+In v3.1:         311                        349                  338
+in v3.2:         335                        393                  351
+latest Linus:    340                        401                  345
+
+(Interesting that tracepoints have disappeared outside the events
+directory)
+
+Note, these do not include the syscall tracepoints.
+
+There's already more tracepoints (compiled for my box) than syscalls.
+
+Tracepoints are being added like the US deficit. We need to set some
+rules somewhere. Either by making a library that can handle small
+changes (like the one we are discussing, even though a memcpy should
+cope), or we need to put a kabosh to adding new tracepoints like they
+are the new fad app. Perhaps we should put the same requirements on new
+tracepoints as we do with new syscalls.
+
+-- Steve
 
 
