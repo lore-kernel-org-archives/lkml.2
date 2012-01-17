@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab2AQQEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 11:04:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42008 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2AQQEN (ORCPT
+	id S1755192Ab2AQQEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 11:04:45 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:33585 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755111Ab2AQQEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 11:04:13 -0500
-Message-ID: <4F159BF7.7040307@gmail.com>
-Date: Tue, 17 Jan 2012 09:04:07 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Tue, 17 Jan 2012 11:04:43 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: YDqDQKwVM1lv9S2JCIzGrEhUBIVefDuENv7du9IRcnrcONV
+ BxjqRYXawaQ1xPlM_XcUKbsnpE7oEGJKpSLOR.x.pLsDQTKOfRes75iJPjQz
+ E5_O.dlp0QorCw2GFXxKhywjhmZD9.UVL4giKK2wmlHFwLvlPmBSLhTJ5fsM
+ FDaTABOWAlTvanYjByJeoCZBW.7JyDA3L6GSyJZ9IDOvhrgsULEVhIOFcU_.
+ xkSE3JhReCvTMpkiNB68zblSXYjmUsl0sIm4uCb2mtIs5dTfs1.GBaNR435Y
+ q3DGyPQOXwdFihmzMeb10C_FAhKlnhpYwPQherHvfPiGTwpq.FQpDork0kba
+ NpIzNE5TqvuL0mlpmk2vhU4q1GDrl.qbRkv4FAszvqPjf42yGB.cIwQOu9MP
+ pJPamPnyQ1rNYuDtVM4qSntA.23XgVH2NVPsD
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 17 Jan 2012 10:04:38 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Hung task when calling clone() due to netfilter/slab
+In-Reply-To: <1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Message-ID: <alpine.DEB.2.00.1201170942240.4800@router.home>
+References: <1326558605.19951.7.camel@lappy>    <1326561043.5287.24.camel@edumazet-laptop>   <1326632384.11711.3.camel@lappy>  <1326648305.5287.78.camel@edumazet-laptop>   <alpine.DEB.2.00.1201170910130.4800@router.home>  <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+  <alpine.DEB.2.00.1201170927020.4800@router.home> <1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-CC: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v4 4/5] perf script: add the offset field specifier
-References: <20120116052146.2485.48349.stgit@linux3> <20120116052228.2485.65259.stgit@linux3>
-In-Reply-To: <20120116052228.2485.65259.stgit@linux3>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2012 10:22 PM, Akihiro Nagai wrote:
-> Add the offset field specifier 'offs' to show the offset from
-> the symbols in the output of perf-script. We can get the more
-> detailed address information.
-> 
-> Output sample:
-> # perf script -f ip,addr,sym,offs
-> 301ec016b0            _start+0x0 ffffffff81467612 irq_return+0x0
-> 301ec016b0            _start+0x0 ffffffff81467612 irq_return+0x0
-> 301ec04b70         _dl_start+0x0       301ec016b3 _start+0x3
-> 301ec04b70         _dl_start+0x0 ffffffff81467612 irq_return+0x0
-> 301ec04b96        _dl_start+0x26 ffffffff81467612 irq_return+0x0
-> 301ec04b9d        _dl_start+0x2d ffffffff81467612 irq_return+0x0
-> 301ec04c0d        _dl_start+0x9d       301ec04beb _dl_start+0x7b
-> 301ec04bf0        _dl_start+0x80       301ec04c11 _dl_start+0xa1
-> [snip]
-> 
-> Changes in v2:
->  - change the way to output offset from '--show-symbol-offset' to
->    'offs' field.
->  - clean up codes.
-> 
+On Tue, 17 Jan 2012, Eric Dumazet wrote:
 
-Reviewed-by: David Ahern <dsahern@gmail.com>
+> Thanks !
+>
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+
+That may not be the end of it. Slub also calls sysfs from sysfs_add_alias
+while holding slub_lock.
+
+If sysfs allows user space stuff to run then you cannot really hold any
+locks. How is one supposed to sync adding pointers to sysfs structures in
+subsystems? Drop all locks and then recheck the memory structures after
+the sysfs function returns? Awkward.
+
+
