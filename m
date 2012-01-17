@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab2AQR44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:56:56 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35770 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752387Ab2AQR4y (ORCPT
+	id S1753532Ab2AQR5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:57:32 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61885 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab2AQR5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:56:54 -0500
-X-Sasl-enc: d95xoaIn1nN9NJKkzKMBGn3fp9CyeeWozfekT+xgkmES 1326823013
-Date: Tue, 17 Jan 2012 09:47:19 -0800
-From: Greg KH <greg@kroah.com>
-To: David Miller <davem@davemloft.net>
-Cc: nbowler@elliptictech.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [00/40] 3.0.17-stable review
-Message-ID: <20120117174719.GB10051@kroah.com>
-References: <20120110214630.GA14384@kroah.com>
- <20120111222158.GA20915@elliptictech.com>
- <20120112230133.GC3360@kroah.com>
- <20120112.151548.979442119186542472.davem@davemloft.net>
+	Tue, 17 Jan 2012 12:57:31 -0500
+Date: Tue, 17 Jan 2012 21:57:25 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
+ v6
+Message-ID: <20120117175725.GJ16213@moon>
+References: <20120116153231.GF2998@moon>
+ <20120116161114.GA17727@redhat.com>
+ <20120116162021.GH2998@moon>
+ <20120117174049.GA19268@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120112.151548.979442119186542472.davem@davemloft.net>
+In-Reply-To: <20120117174049.GA19268@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 03:15:48PM -0800, David Miller wrote:
-> From: Greg KH <greg@kroah.com>
-> Date: Thu, 12 Jan 2012 15:01:33 -0800
+On Tue, Jan 17, 2012 at 06:40:49PM +0100, Oleg Nesterov wrote:
+...
+> > >
+> > > But this is not enough. exit_ptrace() can do list_move() without
+> > > changing ->real_parent.
+> > >
+> > > I'll try to think. At first glance we can rely on EXIT_DEAD, but
+> > > I'd like to avoid this, I think EXIT_DEAD should die.
+> >
+> > Ouch! Thanks for catching this Oleg. I'll try to come with something
+> > to show as well.
 > 
-> > On Wed, Jan 11, 2012 at 05:21:58PM -0500, Nick Bowler wrote:
-> >> Hi Greg,
-> >> 
-> >> On 2012-01-10 13:46 -0800, Greg KH wrote:
-> >> > This is the start of the stable review cycle for the 3.0.17 release.
-> >> > There are 40 patches in this series, all will be posted as a response
-> >> > to this one.  If anyone has any issues with these being applied, please
-> >> > let us know.  If anyone is a maintainer of the proper subsystem, and
-> >> > wants to add a Signed-off-by: line to the patch, please respond with it.
-> >> 
-> >> These upstream commits (in 3.2):
-> >> 
-> >>   b7ea81a58adc ("ah: Read nexthdr value before overwriting it in ahash input callback.")
-> >>   069294e813ed ("ah: Correctly pass error codes in ahash output callback.")
-> >> 
-> >> made it into the 3.1.y series but they appear to not have made it into
-> >> 3.0.y, where they're also applicable.  Also, the following one fixes a
-> >> real bug so it may be 3.0.y material, although I'm not sure if any
-> >> in-tree drivers can trigger it (this one requires a real ahash driver
-> >> for real hardware to trigger; unlike the previous two, cryptd won't do):
-> >> 
-> >>   4b90a603a1b2 ("ah: Don't return NET_XMIT_DROP on input")
-> > 
-> > I rely on the networking maintainer (i.e. David) to send me network
-> > patches.  If he acks these, I'll be glad to queue them up for the next
-> > 3.0-stable release.
+> Do you see another approach? I don't, so I'd suggest to check
+> "task->exit_state != EXIT_DEAD" instead of !list_empty().
 > 
-> Acked-by: David S. Miller <davem@davemloft.net>
 
-Thanks, now applied.
+Well, I thought what if I can find another way without EXIT_DEAD
+but seems there is no luck.
 
-greg k-h
+> Just in case, we can also check "start->exit_state == 0" instead
+> of "task->real_parent == start" with the same effect, up to you.
+> 
+
+real_parent == start somehow more informative for me so if you allow
+(and noone against) I would leave the current form.
+
+> It would be nice to add the comment explaining these checks...
+> 
+
+Yeah, I'll add ones. Sure.
+
+> And I forgot to mention, the comment below
+> 
+> 	> +			/*
+> 	> +			 * We might miss some freshly created children
+> 	> +			 * here, but it was never promised to be
+> 	> +			 * accurate.
+> 	> +			 */
+> 	> +			if (list_is_last(&task->sibling, &start->children))
+> 	> +				goto out;
+> 
+> looks misleading. Contrary to the slow path, we can't miss the
+> freshly forked child here, copy_process() does list_add_tail().
+> 
+
+Ah, crap, indeed!
+
+> But the slow path obviously can skip much more than needed and
+> miss children (freshly forked or not), probably it would be better
+> to move the comment down and remove the "freshly created" part.
+> 
+> What do you think?
+> 
+> 
+
+Yeah, thanks a lot, Oleg. I'll update it an post for review (I hope
+to finish it tonight ;)
+
+	Cyrill
