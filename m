@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab2AQQw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 11:52:28 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:50701 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab2AQQw1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 11:52:27 -0500
-Date: Tue, 17 Jan 2012 11:49:20 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, linux-acpi@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pjones@redhat.com
-Subject: Re: Re-add ibft tree to linux-next please
-Message-ID: <20120117164920.GA5111@phenom.dumpdata.com>
-References: <20111212145330.GA16278@andromeda.dapyr.net>
- <4EE68D57.7030603@zytor.com>
- <20111213021536.GC2730@konrad-lan>
- <4F1580DE.1060002@kernel.org>
+	id S1755382Ab2AQQw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 11:52:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4689 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754707Ab2AQQw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 11:52:56 -0500
+Date: Tue, 17 Jan 2012 17:45:23 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Andi Kleen <andi@firstfloor.org>, indan@nul.nu
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using
+	BPF
+Message-ID: <20120117164523.GA17070@redhat.com>
+References: <1326302710-9427-2-git-send-email-wad@chromium.org> <20120112162231.GA23960@redhat.com> <CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com> <20120112172315.GA26295@redhat.com> <CABqD9hZg4sKiVMS-g5ed7-HKOaiUb06y05TL=QkfBkm9kVmquA@mail.gmail.com> <20120113173153.GA24273@redhat.com> <CABqD9hYYJMNtupTiD48sE5wz6RKaFi9J3DpVRyV4X2FpnT3Mnw@mail.gmail.com> <CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com> <20120116183730.GB21112@redhat.com> <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F1580DE.1060002@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F15A70E.0024,ss=1,re=0.000,fgs=0
+In-Reply-To: <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 09:08:30AM -0500, Len Brown wrote:
-> 
-> > The trick is that we also have to retain the code functionality if
-> > "# CONFIG_ACPI is not set" to scan the memory for the iBFT. That part
-> > should definitly _not_ be moved to drivers/acpi. It could be moved to
-> > arch/x86/ .. but it could also stay in drivers/firmware. <shrugs>
-> 
-> 
-> Are there really hardware/firmware configurations that support IBFT
-> and do not support ACPI?
+On 01/16, Will Drewry wrote:
+>
+> On Mon, Jan 16, 2012 at 12:37 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Yes, thanks, I forgot about compat tasks again. But this is easy, just
+> > we need regs_64_to_32().
+>
+> Yup - we could make the assumption that is_compat_task is always
+> 32-bit and the pt_regs is always 64-bit, then copy_and_truncate with
+> regs_64_to_32.  Seems kinda wonky though :/
 
-gPXE can be used in legacy environments. And it (gPXE) does not update
-the ACPI tables.
+much simpler/faster than what regset does to create the artificial
+user_regs_struct32.
 
-> 
-> If yes, do they require an OS that has CONFIG_ACPI=n?
+> > Doesn't matter. I think Indan has a better suggestion.
+>
+> I disagree, but perhaps I'm not fully understanding!
 
-I can't think of anybody nowadays doing CONFIG_ACPI=n for x86.
-Is there anybody doing it?
+I have much more chances to be wrong ;) I leave it to you and Indan.
 
+Oleg.
 
-> Or would finding the table with CONFIG_ACPI=y and acpi_disabled=1
-> be sufficient?
-
-I think that would work. And also if 'acpi_disabled=0' as you might
-have an IBFT table in memory that is _not_ hooked up to the ACPI tables.
