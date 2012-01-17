@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab2AQUAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 15:00:54 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45029 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574Ab2AQUAv (ORCPT
+	id S1755569Ab2AQUAt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 15:00:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51508 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab2AQUAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 15:00:51 -0500
-Date: Tue, 17 Jan 2012 19:58:41 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Michael D Labriola <mlabriol@gdeb.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
-        michael.d.labriola@gmail.com, support@versalogic.com,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-Subject: Re: [PATCH] x86, reboot: skip DMI checks if reboot set by user
-Message-ID: <20120117195841.48fe8236@pyramind.ukuu.org.uk>
-In-Reply-To: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>
-References: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jan 2012 15:00:47 -0500
+MIME-Version: 1.0
+X-Originating-IP: [93.172.29.3]
+In-Reply-To: <CAK=WgbbZBUiQkCOd=XqT9X_KexKKPft3NB6MCPK1DXfPcqAZ2w@mail.gmail.com>
+References: <CAK=WgbbZBUiQkCOd=XqT9X_KexKKPft3NB6MCPK1DXfPcqAZ2w@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 17 Jan 2012 22:00:26 +0200
+Message-ID: <CAK=WgbZV3PY=ujdLc=8t2F+XJiNfob1z8Tsz=ea77fPwHVxRjg@mail.gmail.com>
+Subject: Re: [GIT PULL] adding rpmsg and remoteproc to 3.3
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, "Grosen, Mark" <mgrosen@ti.com>,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tony Lindgren <tony@atomide.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Greg KH <greg@kroah.com>,
+        akpm@linux-foundation.org, Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, "Shah, Bhavin" <bshah@ti.com>,
+        Iliyan Malchev <malchev@google.com>, "Anna, Suman" <s-anna@ti.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jan 2012 10:16:03 -0500
-Michael D Labriola <mlabriol@gdeb.com> wrote:
+On Thu, Jan 12, 2012 at 9:01 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> Please pull:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next-acked
+>
+> To get the remoteproc and rpmsg frameworks, and a few fixes that were
+> collected after the frameworks were already merged into linux-next.
+>
+> (I also tried to push this as a signed tag "rpmsg-for-3.3" but
+> am not sure how successful that feat really was)
 
-> This commit causes DMI checks for vendor specific reboot
-> quirks to be skipped if the user passed in a reboot= arg
-> on the command line.
-> 
-> Signed-off-by: Michael D Labriola <mlabriol@gdeb.com>
-> ---
->  arch/x86/kernel/reboot.c |   16 ++++++++++++++--
->  1 files changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-> index 37a458b..4240d58 100644
-> --- a/arch/x86/kernel/reboot.c
-> +++ b/arch/x86/kernel/reboot.c
-> @@ -38,6 +38,7 @@ static const struct desc_ptr no_idt = {};
->  static int reboot_mode;
->  enum reboot_type reboot_type = BOOT_ACPI;
->  int reboot_force;
-> +int reboot_user;
+git log --show-signature gives me the exact same output as git log
+does (just built 1.7.9.rc1.3.gb6310 to have it), so I'm not sure about
+the signature revalidation.
 
-static ...
+But I do see the tag and it looks sane, and being able to include a
+merge commentary is indeed nice. And I guess the signature
+revalidation isn't too important since I'm anyway using k.org.
 
->                 case 'f':
->                         reboot_force = 1;
-> +                       reboot_user = 1;
+Please let me know if there are any issues,
 
-Cleaner would be to add a 
-
-BOOT_ACPI_FORCE perhaps so you can tell ACPI v ACPI specified by user
-
->                         break;
->                 }
->  
-> @@ -316,7 +322,10 @@ static struct dmi_system_id __initdata 
-> reboot_dmi_table[] = {
->  
->  static int __init reboot_init(void)
->  {
-> -       dmi_check_system(reboot_dmi_table);
-> +       /* Skip the DMI check if user set reboot= on the command line */
-> +       if (!reboot_user) {
-
-then do
-
-	if (reboot_type == BOOT_ACPI)
-> +               dmi_check_system(reboot_dmi_table);
-> +       }
+Thanks,
+Ohad.
