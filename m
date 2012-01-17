@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab2AQRcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:32:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46387 "EHLO
+	id S1752374Ab2AQRfH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:35:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48412 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab2AQRcC (ORCPT
+	with ESMTP id S1750777Ab2AQRfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:32:02 -0500
-Message-ID: <4F15B08D.5090000@gmail.com>
-Date: Tue, 17 Jan 2012 10:31:57 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Tue, 17 Jan 2012 12:35:05 -0500
+Date: Tue, 17 Jan 2012 09:35:00 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: cfq crashing on boot with CONFIG_DEBUG_PAGE_ALLOC (linus
+ master)
+Message-ID: <20120117173500.GA6762@google.com>
+References: <20120117161024.GC30322@shiny>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: improve trace events of vmexit/mmio/ioport
-References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EE9B.9020901@linux.vnet.ibm.com> <4F13EFFB.90706@redhat.com> <4F14DCBB.3060207@linux.vnet.ibm.com> <20120117115558.GB17420@amt.cnet>
-In-Reply-To: <20120117115558.GB17420@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120117161024.GC30322@shiny>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 04:55 AM, Marcelo Tosatti wrote:
-> On Tue, Jan 17, 2012 at 10:28:11AM +0800, Xiao Guangrong wrote:
->> On 01/16/2012 05:38 PM, Avi Kivity wrote:
->>
->>> On 01/16/2012 11:32 AM, Xiao Guangrong wrote:
->>>> - trace vcpu_id for these events
->>>
->>> We can infer the vcpu id from the kvm_entry tracepoints, no?
->>>
->>
->>
->> Thanks for your review, Avi!
->>
->> Hmm. i think it is hard to do since the vcpu thread can be scheduled
->> anytime, one example is as follow:
->>
->> CPU 0
->>
->> kvm_entry vcpu 0
->> ......
->> kvm_entry vcpu 1
->> ......
->> event1 occurs
->> ......
->> event2 occurs
->>
->> It is hard to know the event belong to which kvm_entry?
->>
->>>> - add kvm_mmio_done to trace the time when mmio/ioport emulation is completed
->>>
->>> ditto?
->>>
->>
->>
->> I think is ok to get the event end time by using kvm_entry.
->>
->>>
->>> Relying on the existing tracepoints will make the tool work on older
->>> kernels.
->>>
->>
->>
->> We can drop all new events, but unfortunately, the information of the origin
->> tracepoints is not enough, at least vcpu_id need be traced in theses events
->> to match its events. Yes?
+On Tue, Jan 17, 2012 at 11:10:24AM -0500, Chris Mason wrote:
+> Hi everyone,
 > 
-> Yes, and if you don't add completed events, you'll have to use kvm_entry 
-> whose collection adds a lot of overhead.
+> Looks like cfq is using stale pages, I'm getting crashes on boot with
+> CONFIG_DEBUG_PAGE_ALLOC enabled.  The oops leads to crashing in
+> cfqq_type, and if you add some fuzz for inlining, it looks like we're
+> here:
+> 
+> (gdb) list *cfq_insert_request+0x3f5
+> 0xffffffff812683d8 is in cfq_insert_request (block/cfq-iosched.c:3131).
+> 3126	
+> 3127		/*
+> 3128		 * workload type is changed, don't save slice, otherwise preempt
+> 3129		 * doesn't happen
+> 3130		 */
+> 3131		if (cfqq_type(old_cfqq) != cfqq_type(cfqq))
+> 3132			cfqq->cfqg->saved_workload_slice = 0;
+> 3133	
+> 3134		/*
+> 3135		 * Put the new queue at the front of the of the current list,
+> 
+> It seems like the most likely reason is that old_cfqq was previously
+> freed:
+> 
+>         struct cfq_queue *old_cfqq = cfqd->active_queue;
 
+Does the following patch resolve the problem?
 
-vcpus run as threads and hence have their own tid which is available in
-the perf samples.
+  http://article.gmane.org/gmane.linux.kernel.next/20340/raw
 
-There is an ongoing 'discussion' about modifying existing tracepoints
-which your proposed patch violates. This is the start of it:
+Thanks.
 
-https://lkml.org/lkml/2012/1/16/41
-
-David
+-- 
+tejun
