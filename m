@@ -1,85 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab2AQVi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 16:38:29 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:52619 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab2AQVi2 (ORCPT
+	id S1756057Ab2AQVlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 16:41:11 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42680 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755979Ab2AQVlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 16:38:28 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-References: <20120117142759.GE16213@moon>
-	<CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
-	<20120117144452.GG16213@moon> <4F15C249.3000602@zytor.com>
-	<20120117211521.GP16213@moon>
-Date: Tue, 17 Jan 2012 13:40:53 -0800
-In-Reply-To: <20120117211521.GP16213@moon> (Cyrill Gorcunov's message of "Wed,
-	18 Jan 2012 01:15:21 +0400")
-Message-ID: <m1fwfe9fdm.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/y9WS/29k5SAYbfu2r5JTMenln9ET7zVM=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	Tue, 17 Jan 2012 16:41:09 -0500
+From: David Daney <ddaney.cavm@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Cc: David Daney <david.daney@cavium.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] perf: Fix broken build by defining _GNU_SOURCE in Makefile
+Date: Tue, 17 Jan 2012 13:41:01 -0800
+Message-Id: <1326836461-11952-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov <gorcunov@gmail.com> writes:
+From: David Daney <david.daney@cavium.com>
 
-> On Tue, Jan 17, 2012 at 10:47:37AM -0800, H. Peter Anvin wrote:
->> On 01/17/2012 06:44 AM, Cyrill Gorcunov wrote:
->> > On Tue, Jan 17, 2012 at 04:38:14PM +0200, Alexey Dobriyan wrote:
->> >> On 1/17/12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> >>> +#define KCMP_EQ		0
->> >>> +#define KCMP_LT		1
->> >>> +#define KCMP_GT		2
->> >>
->> >> LT and GT are meaningless.
->> >>
->> > 
->> > I found symbolic names better than open-coded values. But sure,
->> > if this is problem it could be dropped.
->> > 
->> > Or you mean that in general anything but 'equal' is useless?
->> > 
->> 
->> Why on Earth would user space need to know which order in memory certain
->> kernel objects are?
->> 
->> Keep in mind that this is *exactly* the kind of information which makes
->> rootkits easier.
->> 
->
-> Hmm, indeed this might help narrow down the target address I fear. So
-> after some conversation with Pavel I think we can try to live with just
-> one result -- is objects are at same location in kernel memory or not.
-> The updated version is below. Please review if you get a chance. Thanks
-> a lot for comments!
+When building on my Debian/mips system, util/util.c fails to build
+because commit 1aed2671738785e8f5aea663a6fda91aa7ef59b5 (perf kvm: Do
+guest-only counting by default) indirectly includes stdio.h before the
+feature selection in util.h is done.  This prevents _GNU_SOURCE in
+util.h from enabling the declaration of getline(), from now second
+inclusion of stdio.h, and the build is broken.
 
-Seriously?
+There is another breakage in util/evsel.c caused by include ordering,
+but I didn't fully track down the commit that caused it.
 
-Or is this a case where you get something in then when people start
-seriously using it and the performance is sucks badly you go back to
-something like the current system call?
+The root cause of all this is an inconsistent definition of
+_GNU_SOURCE, so I move the definition into the Makefile so that it is
+passed to all invocations of the compiler and used uniformly for all
+system header files.  All other #define and #undef of _GNU_SOURCE are
+removed as they cause conflicts with the definition passed to the
+compiler.
 
-How are you going to ensure the performance does not degrade badly when
-looking across a large number of processes?
+All the features.h definitions (_LARGEFILE64_SOURCE
+_FILE_OFFSET_BITS=64 and _GNU_SOURCE) are needed by the python glue
+code too, so they are moved to BASIC_CFLAGS, and the misleading
+comments about BASIC_CFLAGS are removed.
 
-Eric
+This gives me a clean build on x86_64 (fc12) and mips (Debian).
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+---
+ tools/perf/Makefile                 |    7 ++-----
+ tools/perf/builtin-probe.c          |    2 --
+ tools/perf/util/probe-event.c       |    2 --
+ tools/perf/util/symbol.c            |    1 -
+ tools/perf/util/trace-event-parse.c |    3 +--
+ tools/perf/util/ui/browsers/hists.c |    2 --
+ tools/perf/util/ui/helpline.c       |    1 -
+ tools/perf/util/util.h              |    1 -
+ 8 files changed, 3 insertions(+), 16 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index ac86d67..7c12650 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -104,7 +104,7 @@ endif
+ 
+ CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+-ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
++ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ ALL_LDFLAGS = $(LDFLAGS)
+ STRIP ?= strip
+ 
+@@ -168,10 +168,7 @@ endif
+ 
+ ### --- END CONFIGURATION SECTION ---
+ 
+-# Those must not be GNU-specific; they are shared with perl/ which may
+-# be built by a different compiler. (Note that this is an artifact now
+-# but it still might be nice to keep that distinction.)
+-BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include
++BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ BASIC_LDFLAGS =
+ 
+ # Guard against environment variables
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 59d43ab..fb85661 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -20,7 +20,6 @@
+  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+  *
+  */
+-#define _GNU_SOURCE
+ #include <sys/utsname.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -31,7 +30,6 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#undef _GNU_SOURCE
+ #include "perf.h"
+ #include "builtin.h"
+ #include "util/util.h"
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index eb25900..29cb654 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -19,7 +19,6 @@
+  *
+  */
+ 
+-#define _GNU_SOURCE
+ #include <sys/utsname.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -33,7 +32,6 @@
+ #include <limits.h>
+ #include <elf.h>
+ 
+-#undef _GNU_SOURCE
+ #include "util.h"
+ #include "event.h"
+ #include "string.h"
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 215d50f..0975438 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1,4 +1,3 @@
+-#define _GNU_SOURCE
+ #include <ctype.h>
+ #include <dirent.h>
+ #include <errno.h>
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 6c164dc..1a8d4dc 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -21,14 +21,13 @@
+  *  The parts for function graph printing was taken and modified from the
+  *  Linux Kernel that were written by Frederic Weisbecker.
+  */
+-#define _GNU_SOURCE
++
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <ctype.h>
+ #include <errno.h>
+ 
+-#undef _GNU_SOURCE
+ #include "../perf.h"
+ #include "util.h"
+ #include "trace-event.h"
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 1212a38..e81aef1 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -1,6 +1,4 @@
+-#define _GNU_SOURCE
+ #include <stdio.h>
+-#undef _GNU_SOURCE
+ #include "../libslang.h"
+ #include <stdlib.h>
+ #include <string.h>
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+index 6ef3c56..4f48f59 100644
+--- a/tools/perf/util/ui/helpline.c
++++ b/tools/perf/util/ui/helpline.c
+@@ -1,4 +1,3 @@
+-#define _GNU_SOURCE
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index b9c530c..ecf9898 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -40,7 +40,6 @@
+ #define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
+ 
+ #define _ALL_SOURCE 1
+-#define _GNU_SOURCE 1
+ #define _BSD_SOURCE 1
+ #define HAS_BOOL
+ 
+-- 
+1.7.2.3
+
