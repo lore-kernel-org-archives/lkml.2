@@ -1,148 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab2AQKGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 05:06:37 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46566 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab2AQKGg (ORCPT
+	id S1752836Ab2AQKKr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 05:10:47 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50842 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab2AQKKp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 05:06:36 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 17 Jan 2012 19:05:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        leonid.moiseichuk@nokia.com, penberg@kernel.org,
-        Rik van Riel <riel@redhat.com>, mel@csn.ul.ie, rientjes@google.com,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
-Subject: Re: [RFC 2/3] vmscan hook
-Message-Id: <20120117190512.047d3a03.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120117091356.GA29736@barrios-desktop.redhat.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-	<1326788038-29141-3-git-send-email-minchan@kernel.org>
-	<20120117173932.1c058ba4.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120117091356.GA29736@barrios-desktop.redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jan 2012 05:10:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F140D25.1000309@st.com>
+References: <cover.1326707233.git.viresh.kumar@st.com>
+	<7c1e6fd573d5cd348b22f8363c9960fe5efcd658.1326707233.git.viresh.kumar@st.com>
+	<4F140D25.1000309@st.com>
+Date: Tue, 17 Jan 2012 15:40:44 +0530
+Message-ID: <CAJe_ZhfYgz5LEO7VqOJ8Qo+PZWrMNNvdfvCGQWMMq-TrbmL+xw@mail.gmail.com>
+Subject: Re: [PATCH 8/8] dmaengine/dw_dmac: Add support for DMA_SLAVE_CONFIG
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Deepak SIKRI <deepak.sikri@st.com>, Bhavna YADAV <bhavna.yadav@st.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jan 2012 18:13:56 +0900
-Minchan Kim <minchan@kernel.org> wrote:
+On 16 January 2012 17:12, Viresh Kumar <viresh.kumar@st.com> wrote:
+> On 1/16/2012 3:20 PM, Viresh KUMAR wrote:
+>> +     /*
+>> +      * Fix sconfig's burst size according to dw_dmac. We need to convert
+>> +      * them as: 1 -> 0, 2 -> 1, 4 -> 2, 8 -> 3, 16 -> 4.
+>> +      *
+>> +      * This can be done by findiding least significant bit set: n & (n - 1)
+>> +      */
+>> +     sconfig->src_maxburst &= sconfig->src_maxburst - 1;
+>> +     sconfig->dst_maxburst &= sconfig->dst_maxburst - 1;
+>
+> Perhaps, this looks incorrect. It will always return 0. :(
+> Can somebody suggest any inbuild function to do this, i think
+>
+Calculating log2(n) which isn't very tidy. For that reason usually we make do
+the other way around by saving values as power of 2 and simply left shifting
+1 by that value.
+In case at hand since most likely only valid values are power of 2,
+maybe you can do
+    maxburst = ffs(maxburst) - 1
 
-> On Tue, Jan 17, 2012 at 05:39:32PM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Tue, 17 Jan 2012 17:13:57 +0900
-> > Minchan Kim <minchan@kernel.org> wrote:
-> > 
-> > 
-> > > +	/*
-> > > +	 * We want to avoid dropping page cache excessively
-> > > +	 * in no swap system
-> > > +	 */
-> > > +	if (nr_swap_pages <= 0) {
-> > > +		free = zone_page_state(mz->zone, NR_FREE_PAGES);
-> > > +		file = zone_page_state(mz->zone, NR_ACTIVE_FILE) +
-> > > +			zone_page_state(mz->zone, NR_INACTIVE_FILE);
-> > > +		/*
-> > > +		 * If we have very few page cache pages,
-> > > +		 * notify to user
-> > > +		 */
-> > > +		if (file < free)
-> > > +			low_mem = true;
-> > > +	}
-> > 
-> > I can't understand why you think you can check lowmem condition by "file < free".
-> 
-> The reason I thought so is I want to maintain some page cache to some degree.
-> But I admit It's very naive heuristic and should be improved.
-> 
-> > And I don't think using per-zone data is good.
-> > (I'm not sure how many zones embeded guys using..)
-> 
-> Agree. In case of swapless system, we need another heuristic.
-> 
-> > 
-> > Another idea:
-> > 1. can't we use some technique like cleancache to detect the condition ?
-> 
-> I totally forgot cleancache approach. Could you remind that?
-> 
-
-Similar to 'victim cache'. Then, cache some clean pages somewhere when
-vmscan pageout it.
-
-   page -> vmscan's pageout -> cleancache  -> may be discarded.
-
-If a filesystem look up a page which is in a cleancache, cache-hit and
-bring it back to radix-tree. If not, read from disk again.
-And cleancache for swap(frontswap) was posted, too.
-
-
-> > 2. can't we measure page-in/page-out distance by recording something ?
-> 
-> I can't understand your point. What's relation does it with swapout prevent?
-> 
-
-If distance between pageout -> pagein is short, it means thrashing.
-For example, recoding the timestamp when the page(mapping, index) was
-paged-out, and check it at page-in.
-
-
-> > 3. NR_ANON + NR_FILE_MAPPED can't mean the amount of core memory if we can
-> >    ignore the data file cache ?
-> 
-> It's good but how do we define some amount?
-> It's very vague but I guess we can get a good idea from that.
-> Perhaps, you already has it.
-> 
-
-Hm, a rough idea is...
-
-  - we now have rss counter per mm.
-    - mapped anon
-    - mapped file
-    - swapents
- 
-Ok, here, add one more counter.
-
-    - paged-out file. (I think this can be recorded in pte.)
-      +1 when try_to_unmap_file() unmaps it.
-      -1 when a page is back or unmapped.
-
-Then, scanning all tasks. Then,
-
-                                 mapped_anon + mapped_file
-active_map_ratio =   ----------------------------------------------------- * 100
-                     mapped_anon + mapped_file + swapents + paged_out_file
-
-Ok, how to use this value...
-
-Like memcg's threshold notify interface, you can change the mem_notify interface
-to use eventfd() as
-
-   <event_fd, fd of /dev/mem_notify, threshold of active_map_ratio>
-
-This will inform you an event when active_map_ratio crosses passed threshold.
-
-complicated ? 
-
-
-> > 4. how about checking kswapd's busy status ?
-> 
-> Could you elaborate on your idea?
-> 
-
-I just thought kswapd may not stop when the situation is very bad.
-
-Thanks,
--Kame
-
-
-
+-j
