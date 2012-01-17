@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab2AQNWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 08:22:23 -0500
-Received: from vms173001pub.verizon.net ([206.46.173.1]:43144 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab2AQNWU (ORCPT
+	id S1754432Ab2AQNWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 08:22:41 -0500
+Received: from vms173017pub.verizon.net ([206.46.173.17]:43865 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407Ab2AQNWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 08:22:20 -0500
-X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 08:22:20 EST
+	Tue, 17 Jan 2012 08:22:38 -0500
+X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 08:22:38 EST
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Cc: Shaohua Li <shaohua.li@intel.com>, stable@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Lin Ming <ming.m.lin@intel.com>, stable@vger.kernel.org,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 43/50] intel_idle: fix API misuse
-Date: Tue, 17 Jan 2012 07:21:35 -0500
-Message-id: <39a74fdedd1c1461d6fb6d330b5266886513c98f.1326802230.git.len.brown@intel.com>
+Subject: [PATCH 47/50] ACPI: processor: fix acpi_get_cpuid for UP processor
+Date: Tue, 17 Jan 2012 07:21:39 -0500
+Message-id: <d640113fe80e45ebd4a5b420b220d3f6bf37f682.1326802230.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.9.rc1
 In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
 References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
@@ -28,54 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaohua Li <shaohua.li@intel.com>
+From: Lin Ming <ming.m.lin@intel.com>
 
-smp_call_function() only lets all other CPUs execute a specific function,
-while we expect all CPUs do in intel_idle.  Without the fix, we could have
-one cpu which has auto_demotion enabled or has no broadcast timer setup.
-Usually we don't see impact because auto demotion just harms power and the
-intel_idle init is called in CPU 0, where boradcast timer delivers
-interrupt, but this still could be a problem.
+For UP processor, it is likely that no _MAT method or MADT table defined.
+So currently acpi_get_cpuid(...) always return -1 for UP processor.
+This is wrong. It should return valid value for CPU0.
+
+In the other hand, BIOS may define multiple CPU handles even for UP
+processor, for example
+
+        Scope (_PR)
+        {
+            Processor (CPU0, 0x00, 0x00000410, 0x06) {}
+            Processor (CPU1, 0x01, 0x00000410, 0x06) {}
+            Processor (CPU2, 0x02, 0x00000410, 0x06) {}
+            Processor (CPU3, 0x03, 0x00000410, 0x06) {}
+        }
+
+We should only return valid value for CPU0's acpi handle.
+And return invalid value for others.
+
+http://marc.info/?t=132329819900003&r=1&w=2
 
 Cc: stable@vger.kernel.org
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Reported-and-tested-by: wallak@free.fr
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/idle/intel_idle.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/processor_core.c |   26 ++++++++++++++++++++++++--
+ 1 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 5d2f8e1..af0b4a5 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -394,7 +394,7 @@ static int intel_idle_probe(void)
- 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
- 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
- 	else {
--		smp_call_function(__setup_broadcast_timer, (void *)true, 1);
-+		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
- 		register_cpu_notifier(&setup_broadcast_notifier);
- 	}
+diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+index 3a0428e..c850de4 100644
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -173,8 +173,30 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
+ 	apic_id = map_mat_entry(handle, type, acpi_id);
+ 	if (apic_id == -1)
+ 		apic_id = map_madt_entry(type, acpi_id);
+-	if (apic_id == -1)
+-		return apic_id;
++	if (apic_id == -1) {
++		/*
++		 * On UP processor, there is no _MAT or MADT table.
++		 * So above apic_id is always set to -1.
++		 *
++		 * BIOS may define multiple CPU handles even for UP processor.
++		 * For example,
++		 *
++		 * Scope (_PR)
++                 * {
++		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
++		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
++		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
++		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
++		 * }
++		 *
++		 * Ignores apic_id and always return 0 for CPU0's handle.
++		 * Return -1 for other CPU's handle.
++		 */
++		if (acpi_id == 0)
++			return acpi_id;
++		else
++			return apic_id;
++	}
  
-@@ -471,7 +471,7 @@ static int intel_idle_cpuidle_driver_init(void)
- 	}
- 
- 	if (auto_demotion_disable_flags)
--		smp_call_function(auto_demotion_disable, NULL, 1);
-+		on_each_cpu(auto_demotion_disable, NULL, 1);
- 
- 	return 0;
- }
-@@ -568,7 +568,7 @@ static void __exit intel_idle_exit(void)
- 	cpuidle_unregister_driver(&intel_idle_driver);
- 
- 	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE) {
--		smp_call_function(__setup_broadcast_timer, (void *)false, 1);
-+		on_each_cpu(__setup_broadcast_timer, (void *)false, 1);
- 		unregister_cpu_notifier(&setup_broadcast_notifier);
- 	}
- 
+ #ifdef CONFIG_SMP
+ 	for_each_possible_cpu(i) {
 -- 
 1.7.9.rc1
 
