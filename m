@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2AQSlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 13:41:08 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45803 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468Ab2AQSlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 13:41:06 -0500
-Date: Tue, 17 Jan 2012 18:40:48 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-Cc: gregkh@suse.de, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amba-pl011: do not disable RTS during shutdown
-Message-ID: <20120117184047.GE22472@flint.arm.linux.org.uk>
-References: <1326796189-21722-1-git-send-email-shreshthakumar.sahu@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326796189-21722-1-git-send-email-shreshthakumar.sahu@stericsson.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754891Ab2AQSle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 13:41:34 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:34645 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028Ab2AQSkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 13:40:46 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: avi@redhat.com
+Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
+        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4 V10] Add flag to indicate that a vm was stopped by the host
+Date: Tue, 17 Jan 2012 13:40:38 -0500
+Message-Id: <1326825641-15765-2-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326825641-15765-1-git-send-email-emunson@mgebm.net>
+References: <1326825641-15765-1-git-send-email-emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 03:59:49PM +0530, Shreshtha Kumar SAHU wrote:
-> From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-> 
-> In present driver, shutdown clears RTS in CR register. But the
-> documentation "Documentation/serial/driver" suggests not to
-> disable RTS in shutdown(). Also RTS is preserved between shutdown
-> and startup calls, i.e. it is restored in startup if it was enabled
-> during shutdown. So that if autorts is set and RTS is set using
-> pl011_set_mctrl then it should continue even after shutdown->startup
-> sequence. And hence during set_termios it will enable RTS only if RTS
-> bit is set in UARTx_CR register. For throttling/unthrottling user
-> should call pl011_set_mctrl.
-> 
-> Change-Id: I743f33fb10e7e655657cd5dae1ec585e914a65bc
+This flag will be used to check if the vm was stopped by the host when a soft
+lockup was detected.  The host will set the flag when it stops the guest.  On
+resume, the guest will check this flag if a soft lockup is detected and skip
+issuing the warning.
 
-Please get rid of this line.
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+Cc: mingo@redhat.com
+Cc: hpa@zytor.com
+Cc: ryanh@linux.vnet.ibm.com
+Cc: aliguori@us.ibm.com
+Cc: mtosatti@redhat.com
+Cc: jeremy.fitzhardinge@citrix.com
+Cc: kvm@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/x86/include/asm/pvclock-abi.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/tty/serial/amba-pl011.c |   17 ++++++++++++++++-
->  1 files changed, 16 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-> index 6958594..46a4690 100644
-> --- a/drivers/tty/serial/amba-pl011.c
-> +++ b/drivers/tty/serial/amba-pl011.c
-> @@ -160,6 +160,7 @@ struct uart_amba_port {
->  	unsigned int		lcrh_tx;	/* vendor-specific */
->  	unsigned int		lcrh_rx;	/* vendor-specific */
->  	bool			autorts;
-> +	bool			rts_state;	/* state during shutdown */
-
-Do we really need a variable to track this?
-
->  	char			type[12];
->  	bool			interrupt_may_hang; /* vendor-specific */
->  #ifdef CONFIG_DMA_ENGINE
-> @@ -1412,6 +1413,8 @@ static int pl011_startup(struct uart_port *port)
->  		barrier();
->  
->  	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
-> +	if (uap->rts_state)
-> +		cr |= UART011_CR_RTS;
->  	writew(cr, uap->port.membase + UART011_CR);
-
-Note that this should preserve DTR as well.
-
+diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
+index 35f2d19..6167fd7 100644
+--- a/arch/x86/include/asm/pvclock-abi.h
++++ b/arch/x86/include/asm/pvclock-abi.h
+@@ -40,5 +40,6 @@ struct pvclock_wall_clock {
+ } __attribute__((__packed__));
+ 
+ #define PVCLOCK_TSC_STABLE_BIT	(1 << 0)
++#define PVCLOCK_GUEST_STOPPED	(1 << 1)
+ #endif /* __ASSEMBLY__ */
+ #endif /* _ASM_X86_PVCLOCK_ABI_H */
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+1.7.5.4
+
