@@ -1,149 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab2AQJGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 04:06:31 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41152 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766Ab2AQJG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 04:06:27 -0500
-Date: Tue, 17 Jan 2012 10:06:05 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-Message-ID: <20120117090605.GD7612@elte.hu>
-References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com>
- <1326721082.2442.234.camel@twins>
- <20120117174031.3118.E1E9C6FF@jp.fujitsu.com>
+	id S1752649Ab2AQJHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 04:07:49 -0500
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:35673 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751340Ab2AQJHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 04:07:45 -0500
+Message-ID: <4F153A3A.7060902@st.com>
+Date: Tue, 17 Jan 2012 14:37:06 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117174031.3118.E1E9C6FF@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>
+Subject: Re: [PATCH 2/8] dmaengine: Add flow controller information to dma_slave_config
+References: <cover.1326707233.git.viresh.kumar@st.com> <5f9ec59562e86536c4123f61891b95590293030f.1326707233.git.viresh.kumar@st.com> <CACRpkdY4QQK6wtB5aPU+FwdyyGq-owsDxMmxdwJVnkzdJTRs_Q@mail.gmail.com>
+In-Reply-To: <CACRpkdY4QQK6wtB5aPU+FwdyyGq-owsDxMmxdwJVnkzdJTRs_Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 1/17/2012 2:07 PM, Linus Walleij wrote:
+>> > Perhaps, this should be a part of struct dma_slave_config. This patch adds
+>> > another field device_fc to this structure. User drivers must pass this as true
+>> > if they want to be flow controller of certain transfers.
+> I dma_slave_config is supposed to be about info that
+> 
+> 1) Must to be set-up at runtime
 
-* Yasunori Goto <y-goto@jp.fujitsu.com> wrote:
+Hmmm.. Currently if i check the comments in dmaengine.h, it is written
+as you said. But i believe its usage could be more than that.
 
-> --- linux-3.2.orig/kernel/exit.c
-> +++ linux-3.2/kernel/exit.c
-> @@ -1038,6 +1038,22 @@ NORET_TYPE void do_exit(long code)
->  
->  	preempt_disable();
->  	exit_rcu();
-> +
-> +	/*
-> +	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
-> +	 * when the following two conditions become true.
-> +	 *   - There is race condition of mmap_sem (It is acquired by
-> +	 *     exit_mm()), and
-> +	 *   - SMI occurs before setting TASK_RUNINNG.
-> +	 *     (or hypervisor of virtual machine switches to other guest)
-> +	 *  As a result, we may become TASK_RUNNING after becoming TASK_DEAD
-> +	 *
-> +	 * To avoid it, we have to wait for releasing tsk->pi_lock which
-> +	 * is held by try_to_wake_up()
-> +	 */
-> +	smp_mb();
-> +	raw_spin_unlock_wait(&tsk->pi_lock);
+For example, how amba-pl011 use it today. Nothing dynamic, all static.
 
-Hm, unlock_wait() is really nasty. Wouldnt the adoption of the 
--rt kernel's delayed task put logic solve most of these races? 
-It's the patch below - we could get rid of the 
-CONFIG_PREEMPT_RT_BASE and make it unconditional.
+Actually the problem scenario is: pl011 is going to use separate DMA drivers
+(for ex: dw_dmac and pl08x) for separate platforms. Now, pl011's code shouldn't
+be dependent at all on these controllers. So, we have to pass separate data to
+these drivers using dma driver specific platform data.
 
-[ The -rt kernel is facing similar "sudden outbreak of large 
-  delays" constraints as hypervisors or SMI victims do, so even 
-  if the delayed-task-put patch does not solve the race, some 
-  other -rt patch might :-) ]
+DMA driver's platform data contains two type of stuff: platform specific
+(request line, master, etc) and user driver specific (like pl011) (reg address,
+burst, width, direction, flow_controller, etc)
 
-Thanks,
+Now, its better to have some common struct in dmaengine which can fulfill
+requirement of various DMA driver's data.
 
-	Ingo
+I find struct dma_slave_config fitting there. All user driver (pl011) specific
+data can be passed using this structure. You can call dma_slave_config()
+onetime after you got the channel. And after that just submit transfers.
 
--------------------->
-Subject: sched-delay-put-task.patch
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 31 May 2011 16:59:16 +0200
+With this i get rid of half of the dw_dmac specific platform data struct and
+used already defined struct dma_slave_config.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/sched.h |   13 +++++++++++++
- kernel/fork.c         |   11 +++++++++++
- 2 files changed, 24 insertions(+)
+> 2) All DMA controllers need to know
+> 
 
-Index: linux-3.2/include/linux/sched.h
-===================================================================
---- linux-3.2.orig/include/linux/sched.h
-+++ linux-3.2/include/linux/sched.h
-@@ -1588,6 +1588,9 @@ struct task_struct {
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
- 	atomic_t ptrace_bp_refcnt;
- #endif
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+	struct rcu_head put_rcu;
-+#endif
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
-@@ -1772,6 +1775,15 @@ extern struct pid *cad_pid;
- extern void free_task(struct task_struct *tsk);
- #define get_task_struct(tsk) do { atomic_inc(&(tsk)->usage); } while(0)
- 
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+extern void __put_task_struct_cb(struct rcu_head *rhp);
-+
-+static inline void put_task_struct(struct task_struct *t)
-+{
-+	if (atomic_dec_and_test(&t->usage))
-+		call_rcu(&t->put_rcu, __put_task_struct_cb);
-+}
-+#else
- extern void __put_task_struct(struct task_struct *t);
- 
- static inline void put_task_struct(struct task_struct *t)
-@@ -1779,6 +1791,7 @@ static inline void put_task_struct(struc
- 	if (atomic_dec_and_test(&t->usage))
- 		__put_task_struct(t);
- }
-+#endif
- 
- extern void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
- extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
-Index: linux-3.2/kernel/fork.c
-===================================================================
---- linux-3.2.orig/kernel/fork.c
-+++ linux-3.2/kernel/fork.c
-@@ -197,7 +197,18 @@ void __put_task_struct(struct task_struc
- 	if (!profile_handoff_task(tsk))
- 		free_task(tsk);
- }
-+#ifndef CONFIG_PREEMPT_RT_BASE
- EXPORT_SYMBOL_GPL(__put_task_struct);
-+#else
-+void __put_task_struct_cb(struct rcu_head *rhp)
-+{
-+	struct task_struct *tsk = container_of(rhp, struct task_struct, rcu);
-+
-+	__put_task_struct(tsk);
-+
-+}
-+EXPORT_SYMBOL_GPL(__put_task_struct_cb);
-+#endif
- 
- /*
-  * macro override instead of weak attribute alias, to workaround
+Sorry i didn't understood it well.
+
+One more thing. I missed few things in this patch:
+- Need to update all instances of struct dma_slave_config with
+	.device_fc = false
+
+If, this field is not getting initialized to false by default, then these users
+will find their code not working atleast with dw_dmac and amba-pl08x.
+Can't say about other drivers.
+
+- Also i need to fixup few atmel drivers which are using dw_dmac.
+
+> So if it doesn't *have* to be set up by drivers at runtime, please keep it in
+> platform data.
+> 
+> If it is (1), so you have a use case where you have to switch a certain channel
+> between DMA master and device flow control at run-time it looks like it could
+> be useful for others as well, but I doubt this so I'd like some back-up on
+> that.
+
+I don't have that crazy usecase :)
+
+-- 
+viresh
