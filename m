@@ -1,667 +1,716 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab2AQNY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 08:24:28 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:60966 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754368Ab2AQNXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 08:23:51 -0500
-From: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: cesarb@cesarb.net, kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net,
-        penberg@kernel.org, aarcange@redhat.com, riel@redhat.com,
-        mel@csn.ul.ie, rientjes@google.com, dima@android.com, gregkh@suse.de,
-        rebecca@android.com, san@google.com, akpm@linux-foundation.org,
-        vesa.jaaskelainen@nokia.com
-Subject: [PATCH v2 2/2] Memory notification pseudo-device module
-Date: Tue, 17 Jan 2012 15:22:11 +0200
-Message-Id: <5b429d6c4d0a3ad06ec01193eab7edc98a03e0de.1326803859.git.leonid.moiseichuk@nokia.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-In-Reply-To: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-References: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-References: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-X-Nokia-AV: Clean
+	id S1754241Ab2AQNWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 08:22:17 -0500
+Received: from vms173019pub.verizon.net ([206.46.173.19]:61857 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab2AQNWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 08:22:10 -0500
+X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 08:22:10 EST
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: Bob Moore <robert.moore@intel.com>, Lin Ming <ming.m.lin@intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 10/50] ACPI 5.0: Add new/changed tables to headers
+Date: Tue, 17 Jan 2012 07:21:02 -0500
+Message-id: <c5bd6537329e66a8b36234f19a36d94b72d07394.1326802229.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.9.rc1
+In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
+References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
+In-reply-to: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
+References: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
+Reply-to: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory notification (memnotify) device tracks level of memory utilization,
-active page set and notifies subscribed processes when consumption crossed
-specified threshold(s) up or down. It could be used on embedded devices to
-implementation of performance-cheap memory reacting by using
-e.g. libmemnotify or similar user-space component.
+From: Bob Moore <robert.moore@intel.com>
 
-The minimal (250 ms) and maximal (15s) periods of reaction and granularity
-(~1.4% of memory size) could be tuned using module options.
+Adds new file, actbl3.h
 
-Signed-off-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/misc/Kconfig     |   11 +
- drivers/misc/Makefile    |    1 +
- drivers/misc/memnotify.c |  582 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 594 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/memnotify.c
+ include/acpi/actbl.h  |    1 +
+ include/acpi/actbl1.h |   57 +++++-
+ include/acpi/actbl3.h |  552 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 606 insertions(+), 4 deletions(-)
+ create mode 100644 include/acpi/actbl3.h
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 5664696..eefda14 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -500,6 +500,17 @@ config USB_SWITCH_FSA9480
- 	  stereo and mono audio, video, microphone and UART data to use
- 	  a common connector port.
+diff --git a/include/acpi/actbl.h b/include/acpi/actbl.h
+index 7d0e051..8e1b92f 100644
+--- a/include/acpi/actbl.h
++++ b/include/acpi/actbl.h
+@@ -349,6 +349,7 @@ struct acpi_table_desc {
  
-+config MEMNOTIFY
-+	tristate "Enables memory notification pseudo-device"
-+	default n
-+	help
-+	  This option enables pseudo-device /dev/memnotify for tracking
-+	  system memory utilization and updating state to subscribed clients
-+	  when specified threshold reached.
+ #include <acpi/actbl1.h>
+ #include <acpi/actbl2.h>
++#include <acpi/actbl3.h>
+ 
+ /*
+  * Sizes of the various flavors of FADT. We need to look closely
+diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
+index 7504bc9..71e747b 100644
+--- a/include/acpi/actbl1.h
++++ b/include/acpi/actbl1.h
+@@ -228,7 +228,8 @@ enum acpi_einj_actions {
+ 	ACPI_EINJ_EXECUTE_OPERATION = 5,
+ 	ACPI_EINJ_CHECK_BUSY_STATUS = 6,
+ 	ACPI_EINJ_GET_COMMAND_STATUS = 7,
+-	ACPI_EINJ_ACTION_RESERVED = 8,	/* 8 and greater are reserved */
++	ACPI_EINJ_SET_ERROR_TYPE_WITH_ADDRESS = 8,
++	ACPI_EINJ_ACTION_RESERVED = 9,	/* 9 and greater are reserved */
+ 	ACPI_EINJ_TRIGGER_ERROR = 0xFF	/* Except for this value */
+ };
+ 
+@@ -240,7 +241,27 @@ enum acpi_einj_instructions {
+ 	ACPI_EINJ_WRITE_REGISTER = 2,
+ 	ACPI_EINJ_WRITE_REGISTER_VALUE = 3,
+ 	ACPI_EINJ_NOOP = 4,
+-	ACPI_EINJ_INSTRUCTION_RESERVED = 5	/* 5 and greater are reserved */
++	ACPI_EINJ_FLUSH_CACHELINE = 5,
++	ACPI_EINJ_INSTRUCTION_RESERVED = 6	/* 6 and greater are reserved */
++};
 +
-+	  Say Y here if you want to support memory monitoring.
-+	  If unsure, say N.
++struct acpi_einj_error_type_with_addr {
++	u32 error_type;
++	u32 vendor_struct_offset;
++	u32 flags;
++	u32 apic_id;
++	u64 address;
++	u64 range;
++	u32 pcie_id;
++};
 +
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index b26495a..86f6199 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -48,3 +48,4 @@ obj-y				+= lis3lv02d/
- obj-y				+= carma/
- obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
- obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
-+obj-$(CONFIG_MEMNOTIFY)		+= memnotify.o
-diff --git a/drivers/misc/memnotify.c b/drivers/misc/memnotify.c
++struct acpi_einj_vendor {
++	u32 length;
++	u32 pcie_id;
++	u16 vendor_id;
++	u16 device_id;
++	u8 revision_id;
++	u8 reserved[3];
+ };
+ 
+ /* EINJ Trigger Error Action Table */
+@@ -275,6 +296,7 @@ enum acpi_einj_command_status {
+ #define ACPI_EINJ_PLATFORM_CORRECTABLE      (1<<9)
+ #define ACPI_EINJ_PLATFORM_UNCORRECTABLE    (1<<10)
+ #define ACPI_EINJ_PLATFORM_FATAL            (1<<11)
++#define ACPI_EINJ_VENDOR_DEFINED            (1<<31)
+ 
+ /*******************************************************************************
+  *
+@@ -631,7 +653,9 @@ enum acpi_madt_type {
+ 	ACPI_MADT_TYPE_INTERRUPT_SOURCE = 8,
+ 	ACPI_MADT_TYPE_LOCAL_X2APIC = 9,
+ 	ACPI_MADT_TYPE_LOCAL_X2APIC_NMI = 10,
+-	ACPI_MADT_TYPE_RESERVED = 11	/* 11 and greater are reserved */
++	ACPI_MADT_TYPE_GENERIC_INTERRUPT = 11,
++	ACPI_MADT_TYPE_GENERIC_DISTRIBUTOR = 12,
++	ACPI_MADT_TYPE_RESERVED = 13	/* 13 and greater are reserved */
+ };
+ 
+ /*
+@@ -752,11 +776,36 @@ struct acpi_madt_local_x2apic_nmi {
+ 	u8 reserved[3];
+ };
+ 
++/* 11: Generic Interrupt (ACPI 5.0) */
++
++struct acpi_madt_generic_interrupt {
++	struct acpi_subtable_header header;
++	u16 reserved;		/* Reserved - must be zero */
++	u32 gic_id;
++	u32 uid;
++	u32 flags;
++	u32 parking_version;
++	u32 performance_interrupt;
++	u64 parked_address;
++	u64 base_address;
++};
++
++/* 12: Generic Distributor (ACPI 5.0) */
++
++struct acpi_madt_generic_distributor {
++	struct acpi_subtable_header header;
++	u16 reserved;		/* Reserved - must be zero */
++	u32 gic_id;
++	u64 base_address;
++	u32 global_irq_base;
++	u32 reserved2;		/* Reserved - must be zero */
++};
++
+ /*
+  * Common flags fields for MADT subtables
+  */
+ 
+-/* MADT Local APIC flags (lapic_flags) */
++/* MADT Local APIC flags (lapic_flags) and GIC flags */
+ 
+ #define ACPI_MADT_ENABLED           (1)	/* 00: Processor is usable if set */
+ 
+diff --git a/include/acpi/actbl3.h b/include/acpi/actbl3.h
 new file mode 100644
-index 0000000..898f3df
+index 0000000..c22ce80
 --- /dev/null
-+++ b/drivers/misc/memnotify.c
-@@ -0,0 +1,582 @@
-+/*
-+ * memnotify.c - system-wide memory meter and notifier pseudo-device
++++ b/include/acpi/actbl3.h
+@@ -0,0 +1,552 @@
++/******************************************************************************
 + *
-+ * Copyright (C) 2012 Nokia Corporation.
-+ *      Leonid Moiseichuk
++ * Name: actbl3.h - ACPI Table Definitions
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+/* #define DEBUG */
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/atomic.h>
-+#include <linux/jiffies.h>
-+#include <linux/miscdevice.h>
-+#include <linux/mm.h>
-+#include <linux/mmzone.h>
-+#include <linux/slab.h>
-+#include <linux/poll.h>
-+#include <linux/highmem.h>
-+#include <linux/swap.h>
-+#include <linux/list.h>
-+#include <linux/wait.h>
-+#include <linux/spinlock.h>
-+#include <linux/spinlock_types.h>
-+#include <linux/timer.h>
-+
++ *****************************************************************************/
 +
 +/*
-+ * How often [ms] information will be updated.
-+ */
-+#define MN_UPDATE_PERIOD	250
-+
-+/*
-+ * Maximal delay [ms] if no changes detected.
-+ */
-+#define MN_MAX_UPDATE_PERIOD	(15 * 1000)
-+
-+/*
-+ * Which minimal [kb] allocation change will produce notification for user-space
-+ * to avoid too often jittering.
-+ */
-+#define MN_UPDATE_SPACE	1024
-+
-+/*
-+ * Which memory types we should have, report and track
++ * Copyright (C) 2000 - 2011, Intel Corp.
++ * All rights reserved.
 + *
-+ * Note:
-+ * If you need to report more values, add them here and
-+ * modify get_memory_status function to fill more fields
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions, and the following disclaimer,
++ *    without modification.
++ * 2. Redistributions in binary form must reproduce at minimum a disclaimer
++ *    substantially similar to the "NO WARRANTY" disclaimer below
++ *    ("Disclaimer") and any redistribution must be conditioned upon
++ *    including a substantially similar Disclaimer requirement for further
++ *    binary redistribution.
++ * 3. Neither the names of the above-listed copyright holders nor the names
++ *    of any contributors may be used to endorse or promote products derived
++ *    from this software without specific prior written permission.
 + *
-+ * Warning:
-+ * The length of list is limited by used flags mask (unsigned = 32)
++ * Alternatively, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") version 2 as published by the Free
++ * Software Foundation.
++ *
++ * NO WARRANTY
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * HOLDERS OR CONTRIBUTORS BE LIABLE FOR SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
++ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
++ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGES.
 + */
-+static const char * const memtypes[] = {
-+	"total",
-+	"used",
-+	"active"
-+};
-+#define MN_TYPES_SIZE		(ARRAY_SIZE(memtypes))
-+#define MN_LINE_BUFFER_SIZE	(MN_TYPES_SIZE * 64)
 +
-+/* Memory values indexed by memtypes */
-+struct memvalue {
-+	unsigned long	v[MN_TYPES_SIZE];
-+};
++#ifndef __ACTBL3_H__
++#define __ACTBL3_H__
 +
++/*******************************************************************************
++ *
++ * Additional ACPI Tables (3)
++ *
++ * These tables are not consumed directly by the ACPICA subsystem, but are
++ * included here to support device drivers and the AML disassembler.
++ *
++ * The tables in this file are fully defined within the ACPI specification.
++ *
++ ******************************************************************************/
 +
-+/* subscriber information to be notified when level changed */
-+struct observer {
-+	/* list data to check from notify_memory_usage and wakeup user-space */
-+	struct list_head	list;
++/*
++ * Values for description table header signatures for tables defined in this
++ * file. Useful because they make it more difficult to inadvertently type in
++ * the wrong signature.
++ */
++#define ACPI_SIG_BGRT           "BGRT"	/* Boot Graphics Resource Table */
++#define ACPI_SIG_DRTM           "DRTM"	/* Dynamic Root of Trust for Measurement table */
++#define ACPI_SIG_FPDT           "FPDT"	/* Firmware Performance Data Table */
++#define ACPI_SIG_GTDT           "GTDT"	/* Generic Timer Description Table */
++#define ACPI_SIG_MPST           "MPST"	/* Memory Power State Table */
++#define ACPI_SIG_PCCT           "PCCT"	/* Platform Communications Channel Table */
++#define ACPI_SIG_PMTT           "PMTT"	/* Platform Memory Topology Table */
++#define ACPI_SIG_RASF           "RASF"	/* RAS Feature table */
 +
-+	/* related file structure for open/close/read/write and poll */
-+	struct file		*file;
-+	/* thresholds [pages] when we should trigger notification */
-+	struct memvalue		threshold;
-+	/* bitmask: did we crossed theshold on last validation? */
-+	unsigned		active;
-+	/* flag about new notification is required */
-+	bool			updated;
-+};
++#define ACPI_SIG_S3PT           "S3PT"	/* S3 Performance (sub)Table */
++#define ACPI_SIG_PCCS           "PCC"	/* PCC Shared Memory Region */
 +
++/* Reserved table signatures */
 +
++#define ACPI_SIG_CSRT           "CSRT"	/* Core System Resources Table */
++#define ACPI_SIG_DBG2           "DBG2"	/* Debug Port table 2 */
++#define ACPI_SIG_MATR           "MATR"	/* Memory Address Translation Table */
++#define ACPI_SIG_MSDM           "MSDM"	/* Microsoft Data Management Table */
++#define ACPI_SIG_WPBT           "WPBT"	/* Windows Platform Binary Table */
 +
-+MODULE_AUTHOR("Leonid Moiseichuk (leonid.moiseichuk@nokia.com)");
-+MODULE_DESCRIPTION("System memory meter/notification pseudo-device");
-+MODULE_LICENSE("GPL v2");
-+MODULE_VERSION("0.2.0");
++/*
++ * All tables must be byte-packed to match the ACPI specification, since
++ * the tables are provided by the system BIOS.
++ */
++#pragma pack(1)
 +
-+static unsigned update_period __read_mostly = MN_UPDATE_PERIOD;
-+module_param(update_period, uint, 0);
-+MODULE_PARM_DESC(update_period, "Base update interval [ms]");
++/*
++ * Note about bitfields: The u8 type is used for bitfields in ACPI tables.
++ * This is the only type that is even remotely portable. Anything else is not
++ * portable, so do not use any other bitfield types.
++ */
 +
-+static unsigned max_update_period __read_mostly = MN_MAX_UPDATE_PERIOD;
-+module_param(max_update_period, uint, 0);
-+MODULE_PARM_DESC(max_update_period, "Maximal update interval [ms]");
++/*******************************************************************************
++ *
++ * BGRT - Boot Graphics Resource Table (ACPI 5.0)
++ *        Version 1
++ *
++ ******************************************************************************/
 +
-+static unsigned update_space __read_mostly;
-+module_param(update_space, uint, 0);
-+MODULE_PARM_DESC(update_space, "Clients granularity space in [kb], 0 - auto");
-+
-+/* The device pointer, mostly for dev_XXX */
-+static struct device *dev __read_mostly;
-+
-+/* Validated parameters in adequate units */
-+static unsigned long update_period_jiffies     __read_mostly;
-+static unsigned long max_update_period_jiffies __read_mostly;
-+static unsigned      update_space_pages        __read_mostly;
-+
-+/* Memory values which is used in measurements and notification */
-+static unsigned long available_pages      __read_mostly;
-+#ifdef CONFIG_SWAP
-+static unsigned long available_swap_pages __read_mostly;
-+#endif
-+
-+/* Amount of memory measured and notified last time */
-+/* That is safe to have these values as a normal data by design */
-+static struct memvalue	last_measured	__read_mostly;
-+static struct memvalue	last_notified	__read_mostly;
-+
-+/* Timer which is used to requesting vm statistics */
-+static struct timer_list timer;
-+static unsigned long update_timer_jiffies __read_mostly;
-+
-+/* Subscribers in poll() call to be validated and notified */
-+static atomic_t observer_counter = ATOMIC_INIT(0);
-+static DEFINE_SPINLOCK(observer_lock);
-+static LIST_HEAD(observer_list);
-+static DECLARE_WAIT_QUEUE_HEAD(watcher_queue);
-+
-+
-+
-+/* Validates two memvalues to be equal or not */
-+static inline bool memvalue_about_equal(
-+	const struct memvalue *a, const struct memvalue *b)
-+{
-+	unsigned m = 1;
-+	unsigned i = 0;
-+
-+	while (i < MN_TYPES_SIZE) {
-+		const unsigned long av = a->v[i];
-+		const unsigned long bv = b->v[i];
-+		/* if field set to zero = not tracked */
-+		if (av && bv &&
-+			(av < bv ? bv - av : av - bv) >= update_space_pages)
-+			return false;
-+		m <<= 1;
-+		i++;
-+	}
-+
-+	return true;
-+}
-+
-+/* Produces bitmask of active memory thresholds */
-+static inline unsigned memvalue_active(
-+	const struct memvalue *t, const struct memvalue *c)
-+{
-+	unsigned a = 0;
-+	unsigned m = 1;
-+	unsigned i = 0;
-+
-+	while (i < MN_TYPES_SIZE) {
-+		const unsigned long tv = t->v[i];
-+		const unsigned long cv = c->v[i];
-+		/* if field set to zero = not tracked */
-+		if (tv && cv && cv >= tv)
-+			a |= m;
-+		m <<= 1;
-+		i++;
-+	}
-+
-+	return a;
-+}
-+
-+
-+static inline bool validate_observer(
-+	struct observer *obs, const struct memvalue *now)
-+{
-+	/* evaluation of current state and compare to old one */
-+	const unsigned active = memvalue_active(&obs->threshold, now);
-+
-+	/*
-+	 * If we evaluated status just before and did not send update
-+	 * yet to user-space we must preserve update flag.
-+	 */
-+	if (active != obs->active) {
-+		obs->active  = active;
-+		obs->updated = true;
-+	}
-+
-+	return obs->updated;
-+}
-+
-+/* Please update this function if contents memtypes is changed */
-+static inline void get_memory_status(struct memvalue *value)
-+{
-+	/* field #0 -- total available pages */
-+	value->v[0] = available_pages;
-+
-+	/* field #1 -- used memory by substracting free memories */
-+	value->v[1] = available_pages;
-+
-+	/* RAM part: free + slab rec + cached - shared - mlocked */
-+	value->v[1] -= global_page_state(NR_FREE_PAGES);
-+	value->v[1] -= global_page_state(NR_SLAB_RECLAIMABLE);
-+	value->v[1] -= global_page_state(NR_FILE_PAGES);
-+	value->v[1] += global_page_state(NR_SHMEM);
-+	value->v[1] += global_page_state(NR_MLOCK);
-+#ifdef CONFIG_SWAP
-+	/* Swap if we have */
-+	if (available_swap_pages) {
-+		struct sysinfo si;
-+		si_swapinfo(&si);
-+		value->v[1] -= si.freeswap;
-+	}
-+#endif
-+
-+	/* field #2 -- active pages */
-+	value->v[2]  = global_page_state(LRU_ACTIVE_FILE);
-+	value->v[2] += global_page_state(LRU_ACTIVE_ANON);
-+}
-+
-+/* this method invoked from timer to re-check statistics */
-+static void timer_function(unsigned long data)
-+{
-+	/* data is not used */
-+	data = data;
-+
-+	/* query current memory statistics */
-+	get_memory_status(&last_measured);
-+
-+	/* do we have value changed? */
-+	if (!memvalue_about_equal(&last_measured, &last_notified)) {
-+		last_notified = last_measured;
-+		update_timer_jiffies = update_period_jiffies;
-+		if (atomic_read(&observer_counter) > 0) {
-+			bool updated = false;
-+			struct list_head *pos;
-+
-+			spin_lock(&observer_lock);
-+			list_for_each(pos, &observer_list) {
-+				struct observer *obs = (struct observer *)pos;
-+				if (validate_observer(obs, &last_measured)) {
-+					updated = true;
-+					/*
-+					 * some watcher changed status
-+					 * the rest will be done in mn_poll
-+					 */
-+					break;
-+				}
-+			}
-+			spin_unlock(&observer_lock);
-+
-+			if (updated) {
-+				/*
-+				 * Wakeup of tasks should happened rare, only
-+				 * when at least one theshold changed. So has
-+				 * sense to show this information in logs.
-+				 */
-+				dev_info(dev, "wakeup polling tasks\n");
-+				wake_up_all(&watcher_queue);
-+			}
-+		}
-+	} else {
-+		update_timer_jiffies <<= 1;
-+		if (update_timer_jiffies > max_update_period_jiffies)
-+			update_timer_jiffies = max_update_period_jiffies;
-+	}
-+
-+	dev_dbg(dev, "tick for %lu jiffies\n", update_timer_jiffies);
-+	mod_timer(&timer, jiffies + update_timer_jiffies);
-+}
-+
-+static int vm_shrink(struct shrinker *sh, struct shrink_control *sc)
-+{
-+	/* unused values */
-+	sh = sh;
-+	sc = sc;
-+
-+	/* we are in reclaim mode - recheck memory situation later */
-+	if (update_timer_jiffies != update_period_jiffies) {
-+		/* adjust timer only in case it has sense */
-+		update_timer_jiffies = update_period_jiffies;
-+		mod_timer(&timer, jiffies + update_timer_jiffies);
-+		dev_dbg(dev, "memory pressure - timer adjusted\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static struct shrinker vm_shrinker = {
-+	.shrink = vm_shrink,
-+	.seeks = DEFAULT_SEEKS
++struct acpi_table_bgrt {
++	struct acpi_table_header header;	/* Common ACPI table header */
++	u16 version;
++	u8 status;
++	u8 image_type;
++	u64 image_address;
++	u32 image_offset_x;
++	u32 image_offset_y;
 +};
 +
++/*******************************************************************************
++ *
++ * DRTM - Dynamic Root of Trust for Measurement table
++ *
++ ******************************************************************************/
 +
-+static inline void subscribe_vm_stats(void)
-+{
-+	/* the initial delay always started from specified value */
-+	update_timer_jiffies = update_period_jiffies;
-+
-+	/* update memory statistics */
-+	get_memory_status(&last_measured);
-+	last_notified = last_measured;
-+
-+	/* create timer and register shrinker */
-+	init_timer_deferrable(&timer);
-+	timer.data = 0;
-+	timer.function = timer_function;
-+	timer.expires = jiffies + update_timer_jiffies;
-+	add_timer(&timer);
-+	register_shrinker(&vm_shrinker);
-+}
-+
-+static inline void unsubscribe_vm_stats(void)
-+{
-+	unregister_shrinker(&vm_shrinker);
-+	del_timer_sync(&timer);
-+}
-+
-+static int mn_open(struct inode *inode, struct file *file)
-+{
-+	struct observer *obs;
-+
-+	obs = kmalloc(sizeof(*obs), GFP_KERNEL);
-+	if (obs) {
-+		get_device(dev);
-+
-+		/* object initialization */
-+		memset(obs, 0, sizeof(*obs));
-+		obs->file      = file;
-+		file->private_data = obs;
-+
-+		/* place it into checking list */
-+		spin_lock(&observer_lock);
-+		list_add(&obs->list, &observer_list);
-+		spin_unlock(&observer_lock);
-+
-+		/* subscribe to vm stat updates */
-+		if (1 == atomic_add_return(1, &observer_counter))
-+			subscribe_vm_stats();
-+
-+		dev_dbg(dev, "0x%p - observer %u created\n",
-+				obs, atomic_read(&observer_counter));
-+
-+		return 0;
-+	}
-+
-+	return -ENOMEM;
-+}
-+
-+static int mn_release(struct inode *inode, struct file *file)
-+{
-+	struct observer *obs = (struct observer *)file->private_data;
-+
-+	if (obs) {
-+		dev_dbg(dev, "0x%p - observer released\n", obs);
-+
-+		/* unsubscribe from vm stat updates */
-+		if (0 == atomic_sub_return(1, &observer_counter))
-+			unsubscribe_vm_stats();
-+
-+		/* remove from checking list */
-+		spin_lock(&observer_lock);
-+		list_del(&obs->list);
-+		spin_unlock(&observer_lock);
-+
-+		/* cleanup the memory */
-+		file->private_data = NULL;
-+		kfree(obs);
-+
-+		put_device(dev);
-+	}
-+
-+	return 0;
-+}
-+
-+static ssize_t mn_read(struct file *file, char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	char tmp[MN_LINE_BUFFER_SIZE];
-+	ssize_t pos = 0;
-+	const struct memvalue mv = last_measured;
-+	int idx;
-+
-+	for (idx = 0; idx < MN_TYPES_SIZE && pos < sizeof(tmp) - 2; idx++) {
-+		ssize_t retval;
-+
-+		if (pos > 0)
-+			tmp[pos++] = ' ';
-+		retval = snprintf(&tmp[pos], sizeof(tmp) - pos,
-+				"%s %lu",
-+				memtypes[idx], mv.v[idx]);
-+		if (retval > 0)
-+			pos += retval;
-+		else
-+			return -EINVAL;
-+	}
-+
-+	if (pos < sizeof(tmp))
-+		tmp[pos++] = '\n';
-+
-+	if (pos > count)
-+		pos = count;
-+
-+	return copy_to_user(buf, tmp, pos) ? -EINVAL : pos;
-+}
-+
-+static ssize_t mn_write(struct file *file, const char __user *buf,
-+					size_t count, loff_t *offset)
-+{
-+	struct observer *obs = (struct observer *)file->private_data;
-+	char tmp[MN_LINE_BUFFER_SIZE];
-+	ssize_t retval = min(count, sizeof(tmp) - 1);
-+	int index;
-+
-+	if (copy_from_user(tmp, buf, retval))
-+		return -EINVAL;
-+
-+	tmp[retval]  = 0;
-+	obs->updated = false;
-+	obs->active  = 0;
-+	for (index = 0; index < MN_TYPES_SIZE; index++) {
-+		const char *ptr = strstr(tmp, memtypes[index]);
-+		if (ptr) {
-+			char nmb[64];
-+			int  i;
-+
-+			ptr += strlen(memtypes[index]) + 1;
-+			while (*ptr && *ptr < '0')
-+				ptr++;
-+			for (i = 0; i < sizeof(nmb) - 1; i++, ptr++) {
-+				const char c = *ptr;
-+				if (c < '0' || c > '9')
-+					break;
-+				nmb[i] = c;
-+			}
-+			nmb[i] = 0;
-+
-+			if (kstrtoul(nmb, 10, &obs->threshold.v[index]) < 0) {
-+				dev_dbg(dev,
-+					"0x%p - cannot parse '%s' as '%s'\n",
-+						obs, memtypes[index], nmb);
-+				obs->threshold.v[index] = 0;
-+				return -EINVAL;
-+			}
-+		} else
-+			obs->threshold.v[index] = 0;
-+	}
-+	obs->active = memvalue_active(&obs->threshold, &last_measured);
-+	dev_dbg(dev, "0x%p - threshold set to 0x%x\n", obs, obs->active);
-+
-+	return (ssize_t)count;
-+}
-+
-+static unsigned int mn_poll(struct file *file, poll_table *wait)
-+{
-+	struct observer *obs = (struct observer *)file->private_data;
-+
-+	if (NULL == obs)
-+		return 0;
-+
-+	poll_wait(file, &watcher_queue, wait);
-+	if (validate_observer(obs, &last_measured)) {
-+		dev_info(dev, "0x%p - threshold updated to 0x%x\n",
-+					obs, obs->active);
-+		obs->updated = false;
-+		return POLLIN;
-+	} else
-+		return 0;
-+}
-+
-+
-+
-+static const struct file_operations mn_fops = {
-+	.owner   = THIS_MODULE,
-+	.llseek  = noop_llseek,
-+	.open    = mn_open,
-+	.release = mn_release,
-+	.read    = mn_read,
-+	.write   = mn_write,
-+	.poll    = mn_poll,
++struct acpi_table_drtm {
++	struct acpi_table_header header;	/* Common ACPI table header */
++	u64 entry_base_address;
++	u64 entry_length;
++	u32 entry_address32;
++	u64 entry_address64;
++	u64 exit_address;
++	u64 log_area_address;
++	u32 log_area_length;
++	u64 arch_dependent_address;
++	u32 flags;
 +};
 +
-+static struct miscdevice mn_device = {
-+	.minor = MISC_DYNAMIC_MINOR,
-+	.name  = "memnotify",
-+	.fops  = &mn_fops,
++/* 1) Validated Tables List */
++
++struct acpi_drtm_vtl_list {
++	u32 validated_table_list_count;
 +};
 +
++/* 2) Resources List */
 +
-+static int __init mn_init(void)
-+{
-+	struct sysinfo si;
-+	int error;
-+#ifdef DEBUG
-+	int i;
-+#endif
++struct acpi_drtm_resource_list {
++	u32 resource_list_count;
++};
 +
-+	error = misc_register(&mn_device);
-+	if (error) {
-+		pr_err("unable to register device %d\n", error);
-+		return error;
-+	}
-+	dev = mn_device.this_device;
++/* 3) Platform-specific Identifiers List */
 +
-+	update_period_jiffies = msecs_to_jiffies(update_period);
-+	if (!update_period_jiffies)
-+		update_period_jiffies = msecs_to_jiffies(MN_UPDATE_PERIOD);
++struct acpi_drtm_id_list {
++	u32 id_list_count;
++};
 +
-+	max_update_period_jiffies = msecs_to_jiffies(max_update_period);
-+	if (max_update_period_jiffies < update_period_jiffies)
-+		max_update_period_jiffies = update_period_jiffies;
++/*******************************************************************************
++ *
++ * FPDT - Firmware Performance Data Table (ACPI 5.0)
++ *        Version 1
++ *
++ ******************************************************************************/
 +
-+	/* query amount of available ram and swap, mem_unit is PAGE_SIZE */
-+	si_meminfo(&si);
-+#ifdef CONFIG_SWAP
-+	si_swapinfo(&si);
-+	available_pages = si.totalram + si.totalswap;
-+	available_swap_pages = si.totalswap;
-+#else
-+	available_pages = si.totalram;
-+#endif
-+	/* if autodetect then set granularity to ~1.4% from available memory */
-+	/* update_space_pages extra divided by 2 due to it is an offset      */
-+	if (update_space)
-+		update_space_pages = update_space >> (PAGE_SHIFT - 10 + 1);
-+	else
-+		update_space_pages = available_pages >> 7;
-+	if (!update_space_pages)
-+		update_space_pages = MN_UPDATE_SPACE >> (PAGE_SHIFT - 10 + 1);
++struct acpi_table_fpdt {
++	struct acpi_table_header header;	/* Common ACPI table header */
++};
 +
-+	dev_dbg(dev, "update period set to %u ms or %lu jiffies\n",
-+				update_period, update_period_jiffies);
-+	dev_dbg(dev, "update period limit set to %u ms or %lu jiffies\n",
-+				max_update_period, max_update_period_jiffies);
-+	dev_dbg(dev, "update space set to %u kb or -+%u pages\n",
-+				update_space, update_space_pages);
++/* FPDT subtable header */
 +
-+#ifdef CONFIG_SWAP
-+	dev_dbg(dev, "%lu available pages found (%lu ram + %lu swap)\n",
-+				available_pages, si.totalram, si.totalswap);
-+#else
-+	dev_dbg(dev, "%lu available pages found (only ram)\n",
-+						available_pages);
-+#endif
++struct acpi_fpdt_header {
++	u16 type;
++	u8 length;
++	u8 revision;
++};
 +
-+#ifdef DEBUG
-+	get_memory_status(&last_measured);
-+	for (i = 0; i < MN_TYPES_SIZE; i++) {
-+		dev_dbg(dev, "%lu %s pages, utilization %lu percents\n",
-+						last_measured.v[i],
-+							memtypes[i],
-+			(100 * last_measured.v[i]) / available_pages);
-+	}
-+#endif
++/* Values for Type field above */
 +
-+	dev_dbg(dev, "overhead per client connection is %u bytes\n",
-+				(unsigned)sizeof(struct observer));
++enum acpi_fpdt_type {
++	ACPI_FPDT_TYPE_BOOT = 0,
++	ACPI_FPDT_TYPE_S3PERF = 1,
++};
 +
-+	return 0;
-+}
++/*
++ * FPDT subtables
++ */
 +
-+static void __exit mn_exit(void)
-+{
-+	dev = NULL;
-+	misc_deregister(&mn_device);
-+}
++/* 0: Firmware Basic Boot Performance Record */
 +
++struct acpi_fpdt_boot {
++	struct acpi_fpdt_header header;
++	u8 reserved[4];
++	u64 reset_end;
++	u64 load_start;
++	u64 startup_start;
++	u64 exit_services_entry;
++	u64 exit_services_exit;
++};
 +
-+module_init(mn_init);
-+module_exit(mn_exit);
++/* 1: S3 Performance Table Pointer Record */
++
++struct acpi_fpdt_s3pt_ptr {
++	struct acpi_fpdt_header header;
++	u8 reserved[4];
++	u64 address;
++};
++
++/*
++ * S3PT - S3 Performance Table. This table is pointed to by the
++ * FPDT S3 Pointer Record above.
++ */
++struct acpi_table_s3pt {
++	u8 signature[4];	/* "S3PT" */
++	u32 length;
++};
++
++/*
++ * S3PT Subtables
++ */
++struct acpi_s3pt_header {
++	u16 type;
++	u8 length;
++	u8 revision;
++};
++
++/* Values for Type field above */
++
++enum acpi_s3pt_type {
++	ACPI_S3PT_TYPE_RESUME = 0,
++	ACPI_S3PT_TYPE_SUSPEND = 1,
++};
++
++struct acpi_s3pt_resume {
++	struct acpi_s3pt_header header;
++	u32 resume_count;
++	u64 full_resume;
++	u64 average_resume;
++};
++
++struct acpi_s3pt_suspend {
++	struct acpi_s3pt_header header;
++	u64 suspend_start;
++	u64 suspend_end;
++};
++
++/*******************************************************************************
++ *
++ * GTDT - Generic Timer Description Table (ACPI 5.0)
++ *        Version 1
++ *
++ ******************************************************************************/
++
++struct acpi_table_gtdt {
++	struct acpi_table_header header;	/* Common ACPI table header */
++	u64 address;
++	u32 flags;
++	u32 secure_pl1_interrupt;
++	u32 secure_pl1_flags;
++	u32 non_secure_pl1_interrupt;
++	u32 non_secure_pl1_flags;
++	u32 virtual_timer_interrupt;
++	u32 virtual_timer_flags;
++	u32 non_secure_pl2_interrupt;
++	u32 non_secure_pl2_flags;
++};
++
++/* Values for Flags field above */
++
++#define ACPI_GTDT_MAPPED_BLOCK_PRESENT      1
++
++/* Values for all "TimerFlags" fields above */
++
++#define ACPI_GTDT_INTERRUPT_MODE            1
++#define ACPI_GTDT_INTERRUPT_POLARITY        2
++
++/*******************************************************************************
++ *
++ * MPST - Memory Power State Table (ACPI 5.0)
++ *        Version 1
++ *
++ ******************************************************************************/
++
++#define ACPI_MPST_CHANNEL_INFO \
++	u16                             reserved1; \
++	u8                              channel_id; \
++	u8                              reserved2; \
++	u16                             power_node_count;
++
++/* Main table */
++
++struct acpi_table_mpst {
++	struct acpi_table_header header;	/* Common ACPI table header */
++	 ACPI_MPST_CHANNEL_INFO	/* Platform Communication Channel */
++};
++
++/* Memory Platform Communication Channel Info */
++
++struct acpi_mpst_channel {
++	ACPI_MPST_CHANNEL_INFO	/* Platform Communication Channel */
++};
++
++/* Memory Power Node Structure */
++
++struct acpi_mpst_power_node {
++	u8 flags;
++	u8 reserved1;
++	u16 node_id;
++	u32 length;
++	u64 range_address;
++	u64 range_length;
++	u8 num_power_states;
++	u8 num_physical_components;
++	u16 reserved2;
++};
++
++/* Values for Flags field above */
++
++#define ACPI_MPST_ENABLED               1
++#define ACPI_MPST_POWER_MANAGED         2
++#define ACPI_MPST_HOT_PLUG_CAPABLE      4
++
++/* Memory Power State Structure (follows POWER_NODE above) */
++
++struct acpi_mpst_power_state {
++	u8 power_state;
++	u8 info_index;
++};
++
++/* Physical Component ID Structure (follows POWER_STATE above) */
++
++struct acpi_mpst_component {
++	u16 component_id;
++};
++
++/* Memory Power State Characteristics Structure (follows all POWER_NODEs) */
++
++struct acpi_mpst_data_hdr {
++	u16 characteristics_count;
++};
++
++struct acpi_mpst_power_data {
++	u8 revision;
++	u8 flags;
++	u16 reserved1;
++	u32 average_power;
++	u32 power_saving;
++	u64 exit_latency;
++	u64 reserved2;
++};
++
++/* Values for Flags field above */
++
++#define ACPI_MPST_PRESERVE              1
++#define ACPI_MPST_AUTOENTRY             2
++#define ACPI_MPST_AUTOEXIT              4
++
++/* Shared Memory Region (not part of an ACPI table) */
++
++struct acpi_mpst_shared {
++	u32 signature;
++	u16 pcc_command;
++	u16 pcc_status;
++	u16 command_register;
++	u16 status_register;
++	u16 power_state_id;
++	u16 power_node_id;
++	u64 energy_consumed;
++	u64 average_power;
++};
++
++/*******************************************************************************
++ *
++ * PCCT - Platform Communications Channel Table (ACPI 5.0)
++ *        Version 1
++ *
++ ******************************************************************************/
++
++struct acpi_table_pcct {
++	struct acpi_table_header header;	/* Common ACPI table header */
++	u32 flags;
++	u32 latency;
++	u32 reserved;
++};
++
++/* Values for Flags field above */
++
++#define ACPI_PCCT_DOORBELL              1
++
++/*
++ * PCCT subtables
++ */
++
++/* 0: Generic Communications Subspace */
++
++struct acpi_pcct_subspace {
++	struct acpi_subtable_header header;
++	u8 reserved[6];
++	u64 base_address;
++	u64 length;
++	struct acpi_generic_address doorbell_register;
++	u64 preserve_mask;
++	u64 write_mask;
++};
++
++/*
++ * PCC memory structures (not part of the ACPI table)
++ */
++
++/* Shared Memory Region */
++
++struct acpi_pcct_shared_memory {
++	u32 signature;
++	u16 command;
++	u16 status;
++};
++
++/*******************************************************************************
++ *
++ * PMTT - Platform Memory Topology Table (ACPI 5.0)
++ *        Version 1
++ *
++ ******************************************************************************/
++
++struct acpi_table_pmtt {
++	struct acpi_table_header header;	/* Common ACPI table header */
++	u32 reserved;
++};
++
++/* Common header for PMTT subtables that follow main table */
++
++struct acpi_pmtt_header {
++	u8 type;
++	u8 reserved1;
++	u16 length;
++	u16 flags;
++	u16 reserved2;
++};
++
++/* Values for Type field above */
++
++#define ACPI_PMTT_TYPE_SOCKET           0
++#define ACPI_PMTT_TYPE_CONTROLLER       1
++#define ACPI_PMTT_TYPE_DIMM             2
++#define ACPI_PMTT_TYPE_RESERVED         3	/* 0x03-0xFF are reserved */
++
++/* Values for Flags field above */
++
++#define ACPI_PMTT_TOP_LEVEL             0x0001
++#define ACPI_PMTT_PHYSICAL              0x0002
++#define ACPI_PMTT_MEMORY_TYPE           0x000C
++
++/*
++ * PMTT subtables, correspond to Type in struct acpi_pmtt_header
++ */
++
++/* 0: Socket Structure */
++
++struct acpi_pmtt_socket {
++	struct acpi_pmtt_header header;
++	u16 socket_id;
++	u16 reserved;
++};
++
++/* 1: Memory Controller subtable */
++
++struct acpi_pmtt_controller {
++	struct acpi_pmtt_header header;
++	u32 read_latency;
++	u32 write_latency;
++	u32 read_bandwidth;
++	u32 write_bandwidth;
++	u16 access_width;
++	u16 alignment;
++	u16 reserved;
++	u16 domain_count;
++};
++
++/* 1a: Proximity Domain substructure */
++
++struct acpi_pmtt_domain {
++	u32 proximity_domain;
++};
++
++/* 2: Physical Component Identifier (DIMM) */
++
++struct acpi_pmtt_physical_component {
++	struct acpi_pmtt_header header;
++	u16 component_id;
++	u16 reserved;
++	u32 memory_size;
++	u32 bios_handle;
++};
++
++/*******************************************************************************
++ *
++ * RASF - RAS Feature Table (ACPI 5.0)
++ *        Version 1
++ *
++ ******************************************************************************/
++
++struct acpi_table_rasf {
++	struct acpi_table_header header;	/* Common ACPI table header */
++	u8 channel_id[12];
++};
++
++/* RASF Platform Communication Channel Shared Memory Region */
++
++struct acpi_rasf_shared_memory {
++	u32 signature;
++	u16 command;
++	u16 status;
++	u64 requested_address;
++	u64 requested_length;
++	u64 actual_address;
++	u64 actual_length;
++	u16 flags;
++	u8 speed;
++};
++
++/* Masks for Flags and Speed fields above */
++
++#define ACPI_RASF_SCRUBBER_RUNNING      1
++#define ACPI_RASF_SPEED                 (7<<1)
++
++/* Channel Commands */
++
++enum acpi_rasf_commands {
++	ACPI_RASF_GET_RAS_CAPABILITIES = 1,
++	ACPI_RASF_GET_PATROL_PARAMETERS = 2,
++	ACPI_RASF_START_PATROL_SCRUBBER = 3,
++	ACPI_RASF_STOP_PATROL_SCRUBBER = 4
++};
++
++/* Channel Command flags */
++
++#define ACPI_RASF_GENERATE_SCI          (1<<15)
++
++/* Status values */
++
++enum acpi_rasf_status {
++	ACPI_RASF_SUCCESS = 0,
++	ACPI_RASF_NOT_VALID = 1,
++	ACPI_RASF_NOT_SUPPORTED = 2,
++	ACPI_RASF_BUSY = 3,
++	ACPI_RASF_FAILED = 4,
++	ACPI_RASF_ABORTED = 5,
++	ACPI_RASF_INVALID_DATA = 6
++};
++
++/* Status flags */
++
++#define ACPI_RASF_COMMAND_COMPLETE      (1)
++#define ACPI_RASF_SCI_DOORBELL          (1<<1)
++#define ACPI_RASF_ERROR                 (1<<2)
++#define ACPI_RASF_STATUS                (0x1F<<3)
++
++/* Reset to default packing */
++
++#pragma pack()
++
++#endif				/* __ACTBL3_H__ */
 -- 
-1.7.7.3
+1.7.9.rc1
 
