@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab2AQSvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 13:51:13 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56148 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab2AQSvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 13:51:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120116151001.GB12817@redhat.com>
-References: <20120110174509.GA30802@redhat.com> <20120113182015.GA3902@redhat.com>
- <20120115182441.GA24694@redhat.com> <20120116074540.GE15641@elte.hu>
- <1326717070.7642.144.camel@gandalf.stny.rr.com> <20120116125329.GB31667@elte.hu>
- <20120116151001.GB12817@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 17 Jan 2012 10:50:51 -0800
-X-Google-Sender-Auth: u3GxTdIDGf9JzkollOIE5ossaNc
-Message-ID: <CA+55aFwBW3abeSGoRMZBKERmSKk76Xm+uv7N+ZajvqOyv=aH3g@mail.gmail.com>
-Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755099Ab2AQSvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 13:51:18 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:57602 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754969Ab2AQSvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 13:51:16 -0500
+Message-ID: <1326826273.17202.11.camel@joe2Laptop>
+Subject: Re: [PATCH] vsprintf: Prevent NULL dereference using %pNF
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: mirq-linux@rere.qmqm.pl, linux-kernel@vger.kernel.org
+Date: Tue, 17 Jan 2012 10:51:13 -0800
+In-Reply-To: <20120117.134640.1673981737109339596.davem@davemloft.net>
+References: <1326825433.17202.6.camel@joe2Laptop>
+	 <20120117.134640.1673981737109339596.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 7:10 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> But do we really need to keep the old tracepoint? IOW, what if
-> we simply rename it and add more info?
+On Tue, 2012-01-17 at 13:46 -0500, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Tue, 17 Jan 2012 10:37:13 -0800
+> > Passing NULL to %pNF is done in skb_gso_segment
+> > which could be dereferenced.
+> skb_gso_segment() should be fixed instead.
 
-Quite frankly, unless somebody can point to something that breaks, I'd
-rather just change the existing one.
+Maybe.  Dereferencing NULL is bad form.
+Michał Mirosław should fix that as it's his patch.
 
-Nobody outside of a few special cases uses tracepoints. *nobody*.  The
-only apps I have ever seen that matters to anybody ends up being
-latencytop and powertop. If those two have been tested and don't care,
-I don't think we should care.
+noinline_for_stack should be added anyway.
 
-                       Linus
+
