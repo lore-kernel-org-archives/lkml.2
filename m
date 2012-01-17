@@ -1,113 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2AQKcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 05:32:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47461 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab2AQKcH convert rfc822-to-8bit (ORCPT
+	id S1753017Ab2AQKea (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 05:34:30 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:50505 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab2AQKe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 05:32:07 -0500
+	Tue, 17 Jan 2012 05:34:28 -0500
+Message-ID: <4F154EAB.8080008@kernel.org>
+Date: Tue, 17 Jan 2012 05:34:19 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-In-Reply-To: <20120113044757.GB6004@mgross-G62>
-References: <1326276130-4042-1-git-send-email-myungjoo.ham@samsung.com>
-	<CAJOA=zMkRxx=PhznO5VSb3H4bSx7oTYiazesasYY_X7SzSf48A@mail.gmail.com>
-	<CAJ0PZbRKknwF1LwJP6M93-GPXJ9xKuzZnDjZMF8C1id026-X4A@mail.gmail.com>
-	<20120113044757.GB6004@mgross-G62>
-Date: Tue, 17 Jan 2012 19:32:05 +0900
-Message-ID: <CAJ0PZbTMuJfBL4iZyc=R4TkdfFuh1_XzV-KQr73330PUt6fcNQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PM / devfreq: add min/max_freq limit requested by users.
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: markgross@thegnar.org
-Cc: "Turquette, Mike" <mturquette@ti.com>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: =?UTF-8?B?QXJrYWRpdXN6IE1pxZtraWV3aWN6?= <a.miskiewicz@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: intel_idle causing 3.0.8 system reboot
+References: <201110272327.14891.a.miskiewicz@gmail.com> <201110281954.39191.a.miskiewicz@gmail.com> <CAJvTdKmCgbebEOY7Ly=cE1ZV2GVG7hL5fE8LmK9nz7r8+BNPJQ@mail.gmail.com> <201111130854.56201.a.miskiewicz@gmail.com>
+In-Reply-To: <201111130854.56201.a.miskiewicz@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 1:47 PM, mark gross <markgross@thegnar.org> wrote:
-> On Thu, Jan 12, 2012 at 11:08:44AM +0900, MyungJoo Ham wrote:
+On 11/13/2011 02:54 AM, Arkadiusz MiÅ›kiewicz wrote:
+
+> On Sunday 13 of November 2011, Len Brown wrote:
+>>> intel_idle.max_cstate=2 also makes the problem go away.
 >>
->> In practice, we have been using min/max to test DVFS behaviors and its
->> side effects. And we are going to use them to 1. restrict power
->> consumption forcibly by the platform software if it is too hot or the
->> battery is low, and to 2. guarantee the minimum performance for
->> specific tasks controlled by the platform software.
+>> Is the system running with BIOS SETUP defaults?
+> 
+> Tried also with "safe defaults (F8)" but that didn't help.
+> 
+>> Are there any BIOS SETUP options related to CPU idle states?
+> 
+> Yes, there are
+> 
+> "C state package limit setting" with values possible: Auto, C1, C3, C6, C7 
+> (set to "Auto" here)
+> "Intel EIST technology" -> Enabled
+> "C1E support" -> Enabled
+> "Intel C-STATE tech" -> Enabled
+> "C1 Auto Demotion" -> Enabled
+> "C3 Auto Demotion" -> Enabled
+> 
+>> please boot with intel_idle.max_cstate=0
+>> and send the output of these two commands:
 >>
->> Anyway, the reason 2 could be tackled by pm-qos if we allow more
->> options in pm-qos with 1. pm qos type to enforce DVFS response time.
-> what would pm_qos do with DVFS response time?  What power management
-> knob would it enable a constraint for?
->
-> pm_qos doesn't do anything but enable power throttling code to consider
-> a constraint on how far to throttle "something".  pm_qos has no
-> enforcement power.
+>> dmesg |grep idle
+>> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
+> 
+> [root@berta ~]# dmesg |grep idle
+> [    0.000000] Command line: auto BOOT_IMAGE=pld3.0.8test ro root=812 
+> console=tty0 console=ttyS2,38400n81 panic=60 selinux=0 intel_idle.max_cstate=0
+> [    0.000000] Kernel command line: auto BOOT_IMAGE=pld3.0.8test ro root=812 
+> console=tty0 console=ttyS2,38400n81 panic=60 selinux=0 intel_idle.max_cstate=0
+> [    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+> [    0.278494] using mwait in idle threads.
+> [    4.330321] intel_idle: disabled
+> [    5.794456] cpuidle: using governor ladder
+> [    5.806755] cpuidle: using governor menu
+> [root@berta ~]# LC_ALL=C grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
+> grep: /sys/devices/system/cpu/cpu0/cpuidle/*/*: No such file or directory
+> 
+> There are only:
+> [root@berta ~]# LC_ALL=C grep . /sys/devices/system/cpu/cpuidle/*
+> /sys/devices/system/cpu/cpuidle/current_driver:none
+> /sys/devices/system/cpu/cpuidle/current_governor_ro:menu
 
+very strange.
+now that it is back up...
+Please file a bug report at bugzilla.kernel.org against idle/intel_idle
+and assign it to me.
 
-- The control knob: polling interval of ondemand-like DVFS mechanisms
-- It's ok to have no enforcement power. The DVFS mechanism only needs
-an interface (PM QoS seems fine for this) from user space / device
-drivers to get the response-time requirement.
+Please attach the complete output from dmesg -s 64000
+and attach your .config
 
-With some events, we need to adjust DVFS polling interval.
+It appears that you have no acpi_idle driver installed.
 
-For now, we do this in our devices for user input events (key input,
-touchscreen input, ...). And some peripheral device drivers want to
-get "guaranteed response time" depending on their operational modes
-from memory and bus at the start of their operations.
+If your kernel is missing
+CONFIG_ACPI_PROCESSOR=y
+please add it and collect the info above.
 
-With user input events, user may (doing something heavy) or may not
-(doing something light) want fast reaction from CPU/MEM/GPU/... in
-many occasions, and we cannot determine it until the DVFS polling has
-been done.
-
-In average, with near 100% threshold, ondemand-like governors will
-take 1.5 x polling interval to response. In a system with 100ms
-polling interval, DVFS mechanism will take usuallly 150ms (and up to
-200ms) to react and this is significantly noticable to human users.
-With 60Hz display system, this is loss of almost 10 frames.
-
-In order to address this, a touch event handler (or any
-thread/callback or anything deals with it) may request QoS with an
-incoming event to reduce polling interval temporarily.
-
-Although PM-QoS does not have the QoS Type for this kind of metric;
-however, DVFS response time seems to be another QoS metric candidate.
-
-
-
->
->> 2. pm qos type to enforce graphics performance. And adding a duration
->> option to pm-qos requests will be helpful (sort of a helper function):
->> i.e., pm_qos_timed_request(struct pm_qos_request *req, int
->> pm_qos_class, s32 value, unsigned long duration_ms);
->
-> What would be good units for graphics throughput?
-> Where in the graphics driver would you insert the equivalent of cpufreq?
-> to control the GPU core frequency?
-
-I've not thought about this much yet. I've just seen the need for QoS
-requirements from GPU people because DVFS mechanism loses a frame or
-frames often during GPU usage without QoS information.
-
-I'm not so familiar with GPUs, so I can't be sure about the metric for
-graphics throughput. However, could it be "FLOPS", "triangles per
-second", or GPU clock speed?
-
-We have GPU DVFS drivers in linux/drivers/media/video/..., which
-controls GPU core frequency and measures GPU usage. However, they can
-be implemented with devfreq framework and move into drivers/devfreq/
-later.
+thanks,
+-Len
 
 
 
-Cheers!
-MyungJoo.
+>>
+>> thanks,
+>> Len Brown, Intel Open Source Technology Center
+>>
+>>>> # cat /proc/cpuinfo
+>>>> processor       : 0
+>>>> vendor_id       : GenuineIntel
+>>>> cpu family      : 6
+>>>> model           : 30
+>>>> model name      : Intel(R) Xeon(R) CPU           X3430  @ 2.40GHz
+>>>> stepping        : 5
+> 
+> 
 
 
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
