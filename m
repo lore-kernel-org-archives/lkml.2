@@ -1,136 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554Ab2AQC6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 21:58:18 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56418 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab2AQC6Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 21:58:16 -0500
+	id S1751427Ab2AQDBF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 22:01:05 -0500
+Received: from mail.tomasu.net ([64.85.170.232]:53583 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758Ab2AQDBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 22:01:03 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: linux-kernel@vger.kernel.org
+Subject: Re: mvsas with 3.1 (mdraid+xfs locked up, single drive w/xfs not locked up)
+Date: Mon, 16 Jan 2012 20:00:54 -0700
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        ayan@marvell.com, andy yan <andyysj@gmail.com>,
+        "linux-raid" <linux-raid@vger.kernel.org>
+References: <201201131144.58044.thomas@fjellstrom.ca>
+In-Reply-To: <201201131144.58044.thomas@fjellstrom.ca>
 MIME-Version: 1.0
-In-Reply-To: <4F14DEAE.60702@linux.vnet.ibm.com>
-References: <4F13EFBE.1030002@linux.vnet.ibm.com>
-	<1326707503.2442.219.camel@twins>
-	<4F14DEAE.60702@linux.vnet.ibm.com>
-Date: Tue, 17 Jan 2012 10:58:15 +0800
-Message-ID: <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com>
-Subject: Re: [PATCH v2] sched: Accelerate "pick_next_entity" under special condition
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201162000.54940.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 10:36 AM, Michael Wang
-<wangyun@linux.vnet.ibm.com> wrote:
-> From: wangyun <wangyun@linux.vnet.ibm.com>
->
-> In original code, we get the next entity in this way:
->
->        if(condition1)
->                result=value1;
->        if(condition2)
->                result=value2;
->        if(condition3)
->                result=value3;
->        return result;
->
-> So if condition3 is true, we will get value3, but still
-> need to check condition1 and condition2, this will waste
-> our time.
->
-> This patch will change the way like:
->
->        if(condition3) {
->                result=value3;
->                goto out;
->        }
->        if(condition2) {
->                result=value2;
->                goto out;
->        }
->        if(condition1) {
->                result=value1;
->                goto out;
->        }
->
->        out:
->        return result;
->
-> So we can avoid check condition2 and condition1 when
-> condition3 is true now.
+On Fri Jan 13, 2012, Thomas Fjellstrom wrote:
+> Is there chance this driver will ever be stable? After more than two years
+> I'm starting to get extremely frustrated. I don't really have the option
+> at the moment to get a new card, otherwise I would, likely a non marvell
+> based device.
+> 
+> It actually managed to last 10 days this time though. Which is a record.
+> The interesting thing is there are no warnings or errors in dmesg coming
+> from the mvsas driver or scsi code. All that's happened is processes lock
+> up when trying to write. Reading seems to be fine.
+> 
+> Just to refresh everyone's memory, it's a AOC-SASLP-MV8 card, has a
+> MV64460/64461/64462 chipset. And I have 7 (seagate 7200.12 SATA drives
+> hooked up).
 
-Then what if condition 1 is true now?
+I attached an 8th drive for kicks (for saving stuff temporarily that don't need 
+to be on the big array), and if anything, the array locks up more than it did 
+before. But there is one difference between the lockups that were happening and 
+that are happening now. Now the entire array is still readable. It just locks 
+up any process attempting to write to the array. Before both read and write 
+would lock up, and a bunch of scary messages would hit dmesg. Now there are 
+very few log messages about the array. In fact no messages show up from the 
+scsi or other subsystems. The only evidence of "bad things" happening is the 
+continual "process foo blocked for more than 120s" messages, and of course 
+anything attempting to write to the array.
 
->
-> v2:
->        1. do not use ugly macro any more.
->        2. add more description.
->
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> ---
->  kernel/sched/fair.c |   26 +++++++++++++++-----------
->  1 files changed, 15 insertions(+), 11 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 84adb2d..e8a72b2 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1308,29 +1308,33 @@ static struct sched_entity
-> *pick_next_entity(struct cfs_rq *cfs_rq)
->        struct sched_entity *left = se;
->
->        /*
-> -        * Avoid running the skip buddy, if running something else can
-> -        * be done without getting too unfair.
-> +        * Someone really wants this to run. If it's not unfair, run it.
->         */
-> -       if (cfs_rq->skip == se) {
-> -               struct sched_entity *second = __pick_next_entity(se);
-> -               if (second && wakeup_preempt_entity(second, left) < 1)
-> -                       se = second;
-> +       if (cfs_rq->next && wakeup_preempt_entity(cfs_rq->next, left) < 1) {
-> +               se = cfs_rq->next;
-> +               goto out;
->        }
->
->        /*
->         * Prefer last buddy, try to return the CPU to a preempted task.
->         */
-> -       if (cfs_rq->last && wakeup_preempt_entity(cfs_rq->last, left) < 1)
-> +       if (cfs_rq->last && wakeup_preempt_entity(cfs_rq->last, left) < 1) {
->                se = cfs_rq->last;
-> +               goto out;
-> +       }
->
->        /*
-> -        * Someone really wants this to run. If it's not unfair, run it.
-> +        * Avoid running the skip buddy, if running something else can
-> +        * be done without getting too unfair.
->         */
-> -       if (cfs_rq->next && wakeup_preempt_entity(cfs_rq->next, left) < 1)
-> -               se = cfs_rq->next;
-> +       if (cfs_rq->skip == se) {
-> +               struct sched_entity *second = __pick_next_entity(se);
-> +               if (second && wakeup_preempt_entity(second, left) < 1)
-> +                       se = second;
-> +       }
->
-> +out:
->        clear_buddies(cfs_rq, se);
-> -
->        return se;
->  }
->
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Here's something interesting though, I just tried writing to the one disk on 
+the card that isn't part of the mdraid raid5 volume. It is fine. I can read 
+from it and write to it. So something to do with mdraid, or the XFS filesystem 
+(or both) is causing a bad interaction with the card itself.
+
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
