@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab2AQIdj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 03:33:39 -0500
-Received: from relay01.digicable.hu ([92.249.128.189]:49348 "EHLO
-	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2AQIdi (ORCPT
+	id S1752465Ab2AQIel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 03:34:41 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42535 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab2AQIej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 03:33:38 -0500
-Message-ID: <4F153221.3080509@freemail.hu>
-Date: Tue, 17 Jan 2012 09:32:33 +0100
-From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] gpio-pch: cleanup __iomem annotation usage
-References: <4F12AB38.5040009@freemail.hu> <CACRpkdZ0osKrjTXsV96J5ckj=wC=OieHL7UTfjtm8ibHRuL6=A@mail.gmail.com>
-In-Reply-To: <CACRpkdZ0osKrjTXsV96J5ckj=wC=OieHL7UTfjtm8ibHRuL6=A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 17 Jan 2012 03:34:39 -0500
+Message-ID: <1326789274.2564.55.camel@edumazet-laptop>
+Subject: Re: [PATCH] mips: remove custom BUILD_BUG()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: David Daney <ddaney.cavm@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, DM <dm.n9107@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        David Daney <david.daney@cavium.com>
+Date: Tue, 17 Jan 2012 09:34:34 +0100
+In-Reply-To: <20120117082841.GA15499@linux-mips.org>
+References: <1322092017-21471-1-git-send-email-ddaney.cavm@gmail.com>
+	 <1322092017-21471-2-git-send-email-ddaney.cavm@gmail.com>
+	 <1326779572.2564.47.camel@edumazet-laptop>
+	 <20120117082841.GA15499@linux-mips.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 8bit
-X-Original: 78.131.104.232
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linux,
+Le mardi 17 janvier 2012 Ã  09:28 +0100, Ralf Baechle a Ã©crit :
 
-Linus Walleij wrote:
-> 2012/1/15 Németh Márton <nm127@freemail.hu>:
+> See 63e9c4fd1c86e894e62aa3737427163d5fb01056 [MIPS: Remove temporary kludge
+> from <asm/page.h>] in linux-next.
 > 
->> From: Márton Németh <nm127@freemail.hu>
->>
->> The __iomem annotation is to be used together with pointers used
->> as iowrite32() parameter. For more details see [1] and [2].
-> (...)
->> -       u32 *im_reg;
->> +       u32 __iomem *im_reg;
-> 
-> Does it work to just say void __iomem *im_reg?
-> 
-> We usually don't type addresses.
 
-You are right, the correct one should be "void __iomem *im_reg;" .
+Good, thanks !
 
-Should I resend a patch for this?
-
-	Márton Németh
 
