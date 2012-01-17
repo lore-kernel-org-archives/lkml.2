@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab2AQOmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 09:42:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:46658 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958Ab2AQOmI (ORCPT
+	id S1754501Ab2AQOpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 09:45:00 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46981 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab2AQOo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 09:42:08 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=p-wZvnPcUTwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=bcbrHNUOv8UQ218sAlwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326811325.17534.48.camel@gandalf.stny.rr.com>
-Subject: Re: [ANNOUNCE] 3.0.14-rt31 - ksoftirq running wild - FEC ethernet
- driver to blame?
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tim Sander <tstone@iss.tu-darmstadt.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tim Sander <tim.sander@hbm.com>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>
-Date: Tue, 17 Jan 2012 09:42:05 -0500
-In-Reply-To: <201201171527.19165.tstone@iss.tu-darmstadt.de>
-References: <1324525237.5916.114.camel@gandalf.stny.rr.com>
-	 <201201121757.25467.tim.sander@hbm.com>
-	 <201201131042.08323.tim.sander@hbm.com>
-	 <201201171527.19165.tstone@iss.tu-darmstadt.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 17 Jan 2012 09:44:59 -0500
+Date: Tue, 17 Jan 2012 18:44:52 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
+Message-ID: <20120117144452.GG16213@moon>
+References: <20120117142759.GE16213@moon>
+ <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 15:27 +0100, Tim Sander wrote:
-> Hi
+On Tue, Jan 17, 2012 at 04:38:14PM +0200, Alexey Dobriyan wrote:
+> On 1/17/12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> > +#define KCMP_EQ		0
+> > +#define KCMP_LT		1
+> > +#define KCMP_GT		2
 > 
-> I have further input to the ksoftirq/0 using as much cpu as available on a
-> arm i.mx pcm043 platform without load with a 3.0.14-rt31 kernel and some local 
-> platform adaptions.
-> 
-> > I was thinking about this ksoftirq0 running on max cpu. The context:
-> > > > > and the running wild ksoftirqd0 most probably after the kernel
-> > > > > message: "sched: RT throttling activated"
-
-> I think that the message  "sched: RT throttling activated" and the ksoftirqd 
-> running on full cpu are possibly to seperate errors. Btw. is there a way to 
-> find out which processes where conuming this timeframe. It would be nice to add 
-> info output which processes caused the throtteling. Is it possible to get this 
-> information out of the scheduler structure?
+> LT and GT are meaningless.
 > 
 
-Peter,
+I found symbolic names better than open-coded values. But sure,
+if this is problem it could be dropped.
 
-This is your territory.
+Or you mean that in general anything but 'equal' is useless?
 
--- Steve
-
-
+	Cyrill
