@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab2AQFNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 00:13:50 -0500
+	id S1752128Ab2AQFN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 00:13:58 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:62467 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab2AQFNs (ORCPT
+	with ESMTP id S1750702Ab2AQFNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 00:13:48 -0500
+	Tue, 17 Jan 2012 00:13:55 -0500
 From: Kelvin Cheung <keguang.zhang@gmail.com>
 To: ralf@linux-mips.org, linux-mips@linux-mips.org, stern@rowland.harvard.edu,
         linux-usb@vger.kernel.org
 Cc: gregkh@suse.de, zhzhl555@gmail.com, peppe.cavallaro@st.com,
         wuzhangjin@gmail.com, linux-kernel@vger.kernel.org,
         Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH V6 4/5] USB: Add EHCI bus glue for Loongson1x SoCs
-Date: Tue, 17 Jan 2012 13:12:39 +0800
-Message-Id: <1326777160-9930-5-git-send-email-keguang.zhang@gmail.com>
+Subject: [PATCH V6 5/5] MIPS: Add defconfig for Loongson1B
+Date: Tue, 17 Jan 2012 13:12:40 +0800
+Message-Id: <1326777160-9930-6-git-send-email-keguang.zhang@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1326777160-9930-1-git-send-email-keguang.zhang@gmail.com>
 References: <1326777160-9930-1-git-send-email-keguang.zhang@gmail.com>
@@ -23,222 +23,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Loongson1x SoCs have a built-in EHCI controller.
-This patch adds the necessary glue code to make the generic EHCI
-driver usable for them.
+This patch adds defconfig for Loongson1B.
 
 Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
 ---
- drivers/usb/Kconfig          |    1 +
- drivers/usb/host/ehci-hcd.c  |    5 +
- drivers/usb/host/ehci-ls1x.c |  170 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 176 insertions(+), 0 deletions(-)
- create mode 100644 drivers/usb/host/ehci-ls1x.c
+ arch/mips/configs/ls1b_defconfig |  104 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 104 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/configs/ls1b_defconfig
 
-diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-index 85d5a01..78ac78b 100644
---- a/drivers/usb/Kconfig
-+++ b/drivers/usb/Kconfig
-@@ -68,6 +68,7 @@ config USB_ARCH_HAS_EHCI
- 	default y if ARCH_MSM
- 	default y if MICROBLAZE
- 	default y if SPARC_LEON
-+	default y if MACH_LOONGSON1
- 	default PCI
- 
- # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 47aa22d..d38bd7c 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1291,6 +1291,11 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_grlib_driver
- #endif
- 
-+#ifdef CONFIG_MACH_LOONGSON1
-+#include "ehci-ls1x.c"
-+#define PLATFORM_DRIVER		ehci_ls1x_driver
-+#endif
-+
- #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
-     !defined(PS3_SYSTEM_BUS_DRIVER) && !defined(OF_PLATFORM_DRIVER) && \
-     !defined(XILINX_OF_PLATFORM_DRIVER)
-diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
+diff --git a/arch/mips/configs/ls1b_defconfig b/arch/mips/configs/ls1b_defconfig
 new file mode 100644
-index 0000000..d3b6720
+index 0000000..eab7d16
 --- /dev/null
-+++ b/drivers/usb/host/ehci-ls1x.c
-@@ -0,0 +1,170 @@
-+/*
-+ *  Bus Glue for Loongson LS1X built-in EHCI controller.
-+ *
-+ *  Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under the terms of the GNU General Public License version 2 as published
-+ *  by the Free Software Foundation.
-+ */
-+
-+
-+#include <linux/platform_device.h>
-+
-+static int ehci_ls1x_setup(struct usb_hcd *hcd)
-+{
-+	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-+	int ret;
-+
-+	ehci->caps = hcd->regs;
-+	ehci->regs = hcd->regs +
-+		HC_LENGTH(ehci, ehci_readl(ehci, &ehci->caps->hc_capbase));
-+	dbg_hcs_params(ehci, "reset");
-+	dbg_hcc_params(ehci, "reset");
-+
-+	/* cache this readonly data; minimize chip reads */
-+	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
-+	ehci->sbrn = 0x20;
-+
-+	ehci_reset(ehci);
-+
-+	/* data structure init */
-+	ret = ehci_init(hcd);
-+	if (ret)
-+		return ret;
-+
-+	ehci_port_power(ehci, 0);
-+
-+	return 0;
-+}
-+
-+static const struct hc_driver ehci_ls1x_hc_driver = {
-+	.description		= hcd_name,
-+	.product_desc		= "LOONGSON1 EHCI",
-+	.hcd_priv_size		= sizeof(struct ehci_hcd),
-+
-+	/*
-+	 * generic hardware linkage
-+	 */
-+	.irq			= ehci_irq,
-+	.flags			= HCD_MEMORY | HCD_USB2,
-+
-+	/*
-+	 * basic lifecycle operations
-+	 */
-+	.reset			= ehci_ls1x_setup,
-+	.start			= ehci_run,
-+	.stop			= ehci_stop,
-+	.shutdown		= ehci_shutdown,
-+
-+	/*
-+	 * managing i/o requests and associated device resources
-+	 */
-+	.urb_enqueue		= ehci_urb_enqueue,
-+	.urb_dequeue		= ehci_urb_dequeue,
-+	.endpoint_disable	= ehci_endpoint_disable,
-+	.endpoint_reset		= ehci_endpoint_reset,
-+
-+	/*
-+	 * scheduling support
-+	 */
-+	.get_frame_number	= ehci_get_frame,
-+
-+	/*
-+	 * root hub support
-+	 */
-+	.hub_status_data	= ehci_hub_status_data,
-+	.hub_control		= ehci_hub_control,
-+	.relinquish_port	= ehci_relinquish_port,
-+	.port_handed_over	= ehci_port_handed_over,
-+
-+	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
-+};
-+
-+static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
-+{
-+	struct usb_hcd *hcd;
-+	struct resource *res;
-+	int irq;
-+	int ret;
-+
-+	pr_debug("initializing loongson1 ehci USB Controller\n");
-+
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev,
-+			"Found HC with no IRQ. Check %s setup!\n",
-+			dev_name(&pdev->dev));
-+		return -ENODEV;
-+	}
-+	irq = res->start;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev,
-+			"Found HC with no register addr. Check %s setup!\n",
-+			dev_name(&pdev->dev));
-+		return -ENODEV;
-+	}
-+
-+	hcd = usb_create_hcd(&ehci_ls1x_hc_driver, &pdev->dev,
-+				dev_name(&pdev->dev));
-+	if (!hcd)
-+		return -ENOMEM;
-+	hcd->rsrc_start	= res->start;
-+	hcd->rsrc_len	= resource_size(res);
-+
-+	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
-+		dev_dbg(&pdev->dev, "controller already in use\n");
-+		ret = -EBUSY;
-+		goto err_put_hcd;
-+	}
-+
-+	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	if (hcd->regs == NULL) {
-+		dev_dbg(&pdev->dev, "error mapping memory\n");
-+		ret = -EFAULT;
-+		goto err_release_region;
-+	}
-+
-+	ret = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+	if (ret)
-+		goto err_iounmap;
-+
-+	return ret;
-+
-+err_iounmap:
-+	iounmap(hcd->regs);
-+err_release_region:
-+	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-+err_put_hcd:
-+	usb_put_hcd(hcd);
-+	return ret;
-+}
-+
-+static int ehci_hcd_ls1x_remove(struct platform_device *pdev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-+
-+	usb_remove_hcd(hcd);
-+	iounmap(hcd->regs);
-+	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-+	usb_put_hcd(hcd);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver ehci_ls1x_driver = {
-+	.probe = ehci_hcd_ls1x_probe,
-+	.remove = ehci_hcd_ls1x_remove,
-+	.shutdown = usb_hcd_platform_shutdown,
-+	.driver = {
-+		.name = "ls1x-ehci",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+MODULE_ALIAS(PLATFORM_MODULE_PREFIX "ls1x-ehci");
++++ b/arch/mips/configs/ls1b_defconfig
+@@ -0,0 +1,104 @@
++CONFIG_MACH_LOONGSON1=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_PREEMPT=y
++# CONFIG_SECCOMP is not set
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SYSVIPC=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_TINY_RCU=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_LOG_BUF_SHIFT=16
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_RD_BZIP2=y
++CONFIG_RD_LZMA=y
++CONFIG_EXPERT=y
++CONFIG_KALLSYMS_ALL=y
++CONFIG_PERF_EVENTS=y
++# CONFIG_COMPAT_BRK is not set
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++# CONFIG_LBDAF is not set
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++# CONFIG_SUSPEND is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_SYN_COOKIES=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_DIAG is not set
++# CONFIG_IPV6 is not set
++# CONFIG_WIRELESS is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++# CONFIG_STANDALONE is not set
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_SCSI=m
++# CONFIG_SCSI_PROC_FS is not set
++CONFIG_BLK_DEV_SD=m
++# CONFIG_SCSI_LOWLEVEL is not set
++CONFIG_NETDEVICES=y
++CONFIG_STMMAC_ETH=y
++CONFIG_STMMAC_DA=y
++# CONFIG_NETDEV_10000 is not set
++# CONFIG_WLAN is not set
++CONFIG_INPUT_EVDEV=y
++# CONFIG_INPUT_KEYBOARD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_SERIO is not set
++CONFIG_VT_HW_CONSOLE_BINDING=y
++CONFIG_LEGACY_PTY_COUNT=8
++# CONFIG_DEVKMEM is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++# CONFIG_MFD_SUPPORT is not set
++# CONFIG_VGA_CONSOLE is not set
++CONFIG_USB_HID=m
++CONFIG_USB=y
++CONFIG_USB_DEVICEFS=y
++# CONFIG_USB_DEVICE_CLASS is not set
++CONFIG_USB_EHCI_HCD=y
++# CONFIG_USB_EHCI_TT_NEWSCHED is not set
++CONFIG_USB_STORAGE=m
++CONFIG_USB_SERIAL=m
++CONFIG_USB_SERIAL_PL2303=m
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_LOONGSON1=y
++# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT2_FS_POSIX_ACL=y
++CONFIG_EXT2_FS_SECURITY=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT3_FS_POSIX_ACL=y
++CONFIG_EXT3_FS_SECURITY=y
++# CONFIG_DNOTIFY is not set
++CONFIG_VFAT_FS=y
++CONFIG_PROC_KCORE=y
++CONFIG_TMPFS=y
++CONFIG_TMPFS_POSIX_ACL=y
++# CONFIG_MISC_FILESYSTEMS is not set
++# CONFIG_NETWORK_FILESYSTEMS is not set
++CONFIG_NLS_CODEPAGE_437=m
++CONFIG_NLS_ISO8859_1=m
++# CONFIG_ENABLE_WARN_DEPRECATED is not set
++# CONFIG_ENABLE_MUST_CHECK is not set
++CONFIG_MAGIC_SYSRQ=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_MEMORY_INIT=y
++CONFIG_SYSCTL_SYSCALL_CHECK=y
++# CONFIG_FTRACE is not set
++# CONFIG_EARLY_PRINTK is not set
 -- 
 1.7.1
 
