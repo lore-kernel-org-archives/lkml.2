@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2AQAez (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jan 2012 19:34:55 -0500
-Received: from mga03.intel.com ([143.182.124.21]:8822 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab2AQAey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jan 2012 19:34:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="57078516"
-Subject: Re: [patch] x86, tsc: fix SMI induced variation in
- quick_pit_calibrate()
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, asit.k.mallick@intel.com
-Date: Mon, 16 Jan 2012 16:41:09 -0800
-In-Reply-To: <CA+55aFys9zddHAoKURGAeu0QYD_MC11uEyOQGU_4Ybsf200NkQ@mail.gmail.com>
-References: <1326744932.16150.9.camel@sbsiddha-desk.sc.intel.com>
-	 <CA+55aFys9zddHAoKURGAeu0QYD_MC11uEyOQGU_4Ybsf200NkQ@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1326760869.16150.16.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1752176Ab2AQAfl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jan 2012 19:35:41 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:37015 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab2AQAfk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jan 2012 19:35:40 -0500
+X-AuditID: cbfee60e-b7c59ae000007ec6-c0-4f14c258a6d1
+Date: Tue, 17 Jan 2012 00:35:36 +0000 (GMT)
+From: =?euc-kr?B?w9bBvsiv?= <jhbird.choi@samsung.com>
+Subject: Re: Re: [PATCH] driver-core: Fix null reference in
+ subsys_interface_unregister
+To: Greg KH <gregkh@suse.de>,
+        =?euc-kr?Q?=C3=D6=C1=BE=C8=AF?= <jhbird.choi@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?euc-kr?Q?=B1=E8=B1=B9=C1=F8?= <kgene.kim@samsung.com>
+Reply-to: jhbird.choi@samsung.com
+MIME-version: 1.0
+X-MTR: 20120117002241776@jhbird.choi
+Msgkey: 20120117002241776@jhbird.choi
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120117002241776@jhbird.choi
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <15905052.41411326760535818.JavaMail.weblogic@epv6ml08>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0H0ZjwN014242
 
-On Mon, 2012-01-16 at 16:18 -0800, Linus Torvalds wrote:
-> So I think your patch is a total hack that just compares the two last
-> TSC deltas, but it's actually close to the "correct' thing in that it
-> does start taking the time to see the last of the previous MSB into
-> account.
+Greg KH wrote:
 
-yeah, it was a hack but your alternative sounds good.
+>On Sat, Jan 14, 2012 at 11:06:03AM +0900, jhbird.choi@samsung.com wrote:
+>> From: Jonghwan Choi 
+> >
+> >Check if the sif is not NULL before de-referencing it
 
-> Now the delta is twice as big as before (it covers four PIT accesses,
-> roughly 4us), so the comments might have to be updated to match, but
-> the rest of the code should "just work" (except it might loop a bit
-> longer, and maybe it gives closer to 250 ppm precision).
-> 
-> Does this fix it for you? I have NOT tested it in any way.
-> 
+>Why would it be?  Have you hit this somehow?  If so, in what code?
 
-also may be we should change the correction 
+> thanks,
 
-from: delta += (long)(d2 - d1)/2;
-to:   delta += (long)(d2 - d1)/4;
-
-I will give this patch a try.
-
-thanks,
-suresh
+> greg k-h
 
 
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 99dc592..4ddb38b 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -1193,13 +1193,15 @@ EXPORT_SYMBOL_GPL(subsys_interface_register);
 
+ void subsys_interface_unregister(struct subsys_interface *sif)
+ {
+-       struct bus_type *subsys = sif->subsys;   // -> Sif is already used, that means sif is not null
++       struct bus_type *subsys;
+        struct subsys_dev_iter iter;
+        struct device *dev;
+
+-       if (!sif)  // -> Check whether sif is null 
++       if (!sif || !sif->subsys)
+                return;
+
++       subsys = sif->subsys;
++
+        mutex_lock(&subsys->p->mutex);
+        list_del_init(&sif->node);
+        if (sif->remove_dev) {
+-- 
+
+sif is already used, but  null pointer check for sif later.
+so i think that sif should be checked before use it.
+
+
+Sorry about that, since my e-mail client has a problem,
+ I couldn't send that to mailing list. I will send it to mailing list.
+ Thanks.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
