@@ -1,106 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2AQRHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 12:07:04 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59969 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441Ab2AQRHC convert rfc822-to-8bit (ORCPT
+	id S1755448Ab2AQRKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 12:10:09 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34964 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755110Ab2AQRKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 12:07:02 -0500
+	Tue, 17 Jan 2012 12:10:07 -0500
+X-Sasl-enc: ijFVRkWO6j0v2SjbXF61Avt8f9rvgR6uEifLoIoRkHpa 1326820206
+Date: Tue, 17 Jan 2012 09:09:53 -0800
+From: Greg KH <greg@kroah.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [29/48] HID: wiimote: Select INPUT_FF_MEMLESS
+Message-ID: <20120117170953.GA21074@kroah.com>
+References: <20120116184527.GA11972@kroah.com>
+ <20120116184518.205969311@clark.kroah.org>
+ <CAP=VYLqajuhNY1S3e7Nbw4DiyEDL1uGthC8VswJ9zJxzwy+wOQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
-References: <1326302710-9427-2-git-send-email-wad@chromium.org>
-	<20120112162231.GA23960@redhat.com>
-	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
-	<20120112172315.GA26295@redhat.com>
-	<CABqD9hZg4sKiVMS-g5ed7-HKOaiUb06y05TL=QkfBkm9kVmquA@mail.gmail.com>
-	<20120113173153.GA24273@redhat.com>
-	<CABqD9hYYJMNtupTiD48sE5wz6RKaFi9J3DpVRyV4X2FpnT3Mnw@mail.gmail.com>
-	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
-	<20120116183730.GB21112@redhat.com>
-	<CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
-	<20120117164523.GA17070@redhat.com>
-	<CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
-	<CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
-Date: Tue, 17 Jan 2012 11:06:59 -0600
-Message-ID: <CABqD9ha+sKCpm4J-B5Ai0aYsvw6oUXz45SmHLQqvJ0d1NjZ0Qg@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, indan@nul.nu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAP=VYLqajuhNY1S3e7Nbw4DiyEDL1uGthC8VswJ9zJxzwy+wOQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 11:01 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Tue, Jan 17, 2012 at 8:56 AM, Will Drewry <wad@chromium.org> wrote:
->> On Tue, Jan 17, 2012 at 10:45 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>> On 01/16, Will Drewry wrote:
->>>>
->>>> On Mon, Jan 16, 2012 at 12:37 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>> >
->>>> > Yes, thanks, I forgot about compat tasks again. But this is easy, just
->>>> > we need regs_64_to_32().
->>>>
->>>> Yup - we could make the assumption that is_compat_task is always
->>>> 32-bit and the pt_regs is always 64-bit, then copy_and_truncate with
->>>> regs_64_to_32.  Seems kinda wonky though :/
->>>
->>> much simpler/faster than what regset does to create the artificial
->>> user_regs_struct32.
->>
->> True, I could collapse pt_regs to looks like the exported ABI pt_regs.
->>  Then only compat processes would get the copy overhead.  That could
->> be tidy and not break ABI.  It would mean that I have to assume that
->> if unsigned long == 64-bit and is_compat_task(), then the task is
->> 32-bit.  Do you think if we ever add a crazy 128-bit "supercomputer"
->> arch that we will add a is_compat64_task() so that I could properly
->> collapse? :)
->>
->> I like this idea!
->
-> FWIW, it's possible for a task to execute in 32-bit mode when
-> !is_compat_task or in 64-bit mode when is_compat_task.  From earlier
-> in the thread, I think you were planning to block the wrong-bitness
-> syscall entries, but it's worth double-checking that you don't open up
-> a hole when a compat task issues the 64-bit syscall instruction.
+On Mon, Jan 16, 2012 at 08:55:59PM -0500, Paul Gortmaker wrote:
+> On Mon, Jan 16, 2012 at 1:44 PM, Greg KH <gregkh@suse.de> wrote:
+> > 3.1-stable review patch.  If anyone has any objections, please let me know.
+> 
+> This one looks like typical patch Makefile/Kconfig "oh, hey this fits anywhere"
+> nonsense, and is completely broken.  Original was for a Wiimote, not Wacom.
 
-Yup - I had to (see below).
+Ah, thanks for catching that, I missed it on the fuzz application.  I've
+removed it now from this tree, and the 3.0 tree.
 
-> (is_compat_task says whether the executable was marked as 32-bit.  The
-> actual execution mode is determined by the cs register, which the user
-> can control.  See the user_64bit_mode function in
-> arch/asm/x86/ptrace.h.  But maybe it would make more sense to have a
-> separate 32-bit and 64-bit BPF program and select which one to use
-> based on the entry point.)
-
-So that was my original design, but the problem was with how regviews
-decides on the user_regs_struct.  It decides using TIF_IA32 while I
-can only check the cross-arch is_compat_task() which checks TS_COMPAT
-on x86.  If I'm just collapsing registers for compat calls (which I am
-exploring the viability of right now), then I guess I could re-fork
-the filtering to support compat versus non-compat.  The nastier bits
-there were that I don't want to allow a compat call to be allowed
-because a process only defined non-compat. I think that can be made
-manage-able though.
-
-I'll finish proving out the possibilities here.
-
-Thanks!
-will
+greg k-h
