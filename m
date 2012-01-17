@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab2AQQEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 11:04:45 -0500
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:33585 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755111Ab2AQQEn (ORCPT
+	id S1755163Ab2AQQGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 11:06:21 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:40030 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755013Ab2AQQGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 11:04:43 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: YDqDQKwVM1lv9S2JCIzGrEhUBIVefDuENv7du9IRcnrcONV
- BxjqRYXawaQ1xPlM_XcUKbsnpE7oEGJKpSLOR.x.pLsDQTKOfRes75iJPjQz
- E5_O.dlp0QorCw2GFXxKhywjhmZD9.UVL4giKK2wmlHFwLvlPmBSLhTJ5fsM
- FDaTABOWAlTvanYjByJeoCZBW.7JyDA3L6GSyJZ9IDOvhrgsULEVhIOFcU_.
- xkSE3JhReCvTMpkiNB68zblSXYjmUsl0sIm4uCb2mtIs5dTfs1.GBaNR435Y
- q3DGyPQOXwdFihmzMeb10C_FAhKlnhpYwPQherHvfPiGTwpq.FQpDork0kba
- NpIzNE5TqvuL0mlpmk2vhU4q1GDrl.qbRkv4FAszvqPjf42yGB.cIwQOu9MP
- pJPamPnyQ1rNYuDtVM4qSntA.23XgVH2NVPsD
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 17 Jan 2012 10:04:38 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Hung task when calling clone() due to netfilter/slab
-In-Reply-To: <1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Message-ID: <alpine.DEB.2.00.1201170942240.4800@router.home>
-References: <1326558605.19951.7.camel@lappy>    <1326561043.5287.24.camel@edumazet-laptop>   <1326632384.11711.3.camel@lappy>  <1326648305.5287.78.camel@edumazet-laptop>   <alpine.DEB.2.00.1201170910130.4800@router.home>  <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-  <alpine.DEB.2.00.1201170927020.4800@router.home> <1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 17 Jan 2012 11:06:19 -0500
+X-Sasl-enc: pNMfXSeJlgeObs1slO5Kw8aPSE/8Mnr10vMdxnkW6Ccw 1326816379
+Date: Tue, 17 Jan 2012 08:03:35 -0800
+From: "greg@kroah.com" <greg@kroah.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "AnilKumar, Chimata" <anilkumar@ti.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+Subject: Re: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
+Message-ID: <20120117160335.GA27679@kroah.com>
+References: <1324617892-14576-1-git-send-email-anilkumar@ti.com>
+ <331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com>
+ <20120117105441.GC2944@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120117105441.GC2944@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jan 2012, Eric Dumazet wrote:
+On Tue, Jan 17, 2012 at 10:54:42AM +0000, Mark Brown wrote:
+> On Tue, Jan 17, 2012 at 07:32:47AM +0000, AnilKumar, Chimata wrote:
+> 
+> > Recalling the patch, provide the comments if there are any if not please include
+> > this patch to v3.3 kernel.
+> 
+> There's no way this is going to make it into the 3.3 kernel at this
+> point, we're almost at the end of the merge window.
 
-> Thanks !
->
-> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Agreed, the merge window is for subsystem maintainers, not everyone
+else.  I'll queue this up for review for after 3.3-rc1 is out.
 
-That may not be the end of it. Slub also calls sysfs from sysfs_add_alias
-while holding slub_lock.
+thanks,
 
-If sysfs allows user space stuff to run then you cannot really hold any
-locks. How is one supposed to sync adding pointers to sysfs structures in
-subsystems? Drop all locks and then recheck the memory structures after
-the sysfs function returns? Awkward.
-
-
+greg k-h
