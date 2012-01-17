@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab2AQJsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 04:48:11 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35787 "EHLO mx3.mail.elte.hu"
+	id S1752748Ab2AQJsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 04:48:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27480 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752413Ab2AQJsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 04:48:10 -0500
-Date: Tue, 17 Jan 2012 10:47:49 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 0/6] x86, UV2: BAU fixes for UV version 2
-Message-ID: <20120117094749.GE10397@elte.hu>
-References: <20120116211617.GD5512@sgi.com>
+	id S1752615Ab2AQJsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 04:48:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120116211617.GD5512@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <4F10B2EC.1010906@xenotime.net>
+References: <20120113155808.05431d23da358e37b19eee7c@canb.auug.org.au>
+	<4F10B2EC.1010906@xenotime.net>
+Date: Tue, 17 Jan 2012 11:48:44 +0200
+Message-ID: <CALLzPKbnjLmbV2WAiN85LOWC16kH1TZkwQQtgz+6PJDac56-AQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 13 (lib/digsig.c)
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Mimi Zohar <zohar@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jan 14, 2012 at 12:40 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 01/12/2012 08:58 PM, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20120112:
+>
+>
+> ERROR: "crypto_alloc_shash" [lib/digsig.ko] undefined!
+> ERROR: "crypto_shash_final" [lib/digsig.ko] undefined!
+> ERROR: "crypto_shash_update" [lib/digsig.ko] undefined!
+> ERROR: "crypto_destroy_tfm" [lib/digsig.ko] undefined!
+>
+Hi,
 
-* Cliff Wickman <cpw@sgi.com> wrote:
+I have done a fix and sent it to linux-security-modules mailing list...
 
-> Following are 6 patches for using SGI's Altix UV2's Broadcast 
-> Assist Unit for TLB shootdown.
-> 
-> The first 3 patches are very necessary to using the BAU on 
-> this new hardware.  Number 3 is a large one.
-
-Note that when patches are fixing hardware support it's better 
-to name them accordingly. I changed all the commit titles to 
-reflect this fact.
-
-I also added a Cc: stable backporting tag to the first three 
-commits, they only affect UV code and it's useful to have a 
-uniform hw platform driver across the stable kernels.
+[PATCH 2/4] lib: digital signature dependency fix
 
 Thanks,
+Dmitry
 
-	Ingo
+
+>
+> Full randconfig file is attached.
+>
+> --
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
