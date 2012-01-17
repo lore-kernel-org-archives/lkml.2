@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab2AQP0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 10:26:52 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:41341 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754613Ab2AQP0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 10:26:51 -0500
-Date: Tue, 17 Jan 2012 07:24:34 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun <dajun.chen@diasemi.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 00/07] DA9052 patch series
-Message-ID: <20120117152433.GA12653@ericsson.com>
-References: <1326806748.3542.338.camel@dhruva>
+	id S1754859Ab2AQP1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 10:27:38 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:29094 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754595Ab2AQP1g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 10:27:36 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: iOEJ550VM1n0mntCtH5_EknTYUTf47GeUHZFidWP2gS02Rl
+ XJgLuj5hQtg2VhcvVZ8rw73..8rV_bPbrjCL8ok_MAbnXeODnAtKcp9VyZXg
+ cxWUkln7DLUV0BOeTKIUqQnouYTgGOsiBA1paM.4MEVAQgysLCaOKfoAtHa0
+ xrB8kVwaoD0JWMQAa.IKNiTGfmkVyFXu4NPXKuQWw3N75mcgIbgqna4wNbju
+ C5kkcPvIN1iJztSYM.Pv0LoXeymCUB0LgvKDWhW4riOuCFE9hK4_srsmsf4C
+ jjxzW4pEKKNAvyUYoMjlNLqk00weXo0pHdfaxnHA46zXLbZmxwySv9o.d4qm
+ Qv1a3u6Ow6YvvC_TPRMUGEAPVSa.UpNZeTclXltLrDHE.V1jLFH3bxqn.h1J
+ cYUzfEPf1Yku8jVeKzMwDfV7kF493psP4iiQv
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 17 Jan 2012 09:27:31 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Hung task when calling clone() due to netfilter/slab
+In-Reply-To: <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Message-ID: <alpine.DEB.2.00.1201170927020.4800@router.home>
+References: <1326558605.19951.7.camel@lappy>   <1326561043.5287.24.camel@edumazet-laptop>  <1326632384.11711.3.camel@lappy> <1326648305.5287.78.camel@edumazet-laptop>  <alpine.DEB.2.00.1201170910130.4800@router.home>
+ <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1326806748.3542.338.camel@dhruva>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 08:25:48AM -0500, Ashish Jangam wrote:
-> The following patch series adds support for the features of Dialog Semiconductor
-> DA9052/53 PMICs.
-> 
-> The DA9052/53 PMICs support many functionalities like GPIOs, regulators,
-> power-supply, touchscreen, rtc, backlight, etc. So these patches are applicable
-> to different sub-systems of the kernel separately.
-> 
-> This patch series adds support for RTC, HWMON, Watchdog, Touch screen interface,
-> Backlight, LEDs and On-Key.
-> 
-> All of these patches depend on the MFD module for DA9052/53. There is no
-> other interdependence of patches.
-> 
-> Ashish Jangam (7):
-> 	[RTC]: RTC module of DA9052/53 PMICs with time and alarm support.
-> 	[HWMON]: Support for ADC of DA9052/53 PMICs.
-> 	[Watchdog]: Watchdog support for DA9052/53 PMICs.
-> 	[Touchscreen]: Driver for touch screen interface of DA9052/53 PMICs.
-> 	[Backlight]: Backlight module for DA9052/53 PMICs.
-> 	[LEDS]: Support for DA9052/53 LEDs.
-> 	[On-Key]: Support for DA9052/53 on-key.
-> 
-Where are the patches ? I see some of them on the kernel kernel mailing list,
-but not the hwmon driver.
+On Tue, 17 Jan 2012, Eric Dumazet wrote:
 
-Guenter
+> Buggy patch, since "goto err;" is going to up_write(&slub_lock) again.
+>
+> Also Christoph, you forgot to add the very much needed :
+>
+> Reported-by: Sasha Levin <levinsasha928@gmail.com>
+
+
+Subject: slub: Do not hold slub_lock when calling sysfs_slab_add()
+
+sysfs_slab_add() calls various sysfs functions that actually may
+end up in userspace doing all sorts of things.
+
+Release the slub_lock after adding the kmem_cache structure to the list.
+At that point the address of the kmem_cache is not known so we are
+guaranteed exlusive access to the following modifications to the
+kmem_cache structure.
+
+If the sysfs_slab_add fails then reacquire the slub_lock to
+remove the kmem_cache structure from the list.
+
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+---
+ mm/slub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2012-01-17 03:07:11.140010438 -0600
++++ linux-2.6/mm/slub.c	2012-01-17 03:26:06.799986908 -0600
+@@ -3929,13 +3929,14 @@ struct kmem_cache *kmem_cache_create(con
+ 		if (kmem_cache_open(s, n,
+ 				size, align, flags, ctor)) {
+ 			list_add(&s->list, &slab_caches);
++			up_write(&slub_lock);
+ 			if (sysfs_slab_add(s)) {
++				down_write(&slub_lock);
+ 				list_del(&s->list);
+ 				kfree(n);
+ 				kfree(s);
+ 				goto err;
+ 			}
+-			up_write(&slub_lock);
+ 			return s;
+ 		}
+ 		kfree(n);
