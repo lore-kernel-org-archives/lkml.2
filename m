@@ -1,100 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab2AQXM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 18:12:29 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38866 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756236Ab2AQXM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 18:12:28 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [Update][PATCH] PM / Hibernate: Fix s2disk regression related to unlock_system_sleep()
-Date: Wed, 18 Jan 2012 00:15:56 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201201172345.15010.rjw@sisk.pl>
-In-Reply-To: <201201172345.15010.rjw@sisk.pl>
+	id S1756328Ab2AQXPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 18:15:49 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17930 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756236Ab2AQXPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 18:15:48 -0500
+Message-ID: <4F160113.1030503@oracle.com>
+Date: Tue, 17 Jan 2012 15:15:31 -0800
+From: Tina Yang <tina.yang@oracle.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ian Campbell <Ian.Campbell@citrix.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gurudas.pai@oracle.com" <gurudas.pai@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH] add netconsole support for xen-netfront
+References: <1326271956-25565-1-git-send-email-zhenzhong.duan@oracle.com> <20120112141745.GA7685@phenom.dumpdata.com> <1326452769.17210.331.camel@zakaz.uk.xensource.com> <4F15EB3E.3060700@oracle.com> <20120117215100.GA25367@phenom.dumpdata.com>
+In-Reply-To: <20120117215100.GA25367@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201180015.56510.rjw@sisk.pl>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F16011E.0087,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Hibernate: Fix s2disk regression related to unlock_system_sleep()
+On 1/17/2012 1:51 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jan 17, 2012 at 01:42:22PM -0800, Tina Yang wrote:
+>> On 1/13/2012 3:06 AM, Ian Campbell wrote:
+>>> On Thu, 2012-01-12 at 14:17 +0000, Konrad Rzeszutek Wilk wrote:
+>>>> On Wed, Jan 11, 2012 at 04:52:36PM +0800, Zhenzhong Duan wrote:
+>>>>> add polling interface to xen-netfront device to support netconsole
+>>>>>
+>>>> Ian, any thoughts on the spinlock changes?
+>>> What are they for?
+>> When I did this patch back in 2008, both netconsole and netdump
+>> were supported.  Spin_lock w/o irqsave and irqrestore would cause
+>> netdump hang due to the unexpected change of the irq status.
+> Hm, that might have been due to the bug that was lurking in there since
+> 2.6.27: d198d499148a0c64a41b3aba9e7dd43772832b91 "xen: x86_32: do not enable iterrupts when returning from exception in interrupt context"
+Don't think so.  Btw, the (guest) kernels back then were el4 (2.6.9) and 
+el5 (2.6.18).
+>> Although netdump is now obsolete, I think it's always a good practice
+>> to preserve caller's irq status as we had a very bad experience
+>> chasing a similar problem caused by such a irq change in RDS
+> Did you find the culprit of it? Was there a patch for that in the
+> upstream kernel?
+Yes.  It has nothing to do with net drivers but same cause
+elsewhere in the kernel.
+>> in the not too long ago past.
+> OK, it sounds like it was issues in the past but might not be the
+> case anymore.
+>
+> Could please re-test it without that spinlock irqsave patch using
+> the upstream kernel (or just UEK2 since it is an 3.0 type kernel).
+Shouldn't be the case now, but don't know about the future.
+The fact is as long as there is a new caller that has the expectation
+of preserved irq status, it would be a problem.  As Ian said,
+some net drivers have been cautious in this regard already by
+saving/restoring the status, but apparently not everyone.
+> Thanks.
+>
+>>> At a guess they are a necessary consequence of the new calling context.
+>>> However not all the drivers I looked at which supported netpool were
+>>> using the irqsave variants in this context so I guess it must be some
+>>> secondary effect.
+>>>
+>>> Anyway, the upshot is that I think the changelog needs to explain the
+>>> rationale for the locking change.
+>>>
+>>> Ian.
+>>>
+>>>>> Signed-off-by: Tina.Yang<tina.yang@oracle.com>
+>>>>> Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
+>>>>> Cc: Jeremy Fitzhardinge<jeremy@goop.org>
+>>>>> Signed-off-by: Zhenzhong.Duan<zhenzhong.duan@oracle.com>
+>>>>> Tested-by: gurudas.pai<gurudas.pai@oracle.com>
+>>>>> ---
+>>>>>   drivers/net/xen-netfront.c |   57 ++++++++++++++++++++++++++-----------------
+>>>>>   1 files changed, 34 insertions(+), 23 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+>>>>> index fa67905..db638b4 100644
+>>>>> --- a/drivers/net/xen-netfront.c
+>>>>> +++ b/drivers/net/xen-netfront.c
+>>>>> @@ -489,6 +489,7 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>>>>>   	int frags = skb_shinfo(skb)->nr_frags;
+>>>>>   	unsigned int offset = offset_in_page(data);
+>>>>>   	unsigned int len = skb_headlen(skb);
+>>>>> +	unsigned long flags;
+>>>>>
+>>>>>   	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
+>>>>>   	if (unlikely(frags>   MAX_SKB_FRAGS + 1)) {
+>>>>> @@ -498,12 +499,12 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>>>>>   		goto drop;
+>>>>>   	}
+>>>>>
+>>>>> -	spin_lock_irq(&np->tx_lock);
+>>>>> +	spin_lock_irqsave(&np->tx_lock, flags);
+>>>>>
+>>>>>   	if (unlikely(!netif_carrier_ok(dev) ||
+>>>>>   		     (frags>   1&&   !xennet_can_sg(dev)) ||
+>>>>>   		     netif_needs_gso(skb, netif_skb_features(skb)))) {
+>>>>> -		spin_unlock_irq(&np->tx_lock);
+>>>>> +		spin_unlock_irqrestore(&np->tx_lock, flags);
+>>>>>   		goto drop;
+>>>>>   	}
+>>>>>
+>>>>> @@ -574,7 +575,7 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>>>>>   	if (!netfront_tx_slot_available(np))
+>>>>>   		netif_stop_queue(dev);
+>>>>>
+>>>>> -	spin_unlock_irq(&np->tx_lock);
+>>>>> +	spin_unlock_irqrestore(&np->tx_lock, flags);
+>>>>>
+>>>>>   	return NETDEV_TX_OK;
+>>>>>
+>>>>> @@ -1228,6 +1229,33 @@ static int xennet_set_features(struct net_device *dev,
+>>>>>   	return 0;
+>>>>>   }
+>>>>>
+>>>>> +static irqreturn_t xennet_interrupt(int irq, void *dev_id)
+>>>>> +{
+>>>>> +	struct net_device *dev = dev_id;
+>>>>> +	struct netfront_info *np = netdev_priv(dev);
+>>>>> +	unsigned long flags;
+>>>>> +
+>>>>> +	spin_lock_irqsave(&np->tx_lock, flags);
+>>>>> +
+>>>>> +	if (likely(netif_carrier_ok(dev))) {
+>>>>> +		xennet_tx_buf_gc(dev);
+>>>>> +		/* Under tx_lock: protects access to rx shared-ring indexes. */
+>>>>> +		if (RING_HAS_UNCONSUMED_RESPONSES(&np->rx))
+>>>>> +			napi_schedule(&np->napi);
+>>>>> +	}
+>>>>> +
+>>>>> +	spin_unlock_irqrestore(&np->tx_lock, flags);
+>>>>> +
+>>>>> +	return IRQ_HANDLED;
+>>>>> +}
+>>>>> +
+>>>>> +#ifdef CONFIG_NET_POLL_CONTROLLER
+>>>>> +static void xennet_poll_controller(struct net_device *dev)
+>>>>> +{
+>>>>> +	xennet_interrupt(0, dev);
+>>>>> +}
+>>>>> +#endif
+>>>>> +
+>>>>>   static const struct net_device_ops xennet_netdev_ops = {
+>>>>>   	.ndo_open            = xennet_open,
+>>>>>   	.ndo_uninit          = xennet_uninit,
+>>>>> @@ -1239,6 +1267,9 @@ static const struct net_device_ops xennet_netdev_ops = {
+>>>>>   	.ndo_validate_addr   = eth_validate_addr,
+>>>>>   	.ndo_fix_features    = xennet_fix_features,
+>>>>>   	.ndo_set_features    = xennet_set_features,
+>>>>> +#ifdef CONFIG_NET_POLL_CONTROLLER
+>>>>> +	.ndo_poll_controller = xennet_poll_controller,
+>>>>> +#endif
+>>>>>   };
+>>>>>
+>>>>>   static struct net_device * __devinit xennet_create_dev(struct xenbus_device *dev)
+>>>>> @@ -1448,26 +1479,6 @@ static int xen_net_read_mac(struct xenbus_device *dev, u8 mac[])
+>>>>>   	return 0;
+>>>>>   }
+>>>>>
+>>>>> -static irqreturn_t xennet_interrupt(int irq, void *dev_id)
+>>>>> -{
+>>>>> -	struct net_device *dev = dev_id;
+>>>>> -	struct netfront_info *np = netdev_priv(dev);
+>>>>> -	unsigned long flags;
+>>>>> -
+>>>>> -	spin_lock_irqsave(&np->tx_lock, flags);
+>>>>> -
+>>>>> -	if (likely(netif_carrier_ok(dev))) {
+>>>>> -		xennet_tx_buf_gc(dev);
+>>>>> -		/* Under tx_lock: protects access to rx shared-ring indexes. */
+>>>>> -		if (RING_HAS_UNCONSUMED_RESPONSES(&np->rx))
+>>>>> -			napi_schedule(&np->napi);
+>>>>> -	}
+>>>>> -
+>>>>> -	spin_unlock_irqrestore(&np->tx_lock, flags);
+>>>>> -
+>>>>> -	return IRQ_HANDLED;
+>>>>> -}
+>>>>> -
+>>>>>   static int setup_netfront(struct xenbus_device *dev, struct netfront_info *info)
+>>>>>   {
+>>>>>   	struct xen_netif_tx_sring *txs;
+>>>>> -- 
+>>>>> 1.7.3
 
-Commit bcda53faf5814c0c6025a0bd47108adfcbe9f199, "PM / Sleep: Replace
-mutex_[un]lock(&pm_mutex) with [un]lock_system_sleep()", modified
-snapshot_read() and snapshot_write() in kernel/power/user.c, among
-other things, by making them use lock_system_sleep() and
-unlock_system_sleep() instead of just locking and unlocking pm_mutex.
-Unfortunately, however, this was a mistake, because these routines
-are supposed to be executed after processes have been frozen
-(i.e. when system_freezing_cnt is nonzero), so when
-unlock_system_sleep() is executed by one of them, this causes the
-caller to execute try_to_freeze() and go into the refrigerator as
-a result.  This, in turn, deadlocks the suspend process and locks up
-the system.
-
-Fix the problem by reverting the part of commit bcda53faf5814c0c6025a
-that changed snapshot_read() and snapshot_write().
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
-
-Well, it wasn't a good idea to make snapshot_write() check
-system_freezing_cnt, because the resume process doesn't freeze tasks.
-So, it's better to simply revert the changes that introduced the
-original regression.
-
-Thanks,
-Rafael
-
----
- kernel/power/user.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux/kernel/power/user.c
-===================================================================
---- linux.orig/kernel/power/user.c
-+++ linux/kernel/power/user.c
-@@ -137,7 +137,7 @@ static ssize_t snapshot_read(struct file
- 	ssize_t res;
- 	loff_t pg_offp = *offp & ~PAGE_MASK;
- 
--	lock_system_sleep();
-+	mutex_lock(&pm_mutex);
- 
- 	data = filp->private_data;
- 	if (!data->ready) {
-@@ -158,7 +158,7 @@ static ssize_t snapshot_read(struct file
- 		*offp += res;
- 
-  Unlock:
--	unlock_system_sleep();
-+	mutex_unlock(&pm_mutex);
- 
- 	return res;
- }
-@@ -170,7 +170,7 @@ static ssize_t snapshot_write(struct fil
- 	ssize_t res;
- 	loff_t pg_offp = *offp & ~PAGE_MASK;
- 
--	lock_system_sleep();
-+	mutex_lock(&pm_mutex);
- 
- 	data = filp->private_data;
- 
-@@ -187,7 +187,7 @@ static ssize_t snapshot_write(struct fil
- 	if (res > 0)
- 		*offp += res;
- unlock:
--	unlock_system_sleep();
-+	mutex_unlock(&pm_mutex);
- 
- 	return res;
- }
