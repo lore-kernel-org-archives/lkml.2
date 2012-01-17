@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab2AQTbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 14:31:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46759 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753118Ab2AQTbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 14:31:13 -0500
-Message-ID: <4F15CC56.90309@redhat.com>
-Date: Tue, 17 Jan 2012 14:30:30 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1755466Ab2AQTc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 14:32:59 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18438 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab2AQTc6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 14:32:58 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 17 Jan 2012 11:32:38 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>
+CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Tue, 17 Jan 2012 11:32:37 -0800
+Subject: RE: Pinmux bindings proposal
+Thread-Topic: Pinmux bindings proposal
+Thread-Index: AczVIJuR6M6/OONiRKSQ5bBSGnP4VQALapVQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17801D22FA@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC6057885091DEA@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20120117082334.GA31295@S2101-09.ap.freescale.net>
+ <7FE21149F4667147B645348EC6057885092D56@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20120117141322.GA31687@S2101-09.ap.freescale.net>
+In-Reply-To: <20120117141322.GA31687@S2101-09.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC 1/3] /dev/low_mem_notify
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org> <1326788038-29141-2-git-send-email-minchan@kernel.org> <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com> <4F15A34F.40808@redhat.com> <alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-In-Reply-To: <alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 01:51 PM, Pekka Enberg wrote:
-> Hello,
+Shawn Guo wrote at Tuesday, January 17, 2012 7:13 AM:
+> On Tue, Jan 17, 2012 at 09:46:42AM +0000, Dong Aisheng-B29396 wrote:
+> ...
+> > I guess Stephen's idea is to retrieving the function name and group name
+> > From the pinctrl driver since Tagre prefers to define those things in driver
+> > Rather than in board file or soc.dts file.
+> > But it does not fit for IMX since we define it in soc.dts.
 >
-> Ok, so here's a proof of concept patch that implements sample-base
-> per-process free threshold VM event watching using perf-like syscall
-> ABI. I'd really like to see something like this that's much more
-> extensible and clean than the /dev based ABIs that people have proposed
-> so far.
+> Hmm, when he came up with this proposal and said it should work for
+> Tegra, I assume he plans to move those from Tegra pinctrl driver into
+> device tree.  Stephen?
 
-Looks like a nice extensible interface to me.
+I plan to have the following:
 
-The only thing is, I expect we will not want to wake
-up processes most of the time, when there is no memory
-pressure, because that would just waste battery power
-and/or cpu time that could be used for something else.
+tegra20.dtsi:
 
-The desire to avoid such wakeups makes it harder to
-wake up processes at arbitrary points set by the API.
+A regular device node for the pin controller, listing just the basic
+device tree properties: "compatible" and "regs".
 
-Another issue is that we might be running two programs
-on the system, each with a different threshold for
-"lets free some of my cache".  Say one program sets
-the threshold at 20% free/cache memory, the other
-program at 10%.
+${board}.dts:
 
-We could end up with the first process continually
-throwing away its caches, while the second process
-never gives its unused memory back to the kernel.
+Each device node lists its pin mux/config setup using the bindings we
+decide upon.
 
-I am not sure what the right thing to do would be...
+drivers/pinctrl/pinctrl-tegra20.c:
+
+Static tables listing all pins, pin groups, mux functions, and pin
+configuration options that Tegra supports.
 
 -- 
-All rights reversed
+nvpublic
+
