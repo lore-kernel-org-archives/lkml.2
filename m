@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab2AQTtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 14:49:15 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60491 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028Ab2AQTtO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 14:49:14 -0500
+	id S1755245Ab2AQTtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 14:49:33 -0500
+Received: from rere.qmqm.pl ([89.167.52.164]:49879 "EHLO rere.qmqm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028Ab2AQTtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 14:49:32 -0500
+X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 14:49:32 EST
+Date: Tue, 17 Jan 2012 20:39:10 +0100
+From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
+To: Joe Perches <joe@perches.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vsprintf: Prevent NULL dereference using %pNF
+Message-ID: <20120117193910.GA17092@rere.qmqm.pl>
+References: <1326825433.17202.6.camel@joe2Laptop>
+ <20120117.134640.1673981737109339596.davem@davemloft.net>
+ <1326826273.17202.11.camel@joe2Laptop>
 MIME-Version: 1.0
-In-Reply-To: <4F15CC56.90309@redhat.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-	<1326788038-29141-2-git-send-email-minchan@kernel.org>
-	<CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
-	<4F15A34F.40808@redhat.com>
-	<alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-	<4F15CC56.90309@redhat.com>
-Date: Tue, 17 Jan 2012 21:49:13 +0200
-X-Google-Sender-Auth: 4GQqt3sCe1EaknGfZT0cpcKpCSQ
-Message-ID: <CAOJsxLFzuvYm2pHZP--=nx3qGatzgfT6Dii49gzJwzxOtzniTg@mail.gmail.com>
-Subject: Re: [RFC 1/3] /dev/low_mem_notify
-From: Pekka Enberg <penberg@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1326826273.17202.11.camel@joe2Laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 9:30 PM, Rik van Riel <riel@redhat.com> wrote:
-> Looks like a nice extensible interface to me.
->
-> The only thing is, I expect we will not want to wake
-> up processes most of the time, when there is no memory
-> pressure, because that would just waste battery power
-> and/or cpu time that could be used for something else.
->
-> The desire to avoid such wakeups makes it harder to
-> wake up processes at arbitrary points set by the API.
+On Tue, Jan 17, 2012 at 10:51:13AM -0800, Joe Perches wrote:
+> On Tue, 2012-01-17 at 13:46 -0500, David Miller wrote:
+> > From: Joe Perches <joe@perches.com>
+> > Date: Tue, 17 Jan 2012 10:37:13 -0800
+> > > Passing NULL to %pNF is done in skb_gso_segment
+> > > which could be dereferenced.
+> > skb_gso_segment() should be fixed instead.
+> Maybe.  Dereferencing NULL is bad form.
+> Micha³ Miros³aw should fix that as it's his patch.
 
-Sure. You could either bump up the threshold or use Minchan's hooks - or both.
+Will do. This is in WARN() and easily fixed.
 
-On Tue, Jan 17, 2012 at 9:30 PM, Rik van Riel <riel@redhat.com> wrote:
-> Another issue is that we might be running two programs
-> on the system, each with a different threshold for
-> "lets free some of my cache".  Say one program sets
-> the threshold at 20% free/cache memory, the other
-> program at 10%.
->
-> We could end up with the first process continually
-> throwing away its caches, while the second process
-> never gives its unused memory back to the kernel.
->
-> I am not sure what the right thing to do would be...
+> noinline_for_stack should be added anyway.
 
-One option is to use per-process thresholds on RSS, for example, and
-also support system-wide thresholds.
+Why? There are no local variables there and inlining this function would
+actually save stack space as no stack frame would be created for the call.
 
-That said, I'd really like to see the N9 and Android policies
-supported with this ABI. It's much easier to make it generic once we
-support real-world use cases.
-
-                        Pekka
+Best Regards,
+Micha³ Miros³aw
