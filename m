@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab2AQMA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:00:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38599 "EHLO mx1.redhat.com"
+	id S1753447Ab2AQMBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:01:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35605 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753037Ab2AQMA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 07:00:27 -0500
-Date: Tue, 17 Jan 2012 09:55:58 -0200
+	id S1753142Ab2AQMA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 07:00:28 -0500
+Date: Tue, 17 Jan 2012 09:59:13 -0200
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: improve trace events of vmexit/mmio/ioport
-Message-ID: <20120117115558.GB17420@amt.cnet>
+Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
+Message-ID: <20120117115913.GC17420@amt.cnet>
 References: <4F13EE3D.2070602@linux.vnet.ibm.com>
- <4F13EE9B.9020901@linux.vnet.ibm.com>
- <4F13EFFB.90706@redhat.com>
- <4F14DCBB.3060207@linux.vnet.ibm.com>
+ <4F13EEC5.8050807@linux.vnet.ibm.com>
+ <CAJSP0QVxR9sYYh_Vr6ZKAU-YrWpjgL5jpiKz2zt7eJxV_kgaOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4F14DCBB.3060207@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJSP0QVxR9sYYh_Vr6ZKAU-YrWpjgL5jpiKz2zt7eJxV_kgaOg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 10:28:11AM +0800, Xiao Guangrong wrote:
-> On 01/16/2012 05:38 PM, Avi Kivity wrote:
+On Mon, Jan 16, 2012 at 10:08:40AM +0000, Stefan Hajnoczi wrote:
+> On Mon, Jan 16, 2012 at 9:32 AM, Xiao Guangrong
+> <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> > +DESCRIPTION
+> > +-----------
+> > +You can analyze some crucial events and statistics with this
+> > +'perf kvm-events' command.
 > 
-> > On 01/16/2012 11:32 AM, Xiao Guangrong wrote:
-> >> - trace vcpu_id for these events
-> > 
-> > We can infer the vcpu id from the kvm_entry tracepoints, no?
-> > 
+> This line is very general and does not explain which events/statistics
+> can be collected or how you can use that information.  I suggest
+> making this description more specific.  Explain that this subcommand
+> observers kvm.ko tracepoints and annotates/decodes them with
+> additional information (this is why I would use this command and not
+> raw perf record -e kvm:\*).
 > 
+> > +       { SVM_EXIT_MONITOR,                     "monitor" }, \
+> > +       { SVM_EXIT_MWAIT,                       "mwait" }, \
+> > +       { SVM_EXIT_XSETBV,                      "xsetbv" }, \
+> > +       { SVM_EXIT_NPF,                         "npf" }
 > 
-> Thanks for your review, Avi!
-> 
-> Hmm. i think it is hard to do since the vcpu thread can be scheduled
-> anytime, one example is as follow:
-> 
-> CPU 0
-> 
-> kvm_entry vcpu 0
-> ......
-> kvm_entry vcpu 1
-> ......
-> event1 occurs
-> ......
-> event2 occurs
-> 
-> It is hard to know the event belong to which kvm_entry?
-> 
-> >> - add kvm_mmio_done to trace the time when mmio/ioport emulation is completed
-> > 
-> > ditto?
-> > 
-> 
-> 
-> I think is ok to get the event end time by using kvm_entry.
-> 
-> > 
-> > Relying on the existing tracepoints will make the tool work on older
-> > kernels.
-> > 
-> 
-> 
-> We can drop all new events, but unfortunately, the information of the origin
-> tracepoints is not enough, at least vcpu_id need be traced in theses events
-> to match its events. Yes?
+> All this copy-paste could be avoided by sharing this stuff with the
+> arch/x86/kvm/ code.
 
-Yes, and if you don't add completed events, you'll have to use kvm_entry 
-whose collection adds a lot of overhead.
+Yes, same for KVM_MAX_VCPUS.
 
