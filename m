@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab2AQMWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 07:22:21 -0500
+	id S1753802Ab2AQMWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 07:22:25 -0500
 Received: from vms173005pub.verizon.net ([206.46.173.5]:56487 "EHLO
 	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab2AQMWP (ORCPT
+	with ESMTP id S1753646Ab2AQMWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 07:22:15 -0500
+	Tue, 17 Jan 2012 07:22:21 -0500
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Huang Ying <ying.huang@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 27/50] ACPI, APEI, Print resource errors in conventional format
-Date: Tue, 17 Jan 2012 07:21:19 -0500
-Message-id: <46b91e379f7180b482b789fbe615946d91e3a07f.1326802230.git.len.brown@intel.com>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 30/50] ACPI, APEI, Printk queued error record before panic
+Date: Tue, 17 Jan 2012 07:21:22 -0500
+Message-id: <46d12f0bcb17b2de89a059114349d472b7eb1783.1326802230.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.9.rc1
 In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
 References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
@@ -26,76 +25,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Huang Ying <ying.huang@intel.com>
 
-Use the normal %pR-like format for MMIO and I/O port ranges.
+Because printk is not safe inside NMI handler, the recoverable error
+records received in NMI handler will be queued to be printked in a
+delayed IRQ context via irq_work.  If a fatal error occurs after the
+recoverable error and before the irq_work processed, we lost a error
+report.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+To solve the issue, the queued error records are printked in NMI
+handler if system will go panic.
+
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/apei/apei-base.c |    8 ++++----
- drivers/acpi/apei/einj.c      |   11 ++++++-----
- 2 files changed, 10 insertions(+), 9 deletions(-)
+ drivers/acpi/apei/ghes.c |   53 ++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 44 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-index 6154036..3492896 100644
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -460,9 +460,9 @@ int apei_resources_request(struct apei_resources *resources,
- 				       desc);
- 		if (!r) {
- 			pr_err(APEI_PFX
--		"Can not request iomem region <%016llx-%016llx> for GARs.\n",
-+		"Can not request [mem %#010llx-%#010llx] for %s registers\n",
- 			       (unsigned long long)res->start,
--			       (unsigned long long)res->end);
-+			       (unsigned long long)res->end - 1, desc);
- 			res_bak = res;
- 			goto err_unmap_iomem;
- 		}
-@@ -472,9 +472,9 @@ int apei_resources_request(struct apei_resources *resources,
- 		r = request_region(res->start, res->end - res->start, desc);
- 		if (!r) {
- 			pr_err(APEI_PFX
--		"Can not request ioport region <%016llx-%016llx> for GARs.\n",
-+		"Can not request [io  %#06llx-%#06llx] for %s registers\n",
- 			       (unsigned long long)res->start,
--			       (unsigned long long)res->end);
-+			       (unsigned long long)res->end - 1, desc);
- 			res_bak = res;
- 			goto err_unmap_ioport;
- 		}
-diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
-index 589b96c..d253902 100644
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -209,9 +209,10 @@ static int __einj_error_trigger(u64 trigger_paddr)
- 			       "APEI EINJ Trigger Table");
- 	if (!r) {
- 		pr_err(EINJ_PFX
--	"Can not request iomem region <%016llx-%016llx> for Trigger table.\n",
-+	"Can not request [mem %#010llx-%#010llx] for Trigger table\n",
- 		       (unsigned long long)trigger_paddr,
--		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab));
-+		       (unsigned long long)trigger_paddr +
-+			    sizeof(*trigger_tab) - 1);
- 		goto out;
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index 9dcb2d8..aaf3609 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -740,26 +740,34 @@ static int ghes_notify_sci(struct notifier_block *this,
+ 	return ret;
+ }
+ 
++static struct llist_node *llist_nodes_reverse(struct llist_node *llnode)
++{
++	struct llist_node *next, *tail = NULL;
++
++	while (llnode) {
++		next = llnode->next;
++		llnode->next = tail;
++		tail = llnode;
++		llnode = next;
++	}
++
++	return tail;
++}
++
+ static void ghes_proc_in_irq(struct irq_work *irq_work)
+ {
+-	struct llist_node *llnode, *next, *tail = NULL;
++	struct llist_node *llnode, *next;
+ 	struct ghes_estatus_node *estatus_node;
+ 	struct acpi_hest_generic *generic;
+ 	struct acpi_hest_generic_status *estatus;
+ 	u32 len, node_len;
+ 
++	llnode = llist_del_all(&ghes_estatus_llist);
+ 	/*
+ 	 * Because the time order of estatus in list is reversed,
+ 	 * revert it back to proper order.
+ 	 */
+-	llnode = llist_del_all(&ghes_estatus_llist);
+-	while (llnode) {
+-		next = llnode->next;
+-		llnode->next = tail;
+-		tail = llnode;
+-		llnode = next;
+-	}
+-	llnode = tail;
++	llnode = llist_nodes_reverse(llnode);
+ 	while (llnode) {
+ 		next = llnode->next;
+ 		estatus_node = llist_entry(llnode, struct ghes_estatus_node,
+@@ -779,6 +787,32 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
  	}
- 	trigger_tab = ioremap_cache(trigger_paddr, sizeof(*trigger_tab));
-@@ -232,9 +233,9 @@ static int __einj_error_trigger(u64 trigger_paddr)
- 			       "APEI EINJ Trigger Table");
- 	if (!r) {
- 		pr_err(EINJ_PFX
--"Can not request iomem region <%016llx-%016llx> for Trigger Table Entry.\n",
--		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab),
--		       (unsigned long long)trigger_paddr + table_size);
-+"Can not request [mem %#010llx-%#010llx] for Trigger Table Entry\n",
-+		       (unsigned long long)trigger_paddr + sizeof(*trigger_tab),
-+		       (unsigned long long)trigger_paddr + table_size - 1);
- 		goto out_rel_header;
- 	}
- 	iounmap(trigger_tab);
+ }
+ 
++static void ghes_print_queued_estatus(void)
++{
++	struct llist_node *llnode;
++	struct ghes_estatus_node *estatus_node;
++	struct acpi_hest_generic *generic;
++	struct acpi_hest_generic_status *estatus;
++	u32 len, node_len;
++
++	llnode = llist_del_all(&ghes_estatus_llist);
++	/*
++	 * Because the time order of estatus in list is reversed,
++	 * revert it back to proper order.
++	 */
++	llnode = llist_nodes_reverse(llnode);
++	while (llnode) {
++		estatus_node = llist_entry(llnode, struct ghes_estatus_node,
++					   llnode);
++		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
++		len = apei_estatus_len(estatus);
++		node_len = GHES_ESTATUS_NODE_LEN(len);
++		generic = estatus_node->generic;
++		ghes_print_estatus(NULL, generic, estatus);
++		llnode = llnode->next;
++	}
++}
++
+ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
+ {
+ 	struct ghes *ghes, *ghes_global = NULL;
+@@ -804,6 +838,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
+ 
+ 	if (sev_global >= GHES_SEV_PANIC) {
+ 		oops_begin();
++		ghes_print_queued_estatus();
+ 		__ghes_print_estatus(KERN_EMERG, ghes_global->generic,
+ 				     ghes_global->estatus);
+ 		/* reboot to log the error! */
 -- 
 1.7.9.rc1
 
