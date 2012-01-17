@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab2AQHZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 02:25:24 -0500
-Received: from lo.gmane.org ([80.91.229.12]:52405 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459Ab2AQHZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 02:25:23 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH] perf: Fix broken build by rearranging some #includes
-Date: Tue, 17 Jan 2012 16:25:09 +0900
-Message-ID: <4F152255.4080409@gmail.com>
-References: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+	id S1752316Ab2AQHZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 02:25:49 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44931 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab2AQHZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 02:25:45 -0500
+X-AuditID: 9c93016f-b7c20ae000005067-36-4f152276263a
+Message-ID: <4F152276.2020403@lge.com>
+Date: Tue, 17 Jan 2012 16:25:42 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: David Daney <ddaney.cavm@gmail.com>
+CC: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Joerg Roedel <joerg.roedel@amd.com>, namhyung@gmail.com
-X-Gmane-NNTP-Posting-Host: 121.50.20.41
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+Subject: Re: [PATCH] perf: Fix broken build by rearranging some #includes
+References: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
 In-Reply-To: <1326765685-7686-1-git-send-email-ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, again
+Hi, again.
 
 2012-01-17 11:01 AM, David Daney wrote:
 > From: David Daney<david.daney@cavium.com>
@@ -71,4 +71,3 @@ to care about the ordering anymore.
 
 Thanks,
 Namhyung
-
