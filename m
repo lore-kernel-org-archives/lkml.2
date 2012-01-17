@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab2AQNWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 08:22:41 -0500
-Received: from vms173017pub.verizon.net ([206.46.173.17]:43865 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab2AQNWi (ORCPT
+	id S1754469Ab2AQNWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 08:22:45 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:43513 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439Ab2AQNWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 08:22:38 -0500
-X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 08:22:38 EST
+	Tue, 17 Jan 2012 08:22:43 -0500
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Cc: Lin Ming <ming.m.lin@intel.com>, stable@vger.kernel.org,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 47/50] ACPI: processor: fix acpi_get_cpuid for UP processor
-Date: Tue, 17 Jan 2012 07:21:39 -0500
-Message-id: <d640113fe80e45ebd4a5b420b220d3f6bf37f682.1326802230.git.len.brown@intel.com>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 25/50] ACPI, Add 64bit read/write support to atomicio on i386
+Date: Tue, 17 Jan 2012 07:21:17 -0500
+Message-id: <04c25997c97e57d95d1f5a7a6e5fff2411dbd48b.1326802230.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.9.rc1
 In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
 References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
@@ -27,73 +25,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
+From: Huang Ying <ying.huang@intel.com>
 
-For UP processor, it is likely that no _MAT method or MADT table defined.
-So currently acpi_get_cpuid(...) always return -1 for UP processor.
-This is wrong. It should return valid value for CPU0.
+There is no 64bit read/write support in ACPI atomicio because
+readq/writeq is used to implement 64bit read/write, but readq/writeq
+is not available on i386.  This patch implement 64bit read/write
+support in atomicio via two readl/writel.
 
-In the other hand, BIOS may define multiple CPU handles even for UP
-processor, for example
-
-        Scope (_PR)
-        {
-            Processor (CPU0, 0x00, 0x00000410, 0x06) {}
-            Processor (CPU1, 0x01, 0x00000410, 0x06) {}
-            Processor (CPU2, 0x02, 0x00000410, 0x06) {}
-            Processor (CPU3, 0x03, 0x00000410, 0x06) {}
-        }
-
-We should only return valid value for CPU0's acpi handle.
-And return invalid value for others.
-
-http://marc.info/?t=132329819900003&r=1&w=2
-
-Cc: stable@vger.kernel.org
-Reported-and-tested-by: wallak@free.fr
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/processor_core.c |   26 ++++++++++++++++++++++++--
- 1 files changed, 24 insertions(+), 2 deletions(-)
+ drivers/acpi/atomicio.c |   36 ++++++++++++++++++++++++++++++------
+ 1 files changed, 30 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-index 3a0428e..c850de4 100644
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@ -173,8 +173,30 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
- 	apic_id = map_mat_entry(handle, type, acpi_id);
- 	if (apic_id == -1)
- 		apic_id = map_madt_entry(type, acpi_id);
--	if (apic_id == -1)
--		return apic_id;
-+	if (apic_id == -1) {
-+		/*
-+		 * On UP processor, there is no _MAT or MADT table.
-+		 * So above apic_id is always set to -1.
-+		 *
-+		 * BIOS may define multiple CPU handles even for UP processor.
-+		 * For example,
-+		 *
-+		 * Scope (_PR)
-+                 * {
-+		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
-+		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
-+		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
-+		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
-+		 * }
-+		 *
-+		 * Ignores apic_id and always return 0 for CPU0's handle.
-+		 * Return -1 for other CPU's handle.
-+		 */
-+		if (acpi_id == 0)
-+			return acpi_id;
-+		else
-+			return apic_id;
-+	}
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+index cfc0cc1..1016f18 100644
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -260,6 +260,21 @@ int acpi_post_unmap_gar(struct acpi_generic_address *reg)
+ }
+ EXPORT_SYMBOL_GPL(acpi_post_unmap_gar);
  
- #ifdef CONFIG_SMP
- 	for_each_possible_cpu(i) {
++#ifdef readq
++static inline u64 read64(const volatile void __iomem *addr)
++{
++	return readq(addr);
++}
++#else
++static inline u64 read64(const volatile void __iomem *addr)
++{
++	u64 l, h;
++	l = readl(addr);
++	h = readl(addr+4);
++	return l | (h << 32);
++}
++#endif
++
+ /*
+  * Can be used in atomic (including NMI) or process context. RCU read
+  * lock can only be released after the IO memory area accessing.
+@@ -280,11 +295,9 @@ static int acpi_atomic_read_mem(u64 paddr, u64 *val, u32 width)
+ 	case 32:
+ 		*val = readl(addr);
+ 		break;
+-#ifdef readq
+ 	case 64:
+-		*val = readq(addr);
++		*val = read64(addr);
+ 		break;
+-#endif
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -293,6 +306,19 @@ static int acpi_atomic_read_mem(u64 paddr, u64 *val, u32 width)
+ 	return 0;
+ }
+ 
++#ifdef writeq
++static inline void write64(u64 val, volatile void __iomem *addr)
++{
++	writeq(val, addr);
++}
++#else
++static inline void write64(u64 val, volatile void __iomem *addr)
++{
++	writel(val, addr);
++	writel(val>>32, addr+4);
++}
++#endif
++
+ static int acpi_atomic_write_mem(u64 paddr, u64 val, u32 width)
+ {
+ 	void __iomem *addr;
+@@ -309,11 +335,9 @@ static int acpi_atomic_write_mem(u64 paddr, u64 val, u32 width)
+ 	case 32:
+ 		writel(val, addr);
+ 		break;
+-#ifdef writeq
+ 	case 64:
+-		writeq(val, addr);
++		write64(val, addr);
+ 		break;
+-#endif
+ 	default:
+ 		return -EINVAL;
+ 	}
 -- 
 1.7.9.rc1
 
