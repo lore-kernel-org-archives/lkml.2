@@ -1,65 +1,404 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab2AQNXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 08:23:53 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:60752 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754332Ab2AQNXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 08:23:50 -0500
-From: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: cesarb@cesarb.net, kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net,
-        penberg@kernel.org, aarcange@redhat.com, riel@redhat.com,
-        mel@csn.ul.ie, rientjes@google.com, dima@android.com, gregkh@suse.de,
-        rebecca@android.com, san@google.com, akpm@linux-foundation.org,
-        vesa.jaaskelainen@nokia.com
-Subject: [PATCH v2 1/2] Making si_swapinfo exportable
-Date: Tue, 17 Jan 2012 15:22:10 +0200
-Message-Id: <56cc3c5d40a8653b7d9bef856ff02d909b98f36f.1326803859.git.leonid.moiseichuk@nokia.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-In-Reply-To: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-References: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-References: <cover.1326803859.git.leonid.moiseichuk@nokia.com>
-X-Nokia-AV: Clean
+	id S1754516Ab2AQNYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 08:24:30 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:43144 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab2AQNWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 08:22:18 -0500
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 42/50] acpi/apei/einj: Add extensions to EINJ from rev 5.0 of
+ acpi spec
+Date: Tue, 17 Jan 2012 07:21:34 -0500
+Message-id: <b297da03b8fae74f7a46f64582880ef6ea744479.1326802230.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.9.rc1
+In-reply-to: <1326802902-21583-1-git-send-email-lenb@kernel.org>
+References: <1326802902-21583-1-git-send-email-lenb@kernel.org>
+In-reply-to: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
+References: <553575f1ae048aa44682b46b3c51929a0b3ad337.1326802228.git.len.brown@intel.com>
+Reply-to: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we will make si_swapinfo() exportable it could be called from modules.
-Otherwise modules have no interface to obtain information about swap usage.
-Change made in the same way as si_meminfo() declared.
+From: Tony Luck <tony.luck@intel.com>
 
-Signed-off-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
+ACPI 5.0 provides extensions to the EINJ mechanism to specify the
+target for the error injection - by APICID for cpu related errors,
+by address for memory related errors, and by segment/bus/device/function
+for PCIe related errors. Also extensions for vendor specific error
+injections.
+
+Tested-by: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- mm/swapfile.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ Documentation/acpi/apei/einj.txt |   43 ++++++--
+ drivers/acpi/apei/einj.c         |  217 +++++++++++++++++++++++++++++++------
+ include/acpi/actbl1.h            |    3 +-
+ 3 files changed, 215 insertions(+), 48 deletions(-)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index b1cd120..192cc25 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -5,10 +5,12 @@
-  *  Swap reorganised 29.12.95, Stephen Tweedie
-  */
+diff --git a/Documentation/acpi/apei/einj.txt b/Documentation/acpi/apei/einj.txt
+index 5cc699b..95a2b22 100644
+--- a/Documentation/acpi/apei/einj.txt
++++ b/Documentation/acpi/apei/einj.txt
+@@ -47,20 +47,41 @@ directory apei/einj. The following files are provided.
  
-+#include <linux/export.h>
- #include <linux/mm.h>
- #include <linux/hugetlb.h>
- #include <linux/mman.h>
- #include <linux/slab.h>
-+#include <linux/kernel.h>
- #include <linux/kernel_stat.h>
- #include <linux/swap.h>
- #include <linux/vmalloc.h>
-@@ -2177,6 +2179,7 @@ void si_swapinfo(struct sysinfo *val)
- 	val->totalswap = total_swap_pages + nr_to_be_unused;
- 	spin_unlock(&swap_lock);
- }
-+EXPORT_SYMBOL(si_swapinfo);
+ - param1
+   This file is used to set the first error parameter value. Effect of
+-  parameter depends on error_type specified. For memory error, this is
+-  physical memory address.  Only available if param_extension module
+-  parameter is specified.
++  parameter depends on error_type specified.
+ 
+ - param2
+   This file is used to set the second error parameter value. Effect of
+-  parameter depends on error_type specified. For memory error, this is
+-  physical memory address mask.  Only available if param_extension
+-  module parameter is specified.
++  parameter depends on error_type specified.
+ 
+-Injecting parameter support is a BIOS version specific extension, that
+-is, it only works on some BIOS version.  If you want to use it, please
+-make sure your BIOS version has the proper support and specify
+-"param_extension=y" in module parameter.
++BIOS versions based in the ACPI 4.0 specification have limited options
++to control where the errors are injected.  Your BIOS may support an
++extension (enabled with the param_extension=1 module parameter, or
++boot command line einj.param_extension=1). This allows the address
++and mask for memory injections to be specified by the param1 and
++param2 files in apei/einj.
++
++BIOS versions using the ACPI 5.0 specification have more control over
++the target of the injection. For processor related errors (type 0x1,
++0x2 and 0x4) the APICID of the target should be provided using the
++param1 file in apei/einj. For memory errors (type 0x8, 0x10 and 0x20)
++the address is set using param1 with a mask in param2 (0x0 is equivalent
++to all ones). For PCI express errors (type 0x80, 0x80 and 0x100) the
++segment, bus, device and function are specified using param1:
++
++         31     24 23    16 15    11 10      8  7        0
++	+-------------------------------------------------+
++	| segment |   bus  | device | function | reserved |
++	+-------------------------------------------------+
++
++An ACPI 5.0 BIOS may also allow vendor specific errors to be injected.
++In this case a file named vendor will contain identifying information
++from the BIOS that hopefully will allow an application wishing to use
++the vendor specific extension to tell that they are running on a BIOS
++that supports it. All vendor extensions have the 0x80000000 bit set in
++error_type. A file vendor_flags controls the interpretation of param1
++and param2 (1 = PROCESSOR, 2 = MEMORY, 4 = PCI). See your BIOS vendor
++documentation for details (and expect changes to this API if vendors
++creativity in using this feature expands beyond our expectations).
+ 
+ For more information about EINJ, please refer to ACPI specification
+-version 4.0, section 17.5.
++version 4.0, section 17.5 and ACPI 5.0, section 18.6.
+diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
+index 589b96c..1bc1f309 100644
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -43,6 +43,42 @@
+ #define FIRMWARE_TIMEOUT	(1 * NSEC_PER_MSEC)
  
  /*
-  * Verify that a swap entry is valid and increment its swap map count.
++ * ACPI version 5 provides a SET_ERROR_TYPE_WITH_ADDRESS action.
++ */
++static int acpi5;
++
++struct set_error_type_with_address {
++	u32	type;
++	u32	vendor_extension;
++	u32	flags;
++	u32	apicid;
++	u64	memory_address;
++	u64	memory_address_range;
++	u32	pcie_sbdf;
++};
++enum {
++	SETWA_FLAGS_APICID = 1,
++	SETWA_FLAGS_MEM = 2,
++	SETWA_FLAGS_PCIE_SBDF = 4,
++};
++
++/*
++ * Vendor extensions for platform specific operations
++ */
++struct vendor_error_type_extension {
++	u32	length;
++	u32	pcie_sbdf;
++	u16	vendor_id;
++	u16	device_id;
++	u8	rev_id;
++	u8	reserved[3];
++};
++
++static u32 vendor_flags;
++static struct debugfs_blob_wrapper vendor_blob;
++static char vendor_dev[64];
++
++/*
+  * Some BIOSes allow parameters to the SET_ERROR_TYPE entries in the
+  * EINJ table through an unpublished extension. Use with caution as
+  * most will ignore the parameter and make their own choice of address
+@@ -103,7 +139,7 @@ static struct apei_exec_ins_type einj_ins_type[] = {
+  */
+ static DEFINE_MUTEX(einj_mutex);
+ 
+-static struct einj_parameter *einj_param;
++static void *einj_param;
+ 
+ #ifndef writeq
+ static inline void writeq(__u64 val, volatile void __iomem *addr)
+@@ -158,10 +194,31 @@ static int einj_timedout(u64 *t)
+ 	return 0;
+ }
+ 
+-static u64 einj_get_parameter_address(void)
++static void check_vendor_extension(u64 paddr,
++				   struct set_error_type_with_address *v5param)
++{
++	int	offset = readl(&v5param->vendor_extension);
++	struct	vendor_error_type_extension *v;
++	u32	sbdf;
++
++	if (!offset)
++		return;
++	v = ioremap(paddr + offset, sizeof(*v));
++	if (!v)
++		return;
++	sbdf = readl(&v->pcie_sbdf);
++	sprintf(vendor_dev, "%x:%x:%x.%x vendor_id=%x device_id=%x rev_id=%x\n",
++		sbdf >> 24, (sbdf >> 16) & 0xff, (sbdf >> 11) & 0x1f, (sbdf >> 8) & 0x7,
++		 readw(&v->vendor_id), readw(&v->device_id),
++		readb(&v->rev_id));
++	iounmap(v);
++}
++
++static void *einj_get_parameter_address(void)
+ {
+ 	int i;
+-	u64 paddr = 0;
++	u64 paddrv4 = 0, paddrv5 = 0;
++	void *param;
+ 	struct acpi_whea_header *entry;
+ 
+ 	entry = EINJ_TAB_ENTRY(einj_tab);
+@@ -170,12 +227,40 @@ static u64 einj_get_parameter_address(void)
+ 		    entry->instruction == ACPI_EINJ_WRITE_REGISTER &&
+ 		    entry->register_region.space_id ==
+ 		    ACPI_ADR_SPACE_SYSTEM_MEMORY)
+-			memcpy(&paddr, &entry->register_region.address,
+-			       sizeof(paddr));
++			memcpy(&paddrv4, &entry->register_region.address,
++			       sizeof(paddrv4));
++		if (entry->action == ACPI_EINJ_SET_ERROR_TYPE_WITH_ADDRESS &&
++		    entry->instruction == ACPI_EINJ_WRITE_REGISTER &&
++		    entry->register_region.space_id ==
++		    ACPI_ADR_SPACE_SYSTEM_MEMORY)
++			memcpy(&paddrv5, &entry->register_region.address,
++			       sizeof(paddrv5));
+ 		entry++;
+ 	}
++	if (paddrv5) {
++		struct set_error_type_with_address *v5param;
++
++		v5param = ioremap(paddrv5, sizeof(*v5param));
++		if (v5param) {
++			acpi5 = 1;
++			check_vendor_extension(paddrv5, v5param);
++			return v5param;
++		}
++	}
++	if (paddrv4) {
++		struct einj_parameter *v4param;
++
++		v4param = ioremap(paddrv4, sizeof(*v4param));
++		if (!v4param)
++			return 0;
++		if (readq(&v4param->reserved1) || readq(&v4param->reserved2)) {
++			iounmap(param);
++			return 0;
++		}
++		return v4param;
++	}
+ 
+-	return paddr;
++	return 0;
+ }
+ 
+ /* do sanity check to trigger table */
+@@ -293,12 +378,56 @@ static int __einj_error_inject(u32 type, u64 param1, u64 param2)
+ 	if (rc)
+ 		return rc;
+ 	apei_exec_ctx_set_input(&ctx, type);
+-	rc = apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE);
+-	if (rc)
+-		return rc;
+-	if (einj_param) {
+-		writeq(param1, &einj_param->param1);
+-		writeq(param2, &einj_param->param2);
++	if (acpi5) {
++		struct set_error_type_with_address *v5param = einj_param;
++
++		writel(type, &v5param->type);
++		if (type & 0x80000000) {
++			switch (vendor_flags) {
++			case SETWA_FLAGS_APICID:
++				writel(param1, &v5param->apicid);
++				break;
++			case SETWA_FLAGS_MEM:
++				writeq(param1, &v5param->memory_address);
++				writeq(param2, &v5param->memory_address_range);
++				break;
++			case SETWA_FLAGS_PCIE_SBDF:
++				writel(param1, &v5param->pcie_sbdf);
++				break;
++			}
++			writel(vendor_flags, &v5param->flags);
++		} else {
++			switch (type) {
++			case ACPI_EINJ_PROCESSOR_CORRECTABLE:
++			case ACPI_EINJ_PROCESSOR_UNCORRECTABLE:
++			case ACPI_EINJ_PROCESSOR_FATAL:
++				writel(param1, &v5param->apicid);
++				writel(SETWA_FLAGS_APICID, &v5param->flags);
++				break;
++			case ACPI_EINJ_MEMORY_CORRECTABLE:
++			case ACPI_EINJ_MEMORY_UNCORRECTABLE:
++			case ACPI_EINJ_MEMORY_FATAL:
++				writeq(param1, &v5param->memory_address);
++				writeq(param2, &v5param->memory_address_range);
++				writel(SETWA_FLAGS_MEM, &v5param->flags);
++				break;
++			case ACPI_EINJ_PCIX_CORRECTABLE:
++			case ACPI_EINJ_PCIX_UNCORRECTABLE:
++			case ACPI_EINJ_PCIX_FATAL:
++				writel(param1, &v5param->pcie_sbdf);
++				writel(SETWA_FLAGS_PCIE_SBDF, &v5param->flags);
++				break;
++			}
++		}
++	} else {
++		rc = apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE);
++		if (rc)
++			return rc;
++		if (einj_param) {
++			struct einj_parameter *v4param = einj_param;
++			writeq(param1, &v4param->param1);
++			writeq(param2, &v4param->param2);
++		}
+ 	}
+ 	rc = apei_exec_run(&ctx, ACPI_EINJ_EXECUTE_OPERATION);
+ 	if (rc)
+@@ -408,15 +537,25 @@ static int error_type_set(void *data, u64 val)
+ {
+ 	int rc;
+ 	u32 available_error_type = 0;
++	u32 tval, vendor;
++
++	/*
++	 * Vendor defined types have 0x80000000 bit set, and
++	 * are not enumerated by ACPI_EINJ_GET_ERROR_TYPE
++	 */
++	vendor = val & 0x80000000;
++	tval = val & 0x7fffffff;
+ 
+ 	/* Only one error type can be specified */
+-	if (val & (val - 1))
+-		return -EINVAL;
+-	rc = einj_get_available_error_type(&available_error_type);
+-	if (rc)
+-		return rc;
+-	if (!(val & available_error_type))
++	if (tval & (tval - 1))
+ 		return -EINVAL;
++	if (!vendor) {
++		rc = einj_get_available_error_type(&available_error_type);
++		if (rc)
++			return rc;
++		if (!(val & available_error_type))
++			return -EINVAL;
++	}
+ 	error_type = val;
+ 
+ 	return 0;
+@@ -455,7 +594,6 @@ static int einj_check_table(struct acpi_table_einj *einj_tab)
+ static int __init einj_init(void)
+ {
+ 	int rc;
+-	u64 param_paddr;
+ 	acpi_status status;
+ 	struct dentry *fentry;
+ 	struct apei_exec_context ctx;
+@@ -509,23 +647,30 @@ static int __init einj_init(void)
+ 	rc = apei_exec_pre_map_gars(&ctx);
+ 	if (rc)
+ 		goto err_release;
+-	if (param_extension) {
+-		param_paddr = einj_get_parameter_address();
+-		if (param_paddr) {
+-			einj_param = ioremap(param_paddr, sizeof(*einj_param));
+-			rc = -ENOMEM;
+-			if (!einj_param)
+-				goto err_unmap;
+-			fentry = debugfs_create_x64("param1", S_IRUSR | S_IWUSR,
+-						    einj_debug_dir, &error_param1);
+-			if (!fentry)
+-				goto err_unmap;
+-			fentry = debugfs_create_x64("param2", S_IRUSR | S_IWUSR,
+-						    einj_debug_dir, &error_param2);
+-			if (!fentry)
+-				goto err_unmap;
+-		} else
+-			pr_warn(EINJ_PFX "Parameter extension is not supported.\n");
++
++	einj_param = einj_get_parameter_address();
++	if ((param_extension || acpi5) && einj_param) {
++		fentry = debugfs_create_x64("param1", S_IRUSR | S_IWUSR,
++					    einj_debug_dir, &error_param1);
++		if (!fentry)
++			goto err_unmap;
++		fentry = debugfs_create_x64("param2", S_IRUSR | S_IWUSR,
++					    einj_debug_dir, &error_param2);
++		if (!fentry)
++			goto err_unmap;
++	}
++
++	if (vendor_dev[0]) {
++		vendor_blob.data = vendor_dev;
++		vendor_blob.size = strlen(vendor_dev);
++		fentry = debugfs_create_blob("vendor", S_IRUSR,
++					     einj_debug_dir, &vendor_blob);
++		if (!fentry)
++			goto err_unmap;
++		fentry = debugfs_create_x32("vendor_flags", S_IRUSR | S_IWUSR,
++					    einj_debug_dir, &vendor_flags);
++		if (!fentry)
++			goto err_unmap;
+ 	}
+ 
+ 	pr_info(EINJ_PFX "Error INJection is initialized.\n");
+diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
+index 7504bc9..f25d7ef 100644
+--- a/include/acpi/actbl1.h
++++ b/include/acpi/actbl1.h
+@@ -228,7 +228,8 @@ enum acpi_einj_actions {
+ 	ACPI_EINJ_EXECUTE_OPERATION = 5,
+ 	ACPI_EINJ_CHECK_BUSY_STATUS = 6,
+ 	ACPI_EINJ_GET_COMMAND_STATUS = 7,
+-	ACPI_EINJ_ACTION_RESERVED = 8,	/* 8 and greater are reserved */
++	ACPI_EINJ_SET_ERROR_TYPE_WITH_ADDRESS = 8,
++	ACPI_EINJ_ACTION_RESERVED = 9,	/* 9 and greater are reserved */
+ 	ACPI_EINJ_TRIGGER_ERROR = 0xFF	/* Except for this value */
+ };
+ 
 -- 
-1.7.7.3
+1.7.9.rc1
 
