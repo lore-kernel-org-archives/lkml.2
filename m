@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab2AQKPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 05:15:40 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:37838 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab2AQKPh (ORCPT
+	id S1752904Ab2AQKUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 05:20:14 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:51901 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752413Ab2AQKUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 05:15:37 -0500
-Date: Tue, 17 Jan 2012 10:14:47 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Colin Walters <walters@verbum.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH 4/4] Allow unprivileged chroot when safe
-Message-ID: <20120117101447.GF7180@jl-vm1.vm.bytemark.co.uk>
-References: <cover.1326673414.git.luto@amacapital.net>
- <c4c1a0e710a50e48221aa28d2b60b486ab686369.1326673414.git.luto@amacapital.net>
- <1326741967.3467.8.camel@lenny>
+	Tue, 17 Jan 2012 05:20:12 -0500
+Message-ID: <4F154B3D.7050705@st.com>
+Date: Tue, 17 Jan 2012 15:49:41 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326741967.3467.8.camel@lenny>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>
+Subject: Re: [PATCH 8/8] dmaengine/dw_dmac: Add support for DMA_SLAVE_CONFIG
+References: <cover.1326707233.git.viresh.kumar@st.com> <7c1e6fd573d5cd348b22f8363c9960fe5efcd658.1326707233.git.viresh.kumar@st.com> <4F140D25.1000309@st.com> <CACRpkdbY7ZOwY6GR4t+GODYL4yAdH-PXExmwp84R+Gz2W19X7w@mail.gmail.com> <4F153C33.5060805@st.com>
+In-Reply-To: <4F153C33.5060805@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin Walters wrote:
-> On Sun, 2012-01-15 at 16:37 -0800, Andy Lutomirski wrote:
+On 1/17/2012 2:45 PM, Viresh Kumar wrote:
+> On 1/17/2012 2:19 PM, Linus Walleij wrote:
+>> > Are you looking for ffs() from <linus/bitops.h>?
+>> > 
+>> > find-first-set (the include boils down to include/asm-generic/bitops/ffs.h
+>> > if you want to check the implementation).
+> Thanks, but it might not solve the issue. :(
+> Actually this will retain the first Least Significant Bit (which is 1)
+> and will mark all other zero. So it will give output 0b10 for 0b110
 > 
-> > Because chroot is an easy way to break out of chroot jail, CAP_SYS_ADMIN
-> > is still required if the caller is already chrooted.
-> 
-> This part is pretty gross.  It means it won't work for stuff like
-> containers (systemd-nspawn etc.) and furthermore
 
-> I have plans that involve running OS trees inside a chroot, and this
-> would obviously not work for that.
+Oops!! I didn't looked at fls in the implementation. :(
+You are right. This will solve my issue.
 
-Indeed, I do run many of my machines inside a chroot.
-The real filesystem has:
-
-    /distro/that
-    /distro/newer
-    /distro/this
-
-instead of partitions.  I'm chroot'd and fully booted up in
-/distro/this, although I can see files in the others and I might run a
-few things from them as well.
-
-This isn't "userland chroot", it's the top level of the process tree:
-/distro/this/sbin/init.  It would be a shame if it behaved differently
-just because "it's a chroot".
-
--- Jamie
+-- 
+viresh
