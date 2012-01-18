@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab2ARC0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 21:26:14 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:36530 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756531Ab2ARC0M (ORCPT
+	id S1756689Ab2ARC0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 21:26:40 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64364 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756531Ab2ARC0j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 21:26:12 -0500
+	Tue, 17 Jan 2012 21:26:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120118022217.GS11715@one.firstfloor.org>
-References: <20120116183730.GB21112@redhat.com> <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
- <20120117164523.GA17070@redhat.com> <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
- <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
- <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
- <20120118022217.GS11715@one.firstfloor.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 17 Jan 2012 18:25:50 -0800
-X-Google-Sender-Auth: mLcoPIEh9B0s2I5g6WdrkJzSIt8
-Message-ID: <CAObL_7Hkq3LG++Y4E3h6LQgRiY89kHpgpX8-Vfdf9M0F-237yA@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jamie Lokier <jamie@shareable.org>, Indan Zupancic <indan@nul.nu>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
+In-Reply-To: <1326850253.22361.619.camel@sli10-conroe>
+References: <20120117201823.GD19223@redhat.com>
+	<20120117214834.GD26207@google.com>
+	<20120117220715.GB23527@redhat.com>
+	<CANejiEUfAxR-DFH+eRQUbmc1jKHSkcBP1RxuRQ-9JKLU=1Ds0w@mail.gmail.com>
+	<20120118010323.GA32160@htj.dyndns.org>
+	<CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com>
+	<20120118011112.GB32160@htj.dyndns.org>
+	<1326850253.22361.619.camel@sli10-conroe>
+Date: Wed, 18 Jan 2012 10:26:38 +0800
+X-Google-Sender-Auth: -KXtsZgJhx1SolOOX9aSfBgHP-U
+Message-ID: <CANejiEUE0ZNNf=t5dUTD8pTB5G3gAGAxkSRkvFomrh3Bm+dY=Q@mail.gmail.com>
+Subject: Re: Kernel crash in icq_free_icq_rcu
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 6:22 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> I'm pretty sure this isn't about changing cs or far jumps
+2012/1/18 Shaohua Li <shaohua.li@intel.com>:
+> On Tue, 2012-01-17 at 17:11 -0800, Tejun Heo wrote:
+>> On Wed, Jan 18, 2012 at 09:05:26AM +0800, Shaohua Li wrote:
+>> > > Vivek is seeing the problem while switching elevators.  Are you too?
+>> > > Or is it during normal operation?
+>> > same here. I had some problems when I debug my ioscheduler, but
+>> > eventually found even switching cfq and noop can trigger oops.
+>>
+>> Hmmm... maybe quiescing isn't working as expected and kmem cache is
+>> being destroyed with live icq's.  I'll try to reproduce it.
+> this debug patch seems to fix for me.
 >
-> He's assuming that code can only run on two code segments and
-> not arbitarily switch between them which is a completely incorrect
-> assumption.
-
-I think all he needs is to figure out which type of syscall was just
-intercepted.  (Obviously arguments in memory are a problem.)
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index e6c05a9..c6a8ef5 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -872,11 +872,11 @@ retry:
+>        spin_unlock_irq(q->queue_lock);
+>
+>        /* create icq if missing */
+> -       if (unlikely(et->icq_cache && !icq))
+> +       if (unlikely(et->icq_cache && !icq && (rw_flags & REQ_ELVPRIV)))
+>                icq = ioc_create_icq(q, gfp_mask);
+>
+>        /* rqs are guaranteed to have icq on elv_set_request() if requested */
+> -       if (likely(!et->icq_cache || icq))
+> +       if (likely(!et->icq_cache || icq || !(rw_flags & REQ_ELVPRIV)))
+>                rq = blk_alloc_request(q, icq, rw_flags, gfp_mask);
+>
+>        if (unlikely(!rq)) {
+this passed my test, but I didn't get reason why it can help ...
+blk_alloc_request doesn't use icq if REQ_ELVPRIV isn't set, so the code
+has problem for sure.
