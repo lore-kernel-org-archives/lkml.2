@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab2ARMNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 07:13:15 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:52543 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab2ARMNM (ORCPT
+	id S1753543Ab2ARMOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 07:14:21 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:53218 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2ARMOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 07:13:12 -0500
-Message-ID: <fbc1f44dffce6079fa7ec827c1b1e40e.squirrel@webmail.greenhost.nl>
-In-Reply-To: <CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com>
-References: <20120116183730.GB21112@redhat.com>
-    <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
-    <20120117164523.GA17070@redhat.com>
-    <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
-    <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
-    <20120117170512.GB17070@redhat.com>
-    <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
-    <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
-    <20120118015013.GR11715@one.firstfloor.org>
-    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
-    <20120118022217.GS11715@one.firstfloor.org>
-    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
-    <CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com>
-Date: Wed, 18 Jan 2012 13:12:42 +0100
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Chris Evans" <scarybeasts@gmail.com>
-Cc: "Andi Kleen" <andi@firstfloor.org>, "Jamie Lokier" <jamie@shareable.org>,
-        "Andrew Lutomirski" <luto@mit.edu>, "Oleg Nesterov" <oleg@redhat.com>,
-        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        "Roland McGrath" <mcgrathr@chromium.org>
-User-Agent: SquirrelMail/1.4.22
+	Wed, 18 Jan 2012 07:14:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Semwal, Sumit" <sumit.semwal@ti.com>
+Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
+Date: Wed, 18 Jan 2012 12:14:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
+Cc: Robert Morell <rmorell@nvidia.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, sumit.semwal@linaro.org,
+        airlied@linux.ie, dri-devel@lists.freedesktop.org
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie> <1326845297-6233-2-git-send-email-rmorell@nvidia.com> <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
+In-Reply-To: <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 1.4
-X-Scan-Signature: 0cb660a7d4ce909c6359c48b0bded22a
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201181214.12055.arnd@arndb.de>
+X-Provags-ID: V02:K0:yDp0vA3YeQMqH3oStXuVDeKb1zK31WVsZ6oD6Yw3UuB
+ aioa+KuFuB3sgMsKwAft6Tr/lpSVRmlO6oT+oD77QUTpYSOHQR
+ AEIPpYc9sxaz/5bsZ1riDzIOufn024VekMWy0enpGLxukKFCZm
+ 3LDJfaY0Ew935U4H+wJDPYN60lVoONydrzagr3THaWngc2gNVn
+ XAUIR4uO1n043UxIuUd74txy2CBu2eOze/lVhk8zuHaH9/IrIh
+ 0UbRcKHXqQCH+YN2Dzv4ExWlfab8v37I1fbPrhDhBdVIZ1Ke5/
+ Dpgff1UcneIHmlgn2z2d5aU/YWEkVX1A/rQohiclfyMaqa5/4+
+ fx3dpgWG+DGVrA8AUsws=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, January 18, 2012 06:43, Chris Evans wrote:
->> As far as I know, we fixed all races except symlink races caused by malicious
->> code outside the jail.
->
-> Are you sure? I've remembered possibly the worst one I encountered,
-> since my previous e-mail to Jamie:
->
-> 1) Tracee is compromised; executes fork() which is syscall that isn't allowed
+On Wednesday 18 January 2012, Semwal, Sumit wrote:
+> On Wed, Jan 18, 2012 at 5:38 AM, Robert Morell <rmorell@nvidia.com> wrote:
+> > EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
+> > issue, and not really an interface".  The dma-buf infrastructure is
+> > explicitly intended as an interface between modules/drivers, so it
+> > should use EXPORT_SYMBOL instead.
+> 
+> + Konrad, Arnd, Mauro: there were strong objections on using
+> EXPORT_SYMBOL in place of EXPORT_SYMBOL_GPL by all 3 of them; I
+> suggest we first arrive at a consensus before merging this patch.
 
-How do you mean compromised? Tracees aren't trusted by definition. And fork is
-allowed in our jail, we're ptracing all tasks within the jail.
+We discussed this before. The reason for using EXPORT_SYMBOL_GPL here is
+that the interface is low-level and that it's meant to be used by
+subsystems that export user-level interface based on that and come
+with their own device driver interface, such as V4L or DRM.
 
-> 2) Tracee traps
-> 2b) Tracee could take a SIGKILL here
-> 3) Tracer looks at registers; bad syscall
-> 3b) Or tracee could take a SIGKILL here
-> 4) The only way to stop the bad syscall from executing is to rewrite
-> orig_eax (PTRACE_CONT + SIGKILL only kills the process after the
-> syscall has finished)
+While there is an eternal debate over whether there should or should
+not be out of tree device drivers, I think there is very little to gain
+by allowing dma_buf to be used by out of tree *subsystems*.
+Further, a device driver that tries to use the interface but sits outside
+of the regular subsystems is a bad technical choice and we should not
+encourage those either.
 
-Yes, we rewrite it to -1.
+NAK
 
-> 5) Disaster: the tracee took a SIGKILL so any attempt to address it by
-> pid (such as PTRACE_SETREGS) fails.
-
-I assume that if a task can execute system calls and we get ptrace events
-for that, that we can do other ptrace operations too. Are you saying that
-the kernel has this ptrace gap between SIGKILL and task exit where ptrace
-doesn't work but the task continues executing system calls? That would be
-a huge bug, but it seems very unlikely too, as the task is stopped and
-shouldn't be able to disappear till it is continued by the tracer.
-
-I mean, really? That would be stupid.
-
-If true we have to work around it by disallowing SIGKILL and just sending
-them ourselves within the jail. Meh.
-
-> 6) Syscall fork() executes; possible unsupervised process now running
-> since the tracer wasn't expecting the fork() to be allowed.
-
-We use PTRACE_O_TRACEFORK (or replace it with clone and set CLONE_PTRACE
-for 2.4 kernels. Yes, I check for CLONE_UNTRACED in clone calls.)
-
->
-> All this ptrace() security headache is why vsftpd is waiting for
-> Will's seccomp enhancements to hit the kernel. Then they will be used
-> pronto.
-
-How will you avoid file path races with BPF?
-
-Greetings,
-
-Indan
-
-
+	Arnd
