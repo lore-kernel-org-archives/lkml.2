@@ -1,114 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab2ARHIZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 02:08:25 -0500
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:2906
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753311Ab2ARHIX (ORCPT
+	id S1756016Ab2ARHQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 02:16:41 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33927 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755444Ab2ARHQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 02:08:23 -0500
-X-SpamScore: 0
-X-BigFish: PS0(zzzz1202hzz8275bhz2fhc1ahc1bh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:207.46.4.139;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0602HT004.namprd06.prod.outlook.com;RD:none;EFVD:NLI
-Message-ID: <4F166FC9.8030906@ixiacom.com>
-Date: Tue, 17 Jan 2012 23:07:53 -0800
-From: Earl Chew <echew@ixiacom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 18 Jan 2012 02:16:40 -0500
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] Fix seq_file mishandling of consecutive pread() invocations.
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [216.23.154.50]
-X-MS-Exchange-CrossPremises-AuthSource: SN2PRD0602HT004.namprd06.prod.outlook.com
-X-MS-Exchange-CrossPremises-AuthAs: Internal
-X-MS-Exchange-CrossPremises-AuthMechanism: 06
-X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
-X-OrganizationHeadersPreserved: SN2PRD0602HT004.namprd06.prod.outlook.com
-X-OriginatorOrg: ixiacom.com
+In-Reply-To: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
+References: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
+Date: Wed, 18 Jan 2012 12:46:37 +0530
+Message-ID: <CAJuYYwT+pNdt6G07Gx7TqkpGBQEnmMGxsHSE2mew9qUjO-ES5Q@mail.gmail.com>
+Subject: Re: [PATCH v6] pinctrl: add a pin config interface
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following program illustrates the problem:
+Hi Linus,
 
-    char buf[8192];
+On 9 December 2011 17:27, Linus Walleij <linus.walleij@stericsson.com> wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+>
+> This add per-pin and per-group pin config interfaces for biasing,
+> driving and other such electronic properties. The details of passed
+> configurations are passed in an opaque unsigned long which may be
+> dereferences to integer types, structs or lists on either side
+> of the configuration interface.
 
-    int fd = open("/proc/self/maps", O_RDONLY);
+In case of runtime pinmuxing, the pin configuration would also be
+required to be setup in some cases. pin_config_set() is suitable to be
+called from the platform code. In case of runtime pinmuxing in driver
+code, is there any way to set the pin config also at runtime in driver
+code?
 
-    n = pread(fd, buf, sizeof(buf), 0);
-    printf("%d\n", n);
-
-    /* lseek(fd, 0, SEEK_CUR); */ /* Uncomment to work around */
-
-    n = pread(fd, buf, sizeof(buf), 0);
-    printf("%d\n", n);
-
-The second printf() prints zero, but uncommenting the lseek()
-corrects the behaviour of seq_file.
-
-To fix, make seq_read() mirror seq_lseek() when processing changes in *ppos.
-Restore m->version first, then if required traverse and update read_pos
-on success.
-
-Signed-off-by: Earl Chew <echew@ixiacom.com>
----
- fs/seq_file.c |   28 +++++++++++++++-------------
- 1 files changed, 15 insertions(+), 13 deletions(-)
-
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index dba43c3..7a45306 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -140,9 +140,21 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
- 
- 	mutex_lock(&m->lock);
- 
-+	/*
-+	 * seq_file->op->..m_start/m_stop/m_next may do special actions
-+	 * or optimisations based on the file->f_version, so we want to
-+	 * pass the file->f_version to those methods.
-+	 *
-+	 * seq_file->version is just copy of f_version, and seq_file
-+	 * methods can treat it simply as file version.
-+	 * It is copied in first and copied out after all operations.
-+	 * It is convenient to have it as  part of structure to avoid the
-+	 * need of passing another argument to all the seq_file methods.
-+	 */
-+	m->version = file->f_version;
-+
- 	/* Don't assume *ppos is where we left it */
- 	if (unlikely(*ppos != m->read_pos)) {
--		m->read_pos = *ppos;
- 		while ((err = traverse(m, *ppos)) == -EAGAIN)
- 			;
- 		if (err) {
-@@ -152,21 +164,11 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
- 			m->index = 0;
- 			m->count = 0;
- 			goto Done;
-+		} else {
-+			m->read_pos = *ppos;
- 		}
- 	}
- 
--	/*
--	 * seq_file->op->..m_start/m_stop/m_next may do special actions
--	 * or optimisations based on the file->f_version, so we want to
--	 * pass the file->f_version to those methods.
--	 *
--	 * seq_file->version is just copy of f_version, and seq_file
--	 * methods can treat it simply as file version.
--	 * It is copied in first and copied out after all operations.
--	 * It is convenient to have it as  part of structure to avoid the
--	 * need of passing another argument to all the seq_file methods.
--	 */
--	m->version = file->f_version;
- 	/* grab buffer if we didn't have one */
- 	if (!m->buf) {
- 		m->buf = kmalloc(m->size = PAGE_SIZE, GFP_KERNEL);
--- 
-1.7.0.4
-
-
-
+Thanks,
+Thomas.
