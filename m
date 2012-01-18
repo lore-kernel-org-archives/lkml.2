@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab2ARVY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 16:24:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:32828 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344Ab2ARVYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 16:24:25 -0500
-Message-ID: <4F1737C9.3070905@zytor.com>
-Date: Wed, 18 Jan 2012 13:21:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752434Ab2ARVZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 16:25:58 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48736 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab2ARVZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 16:25:57 -0500
+Date: Wed, 18 Jan 2012 14:25:55 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Milton Miller <miltonm@bga.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 06/14] irq_domain/powerpc: Eliminate virq_is_host()
+Message-ID: <20120118212555.GO4223@ponder.secretlab.ca>
+References: <1326313337-24603-7-git-send-email-grant.likely@secretlab.ca>
+ <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
+ <keep-irq-is-domain@mdm.bga.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-References: <20120116183730.GB21112@redhat.com> <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com> <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com> <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com> <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com> <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com> <4F1731C1.4050007@zytor.com> <CA+55aFwnvOxT_K7HFOkjCbfDtYkAVkvF+a7r-0=T6gga_x9t-g@mail.gma! il.com> <4F1733DF.7040905@zytor.com>
-In-Reply-To: <4F1733DF.7040905@zytor.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <keep-irq-is-domain@mdm.bga.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2012 01:04 PM, H. Peter Anvin wrote:
-> On 01/18/2012 01:01 PM, Linus Torvalds wrote:
->> On Wed, Jan 18, 2012 at 12:55 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>
->>> If we're going to use bits in an existing register field I would be
->>> happier if we used bits [31:16] of CS, which are unlikely to ever be
->>> used for anything.
->>
->> See my note about that: I would have preferred CS or ORIG_AX myself,
->> but that breaks existing binaries. So that isn't really an option.
->>
+Some more thoughts...
+
+On Thu, Jan 12, 2012 at 04:17:58AM -0600, Milton Miller wrote:
+> On Wed Jan 11 2012 about 15:24:34 EST, Grant Likely wrote:
+> > There is only one user, and it is trivial to open-code.
 > 
-> Fair enough.  Sigh.  I still think an actual pseudo-register would be
-> better.
+> I added virq_is_host because I had planned to change how we find the
+> host (domain) from a virq.
 > 
+> Instead of storing a pointer in irq_desc (a pointer for every irq),
+> I planned to use a NR_IRQ(+extra) bitmap per domain.  This should be
+> a win storage-wise when the number of irq controllers is less than the
+> number of bits in a long.
+> 
+> This would also convert scanning for a reverse map from walking every
+> irqdesc to walking find_next_bit over the irqs assigned to the host.
 
-Roland, could you refresh my memory what your objection to this was?
+>From my reading of the code, this should no long be a concern for
+anything except the radix revmap.  Only the radix revmap has the song
+and dance about deferring allocation of the revmap.  The linear map in
+immediately allocated and should always be available for mapping.
 
-	-hpa
+The only exception I could imagine is a linear hwirq mapping for a
+hwirq number higher than the size of the revmap, but I don't think
+that the code supports.  As you mention below, it should be possible
+to remove the fallback to linear search entirely.
 
+> Thus my rule was "code outside kernel/irq must not touch domain";
+> both the contents and how it was associated were abstracted.
+
+Good rule.  I'll consider this.
+
+> Other planned changes included splitting the reverse lookup into
+> domain dependent pieces, creating the ida for sparse map at domain
+> creation time (init irq is after radix_tree_init as its used by the
+> current irq code) so we never fall back to linear search.  Linear
+> populated the reverse map as the irq was assigned, and changed to
+> a seperate subtype if it mapped an irq above the map size.
+
+I don't think it's worthwhile to handle corner cases like irq above
+the map size in the linear map.  If that actually happens, then the
+driver should probably switch to the tree revmap.
+
+> 
+> I thought some of the domains would be split into seperate files
+> selected by Kconfig, at least the sparse tree.
+
+I might do that, we'll see how the file looks when I'm done.
+
+g.
