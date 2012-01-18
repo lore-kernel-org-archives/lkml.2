@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab2ARJQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:16:38 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:36551 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756784Ab2ARJMy (ORCPT
+	id S932124Ab2ARJRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:17:13 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:56226 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756837Ab2ARJMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:12:54 -0500
+	Wed, 18 Jan 2012 04:12:51 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
 Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
@@ -21,185 +21,88 @@ Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
         <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH V2 07/12] dmaengine/dw_dmac: Don't handle block interrupts
-Date: Wed, 18 Jan 2012 14:41:54 +0530
-Message-ID: <50c41dcc65d41022547819f17f8b9b2d5ce38e1a.1326876464.git.viresh.kumar@st.com>
+Subject: [PATCH V2 00/12] dmaengine: Pl08x and dw_dmac updates
+Date: Wed, 18 Jan 2012 14:41:47 +0530
+Message-ID: <cover.1326876464.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.8.110.g4cb5d
-In-Reply-To: <cover.1326876464.git.viresh.kumar@st.com>
-References: <cover.1326876464.git.viresh.kumar@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Block interrupts give interrupt on completion of every LLI, which is actually
-too much interrupts. This is just not required for current functioning of
-dw_dmac.
+Hi Vinod/Dan,
 
-So, just don't handle them at all.
+This patchset does following:
+- Includes earlier patchset sent by Rajeev for cleanly applying this patchset
+- Adds device_fc (device flow control) field in struct DMA_SLAVE_CONFIG
+- Fixes existing users of DMAENGINE for device_fc.
+- Updates pl08x driver according to that
+- Fixes few issues/bugs in dw_dmac driver
+- Adds DMA_SLAVE_CONFIG for dw_dmac driver
+- Fixes existing users of dw_dmac driver
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/dw_dmac.c |   36 ++++++------------------------------
- 1 files changed, 6 insertions(+), 30 deletions(-)
+Change History:
+Since V1:
+- used dev_get_platdata() instead of platform_get_drvdata(), as that was
+  incorrect
+- Lots of fixes in: dmaengine/dw_dmac: Add support for DMA_SLAVE_CONFIG
+- Additional patches:
+	- dmaengine/dw_dmac: Add 64 bit access width support for slave xfers on
+	  mem side
+	- Fix other kernel driver for device_fc and dw_dmac changes.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index f3aecb3..5d7b199 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -192,7 +192,6 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
- 
- 	/* Enable interrupts */
- 	channel_set_bit(dw, MASK.XFER, dwc->mask);
--	channel_set_bit(dw, MASK.BLOCK, dwc->mask);
- 	channel_set_bit(dw, MASK.ERROR, dwc->mask);
- 
- 	dwc->initialized = true;
-@@ -329,12 +328,6 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&dwc->lock, flags);
--	/*
--	 * Clear block interrupt flag before scanning so that we don't
--	 * miss any, and read LLP before RAW_XFER to ensure it is
--	 * valid if we decide to scan the list.
--	 */
--	dma_writel(dw, CLEAR.BLOCK, dwc->mask);
- 	llp = channel_readl(dwc, LLP);
- 	status_xfer = dma_readl(dw, RAW.XFER);
- 
-@@ -470,17 +463,16 @@ EXPORT_SYMBOL(dw_dma_get_dst_addr);
- 
- /* called with dwc->lock held and all DMAC interrupts disabled */
- static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
--		u32 status_block, u32 status_err, u32 status_xfer)
-+		u32 status_err, u32 status_xfer)
- {
- 	unsigned long flags;
- 
--	if (status_block & dwc->mask) {
-+	if (dwc->mask) {
- 		void (*callback)(void *param);
- 		void *callback_param;
- 
- 		dev_vdbg(chan2dev(&dwc->chan), "new cyclic period llp 0x%08x\n",
- 				channel_readl(dwc, LLP));
--		dma_writel(dw, CLEAR.BLOCK, dwc->mask);
- 
- 		callback = dwc->cdesc->period_callback;
- 		callback_param = dwc->cdesc->period_callback_param;
-@@ -520,7 +512,6 @@ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
- 		channel_writel(dwc, CTL_LO, 0);
- 		channel_writel(dwc, CTL_HI, 0);
- 
--		dma_writel(dw, CLEAR.BLOCK, dwc->mask);
- 		dma_writel(dw, CLEAR.ERROR, dwc->mask);
- 		dma_writel(dw, CLEAR.XFER, dwc->mask);
- 
-@@ -537,36 +528,29 @@ static void dw_dma_tasklet(unsigned long data)
- {
- 	struct dw_dma *dw = (struct dw_dma *)data;
- 	struct dw_dma_chan *dwc;
--	u32 status_block;
- 	u32 status_xfer;
- 	u32 status_err;
- 	int i;
- 
--	status_block = dma_readl(dw, RAW.BLOCK);
- 	status_xfer = dma_readl(dw, RAW.XFER);
- 	status_err = dma_readl(dw, RAW.ERROR);
- 
--	dev_vdbg(dw->dma.dev, "tasklet: status_block=%x status_err=%x\n",
--			status_block, status_err);
-+	dev_vdbg(dw->dma.dev, "tasklet: status_err=%x\n", status_err);
- 
- 	for (i = 0; i < dw->dma.chancnt; i++) {
- 		dwc = &dw->chan[i];
- 		if (test_bit(DW_DMA_IS_CYCLIC, &dwc->flags))
--			dwc_handle_cyclic(dw, dwc, status_block, status_err,
--					status_xfer);
-+			dwc_handle_cyclic(dw, dwc, status_err, status_xfer);
- 		else if (status_err & (1 << i))
- 			dwc_handle_error(dw, dwc);
--		else if ((status_block | status_xfer) & (1 << i))
-+		else if (status_xfer & (1 << i))
- 			dwc_scan_descriptors(dw, dwc);
- 	}
- 
- 	/*
--	 * Re-enable interrupts. Block Complete interrupts are only
--	 * enabled if the INT_EN bit in the descriptor is set. This
--	 * will trigger a scan before the whole list is done.
-+	 * Re-enable interrupts.
- 	 */
- 	channel_set_bit(dw, MASK.XFER, dw->all_chan_mask);
--	channel_set_bit(dw, MASK.BLOCK, dw->all_chan_mask);
- 	channel_set_bit(dw, MASK.ERROR, dw->all_chan_mask);
- }
- 
-@@ -583,7 +567,6 @@ static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
- 	 * softirq handler.
- 	 */
- 	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
--	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
- 	channel_clear_bit(dw, MASK.ERROR, dw->all_chan_mask);
- 
- 	status = dma_readl(dw, STATUS_INT);
-@@ -594,7 +577,6 @@ static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
- 
- 		/* Try to recover */
- 		channel_clear_bit(dw, MASK.XFER, (1 << 8) - 1);
--		channel_clear_bit(dw, MASK.BLOCK, (1 << 8) - 1);
- 		channel_clear_bit(dw, MASK.SRC_TRAN, (1 << 8) - 1);
- 		channel_clear_bit(dw, MASK.DST_TRAN, (1 << 8) - 1);
- 		channel_clear_bit(dw, MASK.ERROR, (1 << 8) - 1);
-@@ -1068,7 +1050,6 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
- 
- 	/* Disable interrupts */
- 	channel_clear_bit(dw, MASK.XFER, dwc->mask);
--	channel_clear_bit(dw, MASK.BLOCK, dwc->mask);
- 	channel_clear_bit(dw, MASK.ERROR, dwc->mask);
- 
- 	spin_unlock_irqrestore(&dwc->lock, flags);
-@@ -1120,7 +1101,6 @@ int dw_dma_cyclic_start(struct dma_chan *chan)
- 		return -EBUSY;
- 	}
- 
--	dma_writel(dw, CLEAR.BLOCK, dwc->mask);
- 	dma_writel(dw, CLEAR.ERROR, dwc->mask);
- 	dma_writel(dw, CLEAR.XFER, dwc->mask);
- 
-@@ -1322,7 +1302,6 @@ void dw_dma_cyclic_free(struct dma_chan *chan)
- 	while (dma_readl(dw, CH_EN) & dwc->mask)
- 		cpu_relax();
- 
--	dma_writel(dw, CLEAR.BLOCK, dwc->mask);
- 	dma_writel(dw, CLEAR.ERROR, dwc->mask);
- 	dma_writel(dw, CLEAR.XFER, dwc->mask);
- 
-@@ -1347,7 +1326,6 @@ static void dw_dma_off(struct dw_dma *dw)
- 	dma_writel(dw, CFG, 0);
- 
- 	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
--	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
- 	channel_clear_bit(dw, MASK.SRC_TRAN, dw->all_chan_mask);
- 	channel_clear_bit(dw, MASK.DST_TRAN, dw->all_chan_mask);
- 	channel_clear_bit(dw, MASK.ERROR, dw->all_chan_mask);
-@@ -1449,13 +1427,11 @@ static int __init dw_probe(struct platform_device *pdev)
- 
- 	/* Clear/disable all interrupts on all channels. */
- 	dma_writel(dw, CLEAR.XFER, dw->all_chan_mask);
--	dma_writel(dw, CLEAR.BLOCK, dw->all_chan_mask);
- 	dma_writel(dw, CLEAR.SRC_TRAN, dw->all_chan_mask);
- 	dma_writel(dw, CLEAR.DST_TRAN, dw->all_chan_mask);
- 	dma_writel(dw, CLEAR.ERROR, dw->all_chan_mask);
- 
- 	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
--	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
- 	channel_clear_bit(dw, MASK.SRC_TRAN, dw->all_chan_mask);
- 	channel_clear_bit(dw, MASK.DST_TRAN, dw->all_chan_mask);
- 	channel_clear_bit(dw, MASK.ERROR, dw->all_chan_mask);
+Rebased-on:
+
+commit 3506c0d507144d9b0f19efd5a56d289f70611179
+Author: Tushar Behera <tushar.behera@linaro.org>
+Date:   Tue Dec 6 16:15:54 2011 +0530
+
+    DMA: PL330: Remove pm_runtime_xxx calls from pl330 probe/remove
+    
+
+Rajeev KUMAR (1):
+  dmaengine/dw_dmac: Hibernation support in dw_dmac
+
+Viresh Kumar (11):
+  dmaengine: Add flow controller information to dma_slave_config
+  dmaengine: Pass dma_slave_config .device_fc = NULL for all existing
+    users
+  dmaengine/amba-pl08x: Take flow controller info from DMA_SLAVE_CONFIG
+  dmaengine/dw_dmac: Don't use magic number for total number of
+    channels
+  dmaengine/dw_dmac: Use dev_get_platdata() instead of accessing dev
+    directly
+  dmaengine/dw_dmac: Don't handle block interrupts
+  dmaengine/dw_dmac: Unmap all memory buffers after completion of slave
+    transfers
+  dmaengine/dw_dmac: Add 64 bit access width support for slave xfers on
+    mem side
+  dmaengine/dw_dmac: Add support for DMA_SLAVE_CONFIG
+  dmaengine/dw_dmac: Fix dw_dmac user drivers to adapt to slave_config
+    changes
+  dmaengine/dw_dmac: Remove unused fields in struct dw_dma_slave
+
+ arch/avr32/mach-at32ap/at32ap700x.c             |   13 --
+ arch/avr32/mach-at32ap/include/mach/atmel-mci.h |    7 -
+ drivers/dma/amba-pl08x.c                        |    4 +-
+ drivers/dma/dw_dmac.c                           |  232 +++++++++++++++--------
+ drivers/dma/dw_dmac_regs.h                      |   15 ++
+ drivers/mmc/host/atmel-mci.c                    |   24 ++-
+ drivers/mmc/host/mmci.c                         |    2 +
+ drivers/mmc/host/mxcmmc.c                       |    2 +
+ drivers/spi/spi-dw-mid.c                        |    3 +
+ drivers/spi/spi-pl022.c                         |    2 +
+ drivers/tty/serial/amba-pl011.c                 |    3 +
+ drivers/usb/musb/ux500_dma.c                    |    1 +
+ include/linux/amba/pl08x.h                      |    8 +-
+ include/linux/dmaengine.h                       |    5 +
+ include/linux/dw_dmac.h                         |   38 ----
+ sound/atmel/abdac.c                             |   18 ++-
+ sound/atmel/ac97c.c                             |   41 ++++-
+ sound/soc/imx/imx-pcm-dma-mx2.c                 |    3 +
+ 18 files changed, 255 insertions(+), 166 deletions(-)
+
 -- 
 1.7.8.110.g4cb5d
 
