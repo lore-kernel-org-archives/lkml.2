@@ -1,545 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab2AREiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 23:38:46 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39494 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756861Ab2AREip convert rfc822-to-8bit (ORCPT
+	id S1757085Ab2AREnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 23:43:22 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:33587 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab2AREnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 23:38:45 -0500
+	Tue, 17 Jan 2012 23:43:21 -0500
+X-Greylist: delayed 170404 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 23:43:21 EST
+X-AuditID: b753bd60-98392ba000007b1b-4b-4f164de639ff
+X-AuditID: b753bd60-98392ba000007b1b-4b-4f164de639ff
+Message-ID: <4F164DDA.1040507@hitachi.com>
+Date: Wed, 18 Jan 2012 13:43:06 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <d65770456424301eb0537673e4eba48b.squirrel@webmail.greenhost.nl>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	<1326302710-9427-2-git-send-email-wad@chromium.org>
-	<20120112162231.GA23960@redhat.com>
-	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
-	<20120112172315.GA26295@redhat.com>
-	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
-	<addf0ca0d9cc381436209af3afdf878f.squirrel@webmail.greenhost.nl>
-	<CABqD9hbBu8cEbArJWhSr-exFUDrnLSXskP1RrTATBczH2MYzFA@mail.gmail.com>
-	<293e9587acd158b91d7d1793c7e16f7c.squirrel@webmail.greenhost.nl>
-	<CABqD9hY2Uhc2Gzy05+Q+_NrZAq+126+avAO0Kd81zDnEi3EXjQ@mail.gmail.com>
-	<9642e1197443efe9716f418c4883489e.squirrel@webmail.greenhost.nl>
-	<CABqD9haQq1a+36ZKn1y7S-RYDo+KQs0rKxH9iN1FBbQsbAL+TA@mail.gmail.com>
-	<d65770456424301eb0537673e4eba48b.squirrel@webmail.greenhost.nl>
-Date: Tue, 17 Jan 2012 22:38:42 -0600
-Message-ID: <CABqD9hYBxyD9VznqBo77px_f_7+TCY18bza7Byy4NiwAp+NRJA@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip v4 1/5] perf-script: unify the expressions indicate
+ "unknown"
+References: <20120116052146.2485.48349.stgit@linux3> <20120116052210.2485.80894.stgit@linux3> <20120117154902.GA15820@infradead.org>
+In-Reply-To: <20120117154902.GA15820@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 10:06 PM, Indan Zupancic <indan@nul.nu> wrote:
-> Hello,
+(2012/01/18 0:49), Arnaldo Carvalho de Melo wrote:
+> Em Mon, Jan 16, 2012 at 02:22:10PM +0900, Akihiro Nagai escreveu:
+>> perf-script uses various expressions to indicate "unknown".
+>> It is unfriendly for user scripts to parse it. So, this patch unifies
+>> the expressions to "[unknown]".
 >
-> I'll try to reduce the vebrosity level a bit, for everyone's sake.
-
-Me too - I wasn't speaking just about your verbosity level :)
-
-> On Tue, January 17, 2012 18:37, Will Drewry wrote:
->>> If BPF is always 32 bits and people have to deal with the 64 bit pain
->>> anyway, you can as well have one fixed ABI that is always the same and
->>> cross-platform by just making the arguments always 64 bit, with lower
->>> and upper halves in a fixed order to avoid endianness problems. This
->>> would be compat and future safe.
->>
->> What happens if unsigned long is no longer 64-bit in some distant future?
+>> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+>> @@ -118,6 +118,7 @@ void map__delete(struct map *self);
+>>   size_t map__fprintf(struct map *self, FILE *fp);
+>> +void map__print_dsoname(struct map *self);
 >
-> It won't matter, because unsigned long is not used directly and system calls
-> will stay 64 bit anyway.
+> See map__fprintf(), everything that is for printing to a file like
+> output has that form: last paramenter is a FILE pointer, then users do:
 >
-> Besides that, I don't think unsigned long will ever be bigger than 64-bit.
-> And if it did, by that time, we can only hope that BPF has gained 64-bit
-> support and hence a new ABI.
-
-There is a BPF major and minor number exported from linux/filter.h so
-it's possible to add BPF instructions without needing to change the
-data layout, but yeah - anything beyond 64-bit is stretching it at
-this point I guess.
-
->> As to endianness, fixed endianess means that userland programs that
->> have a different endianness will need to translate their values.  It's
->> just shifting the work around.
+>     map__fprintf_dsoname(map, stdout);
 >
-> No, they never need to translate values. BPF is 32 bit, it doesn't work
-> on longs directly. If you make it explicit where the upper half of a
-> 64-bit value goes, it can be set and read directly. Only when you access
-> one half of a 64-bit value through a pointer do you need to worry about
-> endianness. That doesn't happen with my proposal, it does if the data
-> you expose contains longs.
-
-True enough and data adjacency is all an illusion to BPF anyway.  As
-long as the struct layout is respected, the BPF engine can
-index/offset/etc however it likes.
-
->> Not really.  I lock down the compat case.  _Even_ with fixed 64-bit
->> arguments, you still get system call number mismatches which mean you
->> need to keep independent filters for the same task. I had this in one
->> of my first implementations and it adds a nasty amount of implicit
->> logic during evaluation.
+> or to stderr, or to something else, like in cases where tools have a
+> 'strace -o FILENAME' like switch, like 'perf stat --log-fd N':
 >
-> Well, that's why I proposed to have a way to set filters per personality.
-> Then applications can just blindly install both the 32 and the 64 bit
-> filters and be assured the kernel picks up the right one. A -1 means
-> "use current personality", anything else uses the personality given.
+>          OPT_INTEGER(0, "log-fd",&output_fd,
+>                      "log output to fd, instead of stderr"),
 >
-> Without a persona option you can only install filters for the current
-> personality, which can be a hassle, especially if the task gets killed
-> if it changes mode and calls a system call.
-
-In general, this is a good thing.  Very few legitimate programs change
-personality after putting themselves in any sort of restricted
-environment. I've only seen that used to escape ptrace jails.
-
->>> It's not portable because it is different for every arch.
->>
->> I was describing the kernel code, not the data set.  By using
->> regviews, I get the consistent register view for the personality of
->> the process for the architecture it is running on.  This means that
->> the user_regs_struct will always be consistent _for the architecture_
->> when given to the user's BPF code.  It does not create a portable
->> userland ABI but instead uses the existing ABI in a way that is
->> arch-agnostic in the kernel (using the regviews interfaces for arch
->> fixup).
+> That uses fdreopen(output_fd), etc.
 >
-> I argue from user space's point of view, which probably explains most
-> of our disagreements. :-)
-
-Makes sense!
-
->>> And they will get the offsets wrong if they are on 64 bits because those are
->>> different than for ptrace. The ptrace ABI uses longs, BPF is fixed to 32 bits,
->>> it's just not a good fit.
->>
->> That's not true on x86-64:
->>
->>  http://lxr.linux.no/linux+v3.2.1/arch/x86/kernel/ptrace.c#L945
->>
->> PEEKUSR uses the offsetof() the 32-bit register struct for compat
->> calls and, with that macro, maps it to the proper entry in pt_regs.
->> For non-compat, it just uses the offset into pt_regs:
->>   http://lxr.linux.no/linux+v3.2.1/arch/x86/kernel/ptrace.c#L475
->>   lxr.linux.no/linux+v3.2.1/arch/x86/kernel/ptrace.c#L170
->>
->> As there is significant overlap in the contents of user_regs_struct
->> and pt_regs on the platform. While it's possible for another arch to
->> use a different set of ptrace ABI offsets, using offsetof(struct
->> user_regs_struct, ...) will always work.  It is not long-based.
->>
->> If you want to convince me this isn't a good fit, I need you to meet
->> me halfway and make sure your assertions match the code! :)
+> So please convert these new __print_something methods to
+> __fprintf_something(..., FILE *fp).
 >
-> You're right, the offset is in bytes, not words.
+> Also please don't use 'self' anymore, that was a bad decision I made in
+> perf's early ages and that Thomas Gleixner suggested we use more
+> descriptive names such as, in the above case, 'map', i.e.:
 >
-> I was looking at my own code, which uses an array of longs and indexes
-> into that, and got defines for the register indices. So it's my own
-> abstraction layer that's long-based, not ptrace. with ptrace I use
-> PTRACE_GETREGS, so I don't use offsets there.
+>   void map__fprintf_dsoname(struct map *map, FILE *fp);
+>
+>> From time to time I convert these 'self' leftovers in areas where I
+> notice that are not having too much coding activity, to avoid clashing
+> with pending patches, so lets not add more in new code :)
+I see. I'm going to fix and resend my patches,
+e.g. map__print_dsoname(self) => map__fprintf_dsoname(map, fp)
 
-Makes sense!
-
->>>>> What special clone/fork registers are you talking about?
->>>>
->>>> On x86, si is used to indicate the tls area:
->>>>   http://lxr.linux.no/linux+v3.2.1/arch/x86/kernel/process_32.c#L238
->>>> (and r8 on 64-bit).  Also segment registers, etc.
->>>
->>> si is just the 4th (5th for x86_64) system call argument, it's nothing special.
->>
->> True - arguably though fork() takes no arguments.  Now
->> syscall_get_arguments() won't know that, so si/r8 and all will still
->> be exposed for filtering.  For some reason, I thought some other
->> pieces were used (EFLAGS?), but I can't back that up in the source.
+Thank you.
 >
-> si is only used when the CLONE_SETTLS flag is set. Fork doesn't set flag,
-> it comes from a clone argument.
-
-Doh. No idea what I was thinking about then.
-
->>> System calls never use segment registers directly, do they? It's not part
->>> of the system call ABI, so why would you want to use them in filtering?
->>
->> On x86-32, you may be using segmentation for isolation purposes.  If
->> you do so, it may be of interest where the call comes from.  Nothing
->> truly relevant, just another possibility.  *shrug*
+> Thanks,
 >
-> Isn't EIP an absolute address, corrected for any segmentation?
-> Or relative to fixed segment registers user space can't change?
-> Doesn't really matter I suppose.
-
-Nah. I think my user_regs_struct proposal is dead on its feet.  Roland
-pointed out a much stronger reason to drop it than even performance.
-Right now, seccomp takes the system call slow-path which adds some
-pretty heavy overheads, but there is very little reason that it
-couldn't take a fast-path.  If I add a dependency on all register
-state being available, then the fast-path is never an option again.
-I'd prefer to dream of a fast-path seccomp than to have access to all
-the register state. :)  (On an Atom, the overhead is on the order of a
-few hundred nanoseconds iirc.)
-
->>
->>>>> I don't think anyone would want to ever filter sig_rt_return, you can as
->>>>> well kill the process.
->>>>
->>>> Why make that decision for them?
->>>
->>> I don't, I'm just saying it doesn't make sense to filter it. Based on what
->>> would anyone ever want to filter it? It's just a kernel helper thing to
->>> implement signal handlers.
->>
->> What if you want the process to die if it returns from any signals?
->
-> Why would you want that? You can as well send it a SIGKILL at random moments.
-
-I look at this from the case where there is no supervisor.  An example
-might be if you want fire up a sandbox and want to make sure that no
-signals are handled by the untrusted code.  A bit unnatural, but I
-could see it being desirable in some very limited cases.
-
->>> But now you mention it, it won't be bad to enforce this in the kernel,
->>> otherwise everyone has to add code to allow it. Same for exit(_group).
->>> Because if those are denied, there's nothing else to run instead.
->>
->> The process will be do_exit()d.  I don't know why it matters?
->
-> Ah, yes, because you kill the process if the filter fails.
->
-> Won't it change the return value and exit state?
-
-Nope - that'd require a call to syscall_set_error.  The entry point to
-seccomp, __secure_computing, does not return a value. So you'd have to
-call the helper and not all arches that support seccomp also support
-syscall_*.  Though it now seems like syscall_get_arguments will be a
-requirement for seccomp_filter so it is fair to reconsider the
-syscall_* helpers.  The only trickiness is that calling them could
-change the subsequent behavior of ptrace or syscall audits since they
-are linearly evaluated in the slow-path (on x86 - not all arches).
-
-> And in the case of exit_group, do you kill just the thread or the whole
-> process? Whatever you choose, it either won't be possible to exit one
-> thread anymore, or any thread exiting kills all threads.
-
-Yeah
-
-> Seems better to always allow it. You may not like the overhead of checking
-> specific system calls, but it's either hardcoded or done in every filter.
-> I suppose it doesn't really matter. If it can be done easily in the kernel,
-> then just do it there. If it's too much of a hassle, push it to the filters.
-
-Checking specific syscall numbers is a PITA.  For all CONFIG_COMPAT
-supporting arches, you have to add a seccomp_syscall_blah and
-seccomp_syscall_blah_32 so you filter the right numbers.  Better to
-leave it to the filters :/
-
->>> But yeah, better to not provide the instruction or stack pointers indeed.
->>> At least the instruction pointer gives some system call related information
->>> (from where it is called).
->>
->> Yup - it's nice to have that.
->
-> And it would round up the total of data to 8 fields. My main concern would be
-> that people try to use it for simplistic security checks and trust it too
-> much.
-
-Yeah though even without TOCTOU vulnerability, people could still
-write crazy dumb filters :)
-
->>>> That said, I can imagine filtering on other registers as being useful
->>>> for tentative research.
->>>
->>> They can use ptrace for that.
->>
->> And it will stay research forever.
->
-> Speaking from experience, you're probably right. But in our case we really
-> want to be able to modify registers too, mostly the args. We use the EIP
-> for system call restarting. But that's not in a performance sensitive path
-> (one per execve). Modifying the registers in filters is not that useful
-> for our case because we can't get copy paths to read-only memory from the
-> BPF anyway.
-
-Yeah - this would require the ptrace callout.
-
->>> What non-argument register would you like to use on x86? I think all
->>> are used up already. All you got left is the segment registers, and
->>> using those seems a bad idea.
->>
->> There are other arches where this would be feasible.
->
-> Yes. Like I said:
->>> It also seems a bad idea to promote non-portable BPF filtering programs.
->
->> Why?  If it's possible to make a userland abstraction layer, why do we
->> force the kernel to take on more work?
->
-> Non-portable implies that it is not possible to make a userspace abstraction
-> layer. Letting the kernel take on slightly more work avoids non-portable
-> filter programs. Yes, this is limiting, but I think limiting filters isn't
-> a bad idea.
-
-Well I believe it was possible to create a userspace abstraction
-layer, but I don't think that matters as much now. The question will
-be more around how the final syscall args get laid out and if we need
-a syscall_arch identifier. (I think)
-
->>
->>> If you support modifying arguments and syscall nr then people can keep
->>> doing the XORing trick with BPF. Another advantage of allowing that is
->>> that unsafe old system calls can be replaced with secure ones on the
->>> fly transparently.
->>>
->>> Really, disallowing modifications is much more limiting than not providing
->>> all registers. But allowing modifications is a lot harder to get right
->>> with a register interface.
->>
->> I'm not going to make the change to support BPF making the data
->> mutable or using scratch space as an output vector. If that is
->> something that makes sense to the networking stack, then we could
->> benefit from it, but I don't want to go there.
->
-> It doesn't make sense for the networking stack, but it would make BPF
-> usable for more use cases when used for system call filtering, like
-> that XOR thing. For our jailer it's not very useful because we need
-> to copy data to read-only memory. Only other cases where we modify
-> data are replacing (v)fork with clone with CLONE_PTRACE set for 2.4
-> kernels, and system call restarting once per execve.
->
-> I don't have strong feelings about it, but not supporting it is more
-> limiting than not providing all registers. That's all.
-
-Agreed, but it is how the engine is.  It's possible to look at adding
-it in the future, but I wouldn't want to start out of the gate with
-it. It  can have further reaching impact than just seccomp (via the
-slow-path).
-
->> It does mean BPF is per-arch, per syscall-convention, but you know I
->> am fine with that :)  I do think the performance gains could be well
->> worth avoiding any copying.  (Perf gains are the strongest argument I
->> think for your proposal and the thing that would likely lead me to do
->> it.)
->
-> Aesthetics is my main argument against using register views.
-
-Fair enough!
-
->>> So call it once and store the value in a long. Then copy the low half
->>> to the right place and then the upper half when on 64 bits. It may not
->>> look too pretty, but the compiler should be able to optimise almost all
->>> overhead away and end up with 6 (or 12) int copies. Something like this:
->>>
->>> struct bpf_data {
->>>        uint32 syscall_nr;
->>>        uint32 arg_low[MAX_SC_ARGS];
->>>        uint32 arg_high[MAX_SC_ARGS];
->>> };
->>>
->>> void fill_bpf_data(struct task_struct *t, struct pt_regs *r, struct bpf_data *d)
->>> {
->>>        int i;
->>>        unsigned long arg;
->>>
->>>        d->syscall_nr = syscall_get_nr(t, r);
->>>        for (i = 0; i < MAX_SC_ARGS; ++i){
->>>                syscall_get_arguments(t, r, i, 1, &arg);
->>>                d->arg_low[i] = arg;
->>>                d->arg_high[i] = arg >> 32;
->>>        }
->>> }
->>
->> Sure, but it seems weird to keep the arguments high and low not
->> adjacent, but I realize you want an arch-independent interface.
->
-> Yes, that was the idea.
->
-> You can achieve the same with an adjacent layout, but then it's easier
-> to get endianness wrong.
->
->> I guess in that world, you could do this:
->>
->> {
->>   int32_t nr;
->>   uint32_t arg32[MAX_SC_ARGS];
->>   uint32_t arg64[MAX_SC_ARGS];
->>   /* room for future expansion is here */
->> };
->
-> Isn't that the same?
-
-Yup - I was pointing out the comment and that your proposal would be
-friendly to arbitrary expansion.
-
->> Yes - per-arch. If you're already doing per-arch fixup, why ius
->> mapping 6 extra registers such a burden?  If the code can't do that in
->> userspace, it is slacking.
->
-> Fair enough.
->
->>>> Exactly why I'm using user_regs_struct.  I think we've been having
->>>> some cross-talk, but I'm not sure.  The only edge case I can find with
->>>> user_regs_struct across all platforms is the nasty x86 32-bit entry
->>>> from 64-bit personality.  Perhaps someday we can just nuke that path
->>>> :)  But even so, it is tightly constrained by saving the personality
->>>> and compat flag in the filter program metadata and checking it at each
->>>> syscall.
->>>
->>> I think it's a good idea to nuke that path, it seems like a security hole
->>> waiting to happen.
->>
->> Agreed. And yet we can't (yet?).
->
-> Apparently unwritten obscure behaviour may not be broken, in case someone
-> counts on it. I disagree, because any users can't be sure that compat mode
-> is supported anyway, so the behaviour is no different than a 64 bit kernel
-> without compat mode. Oh well.
-
-Pretty painful. A big reason why ptrace jails are defense in depth but
-not an perfect solution and why I didn't want to merge seccomp and
-ptrace directly (by making ptrace-bpf).
-
->>> If your ABI is too hard to use directly, it won't be used at all.
->>> Any excuse that people won't use this ABI directly is a sign that
->>> it is not good enough.
->>
->> That is blatantly untrue. Have you ever used tcpdump's expression
->> language for filtering packets? Wireshark?
->
-> Okay, "at all" was stretching it a bit.
->
->>> And the more complicated you make it, the less likely it is that
->>> anyone will use this.
->>
->> Unless there is a nice library that makes it work well.
->
-> I beg you, please don't count on this.
->
-> BPF will be used for security sensitive code, you really want to keep it simple
-> and easy to use, otherwise you're just encouraging bugs to happen. Using registers
-> only adds subtleties for just a tiny performance gain, at best.
-
-Make sense. My goal was a clean, simple to validate implementation in
-the kernel with a usable userland API.  It sounds like it'll need to
-be more like your proposal though.
-
->>> It could if you make the data part of the scratch memory. If you put the
->>> data at the top, just after BPF_MEMWORDS, then it's all compatible with
->>> the read-only version. Except the sk_chk_filter() code. But if you ever
->>> want to consolidate with the networking version, then you already need
->>> new non-byteswapping instructions. You can as well add a special modify
->>> instruction too then. Making it very explicit seems better anyway.
->>
->> I am not going to go this route right now.  If you want to, be my
->> guest. We can add BPF instructions later, but I am not going down that
->> rabbit hole now.
->
-> Agreed.
->
->>> Using BPF for system call filtering changes its very nature already.
->>
->> No it doesn't.  user_regs_struct becomes another data protocol.
->
-> I can't decide whether I agree or disagree. In a way it makes perfect sense,
-> while yet something inside me screams it's not the same at all.
-
-Then my original design succeeded :)
-
->>> I must say that until your patch came up, I've never heard of BPF filters
->>> before. I think I'm going to use it in our ptrace jailer for network
->>> filtering, if it's possible to get the peer address for normal TCP/UDP
->>> sockets. Documentation is quite vague.
->>
->> Cool!
->
-> I might be the first one to use it on regular sockets instead of raw or
-> packet sockets though. I fear I'll only get the packet data and no IP
-> header. But I haven't tried it yet.
->
->>> You could also do the BPF filtering later in the system call entry path
->>> when the arguments are passed directly, but then it's harder to interact
->>> well with ptrace.
->>
->> Where? Interpose it into each system call?  The later I put it, the
->> less attack surface reduction I get.  The whole point of this
->> framework is to reduce the kernel's attack surface by doing minimal
->> kernel-side work before making a policy decision.
->
-> Agreed.
->
->> Also, I've already gone the ftrace route. As I said in the writeup, I
->> don't think it is the right path for this sort of functionality.
->
-> Indeed.
->
->>> Ideally, the BPF filter should be able to deny the system call with a
->>> specific error code, deny the call and kill the task, have a way to
->>> defer to ptrace, and a way to allow it.
->>
->> Not happening (by my hand :).  I'm not changing seccomp to allow it to
->> cause a system call to fail with an error code. I'll add support for
->> tracehook integration if this patch can get merged, but I'm not going
->> to change the basic semantics of seccomp.
->
-> I guess the difference is that you have a somewhat controlled environment
-> and aren't trying to run arbitrary programs in your jail. Because standard
-> programs are trying to do stuff they don't really have to all the time,
-> and killing them for each silly offence would make the jail useless.
->
-> It is also crucial in handling new system calls. Glibc does that all the
-> time, it tries the new version, and if it's not supported, it falls back
-> to the old one. That's why we return ENOSYS for denied system calls and
-> that seems to work pretty well.
->
-> I guess it would be okay if BPF could somehow defer to ptrace instead of
-> killing. But without that, this BPF filtering is useless for our generic
-> jail.
->
-> I don't know anything about tracehooks, is that related to ftrace?
-
-Roughly, tracehook == ptrace.  I was using it as shorthand for ptrace
-integration.  There's more arch-related goo.
-
-lxr.linux.no/linux+v3.2.1/include/linux/tracehook.h#L22
-
-By using seccomp filter as a feeder for ptrace, it become more
-reasonable to attempt to implement some of the fixes for cases where a
-race results in a process executing what it wants.  However, I still
-think ptrace will always be a security nightmare so I like for
-seccomp+bpf to standalone with optional ptrace support.
-
->> The nice thing is, if we
->> reserve return values, this functionality can be layered on later
->> without it causing any ABI breakage and with proper consideration
->> independent of whether the basic functionality gets merged.
->
-> That seems like a good idea.
-
-I'll make that explicit in the next patch.
-
->> Then, if
->> you want retool the entire seccomp path on all architectures to allow
->> graceful system call failure, it'd be totally doable.
->
-> It's trivial if ENOSYS is always returned, then you just change the syscall
-> nr (that's what I do now). But specific return values are indeed harder
-> and maybe not worth the trouble.
->
-> If this gets in and no one else does it, I'll try to add ptrace support
-> so they work nicely together.
-
-Sounds good!  I have a tentative patch for this already too, so
-hopefully we could come to a nice solution!  I'd like ptrace support
-for effective, deployed "learning" mode and soft-enforcement of
-policies in addition to exploring more advanced policy logic.  But
-that's all future :)
-
-Thanks!
-will
+> - Arnaldo
