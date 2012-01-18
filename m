@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab2ARCei (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 21:34:38 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53370 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756531Ab2ARCeg (ORCPT
+	id S1756729Ab2ARCmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 21:42:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48228 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756538Ab2ARCmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 21:34:36 -0500
+	Tue, 17 Jan 2012 21:42:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <7vwr8pok7w.fsf@alter.siamese.dyndns.org>
-References: <7vehuyosaa.fsf@alter.siamese.dyndns.org> <CAH5451nSMcJ50fu2qtMkw4zPpx-Kg-k-jqCcpryu+pkC8JX8rw@mail.gmail.com>
- <7vwr8pok7w.fsf@alter.siamese.dyndns.org>
-From: Andrew Ardill <andrew.ardill@gmail.com>
-Date: Wed, 18 Jan 2012 13:34:14 +1100
-Message-ID: <CAH5451mz7NpDyL9O708siBdgSC7eXZi=VWk5qd2Ghm0PmWZ9NQ@mail.gmail.com>
-Subject: Re: Using signed tag in pull requests
-To: Junio C Hamano <gitster@pobox.com>
-Cc: git@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1326726380.1540.112.camel@vkoul-udesk3>
+References: <1326726380.1540.112.camel@vkoul-udesk3>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 17 Jan 2012 18:41:55 -0800
+X-Google-Sender-Auth: VIyexTi8d8kPsX_soDws9WEwrPg
+Message-ID: <CA+55aFyR7hKoeffHY6VYw-29pii+NVgsH2aFKU3YfW1-kFUtMg@mail.gmail.com>
+Subject: Re: [GIT PULL] slave-dmaengine updates
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan <dan.j.williams@intel.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 January 2012 12:47, Junio C Hamano <gitster@pobox.com> wrote:
-> Andrew Ardill <andrew.ardill@gmail.com> writes:
+On Mon, Jan 16, 2012 at 7:06 AM, Vinod Koul <vinod.koul@intel.com> wrote:
 >
->>> Starting from Git release v1.7.9, a contributor can add a signed tag to
->>> the commit at the tip of the history and ask the integrator to pull that
->>> signed tag. When the integrator runs `git pull`, the signed tag is
->>> automatically verified to assure that the history is not tampered with.
->>> In addition, the resulting merge commit records the content of the signed
->>> tag, so that other people can verify that the branch merged by the
->>> contributor was signed by the contributor, without fetching the signed tag
->>
->> I think you mean to say 'the branch merged by the integrator was signed
->> by the contributor'.
->
-> Definitely. I'll update my local copy.
->
-> Thanks for spotting this.
+> Here is the slave-dmaengine updates which include a new DMA engine API
+> for 2D interleaved transfers along with fixes for slave dma_tranfer
+> direction along with usual fixes and updates on bunch of the slave dma
+> drivers.
 
-No worries. That's the whole point right? :D
+Ok, please verify my conflict resolution. It all looked pretty
+trivial, but affected code that I don't know nor can I even
+test-compile.
+
+               Linus
