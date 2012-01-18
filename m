@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab2ARISe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 03:18:34 -0500
-Received: from trent.utfs.org ([194.246.123.103]:50857 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752947Ab2ARISd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 03:18:33 -0500
-Date: Wed, 18 Jan 2012 00:18:24 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: peterz@infradead.org, axboe@kernel.dk, dm-devel@redhat.com
-Subject: BUG: spinlock trylock failure on UP on CPU#0, vgchange/936
-Message-ID: <alpine.DEB.2.01.1201180009520.2895@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1756295Ab2ARIYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 03:24:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63226 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753852Ab2ARIYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 03:24:50 -0500
+Message-ID: <4F168266.3060205@cn.fujitsu.com>
+Date: Wed, 18 Jan 2012 16:27:18 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 2/2] cgroup: add xattr support
+References: <4F13DA90.2000603@cn.fujitsu.com> <4F13DAA9.4070703@cn.fujitsu.com> <20120117175322.GC6762@google.com>
+In-Reply-To: <20120117175322.GC6762@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-18 16:23:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-18 16:23:37,
+	Serialize complete at 2012-01-18 16:23:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Tejun Heo wrote:
+> Hello,
+> 
+> On Mon, Jan 16, 2012 at 04:07:05PM +0800, Li Zefan wrote:
+>> This is one of the items in the plumber's wish list.
+>>
+>> For use cases:
+>>
+>>>> What would the use case be for this?
+>>>
+>>> Attaching meta information to services, in an easily discoverable
+>>> way. For example, in systemd we create one cgroup for each service, and
+>>> could then store data like the main pid of the specific service as an
+>>> xattr on the cgroup itself. That way we'd have almost all service state
+>>> in the cgroupfs, which would make it possible to terminate systemd and
+>>> later restart it without losing any state information. But there's more:
+>>> for example, some very peculiar services cannot be terminated on
+>>> shutdown (i.e. fakeraid DM stuff) and it would be really nice if the
+>>> services in question could just mark that on their cgroup, by setting an
+>>> xattr. On the more desktopy side of things there are other
+>>> possibilities: for example there are plans defining what an application
+>>> is along the lines of a cgroup (i.e. an app being a collection of
+>>> processes). With xattrs one could then attach an icon or human readable
+>>> program name on the cgroup.
+>>>
+>>> The key idea is that this would allow attaching runtime meta information
+>>> to cgroups and everything they model (services, apps, vms), that doesn't
+>>> need any complex userspace infrastructure, has good access control
+>>> (i.e. because the file system enforces that anyway, and there's the
+>>> "trusted." xattr namespace), notifications (inotify), and can easily be
+>>> shared among applications.
+>>>
+>>> Lennart
+>>
+>> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> 
+> Ummm... I don't feel too good about this.  Why can't those extra
+> information be kept somewhere else?  Overloading cgroupfs as storage
+> for essentially opaque userland information doesn't seem like a good
+> idea to me.
+> 
 
-today's git checkout boots fine on powerpc32, but has this message during 
-bootup:
+Long ago Paul M toyed with a patch that adds a control file for userspace
+to read/write per-cgroup user information, but there were no use cases.
+This patchset has a similar purpose, but this interface is more flexable
+and easier to use, and we do have systemd as a use case this time.
 
-BUG: spinlock trylock failure on UP on CPU#0, vgchange/936
- lock: ef32a9f8, .magic: dead4ead, .owner: vgchange/936, .owner_cpu: 0
-Call Trace:
-[eed459e0] [c0009de4] show_stack+0x70/0x1bc (unreliable)
-[eed45a20] [c0326da8] spin_dump+0x70/0xe0
-[eed45a30] [c0326f8c] do_raw_spin_trylock+0x58/0x70
-[eed45a40] [c0512b28] _raw_spin_trylock+0x34/0xa0
-[eed45a60] [c02f5510] put_io_context+0xd8/0x184
-[eed45a80] [c0303428] __cfq_slice_expired+0x1e4/0x43c
-[eed45ac0] [c03053d8] cfq_insert_request+0x264/0x5b0
-[eed45ae0] [c02edef4] __elv_add_request+0x1a4/0x2d4
-[eed45af0] [c02f1024] blk_flush_plug_list+0x22c/0x270
-[eed45b20] [c05112dc] io_schedule+0x74/0xec
-[eed45b30] [c0110f88] dio_await_completion+0x60/0xf4
-[eed45b50] [c0112d0c] __blockdev_direct_IO+0x1b80/0x3574
-[eed45d70] [c010f4a4] blkdev_direct_IO+0x54/0x64
-[eed45d90] [c009a424] generic_file_aio_read+0x7b8/0x808
-[eed45e40] [c00d4f68] do_sync_read+0xb8/0x144
-[eed45ef0] [c00d6168] vfs_read+0xcc/0x1c0
-[eed45f10] [c00d6394] sys_read+0x58/0xc8
-[eed45f40] [c00127a0] ret_from_syscall+0x0/0x38
---- Exception: c01 at 0xfe52b90
-    LR = 0x1003e834
+I'll let Lennart answer if we can easily live without this.
 
-The system is running fine so far and has before with 3.2.0-rc7, without 
-that warning. The "vgchange" could be the result of some LVM2 initscripts 
-(lvm2-2.02.66-5 are installed on this Debian/stable system), but there are 
-no LVM disks anywhere on the system.
-
-Full .config & dmesg: http://nerdbynature.de/bits/3.2.0/
-
-Is this BUG something to worry about?
-
-Thanks,
-Christian.
--- 
-BOFH excuse #100:
-
-IRQ dropout
+Furthermore, I noticed tmpfs also implemented xattr support, and we
+should be able to share most of the code, which makes the cost for
+having this feature smaller.
