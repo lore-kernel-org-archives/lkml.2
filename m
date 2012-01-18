@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab2ARTqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 14:46:44 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55988 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757309Ab2ARTqm (ORCPT
+	id S1757503Ab2ARTsT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 14:48:19 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:38442 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617Ab2ARTsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 14:46:42 -0500
-Message-ID: <4F17217E.5040805@linux.vnet.ibm.com>
-Date: Thu, 19 Jan 2012 01:16:06 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Wed, 18 Jan 2012 14:48:17 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
-        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
-Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
- to unlock_system_sleep()
-References: <201201172345.15010.rjw@sisk.pl> <201201180015.56510.rjw@sisk.pl> <4F16C24A.4050007@linux.vnet.ibm.com> <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com> <4F16F94C.4020000@linux.vnet.ibm.com> <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com> <4F16FF0D.1030606@linux.vnet.ibm.com> <20120118173037.GE30664@google.com> <4F171BF8.50803@linux.vnet.ibm.com> <20120118193040.GA28538@google.com>
-In-Reply-To: <20120118193040.GA28538@google.com>
+In-Reply-To: <20120118194420.GW11715@one.firstfloor.org>
+References: <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+ <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+ <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+ <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+ <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <20120118193602.GV11715@one.firstfloor.org> <CA+55aFz+NNf3SrAdno72EEVbhM-tgBcwjz0ao3TLiOSJR-yJoQ@mail.gmail.com>
+ <20120118194420.GW11715@one.firstfloor.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Jan 2012 11:47:54 -0800
+X-Google-Sender-Auth: sp7gSfG00aRrs4MJLMJEEV8KyDU
+Message-ID: <CA+55aFwWXqjq=J0R2zfsRuHYBatC19KP6GJqiETS2LKToEPN9w@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Indan Zupancic <indan@nul.nu>, Jamie Lokier <jamie@shareable.org>,
+        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011819-4790-0000-0000-000000EEF616
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 01:00 AM, Tejun Heo wrote:
+On Wed, Jan 18, 2012 at 11:44 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> It can securely enable syscall auditing which can catch all syscalls
+> (however you only get race free memory arguments for the ones with LSM hooks
+> at the right place). Really need both.
+>
+> I agree it's not easy to get tight (and also not pretty), but you have a lot
+> better chance doing it this way than with ptrace.
 
-> Hello,
-> 
-> On Thu, Jan 19, 2012 at 12:52:32AM +0530, Srivatsa S. Bhat wrote:
->> Somehow I don't think its a hack, based on my perception as described
->> above. But feel free to prove me wrong :-)
-> 
-> Thanks for the explanation.  Yeah, I agree and it's much simpler this
-> way, which is nice.  So, in short, because freezing state can't change
-> across lock_system_sleep(), there's no reason to check for freezing
-> state on unlock and this nicely resolves the freezer problem together.
-> 
+.. And how the f*^& did you imagine that something like chrome would do that?
 
+You need massive amounts of privileges, and it's a total disaster in
+every single respect.
 
-Absolutely!
+Stop pushing crap. No, ptrace isn't wonderful, but your LSM+auditing
+idea is a billion times worse in all respects.
 
-> The only thing to be careful is, then, we need to set and clear SKIP
-> inside pm_mutex.
-> 
+We can definitely fix the ptrace issue with compat system calls.
 
+THERE IS NO WAY IN HELL YOU CAN EVER FIX LSM+AUDIT TO BE USABLE!
 
-Not exactly. We need to set SKIP before grabbing pm_mutex and clear it
-inside pm_mutex. The reason is that we decided to set SKIP in the first
-place just to avoid the freezer from declaring failure when we are
-blocked on pm_mutex. If we move it to *after* mutex_lock(&pm_mutex), that
-original intention itself is not satisfied, and we will hit freezing
-failures - IOW making the set and clear exercise useless!
+Stop bothering to even bring it up. It's dead, Jim.
 
-So, something like this should work perfectly:
-
-lock_system_sleep()
-{
-	freezer_do_not_count();
-	mutex_lock(&pm_mutex);
-	current->flags &= ~PF_FREEZER_SKIP;
-}
-
-But in the interest of making the code look a bit symmetric, we can do:
-
-lock_system_sleep()
-{
-	freezer_do_not_count();
-	mutex_lock(&pm_mutex);
-}
-
-unlock_system_sleep()
-{
-	current->flags &= ~PF_FREEZER_SKIP;
-	mutex_unlock(&pm_mutex);
-}
- 
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
-
+               Linus
