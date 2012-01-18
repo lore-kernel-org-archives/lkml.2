@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab2ARMOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 07:14:21 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:53218 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab2ARMOU (ORCPT
+	id S1753831Ab2ARMOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 07:14:45 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54325 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2ARMOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 07:14:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Semwal, Sumit" <sumit.semwal@ti.com>
-Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
-Date: Wed, 18 Jan 2012 12:14:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
-Cc: Robert Morell <rmorell@nvidia.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, sumit.semwal@linaro.org,
-        airlied@linux.ie, dri-devel@lists.freedesktop.org
-References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie> <1326845297-6233-2-git-send-email-rmorell@nvidia.com> <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
-In-Reply-To: <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
+	Wed, 18 Jan 2012 07:14:43 -0500
+Date: Wed, 18 Jan 2012 15:10:50 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Sched fair: check that ilb cpu is online during
+ nohz_balancer_kick()
+Message-ID: <20120118121049.GA4258@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201181214.12055.arnd@arndb.de>
-X-Provags-ID: V02:K0:yDp0vA3YeQMqH3oStXuVDeKb1zK31WVsZ6oD6Yw3UuB
- aioa+KuFuB3sgMsKwAft6Tr/lpSVRmlO6oT+oD77QUTpYSOHQR
- AEIPpYc9sxaz/5bsZ1riDzIOufn024VekMWy0enpGLxukKFCZm
- 3LDJfaY0Ew935U4H+wJDPYN60lVoONydrzagr3THaWngc2gNVn
- XAUIR4uO1n043UxIuUd74txy2CBu2eOze/lVhk8zuHaH9/IrIh
- 0UbRcKHXqQCH+YN2Dzv4ExWlfab8v37I1fbPrhDhBdVIZ1Ke5/
- Dpgff1UcneIHmlgn2z2d5aU/YWEkVX1A/rQohiclfyMaqa5/4+
- fx3dpgWG+DGVrA8AUsws=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 January 2012, Semwal, Sumit wrote:
-> On Wed, Jan 18, 2012 at 5:38 AM, Robert Morell <rmorell@nvidia.com> wrote:
-> > EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
-> > issue, and not really an interface".  The dma-buf infrastructure is
-> > explicitly intended as an interface between modules/drivers, so it
-> > should use EXPORT_SYMBOL instead.
-> 
-> + Konrad, Arnd, Mauro: there were strong objections on using
-> EXPORT_SYMBOL in place of EXPORT_SYMBOL_GPL by all 3 of them; I
-> suggest we first arrive at a consensus before merging this patch.
+Sched fair: check that ilb cpu is online during nohz_balancer_kick()
 
-We discussed this before. The reason for using EXPORT_SYMBOL_GPL here is
-that the interface is low-level and that it's meant to be used by
-subsystems that export user-level interface based on that and come
-with their own device driver interface, such as V4L or DRM.
+find_new_ilb() may return offlined cpu if trigger_load_balance() occurs while machine
+suspending or resuming, hitting native_smp_send_reschedule() assertion failure:
+[  108.473465] Disabling non-boot CPUs ...
+[  108.477308] CPU 1 is now offline
+[  108.477497] ------------[ cut here ]------------
+[  108.477523] WARNING: at arch/x86/kernel/smp.c:120 native_smp_send_reschedule+0x25/0x56()
+[  108.477724] Call Trace:
+[  108.477736]  <IRQ>  [<ffffffff81030092>] warn_slowpath_common+0x7e/0x96
+[  108.477772]  [<ffffffff810300bf>] warn_slowpath_null+0x15/0x17
+[  108.477795]  [<ffffffff81018ff7>] native_smp_send_reschedule+0x25/0x56
+[  108.477823]  [<ffffffff81067ffe>] trigger_load_balance+0x6ac/0x72e
+[  108.477847]  [<ffffffff81067bfd>] ? trigger_load_balance+0x2ab/0x72e
+[  108.477874]  [<ffffffff8105f05c>] scheduler_tick+0xe2/0xeb
+[  108.477899]  [<ffffffff8103f6ac>] update_process_times+0x60/0x70
+[  108.477926]  [<ffffffff8107c1e1>] tick_sched_timer+0x6d/0x96
+[  108.477951]  [<ffffffff81053b3b>] __run_hrtimer+0x1c2/0x3a1
+[  108.477974]  [<ffffffff8107c174>] ? tick_nohz_handler+0xdf/0xdf
+[  108.477999]  [<ffffffff81054721>] hrtimer_interrupt+0xe6/0x1b0
+[  108.478023]  [<ffffffff81019bdd>] smp_apic_timer_interrupt+0x80/0x93
+[  108.478051]  [<ffffffff814a2f73>] apic_timer_interrupt+0x73/0x80
+[  108.478072]  <EOI>  [<ffffffff8148f763>] ? slab_cpuup_callback+0xa8/0xdb
+[  108.478108]  [<ffffffff8149f154>] notifier_call_chain+0x86/0xb3
+[  108.478133]  [<ffffffff8147f09f>] ? spp_getpage+0x5f/0x5f
+[  108.478157]  [<ffffffff810556d9>] __raw_notifier_call_chain+0x9/0xb
+[  108.478182]  [<ffffffff81031857>] __cpu_notify+0x1b/0x2d
+[  108.478204]  [<ffffffff81031962>] cpu_notify_nofail+0xe/0x16
+[  108.478227]  [<ffffffff8147f1fd>] _cpu_down+0x130/0x249
+[  108.478249]  [<ffffffff814920ef>] ? printk+0x4c/0x4e
+[  108.478271]  [<ffffffff810319f6>] disable_nonboot_cpus+0x5a/0xfc
+[  108.478297]  [<ffffffff8106f000>] suspend_devices_and_enter+0x19a/0x407
+[  108.478323]  [<ffffffff8106f391>] enter_state+0x124/0x169
+[  108.478346]  [<ffffffff8106e01b>] state_store+0xb7/0x101
+[  108.478373]  [<ffffffff8126c82f>] kobj_attr_store+0x17/0x19
+[  108.478399]  [<ffffffff8117e20c>] sysfs_write_file+0x103/0x13f
+[  108.478425]  [<ffffffff8111f018>] vfs_write+0xad/0x13d
+[  108.478447]  [<ffffffff8111f293>] sys_write+0x45/0x6c
+[  108.478469]  [<ffffffff814a2439>] system_call_fastpath+0x16/0x1b
+[  108.478492] ---[ end trace 991823fa9b0a0b79 ]---
 
-While there is an eternal debate over whether there should or should
-not be out of tree device drivers, I think there is very little to gain
-by allowing dma_buf to be used by out of tree *subsystems*.
-Further, a device driver that tries to use the interface but sits outside
-of the regular subsystems is a bad technical choice and we should not
-encourage those either.
+Check that returned by find_new_ilb() cpu is online.
 
-NAK
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-	Arnd
+---
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 84adb2d..070b8e0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4826,7 +4826,7 @@ unlock:
+ 	rcu_read_unlock();
+ 
+ out_done:
+-	if (ilb < nr_cpu_ids && idle_cpu(ilb))
++	if (likely(cpu_online(ilb)) && ilb < nr_cpu_ids && idle_cpu(ilb))
+ 		return ilb;
+ 
+ 	return nr_cpu_ids;
+
