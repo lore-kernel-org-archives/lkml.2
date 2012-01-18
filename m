@@ -1,167 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab2ARWTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 17:19:32 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40771 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753721Ab2ARWTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 17:19:30 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related to unlock_system_sleep()
-Date: Wed, 18 Jan 2012 23:22:58 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
-        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
-References: <201201172345.15010.rjw@sisk.pl> <4F17217E.5040805@linux.vnet.ibm.com> <4F172B8D.8050408@linux.vnet.ibm.com>
-In-Reply-To: <4F172B8D.8050408@linux.vnet.ibm.com>
+	id S1753721Ab2ARW1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 17:27:51 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48381 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344Ab2ARW1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 17:27:50 -0500
+Subject: [PATCH 01/13] crc32: removed two instances of trailing whitespaces
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Theodore Tso <tytso@mit.edu>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
+Date: Wed, 18 Jan 2012 14:27:40 -0800
+Message-ID: <20120118222740.4079.56984.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20120118222733.4079.13377.stgit@elm3c44.beaverton.ibm.com>
+References: <20120118222733.4079.13377.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201182322.58301.rjw@sisk.pl>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12011822-7408-0000-0000-000001FD5DD8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 18, 2012, Srivatsa S. Bhat wrote:
-> On 01/19/2012 01:16 AM, Srivatsa S. Bhat wrote:
-> 
-> > On 01/19/2012 01:00 AM, Tejun Heo wrote:
-> > 
-> >> Hello,
-> >>
-> >> On Thu, Jan 19, 2012 at 12:52:32AM +0530, Srivatsa S. Bhat wrote:
-> >>> Somehow I don't think its a hack, based on my perception as described
-> >>> above. But feel free to prove me wrong :-)
-> >>
-> >> Thanks for the explanation.  Yeah, I agree and it's much simpler this
-> >> way, which is nice.  So, in short, because freezing state can't change
-> >> across lock_system_sleep(), there's no reason to check for freezing
-> >> state on unlock and this nicely resolves the freezer problem together.
-> >>
-> > 
-> > 
-> > Absolutely!
-> > 
-> >> The only thing to be careful is, then, we need to set and clear SKIP
-> >> inside pm_mutex.
-> >>
-> > 
-> > 
-> > Not exactly. We need to set SKIP before grabbing pm_mutex and clear it
-> > inside pm_mutex. The reason is that we decided to set SKIP in the first
-> > place just to avoid the freezer from declaring failure when we are
-> > blocked on pm_mutex. If we move it to *after* mutex_lock(&pm_mutex), that
-> > original intention itself is not satisfied, and we will hit freezing
-> > failures - IOW making the set and clear exercise useless!
-> > 
-> > So, something like this should work perfectly:
-> > 
-> > lock_system_sleep()
-> > {
-> > 	freezer_do_not_count();
-> > 	mutex_lock(&pm_mutex);
-> > 	current->flags &= ~PF_FREEZER_SKIP;
-> > }
-> > 
-> > But in the interest of making the code look a bit symmetric, we can do:
-> > 
-> > lock_system_sleep()
-> > {
-> > 	freezer_do_not_count();
-> > 	mutex_lock(&pm_mutex);
-> > }
-> > 
-> > unlock_system_sleep()
-> > {
-> > 	current->flags &= ~PF_FREEZER_SKIP;
-> > 	mutex_unlock(&pm_mutex);
-> > }
-> >  
-> 
-> 
-> So how about this patch, with the comment updated?
-> (and the changelog updated as well to reflect the movement of code)
-> 
-> ---
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
-> 
-> Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
-> [un]lock_system_sleep() APIs" introduced an undesirable change in the
-> behaviour of unlock_system_sleep() since freezer_count() internally calls
-> try_to_freeze() - which we don't need in unlock_system_sleep().
-> 
-> And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
-> [un]lock_system_sleep()" made these APIs wide-spread. This caused a
-> regression in suspend-to-disk where snapshot_read() and snapshot_write()
-> were getting frozen due to the try_to_freeze embedded in
-> unlock_system_sleep(), since these functions were invoked when the freezing
-> condition was still in effect.
-> 
-> Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
-> and dropping the try_to_freeze() part. Not only will this fix the
-> regression but this will also ensure that the API only does what it is
-> intended to do, and nothing more, under the hood.
-> 
-> While at it, make the code more correct and robust by ensuring that the
-> PF_FREEZER_SKIP flag gets cleared with pm_mutex held, to avoid a race with
-> the freezer.
-> 
-> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+- remove trailing whitespace from lib/crc32.c
+	- remove trailing whitespace from lib/crc32defs.h
 
-So, I'd prefer lock_system_sleep() to be open-coded too, to
-avoid situations in which someone changes freezer_do_not_count()
-and freezer_count() leaving unmodified unlock_system_sleep() behind.
-
-Also, have you actually tested this?
-
-Rafael
+From: Bob Pearson <rpearson@systemfabricworks.com>
+Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
+[djwong@us.ibm.com: changelog tweaks]
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
+ lib/crc32.c     |    2 +-
+ lib/crc32defs.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 
-> ---
-> 
->  include/linux/suspend.h |   17 ++++++++++++++++-
->  1 files changed, 16 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-> index 95040cc..cb9d3f4 100644
-> --- a/include/linux/suspend.h
-> +++ b/include/linux/suspend.h
-> @@ -363,8 +363,23 @@ static inline void lock_system_sleep(void)
->  
->  static inline void unlock_system_sleep(void)
->  {
-> +	/*
-> +	 * Don't use freezer_count() because we don't want the call to
-> +	 * try_to_freeze() here.
-> +	 *
-> +	 * Reason:
-> +	 * Fundamentally, we just don't need it, because freezing condition
-> +	 * doesn't come into effect until we release the pm_mutex lock,
-> +	 * since the freezer always works with pm_mutex held.
-> +	 *
-> +	 * More importantly, in the case of hibernation,
-> +	 * unlock_system_sleep() gets called in snapshot_read() and
-> +	 * snapshot_write() when the freezing condition is still in effect.
-> +	 * Which means, if we use try_to_freeze() here, it would make them
-> +	 * enter the refrigerator, thus causing hibernation to lockup.
-> +	 */
-> +	current->flags &= ~PF_FREEZER_SKIP;
->  	mutex_unlock(&pm_mutex);
-> -	freezer_count();
->  }
->  
->  #else /* !CONFIG_PM_SLEEP */
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+diff --git a/lib/crc32.c b/lib/crc32.c
+index 4b35d2b..ffea0c9 100644
+--- a/lib/crc32.c
++++ b/lib/crc32.c
+@@ -317,7 +317,7 @@ EXPORT_SYMBOL(crc32_be);
+  * in the correct multiple to subtract, we can shift a byte at a time.
+  * This produces a 40-bit (rather than a 33-bit) intermediate remainder,
+  * but again the multiple of the polynomial to subtract depends only on
+- * the high bits, the high 8 bits in this case.  
++ * the high bits, the high 8 bits in this case.
+  *
+  * The multiple we need in that case is the low 32 bits of a 40-bit
+  * value whose high 8 bits are given, and which is a multiple of the
+diff --git a/lib/crc32defs.h b/lib/crc32defs.h
+index 9b6773d..f5a5401 100644
+--- a/lib/crc32defs.h
++++ b/lib/crc32defs.h
+@@ -8,7 +8,7 @@
+ 
+ /* How many bits at a time to use.  Requires a table of 4<<CRC_xx_BITS bytes. */
+ /* For less performance-sensitive, use 4 */
+-#ifndef CRC_LE_BITS 
++#ifndef CRC_LE_BITS
+ # define CRC_LE_BITS 8
+ #endif
+ #ifndef CRC_BE_BITS
 
