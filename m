@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab2ARCRf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 21:17:35 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55404 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756578Ab2ARCRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 21:17:34 -0500
-Message-ID: <1326853009.26116.30.camel@pasglop>
-Subject: Re: [RFC 13/14] irq_domain: Remove 'new' irq_domain in favour of
- the ppc one
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Michael Bohan <mbohan@codeaurora.org>, Rob Herring <robherring2@gmail.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linuxppc-dev@lists.ozlabs.org, Russell King <linux@arm.linux.org.uk>,
-        sfr@canb.auug.org.au,
+	id S1756644Ab2ARCTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 21:19:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46178 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab2ARCTH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 21:19:07 -0500
+Date: Wed, 18 Jan 2012 10:30:26 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org
-Date: Wed, 18 Jan 2012 13:16:49 +1100
-In-Reply-To: <CACxGe6ufk+BUoXZBKm5Q-O1Aj1j=18fJ5KjOC-fKQMbpw4z=mw@mail.gmail.com>
-References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
-	 <1326313337-24603-14-git-send-email-grant.likely@secretlab.ca>
-	 <4F0DFC0F.2090005@gmail.com>
-	 <CACxGe6vVSO0cTgPurr6jFoo9QF_W02UaABOFYadCTQGU9dcwmg@mail.gmail.com>
-	 <4F0F7B60.5040701@gmail.com> <4F14E05C.30207@codeaurora.org>
-	 <1326771731.26116.29.camel@pasglop>
-	 <CACxGe6ufk+BUoXZBKm5Q-O1Aj1j=18fJ5KjOC-fKQMbpw4z=mw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Dong Aisheng <dongas86@gmail.com>
+Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Message-ID: <20120118023022.GA563@S2101-09.ap.freescale.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
+ <20120107135445.GI4790@S2101-09.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE3A6E5@HQMAIL01.nvidia.com>
+ <20120112033941.GH20968@S2101-09.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17801D1DCC@HQMAIL01.nvidia.com>
+ <20120113034558.GA12184@S2101-09.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17801D1F9D@HQMAIL01.nvidia.com>
+ <20120114012213.GD1810@S2101-09.ap.freescale.net>
+ <CACRpkdYmxQd7aaRhs+xc5nizC7OjwRzsduq-28kVTLjhTGjVZw@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17801D230A@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D230A@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 17:28 -0700, Grant Likely wrote:
-> BTW: Ben, if you can carve out some time, I'd appreciate a look over
-> my series and make sure you're okay with it.  Once it's had some
-> testing by arm and ppc folks, I want to get it into linux-next.
+On Tue, Jan 17, 2012 at 11:50:33AM -0800, Stephen Warren wrote:
+> I should ask: Who here is coming to Linaro Connect and/or ELC? I'm
+> Currently signed up for Linaro Connect, but not ELC. I could probably
+> add ELC if there was good reason.
+> 
+Aisheng and myself have signed up for both Linaro Connect and ELC.
+So see you there.
 
-I intend to do so but not while I'm at LCA :-)
-
-Cheers,
-Ben.
-
-
+-- 
+Regards,
+Shawn
