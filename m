@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab2ARBuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 20:50:21 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:57474 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab2ARBuS (ORCPT
+	id S1756564Ab2ARBv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 20:51:28 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60988 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab2ARBv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 20:50:18 -0500
-Date: Wed, 18 Jan 2012 02:50:13 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-Message-ID: <20120118015013.GR11715@one.firstfloor.org>
-References: <CABqD9hYYJMNtupTiD48sE5wz6RKaFi9J3DpVRyV4X2FpnT3Mnw@mail.gmail.com> <CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com> <20120116183730.GB21112@redhat.com> <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com> <20120117164523.GA17070@redhat.com> <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com> <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com> <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
-Mime-Version: 1.0
+	Tue, 17 Jan 2012 20:51:27 -0500
+Date: Wed, 18 Jan 2012 01:51:22 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: JONGMAN HEO <jongman.heo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: build failure with current linus tree
+Message-ID: <20120118015122.GW23916@ZenIV.linux.org.uk>
+References: <27516709.76321326849450926.JavaMail.weblogic@epml05>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <27516709.76321326849450926.JavaMail.weblogic@epml05>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Our ptrace jailer is checking cs to figure out if a task is a compat task
-> or not, if the kernel can change that behind our back it means our jailer
+On Wed, Jan 18, 2012 at 01:17:31AM +0000, JONGMAN HEO wrote:
+> 
+> With current linus git (commit a25a2b84), I got following build error,
+> 
+> arch/x86/kernel/vm86_32.c: In function ??do_sys_vm86??:
+> arch/x86/kernel/vm86_32.c:340: error: implicit declaration of function ??__audit_syscall_exit??
+> make[3]: *** [arch/x86/kernel/vm86_32.o] Error 1
+> 
+> I do not have CONFIG_AUDITSYSCALL in my .config.
 
-Every user program change it behind your back.
+Um...  OK, I can reproduce it (32bit allmodconfig with AUDIT=y, AUDITSYSCALL=n)
+Crap...  It's "Audit: push audit success and retcode into arch ptrace.h".
 
-Your ptrace jailer isn't.
-
-> I think this behaviour is so unexpected that it can only cause security
-> problems in the long run. Is anyone counting on this? Where is this
-> behaviour documented?
-
-Look up far jumps in any x86 manual.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
+index af17e1c..b466cab 100644
+--- a/arch/x86/kernel/vm86_32.c
++++ b/arch/x86/kernel/vm86_32.c
+@@ -336,8 +336,10 @@ static void do_sys_vm86(struct kernel_vm86_struct *info, struct task_struct *tsk
+ 		mark_screen_rdonly(tsk->mm);
+ 
+ 	/*call __audit_syscall_exit since we do not exit via the normal paths */
++#ifdef CONFIG_AUDITSYSCALL
+ 	if (unlikely(current->audit_context))
+ 		__audit_syscall_exit(1, 0);
++#endif
+ 
+ 	__asm__ __volatile__(
+ 		"movl %0,%%esp\n\t"
