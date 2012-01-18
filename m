@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348Ab2ARR21 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 12:28:27 -0500
-Received: from mga11.intel.com ([192.55.52.93]:22116 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932200Ab2ARR20 convert rfc822-to-8bit (ORCPT
+	id S932353Ab2ARRao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 12:30:44 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62676 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200Ab2ARRam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 12:28:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="113656763"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Sergei Trofimovich <slyich@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Borislav Petkov <bp@amd64.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "prasad@linux.vnet.ibm.com" <prasad@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "gouders@et.bocholt.fh-gelsenkirchen.de" 
-	<gouders@et.bocholt.fh-gelsenkirchen.de>,
-        Marcos Souza <marcos.mage@gmail.com>,
-        "justinmattock@gmail.com" <justinmattock@gmail.com>,
-        Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: RE: [PATCH] mce: fix warning messages about static struct mce_device
-Thread-Topic: [PATCH] mce: fix warning messages about static struct
- mce_device
-Thread-Index: AQHM1J/gZZi9VvM99kKJ1R/CbZ8vIpYQw7OAgAB45YCAASg4AIAAVvMAgAATRoD//5B5gA==
-Date: Wed, 18 Jan 2012 17:28:23 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F01CF24@ORSMSX104.amr.corp.intel.com>
-References: <20120118144250.GA16288@suse.de>
- <Pine.LNX.4.44L0.1201181047060.1343-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1201181047060.1343-100000@iolanthe.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Jan 2012 12:30:42 -0500
+Date: Wed, 18 Jan 2012 09:30:37 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
+        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
+Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
+ to unlock_system_sleep()
+Message-ID: <20120118173037.GE30664@google.com>
+References: <201201172345.15010.rjw@sisk.pl>
+ <201201180015.56510.rjw@sisk.pl>
+ <4F16C24A.4050007@linux.vnet.ibm.com>
+ <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com>
+ <4F16F94C.4020000@linux.vnet.ibm.com>
+ <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com>
+ <4F16FF0D.1030606@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F16FF0D.1030606@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg said:
-> It was already fixed that way, but the problem is that you can not have
-> statically allocated 'struct device' objects in the system.
+Hello, Srivatsa.
 
-and then Alan said:
-> There's an additional requirement: Device structures may not be reused.  
-> Not even if the caller clears all the fields to 0 in between.  That was
-> the real bug in the original code -- and adding a dummy release routine
-> wouldn't fix it.
+On Wed, Jan 18, 2012 at 10:49:09PM +0530, Srivatsa S. Bhat wrote:
+> I agree, but I was trying to keep the comment from growing too long ;)
 
-There seems to be some curious logic happening here which I don't understand
-at all. How can the code that deals with 'struct device' tell whether it was
-statically declared or dynamically allocated? Why would it care?
+It doesn't have to be long.  It just has to give some meaning to the
+decision.  AFAICS, it is correct to call try_to_freeze() on
+unlock_system_sleep() regardless of 20sec window.  There's no
+guarantee the unlocking task is gonna hit try_to_freeze() elsewhere
+and not calling it actually makes the interface buggy.
 
-What happens if we play by the rules using a dynamic structure and do
+That said, it causes a problem because unlock_system_sleep() is called
+in a special context during later stage of hibernation where the usual
+expectation - that a freezable task which sees a freezing condition
+should freeze - doesn't hold.
 
- device_register() + device_create_file(dev)
-   ...
- device_remove_file(dev) + device_unregister()
+The correct solution would be somehow marking that condition so that
+either try_to_freeze() doesn't get invoked or gets nullified -
+e.g. making the SKIP thing a counter and ensure the hibernating task
+has it elevated throughout the whole process.  Alternatively, if the
+code path is limited enough, using a different version of the unlock
+function, unlock_system_sleep_nofreeze() or whatever, would work too -
+this is a popular approach for synchronization functions which
+interacts with scheduler and preemption.
 
-then later come back to re-add this and by pure random fluke kzalloc()
-gives us back the exact same block of memory that we used for dev before?
+For now, as a quick fix, maybe not calling try_to_freeze()
+unconditionally is okay, I don't know, but it's a hack.
 
-By Alan's logic we are screwed - we are re-using the same device structure
-(unless kfree() + kzalloc() does some magic pixie dust thing so that this
-same block of memory is now not the same device structure we had before, even
-though it has the same address).
+Thanks.
 
-In summary - I can totally buy the argument that you must start with a zeroed
-struct device (and that it is just fine that device_unregister() doesn't waste
-cpu cycles cleaning up the structure just in case someone will re-use it, because
-that isn't going to be the common case).
-
-I just don't understand the magical difference between a static structure that
-has been memset() to all zero, and a dynamic block returned from kzalloc().
-
--Tony
+-- 
+tejun
