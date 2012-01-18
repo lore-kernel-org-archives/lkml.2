@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab2ARAaU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 19:30:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54488 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755039Ab2ARAaS (ORCPT
+	id S1756219Ab2ARAcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 19:32:52 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17275 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab2ARAcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 19:30:18 -0500
-Date: Tue, 17 Jan 2012 16:30:12 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Rakesh Iyer <riyer@nvidia.com>
-Cc: swarren@nvidia.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Input: tegra-kbc - remove pre Tegra20 definitions
-Message-ID: <20120118003012.GA27489@core.coreip.homeip.net>
-References: <1326842810-12039-1-git-send-email-riyer@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326842810-12039-1-git-send-email-riyer@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jan 2012 19:32:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 17 Jan 2012 16:32:50 -0800
+From: Robert Morell <rmorell@nvidia.com>
+To: linux-kernel@vger.kernel.org, sumit.semwal@linaro.org, airlied@linux.ie
+Cc: dri-devel@lists.freedesktop.org
+Subject: Expanding the use of DMA buffers in 3.3
+Date: Tue, 17 Jan 2012 16:08:16 -0800
+Message-Id: <1326845297-6233-1-git-send-email-rmorell@nvidia.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 03:26:50PM -0800, Rakesh Iyer wrote:
-> Add support for Tegra30 by correcting definitions. This is necessary to
-> make driver useful in Tegra30.
+The DMA buffer infrastructure (dma-buf) currently exposes its interface
+with EXPORT_SYMBOL_GPL.  The documentation for EXPORT_SYMBOL_GPL says:
+    "It implies that the function is considered an internal
+    implementation issue, and not really an interface."
+This interface is clearly not just an "implementation issue" but an
+interface to be used across drivers/subsystems, so I think it makes
+sense for it to use EXPORT_SYMBOL instead.
 
-So what about older versions? There still could be users...
+Work on dma-buf was originally started with the goal of unifying several
+competing "memory management" systems developed with different ARM SoCs
+in mind.  It would be unfortunate if restricting its use to only
+GPL-licensed modules caused dma-buf adoption to be limited.
 
-> 
-> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
-> ---
->  arch/arm/mach-tegra/include/mach/kbc.h |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
-> index 4f3572a..3610568 100644
-> --- a/arch/arm/mach-tegra/include/mach/kbc.h
-> +++ b/arch/arm/mach-tegra/include/mach/kbc.h
-> @@ -24,13 +24,8 @@
->  #include <linux/types.h>
->  #include <linux/input/matrix_keypad.h>
->  
-> -#ifdef CONFIG_ARCH_TEGRA_2x_SOC
->  #define KBC_MAX_GPIO	24
->  #define KBC_MAX_KPENT	8
-> -#else
-> -#define KBC_MAX_GPIO	20
-> -#define KBC_MAX_KPENT	7
-> -#endif
->  
->  #define KBC_MAX_ROW	16
->  #define KBC_MAX_COL	8
-> -- 
-> 1.7.4.1
-> 
+For convenience, I'll send the trivial patch to implement this change.
+I'd like to see this in the first release with dma-buf in 3.3.
 
--- 
-Dmitry
+Thanks,
+Robert
+
+
