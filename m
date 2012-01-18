@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab2AROW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 09:22:27 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:22269 "EHLO
+	id S1757678Ab2AROYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 09:24:16 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:3780 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757611Ab2AROW0 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757606Ab2AROYP convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 18 Jan 2012 09:22:26 -0500
-Message-Id: <4F16E3AC020000780006D796@nat28.tlf.novell.com>
+	Wed, 18 Jan 2012 09:24:15 -0500
+Message-Id: <4F16E41B020000780006D7A5@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 18 Jan 2012 14:22:20 +0000
+Date: Wed, 18 Jan 2012 14:24:11 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
 Cc: "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
         <luca@luca-barbieri.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] ix86: adjust asm constraints in atomic64 wrappers
+Subject: [PATCH 2/2] ix86: atomic64 assembly improvements
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,377 +23,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric pointed out overly restrictive constraints in atomic64_set(), but
-there are issues throughout the file. In the cited case, %ebx and %ecx
-are inputs only (don't get changed by either of the two low level
-implementations). This was also the case elsewhere.
+The cmpxchg8b variants of "set" and "xchg" are really identical, and
+hence don't need to be repeated: %ebx and %ecx don't need to be copied
+into %eax and %edx respectively (this is only necessary when desiring
+to only read the stored value), and the LOCK prefix should also be used
+in "set" (other than the comment that is now being removed was saying,
+there is - to my knowledge - no *architectural* guarantee that aligned
+64-bit writes would always be carried out atomically).
 
-Further in many cases early-clobber indicators were missing.
+In the "add_unless" implementation, swapping the use of %ecx and %esi
+for passing arguments allows %esi to become an input only (i.e.
+permitting the register to be re-used to address the same object
+without reload).
 
-Finally, the previous implementation rolled a custom alternative
-instruction macro from scratch, rather than using alternative_call()
-(which was introduced with the commit that the description of the
-change in question actually refers to). Adjusting has the benefit of
-not hiding referenced symbols from the compiler, which however requires
-them to be declared not just in the exporting source file (which, as a
-desirable side effect, in turn allows that exporting file to become a
-real 5-line stub).
+In "{add,sub}_return", doing the initial read64 through the passed in
+%ecx decreases a register dependency.
 
-This patch does not eliminate the overly restrictive memory clobbers,
-however: Doing so would occasionally make the compiler set up a second
-register for accessing the memory object (to satisfy the added "m"
-constraint), and it's not clear which of the two non-optimal
-alternatives is better.
+In "inc_not_zero", a branch can be eliminated by or-ing together the
+two halves of the current (64-bit) value, and code size can be further
+reduced by adjusting the arithmetic slightly.
 
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
 Cc: Luca Barbieri <luca@luca-barbieri.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
 
 ---
- arch/x86/include/asm/alternative.h |    6 +
- arch/x86/include/asm/atomic64_32.h |  145 +++++++++++++++++++------------------
- arch/x86/lib/atomic64_32.c         |   60 ---------------
- 3 files changed, 87 insertions(+), 124 deletions(-)
+ arch/x86/include/asm/atomic64_32.h |   13 +++++------
+ arch/x86/lib/atomic64_386_32.S     |    6 ++---
+ arch/x86/lib/atomic64_cx8_32.S     |   42 +++++++++----------------------------
+ 3 files changed, 20 insertions(+), 41 deletions(-)
 
---- tip-i386-atomic64.orig/arch/x86/include/asm/alternative.h
-+++ tip-i386-atomic64/arch/x86/include/asm/alternative.h
-@@ -145,6 +145,12 @@ static inline int alternatives_text_rese
-  */
- #define ASM_OUTPUT2(a...) a
- 
-+/*
-+ * use this macro if you need clobbers but no inputs in
-+ * alternative_{input,io,call}()
-+ */
-+#define ASM_NO_INPUT_CLOBBER(clbr...) "i" (0) : clbr
-+
- struct paravirt_patch_site;
- #ifdef CONFIG_PARAVIRT
- void apply_paravirt(struct paravirt_patch_site *start,
 --- tip-i386-atomic64.orig/arch/x86/include/asm/atomic64_32.h
 +++ tip-i386-atomic64/arch/x86/include/asm/atomic64_32.h
-@@ -14,13 +14,50 @@ typedef struct {
+@@ -36,6 +36,7 @@ typedef struct {
+ #define ATOMIC64_EXPORT(sym) __ATOMIC64_EXPORT(sym##_cx8); \
+ 		__ATOMIC64_EXPORT(sym##_386)
  
- #define ATOMIC64_INIT(val)	{ (val) }
++__ATOMIC64_EXPORT(set_386);
+ __ATOMIC64_EXPORT(add_386);
+ __ATOMIC64_EXPORT(sub_386);
+ __ATOMIC64_EXPORT(inc_386);
+@@ -46,7 +47,6 @@ __ATOMIC64_EXPORT(dec_386);
+ 	__alternative_atomic64(f, f, ASM_OUTPUT2(out), ## in)
  
-+#ifndef __ATOMIC64_EXPORT
-+/*
-+ * Don't declare these as functions, even though they are - due to their
-+ * non-standard calling conventions they can't be called by C code anyway.
-+ */
-+#define __ATOMIC64_EXPORT(sym) extern const atomic64_t atomic64_##sym[]
-+#endif
-+
- #ifdef CONFIG_X86_CMPXCHG64
--#define ATOMIC64_ALTERNATIVE_(f, g) "call atomic64_" #g "_cx8"
-+#define __alternative_atomic64(f, g, out, in...) \
-+	asm volatile("call %P[func]" \
-+		     : out : [func] "i" (atomic64_##g##_cx8), ## in)
-+
-+#define ATOMIC64_EXPORT(sym) __ATOMIC64_EXPORT(sym##_cx8)
- #else
--#define ATOMIC64_ALTERNATIVE_(f, g) ALTERNATIVE("call atomic64_" #f "_386", "call atomic64_" #g "_cx8", X86_FEATURE_CX8)
-+#define __alternative_atomic64(f, g, out, in...) \
-+	alternative_call(atomic64_##f##_386, atomic64_##g##_cx8, \
-+			 X86_FEATURE_CX8, ASM_OUTPUT2(out), ## in)
-+
-+#define ATOMIC64_EXPORT(sym) __ATOMIC64_EXPORT(sym##_cx8); \
-+		__ATOMIC64_EXPORT(sym##_386)
-+
-+__ATOMIC64_EXPORT(add_386);
-+__ATOMIC64_EXPORT(sub_386);
-+__ATOMIC64_EXPORT(inc_386);
-+__ATOMIC64_EXPORT(dec_386);
- #endif
- 
--#define ATOMIC64_ALTERNATIVE(f) ATOMIC64_ALTERNATIVE_(f, f)
-+#define alternative_atomic64(f, out, in...) \
-+	__alternative_atomic64(f, f, ASM_OUTPUT2(out), ## in)
-+
-+ATOMIC64_EXPORT(read);
-+ATOMIC64_EXPORT(set);
-+ATOMIC64_EXPORT(xchg);
-+ATOMIC64_EXPORT(add_return);
-+ATOMIC64_EXPORT(sub_return);
-+ATOMIC64_EXPORT(inc_return);
-+ATOMIC64_EXPORT(dec_return);
-+ATOMIC64_EXPORT(dec_if_positive);
-+ATOMIC64_EXPORT(inc_not_zero);
-+ATOMIC64_EXPORT(add_unless);
-+
-+#undef ATOMIC64_EXPORT
-+#undef __ATOMIC64_EXPORT
- 
- /**
-  * atomic64_cmpxchg - cmpxchg atomic64 variable
-@@ -50,11 +87,9 @@ static inline long long atomic64_xchg(at
- 	long long o;
- 	unsigned high = (unsigned)(n >> 32);
- 	unsigned low = (unsigned)n;
--	asm volatile(ATOMIC64_ALTERNATIVE(xchg)
--		     : "=A" (o), "+b" (low), "+c" (high)
--		     : "S" (v)
--		     : "memory"
--		     );
-+	alternative_atomic64(xchg, "=&A" (o),
-+			     "S" (v), "b" (low), "c" (high)
-+			     : "memory");
- 	return o;
- }
- 
-@@ -69,11 +104,9 @@ static inline void atomic64_set(atomic64
+ ATOMIC64_EXPORT(read);
+-ATOMIC64_EXPORT(set);
+ ATOMIC64_EXPORT(xchg);
+ ATOMIC64_EXPORT(add_return);
+ ATOMIC64_EXPORT(sub_return);
+@@ -104,9 +104,9 @@ static inline void atomic64_set(atomic64
  {
  	unsigned high = (unsigned)(i >> 32);
  	unsigned low = (unsigned)i;
--	asm volatile(ATOMIC64_ALTERNATIVE(set)
--		     : "+b" (low), "+c" (high)
--		     : "S" (v)
--		     : "eax", "edx", "memory"
--		     );
-+	alternative_atomic64(set, /* no output */,
-+			     "S" (v), "b" (low), "c" (high)
-+			     : "eax", "edx", "memory");
+-	alternative_atomic64(set, /* no output */,
+-			     "S" (v), "b" (low), "c" (high)
+-			     : "eax", "edx", "memory");
++	__alternative_atomic64(set, xchg, /* no output */,
++			       "S" (v), "b" (low), "c" (high)
++			       : "eax", "edx", "memory");
  }
  
  /**
-@@ -85,10 +118,7 @@ static inline void atomic64_set(atomic64
- static inline long long atomic64_read(const atomic64_t *v)
- {
- 	long long r;
--	asm volatile(ATOMIC64_ALTERNATIVE(read)
--		     : "=A" (r), "+c" (v)
--		     : : "memory"
--		     );
-+	alternative_atomic64(read, "=&A" (r), "c" (v) : "memory");
- 	return r;
-  }
- 
-@@ -101,10 +131,9 @@ static inline long long atomic64_read(co
-  */
- static inline long long atomic64_add_return(long long i, atomic64_t *v)
- {
--	asm volatile(ATOMIC64_ALTERNATIVE(add_return)
--		     : "+A" (i), "+c" (v)
--		     : : "memory"
--		     );
-+	alternative_atomic64(add_return,
-+			     ASM_OUTPUT2("+A" (i), "+c" (v)),
-+			     ASM_NO_INPUT_CLOBBER("memory"));
- 	return i;
- }
- 
-@@ -113,32 +142,25 @@ static inline long long atomic64_add_ret
-  */
- static inline long long atomic64_sub_return(long long i, atomic64_t *v)
- {
--	asm volatile(ATOMIC64_ALTERNATIVE(sub_return)
--		     : "+A" (i), "+c" (v)
--		     : : "memory"
--		     );
-+	alternative_atomic64(sub_return,
-+			     ASM_OUTPUT2("+A" (i), "+c" (v)),
-+			     ASM_NO_INPUT_CLOBBER("memory"));
- 	return i;
- }
- 
- static inline long long atomic64_inc_return(atomic64_t *v)
- {
- 	long long a;
--	asm volatile(ATOMIC64_ALTERNATIVE(inc_return)
--		     : "=A" (a)
--		     : "S" (v)
--		     : "memory", "ecx"
--		     );
-+	alternative_atomic64(inc_return, "=&A" (a),
-+			     "S" (v) : "memory", "ecx");
- 	return a;
- }
- 
- static inline long long atomic64_dec_return(atomic64_t *v)
- {
- 	long long a;
--	asm volatile(ATOMIC64_ALTERNATIVE(dec_return)
--		     : "=A" (a)
--		     : "S" (v)
--		     : "memory", "ecx"
--		     );
-+	alternative_atomic64(dec_return, "=&A" (a),
-+			     "S" (v) : "memory", "ecx");
- 	return a;
- }
- 
-@@ -151,10 +173,9 @@ static inline long long atomic64_dec_ret
-  */
- static inline long long atomic64_add(long long i, atomic64_t *v)
- {
--	asm volatile(ATOMIC64_ALTERNATIVE_(add, add_return)
--		     : "+A" (i), "+c" (v)
--		     : : "memory"
--		     );
-+	__alternative_atomic64(add, add_return,
-+			       ASM_OUTPUT2("+A" (i), "+c" (v)),
-+			       ASM_NO_INPUT_CLOBBER("memory"));
- 	return i;
- }
- 
-@@ -167,10 +188,9 @@ static inline long long atomic64_add(lon
-  */
- static inline long long atomic64_sub(long long i, atomic64_t *v)
- {
--	asm volatile(ATOMIC64_ALTERNATIVE_(sub, sub_return)
--		     : "+A" (i), "+c" (v)
--		     : : "memory"
--		     );
-+	__alternative_atomic64(sub, sub_return,
-+			       ASM_OUTPUT2("+A" (i), "+c" (v)),
-+			       ASM_NO_INPUT_CLOBBER("memory"));
- 	return i;
- }
- 
-@@ -196,10 +216,8 @@ static inline int atomic64_sub_and_test(
-  */
- static inline void atomic64_inc(atomic64_t *v)
- {
--	asm volatile(ATOMIC64_ALTERNATIVE_(inc, inc_return)
--		     : : "S" (v)
--		     : "memory", "eax", "ecx", "edx"
--		     );
-+	__alternative_atomic64(inc, inc_return, /* no output */,
-+			       "S" (v) : "memory", "eax", "ecx", "edx");
- }
- 
- /**
-@@ -210,10 +228,8 @@ static inline void atomic64_inc(atomic64
-  */
- static inline void atomic64_dec(atomic64_t *v)
- {
--	asm volatile(ATOMIC64_ALTERNATIVE_(dec, dec_return)
--		     : : "S" (v)
--		     : "memory", "eax", "ecx", "edx"
--		     );
-+	__alternative_atomic64(dec, dec_return, /* no output */,
-+			       "S" (v) : "memory", "eax", "ecx", "edx");
- }
- 
- /**
-@@ -263,15 +279,16 @@ static inline int atomic64_add_negative(
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns the old value of @v.
-+ * Returns non-zero if the add was done, zero otherwise.
-  */
- static inline int atomic64_add_unless(atomic64_t *v, long long a, long long u)
- {
+@@ -286,9 +286,8 @@ static inline int atomic64_add_unless(at
  	unsigned low = (unsigned)u;
  	unsigned high = (unsigned)(u >> 32);
--	asm volatile(ATOMIC64_ALTERNATIVE(add_unless) "\n\t"
--		     : "+A" (a), "+c" (v), "+S" (low), "+D" (high)
--		     : : "memory");
-+	alternative_atomic64(add_unless,
-+			     ASM_OUTPUT2("+A" (a), "+c" (v),
-+					 "+S" (low), "+D" (high)),
-+			     ASM_NO_INPUT_CLOBBER("memory"));
+ 	alternative_atomic64(add_unless,
+-			     ASM_OUTPUT2("+A" (a), "+c" (v),
+-					 "+S" (low), "+D" (high)),
+-			     ASM_NO_INPUT_CLOBBER("memory"));
++			     ASM_OUTPUT2("+A" (a), "+c" (low), "+D" (high)),
++			     "S" (v) : "memory");
  	return (int)a;
  }
  
-@@ -279,26 +296,20 @@ static inline int atomic64_add_unless(at
- static inline int atomic64_inc_not_zero(atomic64_t *v)
- {
- 	int r;
--	asm volatile(ATOMIC64_ALTERNATIVE(inc_not_zero)
--		     : "=a" (r)
--		     : "S" (v)
--		     : "ecx", "edx", "memory"
--		     );
-+	alternative_atomic64(inc_not_zero, "=&a" (r),
-+			     "S" (v) : "ecx", "edx", "memory");
- 	return r;
- }
+--- tip-i386-atomic64.orig/arch/x86/lib/atomic64_386_32.S
++++ tip-i386-atomic64/arch/x86/lib/atomic64_386_32.S
+@@ -137,13 +137,13 @@ BEGIN(dec_return)
+ RET_ENDP
+ #undef v
  
- static inline long long atomic64_dec_if_positive(atomic64_t *v)
- {
- 	long long r;
--	asm volatile(ATOMIC64_ALTERNATIVE(dec_if_positive)
--		     : "=A" (r)
--		     : "S" (v)
--		     : "ecx", "memory"
--		     );
-+	alternative_atomic64(dec_if_positive, "=&A" (r),
-+			     "S" (v) : "ecx", "memory");
- 	return r;
- }
+-#define v %ecx
++#define v %esi
+ BEGIN(add_unless)
+-	addl %eax, %esi
++	addl %eax, %ecx
+ 	adcl %edx, %edi
+ 	addl  (v), %eax
+ 	adcl 4(v), %edx
+-	cmpl %eax, %esi
++	cmpl %eax, %ecx
+ 	je 3f
+ 1:
+ 	movl %eax,  (v)
+--- tip-i386-atomic64.orig/arch/x86/lib/atomic64_cx8_32.S
++++ tip-i386-atomic64/arch/x86/lib/atomic64_cx8_32.S
+@@ -39,24 +39,9 @@ ENTRY(atomic64_read_cx8)
+ 	CFI_ENDPROC
+ ENDPROC(atomic64_read_cx8)
  
--#undef ATOMIC64_ALTERNATIVE
--#undef ATOMIC64_ALTERNATIVE_
-+#undef alternative_atomic64
-+#undef __alternative_atomic64
- 
- #endif /* _ASM_X86_ATOMIC64_32_H */
---- tip-i386-atomic64.orig/arch/x86/lib/atomic64_32.c
-+++ tip-i386-atomic64/arch/x86/lib/atomic64_32.c
-@@ -1,59 +1,5 @@
--#include <linux/compiler.h>
--#include <linux/module.h>
--#include <linux/types.h>
-+#define __ATOMIC64_EXPORT(sym) extern const atomic64_t atomic64_##sym[]; \
-+	EXPORT_SYMBOL(atomic64_##sym)
- 
--#include <asm/processor.h>
--#include <asm/cmpxchg.h>
-+#include <linux/export.h>
- #include <linux/atomic.h>
+-ENTRY(atomic64_set_cx8)
+-	CFI_STARTPROC
 -
--long long atomic64_read_cx8(long long, const atomic64_t *v);
--EXPORT_SYMBOL(atomic64_read_cx8);
--long long atomic64_set_cx8(long long, const atomic64_t *v);
--EXPORT_SYMBOL(atomic64_set_cx8);
--long long atomic64_xchg_cx8(long long, unsigned high);
--EXPORT_SYMBOL(atomic64_xchg_cx8);
--long long atomic64_add_return_cx8(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_add_return_cx8);
--long long atomic64_sub_return_cx8(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_sub_return_cx8);
--long long atomic64_inc_return_cx8(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_inc_return_cx8);
--long long atomic64_dec_return_cx8(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_dec_return_cx8);
--long long atomic64_dec_if_positive_cx8(atomic64_t *v);
--EXPORT_SYMBOL(atomic64_dec_if_positive_cx8);
--int atomic64_inc_not_zero_cx8(atomic64_t *v);
--EXPORT_SYMBOL(atomic64_inc_not_zero_cx8);
--int atomic64_add_unless_cx8(atomic64_t *v, long long a, long long u);
--EXPORT_SYMBOL(atomic64_add_unless_cx8);
+-1:
+-/* we don't need LOCK_PREFIX since aligned 64-bit writes
+- * are atomic on 586 and newer */
+-	cmpxchg8b (%esi)
+-	jne 1b
 -
--#ifndef CONFIG_X86_CMPXCHG64
--long long atomic64_read_386(long long, const atomic64_t *v);
--EXPORT_SYMBOL(atomic64_read_386);
--long long atomic64_set_386(long long, const atomic64_t *v);
--EXPORT_SYMBOL(atomic64_set_386);
--long long atomic64_xchg_386(long long, unsigned high);
--EXPORT_SYMBOL(atomic64_xchg_386);
--long long atomic64_add_return_386(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_add_return_386);
--long long atomic64_sub_return_386(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_sub_return_386);
--long long atomic64_inc_return_386(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_inc_return_386);
--long long atomic64_dec_return_386(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_dec_return_386);
--long long atomic64_add_386(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_add_386);
--long long atomic64_sub_386(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_sub_386);
--long long atomic64_inc_386(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_inc_386);
--long long atomic64_dec_386(long long a, atomic64_t *v);
--EXPORT_SYMBOL(atomic64_dec_386);
--long long atomic64_dec_if_positive_386(atomic64_t *v);
--EXPORT_SYMBOL(atomic64_dec_if_positive_386);
--int atomic64_inc_not_zero_386(atomic64_t *v);
--EXPORT_SYMBOL(atomic64_inc_not_zero_386);
--int atomic64_add_unless_386(atomic64_t *v, long long a, long long u);
--EXPORT_SYMBOL(atomic64_add_unless_386);
--#endif
+-	ret
+-	CFI_ENDPROC
+-ENDPROC(atomic64_set_cx8)
+-
+ ENTRY(atomic64_xchg_cx8)
+ 	CFI_STARTPROC
+ 
+-	movl %ebx, %eax
+-	movl %ecx, %edx
+ 1:
+ 	LOCK_PREFIX
+ 	cmpxchg8b (%esi)
+@@ -78,7 +63,7 @@ ENTRY(atomic64_\func\()_return_cx8)
+ 	movl %edx, %edi
+ 	movl %ecx, %ebp
+ 
+-	read64 %ebp
++	read64 %ecx
+ 1:
+ 	movl %eax, %ebx
+ 	movl %edx, %ecx
+@@ -159,23 +144,22 @@ ENTRY(atomic64_add_unless_cx8)
+ 	SAVE ebx
+ /* these just push these two parameters on the stack */
+ 	SAVE edi
+-	SAVE esi
++	SAVE ecx
+ 
+-	movl %ecx, %ebp
+-	movl %eax, %esi
++	movl %eax, %ebp
+ 	movl %edx, %edi
+ 
+-	read64 %ebp
++	read64 %esi
+ 1:
+ 	cmpl %eax, 0(%esp)
+ 	je 4f
+ 2:
+ 	movl %eax, %ebx
+ 	movl %edx, %ecx
+-	addl %esi, %ebx
++	addl %ebp, %ebx
+ 	adcl %edi, %ecx
+ 	LOCK_PREFIX
+-	cmpxchg8b (%ebp)
++	cmpxchg8b (%esi)
+ 	jne 1b
+ 
+ 	movl $1, %eax
+@@ -199,13 +183,13 @@ ENTRY(atomic64_inc_not_zero_cx8)
+ 
+ 	read64 %esi
+ 1:
+-	testl %eax, %eax
+-	je 4f
+-2:
++	movl %eax, %ecx
++	orl %edx, %ecx
++	jz 3f
+ 	movl %eax, %ebx
+-	movl %edx, %ecx
++	xorl %ecx, %ecx
+ 	addl $1, %ebx
+-	adcl $0, %ecx
++	adcl %edx, %ecx
+ 	LOCK_PREFIX
+ 	cmpxchg8b (%esi)
+ 	jne 1b
+@@ -214,9 +198,5 @@ ENTRY(atomic64_inc_not_zero_cx8)
+ 3:
+ 	RESTORE ebx
+ 	ret
+-4:
+-	testl %edx, %edx
+-	jne 2b
+-	jmp 3b
+ 	CFI_ENDPROC
+ ENDPROC(atomic64_inc_not_zero_cx8)
 
 
