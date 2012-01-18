@@ -1,141 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab2ARSwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 13:52:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59988 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758114Ab2ARSwb convert rfc822-to-8bit (ORCPT
+	id S1758150Ab2ARSxo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 13:53:44 -0500
+Received: from intmgw002.ash2.facebook.com ([66.220.155.179]:51945 "EHLO
+	intmgw002.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758106Ab2ARSxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 13:52:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F165EB4.9090309@gmail.com>
-References: <1326852454-26117-1-git-send-email-venki@google.com>
-	<4F165EB4.9090309@gmail.com>
-Date: Wed, 18 Jan 2012 10:52:30 -0800
-Message-ID: <CABeCy1Y+02K3wiKra+w6UWy9ZVJh3-EajsFB6BwKgZwW3ma9BQ@mail.gmail.com>
-Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
-From: Venki Pallipadi <venki@google.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Jan 2012 13:53:43 -0500
+From: Arun Sharma <asharma@fb.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>, linux-mm@kvack.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        akpm@linux-foundation.org
+Subject: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
+Date: Wed, 18 Jan 2012 10:51:02 -0800
+Message-Id: <1326912662-18805-1-git-send-email-asharma@fb.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 9:55 PM, KOSAKI Motohiro
-<kosaki.motohiro@gmail.com> wrote:
-> (1/17/12 9:07 PM), Venkatesh Pallipadi wrote:
->> Kernel's notion of possible cpus (from include/linux/cpumask.h)
->>   *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
->>
->>   *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
->>   *  that it is possible might ever be plugged in at anytime during the
->>   *  life of that system boot.
->>
->>   #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
->>
->> and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
->> and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
->>
->> i.e, We needlessly go through this mask based calculation everytime
->> num_possible_cpus() is called.
->>
->> The problem is there with cpu_online_mask() as well, which is fixed value at
->> boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
->> in HOTPLUG case.
->>
->> Though most of the callers of these two routines are init time (with few
->> exceptions of runtime calls), it is cleaner to use variables
->> and not go through this repeated mask based calculation.
->>
->> Signed-off-by: Venkatesh Pallipadi<venki@google.com>
->> ---
->>   include/linux/cpumask.h |    8 ++++++--
->>   kernel/cpu.c            |    9 +++++++++
->>   2 files changed, 15 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
->> index 4f7a632..2eb04dd 100644
->> --- a/include/linux/cpumask.h
->> +++ b/include/linux/cpumask.h
->> @@ -80,9 +80,13 @@ extern const struct cpumask *const cpu_online_mask;
->>   extern const struct cpumask *const cpu_present_mask;
->>   extern const struct cpumask *const cpu_active_mask;
->>
->> +extern int nr_online_cpus;
->> +
->>   #if NR_CPUS>  1
->> -#define num_online_cpus()    cpumask_weight(cpu_online_mask)
->> -#define num_possible_cpus()  cpumask_weight(cpu_possible_mask)
->> +
->> +#define num_online_cpus()    (nr_online_cpus)
->> +#define num_possible_cpus()  (nr_cpu_ids)
->
-> nr_cpu_ids mean maximum cpu id of cpus. if cpu id are sparse, maximum id
-> doesn't match number of cpus.
->
+This enables malloc optimizations where we might
+madvise(..,MADV_DONTNEED) a page only to fault it
+back at a different virtual address.
 
-Yes. But will it be sparse in any arch? I saw some of the users of
-num_possible_cpus() doing things like allocating a buffer for that
-size and then indexing it using get_cpu(). So, I thought it would be
-better to use the existing nr_cpu_ids instead of inventing another
-variable. If indeed any arch is depending on this being sparse, we can
-have a new variable similar to num_possible_cpus and also audit all
-users of num_possible_cpus to see whether they should be using
-nr_cpu_ids instead.
+To ensure that we don't leak sensitive data to
+unprivileged processes, we enable this optimization
+only for pages that are reused within a memory
+cgroup.
 
->
->
->> +
->>   #define num_present_cpus()  cpumask_weight(cpu_present_mask)
->>   #define num_active_cpus()   cpumask_weight(cpu_active_mask)
->>   #define cpu_online(cpu)             cpumask_test_cpu((cpu), cpu_online_mask)
->> diff --git a/kernel/cpu.c b/kernel/cpu.c
->> index 2060c6e..eed2169 100644
->> --- a/kernel/cpu.c
->> +++ b/kernel/cpu.c
->> @@ -622,6 +622,13 @@ static DECLARE_BITMAP(cpu_active_bits, CONFIG_NR_CPUS) __read_mostly;
->>   const struct cpumask *const cpu_active_mask = to_cpumask(cpu_active_bits);
->>   EXPORT_SYMBOL(cpu_active_mask);
->>
->> +#ifdef CONFIG_HOTPLUG_CPU
->> +int nr_online_cpus;
->> +#else
->> +int nr_online_cpus __read_mostly;
->> +#endif
->> +EXPORT_SYMBOL(nr_online_cpus);
->
-> You can always mark this to __read_mostly. other cpu hotplug stuff do so.
-> Because of, I guess, cpu hotplug developers don't think hotplugging is
-> frequently event.
->
+The idea is to make this opt-in both at the mmap()
+level and cgroup level so the default behavior is
+unchanged after the patch.
 
-OK. Agree.
+TODO: Ask for a VM_UNINITIALIZED bit
+TODO: Implement a cgroup level opt-in flag
 
->
->>   void set_cpu_possible(unsigned int cpu, bool possible)
->>   {
->>       if (possible)
->> @@ -644,6 +651,8 @@ void set_cpu_online(unsigned int cpu, bool online)
->>               cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
->>       else
->>               cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
->> +
->> +     nr_online_cpus = cpumask_weight(cpu_online_mask);
->>   }
->
-> I like this change. :)
->
->
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org
+Signed-off-by: Arun Sharma <asharma@fb.com>
+---
+ include/asm-generic/mman-common.h |    6 +-----
+ include/linux/highmem.h           |    6 ++++++
+ include/linux/mm.h                |    2 ++
+ include/linux/mman.h              |    1 +
+ include/linux/page_cgroup.h       |   29 +++++++++++++++++++++++++++++
+ init/Kconfig                      |    2 +-
+ mm/mempolicy.c                    |   29 +++++++++++++++++++++++------
+ 7 files changed, 63 insertions(+), 12 deletions(-)
 
-Thanks,
-Venki
+diff --git a/include/asm-generic/mman-common.h b/include/asm-generic/mman-common.h
+index 787abbb..71e079f 100644
+--- a/include/asm-generic/mman-common.h
++++ b/include/asm-generic/mman-common.h
+@@ -19,11 +19,7 @@
+ #define MAP_TYPE	0x0f		/* Mask for type of mapping */
+ #define MAP_FIXED	0x10		/* Interpret addr exactly */
+ #define MAP_ANONYMOUS	0x20		/* don't use a file */
+-#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
+-# define MAP_UNINITIALIZED 0x4000000	/* For anonymous mmap, memory could be uninitialized */
+-#else
+-# define MAP_UNINITIALIZED 0x0		/* Don't support this flag */
+-#endif
++#define MAP_UNINITIALIZED 0x4000000	/* For anonymous mmap, memory could be uninitialized */
+ 
+ #define MS_ASYNC	1		/* sync memory asynchronously */
+ #define MS_INVALIDATE	2		/* invalidate the caches */
+diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+index 3a93f73..caae922 100644
+--- a/include/linux/highmem.h
++++ b/include/linux/highmem.h
+@@ -4,6 +4,7 @@
+ #include <linux/fs.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
++#include <linux/page_cgroup.h>
+ #include <linux/uaccess.h>
+ #include <linux/hardirq.h>
+ 
+@@ -156,6 +157,11 @@ __alloc_zeroed_user_highpage(gfp_t movableflags,
+ 	struct page *page = alloc_page_vma(GFP_HIGHUSER | movableflags,
+ 			vma, vaddr);
+ 
++#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
++	if (!page_needs_clearing(page, vma))
++		return page;
++#endif
++
+ 	if (page)
+ 		clear_user_highpage(page, vaddr);
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 4baadd1..c6bab01 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -118,6 +118,8 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_SAO		0x20000000	/* Strong Access Ordering (powerpc) */
+ #define VM_PFN_AT_MMAP	0x40000000	/* PFNMAP vma that is fully mapped at mmap time */
+ #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
++#define VM_UNINITIALIZED VM_SAO		/* Steal a powerpc bit for now, since we're out
++					   of bits for 32 bit archs */
+ 
+ /* Bits set in the VMA until the stack is in its final location */
+ #define VM_STACK_INCOMPLETE_SETUP	(VM_RAND_READ | VM_SEQ_READ)
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index 8b74e9b..9bef6c9 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -87,6 +87,7 @@ calc_vm_flag_bits(unsigned long flags)
+ 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
+ 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
+ 	       _calc_vm_trans(flags, MAP_EXECUTABLE, VM_EXECUTABLE) |
++	       _calc_vm_trans(flags, MAP_UNINITIALIZED, VM_UNINITIALIZED) |
+ 	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
+ }
+ #endif /* __KERNEL__ */
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 961ecc7..e959869 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -155,6 +155,17 @@ static inline unsigned long page_cgroup_array_id(struct page_cgroup *pc)
+ 	return (pc->flags >> PCG_ARRAYID_SHIFT) & PCG_ARRAYID_MASK;
+ }
+ 
++static int mm_match_cgroup(const struct mm_struct *mm,
++			   const struct mem_cgroup *cgroup);
++static inline bool page_seen_by_cgroup(struct page *page,
++				       const struct mm_struct *mm)
++{
++	struct page_cgroup *pcg = lookup_page_cgroup(page);
++	if (pcg == NULL)
++		return false;
++	return mm_match_cgroup(mm, pcg->mem_cgroup);
++}
++
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct page_cgroup;
+ 
+@@ -175,8 +186,26 @@ static inline void __init page_cgroup_init_flatmem(void)
+ {
+ }
+ 
++static inline bool page_seen_by_cgroup(struct page *page,
++				       const struct mm_struct *mm)
++{
++	return false;
++}
++
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR */
+ 
++static inline bool vma_requests_uninitialized(struct vm_area_struct *vma)
++{
++	return vma && !vma->vm_file && vma->vm_flags & VM_UNINITIALIZED;
++}
++
++static inline bool page_needs_clearing(struct page *page,
++				       struct vm_area_struct *vma)
++{
++	return !(vma_requests_uninitialized(vma)
++		&& page_seen_by_cgroup(page, vma->vm_mm));
++}
++
+ #include <linux/swap.h>
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+diff --git a/init/Kconfig b/init/Kconfig
+index 43298f9..428e047 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1259,7 +1259,7 @@ endchoice
+ 
+ config MMAP_ALLOW_UNINITIALIZED
+ 	bool "Allow mmapped anonymous memory to be uninitialized"
+-	depends on EXPERT && !MMU
++	depends on EXPERT
+ 	default n
+ 	help
+ 	  Normally, and according to the Linux spec, anonymous memory obtained
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index c3fdbcb..7c9ab68 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -90,6 +90,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/ctype.h>
+ #include <linux/mm_inline.h>
++#include <linux/page_cgroup.h>
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/uaccess.h>
+@@ -1847,6 +1848,11 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 	struct zonelist *zl;
+ 	struct page *page;
+ 
++#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
++	if (vma_requests_uninitialized(vma))
++		gfp &= ~__GFP_ZERO;
++#endif
++
+ 	get_mems_allowed();
+ 	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+ 		unsigned nid;
+@@ -1854,25 +1860,36 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
+ 		mpol_cond_put(pol);
+ 		page = alloc_page_interleave(gfp, order, nid);
+-		put_mems_allowed();
+-		return page;
++		goto out;
+ 	}
+ 	zl = policy_zonelist(gfp, pol, node);
+ 	if (unlikely(mpol_needs_cond_ref(pol))) {
+ 		/*
+ 		 * slow path: ref counted shared policy
+ 		 */
+-		struct page *page =  __alloc_pages_nodemask(gfp, order,
+-						zl, policy_nodemask(gfp, pol));
++		page =  __alloc_pages_nodemask(gfp, order,
++					       zl, policy_nodemask(gfp, pol));
+ 		__mpol_put(pol);
+-		put_mems_allowed();
+-		return page;
++		goto out;
+ 	}
++
+ 	/*
+ 	 * fast path:  default or task policy
+ 	 */
+ 	page = __alloc_pages_nodemask(gfp, order, zl,
+ 				      policy_nodemask(gfp, pol));
++
++out:
++#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
++	if (page_needs_clearing(page, vma)) {
++		int i;
++		for (i = 0; i < (1 << order); i++) {
++			void *kaddr = kmap_atomic(page + i, KM_USER0);
++			clear_page(kaddr);
++			kunmap_atomic(kaddr, KM_USER0);
++		}
++	}
++#endif
+ 	put_mems_allowed();
+ 	return page;
+ }
+-- 
+1.7.4
+
