@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab2ARRwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 12:52:22 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:61078 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932327Ab2ARRwU convert rfc822-to-8bit (ORCPT
+	id S932423Ab2ARRyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 12:54:35 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8767 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396Ab2ARRyd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 12:52:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <1326899083.2937.14.camel@localhost>
-References: <20120116183730.GB21112@redhat.com> <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
- <20120117164523.GA17070@redhat.com> <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
- <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
- <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
- <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
- <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
- <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com> <1326899083.2937.14.camel@localhost>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 18 Jan 2012 09:51:57 -0800
-X-Google-Sender-Auth: Twf41OLt1F1c1fFmvcRA2qsnGBg
-Message-ID: <CA+55aFwD13_KUXYyjmJtfuC0kVrJ_RkPH=-eTBLQhQHxztev=w@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-To: Eric Paris <eparis@redhat.com>
-Cc: Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 18 Jan 2012 12:54:33 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 18 Jan 2012 09:54:28 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>, "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Date: Wed, 18 Jan 2012 09:54:27 -0800
+Subject: RE: [PATCH V1 2/2] regulator: tps65910: Initialize n_voltages for
+ rails.
+Thread-Topic: [PATCH V1 2/2] regulator: tps65910: Initialize n_voltages for
+ rails.
+Thread-Index: AczV9E+GbYWK/Q9iTv6L3FiCavWhTAAFYz8g
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1780DAAE10@HQMAIL01.nvidia.com>
+References: <1326899836-14470-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1326899836-14470-1-git-send-email-ldewangan@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 7:04 AM, Eric Paris <eparis@redhat.com> wrote:
->
-> Gratuitous SELinux for the win e-mail!  (Feel free to delete now)  We
-> typically, for all confined domains, do not allow mapping anonymous
-> memory both W and X.  Actually you can't even map it W and then map it
-> X...
+Laxman Dewangan wrote at Wednesday, January 18, 2012 8:17 AM:
+> Initializing the number of voltages supported by different
+> rails of pmic device tps65911.
+...
+> diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+...
+> @@ -188,56 +188,67 @@ static struct tps_info tps65911_regs[] = {
+>  		.name = "VDD1",
+>  		.min_uV = 600000,
+>  		.max_uV = 4500000,
+> +		.table_len = 73,
+>  	},
 
-That doesn't help.
+Forgive me if these comments are bogus since I'm not familiar with
+regulators much, but:
 
-Anonymous memory is the *one* kind of mapping that this cannot happen
-for - because then you have the same page mapped only at one
-particular virtual address (and all modern x86's are entirely coherent
-in the pipeline for that case, afaik).
+a) Don't you want to use ARRAY_SIZE() instead of hard-coding table_len's
+value?
 
-> Now if there is file which you have both W and X SELinux permissions
-> (which is rare, but not impossible) you could map it in two places.  So
-> we can (and do) build SELinux sandboxes which address this.
+b) Don't you need to set .table to actually point at the table too? If not,
+isn't tps65910_list_voltage() going to dereference a NULL pointer, since
+it will dereference .table if .table_len is set?
 
-So the cases that matter are file-backed and various shared memory setups.
+-- 
+nvpublic
 
-                   Linus
