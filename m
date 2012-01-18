@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab2ARHQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 02:16:41 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33927 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444Ab2ARHQk (ORCPT
+	id S1756056Ab2ARHRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 02:17:06 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64353 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755302Ab2ARHRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 02:16:40 -0500
+	Wed, 18 Jan 2012 02:17:04 -0500
+Date: Wed, 18 Jan 2012 09:16:49 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Minchan Kim <minchan@kernel.org>
+cc: Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC 1/3] /dev/low_mem_notify
+In-Reply-To: <20120117232025.GB903@barrios-desktop.redhat.com>
+Message-ID: <alpine.LFD.2.02.1201180905040.2488@tux.localdomain>
+References: <1326788038-29141-1-git-send-email-minchan@kernel.org> <1326788038-29141-2-git-send-email-minchan@kernel.org> <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com> <4F15A34F.40808@redhat.com> <alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
+ <20120117232025.GB903@barrios-desktop.redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
-References: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
-Date: Wed, 18 Jan 2012 12:46:37 +0530
-Message-ID: <CAJuYYwT+pNdt6G07Gx7TqkpGBQEnmMGxsHSE2mew9qUjO-ES5Q@mail.gmail.com>
-Subject: Re: [PATCH v6] pinctrl: add a pin config interface
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 18 Jan 2012, Minchan Kim wrote:
+> I didn't look into your code(will do) but as I read description,
+> still I don't convince we need really some process specific threshold like 99%
+> I think application can know it by polling /proc/meminfo without this mechanism
+> if they really want.
 
-On 9 December 2011 17:27, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> This add per-pin and per-group pin config interfaces for biasing,
-> driving and other such electronic properties. The details of passed
-> configurations are passed in an opaque unsigned long which may be
-> dereferences to integer types, structs or lists on either side
-> of the configuration interface.
+I'm not sure if we need arbitrary threshold either. However, we need to 
+support the following cases:
 
-In case of runtime pinmuxing, the pin configuration would also be
-required to be setup in some cases. pin_config_set() is suitable to be
-called from the platform code. In case of runtime pinmuxing in driver
-code, is there any way to set the pin config also at runtime in driver
-code?
+   - We're about to swap
 
-Thanks,
-Thomas.
+   - We're about to run out of memory
+
+   - We're about to start OOM killing
+
+and I don't think your patch solves that. One possibility is to implement:
+
+   VMNOTIFY_TYPE_ABOUT_TO_SWAP
+   VMNOTIFY_TYPE_ABOUT_TO_OOM
+   VMNOTIFY_TYPE_ABOUT_TO_OOM_KILL
+
+and maybe rip out support for arbitrary thresholds. Does that more 
+reasonable?
+
+As for polling /proc/meminfo, I'd much rather deliver stats as part of 
+vmnotify_read() because it's easier to extend the ABI rather than adding 
+new fields to /proc/meminfo.
+
+On Wed, 18 Jan 2012, Minchan Kim wrote:
+> I would like to notify when system has a trobule with memory pressure without
+> some process specific threshold. Of course, applicatoin can't expect it.(ie,
+> application can know system memory pressure by /proc/meminfo but it can't know
+> when swapout really happens). Kernel low mem notify have to give such notification
+> to user space, I think.
+
+It should be simple to add support for VMNOTIFY_TYPE_MEM_PRESSURE that 
+uses your hooks.
+
+ 			Pekka
