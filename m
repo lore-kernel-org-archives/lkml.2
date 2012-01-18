@@ -1,117 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab2ARApi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 19:45:38 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50903 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab2ARApW (ORCPT
+	id S1756469Ab2ARArV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 19:47:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59535 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756301Ab2ARArT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 19:45:22 -0500
-Date: Wed, 18 Jan 2012 00:45:18 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [git pull] aush^H^Hdit queue
-Message-ID: <20120118004518.GU23916@ZenIV.linux.org.uk>
-References: <20120117213429.GS23916@ZenIV.linux.org.uk>
- <CA+55aFw_9Wm=qUH+39wb7Xq5KFTZZ4TqgkwMksrD_Q8G-uO3jg@mail.gmail.com>
- <20120118003840.GT23916@ZenIV.linux.org.uk>
+	Tue, 17 Jan 2012 19:47:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120118003840.GT23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <op.v781mqwl3l0zgt@mpn-glaptop>
+References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
+ <1325162352-24709-5-git-send-email-m.szyprowski@samsung.com>
+ <CA+K6fF6A1kPUW-2Mw5+W_QaTuLfU0_m0aMYRLOg98mFKwZOhtQ@mail.gmail.com> <op.v781mqwl3l0zgt@mpn-glaptop>
+From: sandeep patil <psandeep.s@gmail.com>
+Date: Tue, 17 Jan 2012 16:46:37 -0800
+Message-ID: <CA+K6fF64hjVBjx6NPspQSud2hkJQWzeXkceLAChPrO-k7eCF+g@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 04/11] mm: page_alloc: introduce alloc_contig_range()
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Typo in init/Kconfig fixed, amended into the commit in question, the rest
-cherry-picked on top of the amended commit.
+> Yeah, we are wondering ourselves about that.  Could you try cherry-picking
+> commit ad10eb079c97e27b4d27bc755c605226ce1625de (update migrate type on pcp
+> when isolating) from git://github.com/mina86/linux-2.6.git?  It probably
+> won't
+> apply cleanly but resolving the conflicts should not be hard (alternatively
+> you can try branch cma from the same repo but it is a work in progress at
+> the
+> moment).
+>
 
-git://git.kernel.org:/pub/scm/linux/kernel/git/viro/audit.git for-linus2
+I'll try this patch and report back ,,
 
-Shortlog:
-Eric Paris (23):
-      audit: make filetype matching consistent with other filters
-      audit: dynamically allocate audit_names when not enough space is in the names array
-      audit: drop the meaningless and format breaking word 'user'
-      audit: check current inode and containing object when filtering on major and minor
-      seccomp: audit abnormal end to a process due to seccomp
-      Audit: push audit success and retcode into arch ptrace.h
-      audit: ia32entry.S sign extend error codes when calling 64 bit code
-      audit: inline audit_syscall_entry to reduce burden on archs
-      audit: remove AUDIT_SETUP_CONTEXT as it isn't used
-      audit: drop some potentially inadvisable likely notations
-      audit: inline checks for not needing to collect aux records
-      audit: drop audit_set_macxattr as it doesn't do anything
-      audit: inline audit_free to simplify the look of generic code
-      audit: reject entry,always rules
-      audit: remove audit_finish_fork as it can't be called
-      audit: allow matching on obj_uid
-      audit: allow audit matching on inode gid
-      audit: remove task argument to audit_set_loginuid
-      audit: only allow tasks to set their loginuid if it is -1
-      audit: do not call audit_getname on error
-      audit: allow interfield comparison in audit rules
-      audit: complex interfield comparison helper
-      audit: allow interfield comparison between gid and ogid
 
-Kees Cook (2):
-      audit: treat s_id as an untrusted string
-      audit: no leading space in audit_log_d_path prefix
+>> is set to MIGRATE_CMA instead of MIGRATE_ISOLATED.
+>
+>
+> My understanding of that situation is that the page is on pcp list in which
+> cases it's page_private is not updated.  Draining and the first patch in
+> the series (and also the commit I've pointed to above) are designed to fix
+> that but I'm unsure why they don't work all the time.
+>
+>
 
-Nathaniel Husted (1):
-      Kernel: Audit Support For The ARM Platform
+Will verify this if the page is found on the pcp list as well .
 
-Peter Moody (2):
-      audit: implement all object interfield comparisons
-      audit: comparison on interprocess fields
+>> I've also had a test case where it failed because (page_count() != 0)
 
-Xi Wang (1):
-      audit: fix signedness bug in audit_log_execve_info()
+With this, when it failed the page_count()
+returned a value of 2. I am not sure why, but I will try and see If I can
+reproduce this.
 
-Diffstat:
- arch/arm/include/asm/kprobes.h       |    1 -
- arch/arm/include/asm/ptrace.h        |    5 +
- arch/arm/include/asm/thread_info.h   |    6 +
- arch/arm/kernel/entry-common.S       |    4 +-
- arch/arm/kernel/ptrace.c             |   16 +-
- arch/ia64/include/asm/ptrace.h       |   13 +-
- arch/ia64/kernel/ptrace.c            |   18 +-
- arch/microblaze/include/asm/ptrace.h |    5 +
- arch/microblaze/kernel/ptrace.c      |    9 +-
- arch/mips/include/asm/ptrace.h       |   14 +-
- arch/mips/kernel/ptrace.c            |   11 +-
- arch/powerpc/include/asm/ptrace.h    |   13 +-
- arch/powerpc/kernel/ptrace.c         |   30 +-
- arch/s390/include/asm/ptrace.h       |    6 +-
- arch/s390/kernel/ptrace.c            |   15 +-
- arch/sh/include/asm/ptrace_32.h      |    5 +-
- arch/sh/include/asm/ptrace_64.h      |    5 +-
- arch/sh/kernel/ptrace_32.c           |   11 +-
- arch/sh/kernel/ptrace_64.c           |   11 +-
- arch/sparc/include/asm/ptrace.h      |   10 +-
- arch/sparc/kernel/ptrace_64.c        |   28 +-
- arch/um/kernel/ptrace.c              |   20 +-
- arch/x86/ia32/ia32entry.S            |   14 +-
- arch/x86/kernel/entry_32.S           |   10 +-
- arch/x86/kernel/entry_64.S           |   14 +-
- arch/x86/kernel/ptrace.c             |   25 +-
- arch/x86/kernel/vm86_32.c            |    4 +-
- arch/x86/um/shared/sysdep/ptrace.h   |    5 +
- arch/xtensa/kernel/ptrace.c          |    3 +-
- fs/namei.c                           |   28 +-
- fs/proc/base.c                       |    5 +-
- include/linux/audit.h                |  116 +++++-
- include/linux/ptrace.h               |   10 +
- init/Kconfig                         |   16 +-
- kernel/audit.c                       |    4 +-
- kernel/audit.h                       |    6 +-
- kernel/auditfilter.c                 |   17 +-
- kernel/auditsc.c                     |  735 +++++++++++++++++++++-------------
- kernel/exit.c                        |    3 +-
- kernel/fork.c                        |    2 -
- kernel/seccomp.c                     |    2 +
- security/integrity/ima/ima_audit.c   |    8 +-
- security/lsm_audit.c                 |   27 +-
- 43 files changed, 810 insertions(+), 500 deletions(-)
+>
+>
+>> Have you or anyone else seen this during the CMA testing?
+>>
+>> Also, could this be because we are finding a page within (start, end)
+>> that actually belongs to a higher order Buddy block ?
+>
+>
+> Higher order free buddy blocks are skipped in the “if (PageBuddy(page))”
+> path of __test_page_isolated_in_pageblock().  Then again, now that I think
+> of it, something fishy may be happening on the edges.  Moving the check
+> outside of __alloc_contig_migrate_range() after outer_start is calculated
+> in alloc_contig_range() could help.  I'll take a look at it.
+
+I was going to suggest that, moving the check until after outer_start
+is calculated
+will definitely help IMO. I am sure I've seen a case where
+
+  page_count(page) = page->private = 0 and PageBuddy(page) was false.
+
+I will try and reproduce this as well.
+
+Thanks,
+Sandeep
