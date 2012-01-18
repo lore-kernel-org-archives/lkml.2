@@ -1,99 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757835Ab2ARPNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 10:13:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36522 "EHLO mx2.suse.de"
+	id S1757873Ab2ARPOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 10:14:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45402 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757647Ab2ARPNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 10:13:16 -0500
-Date: Wed, 18 Jan 2012 16:13:13 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH] mm: memcg: remove checking reclaim order in soft limit
- reclaim
-Message-ID: <20120118151313.GF31112@tiehlicka.suse.cz>
-References: <CAJd=RBBdDriMhfetM2AWGzgxiJ1DDs-W4Ff9_1Z8DUgbyQmSkA@mail.gmail.com>
- <20120117131601.GB14907@tiehlicka.suse.cz>
- <CAJd=RBBcL5RuW1wC_Yh=gy2Ja8wqJ6jhf28zNi1n6MJ=+0=m2Q@mail.gmail.com>
- <20120117140712.GC14907@tiehlicka.suse.cz>
- <CAJd=RBAyqPwKERQL4JyCO38gjE=y8_qasHTbLtMGWqtZ1JFnUg@mail.gmail.com>
- <20120118134053.GD31112@tiehlicka.suse.cz>
- <CAJd=RBAs3_ic+0UbZ_Bn4tBp_t2-HuohcRrWD1d6M2oSYRNYmQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBAs3_ic+0UbZ_Bn4tBp_t2-HuohcRrWD1d6M2oSYRNYmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757647Ab2ARPOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 10:14:12 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CALLzPKb4EycNZAd_80x-+p-iJ94CHerngOFZZmdrLpoJ+bYRMQ@mail.gmail.com>
+References: <CALLzPKb4EycNZAd_80x-+p-iJ94CHerngOFZZmdrLpoJ+bYRMQ@mail.gmail.com> <20111202184229.21874.25782.stgit@warthog.procyon.org.uk> <20111202184406.21874.65285.stgit@warthog.procyon.org.uk> <CALLzPKZFShWGxxic8zMfTxoj6Q+t7-sC90wp5J790VRmg-O09g@mail.gmail.com> <26123.1326889583@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
+        alan.cox@intel.com
+Subject: Re: [PATCH 08/21] KEYS: Add signature verification facility [ver #3]
+Date: Wed, 18 Jan 2012 15:13:44 +0000
+Message-ID: <29789.1326899624@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 18-01-12 22:01:57, Hillf Danton wrote:
-> On Wed, Jan 18, 2012 at 9:40 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Wed 18-01-12 20:30:41, Hillf Danton wrote:
-> >> On Tue, Jan 17, 2012 at 10:07 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> >> > On Tue 17-01-12 21:29:52, Hillf Danton wrote:
-> >> >> On Tue, Jan 17, 2012 at 9:16 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> >> >> > Hi,
-> >> >> >
-> >> >> > On Tue 17-01-12 20:47:59, Hillf Danton wrote:
-> >> >> >> If async order-O reclaim expected here, it is settled down when setting up scan
-> >> >> >> control, with scan priority hacked to be zero. Other than that, deny of reclaim
-> >> >> >> should be removed.
-> >> >> >
-> >> >> > Maybe I have misunderstood you but this is not right. The check is to
-> >> >> > protect from the _global_ reclaim with order > 0 when we prevent from
-> >> >> > memcg soft reclaim.
-> >> >> >
-> >> >> need to bear mm hog in this way?
-> >> >
-> >> > Could you be more specific? Are you trying to fix any particular
-> >> > problem?
-> >> >
-> >> My thought is simple, the outcome of softlimit reclaim depends little on the
-> >> value of reclaim order, zero or not, and only exceeding is reclaimed, so
-> >> selective response to swapd's request is incorrect.
-> >
-> > OK, got your point, finally. Let's add Balbir (the proposed patch can
-> > be found at https://lkml.org/lkml/2012/1/17/166) to the CC list because
-> > this seems to be a design decision.
-> >
-> > I always thought that this is because we want non-userspace (high order)
-> > mem pressure to be handled by the global reclaim only. And it makes some
-> > sense to me because it is little bit strange to reclaim for order-0
-> > while the request is for an higher order. I guess this might lead to an
-> > extensive and pointless reclaiming because we might end up with many
-> > free pages which cannot satisfy higher order allocation.
-> >
-> > On the other hand, it is true that the documentation says that the soft
-> > limit is considered when "the system detects memory contention or low
-> > memory" which doesn't say that the contention comes from memcg accounted
-> > memory.
-> >
-> > Anyway this changes the current behavior so it would better come with
-> > much better justification which shows that over reclaim doesn't happen
-> > and that we will not see higher latencies with higher order allocations.
-> >
-> 
-> As the function shows, the checked reclaim order is not used, but the
-> scan control is prepared with order(= 0), which is called async order-0
-> reclaim in my tern, then your worries on over reclaim and higher latencies
-> could be removed, I think 8-)
+Kasatkin, Dmitry <dmitry.kasatkin@intel.com> wrote:
 
-Not really. My concern was that memcg will reclaim for order-0 while the
-kswapd reclaims for order-N so after we reclaimed something from cgroups
-we finally start reclaiming for order-N.
+> Yes. it is clear...
+> Would it be possible to have pass data (uncompleted) hash?
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Yes, provided it's not finalised.  Also, with the current code it would have
+to be a shash, but I think I should be able to support the passing in of an
+async hash by exporting the state from that and importing the state into a
+shash using the crypto layer export and import functions.
+
+David
