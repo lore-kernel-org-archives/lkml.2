@@ -1,124 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab2ARTBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 14:01:06 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11863 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758077Ab2ARTBE convert rfc822-to-8bit (ORCPT
+	id S1756700Ab2ARTFL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 14:05:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52611 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756195Ab2ARTFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 14:01:04 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 18 Jan 2012 11:00:40 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Date: Wed, 18 Jan 2012 11:00:38 -0800
-Subject: RE: Pinmux bindings proposal
-Thread-Topic: Pinmux bindings proposal
-Thread-Index: AczVkDA3are6Z070SoiRMZQwksHd8wAghpbQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1780DAAE7C@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
- <20120114070858.GG1810@S2101-09.ap.freescale.net>
- <74CDBE0F657A3D45AFBB94109FB122FF17801D22C7@HQMAIL01.nvidia.com>
- <20120118033209.GB563@S2101-09.ap.freescale.net>
-In-Reply-To: <20120118033209.GB563@S2101-09.ap.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Jan 2012 14:05:09 -0500
+Message-ID: <4F1717DF.8060809@kernel.dk>
+Date: Wed, 18 Jan 2012 20:05:03 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, Shaohua Li <shaohua.li@intel.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel crash in icq_free_icq_rcu
+References: <20120118010323.GA32160@htj.dyndns.org> <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com> <20120118011112.GB32160@htj.dyndns.org> <1326850253.22361.619.camel@sli10-conroe> <1326866602.22361.624.camel@sli10-conroe> <20120118135126.GB30204@redhat.com> <20120118142005.GC30204@redhat.com> <20120118160957.GB30664@google.com> <4F16F245.9000708@kernel.dk> <4F16F3CA.90904@kernel.dk> <20120118163638.GD30204@redhat.com>
+In-Reply-To: <20120118163638.GD30204@redhat.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shawn Guo wrote at Tuesday, January 17, 2012 8:32 PM:
-> On Tue, Jan 17, 2012 at 10:47:14AM -0800, Stephen Warren wrote:
-> > Shawn Guo wrote at Saturday, January 14, 2012 12:09 AM:
-> > > On Fri, Jan 13, 2012 at 12:39:42PM -0800, Stephen Warren wrote:
-...
-> > > >                 /*
-> > > >                  * The actual definition of the complete state of the
-> > > >                  * pinmux as required by some driver.
-> > > >                  *
-> > > >                  * These can be either directly in the device node, or
-> > > >                  * somewhere in tegra20.dtsi in order to provide pre-
-> > > >                  * selected/common configurations. Hence, they're referred
-> > > >                  * to by phandle above.
-> > > >                  */
-> > > >                 pmx_sdhci_active: {
-> > > >                         /*
-> > > >                          * Pin mux settings. Mandatory?
-> > > >                          * Not mandatory if the 1:1 mentioned above is
-> > > >                          * extended to 1:n.
-> > > >                          *
-> > > >                          * Format is <&pmx_controller_phandle muxable_entity_id
-> > > >                          * selected_function>.
-> > > >                          *
-> > > >                          * The pmx phandle is required since there may be more
-> > > >                          * than one pinmux controller in the system. Even if
-> > > >                          * this node is inside the pinmux controller itself, I
-> > > >                          * think it's simpler to just always have this field
-> > > >                          * present in the binding for consistency.
-> > > >                          *
-> > >
-> > > I prefer to just put such nodes inside pinctrl controller itself and
-> > > drop those phandles.
-> >
-> > My rationale here:
-> >
-> > Forcing those nodes to be inside the controller node forces us to store
-> > any board-specific custom configurations or overrides in the controller
-> > node too; I'd simply prefer the flexibility to put them anywhere.
->
-> Hmm, this type of flexibility does not make too much point to me.  On
-> the contrary, it's good to have a centralized place for these nodes,
-> so that they can be well organized and people can find them easily.
+On 2012-01-18 17:36, Vivek Goyal wrote:
+> On Wed, Jan 18, 2012 at 05:31:06PM +0100, Jens Axboe wrote:
+>> On 2012-01-18 17:24, Jens Axboe wrote:
+>>> On 2012-01-18 17:09, Tejun Heo wrote:
+>>>> On Wed, Jan 18, 2012 at 09:20:05AM -0500, Vivek Goyal wrote:
+>>>>>> Not allocating icq if request is never going to go to elevator as elevator
+>>>>>> switch was happening makes sense to me.
+>>>>>>
+>>>>>> I tried this patch. It went little further and crashed at a different
+>>>>>> place. I think this seems to be separate merging issue Tejun is trying
+>>>>>> to track down.
+>>>>>
+>>>>> Applied Tejun's debug patch to return early and not call into elevator
+>>>>> for checking whether merge is allowed or not. Things seems to be stable
+>>>>> now for me.
+>>>>
+>>>> Yeah, plug merge is calling into elevator code without any
+>>>> synchronization, so it's bound to be broken.  Given plugging is
+>>>> per-task, I don't think we really need to query elevator about merging
+>>>> bio's.  The request is not on elevator and plugging is part of issuing
+>>>> mechanism, not scheduling, after all.  Jens, what do you think?
+>>>
+>>> Hmmm. We can bypass asking the elevator, as long as we query the
+>>> restrictions. Does the below, by itself, resolve the crash? If yes, let
+>>> me cook up a patch splitting the elv and blk rq merging logic.
+>>
+>> Something like the below, completely untested.
+>>
+>> But thinking about this a bit while doing it, why is the IO scheduler
+>> going away while we have plugged requests that are elvpriv?
+> 
+> Not calling ioscheduler during plug merge will allow merging of sync/async
+> requests together. I guess we wouldn't want that. The only check we can
+> skip in case of plug merge, is whether bio and rq beong to same task/cfqq
+> or not.
 
-I still would really rather have the flexibility to just put the nodes
-anywhere.
+It's not a huge concern. Since the IO is coming from the same task, it's
+definitely related. And for the related cases, we pretty much always
+want merging anyway.
 
-However, I don't think we lose any functionality by forcing the nodes
-to be inside the pin controller's node. And as you say, we do get to
-remove the phandle from the mux and config properties then too, which
-very marginally simplifies parsing.
+> May be separate elevator functions for plug merge (without lock) and
+> elevator merge (with lock) will do?
 
-One other concern I had was a device that needed to configure the pin
-mux on two different pin controllers (think the main SoC and some complex
-chip attached to one of the SoC's external busses). Ideally, there'd be
-a Linux device for each end of the bus, and each would configure the
-respective chip's pinmux. However, I can certainly foresee cases where
-there's only a Linux device for the main SoC, and it'd need to configure
-both chips' pinmux. Still, I think we can deal with that easily enough,
-since that device's pinctrl property can simply use the 1:n feature, and
-have multiple entries pointing at both chip's pinctrl device:
-
-foo@c8000200 {
-   ...
-   pinctrl = <&pinmux_soc_xxx> <&pinmux_otherchip_xxx>
-             <&pinmux_soc_xxx_suspend> <&pinmux_otherchip_xxx_suspend>;
-   pinctrl-entries = <2 2>;
-   pinctrl-names = "active", "suspend";
-};
-
-So, I can live with requiring the pin configuration nodes to be underneath
-the relevant pin controller's node, and removing the phandle from the
-mux and config properties in the pin configuration nodes.
+I don't think that's a good idea, just the restriction checking should
+be enough.
 
 -- 
-nvpublic
+Jens Axboe
 
