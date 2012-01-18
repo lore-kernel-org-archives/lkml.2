@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757855Ab2ARUr0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 15:47:26 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47491 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2ARUrZ (ORCPT
+	id S1758086Ab2ARUtl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 15:49:41 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50127 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757334Ab2ARUtj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 15:47:25 -0500
-Date: Wed, 18 Jan 2012 20:46:39 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrew Jones <drjones@redhat.com>, rientjes@google.com, mingo@elte.hu,
-        david.woodhouse@intel.com, linux-kernel@vger.kernel.org,
-        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, arnd@arndb.de,
-        holt@sgi.com, linux-arch@vger.kernel.org, hskinnemoen@gmail.com,
-        egtvedt@samfundet.no, msalter@redhat.com, a-jacquiot@ti.com,
-        starvik@axis.com, jesper nilsson <jesper.nilsson@axis.com>,
-        dhowells@redhat.com, takata@linux-m32r.org, geert@linux-m68k.org,
-        yasutake koichi <yasutake.koichi@jp.panasonic.com>, jonas@southpole.se,
-        kyle@mcmartin.ca, deller@gmx.de, jejb@parisc-linux.org,
-        chris@zankel.net, greg@kroah.com, davej@redhat.com, airlied@linux.ie,
-        jkosina@suse.cz, mchehab@infradead.org, johannes@sipsolutions.net,
-        linville@tuxdriver.com
-Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
-Message-ID: <20120118204639.GO1068@n2100.arm.linux.org.uk>
-References: <1326295008-29795-1-git-send-email-drjones@redhat.com> <b6315f9b-0ead-4de4-a8f5-ed619f852c6c@zmail13.collab.prod.int.phx2.redhat.com> <20120118122830.037f1e29.akpm@linux-foundation.org>
+	Wed, 18 Jan 2012 15:49:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120118122830.037f1e29.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <7f1e961d.f528.134efaf8348.Coremail.dragonylffly@163.com>
+References: <7f1e961d.f528.134efaf8348.Coremail.dragonylffly@163.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Jan 2012 12:49:17 -0800
+X-Google-Sender-Auth: KKyDwpLdCxMlPlIEAr-sPd8Oo-A
+Message-ID: <CA+55aFx7CV8wpDLfCr-pVVRxRyYgd2QdRXJSmp+UgrjSHyB1eA@mail.gmail.com>
+Subject: Re: [PATCH] eCryptfs: infinite loop bug
+To: dragonylffly <dragonylffly@163.com>
+Cc: tyhicks@canonical.com, john.johansen@canonical.com,
+        dustin.kirkland@gazzang.com, ecryptfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 12:28:30PM -0800, Andrew Morton wrote:
-> I can see an argument for retaining EXPERIMENTAL: as a way of telling
-> people that the particular feature might not yet be ready for prime
-> time.  But I suggest that we tip both CONFIG_EXPERT and CONFIG_EMBEDDED
-> into the ole bit bucket.  What do you guys think would be the negative
-> consequences of doing this?
+Hmm.
 
-The negative effect is that x86 will continue wanting to have things
-like ATKBD enabled, where that's not appropraite for other architectures.
-Eg, on ARM, we really want that to default to 'n' for the fast majority
-of our platforms.
+There are *two* cases where we do that "total_remaining_bytes"
+calculation. The same bug seems to exist both in ecryptfs_read() and
+ecryptfs_write().
 
-I've lost count of the times in the past that I ended up with ATKBD
-inappropriately enabled in the past, or I8042 or something like that,
-and had problems as a result.
+Possibly only the ecryptfs_write() one leads to an endless loop, but
+the read one looks suspicious too.
 
-I'll also mention that I've given up with the Kconfig tools - my way of
-configuring the kernel now is solidly an editor on .config and make
-oldconfig, even for simple changes like changing the compression format
-for zImage.
+Also, what protects things against this just being one nasty DoS
+attack - even if the code is fixed to not be an endless loop, it looks
+like a trivial "truncate()" can be used to generate a *practically*
+infinite write stream. At the very least, this should be KILLABLE. Or
+did I mis-read the code?
 
-The last time I seriously interacted with the Kconfig tools was when I
-built 3.1.8 for the laptop, from a 2.6.35.14 based config - and spent
-something like 30 minutes dealing with 'make oldconfig', each option
-occupying about a second of my attention before giving it an answer.
+Tyler, Dustin, others - comments? This looks nasty.
 
-I believe kernel configuration has positively become a nightmare, one
-which no one sane would undertake.
+                     Linus.
+
+2012/1/17 dragonylffly <dragonylffly@163.com>:
+> Hi,
+>   There is an infinite loop bug in eCryptfs, to make it present,
+> just truncate to generate a huge file (>= 4G) on a 32-bit machine under
+> the plain text foleder mounted with eCryptfs, a simple command
+> 'truncate -s 4G dummy' is enough. Note: 4GB is smaller than 4G,
+> therefore the following command 'truncate -s 4GB dummy' will not
+> trigger this bug. The bug comes from a data overflow, the patch below fixes
+> it.
+>
+> Cheers,
+> Li Wang
+>
+> ---
+>
+> signed-off-by: Li Wang <liwang@nudt.edu.cn>
+>                Yunchuan Wen (wenyunchuan@kylinos.com.cn)
+>
+> --- read_write.c.orig 2012-01-18 10:39:26.000000000 +0800
+> +++ read_write.c 2012-01-18 19:48:41.484196221 +0800
+> @@ -130,7 +130,7 @@
+>    pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
+>    size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
+>    size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
+> -  size_t total_remaining_bytes = ((offset + size) - pos);
+> +  loff_t total_remaining_bytes = ((offset + size) - pos);
+>
+>    if (num_bytes > total_remaining_bytes)
+>     num_bytes = total_remaining_bytes;
+>
+>
+>
