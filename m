@@ -1,293 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab2ARHXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 02:23:48 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47369 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab2ARHXq convert rfc822-to-8bit (ORCPT
+	id S1755927Ab2ARHYb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 02:24:31 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:59357 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab2ARHY3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 02:23:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F13DA90.2000603@cn.fujitsu.com>
-References: <4F13DA90.2000603@cn.fujitsu.com>
-Date: Wed, 18 Jan 2012 15:23:45 +0800
-Message-ID: <CAFj3OHUQzShbmdCKYhWMum=hqM5XqK-_wcDyUajnZ1XWFGX1Xg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cgroup: revise how we re-populate root directory
-From: Sha <handai.szj@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 18 Jan 2012 02:24:29 -0500
+X-SpamScore: -13
+X-BigFish: VS-13(zz9371I542M1432N98aLzz1202hzz8275dh84d07hz2dhc1ahc1bh2a8h668h839h8e2h8e3h944hbe9k61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "Shawn Guo (shawn.guo@linaro.org)" <shawn.guo@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: RE: Pinmux bindings proposal
+Thread-Topic: Pinmux bindings proposal
+Thread-Index: AczSMvpNTKYWSKFeSLCZTyHqrIN5SAB+76JwAEZwauAAGMdXIA==
+Date: Wed, 18 Jan 2012 07:24:26 +0000
+Message-ID: <7FE21149F4667147B645348EC6057885093D83@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC6057885091DEA@039-SN2MPN1-013.039d.mgd.msft.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17801D22DE@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D22DE@HQMAIL01.nvidia.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.198]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zefan,
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@nvidia.com]
+> Sent: Wednesday, January 18, 2012 3:09 AM
+> To: Dong Aisheng-B29396; linus.walleij@stericsson.com; s.hauer@pengutronix.de;
+> rob.herring@calxeda.com; kernel@pengutronix.de; cjb@laptop.org; Simon Glass
+> (sjg@chromium.org); Dong Aisheng; Shawn Guo (shawn.guo@linaro.org)
+> Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> devicetree-discuss@lists.ozlabs.org
+> Subject: RE: Pinmux bindings proposal
+> Importance: High
+> 
+> Dong Aisheng wrote at Monday, January 16, 2012 5:50 AM:
+> > Stephen Warren wrote at Saturday, January 14, 2012 4:40 AM:
+> > > I thought a bit more about pinmux DT bindings. I came up with
+> > > something that I like well enough, and is pretty similar to the binding that
+> Dong posted recently.
+> > > I think it'll work for both Tegra's and IMX's needs.
+> > > Please take a look!
+> ...
+> > >                 pinmux =
+> > >                         <"default" &pmx_sdhci_active>
+> > >                         <"suspend" &pmx_sdhci_suspend>;
+> ...
+> > >                 /*
+> > >                  * Alternative: One property for each required state. But,
+> > >                  * how does pinctrl core know which properties to parse?
+> > >                  * Every property named "pinctrl*" seems a little too far-
+> > >                  * reaching. Perhaps if we used vendor-name "pinmux", that'd
+> > >                  * be OK, i.e. pinmux,default and pinmux,suspend?
+> >
+> > It we support whatever device-defined states, it's meaningless to use
+> > one property For each required state since pinctrl core does not know
+> > the property name the customer defined.
+> 
+> Yes, that's the problem. Shawn proposed copying the clock bindings which I think
+> solves all the issues; see my previous email.
+> > >                  */
+> > >                 pinmux = <&pmx_sdhci_active>;
+> > >                 pinmux-suspend <&pmx_sdhci_suspend>;
+> > >
+> > >                 /* 1:n example: */
+> > >                 pinmux = <&pmx_sdhci_mux_a &pmx_sdhci_pincfg_a>
+> >
+> > This looks ok to me since the mux and pincfg usually is 1 to 1.
+> > And if we do not have a pincfg for a pinmux we can find a way to tell
+> > the pinctl core, maybe just set pincfg phandle to 0.
+> 
+> Just to be clear, I'll repeat part of my previous response to Shawn:
+> 
+> * Just a further explanation on my original code: I always intended that
+> * each entry in that list was a full pinmux configuration that could include
+> * mux and pin configuration settings. Thus, the above is more like:
+> *
+> * pinctrl =
+> *     <"default" &pmx_sdhci_a>
+> *     <"default" &pmx_sdhci_overrides>
+> *
+> * (overrides rather than explicit separate mux/config; the separate mux
+> * And config were just an example use case).
+> 
+> So that was a list where the /examples/ had two entries, one for mux and one for
+> pin config. In general, there could be 1, 2, 3, ... entries and each could
+> define whatever mux and config entries they wanted.
+> 
+I also read your reply to Shawn's mail.
+I guess you mean the first "default" entry may not sufficient to use, so we allow
+customer defines extra pmx_sdhci_overrides in board.dts to use?
 
-On Mon, Jan 16, 2012 at 4:06 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
-> When remounting cgroupfs with some subsystems added to it and some
-> removed, cgroup will remove all the files in root directory and then
-> re-popluate it.
->
-> What I'm doing here is, only remove files which belong to subsystems that
-> are to be unbound, and only create files for newly-added subsystems.
-> The purpose is to have all other files untouched.
->
-> This is a preparation for cgroup xattr support.
->
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  include/linux/cgroup.h |   11 +++---
->  kernel/cgroup.c        |   92 +++++++++++++++++++++++++++++++----------------
->  2 files changed, 67 insertions(+), 36 deletions(-)
->
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index e9b6021..13db9e8 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -327,6 +327,9 @@ struct cftype {
->         */
->        size_t max_write_len;
->
-> +       /* The subsystem this cgroup file belongs to */
-> +       struct cgroup_subsys *subsys;
-> +
->        int (*open)(struct inode *inode, struct file *file);
->        ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
->                        struct file *file,
-> @@ -419,16 +422,14 @@ struct cgroup_scanner {
->  * called by subsystems from within a populate() method
->  */
->  int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
-> -                      const struct cftype *cft);
-> +                   struct cftype *cft);
->
->  /*
->  * Add a set of new files to the given cgroup directory. Should
->  * only be called by subsystems from within a populate() method
->  */
-> -int cgroup_add_files(struct cgroup *cgrp,
-> -                       struct cgroup_subsys *subsys,
-> -                       const struct cftype cft[],
-> -                       int count);
-> +int cgroup_add_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
-> +                    struct cftype cft[], int count);
->
->  int cgroup_is_removed(const struct cgroup *cgrp);
->
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index a5d3b53..c4ed6fe 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -781,6 +781,8 @@ static int cgroup_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode);
->  static struct dentry *cgroup_lookup(struct inode *, struct dentry *, struct nameidata *);
->  static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry);
->  static int cgroup_populate_dir(struct cgroup *cgrp);
-> +static int cgroup_repopulate_dir(struct cgroup *cgrp, unsigned long added_bits,
-> +                                unsigned long removed_bits);
->  static const struct inode_operations cgroup_dir_inode_operations;
->  static const struct file_operations proc_cgroupstats_operations;
->
-> @@ -882,34 +884,44 @@ static void remove_dir(struct dentry *d)
->        dput(parent);
->  }
->
-> -static void cgroup_clear_directory(struct dentry *dentry)
-> +static void cgroup_clear_directory(struct dentry *dentry, bool remove_all,
-> +                                  unsigned long removed_bits)
->  {
-> -       struct list_head *node;
-> +       LIST_HEAD(head);
-> +       struct dentry *d, *node;
->
->        BUG_ON(!mutex_is_locked(&dentry->d_inode->i_mutex));
-> +
->        spin_lock(&dentry->d_lock);
-> -       node = dentry->d_subdirs.next;
-> -       while (node != &dentry->d_subdirs) {
-> -               struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
-> +       list_for_each_entry_safe(d, node, &dentry->d_subdirs, d_u.d_child) {
-> +               struct cftype *cft = d->d_fsdata;
-> +
-> +               if (!remove_all && cft->subsys &&
-> +                   !test_bit(cft->subsys->subsys_id, &removed_bits))
-> +                       continue;
->
->                spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
-> -               list_del_init(node);
-> +               list_move(&d->d_u.d_child, &head);
->                if (d->d_inode) {
->                        /* This should never be called on a cgroup
->                         * directory with child cgroups */
->                        BUG_ON(d->d_inode->i_mode & S_IFDIR);
->                        dget_dlock(d);
-> -                       spin_unlock(&d->d_lock);
-> -                       spin_unlock(&dentry->d_lock);
-> +               }
-> +               spin_unlock(&d->d_lock);
-> +       }
-> +       spin_unlock(&dentry->d_lock);
-> +
-> +       list_for_each_entry_safe(d, node, &head, d_u.d_child) {
-> +               spin_lock(&d->d_lock);
-> +               list_del_init(&d->d_u.d_child);
-> +               spin_unlock(&d->d_lock);
-> +               if (d->d_inode) {
->                        d_delete(d);
->                        simple_unlink(dentry->d_inode, d);
->                        dput(d);
-> -                       spin_lock(&dentry->d_lock);
-> -               } else
-> -                       spin_unlock(&d->d_lock);
-> -               node = dentry->d_subdirs.next;
-> +               }
->        }
-> -       spin_unlock(&dentry->d_lock);
->  }
->
->  /*
-> @@ -919,7 +931,7 @@ static void cgroup_d_remove_dir(struct dentry *dentry)
->  {
->        struct dentry *parent;
->
-> -       cgroup_clear_directory(dentry);
-> +       cgroup_clear_directory(dentry, true, 0);
->
->        parent = dentry->d_parent;
->        spin_lock(&parent->d_lock);
-> @@ -1284,6 +1296,7 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
->        struct cgroupfs_root *root = sb->s_fs_info;
->        struct cgroup *cgrp = &root->top_cgroup;
->        struct cgroup_sb_opts opts;
-> +       unsigned long added_bits, removed_bits;
->
->        mutex_lock(&cgrp->dentry->d_inode->i_mutex);
->        mutex_lock(&cgroup_mutex);
-> @@ -1294,6 +1307,9 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
->        if (ret)
->                goto out_unlock;
->
-> +       added_bits = opts.subsys_bits & ~root->subsys_bits;
-> +       removed_bits = root->subsys_bits & ~opts.subsys_bits;
-> +
+Personally I did not see big benefits for this way but introduce a bit complexity
+and make the code not clear and not easily to understand.
+Why not define it completely for one pinmux group?
 
-Should it be the following？：
-          added_bits = opts.subsys_bits & ~root->actual_subsys_bits;
-          removed_bits = root->actual_subsys_bits & ~opts.subsys_bits;
+I think it also does not meet the current pinctrl subsystem design.
+The group and functions are defined, customer only needs to tell what they want to
+Use. For example, in non-dt case, a pinmux map table is enough to use.
 
-Thanks,
-Sha
+> > >                 pinmux-suspend = <&pmx_sdhci_mux_a
+> > > &pmx_sdhci_pincfg_a_suspend>;
+> > >
+> > >                 /*
+> > >                  * The actual definition of the complete state of the
+> > >                  * pinmux as required by some driver.
+> > >                  *
+> > >                  * These can be either directly in the device node, or
+> > >                  * somewhere in tegra20.dtsi in order to provide pre-
+> > >                  * selected/common configurations. Hence, they're referred
+> > >                  * to by phandle above.
+> > >                  */
+> > >                 pmx_sdhci_active: {
+> > >                         /*
+> > >                          * Pin mux settings. Mandatory?
+> >
+> > Mandatory for what?
+> 
+> I was thinking that each pin mux configuration node MUST specify at least some
+> mux settings. However, that may not make sense; it may be reasonable to specify
+> just pin config settings and no mux settings (in a 1:n model in the "override"
+> node).
+> 
+Yes, after looking Linus's patch to support pin states, I'm thinking for pin config
+case we may need such a property or flag to tell which config of state to use by
+default since we support multi states.
 
->        /* Don't allow flags or name to change at remount */
->        if (opts.flags != root->flags ||
->            (opts.name && strcmp(opts.name, root->name))) {
-> @@ -1308,8 +1324,8 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
->                goto out_unlock;
->        }
+> >
+> > >                          * Not mandatory if the 1:1 mentioned above is
+> > >                          * extended to 1:n.
+> > >                          *
+> > >                          * Format is <&pmx_controller_phandle
+> muxable_entity_id
+> > >                          * selected_function>.
+> > >                          *
+> > >                          * The pmx phandle is required since there may be
+> more
+> > >                          * than one pinmux controller in the system. Even if
+> > >                          * this node is inside the pinmux controller itself,
+> I
+> > >                          * think it's simpler to just always have this field
+> > >                          * present in the binding for consistency.
+> > >                          *
+> > >                          * Alternative: Format is <&pmx_controller_phandle
+> > >                          * pmx_controller_specific_data>. In this case, the
+> > >                          * pmx controller needs to define #pinmux-mux-cells,
+> > >                          * and provide the pinctrl core with a mapping
+> > >                          * function to handle the rest of the data in the
+> > >                          * property. This is how GPIOs and interrupts work.
+> > >                          * However, this will probably interact badly with
+> > >                          * wanting to parse the entire pinmux map early in
+> > >                          * boot, when perhaps the pinctrl core is
+> initialized,
+> > >                          * but the pinctrl driver itself is not.
+> > >                          */
+> > >                         mux =
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_MUX_1>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_MUX_1>
+> > >                                 /* Syntax example */
+> > >                                 <&foo_pmx FOO_PMX_PG_X
+> > > FOO_PMX_MUX_0>;
+> >
+> > I'm still think how do we construct the pinmux map for such binding.
+> > The format you're using is:
+> > <&pmx_controller_phandle muxable_entity_id selected_function> For
+> > contruct pinmux map, we need to know at least 3 things for a device:
+> > a) pinctrl device b) function name c) group name.
+> > For a, we can get it from this binding.
+> > But for b and c, since they are constants, how to convert to name string?
+> 
+> a) pinctrl device: We can extract this from pmx_controller_phandle; simply
+> search for a device with the same OF node, and retrieve that registered device
+> from the pinctrl subsystem. This is how GPIO and IRQ work.
+> 
+Yes, I know this.
+
+> b) function name: The pinmux_ops for the driver of pmx_controller_phandle needs
+> a function to convert integer IDs such as TEGRA_PMX_MUX_1 to whatever function
+> IDs are used by the pinctrl subsystem.
 >
-> -       /* (re)populate subsystem files */
-> -       cgroup_populate_dir(cgrp);
-> +       /* re-populate subsystem files */
-> +       cgroup_repopulate_dir(cgrp, added_bits, removed_bits);
+No, I guess Tegra can do this since tegra prefers to define functions and groups
+In pinctrl driver.
+But for IMX, we do not have these info before the imx-pinctrl driver gets run and
+Parse the device tree.
+
+> c) group name: This should be handled just like (b).
+> 
+> Also you'll need to know:
+> 
+> struct pinmux_map's .name field. This is the value in the pinctrl-names property,
+> assuming we're switching to the following syntax:
 >
->        if (opts.release_agent)
->                strcpy(root->release_agent_path, opts.release_agent);
-> @@ -2710,16 +2726,17 @@ static umode_t cgroup_file_mode(const struct cftype *cft)
->        return mode;
->  }
+>     pinctrl = <&pmx_sdhci_a_active>, <&pmx_sdhci_a_suspend>;
+>     pinctrl-names = "default", "suspend";
 >
-> -int cgroup_add_file(struct cgroup *cgrp,
-> -                      struct cgroup_subsys *subsys,
-> -                      const struct cftype *cft)
-> +int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
-> +                   struct cftype *cft)
->  {
->        struct dentry *dir = cgrp->dentry;
->        struct dentry *dentry;
->        int error;
->        umode_t mode;
-> -
->        char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
-> +
-> +       cft->subsys = subsys;
-> +
->        if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
->                strcpy(name, subsys->name);
->                strcat(name, ".");
-> @@ -2740,10 +2757,8 @@ int cgroup_add_file(struct cgroup *cgrp,
->  }
->  EXPORT_SYMBOL_GPL(cgroup_add_file);
->
-> -int cgroup_add_files(struct cgroup *cgrp,
-> -                       struct cgroup_subsys *subsys,
-> -                       const struct cftype cft[],
-> -                       int count)
-> +int cgroup_add_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
-> +                    struct cftype cft[], int count)
->  {
->        int i, err;
->        for (i = 0; i < count; i++) {
-> @@ -3703,26 +3718,27 @@ static struct cftype cft_release_agent = {
->        .max_write_len = PATH_MAX,
->  };
->
-> -static int cgroup_populate_dir(struct cgroup *cgrp)
-> +static int __cgroup_populate_dir(struct cgroup *cgrp, unsigned long added_bits)
->  {
->        int err;
->        struct cgroup_subsys *ss;
->
-> -       /* First clear out any existing files */
-> -       cgroup_clear_directory(cgrp->dentry);
-> -
->        err = cgroup_add_files(cgrp, NULL, files, ARRAY_SIZE(files));
->        if (err < 0)
->                return err;
->
->        if (cgrp == cgrp->top_cgroup) {
-> -               if ((err = cgroup_add_file(cgrp, NULL, &cft_release_agent)) < 0)
-> +               err = cgroup_add_file(cgrp, NULL, &cft_release_agent);
-> +               if (err < 0)
->                        return err;
->        }
->
->        for_each_subsys(cgrp->root, ss) {
-> -               if (ss->populate && (err = ss->populate(ss, cgrp)) < 0)
-> -                       return err;
-> +               if (test_bit(ss->subsys_id, &added_bits) && ss->populate) {
-> +                       err = ss->populate(ss, cgrp);
-> +                       if (err < 0)
-> +                               return err;
-> +               }
->        }
->        /* This cgroup is ready now */
->        for_each_subsys(cgrp->root, ss) {
-> @@ -3739,6 +3755,20 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
->        return 0;
->  }
->
-> +static int cgroup_populate_dir(struct cgroup *cgrp)
-> +{
-> +       return __cgroup_populate_dir(cgrp, cgrp->root->subsys_bits);
-> +}
-> +
-> +static int cgroup_repopulate_dir(struct cgroup *cgrp, unsigned long added_bits,
-> +                                unsigned long removed_bits)
-> +{
-> +       /* First clear out files */
-> +       cgroup_clear_directory(cgrp->dentry, false, removed_bits);
-> +
-> +       return __cgroup_populate_dir(cgrp, added_bits);
-> +}
-> +
->  static void init_cgroup_css(struct cgroup_subsys_state *css,
->                               struct cgroup_subsys *ss,
->                               struct cgroup *cgrp)
+Here the pinctrl-names are representing 'state'.
+Is pinmux_map.name field used for this?
+ 
+> > >                         /*
+> > >                          * Pin configuration settings. Optional.
+> > >                          *
+> > >                          * Format is <&pmx_controller_phandle
+> muxable_entity_id
+> > >                          * configuration_option configuration_value>.
+> > >                          */
+> > >                         config =
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTA
+> > > TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTD
+> > > TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTA
+> > > TEGRA_PMX_CONF_SLEW_RATE 4>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTD
+> > > TEGRA_PMX_CONF_SLEW_RATE 8>;
+> > >                         /*
+> > >                          * Perhaps allow additional custom properties here
+> to
+> > >                          * express things we haven't thought of. The pinctrl
+> > >                          * drivers would be responsible for parsing them.
+> > >                          */
+> > >                 };
+> > >                 pmx_sdhci_standby: {
+> > >                         mux =
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_MUX_1>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTD
+> TEGRA_PMX_MUX_1>;
+> > >                         config =
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTA
+> > > TEGRA_PMX_CONF_TRISTATE 1>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTD
+> > > TEGRA_PMX_CONF_TRISTATE 1>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTA
+> > > TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTD
+> > > TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTA
+> > > TEGRA_PMX_CONF_SLEW_RATE 4>
+> > >                                 <&tegra_pmx TEGRA_PMX_PG_DTD
+> > > TEGRA_PMX_CONF_SLEW_RATE 8>;
+> > >                 };
+> > >         };
+> > > };
+> > >
+> > > Integer IDs for "muxable entities": Pins on IMX, pin groups on Tegra:
+> >
+> > If "muxable entities" is pins on IMX, I'm wondering how we define the
+> > predefined Functions and groups or if we still need to do that.
+> 
+> By "predefined", do you mean:
+> 
+> a) Does the DT need to list all the functions and groups.
+> 
+> The answer here is no in general. However, if you want to parameterize your
+> pinctrl driver's list of known functions and groups, then you can certainly do
+> this; the pinctrl binding simple doesn't force you to do this.
+> 
+> b) Does the pinctrl driver need to list all functions and groups to the pinctrl
+> core?
+> 
+> As the pinctrl subsystem APIs stand right now, the answer here is yes.
+> 
+> I don't think there's really any way around this, although depending on HW, you
+> can do things like:
+> 
+> 1) Instead of defining logical functions (SDHCI1, I2C1, ...) you could simply
+> define a function for each mux register value (func0, func1, ...)
+> 
+> 2) On IMX, you'd define a pin group for each individual pin, since the HW muxing
+> is at a pin not a group level.
+> 
+Yes, this is what I'm thinking now.
+If we decide to do that, the pin groups concepts of current pinmux subsystem
+Seems does not fit for IMX a lot since each group is only one pin.
+And the functions/groups would be hugh since IMX6Q has 196 pins and each pin may have
+7 functions.
+
+> > >     TEGRA_PMX_PG_DTA
+> > >     TEGRA_PMX_PG_DTD
+> > >
+> > > Each individual pinmux driver's bindings needs to define what each
+> > > integer ID represents.
+> >
+> > Does it mean both pinmux driver and soc.dtsi file need define those
+> > macros if dtc Supports constants?
+> 
+> Yes. As Shawn mentions later, perhaps we can find some way to define these
+> values in one place, and generate both a .dtsi file and a .h file from that
+> single list, or generate a .h file from the .dtsi file or vice- versa.
+> 
+> > > Integer IDs for the "mux functions". Note that these are the raw
+> > > values written into hardware, not any driver-defined abstraction,
+> > > and not any kind of "virtual group" that's been invented to make OEMs life
+> easier:
+> > >
+> > >     TEGRA_PMX_MUX_0
+> > >     TEGRA_PMX_MUX_1
+> > >     ...
+> > >     TEGRA_PMX_MUX_3 (for Tegra, 7 for IMX)
+> > >
+> > > Since these are the raw IDs that go into HW, there's no need to
+> > > specify each ID's meanings in the binding.
+> > >
+> > > Integer IDs for "pin config parameters":
+> > >
+> > >     TEGRA_PMX_CONF_TRISTATE
+> > >     TEGRA_PMX_CONF_DRIVE_STRENGTH
+> > >     TEGRA_PMX_CONF_SLEW_RATE
+> > >
+> > > Each individual pinmux driver's bindings needs to define what each
+> > > integer ID represents, and what the legal "value"s are for each one.
+> > >
+> > > Advantages:
+> > >
+> > > * Provides for both mux settings and "pin configuration".
+> > >
+> > > * Allows the "pinmux configuration" nodes to be part of the SoC .dtsi
+> > >   file if desired to provide pre-defined pinmux configurations to
+> > >   choose from.
+> > >
+> > > * Allows the "pinmux configuration" nodes to be part of the per-device
+> > >   node if you don't want to use pre-defined configurations.
+> > >
+> > > * When pre-defined configurations are present, if you need something
+> > >   custom, you can do it easily.
+> > >
+> > > * Can augment pre-defined configurations by listing n nodes for each
+> > >   "name"d pinmux configuration, e.g. to add one extra pin config
+> > >   value.
+> > >
+> > > * Parsing is still quite simple:
+> > >   1) Parse "pinmux" property in device node to get phandle.
+> > >   2) Parse "mux" property in the node reference by the phandle,
+> > >      splitting into a list of pmx phandle, entity, mux func.
+> > >   3) For each entry, pass entity, function to the appropriate mux
+> > >      driver. (For U-Boot, this might mean check that the phandle
+> > >      points at the expected place, and ignore the entry if not?)
+> > >  4) Mux driver simply converts "muxable entity" to the register
+> > >     address, write the "function" value straight to the register.
+> > >
+> > > Disadvantages:
+> > >
+> > > * If you're not using pre-defined configurations, you still have to dump
+> > >   all the pinmux configuration into a sub-node of the device node, and
+> > >   have a property point at it using a phandle. This is slightly more
+> > >   complex than simply putting the mux/config properties right into the
+> > >   device node. However, it additionally allows one to have multiple
+> > >   "name"d configurations (e.g. for suspend) very easily, and isn't overly
+> > >   complex, so I can live with this.
+> >
+> > I don't think the sub-node of the device node is a good place to
+> > define Custom configurations.
+> > Putting those things into device node will make its size big and also not look
+> good.
+> > Since it uses phandle, why not put it under pinctrl device node in board dts
+> file?
+> > It may also work.
+> 
+> Both you and Shawn have said you don't like allowing the pin configurations to
+> be sub-nodes of the devices. Can you expand a little more on that?
+Actually I agree to reserve the pinctrl device's phandle
+But..
+
+> I mentioned
+> some of my reasons for allowing this in my previous email, so see that for
+> reference. I guess I have a couple more points to make:
+> 
+> 1) It's optional. If everything you need can be represented in pre-
+> defined/canned pin configuration nodes under the pin controller's node, you can
+> certainly do that.
+> 
+> 2) Putting this in the device's node seems more consistent with existing
+> bindings, which put all configuration inside the device node: The IRQ binding
+> places interrupt IDs and configuration (level/edge, high/low) in the device node.
+> The GPIO binding places GPIO IDs and possible flags (e.g. inverted/not) in the
+> device node. Etc.
+> 
+Actually it's not a big issue and we do not have the mandatory requirement that
+You have to put it in somewhere since it's referenced by phandle.
+I just prefer to put it to under pinctrl device node in board.dts file to
+Concentrate manager, becase I think it's a little big and more complicated and
+not like not like IRQ and GPIO case.
+
+> 3) I don't think there will be any .dtb size difference at all between putting
+> the pin configuration in the pin controller node or the device node; the content
+> of the sub-node will be entirely identical. The same holds true for the .dts
+> files (when you consider soc.dtsi and board.dts together).
+> 
 > --
-> 1.7.3.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> nvpublic
+> 
+
+Regards
+Dong Aisheng
+
