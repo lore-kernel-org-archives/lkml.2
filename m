@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab2ARVgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 16:36:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54285 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab2ARVgV (ORCPT
+	id S1752687Ab2ARVgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 16:36:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53880 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab2ARVgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 16:36:21 -0500
-Date: Wed, 18 Jan 2012 13:36:18 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Andrew Jones <drjones@redhat.com>, rientjes@google.com, mingo@elte.hu,
-        david.woodhouse@intel.com, linux-kernel@vger.kernel.org,
-        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, arnd@arndb.de,
-        holt@sgi.com, linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
-        a-jacquiot@ti.com, starvik@axis.com,
-        jesper nilsson <jesper.nilsson@axis.com>, dhowells@redhat.com,
-        takata@linux-m32r.org, geert@linux-m68k.org,
-        yasutake koichi <yasutake.koichi@jp.panasonic.com>, jonas@southpole.se,
-        kyle@mcmartin.ca, deller@gmx.de, jejb@parisc-linux.org,
-        chris@zankel.net, greg@kroah.com, davej@redhat.com, airlied@linux.ie,
-        jkosina@suse.cz, mchehab@infradead.org, johannes@sipsolutions.net,
-        linville@tuxdriver.com
-Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
-Message-Id: <20120118133618.48948662.akpm@linux-foundation.org>
-In-Reply-To: <20120118210441.GA4728@p183.telecom.by>
-References: <1326295008-29795-1-git-send-email-drjones@redhat.com>
-	<b6315f9b-0ead-4de4-a8f5-ed619f852c6c@zmail13.collab.prod.int.phx2.redhat.com>
-	<20120118122830.037f1e29.akpm@linux-foundation.org>
-	<20120118210441.GA4728@p183.telecom.by>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jan 2012 16:36:42 -0500
+Date: Wed, 18 Jan 2012 13:36:38 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Lennart Poettering <mzxreary@0pointer.de>
+Subject: Re: [PATCH 2/2] cgroup: add xattr support
+Message-ID: <20120118213638.GA21533@google.com>
+References: <4F13DA90.2000603@cn.fujitsu.com>
+ <4F13DAA9.4070703@cn.fujitsu.com>
+ <20120117175322.GC6762@google.com>
+ <CAPXgP13fT3V4L0x6uj9ZdAOw25BgQtEpa8QzLB-_c_Yn+9kO2Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPXgP13fT3V4L0x6uj9ZdAOw25BgQtEpa8QzLB-_c_Yn+9kO2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jan 2012 00:04:41 +0300
-Alexey Dobriyan <adobriyan@gmail.com> wrote:
+Hello,
 
-> On Wed, Jan 18, 2012 at 12:28:30PM -0800, Andrew Morton wrote:
-> > And ditto EXPERT.  Is there really any benefit in hiding config options
-> > from developers so they won't burn their fingers?  Or is there some
-> > other reason for EXPERT?
-> 
-> Absolutely.
-> 
-> If say CONFIG_TMPFS is disabled, Debian simply won't boot past
-> init scripts. Or CONFIG_UNIX (I'm almost sure, reasonably
-> modern distro is unusable anyway).
-> 
+On Wed, Jan 18, 2012 at 10:28:42PM +0100, Kay Sievers wrote:
+> The idea with the cgroup fs xattrs was to be able to attach some
+> general useful attributes to the 'service container' itself, instead
+> of keeping them in the memory of the managing process or store them on
+> disk which can get out-of-sync much easier.
 
-If you screw up your kernel config, the resulting kernel won't work
-right.  There are countless ways of doing this.  You go back to the
-previous .config and try again.
+Hmmm.... I can see the attraction but there really is nothing which
+binds that information to cgroup.  The same information might as well
+live in /proc/PID/userland_data or whatever.  It may be convenient now
+but I'm pretty skeptical it's a good idea in the long run.
 
+Given that cgroups themselves need to be explicitly created and
+destroyed, maintaining a parallel tmpfs hierarchy for metadata, if
+necessary, shouldn't be too bothersome, right?
 
-Is there some benefit to handholding people in a few special cases? 
-Well yes, I suppose so.  But does that benefit justify all the gunk
-we've added to Kconfig to implement it?   I don't think so.
+Thanks.
 
+-- 
+tejun
