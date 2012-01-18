@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab2ARO0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 09:26:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45458 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757651Ab2ARO0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 09:26:17 -0500
-Date: Wed, 18 Jan 2012 15:20:05 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
-	condition
-Message-ID: <20120118142005.GB10105@redhat.com>
-References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com> <1326721082.2442.234.camel@twins> <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <20120117090605.GD7612@elte.hu> <20120117151242.GA13290@redhat.com> <20120118094219.GE5842@elte.hu>
+	id S1757712Ab2AROaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 09:30:30 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:50378 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757681Ab2AROa3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 09:30:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120118094219.GE5842@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120118141329.GA22818@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+	<20120116182808.GG4223@ponder.secretlab.ca>
+	<20120118141329.GA22818@atomide.com>
+Date: Wed, 18 Jan 2012 22:30:28 +0800
+Message-ID: <CAAQ0ZWTtYz3Lg7=Xz29m07j_k8yA95hn6cyk92SAJ4iGJRT_gw@mail.gmail.com>
+Subject: Re: Pinmux bindings proposal
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Dong Aisheng <dongas86@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18, Ingo Molnar wrote:
+On 18 January 2012 22:13, Tony Lindgren <tony@atomide.com> wrote:
+> Hi,
 >
-> Well, but does the -rt kernel suffer from the same race?
+> * Grant Likely <grant.likely@secretlab.ca> [120116 09:55]:
+>> On Fri, Jan 13, 2012 at 12:39:42PM -0800, Stephen Warren wrote:
+>> >                 pinmux =
+>> >                         <"default" &pmx_sdhci_active>
+>> >                         <"suspend" &pmx_sdhci_suspend>;
+>> >
+>> >                 /* 1:n example: */
+>> >                 pinmux =
+>> >                         <"default" &pmx_sdhci_mux_a>
+>> >                         <"default" &pmx_sdhci_pincfg_a>
+>> >                         <"suspend" &pmx_sdhci_mux_a>
+>> >                         <"suspend" &pmx_sdhci_pincfg_a_suspend>;
+>>
+>>
+>> Yeah, don't do this.  Mixing phandle, string and cell values in a
+>> property gets messy and could become troublesome to parse.  I've
+>> backed away from it in the clk binding.
+>
+> Yup, that's because the string is embedded directly into the mixed
+> mode array and will likely make the following data unaligned. That
+> means it's extremely flakey to parse, and will lead into horrible
+> errors if you have typos in the .dts file.. Tried that and gave up
+> on it.
+>
+> I think I've found a way to avoid using names at all, assuming we set
+> each pin as a phandle for the drivers to use :)
+>
+The problem with doing that is we will have to represent each pin as a
+node in device tree.  For imx6q case, we have 197 pins.  Doing so will
+bloat the device tree.
 
-I think yes.
-
-To remind, the problem is generic, it is not bound to this
-particular place. Let me repeat:
-
-Suppose that the task T does
-
-	set_current_state(TASK_INTERRUPTIBLE);
-
-	set_current_state(TASK_UNINTERRUPTIBLE);
-	schedule();
-
-try_to_wake_up(TASK_UNINTERRUPTIBLE) in between can observe this task
-in TASK_INTERRUPTIBLE state. Then it can set RUNNING/WAKING after T
-sets ->state = TASK_UNINTERRUPTIBLE.
-
-For example, this is possibly if T simply does wait_event() twice when
-the the 1st wait_event() doesn't sleep.
-
-
-do_exit() is different because it can not handle the spurious wakeup.
-Well, may be we can? we can simply do
-
-		for (;;) {
-			tsk->state = TASK_DEAD;
-			schedule();
-		}
-
-__schedule() can't race with ttwu() once it takes rq->lock. If the
-exiting task is deactivated, finish_task_switch() will see EXIT_DEAD.
-Unless I missed something, the only problem is preempt_disable(),
-but schedule_debug() checks ->exit_state.
-
-OTOH, if we fix this race then probably schedule_debug() should
-check state == EXIT_DEAD instead.
-
-> So if there's something in the -rt kernel that fixes this race
-> we'd like to have that. If the bug is present in the -rt kernel
-> then why didn't it ever get triggered? We caught much more
-> narrow races in -rt, and very early on in the project.
-
-I do not know.
-
-Oleg.
-
+-- 
+Regards,
+Shawn
