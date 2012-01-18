@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab2ARV41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 16:56:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33037 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016Ab2ARV4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 16:56:25 -0500
-Message-ID: <4F173F48.2070604@zytor.com>
-Date: Wed, 18 Jan 2012 13:53:12 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753336Ab2ARWEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 17:04:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44461 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab2ARWEt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 17:04:49 -0500
+Date: Wed, 18 Jan 2012 14:04:44 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
+        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
+Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
+ to unlock_system_sleep()
+Message-ID: <20120118220444.GB21533@google.com>
+References: <4F16C24A.4050007@linux.vnet.ibm.com>
+ <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com>
+ <4F16F94C.4020000@linux.vnet.ibm.com>
+ <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com>
+ <4F16FF0D.1030606@linux.vnet.ibm.com>
+ <20120118173037.GE30664@google.com>
+ <4F171BF8.50803@linux.vnet.ibm.com>
+ <20120118193040.GA28538@google.com>
+ <4F17217E.5040805@linux.vnet.ibm.com>
+ <4F172B8D.8050408@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Roland McGrath <mcgrathr@google.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-References: <20120116183730.GB21112@redhat.com> <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com> <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com> <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com> <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com> <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com> <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com> <4F1737C9.3070905@zytor.com> <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com>
-In-Reply-To: <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F172B8D.8050408@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2012 01:51 PM, Roland McGrath wrote:
+On Thu, Jan 19, 2012 at 01:59:01AM +0530, Srivatsa S. Bhat wrote:
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
 > 
-> There are all the concerns about obscure ABI compatibility with
-> expectations of existing debuggers and so forth, which Linus has mentioned.
-> For that I can accept his point that things today so mishandle the
-> int80-from-64 case that something like a new meaning for high bits of
-> orig_ax or whatnot in just that case would not be actually problematic.
-> When you and I were discussing a more general feature of distinguishing
-> int80 from sysenter from syscall from traps from asynchronous interrupts,
-> that was of more concern.
+> Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
+> [un]lock_system_sleep() APIs" introduced an undesirable change in the
+> behaviour of unlock_system_sleep() since freezer_count() internally calls
+> try_to_freeze() - which we don't need in unlock_system_sleep().
 > 
-> I do feel strongly that any new means of exposing bona fide user state
-> ought to be done via the user_regset mechanism.  (i.e., either overloading
-> some existing user_regs_struct bits if that truly is harmless to
-> compatibility, or adding a new regset flavor.)  That way it is
-> automatically recorded in core files, accessible with PTRACE_GETREGSET,
-> etc.  (But I'm not really working on this stuff any more, so I'm out of the
-> business of arguing strenuously about such opinions.)
+> And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
+> [un]lock_system_sleep()" made these APIs wide-spread. This caused a
+> regression in suspend-to-disk where snapshot_read() and snapshot_write()
+> were getting frozen due to the try_to_freeze embedded in
+> unlock_system_sleep(), since these functions were invoked when the freezing
+> condition was still in effect.
 > 
+> Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
+> and dropping the try_to_freeze() part. Not only will this fix the
+> regression but this will also ensure that the API only does what it is
+> intended to do, and nothing more, under the hood.
+> 
+> While at it, make the code more correct and robust by ensuring that the
+> PF_FREEZER_SKIP flag gets cleared with pm_mutex held, to avoid a race with
+> the freezer.
+> 
+> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-I think we can obviously agree that regsets is the only way to go for
-any kind of new state.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-	-hpa
+Thanks!
 
+-- 
+tejun
