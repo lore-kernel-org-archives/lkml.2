@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab2AROUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 09:20:54 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56125 "EHLO
+	id S1757645Ab2AROVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 09:21:32 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:57981 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757466Ab2AROUx convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757466Ab2AROVb convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 18 Jan 2012 09:20:53 -0500
-Message-Id: <4F16E350020000780006D78A@nat28.tlf.novell.com>
+	Wed, 18 Jan 2012 09:21:31 -0500
+Message-Id: <4F16E377020000780006D78D@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 18 Jan 2012 14:20:48 +0000
+Date: Wed, 18 Jan 2012 14:21:27 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
 Cc: "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
         <luca@luca-barbieri.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ix86: atomic64 adjustments
+Subject: [PATCH 0/2] ix86: atomic64 adjustments
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
