@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab2ARKpE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 05:45:04 -0500
-Received: from smtp.nokia.com ([147.243.1.47]:28752 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752753Ab2ARKpC convert rfc822-to-8bit (ORCPT
+	id S1754715Ab2ARK4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 05:56:20 -0500
+Received: from mga10.intel.com ([192.55.52.92]:19304 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752938Ab2ARK4S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 05:45:02 -0500
-From: <leonid.moiseichuk@nokia.com>
-To: <penberg@kernel.org>
-CC: <riel@redhat.com>, <minchan@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <mel@csn.ul.ie>, <rientjes@google.com>, <kosaki.motohiro@gmail.com>,
-        <hannes@cmpxchg.org>, <mtosatti@redhat.com>,
-        <akpm@linux-foundation.org>, <rhod@redhat.com>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: RE: [RFC 1/3] /dev/low_mem_notify
-Thread-Topic: [RFC 1/3] /dev/low_mem_notify
-Thread-Index: AQHM1PAILpEwsgBJQ0+ebltvcfq8MpYQOdkAgAB3jICAACXvgIAA9v4A///6iYCAABO3AIAAA+QAgAARAJA=
-Date: Wed, 18 Jan 2012 10:44:13 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB982690455978C@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-	<1326788038-29141-2-git-send-email-minchan@kernel.org>
-	<CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
-	<4F15A34F.40808@redhat.com>
-	<alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-	<84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com>
-	<CAOJsxLGiG_Bsp8eMtqCjFToxYAPCE4HC9XCebpZ+-G8E3gg5bw@mail.gmail.com>
-	<84FF21A720B0874AA94B46D76DB98269045596EA@008-AM1MPN1-003.mgdnok.nokia.com>
- <CAOJsxLG4hMrAdsyOg6QUe71SPqEBq3eZXvRvaKFZQo8HS1vphQ@mail.gmail.com>
-In-Reply-To: <CAOJsxLG4hMrAdsyOg6QUe71SPqEBq3eZXvRvaKFZQo8HS1vphQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.23.171]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Jan 2012 05:56:18 -0500
 MIME-Version: 1.0
-X-OriginalArrivalTime: 18 Jan 2012 10:44:14.0431 (UTC) FILETIME=[1ED756F0:01CCD5CE]
-X-Nokia-AV: Clean
+In-Reply-To: <21109.1326814340@redhat.com>
+References: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
+	<20111202184354.21874.57647.stgit@warthog.procyon.org.uk>
+	<1326718394.2276.1.camel@falcor>
+	<21109.1326814340@redhat.com>
+Date: Wed, 18 Jan 2012 12:56:15 +0200
+Message-ID: <CALLzPKY87L_GTP57MwA=iz4Cn3inboBszJ5OfOSYtUcRJn4KQg@mail.gmail.com>
+Subject: Re: [PATCH 07/21] KEYS: Create a key type that can be used for
+ general cryptographic operations [ver #3]
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arjan.van.de.ven@intel.com,
+        alan.cox@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
-> Pekka Enberg
-> Sent: 18 January, 2012 12:40
-...
-> > Not worse than %%. For example you had 10% free memory threshold for
-> > 512 MB RAM meaning 51.2 MB in absolute number.  Then hotplug turned
-> > off 256 MB, you for sure must update threshold for %% because these
-> > 10% for 25.6 MB most likely will be not suitable for different operating
-> mode.
-> > Using pages makes calculations must simpler.
-> 
-> Right. Does threshold in percentages make any sense then? Is it enough to
-> use number of free pages?
+On Tue, Jan 17, 2012 at 5:32 PM, David Howells <dhowells@redhat.com> wrote:
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>
+>> Nice! Basically the 'crypto' key type ties crypto/ with security/keys.
+>> Other than the posted pgp key parser used for verifying kernel module
+>> signatures, I assume another use case could be to expose kernel
+>> cryptography to userspace.  As there was a submission
+>> https://lkml.org/lkml/2010/8/20/103 to do just this, there must be
+>> userspace apps that would benefit.  This architecture would address a
+>> number of concerns raised with the prior submission. (Refer to
+>> http://lwn.net/Articles/401548/.)
+>
+> :-)
+>
+>> You'd probably want to move the 'crypto' key type to its own directory.
+>
+> Yeah.
+>
+> I'd also like to see if Dmitry's work can be absorbes into this infrastructure.
+>
 
-Paul Mundt noticed that and we stopped use percentage in 2006 for n770 update. 
-He was right.
-Percents are useless and do not correlate with other kernel APIs like sysinfo().
+Hi David,
 
+Crypto keys is very nice idea.
+We thought some time ago about having dedicated key type for handling
+public key cryptography operations,
+but did not go that far. Also I did not want to mess-up with GnuPG
+formats and just made straight-forward RSA implementation,
+which can be handled by any crypto library, such as openssl.
+We can easily take GPG signing scheme into use for IMA/EVM when it
+gets to upstream.
+
+- Dmitry
+
+> David
