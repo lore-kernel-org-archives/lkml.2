@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab2ARRLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 12:11:21 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:49409 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932214Ab2ARRLT (ORCPT
+	id S932284Ab2ARRMp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 12:12:45 -0500
+Received: from sargas.telkomsa.net ([196.25.211.69]:12672 "EHLO
+	sargas.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932214Ab2ARRMo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 12:11:19 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>, linux-input@vger.kernel.org
-Subject: Re: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
-Date: Wed, 18 Jan 2012 17:11:15 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
-Cc: "AnilKumar, Chimata" <anilkumar@ti.com>, "greg@kroah.com" <greg@kroah.com>,
-        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <1324617892-14576-1-git-send-email-anilkumar@ti.com> <201201181403.47806.arnd@arndb.de> <b659db7b-2ef1-49b8-9752-a0601226cc6e@email.android.com>
-In-Reply-To: <b659db7b-2ef1-49b8-9752-a0601226cc6e@email.android.com>
+	Wed, 18 Jan 2012 12:12:44 -0500
+Date: Wed, 18 Jan 2012 19:12:38 +0200 (SAST)
+From: =?utf-8?Q?Western_Union_Company_=C2=A9?= 
+	<online445428@telkomsa.net>
+Reply-To: =?utf-8?Q?Western_Union_Company_=C2=A9?= <wumtf101@yahoo.com.hk>
+Message-ID: <710280213.243840.1326906758501.JavaMail.root@zimbra3-vm1.telkomsa.net>
+Subject: New  Year  Payment  To  Our  Beneficiary!!!
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201181711.15751.arnd@arndb.de>
-X-Provags-ID: V02:K0:nVP84nNDE5WQkN10iQomx4wyHPjP/x7dB1SmcS2po01
- TWKZL34ieZSHAkGbk3+PPLt5BowQLA8eDhih6k6B6IpebzsSt0
- Atobi0K99fxaYWymPq7VDGifxygdsaPxk/fpUWjixNZqlAD76w
- U+AtGW4a2fOsJ8G4+V6LDlc/FiAeRhqOOXTh/ZSBTqev4/pHzC
- L66+amuEG24bkpI1AfptH5lefeNj3LZWFD/1uCPghTMDU3k8a/
- vrGslWWKFQVvNJmZz0Jf7B5H9r26AOMd7VtkQ4+TPtrxj9v3nV
- NxzqnKswcxi3/iPP1a0H+OawLgsV4idMLl4u1b3mdFF3ebS2yx
- 6hvIwWc5Ifi7QUrgU0/k=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.16.42]
+X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 January 2012, Jonathan Cameron wrote:
-> Arnd Bergmann <arnd@arndb.de> wrote:
->
-> >Any opinions where they should live? input, iio or a new subsystem?
-> >
-> Personal thought is that straight 3d devices very directed at input
-> should go there. Iio has a few wrinkles left for the in kernel
-> interfaces needed for a bridge to input. For starters the pull 
-> and push data interfaces have not merged yet (in staging) and we
-> have not started on in kernel acess to non data events yet(thresholds).
-> Still happy to take them when we can support usecases fully. 
+Dear Beneficiary,
+ 
+We are here to notify you that the sum of  $250,000 U.S.Dollars was generated and awarded to you by the Western Union Foundation in conjunction with the African Union Foundation.This award was been selected through the internet, where your e-mail address was indicated and notified.The Western Union  Foundation, All the email addresses of the people that are active online,among the millions of our customers who use Western Union in their business transactions.Four people are selected Every year  to benefit from this promotion and you are one of the Selected Winners.
 
-Ok, thanks for the information, sounds all reasonable. I think we
-can definitely say no to new accelerometer drivers in drivers/misc
-then and refer them to iio and input.
+To avoid misappropriation of funds, proper verifications must be carried out before the fund is transferred. We require the details below for verification so that the transfer can be carried out.
 
-In case of lis33ldlh, I would like to see it move out at some point
-once the necessary parts of iio have graduated out of staging.
-Hopefully it won't be a large amount of work to convert it to
-a different internal API.
+1. Receiver's Full Name:
+2. Receiver's Address:
+3. Receiver's Country:
+4. Receiver's Telephone Number:
+5. Receiver's Occupation:
 
-AnilKumar, what are the existing users of the driver? Is it still
-possible to convert them to use iio without causing problems for
-people that rely on this driver, or do we have to keep supporting the
-current interface?
+  Send the above details to us via the email addresses stated below:
+ 
+Western Union District Manager (Mr. Mike Moris)
+Website: www.westernunion.com
+E-mail: wumtf101@yahoo.com.hk
 
-	Arnd
+Note: You were selected as a winner on this promotion and I personally advise that you use the funds wisely. However, we need your information as stated above to commence the transaction due process.
+
+As soon as these details are received and verified, the fund will be transferred to you.
+
+Copyright © 2001-2011 The Western Union Company , All Rights Reserved.
