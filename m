@@ -1,48 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab2ARJBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:01:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53998 "EHLO mx1.redhat.com"
+	id S1756686Ab2ARJJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:09:24 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:38865 "EHLO mgw-da01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756165Ab2ARJBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:01:16 -0500
-Message-ID: <4F168A49.8000606@redhat.com>
-Date: Wed, 18 Jan 2012 10:00:57 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1756165Ab2ARJJV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 04:09:21 -0500
+From: <leonid.moiseichuk@nokia.com>
+To: <penberg@kernel.org>, <riel@redhat.com>
+CC: <minchan@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <mel@csn.ul.ie>,
+        <rientjes@google.com>, <kosaki.motohiro@gmail.com>,
+        <hannes@cmpxchg.org>, <mtosatti@redhat.com>,
+        <akpm@linux-foundation.org>, <rhod@redhat.com>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: RE: [RFC 1/3] /dev/low_mem_notify
+Thread-Topic: [RFC 1/3] /dev/low_mem_notify
+Thread-Index: AQHM1PAILpEwsgBJQ0+ebltvcfq8MpYQOdkAgAB3jICAACXvgIAA9v4A
+Date: Wed, 18 Jan 2012 09:06:06 +0000
+Message-ID: <84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com>
+References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+ <1326788038-29141-2-git-send-email-minchan@kernel.org>
+ <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
+ <4F15A34F.40808@redhat.com>
+ <alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
+In-Reply-To: <alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.23.171]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [PATCH stable 3/4] block: fail SCSI passthrough ioctls on partition
- devices
-References: <1326772723.2819.167.camel@deadeye>  <1326773222.2819.172.camel@deadeye> <4F1545A4.3000809@redhat.com> <1326862077.2819.210.camel@deadeye>
-In-Reply-To: <1326862077.2819.210.camel@deadeye>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Jan 2012 09:06:08.0068 (UTC) FILETIME=[6A4BA040:01CCD5C0]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2012 05:47 AM, Ben Hutchings wrote:
-> >     Changes with respect to 3.3: return -ENOTTY from scsi_verify_blk_ioctl
-> >     and -ENOIOCTLCMD from sd_compat_ioctl. ]
->
-> But in 2.6.32, compat_sys_ioctl will end up returning EINVAL rather than
-> ENOTTY for an unhandled ioctl number.
+Hi,
 
-No, it won't.  The ioctl will percolate up the non-compat path and then 
-sd_ioctl will return ENOTTY.
+Just couple of observations, which maybe wrong below
 
-> Also, since we're denying ioctls
-> for security reasons rather than because we don't know how to handle
-> them, I don't think there's any harm in doing this.
+> -----Original Message-----
+> From: Pekka Enberg [mailto:penberg@gmail.com] On Behalf Of ext Pekka
+> Enberg
+> Sent: 17 January, 2012 20:51
+....
 
-There is harm.  You'll be blacklisting also the standard block device 
-ioctls, and those won't work on 32-on-64 anymore.  A system with 32-bit 
-userland will likely not boot anymore.  This is also somewhat exchanged 
-in my original exchange with Linus.
+> +struct vmnotify_config {
+> +	/*
+> +	 * Size of the struct for ABI extensibility.
+> +	 */
+> +	__u32		   size;
+> +
+> +	/*
+> +	 * Notification type bitmask
+> +	 */
+> +	__u64			type;
+> +
+> +	/*
+> +	 * Free memory threshold in percentages [1..99]
+> +	 */
+> +	__u32			free_threshold;
 
-Paolo
+Would be possible to not use percents for thesholds? Accounting in pages even not so difficult to user-space.
+Also, looking on vmnotify_match I understand that events propagated to user-space only in case threshold trigger change state from 0 to 1 but not back, 1-> 0 is very useful event as well.
+
+Would be possible to use for threshold pointed value(s) e.g. according to enum zone_state_item, because kinds of memory to track could be different?
+E.g. to tracking paging activity NR_ACTIVE_ANON and NR_ACTIVE_FILE could be interesting, not only free.
+
+> +
+> +	/*
+> +	 * Sample period in nanoseconds
+> +	 */
+> +	__u64			sample_period_ns;
+> +};
+> +
+....
+> +struct vmnotify_event {
+> +	/* Size of the struct for ABI extensibility. */
+> +	__u32			size;
+> +
+> +	__u64			nr_avail_pages;
+> +
+> +	__u64			nr_swap_pages;
+> +
+> +	__u64			nr_free_pages;
+> +};
+
+Two fields here most likely session-constant, (nr_avail_pages and nr_swap_pages), seems not much sense to report them in every event.
+If we have memory/swap hotplug user-space can use sysinfo() call.
+
+> +static void vmnotify_sample(struct vmnotify_watch *watch) {
+...
+> +	si_meminfo(&si);
+> +	event.nr_avail_pages	= si.totalram;
+> +
+> +#ifdef CONFIG_SWAP
+> +	si_swapinfo(&si);
+> +	event.nr_swap_pages	= si.totalswap;
+> +#endif
+> +
+
+Why not to use global_page_state() directly? si_meminfo() and especial si_swapinfo are quite expensive call.
+
+> +static void vmnotify_start_timer(struct vmnotify_watch *watch) {
+> +	u64 sample_period = watch->config.sample_period_ns;
+> +
+> +	hrtimer_init(&watch->timer, CLOCK_MONOTONIC,
+> HRTIMER_MODE_REL);
+> +	watch->timer.function = vmnotify_timer_fn;
+> +
+> +	hrtimer_start(&watch->timer, ns_to_ktime(sample_period),
+> +HRTIMER_MODE_REL_PINNED); }
+
+Do I understand correct you allocate timer for every user-space client and propagate events every pointed interval?
+What will happened with system if we have a timer but need to turn CPU off? The timer must not be a reason to wakeup if user-space is sleeping.
+
