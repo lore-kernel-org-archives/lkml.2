@@ -1,110 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab2ARJRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:17:06 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:60404 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757021Ab2ARJMw (ORCPT
+	id S1757082Ab2ARJTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:19:54 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55247 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756725Ab2ARJTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:12:52 -0500
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
-        <linus.walleij@linaro.org>, <ulf.hansson@stericsson.com>,
-        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <egtvedt@samfundet.no>, <hskinnemoen@gmail.com>,
-        <kernel@pengutronix.de>, <perex@perex.cz>,
-        <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
-        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH V2 04/12] dmaengine/amba-pl08x: Take flow controller info from DMA_SLAVE_CONFIG
-Date: Wed, 18 Jan 2012 14:41:51 +0530
-Message-ID: <0bf6d205db66a2e3b8b669f1afdef39788572814.1326876464.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.8.110.g4cb5d
-In-Reply-To: <cover.1326876464.git.viresh.kumar@st.com>
-References: <cover.1326876464.git.viresh.kumar@st.com>
+	Wed, 18 Jan 2012 04:19:48 -0500
+Date: Wed, 18 Jan 2012 01:19:44 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Jones <drjones@redhat.com>
+cc: Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, david.woodhouse@intel.com,
+        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, holt@sgi.com,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
+        dhowells@redhat.com, takata@linux-m32r.org, geert@linux-m68k.org,
+        yasutake.koichi@jp.panasonic.com, jonas@southpole.se, kyle@mcmartin.ca,
+        deller@gmx.de, jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
+        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
+        mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+In-Reply-To: <20120118081455.GA2317@turtle.usersys.redhat.com>
+Message-ID: <alpine.DEB.2.00.1201180113030.19730@chino.kir.corp.google.com>
+References: <20120112101805.GA2375@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201121259270.17287@chino.kir.corp.google.com> <20120113085125.GA2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201130230320.15417@chino.kir.corp.google.com>
+ <20120113122202.GB2452@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201131318340.24089@chino.kir.corp.google.com> <20120116091832.GA2401@turtle.usersys.redhat.com> <alpine.DEB.2.00.1201161521240.16270@chino.kir.corp.google.com> <20120117142738.GB3188@turtle.usersys.redhat.com>
+ <alpine.DEB.2.00.1201171240070.2595@chino.kir.corp.google.com> <20120118081455.GA2317@turtle.usersys.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Flow controller information is passed now from DMA_SLAVE_CONFIG option. This
-patch makes changes in pl08x driver to use device_fc from it instead of platform
-data.
+On Wed, 18 Jan 2012, Andrew Jones wrote:
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/amba-pl08x.c   |    4 +++-
- include/linux/amba/pl08x.h |    8 ++++----
- 2 files changed, 7 insertions(+), 5 deletions(-)
+> > > Now changing it, i.e. making it conform more closely to its name and only
+> > > affect embedded related options, you can't do. If you were to do so, then
+> > > you would lose backward compatibility. How do you know there aren't users
+> > > that started using EMBEDDED for the non-embedded side effects?
+> > 
+> > That's why they're now using EXPERT.
+> 
+> How do you know they've all switched?
+> 
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 9ebceca..e1a71f0 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -1139,6 +1139,8 @@ static int dma_set_runtime_config(struct dma_chan *chan,
- 	cctl |= burst << PL080_CONTROL_SB_SIZE_SHIFT;
- 	cctl |= burst << PL080_CONTROL_DB_SIZE_SHIFT;
- 
-+	plchan->device_fc = config->device_fc;
-+
- 	if (plchan->runtime_direction == DMA_DEV_TO_MEM) {
- 		plchan->src_addr = config->src_addr;
- 		plchan->src_cctl = pl08x_cctl(cctl) | PL080_CONTROL_DST_INCR |
-@@ -1370,7 +1372,7 @@ static struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
- 		return NULL;
- 	}
- 
--	if (plchan->cd->device_fc)
-+	if (plchan->device_fc)
- 		tmp = (direction == DMA_MEM_TO_DEV) ? PL080_FLOW_MEM2PER_PER :
- 			PL080_FLOW_PER2MEM_PER;
- 	else
-diff --git a/include/linux/amba/pl08x.h b/include/linux/amba/pl08x.h
-index 033f6aa..2c58853 100644
---- a/include/linux/amba/pl08x.h
-+++ b/include/linux/amba/pl08x.h
-@@ -47,9 +47,6 @@ enum {
-  * @muxval: a number usually used to poke into some mux regiser to
-  * mux in the signal to this channel
-  * @cctl_opt: default options for the channel control register
-- * @device_fc: Flow Controller Settings for ccfg register. Only valid for slave
-- * channels. Fill with 'true' if peripheral should be flow controller. Direction
-- * will be selected at Runtime.
-  * @addr: source/target address in physical memory for this DMA channel,
-  * can be the address of a FIFO register for burst requests for example.
-  * This can be left undefined if the PrimeCell API is used for configuring
-@@ -68,7 +65,6 @@ struct pl08x_channel_data {
- 	int max_signal;
- 	u32 muxval;
- 	u32 cctl;
--	bool device_fc;
- 	dma_addr_t addr;
- 	bool circular_buffer;
- 	bool single;
-@@ -183,6 +179,9 @@ enum pl08x_dma_chan_state {
-  * @host: a pointer to the host (internal use)
-  * @state: whether the channel is idle, paused, running etc
-  * @slave: whether this channel is a device (slave) or for memcpy
-+ * @device_fc: Flow Controller Settings for ccfg register. Only valid for slave
-+ * channels. Fill with 'true' if peripheral should be flow controller. Direction
-+ * will be selected at Runtime.
-  * @waiting: a TX descriptor on this channel which is waiting for a physical
-  * channel to become available
-  */
-@@ -205,6 +204,7 @@ struct pl08x_dma_chan {
- 	struct pl08x_driver_data *host;
- 	enum pl08x_dma_chan_state state;
- 	bool slave;
-+	bool device_fc;
- 	struct pl08x_txd *waiting;
- };
- 
--- 
-1.7.8.110.g4cb5d
+Because existing CONFIG_EMBEDDED configs now automatically enable it since 
+my patch was merged a year ago.  Users who haven't upgraded since then and 
+run make oldconfig will do so in the future and we're not risking breaking 
+backwards compatibility at least until a sufficient amount of time has 
+passed.
 
+> > No, because they've already enabled EXPERT.  You can't have EMBEDDED=y and 
+> > EXPERT=n.  That's what this little thing called "select" does.  After a 
+> > sufficient amount of time passes and all options that are important only 
+> > for embedded users have been either extended for EMBEDDED or replaced only 
+> > be EMBEDDED, you can get rid of the "select" without losing backwards 
+> > compatibility.
+> 
+> How do you define a sufficient amount of time? How do you know everyone
+> else agrees with that definition? OIOW, where is it documented? If it is
+> documented, then how do you know everyone will read it and comply to it?
+> 
+
+An example: when I rewrote the kernel oom killer and deprecated 
+/proc/pid/oom_adj, we did this:
+
+ - mapped writes to oom_adj to the new tunable, oom_score_adj,
+
+ - emitted a warning when userspace wrote to oom_adj a single time,
+
+ - a year later, emitted a warning every time userspace writes to
+   oom_adj, and
+
+ - in September of 2012, the tunable will be removed entirely.
+
+This gives userspace two years to covert before the tunable is dropped 
+entirely.  We can't keep it around forever, but we're careful not to 
+suddenly drop existing users without some due diligence.  It's added to 
+Documentation/feature-removal-schedule.txt like all feature removals are.  
+We can do no better without a huge maintenance burden.
+
+We could add that CONFIG_EMBEDDED will stop automatically enabling 
+CONFIG_EXPERT in January 2014 to 
+Documentation/feature-removal-schedule.txt as well.  That certainly seems 
+like a good idea.
+
+However, we've now diverged entirely from your patch in this thread.
