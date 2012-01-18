@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086Ab2ARUtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 15:49:41 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50127 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757334Ab2ARUtj convert rfc822-to-8bit (ORCPT
+	id S1758110Ab2ARUuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 15:50:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61544 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758056Ab2ARUuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 15:49:39 -0500
+	Wed, 18 Jan 2012 15:50:03 -0500
+Date: Wed, 18 Jan 2012 13:49:59 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: linus.walleij@stericsson.com, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V1] gpio: tps65910: Use correct offset for gpio
+ initialization
+Message-ID: <20120118204959.GK4223@ponder.secretlab.ca>
+References: <1326897455-8298-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <7f1e961d.f528.134efaf8348.Coremail.dragonylffly@163.com>
-References: <7f1e961d.f528.134efaf8348.Coremail.dragonylffly@163.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 18 Jan 2012 12:49:17 -0800
-X-Google-Sender-Auth: KKyDwpLdCxMlPlIEAr-sPd8Oo-A
-Message-ID: <CA+55aFx7CV8wpDLfCr-pVVRxRyYgd2QdRXJSmp+UgrjSHyB1eA@mail.gmail.com>
-Subject: Re: [PATCH] eCryptfs: infinite loop bug
-To: dragonylffly <dragonylffly@163.com>
-Cc: tyhicks@canonical.com, john.johansen@canonical.com,
-        dustin.kirkland@gazzang.com, ecryptfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326897455-8298-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm.
+On Wed, Jan 18, 2012 at 08:07:35PM +0530, Laxman Dewangan wrote:
+> Using the correct gpio offset for setting the initial value
+> of gpio when setting output direction.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-There are *two* cases where we do that "total_remaining_bytes"
-calculation. The same bug seems to exist both in ecryptfs_read() and
-ecryptfs_write().
+Applied, thanks.
 
-Possibly only the ecryptfs_write() one leads to an endless loop, but
-the read one looks suspicious too.
+g.
 
-Also, what protects things against this just being one nasty DoS
-attack - even if the code is fixed to not be an endless loop, it looks
-like a trivial "truncate()" can be used to generate a *practically*
-infinite write stream. At the very least, this should be KILLABLE. Or
-did I mis-read the code?
-
-Tyler, Dustin, others - comments? This looks nasty.
-
-                     Linus.
-
-2012/1/17 dragonylffly <dragonylffly@163.com>:
-> Hi,
->   There is an infinite loop bug in eCryptfs, to make it present,
-> just truncate to generate a huge file (>= 4G) on a 32-bit machine under
-> the plain text foleder mounted with eCryptfs, a simple command
-> 'truncate -s 4G dummy' is enough. Note: 4GB is smaller than 4G,
-> therefore the following command 'truncate -s 4GB dummy' will not
-> trigger this bug. The bug comes from a data overflow, the patch below fixes
-> it.
->
-> Cheers,
-> Li Wang
->
 > ---
->
-> signed-off-by: Li Wang <liwang@nudt.edu.cn>
->                Yunchuan Wen (wenyunchuan@kylinos.com.cn)
->
-> --- read_write.c.orig 2012-01-18 10:39:26.000000000 +0800
-> +++ read_write.c 2012-01-18 19:48:41.484196221 +0800
-> @@ -130,7 +130,7 @@
->    pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
->    size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
->    size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
-> -  size_t total_remaining_bytes = ((offset + size) - pos);
-> +  loff_t total_remaining_bytes = ((offset + size) - pos);
->
->    if (num_bytes > total_remaining_bytes)
->     num_bytes = total_remaining_bytes;
->
->
->
+>  drivers/gpio/gpio-tps65910.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-tps65910.c b/drivers/gpio/gpio-tps65910.c
+> index b9c1c29..91f45b9 100644
+> --- a/drivers/gpio/gpio-tps65910.c
+> +++ b/drivers/gpio/gpio-tps65910.c
+> @@ -52,7 +52,7 @@ static int tps65910_gpio_output(struct gpio_chip *gc, unsigned offset,
+>  	struct tps65910 *tps65910 = container_of(gc, struct tps65910, gpio);
+>  
+>  	/* Set the initial value */
+> -	tps65910_gpio_set(gc, 0, value);
+> +	tps65910_gpio_set(gc, offset, value);
+>  
+>  	return tps65910_set_bits(tps65910, TPS65910_GPIO0 + offset,
+>  						GPIO_CFG_MASK);
+> -- 
+> 1.7.1.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
