@@ -1,118 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab2ARLK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 06:10:29 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:46350 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2ARLK2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 06:10:28 -0500
-Date: Wed, 18 Jan 2012 06:08:30 -0500 (EST)
-From: Andrew Jones <drjones@redhat.com>
-To: drjones@redhat.com, rientjes@google.com, mingo@elte.hu,
-        david.woodhouse@intel.com
-Cc: linux-kernel@vger.kernel.org, rientjes@google.com,
-        akpm@linux-foundation.org, mingo@elte.hu,
-        david woodhouse <david.woodhouse@intel.com>, gregkh@suse.de,
-        davem@davemloft.net, axboe@kernel.dk, arnd@arndb.de, holt@sgi.com,
-        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
-        a-jacquiot@ti.com, starvik@axis.com,
-        jesper nilsson <jesper.nilsson@axis.com>, dhowells@redhat.com,
-        takata@linux-m32r.org, geert@linux-m68k.org,
-        yasutake koichi <yasutake.koichi@jp.panasonic.com>, jonas@southpole.se,
-        kyle@mcmartin.ca, deller@gmx.de, jejb@parisc-linux.org,
-        chris@zankel.net, greg@kroah.com, davej@redhat.com, airlied@linux.ie,
-        jkosina@suse.cz, mchehab@infradead.org, johannes@sipsolutions.net,
-        linville@tuxdriver.com
-Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
-Message-ID: <b6315f9b-0ead-4de4-a8f5-ed619f852c6c@zmail13.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1326295008-29795-1-git-send-email-drjones@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1752104Ab2ARLOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 06:14:21 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35422 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751758Ab2ARLOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 06:14:20 -0500
+Date: Wed, 18 Jan 2012 12:14:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: tglx@linutronix.de, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH] x86-64: fix memset() to support sizes of 4Gb and above
+Message-ID: <20120118111404.GA12152@elte.hu>
+References: <4F05D992020000780006AA09@nat28.tlf.novell.com>
+ <20120106110519.GA32673@elte.hu>
+ <4F16AFB1020000780006D671@nat28.tlf.novell.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.34.1.174]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F16AFB1020000780006D671@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+* Jan Beulich <JBeulich@suse.com> wrote:
 
------ Original Message -----
-> Commit 6a108a14fa35 renamed CONFIG_EMBEDDED to CONFIG_EXPERT with the
-> justification that EMBEDDED was being used with a broader scope. It
-> was
-> no longer just being used to expose standard options to embedded
-> kernel
-> configs for tweaking, but rather for all "non-standard" kernel
-> configs.
-> This is nice, because now developers have a way to clean up the
-> config
-> menu by adding 'if EXPERT' to all entries in their Kconfig files that
-> should rarely have a non-default value selected (hint1: it would be
-> nice
-> if developers would do this, hint2: it would also be nice if
-> developers
-> would do this rather than making these types of options silent, and
-> thus
-> impossible to override).
+> >>> On 06.01.12 at 12:05, Ingo Molnar <mingo@elte.hu> wrote:
+> >> * Jan Beulich <JBeulich@suse.com> wrote:
+> > Would be nice to add support for arch/x86/lib/memset_64.S as 
+> > well, and look at the before/after performance of it.
 > 
-> Unfortunately, EMBEDDED was also being used to modify the defaults of
-> some of these options to selections more appropriate for embedded
-> kernels. Since the renaming was a simple global search-replace, if
-> developers were to follow hints 1 and 2 above for non-embedded
-> kernels,
-> then they may find unexpected changes in their configs after turning
-> on
-> EXPERT.
+> Got this done, will post the patch soon. However, ...
 > 
-> This patch attempts to untangle these two, making EXPERT true to its
-> purpose, which is to only expose standard options for tweaking, and
-> EMBEDDED to resume use as a default option modifier. The patch was
-> made
-> with the following four steps, which could not be split into separate
-> patches without breaking configs
+> > For example the kernel's memcpy routine in slightly faster than 
+> > glibc's:
 > 
-> 1. Make sure EMBEDDED does nothing, i.e. s/EMBEDDED/EXPERT/. There
-> were
-> only three places EMBEDDED was used.
-> 
-> 2. Add CONFIG_EXPERT=y to all configs that had CONFIG_EMBEDDED=y (and
-> not CONFIG_EXPERT=y already) to make sure step1 has no effect. This
-> step
-> isn't strictly necessary since EMBEDDED selects EXPERT, but I wanted
-> the
-> configs expressing the new need explicitly. Only 13 *_defconfig
-> files.
-> 
-> 3. Move all side effects (default changes) from EXPERT to EMBEDDED
-> 
-> 4. Add CONFIG_EMBEDDED=y to all configs that had CONFIG_EXPERT=y (and
-> not CONFIG_EMBEDDED=y already) to make sure step3 has no effect.
-> 
-> I certainly didn't test this for every touched config. However, I did
-> test it for one config and got the expected results;
->     Before patch:
->         1. diff config.orig orig.EXPERT   -- shows many changes
->         2. diff config.orig orig.EMBEDDED -- shows same changes as
->         (1)
->                                              plus EMBEDDED on
->     After patch:
->         3. diff config.orig config.new    -- no change
->         4. diff config.orig new.EXPERT    -- only 1 change, EXPERT on
->         5. diff config.orig new.EMBEDDED  -- shows same changes as
->         (2)
-> 
-> Signed-off-by: Andrew Jones <drjones@redhat.com>
-> ---
+> This is an illusion [...]
 
-This patch is effectively a partial revert of 6a108a14fa35, and has now
-been nacked by David Rientjes (author of 6a108a14fa35). However, IMO,
-there hasn't been a sufficient technical explanation for why. I've now
-added Ingo Molnar and David Woodhouse to the 'To:', in order to try and
-bring the patch to their attention. Both are listed as having reviewed or
-acked 6a108a14fa35, so I would appreciate their opinions on this patch as
-well.
+Oh ...
 
-Drew
+> [...] - since the kernel's memcpy_64.S also defines a "memcpy" 
+> (not just "__memcpy"), the static linker resolves the 
+> reference from mem-memcpy.c against this one. Apparent 
+> performance differences rather point at effects like 
+> (guessing) branch prediction (using the second vs the first 
+> entry of routines[]). After fixing this, on my Westmere box 
+> glibc's is quite a bit slower than the unrolled kernel variant 
+> (4% fewer instructions, but about 15% more cycles).
+
+Cool and thanks for looking into this. Will wait for your 
+patch(es).
+
+> > If such measurements all suggests equal or better 
+> > performance, and if there's no erratum in current CPUs that 
+> > would make 4G string copies dangerous [which your research 
+> > suggests should be fine], i have no principal objection 
+> > against this patch.
+> 
+> If I interpreted things correctly, there's a tiny win with the 
+> changes (also for not-yet-posted memcpy equivalent):
+
+Nice. That would be the expectation from the reduction in the 
+instruction count. Seems to be slighly above the noise threshold 
+of the measurement.
+
+Note that sometimes there's variance between different perf 
+bench runs larger than the reported standard deviation. This can 
+be seen from the three repeated --repeat 1000 runs you did.
+
+I believe this effect is due to memory layout artifacts - found 
+no good way so far to move that kind of variance inside the perf 
+stat --repeat runs.
+
+Maybe we could allocate a random amount of memory in user-space, 
+in the [0..1MB] range, before doing a repeat run (and freeing it 
+after an iteration), and perhaps dup() stdout randomly, to fuzz 
+the kmalloc and page allocation layout patterns?
+
+Thanks,
+
+	Ingo
