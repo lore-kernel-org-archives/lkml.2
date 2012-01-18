@@ -1,91 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab2ARR4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 12:56:55 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42222 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932252Ab2ARR4y (ORCPT
+	id S932453Ab2ARR5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 12:57:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57045 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932252Ab2ARR5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 12:56:54 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wBu39ZheO1YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OZNpMpAgtiifqc6JUxsA:9 a=a4qmjXvVJtCnUrc03QkA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326909412.17534.91.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH][GIT PULL][v3.3] tracing: Add header wrappers
- event_headers_start.h and event_headers_end.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Date: Wed, 18 Jan 2012 12:56:52 -0500
-In-Reply-To: <20120118120711.GB14863@elte.hu>
-References: <1326754637.7642.177.camel@gandalf.stny.rr.com>
-	 <20120117095418.GG10397@elte.hu>
-	 <1326807145.17534.26.camel@gandalf.stny.rr.com>
-	 <20120118120711.GB14863@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 18 Jan 2012 12:57:05 -0500
+Date: Wed, 18 Jan 2012 17:57:04 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V1 1/2] regulator: tps65910: Add regulator info for RTC
+ rail
+Message-ID: <20120118175703.GU8732@opensource.wolfsonmicro.com>
+References: <1326899816-14436-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326899816-14436-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Bridge ahead.  Pay troll.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-18 at 13:07 +0100, Ingo Molnar wrote:
+On Wed, Jan 18, 2012 at 08:46:56PM +0530, Laxman Dewangan wrote:
+> Adding missing regulator info for VRTC rail for device
+> tps65911. The regulator voltage rail index start from
+> VRTC which is defined as 0.
 
-> I'd argue that __raise_softirq_irqoff() should not be inline - 
-> that would solve a whole host of issues. Event tracing is 
-> enabled in most distros so there's no real overhead argument to 
-> be made here either - so it's probably a bit faster in fact to 
-> have this uninlined. What do you think?
-
-Sure, I have no problem moving that out of the header. I don't think
-raising a softirq is in that critical a path that it can't be a function
-call.
-
-There's only one trace/events header left which is in module.h. Perhaps
-we can move __module_get() and try_module_get() out of the header. We
-could just move the "if" part out.
-
-extern void inc_module(struct module *module, unsigned long ip);
-
-static inline void __module_get(struct module *module)
-{
-	if (module) {
-		preempt_disable();
-		inc_module(module, _THIS_IP_);
-		preempt_enable();
-	}
-}
-
-static inline void try_module_get(struct module *module)
-{
-	int ret = 1;
-
-	if (module) {
-		preempt_disable();
-
-		if (likely(module_is_live(module)))
-			inc_module(module, _THIS_IP_);
-		else
-			ret = 0;
-
-		preempt_enable();
-	}
-	return ret;
-}
-
----
-
-void inc_module(struct module *module, unsigned long ip)
-{
-	__this_cpu_inc(module->refptr->incs);
-	trace_module_get(module, ip);
-}
-
-
--- Steve
-
-
+Applied, thanks.
