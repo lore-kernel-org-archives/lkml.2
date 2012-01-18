@@ -1,207 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab2ARWvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 17:51:23 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49193 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751323Ab2ARWvV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 17:51:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120118224304.GJ2431@linux.vnet.ibm.com>
-References: <1326826563-32215-1-git-send-email-sjg@chromium.org>
-	<1326826563-32215-3-git-send-email-sjg@chromium.org>
-	<20120117201036.6d99f98f@pyramind.ukuu.org.uk>
-	<20120118041720.GA2431@linux.vnet.ibm.com>
-	<CAPnjgZ1GJatR15dVsq-+hAWhD7eaLhtN737QvBaor_=0+K+6wA@mail.gmail.com>
-	<20120118214215.GH2431@linux.vnet.ibm.com>
-	<CAPnjgZ1g0Gf8ZCavAbmxjJXxxk9duf1ybbEUNo9L-DHBxyXx-g@mail.gmail.com>
-	<20120118224304.GJ2431@linux.vnet.ibm.com>
-Date: Wed, 18 Jan 2012 14:51:20 -0800
-X-Google-Sender-Auth: 8xVPLzSiR7Y9Kxub6OjS5lCrGl0
-Message-ID: <CAPnjgZ3Rg80YE6qFNB+VxqX9aPd4oQYsDa2pGAsEsJHiNFYAbw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
-From: Simon Glass <sjg@chromium.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755303Ab2ARXBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 18:01:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55436 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab2ARXBQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 18:01:16 -0500
+Date: Wed, 18 Jan 2012 15:01:14 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, Theodore Tso <tytso@mit.edu>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH v5.4 00/13] crc32c: Add faster algorithm and self-test
+ code
+Message-Id: <20120118150114.2e2dac2d.akpm@linux-foundation.org>
+In-Reply-To: <20120118222733.4079.13377.stgit@elm3c44.beaverton.ibm.com>
+References: <20120118222733.4079.13377.stgit@elm3c44.beaverton.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Wed, 18 Jan 2012 14:27:33 -0800
+"Darrick J. Wong" <djwong@us.ibm.com> wrote:
 
-On Wed, Jan 18, 2012 at 2:43 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
->> Hi Paul,
->>
->> On Wed, Jan 18, 2012 at 1:42 PM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > On Wed, Jan 18, 2012 at 01:08:13PM -0800, Simon Glass wrote:
->> >> [+cc Rafael J. Wysocki <rjw@sisk.pl> who I think wrote the wakeup.c code]
->> >>
->> >> Hi Alan, Paul,
->> >>
->> >> On Tue, Jan 17, 2012 at 8:17 PM, Paul E. McKenney
->> >> <paulmck@linux.vnet.ibm.com> wrote:
->> >> > On Tue, Jan 17, 2012 at 08:10:36PM +0000, Alan Cox wrote:
->> >> >> On Tue, 17 Jan 2012 10:56:03 -0800
->> >> >> Simon Glass <sjg@chromium.org> wrote:
->> >> >>
->> >> >> > Since serial_core now does not make serial ports wake-up capable by
->> >> >> > default, add a parameter to support this feature in the 8250 UART.
->> >> >> > This is the only UART where I think this feature is useful.
->> >> >>
->> >> >> NAK
->> >> >>
->> >> >> Things should just work for users. Magic parameters is not an
->> >> >> improvement. If its a performance problem someone needs to fix the rcu
->> >> >> sync overhead or stop using rcu on that path.
->> >>
->> >> OK fair enough, I agree. Every level I move down the source tree
->> >> affects more people though.
->> >>
->> >> >
->> >> > I must say that I lack context here, even after looking at the patch,
->> >> > but the synchronize_rcu_expedited() primitives can be used if the latency
->> >> > of synchronize_rcu() is too large.
->> >> >
->> >>
->> >> Let me provide a bit of context. The serial_core code seems to be the
->> >> only place in the kernel that does this:
->> >>
->> >>               device_init_wakeup(tty_dev, 1);
->> >>               device_set_wakeup_enable(tty_dev, 0);
->> >>
->> >> The first call makes the device wakeup capable and enables wakeup, The
->> >> second call disabled wakeup.
->> >>
->> >> The code that removes the wakeup source looks like this:
->> >>
->> >> void wakeup_source_remove(struct wakeup_source *ws)
->> >> {
->> >>       if (WARN_ON(!ws))
->> >>               return;
->> >>
->> >>       spin_lock_irq(&events_lock);
->> >>       list_del_rcu(&ws->entry);
->> >>       spin_unlock_irq(&events_lock);
->> >>       synchronize_rcu();
->> >> }
->> >>
->> >> The sync is there because we are about to destroy the actual ws
->> >> structure (in wakeup_source_destroy()). I wonder if it should be in
->> >> wakeup_source_destroy() but that wouldn't help me anyway.
->> >>
->> >> synchronize_rcu_expedited() is a bit faster but not really fast
->> >> enough. Anyway surely people will complain if I put this in the wakeup
->> >> code - it will affect all wakeup users. It seems to me that the right
->> >> solution is to avoid enabling and then immediately disabling wakeup.
->> >
->> > Hmmm...  What hardware are you running this one?  Normally,
->> > synchronize_rcu_expedited() will be a couple of orders of magnitude
->> > faster than synchronize_rcu().
->> >
->> >> I assume we can't and shouldn't change device_init_wakeup() . We could
->> >> add a call like device_init_wakeup_disabled() which makes the device
->> >> wakeup capable but does not actually enable it. Does that work?
->> >
->> > If the only reason for the synchronize_rcu() is to defer the pair of
->> > kfree()s in wakeup_source_destroy(), then another possible approach
->> > would be to remove the synchronize_rcu() from wakeup_source_remove()
->> > and then use call_rcu() to defer the two kfree()s.
->> >
->> > If this is a reasonable change to make, the approach is as follows:
->> >
->> > 1.      Add a struct rcu_head to wakeup_source, call it "rcu".
->> >        Or adjust the following to suit your choice of name.
->> >
->> > 2.      Replace the pair of kfree()s with:
->> >
->> >                call_rcu(&ws->rcu, wakeup_source_destroy_rcu);
->> >
->> > 3.      Create the wakeup_source_destroy_rcu() as follows:
->> >
->> >        static void wakeup_source_destroy_rcu(struct rcu_head *head)
->> >        {
->> >                struct wakeup_source *ws =
->> >                        container_of(head, struct wakeup_source, rcu);
->> >
->> >                kfree(ws->name);
->> >                kfree(ws);
->> >        }
->> >
->> > Of course, this assumes that it is OK for wakeup_source_unregister()
->> > to return before the memory is freed up.  This often is OK, but there
->> > are some cases where the caller requires that there be no further
->> > RCU readers with access to the old data.  In these cases, you really
->> > do need the wait.
->>
->> Thanks very much for that. I'm not sure if it is a reasonable change,
->> but it does bug me that we add it to a data structure knowing that we
->> will immediately remove it!
->>
->> >From what I can see, making a device wakeup-enabled mostly happens on
->> init or in response to a request to the driver (presumably from user
->> space). In the latter case I suspect the synchronise_rcu() is fine. In
->> the former it feels like we should make up our minds which of the
->> three options is required (incapable, capable but not enabled, capable
->> and enabled).
->>
->> I will try a patch first based on splitting the two options (capable
->> and enable) and see if that get a NAK.
->>
->> Then I will come back to your solution - it seems fine to me and not a
->> lot of code. Do we have to worry about someone enabling, disabled,
->> enabling and then disabling wakeup quickly? Will this method break in
->> that case if the second call to call_rcu() uses the same wc->rcu?
->
-> There are a couple of questions here, let me take them one at a time:
->
-> 1.      If you just disabled, can you immediately re-enable?
->
->        The answer is "yes".  The reason that this works is that you
->        allocate a new structure for the re-enabling, and that new
->        structure has its own rcu_head field.
->
-> 2.      If you repeatedly disable and re-enable in a tight loop,
->        can this cause problems?
->
->        The answer to this is also "yes" -- you can run the system
->        out of memory doing that.  However, there are a number of
->        simple ways to avoid this problem:
->
->        a.      Do a synchronize_rcu() on every (say) thousandth
->                disable operation.
->
->        b.      As above, but only do the synchronize_rcu() if
->                all 1,000 disable operations occurred within
->                (say) a second of each other.
->
->        c.      As above, but actually count the number of
->                pending call_rcu() callbacks.
->
->        Both (a) and (b) can be carried out on a per-CPU basis if there
->        is no convenient locked structure in which to track the state.
->        You cannot carry (c) out on a per-CPU basis because RCU callbacks
->        can sometimes be invoked on a different CPU from the one that
->        call_rcu()ed them.  Rare, but it can happen.
->
->        I would expect that option (a) would work in almost all cases.
->
-> If this can be exercised freely from user space, then you probably
-> really do need #2 above.
+> This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
+> software crc32c implementation.  It removes the crc32c implementation in
+> crypto/ in favor of using the stamped-out one in lib/.  There is also a change
+> to Kconfig so that the kernel builder can pick an implementation best suited
+> for the hardware.
+> 
+> The motivation for this patchset is that I am working on adding full metadata
+> checksumming to ext4.  As far as performance impact of adding checksumming
+> goes, I see nearly no change with a standard mail server ffsb simulation.  On a
+> test that involves only file creation and deletion and extent tree writes, I
+> see a drop of about 50 pcercent with the current kernel crc32c implementation;
+> this improves to a drop of about 20 percent with the enclosed crc32c code.
+> 
+> When metadata is usually a small fraction of total IO, this new implementation
+> doesn't help much because metadata is usually a small fraction of total IO.
+> However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
+> tree), then this patch speeds up the operation substantially.
+> 
+> Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
+> should improve their speed as well.  I have not yet quantified that, however.
+> This latest submission combines Bob's patches from late August 2011 with mine
+> so that they can be one coherent patch set.  Please excuse my inability to
+> combine some of the patches; I've been advised to leave Bob's patches alone and
+> build atop them instead. :/
+> 
+> Since the last posting, I've also collected some crc32c test results on a bunch
+> of different x86/powerpc/sparc platforms.  The results can be viewed here:
+> http://goo.gl/sgt3i ; the "crc32-kern-le" and "crc32c" columns describe the
+> performance of the kernel's current crc32 and crc32c software implementations.
+> The "crc32c-by8-le" column shows crc32c performance with this patchset applied.
+> I expect crc32 performance to be roughly the same.
+> 
+> The two _boost columns at the right side of the spreadsheet shows how much
+> faster the new implementation is over the old one.  As you can see, crc32 rises
+> substantially, and crc32c experiences a huge increase.
 
-OK I see, thank you. It does sound a bit complicated although the
-chances of anyone actually doing this are probably remote.
+I grabbed this lot, so it will turn up in linux-next soon.
 
-I will send my patch to avoid getting into this situation and see what
-you think.
+There are quite a lot of clients of the crc32 code.  net, netfilter and
+wireless are prominent, but there are others everywhere.
 
-Regards,
-Simon
+So I cc'ed various other mailing lists just as a heads-up that this
+work is inbound and will hopefully yield performance improvements.  But
+of course, it might also yield bugs.
+
