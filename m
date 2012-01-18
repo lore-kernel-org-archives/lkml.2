@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab2ARRTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 12:19:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932288Ab2ARRTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 12:19:40 -0500
-Date: Wed, 18 Jan 2012 18:12:10 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Chris Evans <scarybeasts@gmail.com>
-Cc: Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
-	[RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-Message-ID: <20120118171210.GB16835@redhat.com>
-References: <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com> <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com> <20120118170006.GA16835@redhat.com>
+	id S932336Ab2ARRU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 12:20:58 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49021 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197Ab2ARRUz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 12:20:55 -0500
+Date: Wed, 18 Jan 2012 21:20:49 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andrey Vagin <avagin@openvz.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
+Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
+Message-ID: <20120118172049.GC2889@moon>
+References: <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
+ <20120117144452.GG16213@moon>
+ <4F15C249.3000602@zytor.com>
+ <m1obu29fnf.fsf@fess.ebiederm.org>
+ <20120118080103.GA2889@moon>
+ <4F168CF3.5090400@gmail.com>
+ <4F168E93.5010000@parallels.com>
+ <4F168F8C.8090504@gmail.com>
+ <20120118115700.GO1968@moon>
+ <4F16F781.3040700@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120118170006.GA16835@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F16F781.3040700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18, Oleg Nesterov wrote:
->
-> On 01/17, Chris Evans wrote:
+On Wed, Jan 18, 2012 at 11:46:57AM -0500, KOSAKI Motohiro wrote:
+> (1/18/12 6:57 AM), Cyrill Gorcunov wrote:
+> >On Wed, Jan 18, 2012 at 04:23:24AM -0500, KOSAKI Motohiro wrote:
+> >>(1/18/12 4:19 AM), Pavel Emelyanov wrote:
+> >>>>I think Eric only said gt/lt compare is useful. We don't need to expose bare
+> >>>>pointer order. example, kcmp(rotate(ptr, per-task-random-value)) is enough
+> >>>>hide the critical information. I think.
+> >>>
+> >>>The per-task might break thinks up in case
+> >>>
+> >>>(tsk1->file != tsk2->file) && (rotate(tsk1->file, tsk1->random) == rotate(tsk2->file, tsk2->rotate))
+> >>
+> >>I meant,
+> >>
+> >>(tsk1->file != tsk2->file) && (rotate(tsk1->file, caller_task->random) == rotate(tsk2->file, caller_task->random))
+> >>
+> >>>
+> >>>but I agree, that the overall idea of comparing not bare pointers, but those poisoned with
+> >>>some global value can address the Peter's concerns about rootkits.
 > >
-> > 1) Tracee is compromised; executes fork() which is syscall that isn't allowed
-> > 2) Tracee traps
-> > 2b) Tracee could take a SIGKILL here
-> > 3) Tracer looks at registers; bad syscall
-> > 3b) Or tracee could take a SIGKILL here
-> > 4) The only way to stop the bad syscall from executing is to rewrite
-> > orig_eax (PTRACE_CONT + SIGKILL only kills the process after the
-> > syscall has finished)
-> > 5) Disaster: the tracee took a SIGKILL so any attempt to address it by
-> > pid (such as PTRACE_SETREGS) fails.
-> > 6) Syscall fork() executes; possible unsupervised process now running
-> > since the tracer wasn't expecting the fork() to be allowed.
->
-> As for fork() in particular, it can't succeed after SIGKILL.
->
-> But I agree, probably it makes sense to change ptrace_stop() to check
-> fatal_signal_pending() and do do_group_exit(SIGKILL) after it sleeps
-> in TASK_TRACED. Or we can change tracehook_report_syscall_entry()
->
-> 	-	return 0;
-> 	+	return !fatal_signal_pending();
->
-> (no, I do not literally mean the change above)
->
-> Not only for security. The current behaviour sometime confuses the
-> users. Debugger sends SIGKILL to the tracee and assumes it should
-> die asap, but the tracee exits only after syscall.
+> >Guys, can we stick with something simplier? I could use hashes here (again?!) or
+> >even aes encoded pointers extended to 128 bits as it was proposed too. But
+> >maybe we can live with something more simplier?
+> 
+> The problem of hashes is,
+> 
+>  - SHA1 didn't provide correct "equal or not" policy. (and I don't think sha1 is faster than kcmp)
+>  - Poisoned pointer can be used to restore original bare pointer.
+> 
+> Do this have the same issue?
 
-Something like the patch below.
+No, this rorate() helper seems to not have such problems (still sha1 provided
+pretty well equal or not policy, aes with internals random too). The thing is
+the ->random you choose here (which I suppose will be the number of bits to
+rotate in former pointer and this way break order -- weak option too, you
+will be rotating in modulo field).
 
-Oleg.
+> 
+> >We could export EQ/NE for regular users (which might be usefull for less
+> >frequently used objects such as namespaces I guess). And GT/LT for root
+> >only.
+> >
+> >Does it look better? Does the change log tells enough?
+> 
+> I dislike. Just EQ/NE is better than "root only" behavior change. it's misleading.
+> If you dislike GT/LT, please just delete it.
+> 
 
---- x/include/linux/tracehook.h
-+++ x/include/linux/tracehook.h
-@@ -54,12 +54,12 @@ struct linux_binprm;
- /*
-  * ptrace report for syscall entry and exit looks identical.
-  */
--static inline void ptrace_report_syscall(struct pt_regs *regs)
-+static inline int ptrace_report_syscall(struct pt_regs *regs)
- {
- 	int ptrace = current->ptrace;
- 
- 	if (!(ptrace & PT_PTRACED))
--		return;
-+		return 0;
- 
- 	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
- 
-@@ -72,6 +72,8 @@ static inline void ptrace_report_syscall
- 		send_sig(current->exit_code, current, 1);
- 		current->exit_code = 0;
- 	}
-+
-+	return fatal_signal_pending(current);
- }
- 
- /**
-@@ -96,8 +98,7 @@ static inline void ptrace_report_syscall
- static inline __must_check int tracehook_report_syscall_entry(
- 	struct pt_regs *regs)
- {
--	ptrace_report_syscall(regs);
--	return 0;
-+	return ptrace_report_syscall(regs);
- }
- 
- /**
+EQ/NE remains here for everyone and behaves constantly for all users. For safety reason
+only root can restore in-memory order, so I must admit I don't understand the problem.
 
+If I'm root on a machine already, the memory order is least interesting thing for me,
+really, but getting the root rights is really a problem for most cases in turn.
+
+So we would preferred to have gt/lt ability at least for root. If there
+absolutely no way to do so -- eq/ne is admisable and we can try to optimise
+sorting somehow (still not sure if we will success) but it's not desirable.
+
+	Cyrill
