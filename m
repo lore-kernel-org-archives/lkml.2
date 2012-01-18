@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2ARWQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 17:16:06 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42092 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab2ARWQD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 17:16:03 -0500
+	id S1753920Ab2ARWQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 17:16:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372Ab2ARWQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 17:16:14 -0500
+Date: Wed, 18 Jan 2012 17:13:52 -0500
+From: Dave Jones <davej@redhat.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Jones <drjones@redhat.com>, rientjes@google.com, mingo@elte.hu,
+        david.woodhouse@intel.com, linux-kernel@vger.kernel.org,
+        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, arnd@arndb.de,
+        holt@sgi.com, linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com,
+        jesper nilsson <jesper.nilsson@axis.com>, dhowells@redhat.com,
+        takata@linux-m32r.org, geert@linux-m68k.org,
+        yasutake koichi <yasutake.koichi@jp.panasonic.com>, jonas@southpole.se,
+        kyle@mcmartin.ca, deller@gmx.de, jejb@parisc-linux.org,
+        chris@zankel.net, greg@kroah.com, airlied@linux.ie, jkosina@suse.cz,
+        mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+Message-ID: <20120118221351.GB19758@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Paul Bolle <pebolle@tiscali.nl>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andrew Jones <drjones@redhat.com>, rientjes@google.com,
+	mingo@elte.hu, david.woodhouse@intel.com,
+	linux-kernel@vger.kernel.org, gregkh@suse.de, davem@davemloft.net,
+	axboe@kernel.dk, arnd@arndb.de, holt@sgi.com,
+	linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+	hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
+	a-jacquiot@ti.com, starvik@axis.com,
+	jesper nilsson <jesper.nilsson@axis.com>, dhowells@redhat.com,
+	takata@linux-m32r.org, geert@linux-m68k.org,
+	yasutake koichi <yasutake.koichi@jp.panasonic.com>,
+	jonas@southpole.se, kyle@mcmartin.ca, deller@gmx.de,
+	jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
+	airlied@linux.ie, jkosina@suse.cz, mchehab@infradead.org,
+	johannes@sipsolutions.net, linville@tuxdriver.com
+References: <1326295008-29795-1-git-send-email-drjones@redhat.com>
+ <b6315f9b-0ead-4de4-a8f5-ed619f852c6c@zmail13.collab.prod.int.phx2.redhat.com>
+ <20120118122830.037f1e29.akpm@linux-foundation.org>
+ <1326923285.9412.21.camel@x61.thuisdomein>
 MIME-Version: 1.0
-In-Reply-To: <20120118140603.0fc22302.akpm@linux-foundation.org>
-References: <20120117235852.GA4877@www.outflux.net>
-	<20120118140603.0fc22302.akpm@linux-foundation.org>
-Date: Wed, 18 Jan 2012 14:16:02 -0800
-X-Google-Sender-Auth: baHTS1KIoWHF4-f2m96CVNOUD2Y
-Message-ID: <CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
-Subject: Re: [PATCH v5] ramoops: use pstore interface
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326923285.9412.21.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 2:06 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 17 Jan 2012 15:58:52 -0800
-> Kees Cook <keescook@chromium.org> wrote:
->
->> --- a/drivers/char/Kconfig
->> +++ b/drivers/char/Kconfig
->> @@ -603,6 +603,7 @@ source "drivers/s390/char/Kconfig"
->>  config RAMOOPS
->>       tristate "Log panic/oops to a RAM buffer"
->>       depends on HAS_IOMEM
->> +     depends on PSTORE
->>       default n
->>       help
->>         This enables panic and oops messages to be logged to a circular
->
-> I think this is the right thing to do, but boy I hate it.  You sit
-> there wondering "wtf do I need to enable so I can use feature X".  I
-> sometimes use menuconfig's search feature, other times go trawl the
-> Kconfig files.  There should be a capability in Kconfig to just turn on
-> the terminal feature, enabling any precondition features on the way.
-> Everyone loves Kconfig.
+On Wed, Jan 18, 2012 at 10:48:05PM +0100, Paul Bolle wrote:
 
-Heh. Yeah, makes a lot of thing undiscoverable in menuconfig. Maybe
-stuff should be greyed out instead of just disappearing.
+ > The kernel configuration used for the kernels currently shipped with
+ > Fedora 16 and Debian 6.0.3 (ie, stable or squeeze), which are the
+ > configurations I can examine here, have CONFIG_EXPERIMENTAL set. Perhaps
+ > Debian and Fedora need that option for a few odd features.
 
->>  static int __exit ramoops_remove(struct platform_device *pdev)
->>  {
->> +#if 0
->> +     /* TODO(kees): We cannot unload ramoops since pstore doesn't support
->> +      * unregistering yet.
->> +      */
->
-> Well that sucks.  Is pstore getting fixed?
+In some cases. In others, not so odd.
 
-Tony, any plans for changing this? I'm ready when it does! :)
+Here's a list of everything that would go away if we disabled
+CONFIG_EXPERIMENTAL in our builds..
 
-Thanks,
+http://fpaste.org/Ibbw/
 
--Kees
+	Dave
 
--- 
-Kees Cook
-ChromeOS Security
