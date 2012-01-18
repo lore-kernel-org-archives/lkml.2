@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab2ARXHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 18:07:40 -0500
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:63154 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358Ab2ARXHh (ORCPT
+	id S1755543Ab2ARXJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 18:09:49 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:53319 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755470Ab2ARXJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 18:07:37 -0500
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Simon Glass <sjg@chromium.org>
-Subject: [PATCH 2/2] serial: Use device_init_wakeup_flag() to make device wakeup-capable
-Date: Wed, 18 Jan 2012 15:07:07 -0800
-Message-Id: <1326928027-20610-2-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1326928027-20610-1-git-send-email-sjg@chromium.org>
-References: <1326826563-32215-3-git-send-email-sjg@chromium.org>
- <1326928027-20610-1-git-send-email-sjg@chromium.org>
+	Wed, 18 Jan 2012 18:09:47 -0500
+Date: Thu, 19 Jan 2012 10:09:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Schmidt <list.btrfs@jan-o-sch.net>, Arne Jansen <sensille@gmx.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: linux-next: build warning in Linus' tree
+Message-Id: <20120119100935.82c5ec6db156f3799835163f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Jan_2012_10_09_35_+1100_lE5_jvtJ7rZ67x=a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want the serial device to be wakeup-capable but not actually enable
-the wakeup function. The original code results in making the serial
-device wakeup-capable, then enabling and then immediately disabling
-the actual wakeup feature on the device. This ends up in a
-synchronise_rcu() in wakeup_source_remove() which can take some 15ms
-to run, yet is entirely avoidable. The cost over 4 ports is about 600ms
-on my Tegra2x system (with CONFIG_PREEMPT disabled).
+--Signature=_Thu__19_Jan_2012_10_09_35_+1100_lE5_jvtJ7rZ67x=a
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Using the new function avoids this problem.
+Hi Linus,
 
-Signed-off-by: Simon Glass <sjg@chromium.org>
----
- drivers/tty/serial/serial_core.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Building Linus' tree, today's linux-next build (powerpc_ppc64_defconfig)
+produced these warnings:
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index c7bf31a..a8b01db 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2348,11 +2348,11 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	 */
- 	tty_dev = tty_register_device(drv->tty_driver, uport->line, uport->dev);
- 	if (likely(!IS_ERR(tty_dev))) {
--		device_init_wakeup(tty_dev, 1);
--		device_set_wakeup_enable(tty_dev, 0);
--	} else
-+		device_init_wakeup_flag(tty_dev, PM_WAKEUP_CAP);
-+	} else {
- 		printk(KERN_ERR "Cannot register tty device on line %d\n",
- 		       uport->line);
-+	}
- 
- 	/*
- 	 * Ensure UPF_DEAD is not set.
--- 
-1.7.7.3
+fs/btrfs/backref.c: In function 'find_parent_nodes':
+fs/btrfs/backref.c:482:3: warning: 'ret' may be used uninitialized in this =
+function [-Wuninitialized]
+fs/btrfs/backref.c:395:6: note: 'ret' was declared here
+fs/btrfs/backref.c:381:3: warning: 'ret' may be used uninitialized in this =
+function [-Wuninitialized]
+fs/btrfs/backref.c:300:6: note: 'ret' was declared here
 
+and indeed, there is a path through to a BUG_ON(ret) that does not set
+"ret".  Introduced by commit 8da6d5815c59 ("Btrfs: added
+btrfs_find_all_roots()").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__19_Jan_2012_10_09_35_+1100_lE5_jvtJ7rZ67x=a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPF1EvAAoJEECxmPOUX5FEswcP/2CVtHJTzF/k4kB62tXhV5NR
+e7ZC7FbyYJg7FEv4x00Jfzd2TYADG31+M7kemnRg4Bq+O9D1X9GA5cxe1sLIkFQK
+I4+FdTsSwuWYA7pA/FCW7vZj50n9ZFhQai+jHxmuW5RU5bzBr3gWMkT5xTXMr7f6
+oh3fIaNTW1rzIyoluZHns+K23SqHkZg1OTlB8oSCrFKBxmbHroIckMEIejqFB4CO
+JEClAUdvV2kJyEpbCK+WIHDelM3IktDnMRbKLeFNYtGgSH59FitzXtIlEfcsFLSC
++qThlSt7v7tqz9VraqkoHchbURmnhJuZ62CD3SzH+qwokxnCIFMR3iVfNgbQ/vd9
+Sr+kOkaQHWSx1z0//h5LJxpQpijisGhZMTtlonEQ6hevkfEmVBCY/70hZKpIlYNg
+C4UomG7zZ8Ihzi1Tqbs4RV8SWVZlPYD3SvGY1aFLhR1tbZLys64OHAt8KtUOY9Ci
+Ynm3B234PxfWbxEDKY3K1ZY5XduuVtAHU2GEnwMiJ95x0/JwBv3buu0Ya+GPIMt5
+R6tBL0aRdG9EInHUEkZeG+w89e5bfFAnyNFfLLWRyJOCtKCtuA5dnO3S52exDVOb
+wf9ovMPhVZPE6kLqcKYnU2Fmq4EssS7N79yzpCgT/mVGTGEjesuDTu13BGW8aZlQ
+KP6UM+a76MVNIXDuenPo
+=8/ME
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Jan_2012_10_09_35_+1100_lE5_jvtJ7rZ67x=a--
