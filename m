@@ -1,106 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab2ARRSF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 12:18:05 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:43712 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932247Ab2ARRSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 12:18:04 -0500
-Message-ID: <4F16FEC8.1080901@bfs.de>
-Date: Wed, 18 Jan 2012 18:18:00 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S932317Ab2ARRTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 12:19:20 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53006 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932290Ab2ARRTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 12:19:19 -0500
+Message-ID: <4F16FF0D.1030606@linux.vnet.ibm.com>
+Date: Wed, 18 Jan 2012 22:49:09 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, kernel-janitors@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] drivers/staging: adjust double test
-References: <1326403988-872-1-git-send-email-Julia.Lawall@lip6.fr> <1326403988-872-2-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1326403988-872-2-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
+        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
+Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
+ to unlock_system_sleep()
+References: <201201172345.15010.rjw@sisk.pl>	<201201180015.56510.rjw@sisk.pl> <4F16C24A.4050007@linux.vnet.ibm.com> <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com> <4F16F94C.4020000@linux.vnet.ibm.com> <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com>
+In-Reply-To: <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12011807-1396-0000-0000-0000008D1FDB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Tejun,
+
+On 01/18/2012 10:28 PM, Tejun Heo wrote:
+
+> Hello,
+> 
+> On Wed, Jan 18, 2012 at 8:54 AM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> +       /*
+>> +        * Don't use freezer_count() because we don't want the call to
+>> +        * try_to_freeze() here.
+>> +        *
+>> +        * Reason:
+>> +        * unlock_system_sleep() gets called in snapshot_read() and
+>> +        * snapshot_write() when the freezing condition is still in effect.
+>> +        * Which means, if we use try_to_freeze() here, it would make them
+>> +        * enter the refrigerator, thus causing suspend-to-disk to lockup.
+>> +        */
+> 
+> Yeap, much better but wouldn't it be better if the description was
+> higher level?  ie. Explain why try_to_freeze() doesn't make sense for
+> this operation semantically and then, optionally, give an example of
+> breakage.  It usually is lack of proper rationale / reasoning that
+> confuses people reading the code.
+> 
 
 
-Am 12.01.2012 22:33, schrieb Julia Lawall:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Rewrite a duplicated test to test the correct value
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression E;
-> @@
-> 
-> (
-> * E
->   || ... || E
-> |
-> * E
->   && ... && E
-> )
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  drivers/staging/gma500/mdfld_dsi_pkg_sender.c |    6 ++----
->  drivers/staging/rtl8192e/rtllib_rx.c          |    2 +-
->  2 files changed, 3 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
-> index 6c5061f..13979b5 100644
-> --- a/drivers/staging/rtl8192e/rtllib_rx.c
-> +++ b/drivers/staging/rtl8192e/rtllib_rx.c
-> @@ -2453,7 +2453,7 @@ static inline void update_network(struct rtllib_network *dst,
->  	if (src->wmm_param[0].ac_aci_acm_aifsn ||
->  	   src->wmm_param[1].ac_aci_acm_aifsn ||
->  	   src->wmm_param[2].ac_aci_acm_aifsn ||
-> -	   src->wmm_param[1].ac_aci_acm_aifsn)
-> +	   src->wmm_param[3].ac_aci_acm_aifsn)
->  		memcpy(dst->wmm_param, src->wmm_param, WME_AC_PRAM_LEN);
->  
->  	dst->SignalStrength = src->SignalStrength;
-> diff --git a/drivers/staging/gma500/mdfld_dsi_pkg_sender.c b/drivers/staging/gma500/mdfld_dsi_pkg_sender.c
-> index 9b96a5c..3a9f44f 100644
-> --- a/drivers/staging/gma500/mdfld_dsi_pkg_sender.c
-> +++ b/drivers/staging/gma500/mdfld_dsi_pkg_sender.c
-> @@ -1249,8 +1249,7 @@ int mdfld_dsi_read_gen_hs(struct mdfld_dsi_pkg_sender *sender,
->  			u32 *data,
->  			u16 len)
->  {
-> -	if (!sender || !data || param_num < 0 || param_num > 2
-> -		|| !data || !len) {
-> +	if (!sender || param_num < 0 || param_num > 2 || !data || !len) {
->  		DRM_ERROR("Invalid parameters\n");
->  		return -EINVAL;
->  	}
-> @@ -1267,8 +1266,7 @@ int mdfld_dsi_read_gen_lp(struct mdfld_dsi_pkg_sender *sender,
->  			u32 *data,
->  			u16 len)
->  {
-> -	if (!sender || !data || param_num < 0 || param_num > 2
-> -		|| !data || !len) {
-> +	if (!sender || param_num < 0 || param_num > 2 || !data || !len) {
->  		DRM_ERROR("Invalid parameters\n");
->  		return -EINVAL;
->  	}
-> 
-> --
-Hi,
-this is obviously correct but what is about readability ?
-would it be an option to break it into two line (or two if) like:
-  if (!sender || !data || !len)
-	if ( param_num < 0 || param_num > 2 )
+I agree, but I was trying to keep the comment from growing too long ;)
 
-re,
- wh
+In fact, before updating that patch, I wrote up the following description
+but then didn't post it. I know you are asking me to update the comment
+in the code, but let me post my original description as well, atleast just
+because I took the effort to write it up ;)
 
+Explanation as to why try_to_freeze() must not be used in
+unlock_system_sleep():
+
+We don't want try_to_freeze() here because of 2 reasons:
+
+a) It is unnecessary at this point:
+   Freezing always begins and ends in a piece of code which is protected by
+   pm_mutex. 
+
+   Some code piece, say "X":             PM/Freezer call path:
+
+				         grab pm_mutex
+				         start freezing tasks
+   [-- lock_system_sleep() --]
+				         skip freezing "X" since
+				        it called freezer_do_not_count()
+
+				         freezing succeeded.
+				         Other things get done (suspend
+				         or hibernate etc).
+
+				         release pm_mutex
+
+   lock_system_sleep()
+   (it is only *now* that this
+   function returned since pm_mutex
+   had been grabbed all this while
+   by the PM path.)
+
+				          Let us say another PM operation
+				          like suspend/hibernate begins.
+					   So try to grab pm_mutex.
+
+   /* do something */
+
+   unlock_system_sleep()
+   //Point 1
+
+                		          It is only now that we acquire
+					  pm_mutex.
+					  So freezing for example, can
+					  start only now.
+					  //Point 2
+
+
+>From the above depiction, it is clear that try_to_freeze() at Point 1 is
+pointless because freezing can only begin much later, at Point 2.
+When freezer_count() is called in some generic code, the try_to_freeze() is
+justified because, we had asked the freezer to skip us earlier, and now we
+want the freezer to consider us again. And hence, just in case the freezer
+is about to give up based on its 20 second timeout, we are extra-cooperative
+- we immediately call try_to_freeze() ourselves.
+
+However, in the unlock_system_sleep() case, the freezer won't be anywhere
+near its 20 second timeout, because freezing wouldn't have begun at all!
+Freezing would start only after we release the pm_mutex in
+unlock_system_sleep.
+
+So, considering all this, try_to_freeze() is not needed in
+unlock_system_sleep() path.
+
+b) A more important reason why try_to_freeze() should not be used here is that
+   it causes suspend-to-disk to lock up, as pointed out by Rafael.
+   So its no longer "pointless/unnecessary", it is now "known to make things
+   fail and hence not allowed".
+
+//End of my description :)
+
+I'll see how best I can summarize this in a short comment and post an updated
+patch when I'm done.
+
+Regards,
+Srivatsa S. Bhat
 
