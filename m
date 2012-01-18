@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab2ARX3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 18:29:19 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44843 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab2ARX3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 18:29:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F173F48.2070604@zytor.com>
-References: <20120116183730.GB21112@redhat.com> <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
- <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
- <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
- <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
- <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
- <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
- <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
- <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
- <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com> <4F1737C9.3070905@zytor.com>
- <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com> <4F173F48.2070604@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 18 Jan 2012 15:28:54 -0800
-X-Google-Sender-Auth: eU3ubJL_aCaSTG8vF-pinhquuFA
-Message-ID: <CA+55aFw3kv_JRsSCQEf6fQd0gX939MuoevDxFtcXkPY+bmyjtA@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Roland McGrath <mcgrathr@google.com>, Indan Zupancic <indan@nul.nu>,
-        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
-        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755470Ab2ARXbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 18:31:37 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752884Ab2ARXbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 18:31:35 -0500
+From: Richard Weinberger <rw@linutronix.de>
+To: netfilter-devel@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, rostedt@goodmis.org
+Subject: Netfilter: New target: RLOG
+Date: Wed, 18 Jan 2012 23:43:25 +0100
+Message-Id: <1326926610-17830-1-git-send-email-rw@linutronix.de>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 1:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> I think we can obviously agree that regsets is the only way to go for
-> any kind of new state.
+RLOG is a new log target, it works like LOG with the exception that it writes to ring buffers.
+It makes use of Steven Rostedt's ring_buffer subsystem. 
+I've used Steve's ring buffer because it allows concurrent writes. IOW it's very fast.
+For more details see: Documentation/trace/ring-buffer-design.txt.
 
-So I really don't necessarily agree at all.
+Each ring buffer is represented as a pipe-like file in /proc/net/netfilter/xt_RLOG/.
+You can read from it with and program you like (cat, syslog, etc...).
+The default size is 1MiB. With this size it can store approximately 5000 messages.
 
-Exactly because there is a heavy burden to introducing new models.
-It's not only relatively much more kernel code, it's also relatively
-much more painful for user code. If we can hide it in existing
-structures, user code is *much* better off, because any existing code
-to get the state will just continue to work. Otherwise, you need to
-have the code to figure out the new structures (how do you compile it
-without the new kernel headers?), you need to do the extra accesses
-conditionally etc etc.
+- Why not LOG?
+I like the LOG target a lot but I really hat it when it floods my kernel syslog.
+dmesg becomes useless.
+Writing all log messages to a file using syslogd also not always the best solution.
+Most of the time my firewall logs just waste disk space.
 
-There's a real cost to introducing new interfaces. There's a *reason*
-people try to make do with old ones.
+Compared with Steve's ring_buffer, the kernel syslog is rather slow.
+Especially when the firewall logs very much syslog becomes a bottleneck.
+As we all know printk() is not fast.
 
-          Linus
+- Why not ULOG/NFLOG?
+Because it cannot replace LOG.
+Details like PHYSIN and PHYSOUT are not available form the packet headers.
+Also on many Linux systems ulogd is not available/supported.  
+
+- Why RLOG?
+Using RLOG you can have many ring buffers with all kind of logs.
+If your firewall goes nuts you don't have to mess you rule-set with adding
+new LOG rules to find out what's going on.
+Just install a few RLOG rules with small buffer sized and read them if you don't
+know what's going on.
+If you make you firewall rule-set per default verbose using LOG or NFLOG it will 
+generate lot's of useless messages which you'll never ever read.
+With RLOG you can bypass this problem.
+On my firewall I record only useful data to the disk. Everything else goes into RLOG.
+
+If your firewall is really busy and you want to log nearly everything, c
+reate a big ring buffer and read from is using your favorite userspace tool.
+In case the buffer fills faster than the userspace consumes it, RLOG will warn you.
+I'd also possible to resize the buffer.
+
+- Example
+
+You can use RLOG like LOG.
+E.g:
+iptables -A INPUT -p icmp -j RLOG
+The default name of the ring buffer is "default".
+Now you can read your icmp logs from /proc/net/netfilter/default
+
+iptables -A INPUT -p icmp -j RLOG --ring foo
+iptables -A INPUT -j RLOG --ring bar --size 4096
+
+This will create two new ring buffers "foo" and "bar".
+"bar" has a size of 4MiB.
+
+ICMP logs go now into three ring buffers, "default" and "foo".
+Everything else (including ICMP) goes into "bar".
+If you don't want to use syslog add "--add-timestamp" to have timestamps in your logs.
+
+Different iptables rules with different RLOG flags can use the same ring buffer.
+iptables -A INPUT -p icmp -j RLOG --ring xxx --add-timestamp
+iptables -A INPUT -p icmp -j RLOG --ring xxx
+
+Every ICMP packet will show up in "xxx" twice. But the first entry will have a timestamp.
+
+
+[PATCH 1/5] ring_buffer: Export for_each_buffer_cpu()
+Steve, is this path ok for you?
+
+[PATCH 2/5] xt_log: Make printk() in sb_close() optional
+[PATCH 3/5] nf_log: Export dump_packet() and dump_mac_header()
+RLOG reuses as much code from LOG are possible.
+These two patches are needed to export some code to RLOG.
+Currently RLOG depends on both ipt_LOG and ip6t_LOG.
+
+[PATCH 4/5] netfilter: Implement xt_RLOG
+[PATCH 5/5] xt_RLOG: add userspace-components
+
+Any feedback is welcome!
