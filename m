@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab2ARXpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 18:45:55 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:53526 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753130Ab2ARXpx (ORCPT
+	id S1755859Ab2ARXsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 18:48:13 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:65513 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab2ARXsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 18:45:53 -0500
-X-Authenticated: #10150493
-X-Provags-ID: V01U2FsdGVkX1/WhuxpmhTWAonpY/TzqcBWChTCTvwK1KcO37w6YS
-	4dqiyWb+cdmT7k
-Message-ID: <4F1759A8.5080209@gmx.de>
-Date: Thu, 19 Jan 2012 00:45:44 +0100
-From: Thomas Faber <thfabba@gmx.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 18 Jan 2012 18:48:12 -0500
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: ftgmac100/ftmac100: add missing interrupt.h include
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20120119103626.a9b21533cf30da57ddc54947@canb.auug.org.au>
+References: <20120119103626.a9b21533cf30da57ddc54947@canb.auug.org.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Jan 2012 15:47:50 -0800
+X-Google-Sender-Auth: uVRwEo6eHHodyMCX4_MMepn4Y5g
+Message-ID: <CA+55aFyNcD0n9xj5CjGZ9szQQYqGCNtbpXLGctkPZCh6ZdhDYw@mail.gmail.com>
+Subject: Re: linux-next: build warning in Linus' tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes compilation failure of these modules due to missing
-irqreturn_t type for the ft(g)mac100_interrupt definition.
+On Wed, Jan 18, 2012 at 3:36 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> Building Linus' tree, today's linux-next build (x86_64 allmodconfig)
+> produced this warning:
+>
+> drivers/block/nvme.c: In function 'nvme_alloc_ns':
+> drivers/block/nvme.c:1336:2: warning: passing argument 2 of 'blk_queue_make_request' from incompatible pointer type [enabled by default]
+> include/linux/blkdev.h:830:13: note: expected 'void (*)(struct request_queue *, struct bio *)' but argument is of type 'int (*)(struct request_queue *, struct bio *)'
 
-Signed-off-by: Thomas Faber <thfabba@gmx.de>
----
- drivers/net/ethernet/faraday/ftgmac100.c |    1 +
- drivers/net/ethernet/faraday/ftmac100.c  |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+That's a merge error of mine, resulting from a non-conflicting semantics change.
 
-diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
-index fb5579a..47f85c3 100644
---- a/drivers/net/ethernet/faraday/ftgmac100.c
-+++ b/drivers/net/ethernet/faraday/ftgmac100.c
-@@ -25,6 +25,7 @@
- #include <linux/etherdevice.h>
- #include <linux/ethtool.h>
- #include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/module.h>
- #include <linux/netdevice.h>
-diff --git a/drivers/net/ethernet/faraday/ftmac100.c b/drivers/net/ethernet/faraday/ftmac100.c
-index a127cb2..bb336a0 100644
---- a/drivers/net/ethernet/faraday/ftmac100.c
-+++ b/drivers/net/ethernet/faraday/ftmac100.c
-@@ -25,6 +25,7 @@
- #include <linux/etherdevice.h>
- #include <linux/ethtool.h>
- #include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/mii.h>
- #include <linux/module.h>
---
-1.7.3.4
+The type of make_request_fn has changed to void, but the nvme driver
+was based on the older version.
+
+It's benign in that in the absence of truly crazy calling conventions
+it has no relevance apart from unnecessarily clearing the return value
+that now doesn't exist and isn't used, but the warning is clearly
+annoying.
+
+I pushed out the obvious fix.
+
+                     Linus
