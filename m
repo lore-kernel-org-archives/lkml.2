@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab2ARC0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 21:26:49 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47856 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531Ab2ARC0q (ORCPT
+	id S1756701Ab2ARC1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 21:27:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:32902 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756632Ab2ARC1n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 21:26:46 -0500
-Message-ID: <4F162DFD.7010200@chocky.org>
-Date: Tue, 17 Jan 2012 18:27:09 -0800
-From: Peter Naulls <peter@chocky.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Tue, 17 Jan 2012 21:27:43 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] ftdi USB serial additional IDs
-Content-Type: multipart/mixed;
- boundary="------------060901050903090308090905"
+In-Reply-To: <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+References: <CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
+ <20120116183730.GB21112@redhat.com> <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
+ <20120117164523.GA17070@redhat.com> <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
+ <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
+ <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+ <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+ <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 17 Jan 2012 18:27:19 -0800
+X-Google-Sender-Auth: GCBcrFCGQr3nZCJkLmS7t7yO5GQ
+Message-ID: <CA+55aFyVTh4SQjjcf3x9BSzULttNVcmG9FyaKzhok=2_804xWA@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
+ [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Indan Zupancic <indan@nul.nu>,
+        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060901050903090308090905
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Tue, Jan 17, 2012 at 6:04 PM, Jamie Lokier <jamie@shareable.org> wrote:
+>
+> I think Indan means code is running with 64-bit cs, but the kernel
+> treats int $0x80 as a 32-bit syscall and sysenter as a 64-bit syscall,
+> and there's no way for the ptracer to know which syscall the kernel
+> will perform, even by looking at all registers.  It looks like a hole
+> in ptrace which could be fixed.
 
+We could possibly munge the "orig_ax" field to be different for the
+int80 vs syscall cases. That's really the only field that isn't direct
+x86 state. And it's 64 bits wide, but we really only care about the
+low 32 bits in the kernel. So a bit in the high bits that says "this
+was a int80 entry" would be possible.
 
-I tested this against 2.6.39 in the Ubuntu kernel, however I see the IDs are not 
-in latest 3.2 git.
-
-This adds IDs for the FTDI controller in the Rainforest Automation Zigbee
-dongle.
-
-I don't subscribe to this list, please CC responses.
-
-
-
---------------060901050903090308090905
-Content-Type: text/x-patch;
- name="ftdi.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="ftdi.patch"
-
---- a/drivers/usb/serial/ftdi_sio_ids.h.orig	2012-01-16 15:05:19.479187251 -0800
-+++ b/drivers/usb/serial/ftdi_sio_ids.h	2012-01-16 15:09:36.059187291 -0800
-@@ -1159,4 +1159,8 @@
- /* USB-Nano-485*/
- #define FTDI_CTI_NANO_PID	0xF60B
- 
--
-+/*
-+ * Rainforest Automation
-+ */
-+/* ZigBee controller */
-+#define FTDI_RF_R106		0x8A28
---- a/drivers/usb/serial/ftdi_sio.c.orig	2012-01-16 15:05:27.727187253 -0800
-+++ b/drivers/usb/serial/ftdi_sio.c	2012-01-16 15:10:37.695187302 -0800
-@@ -828,6 +828,7 @@
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
-
-
-Signed-off-by: Peter Naulls <peter@chocky.org>
-
---------------060901050903090308090905--
+                       Linus
