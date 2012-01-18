@@ -1,349 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659Ab2AROWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 09:22:05 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53233 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757466Ab2AROWC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 09:22:02 -0500
-Date: Wed, 18 Jan 2012 18:21:56 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
- v6
-Message-ID: <20120118142156.GR1968@moon>
-References: <20120116153231.GF2998@moon>
- <4F15EA53.8030405@gmail.com>
- <20120118135809.GA10105@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757687Ab2AROW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 09:22:27 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:22269 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757611Ab2AROW0 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 18 Jan 2012 09:22:26 -0500
+Message-Id: <4F16E3AC020000780006D796@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 18 Jan 2012 14:22:20 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        <luca@luca-barbieri.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] ix86: adjust asm constraints in atomic64 wrappers
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120118135809.GA10105@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 02:58:09PM +0100, Oleg Nesterov wrote:
-> On 01/17, KOSAKI Motohiro wrote:
-> >
-> > (1/16/12 10:32 AM), Cyrill Gorcunov wrote:
-> >> When we do checkpoint of a task we need to know the list of children
-> >> the task, has but there is no easy and fast way to generate reverse
-> >> parent->children chain from arbitrary<pid>  (while a parent pid is
-> >> provided in "PPid" field of /proc/<pid>/status).
-> >>
-> >> So instead of walking over all pids in the system (creating one big process
-> >> tree in memory, just to figure out which children a task has) -- we add
-> >> explicit /proc/<pid>/task/<tid>/children entry, because the kernel already has
-> >> this kind of information but it is not yet exported.
-> >
-> > I doubt this is good idea. It move some complexity to userland, but not reduce.
-> > Again, if we add this interface, it should help pstree like process traversal
-> > tools. Bare task hierarchy shouldn't be exposed userland. I believe users need
-> > sub process, not sub threads.
-> 
-> IOW, you mean that the reading from 'children' should list all children
-> of the whole thread group. Yes, we discussed this before a bit.
-> 
-> In this case this file should live in /proc/pid/, not in /proc/pid/task/tid.
-> But this doesn't allow to restore the hierarchy correctly, you need to know
-> the parent thread. So I think /proc/pid/tasks/tid/children is still needed.
-> And I think it does help pstree-like apps, just they need to look into task/.
-> 
-> As for /proc/pid/children, may be we can add it later. But this is not that
-> simple. The problem is the threaded reparenting, we do not want to list the
-> same child twice.
-> 
+Eric pointed out overly restrictive constraints in atomic64_set(), but
+there are issues throughout the file. In the cited case, %ebx and %ecx
+are inputs only (don't get changed by either of the two low level
+implementations). This was also the case elsewhere.
 
-Yes, /proc/pid/children was initial target but then I fall back to hardness
-and though implementing more simplier solution is better approach.
+Further in many cases early-clobber indicators were missing.
 
-So Oleg, I think you meant something like below? Comment is moved down an
-list_empty over siblings remans, right?
+Finally, the previous implementation rolled a custom alternative
+instruction macro from scratch, rather than using alternative_call()
+(which was introduced with the commit that the description of the
+change in question actually refers to). Adjusting has the benefit of
+not hiding referenced symbols from the compiler, which however requires
+them to be declared not just in the exporting source file (which, as a
+desirable side effect, in turn allows that exporting file to become a
+real 5-line stub).
 
-Btw, should it be under CONFIG_CHECKPOINT_RESTORE or we could live with it
-in general?
+This patch does not eliminate the overly restrictive memory clobbers,
+however: Doing so would occasionally make the compiler set up a second
+register for accessing the memory object (to satisfy the added "m"
+constraint), and it's not clear which of the two non-optimal
+alternatives is better.
 
-	Cyrill
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Luca Barbieri <luca@luca-barbieri.com>
+
 ---
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v6
+ arch/x86/include/asm/alternative.h |    6 +
+ arch/x86/include/asm/atomic64_32.h |  145 +++++++++++++++++++------------------
+ arch/x86/lib/atomic64_32.c         |   60 ---------------
+ 3 files changed, 87 insertions(+), 124 deletions(-)
 
-When we do checkpoint of a task we need to know the list of children
-the task, has but there is no easy and fast way to generate reverse
-parent->children chain from arbitrary <pid> (while a parent pid is
-provided in "PPid" field of /proc/<pid>/status).
-
-So instead of walking over all pids in the system (creating one big process
-tree in memory, just to figure out which children a task has) -- we add
-explicit /proc/<pid>/task/<tid>/children entry, because the kernel already has
-this kind of information but it is not yet exported.
-
-This is a first level children, not the whole process tree.
-
-v2:
- - Kame suggested to use a separated /proc/<pid>/children entry
-   instead of poking /proc/<pid>/status
- - Andew suggested to use rcu facility instead of locking
-   tasklist_lock
- - Tejun pointed that non-seekable seq file might not be
-   enough for tasks with large number of children
-
-v3:
- - To be on a safe side use %lu format for pid_t printing
-
-v4:
- - New line get printed when sequence ends not at seq->stop,
-   a nit pointed by Tejun
- - Documentation update
- - tasklist_lock is back, Oleg pointed that ->children list
-   is actually not rcu-safe
-
-v5:
- - Oleg suggested to make /proc/<pid>/task/<tid>/children
-   instead of global /proc/<pid>/children, which eliminates
-   hardness related to threads and children migration, and
-   allows patch to be a way simplier.
-
-v6:
- - Drop ptrace_may_access tests, pids are can be found anyway
-   so nothing to protect here.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- Documentation/filesystems/proc.txt |   18 ++++
- fs/proc/array.c                    |  147 +++++++++++++++++++++++++++++++++++++
- fs/proc/base.c                     |    1 
- fs/proc/internal.h                 |    1 
- 4 files changed, 167 insertions(+)
-
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -40,6 +40,7 @@ Table of Contents
-   3.4	/proc/<pid>/coredump_filter - Core dump filtering settings
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
-+  3.7   /proc/<pid>/task/<tid>/children - Information about task children
+--- tip-i386-atomic64.orig/arch/x86/include/asm/alternative.h
++++ tip-i386-atomic64/arch/x86/include/asm/alternative.h
+@@ -145,6 +145,12 @@ static inline int alternatives_text_rese
+  */
+ #define ASM_OUTPUT2(a...) a
  
-   4	Configuring procfs
-   4.1	Mount options
-@@ -1549,6 +1550,23 @@ then the kernel's TASK_COMM_LEN (current
- comm value.
++/*
++ * use this macro if you need clobbers but no inputs in
++ * alternative_{input,io,call}()
++ */
++#define ASM_NO_INPUT_CLOBBER(clbr...) "i" (0) : clbr
++
+ struct paravirt_patch_site;
+ #ifdef CONFIG_PARAVIRT
+ void apply_paravirt(struct paravirt_patch_site *start,
+--- tip-i386-atomic64.orig/arch/x86/include/asm/atomic64_32.h
++++ tip-i386-atomic64/arch/x86/include/asm/atomic64_32.h
+@@ -14,13 +14,50 @@ typedef struct {
  
+ #define ATOMIC64_INIT(val)	{ (val) }
  
-+3.7	/proc/<pid>/task/<tid>/children - Information about task children
-+-------------------------------------------------------------------------
-+This file provides a fast way to retrieve first level children pids
-+of a task pointed by <pid>/<tid> pair. The format is a space separated
-+stream of pids.
++#ifndef __ATOMIC64_EXPORT
++/*
++ * Don't declare these as functions, even though they are - due to their
++ * non-standard calling conventions they can't be called by C code anyway.
++ */
++#define __ATOMIC64_EXPORT(sym) extern const atomic64_t atomic64_##sym[]
++#endif
 +
-+Note the "first level" here -- if a child has own children they will
-+not be listed here, one needs to read /proc/<children-pid>/task/<tid>/children
-+to obtain the descendants.
+ #ifdef CONFIG_X86_CMPXCHG64
+-#define ATOMIC64_ALTERNATIVE_(f, g) "call atomic64_" #g "_cx8"
++#define __alternative_atomic64(f, g, out, in...) \
++	asm volatile("call %P[func]" \
++		     : out : [func] "i" (atomic64_##g##_cx8), ## in)
 +
-+Since this interface is intended to be fast and cheap it doesn't
-+guarantee to provide precise results, which means if there a new child
-+created while we read the "children" file -- it might or might not be
-+counted. So one need to either stop or freeze processes if precise
-+results are needed.
++#define ATOMIC64_EXPORT(sym) __ATOMIC64_EXPORT(sym##_cx8)
+ #else
+-#define ATOMIC64_ALTERNATIVE_(f, g) ALTERNATIVE("call atomic64_" #f "_386", "call atomic64_" #g "_cx8", X86_FEATURE_CX8)
++#define __alternative_atomic64(f, g, out, in...) \
++	alternative_call(atomic64_##f##_386, atomic64_##g##_cx8, \
++			 X86_FEATURE_CX8, ASM_OUTPUT2(out), ## in)
 +
++#define ATOMIC64_EXPORT(sym) __ATOMIC64_EXPORT(sym##_cx8); \
++		__ATOMIC64_EXPORT(sym##_386)
 +
- ------------------------------------------------------------------------------
- Configuring procfs
- ------------------------------------------------------------------------------
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -547,3 +547,150 @@ int proc_pid_statm(struct seq_file *m, s
- 
- 	return 0;
- }
-+
-+struct proc_pid_children_iter {
-+	struct pid_namespace *pid_ns;
-+	struct pid *pid_start;
-+};
-+
-+static struct pid *
-+get_children_pid(struct proc_pid_children_iter *iter, struct pid *pid_prev, loff_t pos)
-+{
-+	struct task_struct *start, *task;
-+	struct pid *pid = NULL;
-+
-+	read_lock(&tasklist_lock);
-+
-+	start = pid_task(iter->pid_start, PIDTYPE_PID);
-+	if (!start)
-+		goto out;
-+
-+	/*
-+	 * Lets try to continue searching first, this gives
-+	 * us significant speedup on children-rich processes.
-+	 */
-+	if (pid_prev) {
-+		task = pid_task(pid_prev, PIDTYPE_PID);
-+		if (task && task->real_parent == start &&
-+		    !(list_empty(&task->sibling))) {
-+			if (list_is_last(&task->sibling, &start->children))
-+				goto out;
-+			task = list_first_entry(&task->sibling,
-+						struct task_struct, sibling);
-+			pid = get_pid(task_pid(task));
-+			goto out;
-+		}
-+	}
-+
-+	/*
-+	 * Slow search case
-+	 *
-+	 * We might miss some freshly created children
-+	 * here, but it was never promised to be
-+	 * accurate.
-+	 */
-+	list_for_each_entry(task, &start->children, sibling) {
-+		if (pos-- == 0) {
-+			pid = get_pid(task_pid(task));
-+			break;
-+		}
-+	}
-+
-+out:
-+	read_unlock(&tasklist_lock);
-+	return pid;
-+}
-+
-+static int children_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct proc_pid_children_iter *iter = seq->private;
-+	unsigned long pid = (unsigned long)pid_nr_ns(v, iter->pid_ns);
-+
-+	return seq_printf(seq, " %lu", pid);
-+}
-+
-+static void *children_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	return get_children_pid(seq->private, NULL, *pos);
-+}
-+
-+static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct proc_pid_children_iter *iter = seq->private;
-+	struct pid *pid = NULL;
-+
-+	pid = get_children_pid(iter, v, *pos + 1);
-+	if (!pid)
-+		seq_printf(seq, "\n");
-+	put_pid(v);
-+
-+	++*pos;
-+	return pid;
-+}
-+
-+static void children_seq_stop(struct seq_file *seq, void *v)
-+{
-+	put_pid(v);
-+}
-+
-+static const struct seq_operations children_seq_ops = {
-+	.start	= children_seq_start,
-+	.next	= children_seq_next,
-+	.stop	= children_seq_stop,
-+	.show	= children_seq_show,
-+};
-+
-+static int children_seq_open(struct inode *inode, struct file *file)
-+{
-+	struct proc_pid_children_iter *iter = NULL;
-+	struct task_struct *task = NULL;
-+	int ret = 0;
-+
-+	task = get_proc_task(inode);
-+	if (!task) {
-+		ret = -ENOENT;
-+		goto err;
-+	}
-+
-+	iter = kmalloc(sizeof(*iter), GFP_KERNEL);
-+	if (!iter) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	ret = seq_open(file, &children_seq_ops);
-+	if (!ret) {
-+		struct seq_file *m = file->private_data;
-+		m->private = iter;
-+
-+		iter->pid_start = get_pid(task_pid(task));
-+		iter->pid_ns = inode->i_sb->s_fs_info;
-+	}
-+
-+err:
-+	if (task)
-+		put_task_struct(task);
-+	if (ret)
-+		kfree(iter);
-+
-+	return ret;
-+}
-+
-+int children_seq_release(struct inode *inode, struct file *file)
-+{
-+	struct seq_file *m = file->private_data;
-+	struct proc_pid_children_iter *iter = m->private;
-+
-+	put_pid(iter->pid_start);
-+	kfree(iter);
-+
-+	seq_release(inode, file);
-+	return 0;
-+}
-+
-+const struct file_operations proc_tid_children_operations = {
-+	.open    = children_seq_open,
-+	.read    = seq_read,
-+	.llseek  = seq_lseek,
-+	.release = children_seq_release,
-+};
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -3454,6 +3454,7 @@ static const struct pid_entry tid_base_s
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
- 	REG("maps",      S_IRUGO, proc_maps_operations),
-+	REG("children",  S_IRUGO, proc_tid_children_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps", S_IRUGO, proc_numa_maps_operations),
++__ATOMIC64_EXPORT(add_386);
++__ATOMIC64_EXPORT(sub_386);
++__ATOMIC64_EXPORT(inc_386);
++__ATOMIC64_EXPORT(dec_386);
  #endif
-Index: linux-2.6.git/fs/proc/internal.h
-===================================================================
---- linux-2.6.git.orig/fs/proc/internal.h
-+++ linux-2.6.git/fs/proc/internal.h
-@@ -53,6 +53,7 @@ extern int proc_pid_statm(struct seq_fil
- 				struct pid *pid, struct task_struct *task);
- extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
  
-+extern const struct file_operations proc_tid_children_operations;
- extern const struct file_operations proc_maps_operations;
- extern const struct file_operations proc_numa_maps_operations;
- extern const struct file_operations proc_smaps_operations;
+-#define ATOMIC64_ALTERNATIVE(f) ATOMIC64_ALTERNATIVE_(f, f)
++#define alternative_atomic64(f, out, in...) \
++	__alternative_atomic64(f, f, ASM_OUTPUT2(out), ## in)
++
++ATOMIC64_EXPORT(read);
++ATOMIC64_EXPORT(set);
++ATOMIC64_EXPORT(xchg);
++ATOMIC64_EXPORT(add_return);
++ATOMIC64_EXPORT(sub_return);
++ATOMIC64_EXPORT(inc_return);
++ATOMIC64_EXPORT(dec_return);
++ATOMIC64_EXPORT(dec_if_positive);
++ATOMIC64_EXPORT(inc_not_zero);
++ATOMIC64_EXPORT(add_unless);
++
++#undef ATOMIC64_EXPORT
++#undef __ATOMIC64_EXPORT
+ 
+ /**
+  * atomic64_cmpxchg - cmpxchg atomic64 variable
+@@ -50,11 +87,9 @@ static inline long long atomic64_xchg(at
+ 	long long o;
+ 	unsigned high = (unsigned)(n >> 32);
+ 	unsigned low = (unsigned)n;
+-	asm volatile(ATOMIC64_ALTERNATIVE(xchg)
+-		     : "=A" (o), "+b" (low), "+c" (high)
+-		     : "S" (v)
+-		     : "memory"
+-		     );
++	alternative_atomic64(xchg, "=&A" (o),
++			     "S" (v), "b" (low), "c" (high)
++			     : "memory");
+ 	return o;
+ }
+ 
+@@ -69,11 +104,9 @@ static inline void atomic64_set(atomic64
+ {
+ 	unsigned high = (unsigned)(i >> 32);
+ 	unsigned low = (unsigned)i;
+-	asm volatile(ATOMIC64_ALTERNATIVE(set)
+-		     : "+b" (low), "+c" (high)
+-		     : "S" (v)
+-		     : "eax", "edx", "memory"
+-		     );
++	alternative_atomic64(set, /* no output */,
++			     "S" (v), "b" (low), "c" (high)
++			     : "eax", "edx", "memory");
+ }
+ 
+ /**
+@@ -85,10 +118,7 @@ static inline void atomic64_set(atomic64
+ static inline long long atomic64_read(const atomic64_t *v)
+ {
+ 	long long r;
+-	asm volatile(ATOMIC64_ALTERNATIVE(read)
+-		     : "=A" (r), "+c" (v)
+-		     : : "memory"
+-		     );
++	alternative_atomic64(read, "=&A" (r), "c" (v) : "memory");
+ 	return r;
+  }
+ 
+@@ -101,10 +131,9 @@ static inline long long atomic64_read(co
+  */
+ static inline long long atomic64_add_return(long long i, atomic64_t *v)
+ {
+-	asm volatile(ATOMIC64_ALTERNATIVE(add_return)
+-		     : "+A" (i), "+c" (v)
+-		     : : "memory"
+-		     );
++	alternative_atomic64(add_return,
++			     ASM_OUTPUT2("+A" (i), "+c" (v)),
++			     ASM_NO_INPUT_CLOBBER("memory"));
+ 	return i;
+ }
+ 
+@@ -113,32 +142,25 @@ static inline long long atomic64_add_ret
+  */
+ static inline long long atomic64_sub_return(long long i, atomic64_t *v)
+ {
+-	asm volatile(ATOMIC64_ALTERNATIVE(sub_return)
+-		     : "+A" (i), "+c" (v)
+-		     : : "memory"
+-		     );
++	alternative_atomic64(sub_return,
++			     ASM_OUTPUT2("+A" (i), "+c" (v)),
++			     ASM_NO_INPUT_CLOBBER("memory"));
+ 	return i;
+ }
+ 
+ static inline long long atomic64_inc_return(atomic64_t *v)
+ {
+ 	long long a;
+-	asm volatile(ATOMIC64_ALTERNATIVE(inc_return)
+-		     : "=A" (a)
+-		     : "S" (v)
+-		     : "memory", "ecx"
+-		     );
++	alternative_atomic64(inc_return, "=&A" (a),
++			     "S" (v) : "memory", "ecx");
+ 	return a;
+ }
+ 
+ static inline long long atomic64_dec_return(atomic64_t *v)
+ {
+ 	long long a;
+-	asm volatile(ATOMIC64_ALTERNATIVE(dec_return)
+-		     : "=A" (a)
+-		     : "S" (v)
+-		     : "memory", "ecx"
+-		     );
++	alternative_atomic64(dec_return, "=&A" (a),
++			     "S" (v) : "memory", "ecx");
+ 	return a;
+ }
+ 
+@@ -151,10 +173,9 @@ static inline long long atomic64_dec_ret
+  */
+ static inline long long atomic64_add(long long i, atomic64_t *v)
+ {
+-	asm volatile(ATOMIC64_ALTERNATIVE_(add, add_return)
+-		     : "+A" (i), "+c" (v)
+-		     : : "memory"
+-		     );
++	__alternative_atomic64(add, add_return,
++			       ASM_OUTPUT2("+A" (i), "+c" (v)),
++			       ASM_NO_INPUT_CLOBBER("memory"));
+ 	return i;
+ }
+ 
+@@ -167,10 +188,9 @@ static inline long long atomic64_add(lon
+  */
+ static inline long long atomic64_sub(long long i, atomic64_t *v)
+ {
+-	asm volatile(ATOMIC64_ALTERNATIVE_(sub, sub_return)
+-		     : "+A" (i), "+c" (v)
+-		     : : "memory"
+-		     );
++	__alternative_atomic64(sub, sub_return,
++			       ASM_OUTPUT2("+A" (i), "+c" (v)),
++			       ASM_NO_INPUT_CLOBBER("memory"));
+ 	return i;
+ }
+ 
+@@ -196,10 +216,8 @@ static inline int atomic64_sub_and_test(
+  */
+ static inline void atomic64_inc(atomic64_t *v)
+ {
+-	asm volatile(ATOMIC64_ALTERNATIVE_(inc, inc_return)
+-		     : : "S" (v)
+-		     : "memory", "eax", "ecx", "edx"
+-		     );
++	__alternative_atomic64(inc, inc_return, /* no output */,
++			       "S" (v) : "memory", "eax", "ecx", "edx");
+ }
+ 
+ /**
+@@ -210,10 +228,8 @@ static inline void atomic64_inc(atomic64
+  */
+ static inline void atomic64_dec(atomic64_t *v)
+ {
+-	asm volatile(ATOMIC64_ALTERNATIVE_(dec, dec_return)
+-		     : : "S" (v)
+-		     : "memory", "eax", "ecx", "edx"
+-		     );
++	__alternative_atomic64(dec, dec_return, /* no output */,
++			       "S" (v) : "memory", "eax", "ecx", "edx");
+ }
+ 
+ /**
+@@ -263,15 +279,16 @@ static inline int atomic64_add_negative(
+  * @u: ...unless v is equal to u.
+  *
+  * Atomically adds @a to @v, so long as it was not @u.
+- * Returns the old value of @v.
++ * Returns non-zero if the add was done, zero otherwise.
+  */
+ static inline int atomic64_add_unless(atomic64_t *v, long long a, long long u)
+ {
+ 	unsigned low = (unsigned)u;
+ 	unsigned high = (unsigned)(u >> 32);
+-	asm volatile(ATOMIC64_ALTERNATIVE(add_unless) "\n\t"
+-		     : "+A" (a), "+c" (v), "+S" (low), "+D" (high)
+-		     : : "memory");
++	alternative_atomic64(add_unless,
++			     ASM_OUTPUT2("+A" (a), "+c" (v),
++					 "+S" (low), "+D" (high)),
++			     ASM_NO_INPUT_CLOBBER("memory"));
+ 	return (int)a;
+ }
+ 
+@@ -279,26 +296,20 @@ static inline int atomic64_add_unless(at
+ static inline int atomic64_inc_not_zero(atomic64_t *v)
+ {
+ 	int r;
+-	asm volatile(ATOMIC64_ALTERNATIVE(inc_not_zero)
+-		     : "=a" (r)
+-		     : "S" (v)
+-		     : "ecx", "edx", "memory"
+-		     );
++	alternative_atomic64(inc_not_zero, "=&a" (r),
++			     "S" (v) : "ecx", "edx", "memory");
+ 	return r;
+ }
+ 
+ static inline long long atomic64_dec_if_positive(atomic64_t *v)
+ {
+ 	long long r;
+-	asm volatile(ATOMIC64_ALTERNATIVE(dec_if_positive)
+-		     : "=A" (r)
+-		     : "S" (v)
+-		     : "ecx", "memory"
+-		     );
++	alternative_atomic64(dec_if_positive, "=&A" (r),
++			     "S" (v) : "ecx", "memory");
+ 	return r;
+ }
+ 
+-#undef ATOMIC64_ALTERNATIVE
+-#undef ATOMIC64_ALTERNATIVE_
++#undef alternative_atomic64
++#undef __alternative_atomic64
+ 
+ #endif /* _ASM_X86_ATOMIC64_32_H */
+--- tip-i386-atomic64.orig/arch/x86/lib/atomic64_32.c
++++ tip-i386-atomic64/arch/x86/lib/atomic64_32.c
+@@ -1,59 +1,5 @@
+-#include <linux/compiler.h>
+-#include <linux/module.h>
+-#include <linux/types.h>
++#define __ATOMIC64_EXPORT(sym) extern const atomic64_t atomic64_##sym[]; \
++	EXPORT_SYMBOL(atomic64_##sym)
+ 
+-#include <asm/processor.h>
+-#include <asm/cmpxchg.h>
++#include <linux/export.h>
+ #include <linux/atomic.h>
+-
+-long long atomic64_read_cx8(long long, const atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_read_cx8);
+-long long atomic64_set_cx8(long long, const atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_set_cx8);
+-long long atomic64_xchg_cx8(long long, unsigned high);
+-EXPORT_SYMBOL(atomic64_xchg_cx8);
+-long long atomic64_add_return_cx8(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_add_return_cx8);
+-long long atomic64_sub_return_cx8(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_sub_return_cx8);
+-long long atomic64_inc_return_cx8(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_inc_return_cx8);
+-long long atomic64_dec_return_cx8(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_dec_return_cx8);
+-long long atomic64_dec_if_positive_cx8(atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_dec_if_positive_cx8);
+-int atomic64_inc_not_zero_cx8(atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_inc_not_zero_cx8);
+-int atomic64_add_unless_cx8(atomic64_t *v, long long a, long long u);
+-EXPORT_SYMBOL(atomic64_add_unless_cx8);
+-
+-#ifndef CONFIG_X86_CMPXCHG64
+-long long atomic64_read_386(long long, const atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_read_386);
+-long long atomic64_set_386(long long, const atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_set_386);
+-long long atomic64_xchg_386(long long, unsigned high);
+-EXPORT_SYMBOL(atomic64_xchg_386);
+-long long atomic64_add_return_386(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_add_return_386);
+-long long atomic64_sub_return_386(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_sub_return_386);
+-long long atomic64_inc_return_386(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_inc_return_386);
+-long long atomic64_dec_return_386(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_dec_return_386);
+-long long atomic64_add_386(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_add_386);
+-long long atomic64_sub_386(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_sub_386);
+-long long atomic64_inc_386(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_inc_386);
+-long long atomic64_dec_386(long long a, atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_dec_386);
+-long long atomic64_dec_if_positive_386(atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_dec_if_positive_386);
+-int atomic64_inc_not_zero_386(atomic64_t *v);
+-EXPORT_SYMBOL(atomic64_inc_not_zero_386);
+-int atomic64_add_unless_386(atomic64_t *v, long long a, long long u);
+-EXPORT_SYMBOL(atomic64_add_unless_386);
+-#endif
+
+
