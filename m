@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab2ARKX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 05:23:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:58769 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757352Ab2ARKWY (ORCPT
+	id S1757436Ab2ARKYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 05:24:22 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:43093 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757352Ab2ARKYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 05:22:24 -0500
-Date: Wed, 18 Jan 2012 11:22:22 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
-Subject: [PATCH 2/7] dma: shdma: prepare for simple DMA conversion
-In-Reply-To: <Pine.LNX.4.64.1201181025280.28782@axis700.grange>
-Message-ID: <Pine.LNX.4.64.1201181112170.28782@axis700.grange>
-References: <Pine.LNX.4.64.1201181025280.28782@axis700.grange>
+	Wed, 18 Jan 2012 05:24:20 -0500
+Date: Wed, 18 Jan 2012 15:53:59 +0530
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] amba-pl011: do not disable RTS during shutdown
+Message-ID: <20120118102359.GA3917@bnru02.bnr.st.com>
+References: <1326796189-21722-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+ <20120117184047.GE22472@flint.arm.linux.org.uk>
+ <20120118094505.GA889@bnru02.bnr.st.com>
+ <20120118101013.GF22472@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:6vyNWy4kELJyAxYOMQJ0/Iyf8wwedI4bDN65XULvqsI
- 8ylbN/JDQFlJO3waobigNB8TZ80Hl/aqGMjWq3bAQ0RpRqMitP
- azYG3iLl2Xk/hBCxvbRFNS6SL2ixJA3fepb+Wx+EtMYICj53J+
- YiTKtoyJKrbghBgRgmNmHyjDzAa+n3xPkG7pjzPMBFrszGV5S9
- MDucyAQ4dnkH6JlKH0/wHjup7K8ANRTiYASPEJG8XvARizsmfb
- VkgGnJHmppmdkqXu4zzdMELT9CGEqzuFyIgTEljZjbZ6PlhUa+
- ixk+7C7Cp8HQ6DdUCSxdD4MBXE+jjIMYAYlyladyrCbBAu4teA
- fNWY7UDGsuEHWAkqN8kNGlR6PI6hEAjslWE61EXoMcZOEUAOmm
- 6tQhGGGLwSdlw==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120118101013.GF22472@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By placing an anonymous union at the top of struct sh_dmae_slave we can
-transparently prepare all drivers for the upcoming simple DMA conversion.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+>From 1b9b0de2d7fd099d775e03065ad96414e7c4ed60 Mon Sep 17 00:00:00 2001
+From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Date: Tue, 17 Jan 2012 11:00:26 +0530
+Subject: [PATCH v4] amba-pl011: do not disable RTS during shutdown
+
+In present driver, shutdown clears RTS and DTR in CR register. But the
+documentation "Documentation/serial/driver" suggests not to disable
+RTS and DTR in shutdown(). Also RTS and DTR is preserved between shutdown
+and startup calls, i.e. these are restored in startup if they were enabled
+while doing shutdown. So that if RTS and DTR are set using pl011_set_mctrl
+then it should continue even after shutdown->startup sequence.
+For throttling/unthrottling user should call pl011_set_mctrl.
+
+Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- include/linux/sh_dma.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/tty/serial/amba-pl011.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
-index db637b9..1b14cf4 100644
---- a/include/linux/sh_dma.h
-+++ b/include/linux/sh_dma.h
-@@ -10,12 +10,16 @@
- #ifndef SH_DMA_H
- #define SH_DMA_H
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 6958594..d155e45 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -159,6 +159,7 @@ struct uart_amba_port {
+ 	unsigned int		fifosize;	/* vendor-specific */
+ 	unsigned int		lcrh_tx;	/* vendor-specific */
+ 	unsigned int		lcrh_rx;	/* vendor-specific */
++	unsigned int		old_cr;		/* state during shutdown */
+ 	bool			autorts;
+ 	char			type[12];
+ 	bool			interrupt_may_hang; /* vendor-specific */
+@@ -1411,7 +1412,9 @@ static int pl011_startup(struct uart_port *port)
+ 	while (readw(uap->port.membase + UART01x_FR) & UART01x_FR_BUSY)
+ 		barrier();
  
--#include <linux/list.h>
-+#include <linux/dma-simple.h>
- #include <linux/dmaengine.h>
-+#include <linux/list.h>
+-	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
++	/* restore RTS and DTR */
++	cr = uap->old_cr & (UART011_CR_RTS | UART011_CR_DTR);
++	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
  
- /* Used by slave DMA clients to request DMA to/from a specific peripheral */
- struct sh_dmae_slave {
--	unsigned int			slave_id; /* Set by the platform */
-+	union {
-+		unsigned int		slave_id; /* Set by the platform */
-+		struct dma_simple_slave	simple_slave;
-+	};
- 	struct device			*dma_dev; /* Set by the platform */
- 	const struct sh_dmae_slave_config	*config;  /* Set by the driver */
- };
+ 	/* Clear pending error interrupts */
+@@ -1469,6 +1472,7 @@ static void pl011_shutdown_channel(struct uart_amba_port *uap,
+ static void pl011_shutdown(struct uart_port *port)
+ {
+ 	struct uart_amba_port *uap = (struct uart_amba_port *)port;
++	unsigned int cr;
+ 
+ 	/*
+ 	 * disable all interrupts
+@@ -1488,9 +1492,16 @@ static void pl011_shutdown(struct uart_port *port)
+ 
+ 	/*
+ 	 * disable the port
++	 * disable the port. It should not disable RTS and DTR.
++	 * Also RTS and DTR state should be preserved to restore
++	 * it during startup().
+ 	 */
+ 	uap->autorts = false;
+-	writew(UART01x_CR_UARTEN | UART011_CR_TXE, uap->port.membase + UART011_CR);
++	cr = readw(uap->port.membase + UART011_CR);
++	uap->old_cr = cr;
++	cr &= UART011_CR_RTS | UART011_CR_DTR;
++	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
++	writew(cr, uap->port.membase + UART011_CR);
+ 
+ 	/*
+ 	 * disable break condition and fifos
+@@ -1905,6 +1916,7 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
+ 	uap->vendor = vendor;
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
++	uap->old_cr = 0;
+ 	uap->fifosize = vendor->fifosize;
+ 	uap->interrupt_may_hang = vendor->interrupt_may_hang;
+ 	uap->port.dev = &dev->dev;
 -- 
-1.7.2.5
+1.7.4.3
 
