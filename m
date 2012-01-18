@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab2ARXfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 18:35:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752638Ab2ARXfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 18:35:18 -0500
-Message-ID: <4F175706.8000808@redhat.com>
-Date: Thu, 19 Jan 2012 01:34:30 +0200
-From: Ronen Hod <rhod@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: leonid.moiseichuk@nokia.com
-CC: penberg@kernel.org, riel@redhat.com, minchan@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
-        kosaki.motohiro@gmail.com, hannes@cmpxchg.org, mtosatti@redhat.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC 1/3] /dev/low_mem_notify
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org> <1326788038-29141-2-git-send-email-minchan@kernel.org> <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com> <4F15A34F.40808@redhat.com> <alpine.LFD.2.02.1201172044310.15303@tux.localdomain> <84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com> <CAOJsxLGiG_Bsp8eMtqCjFToxYAPCE4HC9XCebpZ+-G8E3gg5bw@mail.gmail.com> <84FF21A720B0874AA94B46D76DB98269045596EA@008-AM1MPN1-003.mgdnok.nokia.com> <CAOJsxLG4hMrAdsyOg6QUe71SPqEBq3eZXvRvaKFZQo8HS1vphQ@mail.gmail.com> <84FF21A720B0874AA94B46D76DB982690455978C@008-AM1MPN1-003.mgdnok.nokia.com>
-In-Reply-To: <84FF21A720B0874AA94B46D76DB982690455978C@008-AM1MPN1-003.mgdnok.nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755599Ab2ARXgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 18:36:35 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:54316 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab2ARXge (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 18:36:34 -0500
+Date: Thu, 19 Jan 2012 10:36:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: linux-next: build warning in Linus' tree
+Message-Id: <20120119103626.a9b21533cf30da57ddc54947@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Jan_2012_10_36_26_+1100_oXopTEUySA/IMY2t"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2012 12:44 PM, leonid.moiseichuk@nokia.com wrote:
->> -----Original Message-----
->> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
->> Pekka Enberg
->> Sent: 18 January, 2012 12:40
-> ...
->>> Not worse than %%. For example you had 10% free memory threshold for
->>> 512 MB RAM meaning 51.2 MB in absolute number.  Then hotplug turned
->>> off 256 MB, you for sure must update threshold for %% because these
->>> 10% for 25.6 MB most likely will be not suitable for different operating
->> mode.
->>> Using pages makes calculations must simpler.
->> Right. Does threshold in percentages make any sense then? Is it enough to
->> use number of free pages?
-> Paul Mundt noticed that and we stopped use percentage in 2006 for n770 update.
-> He was right.
-> Percents are useless and do not correlate with other kernel APIs like sysinfo().
+--Signature=_Thu__19_Jan_2012_10_36_26_+1100_oXopTEUySA/IMY2t
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I believe that it will be best if the kernel publishes an ideal number_of_free_pages (in /proc/meminfo or whatever). Such number is easy to work with since this is what applications do, they free pages. Applications will be able to refer to this number from their garbage collector, or before allocating memory also if they did not get a notification, and it is also useful if several applications free memory at the same time.
+Hi all,
 
-Ronen.
+Building Linus' tree, today's linux-next build (x86_64 allmodconfig)
+produced this warning:
 
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+drivers/block/nvme.c: In function 'nvme_alloc_ns':
+drivers/block/nvme.c:1336:2: warning: passing argument 2 of 'blk_queue_make=
+_request' from incompatible pointer type [enabled by default]
+include/linux/blkdev.h:830:13: note: expected 'void (*)(struct request_queu=
+e *, struct bio *)' but argument is of type 'int (*)(struct request_queue *=
+, struct bio *)'
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__19_Jan_2012_10_36_26_+1100_oXopTEUySA/IMY2t
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPF1d6AAoJEECxmPOUX5FEfG8P/RoDpjVhxarIZwF017Q/9Y/t
+DgfM2O8wBv3y/LBMXM9I7H/WNVwDbIeJKDr/em8Ur/IVi+kLsHn3ljJ69bss7GOs
+nu3BLZs3s4RXJmRFMGcOp8dmiZIsjqoCdlsf19AKHLQJk/ncGomv0WWGkjHFEcRC
+9aE5iGpXMuv3/TanSuDAiYgxTJrVzgYvvWMVOw7UlvwmuyfDCdkUDaANWDhpaxVt
+u88yAClG8fGXu209/IkIpuriDaKqAmMkfhzEpqe+o2+gIe49tjB9zw+gdA4Vhohd
+gzGtHJH6ReWGGBxzRyHauEKIwvihUW1MKg+anplSZppUdAE3CkdZYN+SO2hsihJS
+MQxceVC3s1Ql1te+iatQyNYNTh5W4PYhySA/88nHo2tl+sBSlFQxhQku9+O6JfFw
+W6OA0voF0iynRLCfhonQg1TVr+4qH+XgyXoY8ZM0f+8eBa6xXNfSNycV3ApDpZd6
+QYThnUjmU3b34TDGaTreVVvtYuSzHOwhZWXarI06bv6bN+2LLAYclYfMzd1iTQPB
+Az4d1ot8c/neiRuJowrdZhMkx5rJjj/+EYRRrxIH1oiXbTJrb1DuOsGBSwXsT+UE
+TvCI/F0xPNbkDe0O2Uzt8jKCDNOt2R023aR3b0mMZhIF3SoS8HyQ2sEJENHfWufr
+WvkQ86vlc3Djv7dwivUJ
+=scNM
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Jan_2012_10_36_26_+1100_oXopTEUySA/IMY2t--
