@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab2ARJOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:14:32 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:51189 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756833Ab2ARJO3 (ORCPT
+	id S1757182Ab2ARJM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:12:57 -0500
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:35331 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756997Ab2ARJMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:14:29 -0500
-Date: Wed, 18 Jan 2012 10:14:25 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org
-Subject: [PATCH 1/2] dma: sh_dma: not all SH DMAC implementations support
- MEMCPY
-Message-ID: <Pine.LNX.4.64.1201181012130.28782@axis700.grange>
+	Wed, 18 Jan 2012 04:12:51 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
+        <linus.walleij@linaro.org>, <ulf.hansson@stericsson.com>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <egtvedt@samfundet.no>, <hskinnemoen@gmail.com>,
+        <kernel@pengutronix.de>, <perex@perex.cz>,
+        <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
+        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
+Subject: [PATCH V2 05/12] dmaengine/dw_dmac: Don't use magic number for total number of channels
+Date: Wed, 18 Jan 2012 14:41:52 +0530
+Message-ID: <0bd6490c26e9b4cb56ea585a76d31b8a34101220.1326876464.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.8.110.g4cb5d
+In-Reply-To: <cover.1326876464.git.viresh.kumar@st.com>
+References: <cover.1326876464.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:7c353VRDNm+/BUkt0uY0BqMdARQPNzaNN3mgut0rHlz
- EpUPR1nxVoHUjlK0oTlxgMClaejyBOjNIu/wfJXveAV3Gh27nX
- HA5qcOS0YcLKJvhBkOmsOvsrh03mkolPwhxYGoGY4SUcCFUoJz
- XS7+IwPhl50+ZjiCXcx4s9DRd3E8MC/JBelsuh3mKOwisUhSjC
- PTfpheEDRn9gAy1Zj/+aET0YwsvCY70mMmCmY+fLl9DDxVNJIg
- g4+Jn5FeWinguqCtNs25x4xIFs6RxGCzux5m9pQ3zJlN0ntZVu
- XUvbPNvd2DrJXfbMcJkzaQkYeO7wmurUXxtc79tYQJpHv4t5iI
- JDYSpyJduapcpCPgDsOk5KCw12d8EFJ53qwYetYzFK/W1VhsEX
- xdt/5Hw+AFsMA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a flag to allow platforms to specify, whether a DMAC instance supports
-the MEMCPY operation. To avoid regressions, preserve the current default.
+Total number of channels is passed in pdata->nr_channels variable, thus we must
+not use magic number '7' for total number of channels.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/shdma.c    |    3 ++-
- include/linux/sh_dma.h |    1 +
- 2 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/dma/dw_dmac.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
-index cabcfe8..e4ed4da 100644
---- a/drivers/dma/shdma.c
-+++ b/drivers/dma/shdma.c
-@@ -1267,7 +1267,8 @@ static int __init sh_dmae_probe(struct platform_device *pdev)
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 3a3d7ed..1577394 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1432,7 +1432,7 @@ static int __init dw_probe(struct platform_device *pdev)
  
- 	INIT_LIST_HEAD(&shdev->common.channels);
+ 		/* 7 is highest priority & 0 is lowest. */
+ 		if (pdata->chan_priority == CHAN_PRIORITY_ASCENDING)
+-			dwc->priority = 7 - i;
++			dwc->priority = pdata->nr_channels - i - 1;
+ 		else
+ 			dwc->priority = i;
  
--	dma_cap_set(DMA_MEMCPY, shdev->common.cap_mask);
-+	if (!pdata->slave_only)
-+		dma_cap_set(DMA_MEMCPY, shdev->common.cap_mask);
- 	if (pdata->slave && pdata->slave_num)
- 		dma_cap_set(DMA_SLAVE, shdev->common.cap_mask);
- 
-diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
-index e11e171..db637b9 100644
---- a/include/linux/sh_dma.h
-+++ b/include/linux/sh_dma.h
-@@ -70,6 +70,7 @@ struct sh_dmae_pdata {
- 	unsigned int needs_tend_set:1;
- 	unsigned int no_dmars:1;
- 	unsigned int chclr_present:1;
-+	unsigned int slave_only:1;
- };
- 
- /* DMA register */
 -- 
-1.7.2.5
+1.7.8.110.g4cb5d
 
