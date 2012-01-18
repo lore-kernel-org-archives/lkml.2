@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316Ab2ARJn6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:43:58 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:49352 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757104Ab2ARJn4 convert rfc822-to-8bit (ORCPT
+	id S1757318Ab2ARJpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:45:30 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:54305 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757104Ab2ARJp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:43:56 -0500
-From: <leonid.moiseichuk@nokia.com>
-To: <penberg@kernel.org>
-CC: <riel@redhat.com>, <minchan@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <mel@csn.ul.ie>, <rientjes@google.com>, <kosaki.motohiro@gmail.com>,
-        <hannes@cmpxchg.org>, <mtosatti@redhat.com>,
-        <akpm@linux-foundation.org>, <rhod@redhat.com>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: RE: [RFC 1/3] /dev/low_mem_notify
-Thread-Topic: [RFC 1/3] /dev/low_mem_notify
-Thread-Index: AQHM1PAILpEwsgBJQ0+ebltvcfq8MpYQOdkAgAB3jICAACXvgIAA9v4A///6iYCAABO3AA==
-Date: Wed, 18 Jan 2012 09:41:41 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045596EA@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-	<1326788038-29141-2-git-send-email-minchan@kernel.org>
-	<CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
-	<4F15A34F.40808@redhat.com>
-	<alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-	<84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com>
- <CAOJsxLGiG_Bsp8eMtqCjFToxYAPCE4HC9XCebpZ+-G8E3gg5bw@mail.gmail.com>
-In-Reply-To: <CAOJsxLGiG_Bsp8eMtqCjFToxYAPCE4HC9XCebpZ+-G8E3gg5bw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.23.171]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Jan 2012 04:45:28 -0500
+Date: Wed, 18 Jan 2012 15:15:06 +0530
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] amba-pl011: do not disable RTS during shutdown
+Message-ID: <20120118094505.GA889@bnru02.bnr.st.com>
+References: <1326796189-21722-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+ <20120117184047.GE22472@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 18 Jan 2012 09:41:42.0588 (UTC) FILETIME=[629187C0:01CCD5C5]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120117184047.GE22472@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
-> Pekka Enberg
-> Sent: 18 January, 2012 11:16
-...
-> > Would be possible to not use percents for thesholds? Accounting in pages
-> even
-> > not so difficult to user-space.
-> 
-> How does that work with memory hotplug?
+data type of old_cr was bool in patchv2, corrected in this patchv3
 
-Not worse than %%. For example you had 10% free memory threshold for 512 MB RAM meaning 51.2 MB in absolute number.
-Then hotplug turned off 256 MB, you for sure must update threshold for %% because these 10% for 25.6 MB most likely will be not suitable for different operating mode.
-Using pages makes calculations must simpler.
+>From 5500b7d25b5382026bc9392a9b44c3c69bf172b0 Mon Sep 17 00:00:00 2001
+From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Date: Tue, 17 Jan 2012 11:00:26 +0530
+Subject: [PATCHv3] amba-pl011: do not disable RTS during shutdown
 
-> 
-> On Wed, Jan 18, 2012 at 11:06 AM,  <leonid.moiseichuk@nokia.com> wrote:
-> > Also, looking on vmnotify_match I understand that events propagated to
-> > user-space only in case threshold trigger change state from 0 to 1 but not
-> > back, 1-> 0 is very useful event as well
-(*)
+In present driver, shutdown clears RTS and DTR in CR register. But the
+documentation "Documentation/serial/driver" suggests not to disable
+RTS and DTR in shutdown(). Also RTS and DTR is preserved between shutdown
+and startup calls, i.e. these are restored in startup if they were enabled
+while doing shutdown. So that if RTS and DTR are set using pl011_set_mctrl
+then it should continue even after shutdown->startup sequence.
+For throttling/unthrottling user should call pl011_set_mctrl.
 
-> >
-> > Would be possible to use for threshold pointed value(s) e.g. according to
-> > enum zone_state_item, because kinds of memory to track could be
-> different?
-> > E.g. to tracking paging activity NR_ACTIVE_ANON and NR_ACTIVE_FILE
-> could be
-> > interesting, not only free.
-> 
-> I don't think there's anything in the ABI that would prevent that.
+Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/tty/serial/amba-pl011.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
-If this statement also related my question (*)  I have to point need to track attributes history, otherwise user-space will be constantly kicked with updates.
-
-> I actually changed the ABI to look like this:
-> 
-> struct vmnotify_event {
->         /*
->          * Size of the struct for ABI extensibility.
->          */
->         __u32                   size;
-> 
->         __u64                   attrs;
-> 
->         __u64                   attr_values[];
-> };
-> 
-> So userspace can decide which fields to include in notifications.
-
-Good. But how you can provide current status of attributes to user-space? Need to have read() call support to deliver all supported attr_values[] on demand.
-
-> >> +
-> >> +#ifdef CONFIG_SWAP
-> >> +     si_swapinfo(&si);
-> >> +     event.nr_swap_pages     = si.totalswap;
-> >> +#endif
-> >> +
-> >
-> > Why not to use global_page_state() directly? si_meminfo() and especial
-> > si_swapinfo are quite expensive call.
-> 
-> Sure, we can do that. Feel free to send a patch :-).
-
-When I see code because from emails it is quite difficult to understand. 
-For short-term I need to focus on integration "memnotify" version internally which is kind of work for me already and provides all required interfaces n9 needs.
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 6958594..62ff7da 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -159,6 +159,7 @@ struct uart_amba_port {
+ 	unsigned int		fifosize;	/* vendor-specific */
+ 	unsigned int		lcrh_tx;	/* vendor-specific */
+ 	unsigned int		lcrh_rx;	/* vendor-specific */
++	unsigned int		old_cr;		/* state during shutdown */
+ 	bool			autorts;
+ 	char			type[12];
+ 	bool			interrupt_may_hang; /* vendor-specific */
+@@ -1411,7 +1412,9 @@ static int pl011_startup(struct uart_port *port)
+ 	while (readw(uap->port.membase + UART01x_FR) & UART01x_FR_BUSY)
+ 		barrier();
  
-Btw, when API starts to work with pointed thresholds logically it is not anymore low_mem_notify, you need to invent some other name. 
+-	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
++	/* restore RTS and DTR */
++	cr = (uap->old_cr & (UART011_CR_RTS | UART011_CR_DTR));
++	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
+ 
+ 	/* Clear pending error interrupts */
+@@ -1469,6 +1472,7 @@ static void pl011_shutdown_channel(struct uart_amba_port *uap,
+ static void pl011_shutdown(struct uart_port *port)
+ {
+ 	struct uart_amba_port *uap = (struct uart_amba_port *)port;
++	unsigned int cr;
+ 
+ 	/*
+ 	 * disable all interrupts
+@@ -1488,9 +1492,16 @@ static void pl011_shutdown(struct uart_port *port)
+ 
+ 	/*
+ 	 * disable the port
++	 * disable the port. It should not disable RTS and DTR.
++	 * Also RTS and DTR state should be preserved to restore
++	 * it during startup().
+ 	 */
+ 	uap->autorts = false;
+-	writew(UART01x_CR_UARTEN | UART011_CR_TXE, uap->port.membase + UART011_CR);
++	cr = readw(uap->port.membase + UART011_CR);
++	uap->old_cr = cr;
++	cr &= (UART011_CR_RTS | UART011_CR_DTR);
++	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
++	writew(cr, uap->port.membase + UART011_CR);
+ 
+ 	/*
+ 	 * disable break condition and fifos
+@@ -1905,6 +1916,7 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
+ 	uap->vendor = vendor;
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
++	uap->old_cr = 0;
+ 	uap->fifosize = vendor->fifosize;
+ 	uap->interrupt_may_hang = vendor->interrupt_may_hang;
+ 	uap->port.dev = &dev->dev;
+-- 
+1.7.4.3
 
-> No idea what happens. The sampling code is just a proof of concept thing and
-> I expect it to be buggy as hell. :-)
-> 
-> 			Pekka
