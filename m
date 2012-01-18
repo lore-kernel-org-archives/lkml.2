@@ -1,253 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab2ARSxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 13:53:44 -0500
-Received: from intmgw002.ash2.facebook.com ([66.220.155.179]:51945 "EHLO
-	intmgw002.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758106Ab2ARSxn (ORCPT
+	id S1758177Ab2ARSyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 13:54:08 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24107 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758106Ab2ARSyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 13:53:43 -0500
-From: Arun Sharma <asharma@fb.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>, linux-mm@kvack.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        akpm@linux-foundation.org
-Subject: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
-Date: Wed, 18 Jan 2012 10:51:02 -0800
-Message-Id: <1326912662-18805-1-git-send-email-asharma@fb.com>
-X-Mailer: git-send-email 1.7.4
+	Wed, 18 Jan 2012 13:54:06 -0500
+Date: Wed, 18 Jan 2012 21:54:57 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Pradheep Shrinivasan <pradheep.sh@gmail.com>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: greg@kroah.com, devel@linuxdriverproject.org, swetland@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] staging:android_pmem.h: Fixes the space and other
+ formating issues pointed out by checkpatch.pl
+Message-ID: <20120118185457.GH3356@mwanda>
+References: <1326856764-2531-1-git-send-email-pradheep.sh@gmail.com>
+ <20120118065620.GE3294@mwanda>
+ <CANz8tm1imZ3njy_uV0tkq0sXwyB5ZLLJsrp4G1zjcBDnJUrjiw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="poemUeGtc2GQvHuH"
+Content-Disposition: inline
+In-Reply-To: <CANz8tm1imZ3njy_uV0tkq0sXwyB5ZLLJsrp4G1zjcBDnJUrjiw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4F171547.0067,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables malloc optimizations where we might
-madvise(..,MADV_DONTNEED) a page only to fault it
-back at a different virtual address.
 
-To ensure that we don't leak sensitive data to
-unprivileged processes, we enable this optimization
-only for pages that are reused within a memory
-cgroup.
+--poemUeGtc2GQvHuH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The idea is to make this opt-in both at the mmap()
-level and cgroup level so the default behavior is
-unchanged after the patch.
+On Wed, Jan 18, 2012 at 11:38:34PM +0530, Pradheep Shrinivasan wrote:
+>> > > -#define PMEM_IOCTL_MAGIC 'p'
+> > > +#define PMEM_IOCTL_MAGIC ('p')
+> >
+> > You don't need parenthesis here.  Did checkpatch really complain
+> > about this?
+>
+> Yes the check patch does complain about the parenthesis.
+>=20
+> pradheep@ubuntu:~/linux-next/
+> linux-next/drivers/staging/android$ checkpatch android_pmem.h
+> android_pmem.h:10: ERROR: trailing whitespace
+> android_pmem.h:19: ERROR: Macros with complex values should be enclosed in
+> parenthesis
 
-TODO: Ask for a VM_UNINITIALIZED bit
-TODO: Implement a cgroup level opt-in flag
+That seems like a bug in checkpatch.pl.  It's hard to imagine less
+complex macro than:  #define PMEM_IOCTL_MAGIC 'p'
 
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org
-Signed-off-by: Arun Sharma <asharma@fb.com>
----
- include/asm-generic/mman-common.h |    6 +-----
- include/linux/highmem.h           |    6 ++++++
- include/linux/mm.h                |    2 ++
- include/linux/mman.h              |    1 +
- include/linux/page_cgroup.h       |   29 +++++++++++++++++++++++++++++
- init/Kconfig                      |    2 +-
- mm/mempolicy.c                    |   29 +++++++++++++++++++++++------
- 7 files changed, 63 insertions(+), 12 deletions(-)
+Perhaps if the check looked for one of these characters: */+-=3D<>|&
 
-diff --git a/include/asm-generic/mman-common.h b/include/asm-generic/mman-common.h
-index 787abbb..71e079f 100644
---- a/include/asm-generic/mman-common.h
-+++ b/include/asm-generic/mman-common.h
-@@ -19,11 +19,7 @@
- #define MAP_TYPE	0x0f		/* Mask for type of mapping */
- #define MAP_FIXED	0x10		/* Interpret addr exactly */
- #define MAP_ANONYMOUS	0x20		/* don't use a file */
--#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
--# define MAP_UNINITIALIZED 0x4000000	/* For anonymous mmap, memory could be uninitialized */
--#else
--# define MAP_UNINITIALIZED 0x0		/* Don't support this flag */
--#endif
-+#define MAP_UNINITIALIZED 0x4000000	/* For anonymous mmap, memory could be uninitialized */
- 
- #define MS_ASYNC	1		/* sync memory asynchronously */
- #define MS_INVALIDATE	2		/* invalidate the caches */
-diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-index 3a93f73..caae922 100644
---- a/include/linux/highmem.h
-+++ b/include/linux/highmem.h
-@@ -4,6 +4,7 @@
- #include <linux/fs.h>
- #include <linux/kernel.h>
- #include <linux/mm.h>
-+#include <linux/page_cgroup.h>
- #include <linux/uaccess.h>
- #include <linux/hardirq.h>
- 
-@@ -156,6 +157,11 @@ __alloc_zeroed_user_highpage(gfp_t movableflags,
- 	struct page *page = alloc_page_vma(GFP_HIGHUSER | movableflags,
- 			vma, vaddr);
- 
-+#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
-+	if (!page_needs_clearing(page, vma))
-+		return page;
-+#endif
-+
- 	if (page)
- 		clear_user_highpage(page, vaddr);
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 4baadd1..c6bab01 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -118,6 +118,8 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_SAO		0x20000000	/* Strong Access Ordering (powerpc) */
- #define VM_PFN_AT_MMAP	0x40000000	/* PFNMAP vma that is fully mapped at mmap time */
- #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
-+#define VM_UNINITIALIZED VM_SAO		/* Steal a powerpc bit for now, since we're out
-+					   of bits for 32 bit archs */
- 
- /* Bits set in the VMA until the stack is in its final location */
- #define VM_STACK_INCOMPLETE_SETUP	(VM_RAND_READ | VM_SEQ_READ)
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index 8b74e9b..9bef6c9 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -87,6 +87,7 @@ calc_vm_flag_bits(unsigned long flags)
- 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
- 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
- 	       _calc_vm_trans(flags, MAP_EXECUTABLE, VM_EXECUTABLE) |
-+	       _calc_vm_trans(flags, MAP_UNINITIALIZED, VM_UNINITIALIZED) |
- 	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
- }
- #endif /* __KERNEL__ */
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index 961ecc7..e959869 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -155,6 +155,17 @@ static inline unsigned long page_cgroup_array_id(struct page_cgroup *pc)
- 	return (pc->flags >> PCG_ARRAYID_SHIFT) & PCG_ARRAYID_MASK;
- }
- 
-+static int mm_match_cgroup(const struct mm_struct *mm,
-+			   const struct mem_cgroup *cgroup);
-+static inline bool page_seen_by_cgroup(struct page *page,
-+				       const struct mm_struct *mm)
-+{
-+	struct page_cgroup *pcg = lookup_page_cgroup(page);
-+	if (pcg == NULL)
-+		return false;
-+	return mm_match_cgroup(mm, pcg->mem_cgroup);
-+}
-+
- #else /* CONFIG_CGROUP_MEM_RES_CTLR */
- struct page_cgroup;
- 
-@@ -175,8 +186,26 @@ static inline void __init page_cgroup_init_flatmem(void)
- {
- }
- 
-+static inline bool page_seen_by_cgroup(struct page *page,
-+				       const struct mm_struct *mm)
-+{
-+	return false;
-+}
-+
- #endif /* CONFIG_CGROUP_MEM_RES_CTLR */
- 
-+static inline bool vma_requests_uninitialized(struct vm_area_struct *vma)
-+{
-+	return vma && !vma->vm_file && vma->vm_flags & VM_UNINITIALIZED;
-+}
-+
-+static inline bool page_needs_clearing(struct page *page,
-+				       struct vm_area_struct *vma)
-+{
-+	return !(vma_requests_uninitialized(vma)
-+		&& page_seen_by_cgroup(page, vma->vm_mm));
-+}
-+
- #include <linux/swap.h>
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-diff --git a/init/Kconfig b/init/Kconfig
-index 43298f9..428e047 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1259,7 +1259,7 @@ endchoice
- 
- config MMAP_ALLOW_UNINITIALIZED
- 	bool "Allow mmapped anonymous memory to be uninitialized"
--	depends on EXPERT && !MMU
-+	depends on EXPERT
- 	default n
- 	help
- 	  Normally, and according to the Linux spec, anonymous memory obtained
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index c3fdbcb..7c9ab68 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -90,6 +90,7 @@
- #include <linux/syscalls.h>
- #include <linux/ctype.h>
- #include <linux/mm_inline.h>
-+#include <linux/page_cgroup.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/uaccess.h>
-@@ -1847,6 +1848,11 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
- 	struct zonelist *zl;
- 	struct page *page;
- 
-+#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
-+	if (vma_requests_uninitialized(vma))
-+		gfp &= ~__GFP_ZERO;
-+#endif
-+
- 	get_mems_allowed();
- 	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
- 		unsigned nid;
-@@ -1854,25 +1860,36 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
- 		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
- 		mpol_cond_put(pol);
- 		page = alloc_page_interleave(gfp, order, nid);
--		put_mems_allowed();
--		return page;
-+		goto out;
- 	}
- 	zl = policy_zonelist(gfp, pol, node);
- 	if (unlikely(mpol_needs_cond_ref(pol))) {
- 		/*
- 		 * slow path: ref counted shared policy
- 		 */
--		struct page *page =  __alloc_pages_nodemask(gfp, order,
--						zl, policy_nodemask(gfp, pol));
-+		page =  __alloc_pages_nodemask(gfp, order,
-+					       zl, policy_nodemask(gfp, pol));
- 		__mpol_put(pol);
--		put_mems_allowed();
--		return page;
-+		goto out;
- 	}
-+
- 	/*
- 	 * fast path:  default or task policy
- 	 */
- 	page = __alloc_pages_nodemask(gfp, order, zl,
- 				      policy_nodemask(gfp, pol));
-+
-+out:
-+#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
-+	if (page_needs_clearing(page, vma)) {
-+		int i;
-+		for (i = 0; i < (1 << order); i++) {
-+			void *kaddr = kmap_atomic(page + i, KM_USER0);
-+			clear_page(kaddr);
-+			kunmap_atomic(kaddr, KM_USER0);
-+		}
-+	}
-+#endif
- 	put_mems_allowed();
- 	return page;
- }
--- 
-1.7.4
+regards,
+dan carpenter
 
+
+--poemUeGtc2GQvHuH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPFxWAAAoJEOnZkXI/YHqR+P8P/3C5vkg+KnU3SWvJWdX7Jpfu
+Usaaqq44lnkS4SCjT9xeD82S/BWu4xEd1xLq0UbKswT5vtY5Pdf++aDJUSCe//nR
+HuH6yQJ4t+NkL2tEqnlZHcX+KYo3kJ85Up2EtqMGWeSClb+XKNUDHw1+oMZ/0BLs
+RgOgnw44frda4h7U78yVKVZpQ3mXGbs8sZvwknfPsqNMs3+CWObcsh7Dblsgo+lB
+LB92AYnthbEaZoBjmeDVOPdXNNaibF9+uX/b2gBpWexTbJpFeRsY2g425xw4KWL9
+ZkzhJ/EWqqSZDi8rnMuoyUKnxHdD6+2Uqg1ul9XTF/0LlE59gJQ8UcG3jdms8trv
+ulmEjjzD5aRm1aiBH7++0M4j8c9ic8wJA50fqw9SeTIUALEESnNOZaYrORfkRw7P
+wTcXjZPbkwEEjPPhKR0gGG8A1yUsUsG/noSHrmTjk7Fvmwewu/DTy16miiLE/0ic
+I0lFFpqchX/CNr1dWpH3rQQa31cWMqDYf9OGN4I9A+bY/rNFXwSoRzmFuzK2UXSS
+qpK5FHhoQEWk3rH1UMaRtamSyHY4hkvY3vjuKrzAoMt9euY/guOkTDtPRKbge2MO
+LHWCAb8f/tBILFYiATJsDY9ToSy8wvwpmIyVYV/dsbmawNHS2zyZRPP4sAwEMGOY
+LlCXRN4DIQZDseeXOWyr
+=D+sy
+-----END PGP SIGNATURE-----
+
+--poemUeGtc2GQvHuH--
