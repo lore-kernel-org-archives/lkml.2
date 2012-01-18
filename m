@@ -1,163 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab2ARMep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 07:34:45 -0500
-Received: from linux-sh.org ([111.68.239.195]:34325 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752156Ab2ARMeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 07:34:44 -0500
-Date: Wed, 18 Jan 2012 21:34:31 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
-        "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
-Subject: Re: [PATCH 1/7] dma: add a simple dma library
-Message-ID: <20120118123431.GH8182@linux-sh.org>
-References: <Pine.LNX.4.64.1201181025280.28782@axis700.grange> <Pine.LNX.4.64.1201181111340.28782@axis700.grange>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1201181111340.28782@axis700.grange>
-User-Agent: Mutt/1.4.1i
+	id S1756020Ab2ARMia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 07:38:30 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53678 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab2ARMi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 07:38:29 -0500
+Message-ID: <4F16BD39.6070201@linux.vnet.ibm.com>
+Date: Wed, 18 Jan 2012 18:08:17 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
+        Marcos Souza <marcos.mage@gmail.com>
+Subject: Re: [PATCH] Sched fair: check that ilb cpu is online during nohz_balancer_kick()
+References: <20120118121049.GA4258@swordfish.minsk.epam.com>
+In-Reply-To: <20120118121049.GA4258@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011802-0260-0000-0000-000000657786
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 11:22:18AM +0100, Guennadi Liakhovetski wrote:
-> This patch adds a library of functions, helping to implement dmaengine
-> drivers for hardware, unable to handle scatter-gather lists natively.
-> The first version of this driver only supports memcpy and slave DMA
-> operation.
+On 01/18/2012 05:40 PM, Sergey Senozhatsky wrote:
+
+> Sched fair: check that ilb cpu is online during nohz_balancer_kick()
 > 
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> find_new_ilb() may return offlined cpu if trigger_load_balance() occurs while machine
+> suspending or resuming, hitting native_smp_send_reschedule() assertion failure:
+> [  108.473465] Disabling non-boot CPUs ...
+> [  108.477308] CPU 1 is now offline
+> [  108.477497] ------------[ cut here ]------------
+> [  108.477523] WARNING: at arch/x86/kernel/smp.c:120 native_smp_send_reschedule+0x25/0x56()
+> [  108.477724] Call Trace:
+> [  108.477736]  <IRQ>  [<ffffffff81030092>] warn_slowpath_common+0x7e/0x96
+> [  108.477772]  [<ffffffff810300bf>] warn_slowpath_null+0x15/0x17
+> [  108.477795]  [<ffffffff81018ff7>] native_smp_send_reschedule+0x25/0x56
+> [  108.477823]  [<ffffffff81067ffe>] trigger_load_balance+0x6ac/0x72e
+> [  108.477847]  [<ffffffff81067bfd>] ? trigger_load_balance+0x2ab/0x72e
+> [  108.477874]  [<ffffffff8105f05c>] scheduler_tick+0xe2/0xeb
+> [  108.477899]  [<ffffffff8103f6ac>] update_process_times+0x60/0x70
+> [  108.477926]  [<ffffffff8107c1e1>] tick_sched_timer+0x6d/0x96
+> [  108.477951]  [<ffffffff81053b3b>] __run_hrtimer+0x1c2/0x3a1
+> [  108.477974]  [<ffffffff8107c174>] ? tick_nohz_handler+0xdf/0xdf
+> [  108.477999]  [<ffffffff81054721>] hrtimer_interrupt+0xe6/0x1b0
+> [  108.478023]  [<ffffffff81019bdd>] smp_apic_timer_interrupt+0x80/0x93
+> [  108.478051]  [<ffffffff814a2f73>] apic_timer_interrupt+0x73/0x80
+> [  108.478072]  <EOI>  [<ffffffff8148f763>] ? slab_cpuup_callback+0xa8/0xdb
+> [  108.478108]  [<ffffffff8149f154>] notifier_call_chain+0x86/0xb3
+> [  108.478133]  [<ffffffff8147f09f>] ? spp_getpage+0x5f/0x5f
+> [  108.478157]  [<ffffffff810556d9>] __raw_notifier_call_chain+0x9/0xb
+> [  108.478182]  [<ffffffff81031857>] __cpu_notify+0x1b/0x2d
+> [  108.478204]  [<ffffffff81031962>] cpu_notify_nofail+0xe/0x16
+> [  108.478227]  [<ffffffff8147f1fd>] _cpu_down+0x130/0x249
+> [  108.478249]  [<ffffffff814920ef>] ? printk+0x4c/0x4e
+> [  108.478271]  [<ffffffff810319f6>] disable_nonboot_cpus+0x5a/0xfc
+> [  108.478297]  [<ffffffff8106f000>] suspend_devices_and_enter+0x19a/0x407
+> [  108.478323]  [<ffffffff8106f391>] enter_state+0x124/0x169
+> [  108.478346]  [<ffffffff8106e01b>] state_store+0xb7/0x101
+> [  108.478373]  [<ffffffff8126c82f>] kobj_attr_store+0x17/0x19
+> [  108.478399]  [<ffffffff8117e20c>] sysfs_write_file+0x103/0x13f
+> [  108.478425]  [<ffffffff8111f018>] vfs_write+0xad/0x13d
+> [  108.478447]  [<ffffffff8111f293>] sys_write+0x45/0x6c
+> [  108.478469]  [<ffffffff814a2439>] system_call_fastpath+0x16/0x1b
+> [  108.478492] ---[ end trace 991823fa9b0a0b79 ]---
+> 
+> Check that returned by find_new_ilb() cpu is online.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> ---
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 84adb2d..070b8e0 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4826,7 +4826,7 @@ unlock:
+>  	rcu_read_unlock();
+> 
+>  out_done:
+> -	if (ilb < nr_cpu_ids && idle_cpu(ilb))
+> +	if (likely(cpu_online(ilb)) && ilb < nr_cpu_ids && idle_cpu(ilb))
+>  		return ilb;
+> 
+>  	return nr_cpu_ids;
+> 
 
-While I like the direction this is going there are just a few minor
-things that have popped up.
 
-> +/*
-> + * For slave DMA we assume, that there is a finate number of DMA slaves in the
-> + * system, and that each such slave can only use a finate number of channels.
-> + * We use slave channel IDs to make sure, that no such slave channel ID is
-> + * allocated more than once.
-> + */
-Presumably you meant finite.
+You can do even better than that by doing:
 
-> +static unsigned int slave_num = 256;
-> +module_param(slave_num, uint, 0444);
-> +
-> +/* A bitmask with slave_num bits */
-> +static unsigned long *simple_slave_used;
-> +
-The shdma code explicitly used BITS_TO_LONGS here which explicitly
-requires a defined (or max) size, but this could all presumably be buried
-under DECLARE_BITMAP().
+if (likely(cpu_active(ilb) && ilb < nr_cpu_ids && idle_cpu(ilb))
 
-> +		BUG_ON(tx->cookie > 0 && tx->cookie != desc->cookie);
-> +		BUG_ON(desc->mark != DESC_SUBMITTED &&
-> +		       desc->mark != DESC_COMPLETED &&
-> +		       desc->mark != DESC_WAITING);
-> +
-..
-> +			BUG_ON(desc->chunks != 1);
-..
-> +				BUG_ON(tx->cookie < 0);
+This would prevent us from sending IPIs to CPUs that are about to go
+offline as well (apart from those that are already offline).
 
-This seems to depend on BUG_ON() as its primary assert/sanity check path,
-which seems a bit excessive. Drivers get fed garbage all the time,
-some effort to provide meaningful debug output or less fatal error
-handling would be nice. As it is, one misbehaving user can pretty much
-grind everything else to a halt for things that aren't really that big of
-a deal.
+However, I would rather prefer an approach where we fix the
+nohz.idle_cpus_mask so that it doesn't contain entries corresponding to offline
+CPUs. This would not only fix the root-cause of the problem but would also make
+find_new_ilb() return useful values more often (that is, values other than
+nr_cpu_ids).
 
-> +/*
-> + * simple_chan_ld_cleanup - Clean up link descriptors
-> + *
-> + * Clean up the ld_queue of DMA channel.
-> + */
-> +static void simple_chan_ld_cleanup(struct dma_simple_chan *schan, bool all)
-> +{
-> +	while (__ld_cleanup(schan, all))
-> +		;
-> +}
-> +
-cpu_relax()
+Suresh has posted a patch in that direction here:
+http://thread.gmane.org/gmane.linux.kernel/1237745/focus=1240001
 
-> +/*
-> + * simple_free_chan_resources - Free all resources of the channel.
-> + */
-> +static void simple_free_chan_resources(struct dma_chan *chan)
-> +{
-> +	struct dma_simple_chan *schan = to_simple_chan(chan);
-> +	struct dma_simple_dev *sdev = to_simple_dev(chan->device);
-> +	const struct dma_simple_ops *ops = sdev->ops;
-> +	LIST_HEAD(list);
-> +
-> +	/* Protect against ISR */
-> +	spin_lock_irq(&schan->chan_lock);
-> +	ops->halt_channel(schan);
-> +	spin_unlock_irq(&schan->chan_lock);
-> +
-> +	/* Now no new interrupts will occur */
-> +
-> +	/* Prepared and not submitted descriptors can still be on the queue */
-> +	if (!list_empty(&schan->ld_queue))
-> +		simple_chan_ld_cleanup(schan, true);
-> +
-Why doesn't simple_chan_ld_cleanup() do a list_empty test instead?
+(But that patch didn't help though...)
 
-> +int __devinit dma_simple_init(struct device *dev, struct dma_simple_dev *sdev,
-> +			      int chan_num)
-> +{
-..
-> +}
-> +EXPORT_SYMBOL(dma_simple_init);
-> +
-> +void __devexit dma_simple_cleanup(struct dma_simple_dev *sdev)
-> +{
-..
-> +}
-> +EXPORT_SYMBOL(dma_simple_cleanup);
-> +
-__devinit/exit on exported symbols? You could try __init_or_module, but I
-think it's more trouble than it is worth.
+It is also to be noted that this warning is a problem introduced in 3.3 merge
+window - we didn't hit this in 3.2. So, it would be good to fix the root-cause
+provided it is worth the effort (considering both additional code complexity
+and the coding effort needed).
 
-> +static int __init dma_simple_enter(void)
-> +{
-> +	simple_slave_used = kzalloc(DIV_ROUND_UP(slave_num, BITS_PER_BYTE),
-> +				    GFP_KERNEL);
-> +	if (!simple_slave_used)
-> +		return -ENOMEM;
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
-Pretty weird way to do BITS_PER_LONGS, and as noted above can just be
-handled by DECLARE_BITMAP() if the max case isn't too outlandish.
-
-> +module_init(dma_simple_enter);
-> +
-> +static void __exit dma_simple_exit(void)
-> +{
-> +	kfree(simple_slave_used);
-> +}
-> +module_exit(dma_simple_exit);
-> +
-At which point these can probably just go away completely.
-
-> +static inline void dma_simple_lock(struct dma_simple_chan *schan)
-> +{
-> +	spin_lock(&schan->chan_lock);
-> +}
-> +
-> +static inline void dma_simple_unlock(struct dma_simple_chan *schan)
-> +{
-> +	spin_unlock(&schan->chan_lock);
-> +}
-> +
-These deserve to die a violent death, it's ok for driver writers to
-handle a spinlock on their own, or so one hopes.
-
-> +void dma_simple_chan_remove(struct dma_simple_chan *schan);
-> +int dma_simple_init(struct device *dev, struct dma_simple_dev *sdev,
-> +		    int chan_num) __devinit;
-> +void dma_simple_cleanup(struct dma_simple_dev *sdev) __devexit;
-> +
-Not really convinced about the section annotations here, either.
