@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab2ARSpB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 13:45:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37059 "EHLO mx1.redhat.com"
+	id S1758162Ab2ARSps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 13:45:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26643 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758063Ab2ARSo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 13:44:58 -0500
+	id S1758124Ab2ARSpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 13:45:01 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
 Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 4/7] ftrace, perf: Add add/del tracepoint perf registration actions
-Date: Wed, 18 Jan 2012 19:44:32 +0100
-Message-Id: <1326912275-26405-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 5/7] ftrace, perf: Add support to use function tracepoint in perf
+Date: Wed, 18 Jan 2012 19:44:33 +0100
+Message-Id: <1326912275-26405-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
 References: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
  <1326912275-26405-1-git-send-email-jolsa@redhat.com>
@@ -21,102 +21,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding TRACE_REG_PERF_ADD and TRACE_REG_PERF_DEL to handle
-perf event schedule in/out actions.
+Adding perf registration support for the ftrace function event,
+so it is now possible to register it via perf interface.
 
-The add action is invoked for when the perf event is scheduled in,
-while the del action is invoked when the event is scheduled out.
+The perf_event struct statically contains ftrace_ops as a handle
+for function tracer. The function tracer is registered/unregistered
+in open/close actions.
+
+To be efficient, we enable/disable ftrace_ops each time the traced
+process is scheduled in/out (via TRACE_REG_PERF_(ADD|DELL) handlers).
+This way tracing is enabled only when the process is running.
+Intentionally using this way instead of the event's hw state
+PERF_HES_STOPPED, which would not disable the ftrace_ops.
+
+It is now possible to use function trace within perf commands
+like:
+
+  perf record -e ftrace:function ls
+  perf stat -e ftrace:function ls
+
+Allowed only for root.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/ftrace_event.h    |    2 ++
- kernel/trace/trace_event_perf.c |    4 +++-
- kernel/trace/trace_events.c     |    2 ++
- kernel/trace/trace_kprobe.c     |    2 ++
- kernel/trace/trace_syscalls.c   |    4 ++++
- 5 files changed, 13 insertions(+), 1 deletions(-)
+ include/linux/perf_event.h      |    3 +
+ kernel/trace/trace.h            |    2 +
+ kernel/trace/trace_event_perf.c |   92 +++++++++++++++++++++++++++++++++++++++
+ kernel/trace/trace_export.c     |   28 ++++++++++++
+ 4 files changed, 125 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 195e360..2bf677c 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -148,6 +148,8 @@ enum trace_reg {
- 	TRACE_REG_PERF_UNREGISTER,
- 	TRACE_REG_PERF_OPEN,
- 	TRACE_REG_PERF_CLOSE,
-+	TRACE_REG_PERF_ADD,
-+	TRACE_REG_PERF_DEL,
- };
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 0b91db2..5003be6 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -858,6 +858,9 @@ struct perf_event {
+ #ifdef CONFIG_EVENT_TRACING
+ 	struct ftrace_event_call	*tp_event;
+ 	struct event_filter		*filter;
++#ifdef CONFIG_FUNCTION_TRACER
++	struct ftrace_ops               ftrace_ops;
++#endif
+ #endif
  
- struct ftrace_event_call;
+ #ifdef CONFIG_CGROUP_PERF
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 85732a8..e88e58a 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -591,6 +591,8 @@ static inline int ftrace_trace_task(struct task_struct *task)
+ static inline int ftrace_is_dead(void) { return 0; }
+ #endif
+ 
++int ftrace_event_is_function(struct ftrace_event_call *call);
++
+ /*
+  * struct trace_parser - servers for reading the user input separated by spaces
+  * @cont: set if the input is not complete - no final space char was found
 diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 0cfcc37..d72af0b 100644
+index d72af0b..57eb232 100644
 --- a/kernel/trace/trace_event_perf.c
 +++ b/kernel/trace/trace_event_perf.c
-@@ -211,12 +211,14 @@ int perf_trace_add(struct perf_event *p_event, int flags)
- 	list = this_cpu_ptr(pcpu_list);
- 	hlist_add_head_rcu(&p_event->hlist_entry, list);
- 
--	return 0;
-+	return tp_event->class->reg(tp_event, TRACE_REG_PERF_ADD, p_event);
- }
- 
- void perf_trace_del(struct perf_event *p_event, int flags)
+@@ -24,6 +24,11 @@ static int	total_ref_count;
+ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
+ 				 struct perf_event *p_event)
  {
-+	struct ftrace_event_call *tp_event = p_event->tp_event;
- 	hlist_del_rcu(&p_event->hlist_entry);
-+	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
++	/* The ftrace function trace is allowed only for root. */
++	if (ftrace_event_is_function(tp_event) &&
++	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
+ 	/* No tracing, just counting, so no obvious leak */
+ 	if (!(p_event->attr.sample_type & PERF_SAMPLE_RAW))
+ 		return 0;
+@@ -250,3 +255,90 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+ 	return raw_data;
  }
+ EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
++
++
++static void
++perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
++{
++	struct ftrace_entry *entry;
++	struct hlist_head *head;
++	struct pt_regs regs;
++	int rctx;
++
++#define ENTRY_SIZE (ALIGN(sizeof(struct ftrace_entry) + sizeof(u32), \
++		    sizeof(u64)) - sizeof(u32))
++
++	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
++
++	perf_fetch_caller_regs(&regs);
++
++	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
++	if (!entry)
++		return;
++
++	entry->ip = ip;
++	entry->parent_ip = parent_ip;
++
++	head = this_cpu_ptr(event_function.perf_events);
++	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
++			      1, &regs, head);
++
++#undef ENTRY_SIZE
++}
++
++static int perf_ftrace_function_register(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++
++	ops->flags |= FTRACE_OPS_FL_CONTROL;
++	ops->func = perf_ftrace_function_call;
++	return register_ftrace_function(ops);
++}
++
++static int perf_ftrace_function_unregister(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	return unregister_ftrace_function(ops);
++}
++
++static void perf_ftrace_function_enable(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	ftrace_function_enable(ops, smp_processor_id());
++}
++
++static void perf_ftrace_function_disable(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	ftrace_function_disable(ops, smp_processor_id());
++}
++
++int perf_ftrace_event_register(struct ftrace_event_call *call,
++			       enum trace_reg type, void *data)
++{
++	int etype = call->event.type;
++
++	if (etype != TRACE_FN)
++		return -EINVAL;
++
++	switch (type) {
++	case TRACE_REG_REGISTER:
++	case TRACE_REG_UNREGISTER:
++		break;
++	case TRACE_REG_PERF_REGISTER:
++	case TRACE_REG_PERF_UNREGISTER:
++		return 0;
++	case TRACE_REG_PERF_OPEN:
++		return perf_ftrace_function_register(data);
++	case TRACE_REG_PERF_CLOSE:
++		return perf_ftrace_function_unregister(data);
++	case TRACE_REG_PERF_ADD:
++		perf_ftrace_function_enable(data);
++		return 0;
++	case TRACE_REG_PERF_DEL:
++		perf_ftrace_function_disable(data);
++		return 0;
++	}
++
++	return -EINVAL;
++}
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index bbeec31..867653c 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -131,6 +131,28 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
  
- __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 5138fea..079a93a 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -173,6 +173,8 @@ int ftrace_event_reg(struct ftrace_event_call *call,
- 		return 0;
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
+ #include "trace_entries.h"
+ 
++static int ftrace_event_class_register(struct ftrace_event_call *call,
++				       enum trace_reg type, void *data)
++{
++	switch (type) {
++	case TRACE_REG_PERF_REGISTER:
++	case TRACE_REG_PERF_UNREGISTER:
++		return 0;
++	case TRACE_REG_PERF_OPEN:
++	case TRACE_REG_PERF_CLOSE:
 +	case TRACE_REG_PERF_ADD:
 +	case TRACE_REG_PERF_DEL:
- 		return 0;
- #endif
- 	}
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 5667f89..580a05e 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1912,6 +1912,8 @@ int kprobe_register(struct ftrace_event_call *event,
- 		return 0;
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
-+	case TRACE_REG_PERF_ADD:
-+	case TRACE_REG_PERF_DEL:
- 		return 0;
- #endif
- 	}
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 6916b0d..dbdd804 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -666,6 +666,8 @@ static int syscall_enter_register(struct ftrace_event_call *event,
- 		return 0;
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
-+	case TRACE_REG_PERF_ADD:
-+	case TRACE_REG_PERF_DEL:
- 		return 0;
- #endif
- 	}
-@@ -690,6 +692,8 @@ static int syscall_exit_register(struct ftrace_event_call *event,
- 		return 0;
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
-+	case TRACE_REG_PERF_ADD:
-+	case TRACE_REG_PERF_DEL:
- 		return 0;
- #endif
- 	}
++#ifdef CONFIG_PERF_EVENTS
++		return perf_ftrace_event_register(call, type, data);
++#endif
++	case TRACE_REG_REGISTER:
++	case TRACE_REG_UNREGISTER:
++		break;
++	}
++
++	return -EINVAL;
++}
++
+ #undef __entry
+ #define __entry REC
+ 
+@@ -159,6 +181,7 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
+ 	.system			= __stringify(TRACE_SYSTEM),		\
+ 	.define_fields		= ftrace_define_fields_##call,		\
+ 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
++	.reg			= ftrace_event_class_register,		\
+ };									\
+ 									\
+ struct ftrace_event_call __used event_##call = {			\
+@@ -170,4 +193,9 @@ struct ftrace_event_call __used event_##call = {			\
+ struct ftrace_event_call __used						\
+ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+ 
++int ftrace_event_is_function(struct ftrace_event_call *call)
++{
++	return call == &event_function;
++}
++
+ #include "trace_entries.h"
 -- 
 1.7.1
 
