@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab2ARMYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 07:24:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34077 "EHLO mx1.redhat.com"
+	id S1754188Ab2ARM0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 07:26:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718Ab2ARMYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 07:24:07 -0500
-Message-ID: <4F16B9D7.2030104@redhat.com>
-Date: Wed, 18 Jan 2012 10:23:51 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "Semwal, Sumit" <sumit.semwal@ti.com>, Robert Morell <rmorell@nvidia.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, sumit.semwal@linaro.org,
-        airlied@linux.ie, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
-References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie> <1326845297-6233-2-git-send-email-rmorell@nvidia.com> <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com> <201201181214.12055.arnd@arndb.de>
-In-Reply-To: <201201181214.12055.arnd@arndb.de>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753233Ab2ARM0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 07:26:34 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CALLzPKZFShWGxxic8zMfTxoj6Q+t7-sC90wp5J790VRmg-O09g@mail.gmail.com>
+References: <CALLzPKZFShWGxxic8zMfTxoj6Q+t7-sC90wp5J790VRmg-O09g@mail.gmail.com> <20111202184229.21874.25782.stgit@warthog.procyon.org.uk> <20111202184406.21874.65285.stgit@warthog.procyon.org.uk>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
+        alan.cox@intel.com
+Subject: Re: [PATCH 08/21] KEYS: Add signature verification facility [ver #3]
+Date: Wed, 18 Jan 2012 12:26:23 +0000
+Message-ID: <26123.1326889583@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 18-01-2012 10:14, Arnd Bergmann escreveu:
-> On Wednesday 18 January 2012, Semwal, Sumit wrote:
->> On Wed, Jan 18, 2012 at 5:38 AM, Robert Morell <rmorell@nvidia.com> wrote:
->>> EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
->>> issue, and not really an interface".  The dma-buf infrastructure is
->>> explicitly intended as an interface between modules/drivers, so it
->>> should use EXPORT_SYMBOL instead.
->>
->> + Konrad, Arnd, Mauro: there were strong objections on using
->> EXPORT_SYMBOL in place of EXPORT_SYMBOL_GPL by all 3 of them; I
->> suggest we first arrive at a consensus before merging this patch.
-> 
-> We discussed this before. The reason for using EXPORT_SYMBOL_GPL here is
-> that the interface is low-level and that it's meant to be used by
-> subsystems that export user-level interface based on that and come
-> with their own device driver interface, such as V4L or DRM.
-> 
-> While there is an eternal debate over whether there should or should
-> not be out of tree device drivers, I think there is very little to gain
-> by allowing dma_buf to be used by out of tree *subsystems*.
-> Further, a device driver that tries to use the interface but sits outside
-> of the regular subsystems is a bad technical choice and we should not
-> encourage those either.
-> 
-> NAK
+Kasatkin, Dmitry <dmitry.kasatkin@intel.com> wrote:
 
-I fully agree with Arnd.
+> It would also nice to have an API to supply pre-computed data hash.  For
+> example IMA uses the same functionality to compute the hash of the file
+> content, and then, based on security.ima type decided either verify it using
+> just hash, or use digital signature.  We could pass a hash as data. But may
+> be we do not want to have extra operation and compute hash over hash.
 
-A bug on a driver using such low-level interface could cause side effects
-at the wrong places. In order to handle such bugs, the developers and the
-maintainers of both subsystems need to see the source code of the entire
-pipeline, with is not possible if is there any non-GPL'd driver.
+If I understand you correctly, you'd like to have the option to do the hashing
+externally to this API?  Would you supply the completed hash or just a hash
+with the data in it, and require this API to complete it (ie. chuck metadata
+into it)?
 
-NAK
+I don't think it should be hard.  I could add an alternative to
+verify_sig_add_data() perhaps.  Either that or one function that does the lot
+and takes the precomputed hash as input.  There would be no need for the split
+into four functions (begin, add_data, end, cancel) in such a case.  The reason
+for the split is so that the caller can invoke add_data several times with
+non-contiguous bits of data.
 
-Mauro.
+It might even make sense to expose the crypto hash object for direct access
+rather than use add_data - but that then makes it hard to use crypto hardware
+where you would just shovel the raw data into it and it does all the hashing
+and cryptography in a black box.
+
+David
