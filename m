@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab2ARW3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 17:29:17 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36702 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab2ARW2j (ORCPT
+	id S1754658Ab2ARW3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 17:29:33 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:58748 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab2ARW32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 17:28:39 -0500
-Subject: [PATCH 08/13] crc32: Optimize loop counter for x86
+	Wed, 18 Jan 2012 17:29:28 -0500
+Subject: [PATCH 05/13] crc32: Fix mixing of endian-specific types
 To: Andrew Morton <akpm@linux-foundation.org>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
         "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,8 +20,8 @@ Cc: Theodore Tso <tytso@mit.edu>,
         linux-crypto <linux-crypto@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
-Date: Wed, 18 Jan 2012 14:28:29 -0800
-Message-ID: <20120118222829.4079.22103.stgit@elm3c44.beaverton.ibm.com>
+Date: Wed, 18 Jan 2012 14:28:07 -0800
+Message-ID: <20120118222807.4079.77106.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120118222733.4079.13377.stgit@elm3c44.beaverton.ibm.com>
 References: <20120118222733.4079.13377.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -29,77 +29,66 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12011822-2398-0000-0000-0000037FA609
+x-cbid: 12011822-7408-0000-0000-000001FD5EBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add two changes that improve the performance of x86 systems
-	1. replace main loop with incrementing counter
-	   this change improves the performance of the selftest
-	   by about 5-6% on Nehalem CPUs. The apparent
-	   reason is that the compiler can use the loop index
-	   to perform an indexed memory access. This is
-	   reported to make the performance of PowerPC CPUs
-	   to get worse.
-	2. replace the rem_len loop with incrementing counter
-	   this change improves the performance of the selftest,
-	   which has more than the usual number of occurances,
-	   by about 1-2% on x86 CPUs. In actual work loads
-	   the length is most often a multiple of 4 bytes and
-	   this code does not get executed as often if at all.
-	   Again this change is reported to make the performance
-	   of PowerPC get worse.
+crc32.c in its original version freely mixed u32, __le32 and __be32 types
+which caused warnings from sparse with __CHECK_ENDIAN__.
+This patch fixes these by forcing the types to u32.
 
 From: Bob Pearson <rpearson@systemfabricworks.com>
 Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
 [djwong@us.ibm.com: Minor changelog tweaks]
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- lib/crc32.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ lib/crc32.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
 
 diff --git a/lib/crc32.c b/lib/crc32.c
-index 826e163..4eac9c7 100644
+index bf03922..7394288 100644
 --- a/lib/crc32.c
 +++ b/lib/crc32.c
-@@ -66,6 +66,9 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- # endif
- 	const u32 *b;
- 	size_t    rem_len;
-+# ifdef CONFIG_X86
-+	size_t i;
-+# endif
- 	const u32 *t0=tab[0], *t1=tab[1], *t2=tab[2], *t3=tab[3];
- 	const u32 *t4 = tab[4], *t5 = tab[5], *t6 = tab[6], *t7 = tab[7];
- 	u32 q;
-@@ -86,7 +89,12 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- # endif
+@@ -28,13 +28,13 @@
+ #include "crc32defs.h"
  
- 	b = (const u32 *)buf;
-+# ifdef CONFIG_X86
-+	--b;
-+	for (i = 0; i < len; i++) {
-+# else
- 	for (--b; len; --len) {
-+# endif
- 		q = crc ^ *++b; /* use pre increment for speed */
- # if CRC_LE_BITS == 32
- 		crc = DO_CRC4;
-@@ -100,9 +108,14 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- 	/* And the last few bytes */
- 	if (len) {
- 		u8 *p = (u8 *)(b + 1) - 1;
-+# ifdef CONFIG_X86
-+		for (i = 0; i < len; i++)
-+			DO_CRC(*++p); /* use pre increment for speed */
-+# else
- 		do {
- 			DO_CRC(*++p); /* use pre increment for speed */
- 		} while (--len);
-+# endif
- 	}
+ #if CRC_LE_BITS == 8
+-# define tole(x) __constant_cpu_to_le32(x)
++# define tole(x) ((__force u32) __constant_cpu_to_le32(x))
+ #else
+ # define tole(x) (x)
+ #endif
+ 
+ #if CRC_BE_BITS == 8
+-# define tobe(x) __constant_cpu_to_be32(x)
++# define tobe(x) ((__force u32) __constant_cpu_to_be32(x))
+ #else
+ # define tobe(x) (x)
+ #endif
+@@ -128,9 +128,9 @@ u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
+ # elif CRC_LE_BITS == 8
+ 	const u32      (*tab)[] = crc32table_le;
+ 
+-	crc = __cpu_to_le32(crc);
++	crc = (__force u32) __cpu_to_le32(crc);
+ 	crc = crc32_body(crc, p, len, tab);
+-	crc = __le32_to_cpu(crc);
++	crc = __le32_to_cpu((__force __le32)crc);
+ #endif
  	return crc;
- #undef DO_CRC
+ }
+@@ -171,9 +171,9 @@ u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
+ # elif CRC_BE_BITS == 8
+ 	const u32      (*tab)[] = crc32table_be;
+ 
+-	crc = __cpu_to_be32(crc);
++	crc = (__force u32) __cpu_to_be32(crc);
+ 	crc = crc32_body(crc, p, len, tab);
+-	crc = __be32_to_cpu(crc);
++	crc = __be32_to_cpu((__force __be32)crc);
+ # endif
+ 	return crc;
+ }
 
