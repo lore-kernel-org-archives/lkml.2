@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab2ARRrn (ORCPT <rfc822;w@1wt.eu>);
+	id S932406Ab2ARRr5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 12:47:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60082 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932378Ab2ARRrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jan 2012 12:47:43 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54472 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932200Ab2ARRrh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 12:47:37 -0500
-Date: Wed, 18 Jan 2012 09:47:32 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] cgroup: add xattr support
-Message-ID: <20120118174732.GG30664@google.com>
-References: <4F13DA90.2000603@cn.fujitsu.com>
- <4F13DAA9.4070703@cn.fujitsu.com>
- <20120117175322.GC6762@google.com>
- <4F168266.3060205@cn.fujitsu.com>
+Message-ID: <4F1705A8.301@zytor.com>
+Date: Wed, 18 Jan 2012 09:47:20 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F168266.3060205@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Beulich <JBeulich@suse.com>
+CC: mingo@elte.hu, "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        tglx@linutronix.de, luca@luca-barbieri.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ix86: atomic64 assembly improvements
+References: <4F16E41B020000780006D7A5@nat28.tlf.novell.com> <4F16F505.8040809@zytor.com> <4F170679020000780006D85B@nat28.tlf.novell.com>
+In-Reply-To: <4F170679020000780006D85B@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 01/18/2012 08:50 AM, Jan Beulich wrote:
+>>
+>> It's atomic in the same way a MOV is atomic.
+>
+> Then please point me to where this is documented.
+>
+> As I understand it, there is nothing keeping the CPU (or something
+> down the bus) from executing the unlocked version as two 32-bit
+> reads followed by two 32-bit writes.
+>
+>> The CPU could, in fact, execute the locked version at all if the
+>> unlocked version didn't behave like that.
+>
+> Assuming you meant "could not", that's not true: As long as the
+> external world has a way to know that both items are locked (think
+> of the old bus lock mechanism when there were no caches yet),
+> it can very well do so.
+>
+> I do not question that in practice all CPUs behave as described,
+> but without an architectural guarantee (and with the code in
+> question not being used in hot paths afaik) I see no reason why
+> it should depend on undefined behavior.
+>
 
-On Wed, Jan 18, 2012 at 04:27:18PM +0800, Li Zefan wrote:
-> Furthermore, I noticed tmpfs also implemented xattr support, and we
-> should be able to share most of the code, which makes the cost for
-> having this feature smaller.
+Sorry, Jan, if you want to play the documentation lawyer game then there 
+is very little that will get done.  The code is increasingly being used 
+in warm/hot paths and that's actually fair, so I'd like to avoid 
+crapping it up.
 
-Yes, maybe, but tmpfs doesn't have any special semantics attached to
-files.  It's supposed to store opaque data from userland.  Regardless
-of code complexity, I just don't think this is a good idea.  What if
-we later want to attach certain config meaning to or export statistics
-via xattrs?  That would be quite unusual and require strong rationale
-but at least fall in the similar usage as with the rest of the fs.
+There are, to my knowledge, only three companies which have brought 
+SMP-capable x86 processors to market: Intel, AMD, and VIA and the above 
+holds for them.  A new vendor realistically can't bring a new processor 
+to market which violates a constraint that the existing processor 
+vendors have preserved.
 
-Thanks.
+It is somewhat implied in the SDM section 8.1.1 of volume 3A, but as 
+with many other things it's not written out specifically... I suspect 
+largely because the question hasn't been raised before.
 
--- 
-tejun
+	-hpa
