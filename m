@@ -1,90 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab2ARKkM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 05:40:12 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:52640 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752719Ab2ARKkK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 05:40:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045596EA@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-	<1326788038-29141-2-git-send-email-minchan@kernel.org>
-	<CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
-	<4F15A34F.40808@redhat.com>
-	<alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-	<84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com>
-	<CAOJsxLGiG_Bsp8eMtqCjFToxYAPCE4HC9XCebpZ+-G8E3gg5bw@mail.gmail.com>
-	<84FF21A720B0874AA94B46D76DB98269045596EA@008-AM1MPN1-003.mgdnok.nokia.com>
-Date: Wed, 18 Jan 2012 12:40:10 +0200
-X-Google-Sender-Auth: m39lzZJc9197wyBHMq5yVhZp3Yw
-Message-ID: <CAOJsxLG4hMrAdsyOg6QUe71SPqEBq3eZXvRvaKFZQo8HS1vphQ@mail.gmail.com>
-Subject: Re: [RFC 1/3] /dev/low_mem_notify
-From: Pekka Enberg <penberg@kernel.org>
-To: leonid.moiseichuk@nokia.com
-Cc: riel@redhat.com, minchan@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mel@csn.ul.ie, rientjes@google.com, kosaki.motohiro@gmail.com,
-        hannes@cmpxchg.org, mtosatti@redhat.com, akpm@linux-foundation.org,
-        rhod@redhat.com, kosaki.motohiro@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753440Ab2ARKkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 05:40:40 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:10322 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab2ARKkj convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Wed, 18 Jan 2012 05:40:39 -0500
+Message-Id: <4F16AFB1020000780006D671@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 18 Jan 2012 10:40:33 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ingo Molnar" <mingo@elte.hu>
+Cc: <tglx@linutronix.de>, "Andrew Morton" <akpm@linux-foundation.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: fix memset() to support sizes of 4Gb and
+ above
+References: <4F05D992020000780006AA09@nat28.tlf.novell.com>
+ <20120106110519.GA32673@elte.hu>
+In-Reply-To: <20120106110519.GA32673@elte.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 11:41 AM,  <leonid.moiseichuk@nokia.com> wrote:
->> -----Original Message-----
->> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
->> Pekka Enberg
->> Sent: 18 January, 2012 11:16
-> ...
->> > Would be possible to not use percents for thesholds? Accounting in pages
->> even
->> > not so difficult to user-space.
->>
->> How does that work with memory hotplug?
->
-> Not worse than %%. For example you had 10% free memory threshold for 512 MB
-> RAM meaning 51.2 MB in absolute number.  Then hotplug turned off 256 MB, you
-> for sure must update threshold for %% because these 10% for 25.6 MB most
-> likely will be not suitable for different operating mode.
-> Using pages makes calculations must simpler.
+>>> On 06.01.12 at 12:05, Ingo Molnar <mingo@elte.hu> wrote:
+>> * Jan Beulich <JBeulich@suse.com> wrote:
+> Would be nice to add support for arch/x86/lib/memset_64.S as 
+> well, and look at the before/after performance of it.
 
-Right. Does threshold in percentages make any sense then? Is it enough to use
-number of free pages?
+Got this done, will post the patch soon. However, ...
 
-On Wed, Jan 18, 2012 at 11:06 AM,  <leonid.moiseichuk@nokia.com> wrote:
->> > Also, looking on vmnotify_match I understand that events propagated to
->> > user-space only in case threshold trigger change state from 0 to 1 but not
->> > back, 1-> 0 is very useful event as well
-> (*)
->
->> >
->> > Would be possible to use for threshold pointed value(s) e.g. according to
->> > enum zone_state_item, because kinds of memory to track could be
->> different?
->> > E.g. to tracking paging activity NR_ACTIVE_ANON and NR_ACTIVE_FILE
->> could be
->> > interesting, not only free.
->>
->> I don't think there's anything in the ABI that would prevent that.
->
-> If this statement also related my question (*)  I have to point need to track
-> attributes history, otherwise user-space will be constantly kicked with
-> updates.
+> For example the kernel's memcpy routine in slightly faster than 
+> glibc's:
 
-Well sure, I think it makes sense to support state change to both directions.
+This is an illusion - since the kernel's memcpy_64.S also defines a
+"memcpy" (not just "__memcpy"), the static linker resolves the
+reference from mem-memcpy.c against this one. Apparent
+performance differences rather point at effects like (guessing)
+branch prediction (using the second vs the first entry of
+routines[]). After fixing this, on my Westmere box glibc's is quite
+a bit slower than the unrolled kernel variant (4% fewer
+instructions, but about 15% more cycles).
 
-> When I see code because from emails it is quite difficult to understand.  For
-> short-term I need to focus on integration "memnotify" version internally
-> which is kind of work for me already and provides all required interfaces n9
-> needs.
+> If such measurements all suggests equal or better performance, 
+> and if there's no erratum in current CPUs that would make 4G 
+> string copies dangerous [which your research suggests should be 
+> fine], i have no principal objection against this patch.
 
-Sure. I'm only talking about mainline here.
+If I interpreted things correctly, there's a tiny win with the changes
+(also for not-yet-posted memcpy equivalent):
 
-> Btw, when API starts to work with pointed thresholds logically it is not
+# Original 3.2:
+ Performance counter stats for 'perf bench mem memcpy -r x86-64-unrolled' (1000 runs):
 
-Definitely, it's about generic VM event notification now.
+         5,237,848 instructions              #    1.01  insns per cycle          ( +-  0.01% )
+         5,187,712 cycles                    #    0.000 GHz                      ( +-  0.10% )
 
-			Pekka
+       0.003426133 seconds time elapsed                                          ( +-  0.30% )
+
+         5,236,075 instructions              #    1.01  insns per cycle          ( +-  0.01% )
+         5,177,677 cycles                    #    0.000 GHz                      ( +-  0.08% )
+
+       0.003423426 seconds time elapsed                                          ( +-  0.29% )
+
+         5,236,887 instructions              #    1.01  insns per cycle          ( +-  0.01% )
+         5,180,640 cycles                    #    0.000 GHz                      ( +-  0.08% )
+
+       0.003410956 seconds time elapsed                                          ( +-  0.32% )
+
+ Performance counter stats for 'perf bench mem memset -r x86-64-unrolled' (1000 runs):
+
+         4,300,600 instructions              #    0.97  insns per cycle          ( +-  0.02% )
+         4,442,449 cycles                    #    0.000 GHz                      ( +-  0.12% )
+
+       0.002976608 seconds time elapsed                                          ( +-  0.29% )
+
+         4,300,542 instructions              #    0.97  insns per cycle          ( +-  0.02% )
+         4,443,480 cycles                    #    0.000 GHz                      ( +-  0.10% )
+
+       0.002942516 seconds time elapsed                                          ( +-  0.36% )
+
+         4,300,400 instructions              #    0.97  insns per cycle          ( +-  0.02% )
+         4,439,363 cycles                    #    0.000 GHz                      ( +-  0.08% )
+
+       0.002962733 seconds time elapsed                                          ( +-  0.32% )
+
+# Patched (x86_64-mem*.patch):
+ Performance counter stats for 'perf bench mem memcpy -r x86-64-unrolled' (1000 runs):
+
+         5,236,674 instructions              #    1.01  insns per cycle          ( +-  0.01% )
+         5,182,292 cycles                    #    0.000 GHz                      ( +-  0.07% )
+
+       0.003426389 seconds time elapsed                                          ( +-  0.29% )
+
+         5,235,704 instructions              #    1.01  insns per cycle          ( +-  0.01% )
+         5,183,586 cycles                    #    0.000 GHz                      ( +-  0.08% )
+
+       0.003414827 seconds time elapsed                                          ( +-  0.31% )
+
+         5,236,240 instructions              #    1.01  insns per cycle          ( +-  0.01% )
+         5,192,932 cycles                    #    0.000 GHz                      ( +-  0.10% )
+
+       0.003404885 seconds time elapsed                                          ( +-  0.33% )
+
+ Performance counter stats for 'perf bench mem memset -r x86-64-unrolled' (1000 runs):
+
+         4,299,811 instructions              #    0.97  insns per cycle          ( +-  0.02% )
+         4,442,268 cycles                    #    0.000 GHz                      ( +-  0.09% )
+
+       0.002957321 seconds time elapsed                                          ( +-  0.32% )
+
+         4,300,057 instructions              #    0.97  insns per cycle          ( +-  0.02% )
+         4,438,804 cycles                    #    0.000 GHz                      ( +-  0.09% )
+
+       0.002974749 seconds time elapsed                                          ( +-  0.29% )
+
+         4,299,886 instructions              #    0.97  insns per cycle          ( +-  0.02% )
+         4,444,117 cycles                    #    0.000 GHz                      ( +-  0.11% )
+
+       0.002967353 seconds time elapsed                                          ( +-  0.30% )
+
+Jan
