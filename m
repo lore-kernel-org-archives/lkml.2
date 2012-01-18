@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab2ARCFR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 21:05:17 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:35751 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756507Ab2ARCFO (ORCPT
+	id S1756599Ab2ARCIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 21:08:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64018 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756495Ab2ARCIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 21:05:14 -0500
-Date: Wed, 18 Jan 2012 02:04:53 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Indan Zupancic <indan@nul.nu>, Andrew Lutomirski <luto@mit.edu>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-Message-ID: <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
-References: <CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
- <20120116183730.GB21112@redhat.com>
- <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
- <20120117164523.GA17070@redhat.com>
- <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
- <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
- <20120117170512.GB17070@redhat.com>
- <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <20120118015013.GR11715@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120118015013.GR11715@one.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jan 2012 21:08:11 -0500
+From: Venkatesh Pallipadi <venki@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+Date: Tue, 17 Jan 2012 18:07:34 -0800
+Message-Id: <1326852454-26117-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen wrote:
-> > Our ptrace jailer is checking cs to figure out if a task is a compat task
-> > or not, if the kernel can change that behind our back it means our jailer
-> 
-> Every user program change it behind your back.
-..
-> Look up far jumps in any x86 manual.
+Kernel's notion of possible cpus (from include/linux/cpumask.h)
+ *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
 
-I'm pretty sure this isn't about changing cs or far jumps
+ *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
+ *  that it is possible might ever be plugged in at anytime during the
+ *  life of that system boot.
 
-I think Indan means code is running with 64-bit cs, but the kernel
-treats int $0x80 as a 32-bit syscall and sysenter as a 64-bit syscall,
-and there's no way for the ptracer to know which syscall the kernel
-will perform, even by looking at all registers.  It looks like a hole
-in ptrace which could be fixed.
+ #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
 
--- Jamie
+and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
+and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
+
+i.e, We needlessly go through this mask based calculation everytime
+num_possible_cpus() is called.
+
+The problem is there with cpu_online_mask() as well, which is fixed value at
+boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
+in HOTPLUG case.
+
+Though most of the callers of these two routines are init time (with few
+exceptions of runtime calls), it is cleaner to use variables
+and not go through this repeated mask based calculation.
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ include/linux/cpumask.h |    8 ++++++--
+ kernel/cpu.c            |    9 +++++++++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index 4f7a632..2eb04dd 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -80,9 +80,13 @@ extern const struct cpumask *const cpu_online_mask;
+ extern const struct cpumask *const cpu_present_mask;
+ extern const struct cpumask *const cpu_active_mask;
+ 
++extern int nr_online_cpus;
++
+ #if NR_CPUS > 1
+-#define num_online_cpus()	cpumask_weight(cpu_online_mask)
+-#define num_possible_cpus()	cpumask_weight(cpu_possible_mask)
++
++#define num_online_cpus()	(nr_online_cpus)
++#define num_possible_cpus()	(nr_cpu_ids)
++
+ #define num_present_cpus()	cpumask_weight(cpu_present_mask)
+ #define num_active_cpus()	cpumask_weight(cpu_active_mask)
+ #define cpu_online(cpu)		cpumask_test_cpu((cpu), cpu_online_mask)
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 2060c6e..eed2169 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -622,6 +622,13 @@ static DECLARE_BITMAP(cpu_active_bits, CONFIG_NR_CPUS) __read_mostly;
+ const struct cpumask *const cpu_active_mask = to_cpumask(cpu_active_bits);
+ EXPORT_SYMBOL(cpu_active_mask);
+ 
++#ifdef CONFIG_HOTPLUG_CPU
++int nr_online_cpus;
++#else
++int nr_online_cpus __read_mostly;
++#endif
++EXPORT_SYMBOL(nr_online_cpus);
++
+ void set_cpu_possible(unsigned int cpu, bool possible)
+ {
+ 	if (possible)
+@@ -644,6 +651,8 @@ void set_cpu_online(unsigned int cpu, bool online)
+ 		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+ 	else
+ 		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
++
++	nr_online_cpus = cpumask_weight(cpu_online_mask);
+ }
+ 
+ void set_cpu_active(unsigned int cpu, bool active)
+-- 
+1.7.7.3
+
