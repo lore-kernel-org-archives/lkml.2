@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab2ARVHP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 16:07:15 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:48879 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932126Ab2ARVHN (ORCPT
+	id S932350Ab2ARVHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 16:07:22 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52918 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126Ab2ARVHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 16:07:13 -0500
-Message-ID: <4F173467.90106@oracle.com>
-Date: Wed, 18 Jan 2012 13:06:47 -0800
-From: Tina Yang <tina.yang@oracle.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 18 Jan 2012 16:07:19 -0500
+Date: Wed, 18 Jan 2012 14:07:16 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: N?meth M?rton <nm127@freemail.hu>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH] use void __iomem * pointers for ioread32()/iowrite32()
+Message-ID: <20120118210716.GN4223@ponder.secretlab.ca>
+References: <4F12AB38.5040009@freemail.hu>
+ <CACRpkdZ0osKrjTXsV96J5ckj=wC=OieHL7UTfjtm8ibHRuL6=A@mail.gmail.com>
+ <4F153221.3080509@freemail.hu>
+ <CACRpkdZEZ6X20mtP5reAq2UaG5f0DS_hMBN9L8LpV1O0tBkb-w@mail.gmail.com>
+ <CACxGe6t2xtm-T43cBcbaqTrnPST9+R8E7dhq1rJnC+4P2__JRQ@mail.gmail.com>
+ <4F16611E.3050303@freemail.hu>
+ <20120118061815.GY23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gurudas.pai@oracle.com" <gurudas.pai@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH] add netconsole support for xen-netfront
-References: <1326271956-25565-1-git-send-email-zhenzhong.duan@oracle.com>  <20120112141745.GA7685@phenom.dumpdata.com>  <1326452769.17210.331.camel@zakaz.uk.xensource.com>  <4F15EB3E.3060700@oracle.com> <20120117215100.GA25367@phenom.dumpdata.com>  <4F160113.1030503@oracle.com> <1326877176.29475.37.camel@dagon.hellion.org.uk>
-In-Reply-To: <1326877176.29475.37.camel@dagon.hellion.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4F173479.0074,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120118061815.GY23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/18/2012 12:59 AM, Ian Campbell wrote:
-> On Tue, 2012-01-17 at 23:15 +0000, Tina Yang wrote:
->> On 1/17/2012 1:51 PM, Konrad Rzeszutek Wilk wrote:
->>> On Tue, Jan 17, 2012 at 01:42:22PM -0800, Tina Yang wrote:
->>>> On 1/13/2012 3:06 AM, Ian Campbell wrote:
->>>> Although netdump is now obsolete, I think it's always a good practice
->>>> to preserve caller's irq status as we had a very bad experience
->>>> chasing a similar problem caused by such a irq change in RDS
->>> Did you find the culprit of it? Was there a patch for that in the
->>> upstream kernel?
->> Yes.  It has nothing to do with net drivers but same cause
->> elsewhere in the kernel.
-> I didn't think start_xmit could be called with interrupts disabled or
-> from interrupt context but perhaps I am wrong about that or perhaps
-> netconsole changes things?
-Netdump does call it with interrupt disabled and hang because of
-it in 2.6.9 as I remember it.  And you are right, netconsole has
-undergone changes from time to time, which also can change
-this specification.
->
-> Right, Documentation/networking/netdevices.txt states that start_xmit
-> can be called with interrupts disabled by netconsole and therefore using
-> the irqsave/restore locking in this function is, AFAICT, correct.
->
->>>> in the not too long ago past.
->>> OK, it sounds like it was issues in the past but might not be the
->>> case anymore.
->>>
->>> Could please re-test it without that spinlock irqsave patch using
->>> the upstream kernel (or just UEK2 since it is an 3.0 type kernel).
->> Shouldn't be the case now, but don't know about the future.
->> The fact is as long as there is a new caller that has the expectation
->> of preserved irq status, it would be a problem.
-> The question is not so much what may or may not be a problem in the
-> future but what the requirements of this function are, in particular
-> those imposed by the network stack for the start_xmit function.
-Agreed.  It's not safe to assume it unless the API documentation states 
-that it can
-not be called with interrupt disabled explicitly.
->> As Ian said, some net drivers have been cautious in this regard already by
->> saving/restoring the status, but apparently not everyone.
-> I was talking about the interrupt/poll handler here since I hadn't yet
-> noticed that the locking change was also in start_xmit and not just the
-> poll/interrupt paths (which was actually just code motion and not a
-> locking change in any case).
-I did look at the start_xmit of most of the net drivers myself when I 
-hit the
-netdump hang back in 2008, and some of them did save/restore already,
-but others didn't.
-> Ian.
->
->
+On Wed, Jan 18, 2012 at 06:18:15AM +0000, Al Viro wrote:
+> On Wed, Jan 18, 2012 at 07:05:18AM +0100, N?meth M?rton wrote:
+> > From: M?rton N?meth <nm127@freemail.hu>
+> > 
+> > The address pointer of ioread32()/iowrite32() functions are
+> > of type "void __iomem *". Use matching variable type.
+> 
+> > diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
+> > index 68fa55e..84b7f28 100644
+> > --- a/drivers/gpio/gpio-pch.c
+> > +++ b/drivers/gpio/gpio-pch.c
+> > @@ -231,7 +231,7 @@ static void pch_gpio_setup(struct pch_gpio *chip)
+> >  static int pch_irq_type(struct irq_data *d, unsigned int type)
+> >  {
+> >  	u32 im;
+> > -	u32 __iomem *im_reg;
+> > +	void __iomem *im_reg;
+> 
+> NAK.  Please, learn what "function with pointer to (possibly qualified) void"
+> means.  It's fairly basic C, so any (post-K&R) textbook would do.
 
+Okay, ignoring.
