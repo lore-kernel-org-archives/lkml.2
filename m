@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab2ARMHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 07:07:32 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38229 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab2ARMHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 07:07:31 -0500
-Date: Wed, 18 Jan 2012 13:07:11 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH][GIT PULL][v3.3] tracing: Add header wrappers
- event_headers_start.h and event_headers_end.h
-Message-ID: <20120118120711.GB14863@elte.hu>
-References: <1326754637.7642.177.camel@gandalf.stny.rr.com>
- <20120117095418.GG10397@elte.hu>
- <1326807145.17534.26.camel@gandalf.stny.rr.com>
+	id S1753509Ab2ARMJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 07:09:17 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62182 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2ARMJP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 07:09:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326807145.17534.26.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1326265453_1662@mail4.comsite.net>
+References: <1326040026-7285-6-git-send-email-gilad@benyossef.com>
+	<1326265453_1662@mail4.comsite.net>
+Date: Wed, 18 Jan 2012 14:09:14 +0200
+Message-ID: <CAOtvUMceUE9t1EsTPGTZ9gERHvshnZOZ1_4YVumyNiBvrixMTQ@mail.gmail.com>
+Subject: Re: [PATCH v6 5/8] slub: only IPI CPUs that have per cpu obj to flush
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 11, 2012 at 9:04 AM, Milton Miller <miltonm@bga.com> wrote:
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> > mm/slub.c | 10 +++++++++-
+> > 1 files changed, 9 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 09ccee8..31833d6 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -2013,9 +2013,17 @@ static void flush_cpu_slab(void *d)
+> > __flush_cpu_slab(s, smp_processor_id());
+> > }
+> >
+> > +static int has_cpu_slab(int cpu, void *info)
+> > +{
+> > + struct kmem_cache *s = info;
+> > + struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
+> > +
+> > + return !!(c->page);
+>
+> __flush_cpu_slab is careful to test that the the per_cpu_ptr is not
+> NULL before referencing the page field.  free_percpu likewise ignores
+> NULL pointers.  We need to check !!(c && c->page) here.
+>
+This is indeed what I did in the first iterations but Christoph indicated that
+c could never be NULL in his review of the patch. See :
+https://lkml.org/lkml/2011/11/15/207
 
-> On Tue, 2012-01-17 at 10:54 +0100, Ingo Molnar wrote:
-> > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> 
-> > Hm, i don't really like the extra complexity - this code 
-> > *really* does not need any more complexity ...
-> 
-> I agree.
-> 
-> > 
-> > How about the low-tech solution of adding some text between
-> > '/* */' markers to warns that these headers should not be 
-> > included in ordinary headers?
-> 
-> The problem is that they currently are. For example:
-> 
-> include/linux/interrupt.h
-> 
-> has one to add a tracepoint in __raise_softirq_irqoff()
-> 
-> Which is fine, as long as no other tracepoint header includes
-> linux/interrupt.h.
+I integrated all the other review comment of this patch though. Thanks!
+Gilad
 
-Could we try to remove this one from the header?
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
 
-I'd argue that __raise_softirq_irqoff() should not be inline - 
-that would solve a whole host of issues. Event tracing is 
-enabled in most distros so there's no real overhead argument to 
-be made here either - so it's probably a bit faster in fact to 
-have this uninlined. What do you think?
-
-Thanks,
-
-	Ingo
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
