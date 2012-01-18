@@ -1,135 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab2ARBUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 20:20:03 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58690 "EHLO mga09.intel.com"
+	id S1756051Ab2ARBUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 20:20:22 -0500
+Received: from lo.gmane.org ([80.91.229.12]:60623 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755315Ab2ARBUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 20:20:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="99782757"
-Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
-From: Shaohua Li <shaohua.li@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, jmoyer@redhat.com, zhu.yanhai@gmail.com
-In-Reply-To: <20120117090220.GB15511@redhat.com>
-References: <1325746241.22361.503.camel@sli10-conroe>
-	 <1325826750.22361.533.camel@sli10-conroe> <20120108221615.GA4198@dastard>
-	 <1326071375.22361.543.camel@sli10-conroe>
-	 <20120115224532.GD3174@redhat.com>
-	 <1326688590.22361.578.camel@sli10-conroe>
-	 <20120116071132.GE3174@redhat.com>
-	 <1326700541.22361.607.camel@sli10-conroe>
-	 <20120116082927.GF3174@redhat.com>
-	 <1326762388.22361.613.camel@sli10-conroe>
-	 <20120117090220.GB15511@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Jan 2012 09:20:37 +0800
-Message-ID: <1326849637.22361.616.camel@sli10-conroe>
+	id S1754181Ab2ARBUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 20:20:20 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH 2/3] block: prevent duplicated bio completion report
+Date: Wed, 18 Jan 2012 10:20:03 +0900
+Message-ID: <4F161E43.5040705@gmail.com>
+References: <1326763928-1972-1-git-send-email-namhyung.kim@lge.com> <1326763928-1972-2-git-send-email-namhyung.kim@lge.com> <20120117174520.GB6762@google.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+X-Gmane-NNTP-Posting-Host: 121.50.20.41
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+In-Reply-To: <20120117174520.GB6762@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 04:02 -0500, Vivek Goyal wrote:
-> On Tue, Jan 17, 2012 at 09:06:28AM +0800, Shaohua Li wrote:
-> > On Mon, 2012-01-16 at 03:29 -0500, Vivek Goyal wrote:
-> > > On Mon, Jan 16, 2012 at 03:55:41PM +0800, Shaohua Li wrote:
-> > > > On Mon, 2012-01-16 at 02:11 -0500, Vivek Goyal wrote:
-> > > > > On Mon, Jan 16, 2012 at 12:36:30PM +0800, Shaohua Li wrote:
-> > > > > > On Sun, 2012-01-15 at 17:45 -0500, Vivek Goyal wrote:
-> > > > > > > On Mon, Jan 09, 2012 at 09:09:35AM +0800, Shaohua Li wrote:
-> > > > > > > 
-> > > > > > > [..]
-> > > > > > > > > You need to present raw numbers and give us some idea of how close
-> > > > > > > > > those numbers are to raw hardware capability for us to have any idea
-> > > > > > > > > what improvements these numbers actually demonstrate.
-> > > > > > > > Yes, your guess is right. The hardware has limitation. 12 SSD exceeds
-> > > > > > > > the jbod capability, for both throughput and IOPS, that's why only
-> > > > > > > > read/write mixed workload impacts. I'll use less SSD in later tests,
-> > > > > > > > which will demonstrate the performance better. I'll report both raw
-> > > > > > > > numbers and fiops/cfq numbers later.
-> > > > > > > 
-> > > > > > > If fiops number are better please explain why those numbers are better.
-> > > > > > > If you cut down on idling, it is obivious that you will get higher
-> > > > > > > throughput on these flash devices. CFQ does disable queue idling for
-> > > > > > > non rotational NCQ devices. If higher throughput is due to driving
-> > > > > > > deeper queue depths, then CFQ can do that too just by changing quantum
-> > > > > > > and disabling idling. 
-> > > > > > it's because of quantum. Surely you can change the quantum, and CFQ
-> > > > > > performance will increase, but you will find CFQ is very unfair then.
-> > > > > 
-> > > > > Why increasing quantum leads to CFQ being unfair? In terms of time it
-> > > > > still tries to be fair. 
-> > > > we can dispatch a lot of requests to NCQ SSD with very small time
-> > > > interval. The disk can finish a lot of requests in small time interval
-> > > > too. The time is much smaller than 1 jiffy. Increasing quantum can lead
-> > > > a task dispatches request more faster and makes the accounting worse,
-> > > > because with small quantum the task needs wait to dispatch. you can
-> > > > easily verify this with a simple fio test.
-> > > > 
-> > > > > That's a different thing that with NCQ, right
-> > > > > time measurement is not possible with requests from multiple queues
-> > > > > being in the driver/disk at the same time. So accouting in terms of
-> > > > > iops per queue might make sense.
-> > > > yes.
-> > > > 
-> > > > > > > So I really don't understand that what are you doing fundamentally
-> > > > > > > different in FIOPS ioscheduler. 
-> > > > > > > 
-> > > > > > > The only thing I can think of more accurate accounting per queue in
-> > > > > > > terms of number of IOs instead of time. Which can just serve to improve
-> > > > > > > fairness a bit for certain workloads. In practice, I think it might
-> > > > > > > not matter much.
-> > > > > > If quantum is big, CFQ will have better performance, but it actually
-> > > > > > fallbacks to Noop, no any fairness. fairness is important and is why we
-> > > > > > introduce CFQ.
-> > > > > 
-> > > > > It is not exactly noop. It still preempts writes and prioritizes reads
-> > > > > and direct writes. 
-> > > > sure, I mean fairness mostly here.
-> > > > 
-> > > > > Also, what's the real life workload where you face issues with using
-> > > > > say deadline with these flash based storage.
-> > > > deadline doesn't provide fairness. mainly cgroup workload. workload with
-> > > > different ioprio has issues too, but I don't know which real workload
-> > > > uses ioprio.
-> > > 
-> > > Personally I have not run into any workload which provides deep queue depths
-> > > constantly for a very long time. I had to run fio to create such
-> > > scnearios.
-> > > 
-> > > Not running deep queue depths will lead to expiration of queue (Otherwise
-> > > idling will kill performance on these fast devices). And without idling
-> > > most of the logic of slice and accounting does not help. A queue
-> > > dispatches some requests and expires (irrespective of what time slice
-> > > you had allocated it based on ioprio).
-> > That's true, if workload doesn't drive deep queue depths, any accounting
-> > can't help for NCQ disks as far as I tried. Idling is the only method to
-> > make accounting correct, but it impacts performance too much.
-> 
-> Idiling will kill performance and faster the device, more prominent are
-> the effects of idling. So to me using CFQ on these fast devices is not
-> a very good idea and deadline might just serve well.
-> 
-> > 
-> > > That's why I am insisting that it would be nice that any move in this
-> > > direction should be driven by some real workload instead of just coming
-> > > up with synthetic workloads.
-> > I thought yanhai from taobao (cc-ed) has real workload and he found cfq
-> > performance suffers a lot.
-> 
-> Can we run that real workload with "deadline" and see what kind of
-> concerns do we have. Is anybody getting starved for long time. If not,
-> then we don't have to do anything.
-> 
-> I think trying to make to make CFQ work (Or trying to come up with CFQ
-> like IOPS scheduler) on these fast devices might not lead us anywhere.
-If only performance matters, I'd rather use noop for ssd. There is
-requirement to have cgroup support (maybe ioprio) to give different
-tasks different bandwidth.
+Hi,
+
+2012-01-18 2:45 AM, Tejun Heo wrote:
+> Hello,
+>
+> On Tue, Jan 17, 2012 at 10:32:07AM +0900, Namhyung Kim wrote:
+>> Since previous patch make block_bio_complete TP working,
+>> it will generate duplicated BLK_TA_COMPLETEs for bounced
+>> bios. Fix it.
+>>
+>> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+>> Cc: Tejun Heo <tj@kernel.org>
+>
+> This and the third patch should probably be merged to the first patch.
+> As it currently stands, it introduces window where spurious events are
+> generated.
+
+OK, will do.
+
+
+>
+>> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+>> index 4053cbd4490e..45cd0074a1c8 100644
+>> --- a/include/linux/blk_types.h
+>> +++ b/include/linux/blk_types.h
+>> @@ -97,6 +97,9 @@ struct bio {
+>>   #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
+>>   #define bio_flagged(bio, flag)	((bio)->bi_flags&  (1<<  (flag)))
+>>
+>> +/* masked bio's won't report its completion via tracepoint */
+>> +#define BIO_COMPLETE_MASK	(1<<  BIO_BOUNCED)
+>
+> And, who's setting this flag?
+
+__blk_queue_bounce() does.
+
+
+>
+>>   /*
+>>    * top 4 bits of bio flags indicate the pool this bio came from
+>>    */
+>> diff --git a/include/trace/events/block.h b/include/trace/events/block.h
+>> index 96955f4828b3..72888542e186 100644
+>> --- a/include/trace/events/block.h
+>> +++ b/include/trace/events/block.h
+>> @@ -219,7 +219,8 @@ TRACE_EVENT_CONDITION(block_bio_complete,
+>>
+>>   	TP_ARGS(q, bio, error),
+>>
+>> -	TP_CONDITION(bio->bi_bdev != NULL),
+>> +	TP_CONDITION(bio->bi_bdev != NULL&&
+>> +		     !(bio->bi_flags&  BIO_COMPLETE_MASK)),
+>
+> Bounced bio's are separate bio's too and I don't think masking its
+> completion from the TP itself is a good idea.  As I wrote before, why
+> not do this from blktrace code?
+
+Because blktrace cannot know about the bi_flags, as I said before. :) 
+And although the bounced bio's are separate ones, they aren't queued 
+separately. They just get replaced on the way.
+
+Besides, I think accounting wait_time of them will result in an invalid 
+value unless it's handled somehow in block_bio_bounce and/or 
+block_rq_issue TP.
+
+
+Thanks,
+Namhyung
 
