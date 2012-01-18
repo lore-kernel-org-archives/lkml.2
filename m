@@ -1,326 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2ARHVZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 02:21:25 -0500
-Received: from mail-qw0-f66.google.com ([209.85.216.66]:46075 "EHLO
-	mail-qw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab2ARHVW (ORCPT
+	id S1755353Ab2ARHXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 02:23:48 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47369 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab2ARHXq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 02:21:22 -0500
-X-Greylist: delayed 973 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Jan 2012 02:21:22 EST
-Message-ID: <4F166F21.3050501@kernel.org>
-Date: Wed, 18 Jan 2012 02:05:05 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
+	Wed, 18 Jan 2012 02:23:46 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-acpi <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] ACPI & Power Management patches for Linux 3.3-merge
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F13DA90.2000603@cn.fujitsu.com>
+References: <4F13DA90.2000603@cn.fujitsu.com>
+Date: Wed, 18 Jan 2012 15:23:45 +0800
+Message-ID: <CAFj3OHUQzShbmdCKYhWMum=hqM5XqK-_wcDyUajnZ1XWFGX1Xg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cgroup: revise how we re-populate root directory
+From: Sha <handai.szj@gmail.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Zefan,
 
-Please pull these ACPI & Power Management patches.
+On Mon, Jan 16, 2012 at 4:06 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> When remounting cgroupfs with some subsystems added to it and some
+> removed, cgroup will remove all the files in root directory and then
+> re-popluate it.
+>
+> What I'm doing here is, only remove files which belong to subsystems that
+> are to be unbound, and only create files for newly-added subsystems.
+> The purpose is to have all other files untouched.
+>
+> This is a preparation for cgroup xattr support.
+>
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  include/linux/cgroup.h |   11 +++---
+>  kernel/cgroup.c        |   92 +++++++++++++++++++++++++++++++----------------
+>  2 files changed, 67 insertions(+), 36 deletions(-)
+>
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index e9b6021..13db9e8 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -327,6 +327,9 @@ struct cftype {
+>         */
+>        size_t max_write_len;
+>
+> +       /* The subsystem this cgroup file belongs to */
+> +       struct cgroup_subsys *subsys;
+> +
+>        int (*open)(struct inode *inode, struct file *file);
+>        ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
+>                        struct file *file,
+> @@ -419,16 +422,14 @@ struct cgroup_scanner {
+>  * called by subsystems from within a populate() method
+>  */
+>  int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+> -                      const struct cftype *cft);
+> +                   struct cftype *cft);
+>
+>  /*
+>  * Add a set of new files to the given cgroup directory. Should
+>  * only be called by subsystems from within a populate() method
+>  */
+> -int cgroup_add_files(struct cgroup *cgrp,
+> -                       struct cgroup_subsys *subsys,
+> -                       const struct cftype cft[],
+> -                       int count);
+> +int cgroup_add_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+> +                    struct cftype cft[], int count);
+>
+>  int cgroup_is_removed(const struct cgroup *cgrp);
+>
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index a5d3b53..c4ed6fe 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -781,6 +781,8 @@ static int cgroup_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode);
+>  static struct dentry *cgroup_lookup(struct inode *, struct dentry *, struct nameidata *);
+>  static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry);
+>  static int cgroup_populate_dir(struct cgroup *cgrp);
+> +static int cgroup_repopulate_dir(struct cgroup *cgrp, unsigned long added_bits,
+> +                                unsigned long removed_bits);
+>  static const struct inode_operations cgroup_dir_inode_operations;
+>  static const struct file_operations proc_cgroupstats_operations;
+>
+> @@ -882,34 +884,44 @@ static void remove_dir(struct dentry *d)
+>        dput(parent);
+>  }
+>
+> -static void cgroup_clear_directory(struct dentry *dentry)
+> +static void cgroup_clear_directory(struct dentry *dentry, bool remove_all,
+> +                                  unsigned long removed_bits)
+>  {
+> -       struct list_head *node;
+> +       LIST_HEAD(head);
+> +       struct dentry *d, *node;
+>
+>        BUG_ON(!mutex_is_locked(&dentry->d_inode->i_mutex));
+> +
+>        spin_lock(&dentry->d_lock);
+> -       node = dentry->d_subdirs.next;
+> -       while (node != &dentry->d_subdirs) {
+> -               struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
+> +       list_for_each_entry_safe(d, node, &dentry->d_subdirs, d_u.d_child) {
+> +               struct cftype *cft = d->d_fsdata;
+> +
+> +               if (!remove_all && cft->subsys &&
+> +                   !test_bit(cft->subsys->subsys_id, &removed_bits))
+> +                       continue;
+>
+>                spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
+> -               list_del_init(node);
+> +               list_move(&d->d_u.d_child, &head);
+>                if (d->d_inode) {
+>                        /* This should never be called on a cgroup
+>                         * directory with child cgroups */
+>                        BUG_ON(d->d_inode->i_mode & S_IFDIR);
+>                        dget_dlock(d);
+> -                       spin_unlock(&d->d_lock);
+> -                       spin_unlock(&dentry->d_lock);
+> +               }
+> +               spin_unlock(&d->d_lock);
+> +       }
+> +       spin_unlock(&dentry->d_lock);
+> +
+> +       list_for_each_entry_safe(d, node, &head, d_u.d_child) {
+> +               spin_lock(&d->d_lock);
+> +               list_del_init(&d->d_u.d_child);
+> +               spin_unlock(&d->d_lock);
+> +               if (d->d_inode) {
+>                        d_delete(d);
+>                        simple_unlink(dentry->d_inode, d);
+>                        dput(d);
+> -                       spin_lock(&dentry->d_lock);
+> -               } else
+> -                       spin_unlock(&d->d_lock);
+> -               node = dentry->d_subdirs.next;
+> +               }
+>        }
+> -       spin_unlock(&dentry->d_lock);
+>  }
+>
+>  /*
+> @@ -919,7 +931,7 @@ static void cgroup_d_remove_dir(struct dentry *dentry)
+>  {
+>        struct dentry *parent;
+>
+> -       cgroup_clear_directory(dentry);
+> +       cgroup_clear_directory(dentry, true, 0);
+>
+>        parent = dentry->d_parent;
+>        spin_lock(&parent->d_lock);
+> @@ -1284,6 +1296,7 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
+>        struct cgroupfs_root *root = sb->s_fs_info;
+>        struct cgroup *cgrp = &root->top_cgroup;
+>        struct cgroup_sb_opts opts;
+> +       unsigned long added_bits, removed_bits;
+>
+>        mutex_lock(&cgrp->dentry->d_inode->i_mutex);
+>        mutex_lock(&cgroup_mutex);
+> @@ -1294,6 +1307,9 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
+>        if (ret)
+>                goto out_unlock;
+>
+> +       added_bits = opts.subsys_bits & ~root->subsys_bits;
+> +       removed_bits = root->subsys_bits & ~opts.subsys_bits;
+> +
 
-This includes initial support for the recently published ACPI 5.0 spec.
-In particular, support for the "hardware-reduced" bit that eliminates
-the dependency on legacy hardware.
-APEI has patches resulting from testing on real hardware.
-Plus other random fixes.
+Should it be the following？：
+          added_bits = opts.subsys_bits & ~root->actual_subsys_bits;
+          removed_bits = root->actual_subsys_bits & ~opts.subsys_bits;
 
-thanks!
-Len Brown, Intel Open Source Technology Center
+Thanks,
+Sha
 
-The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
-
-  Linux 3.2 (2012-01-04 15:55:44 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
-
-for you to fetch changes up to 79ba0db69c5887f1ad4ed51d58894e7e889084b0:
-
-  Merge branches 'einj', 'intel_idle', 'misc', 'srat' and 'turbostat-ivb' into release (2012-01-18 01:15:54 -0500)
-
-----------------------------------------------------------------
-
-Bjorn Helgaas (1):
-      ACPI, APEI, Print resource errors in conventional format
-
-Bob Moore (16):
-      ACPICA: Update for GCC 4
-      ACPICA: Add error msg for unsupported I/O requests (not 8/16/32 bit length)
-      ACPICA: Add error msg for Index/Bank field registers out-of-range
-      ACPICA: Do not abort table load on invalid space ID
-      ACPI 5.0: Basic support for FADT version 5
-      ACPI 5.0: Implement hardware-reduced option
-      ACPI 5.0: Add new/changed tables to headers
-      ACPI 5.0: Implement Connection() and AccessAs() changes
-      ACPI 5.0: Support for GeneralPurposeIo and GenericSerialBus operation region
-      ACPI 5.0: New interface, acpi_get_event_resources
-      ACPI 5.0: New interface, acpi_buffer_to_resource
-      ACPI 5.0: Add new predefined names
-      ACPICA: Update to version 20111123
-      ACPICA: Update for larger ACPI 5 FADT size
-      ACPICA: Update all copyrights to 2012
-      ACPICA: Update to version 20120111
-
-David Howells (1):
-      intel_idle: Fix a cast to pointer from integer of different size warning in intel_idle
-
-Huang Ying (9):
-      ACPI, Add 64bit read/write support to atomicio on i386
-      ACPI, APEI, GHES: Add PCIe AER recovery support
-      ACPI, APEI, Remove table not found message
-      ACPI, APEI, GHES, Distinguish interleaved error report in kernel log
-      ACPI, APEI, Printk queued error record before panic
-      ACPI, Add RAM mapping support to ACPI atomic IO support
-      ACPI, APEI, EINJ, Fix resource conflict on some machine
-      ACPI, Record ACPI NVS regions
-      ACPI, APEI, Resolve false conflict between ACPI NVS and APEI
-
-Kurt Garloff (3):
-      ACPI: Store SRAT table revision
-      ACPI, x86: Use SRAT table rev to use 8bit or 32bit PXM fields (x86/x86-64)
-      ACPI, ia64: Use SRAT table rev to use 8bit or 16/32bit PXM fields (ia64)
-
-Len Brown (5):
-      tools turbostat: recognize and run properly on IVB
-      Merge branch 'acpica-validate-address-regression' into next
-      Merge branch 'apei' into release
-      Merge branch 'atomicio-remove' into release
-      Merge branches 'einj', 'intel_idle', 'misc', 'srat' and 'turbostat-ivb' into release
-
-Lin Ming (7):
-      ACPICA: Put back the call to acpi_os_validate_address
-      ACPICA: Fix to allow region arguments to reference other scopes
-      ACPI 5.0: New interfaces to allow driver access to AML mutex objects
-      ACPI 5.0: Support for all new resource descriptors
-      ACPICA: Clean up Makefile
-      ACPICA: Add support for region address conflict checking
-      ACPI: processor: fix acpi_get_cpuid for UP processor
-
-Masanari Iida (1):
-      ACPI: kernel-parameters.txt : Add intel_idle.max_cstate
-
-Myron Stowe (3):
-      ACPI: Fix possible alignment issues with GAS 'address' references
-      ACPI: Export interfaces for ioremapping/iounmapping ACPI registers
-      ACPI APEI: Convert atomicio routines
-
-Shaohua Li (1):
-      intel_idle: fix API misuse
-
-Thomas Renninger (5):
-      ACPI processor: Fix error path, also remove sysdev link
-      intel idle: Make idle driver more robust
-      ACPI processor: Remove unneeded cpuidle_unregister_driver call
-      ACPI processor: Remove unneeded variable passed by acpi_processor_hotadd_init V2
-      intel_idle: Split up and provide per CPU initialization func
-
-Tony Luck (1):
-      acpi/apei/einj: Add extensions to EINJ from rev 5.0 of acpi spec
-
-Xiao, Hui (1):
-      ACPI, APEI, EINJ, Refine the fix of resource conflict
-
-Yanmin Zhang (1):
-      intel_idle: remove redundant local_irq_disable() call
-
-Zhang Rui (1):
-      ACPI 5.0: Allow _AEI method in walk resources
-
- Documentation/acpi/apei/einj.txt      |   55 +++-
- Documentation/kernel-parameters.txt   |    5 +
- arch/ia64/kernel/acpi.c               |   10 +-
- arch/x86/kernel/e820.c                |    4 +-
- arch/x86/mm/srat.c                    |    4 +
- drivers/acpi/Makefile                 |    3 +-
- drivers/acpi/acpica/Makefile          |  158 ++++++++--
- drivers/acpi/acpica/accommon.h        |    2 +-
- drivers/acpi/acpica/acconfig.h        |    9 +-
- drivers/acpi/acpica/acdebug.h         |    2 +-
- drivers/acpi/acpica/acdispat.h        |    2 +-
- drivers/acpi/acpica/acevents.h        |    3 +-
- drivers/acpi/acpica/acglobal.h        |   17 +-
- drivers/acpi/acpica/achware.h         |    2 +-
- drivers/acpi/acpica/acinterp.h        |    4 +-
- drivers/acpi/acpica/aclocal.h         |   26 ++-
- drivers/acpi/acpica/acmacros.h        |    2 +-
- drivers/acpi/acpica/acnamesp.h        |    2 +-
- drivers/acpi/acpica/acobject.h        |    8 +-
- drivers/acpi/acpica/acopcode.h        |    6 +-
- drivers/acpi/acpica/acparser.h        |    2 +-
- drivers/acpi/acpica/acpredef.h        |   41 +++-
- drivers/acpi/acpica/acresrc.h         |  115 +++++---
- drivers/acpi/acpica/acstruct.h        |    2 +-
- drivers/acpi/acpica/actables.h        |    2 +-
- drivers/acpi/acpica/acutils.h         |   21 ++-
- drivers/acpi/acpica/amlcode.h         |   29 ++-
- drivers/acpi/acpica/amlresrc.h        |  138 ++++++++-
- drivers/acpi/acpica/dsargs.c          |   18 +-
- drivers/acpi/acpica/dscontrol.c       |    2 +-
- drivers/acpi/acpica/dsfield.c         |   83 ++++-
- drivers/acpi/acpica/dsinit.c          |    2 +-
- drivers/acpi/acpica/dsmethod.c        |    2 +-
- drivers/acpi/acpica/dsmthdat.c        |    2 +-
- drivers/acpi/acpica/dsobject.c        |    2 +-
- drivers/acpi/acpica/dsopcode.c        |    2 +-
- drivers/acpi/acpica/dsutils.c         |    2 +-
- drivers/acpi/acpica/dswexec.c         |    2 +-
- drivers/acpi/acpica/dswload.c         |    2 +-
- drivers/acpi/acpica/dswload2.c        |    2 +-
- drivers/acpi/acpica/dswscope.c        |    2 +-
- drivers/acpi/acpica/dswstate.c        |    2 +-
- drivers/acpi/acpica/evevent.c         |   14 +-
- drivers/acpi/acpica/evglock.c         |    8 +-
- drivers/acpi/acpica/evgpe.c           |    2 +-
- drivers/acpi/acpica/evgpeblk.c        |    2 +-
- drivers/acpi/acpica/evgpeinit.c       |    2 +-
- drivers/acpi/acpica/evgpeutil.c       |    2 +-
- drivers/acpi/acpica/evmisc.c          |    2 +-
- drivers/acpi/acpica/evregion.c        |   31 ++-
- drivers/acpi/acpica/evrgnini.c        |    2 +-
- drivers/acpi/acpica/evsci.c           |    2 +-
- drivers/acpi/acpica/evxface.c         |    2 +-
- drivers/acpi/acpica/evxfevnt.c        |    2 +-
- drivers/acpi/acpica/evxfgpe.c         |    2 +-
- drivers/acpi/acpica/evxfregn.c        |    2 +-
- drivers/acpi/acpica/exconfig.c        |    8 +-
- drivers/acpi/acpica/exconvrt.c        |    2 +-
- drivers/acpi/acpica/excreate.c        |   31 ++-
- drivers/acpi/acpica/exdebug.c         |    2 +-
- drivers/acpi/acpica/exdump.c          |    9 +-
- drivers/acpi/acpica/exfield.c         |   30 ++-
- drivers/acpi/acpica/exfldio.c         |   38 ++-
- drivers/acpi/acpica/exmisc.c          |    2 +-
- drivers/acpi/acpica/exmutex.c         |    2 +-
- drivers/acpi/acpica/exnames.c         |    2 +-
- drivers/acpi/acpica/exoparg1.c        |    2 +-
- drivers/acpi/acpica/exoparg2.c        |    2 +-
- drivers/acpi/acpica/exoparg3.c        |    2 +-
- drivers/acpi/acpica/exoparg6.c        |    2 +-
- drivers/acpi/acpica/exprep.c          |   27 ++-
- drivers/acpi/acpica/exregion.c        |    2 +-
- drivers/acpi/acpica/exresnte.c        |    2 +-
- drivers/acpi/acpica/exresolv.c        |    2 +-
- drivers/acpi/acpica/exresop.c         |    2 +-
- drivers/acpi/acpica/exstore.c         |    2 +-
- drivers/acpi/acpica/exstoren.c        |    2 +-
- drivers/acpi/acpica/exstorob.c        |    2 +-
- drivers/acpi/acpica/exsystem.c        |    2 +-
- drivers/acpi/acpica/exutils.c         |   27 ++-
- drivers/acpi/acpica/hwacpi.c          |    2 +-
- drivers/acpi/acpica/hwgpe.c           |    2 +-
- drivers/acpi/acpica/hwpci.c           |    2 +-
- drivers/acpi/acpica/hwregs.c          |    2 +-
- drivers/acpi/acpica/hwsleep.c         |    2 +-
- drivers/acpi/acpica/hwtimer.c         |    2 +-
- drivers/acpi/acpica/hwvalid.c         |    4 +-
- drivers/acpi/acpica/hwxface.c         |    2 +-
- drivers/acpi/acpica/nsaccess.c        |    2 +-
- drivers/acpi/acpica/nsalloc.c         |    2 +-
- drivers/acpi/acpica/nsdump.c          |    2 +-
- drivers/acpi/acpica/nsdumpdv.c        |    2 +-
- drivers/acpi/acpica/nseval.c          |    2 +-
- drivers/acpi/acpica/nsinit.c          |    2 +-
- drivers/acpi/acpica/nsload.c          |    2 +-
- drivers/acpi/acpica/nsnames.c         |    2 +-
- drivers/acpi/acpica/nsobject.c        |    2 +-
- drivers/acpi/acpica/nsparse.c         |    2 +-
- drivers/acpi/acpica/nspredef.c        |   31 ++-
- drivers/acpi/acpica/nsrepair.c        |    3 +-
- drivers/acpi/acpica/nsrepair2.c       |    7 +-
- drivers/acpi/acpica/nssearch.c        |    2 +-
- drivers/acpi/acpica/nsutils.c         |    2 +-
- drivers/acpi/acpica/nswalk.c          |    2 +-
- drivers/acpi/acpica/nsxfeval.c        |    2 +-
- drivers/acpi/acpica/nsxfname.c        |    2 +-
- drivers/acpi/acpica/nsxfobj.c         |    2 +-
- drivers/acpi/acpica/psargs.c          |  143 ++++++++-
- drivers/acpi/acpica/psloop.c          |    2 +-
- drivers/acpi/acpica/psopcode.c        |   15 +-
- drivers/acpi/acpica/psparse.c         |    2 +-
- drivers/acpi/acpica/psscope.c         |    2 +-
- drivers/acpi/acpica/pstree.c          |    8 +-
- drivers/acpi/acpica/psutils.c         |    2 +-
- drivers/acpi/acpica/pswalk.c          |    2 +-
- drivers/acpi/acpica/psxface.c         |    2 +-
- drivers/acpi/acpica/rsaddr.c          |    2 +-
- drivers/acpi/acpica/rscalc.c          |   89 +++++-
- drivers/acpi/acpica/rscreate.c        |   69 ++++-
- drivers/acpi/acpica/rsdump.c          |  196 +++++++++++-
- drivers/acpi/acpica/rsinfo.c          |   58 +++-
- drivers/acpi/acpica/rsio.c            |    2 +-
- drivers/acpi/acpica/rsirq.c           |   33 ++-
- drivers/acpi/acpica/rslist.c          |   77 ++++-
- drivers/acpi/acpica/rsmemory.c        |    2 +-
- drivers/acpi/acpica/rsmisc.c          |  269 ++++++++++++++++-
- drivers/acpi/acpica/rsserial.c        |  441 ++++++++++++++++++++++++++
- drivers/acpi/acpica/rsutils.c         |   56 ++++-
- drivers/acpi/acpica/rsxface.c         |   52 +++-
- drivers/acpi/acpica/tbfadt.c          |   41 ++-
- drivers/acpi/acpica/tbfind.c          |    2 +-
- drivers/acpi/acpica/tbinstal.c        |    2 +-
- drivers/acpi/acpica/tbutils.c         |    9 +-
- drivers/acpi/acpica/tbxface.c         |    2 +-
- drivers/acpi/acpica/tbxfroot.c        |    2 +-
- drivers/acpi/acpica/utaddress.c       |  294 ++++++++++++++++++
- drivers/acpi/acpica/utalloc.c         |    2 +-
- drivers/acpi/acpica/utcopy.c          |    2 +-
- drivers/acpi/acpica/utdebug.c         |    2 +-
- drivers/acpi/acpica/utdecode.c        |    6 +-
- drivers/acpi/acpica/utdelete.c        |   15 +-
- drivers/acpi/acpica/uteval.c          |    2 +-
- drivers/acpi/acpica/utglobal.c        |    8 +-
- drivers/acpi/acpica/utids.c           |    2 +-
- drivers/acpi/acpica/utinit.c          |    3 +-
- drivers/acpi/acpica/utlock.c          |    2 +-
- drivers/acpi/acpica/utmath.c          |    2 +-
- drivers/acpi/acpica/utmisc.c          |    2 +-
- drivers/acpi/acpica/utmutex.c         |   11 +-
- drivers/acpi/acpica/utobject.c        |    2 +-
- drivers/acpi/acpica/utosi.c           |    2 +-
- drivers/acpi/acpica/utresrc.c         |  278 +++++++++++++++--
- drivers/acpi/acpica/utstate.c         |    2 +-
- drivers/acpi/acpica/utxface.c         |   40 +++-
- drivers/acpi/acpica/utxferror.c       |    2 +-
- drivers/acpi/acpica/utxfmutex.c       |  187 +++++++++++
- drivers/acpi/apei/apei-base.c         |  150 +++++++++-
- drivers/acpi/apei/apei-internal.h     |    6 +
- drivers/acpi/apei/einj.c              |  290 +++++++++++++++---
- drivers/acpi/apei/erst.c              |    5 +-
- drivers/acpi/apei/ghes.c              |  102 +++++--
- drivers/acpi/apei/hest.c              |    5 +-
- drivers/acpi/atomicio.c               |   77 ++++-
- drivers/acpi/numa.c                   |    6 +
- drivers/acpi/nvs.c                    |   53 +++-
- drivers/acpi/osl.c                    |  242 +++------------
- drivers/acpi/processor_core.c         |   26 ++-
- drivers/acpi/processor_driver.c       |   20 +-
- drivers/idle/intel_idle.c             |   96 +++---
- include/acpi/acnames.h                |    1 +
- include/acpi/acpi_numa.h              |    1 +
- include/acpi/acpiosxf.h               |    7 -
- include/acpi/acpixf.h                 |   32 ++-
- include/acpi/acrestyp.h               |  207 ++++++++++++-
- include/acpi/actbl.h                  |   23 +-
- include/acpi/actbl1.h                 |   57 ++++-
- include/acpi/actbl3.h                 |  552 +++++++++++++++++++++++++++++++++
- include/acpi/actypes.h                |   12 +-
- include/linux/acpi.h                  |   20 +-
- include/linux/acpi_io.h               |    3 +
- include/linux/cpuidle.h               |    7 +
- tools/power/x86/turbostat/turbostat.c |    2 +
- 182 files changed, 4824 insertions(+), 795 deletions(-)
- create mode 100644 drivers/acpi/acpica/rsserial.c
- create mode 100644 drivers/acpi/acpica/utaddress.c
- create mode 100644 drivers/acpi/acpica/utxfmutex.c
- create mode 100644 include/acpi/actbl3.h
+>        /* Don't allow flags or name to change at remount */
+>        if (opts.flags != root->flags ||
+>            (opts.name && strcmp(opts.name, root->name))) {
+> @@ -1308,8 +1324,8 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
+>                goto out_unlock;
+>        }
+>
+> -       /* (re)populate subsystem files */
+> -       cgroup_populate_dir(cgrp);
+> +       /* re-populate subsystem files */
+> +       cgroup_repopulate_dir(cgrp, added_bits, removed_bits);
+>
+>        if (opts.release_agent)
+>                strcpy(root->release_agent_path, opts.release_agent);
+> @@ -2710,16 +2726,17 @@ static umode_t cgroup_file_mode(const struct cftype *cft)
+>        return mode;
+>  }
+>
+> -int cgroup_add_file(struct cgroup *cgrp,
+> -                      struct cgroup_subsys *subsys,
+> -                      const struct cftype *cft)
+> +int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+> +                   struct cftype *cft)
+>  {
+>        struct dentry *dir = cgrp->dentry;
+>        struct dentry *dentry;
+>        int error;
+>        umode_t mode;
+> -
+>        char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
+> +
+> +       cft->subsys = subsys;
+> +
+>        if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
+>                strcpy(name, subsys->name);
+>                strcat(name, ".");
+> @@ -2740,10 +2757,8 @@ int cgroup_add_file(struct cgroup *cgrp,
+>  }
+>  EXPORT_SYMBOL_GPL(cgroup_add_file);
+>
+> -int cgroup_add_files(struct cgroup *cgrp,
+> -                       struct cgroup_subsys *subsys,
+> -                       const struct cftype cft[],
+> -                       int count)
+> +int cgroup_add_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+> +                    struct cftype cft[], int count)
+>  {
+>        int i, err;
+>        for (i = 0; i < count; i++) {
+> @@ -3703,26 +3718,27 @@ static struct cftype cft_release_agent = {
+>        .max_write_len = PATH_MAX,
+>  };
+>
+> -static int cgroup_populate_dir(struct cgroup *cgrp)
+> +static int __cgroup_populate_dir(struct cgroup *cgrp, unsigned long added_bits)
+>  {
+>        int err;
+>        struct cgroup_subsys *ss;
+>
+> -       /* First clear out any existing files */
+> -       cgroup_clear_directory(cgrp->dentry);
+> -
+>        err = cgroup_add_files(cgrp, NULL, files, ARRAY_SIZE(files));
+>        if (err < 0)
+>                return err;
+>
+>        if (cgrp == cgrp->top_cgroup) {
+> -               if ((err = cgroup_add_file(cgrp, NULL, &cft_release_agent)) < 0)
+> +               err = cgroup_add_file(cgrp, NULL, &cft_release_agent);
+> +               if (err < 0)
+>                        return err;
+>        }
+>
+>        for_each_subsys(cgrp->root, ss) {
+> -               if (ss->populate && (err = ss->populate(ss, cgrp)) < 0)
+> -                       return err;
+> +               if (test_bit(ss->subsys_id, &added_bits) && ss->populate) {
+> +                       err = ss->populate(ss, cgrp);
+> +                       if (err < 0)
+> +                               return err;
+> +               }
+>        }
+>        /* This cgroup is ready now */
+>        for_each_subsys(cgrp->root, ss) {
+> @@ -3739,6 +3755,20 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
+>        return 0;
+>  }
+>
+> +static int cgroup_populate_dir(struct cgroup *cgrp)
+> +{
+> +       return __cgroup_populate_dir(cgrp, cgrp->root->subsys_bits);
+> +}
+> +
+> +static int cgroup_repopulate_dir(struct cgroup *cgrp, unsigned long added_bits,
+> +                                unsigned long removed_bits)
+> +{
+> +       /* First clear out files */
+> +       cgroup_clear_directory(cgrp->dentry, false, removed_bits);
+> +
+> +       return __cgroup_populate_dir(cgrp, added_bits);
+> +}
+> +
+>  static void init_cgroup_css(struct cgroup_subsys_state *css,
+>                               struct cgroup_subsys *ss,
+>                               struct cgroup *cgrp)
+> --
+> 1.7.3.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
