@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab2ARNkh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 08:40:37 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:47752 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757489Ab2ARNkg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 08:40:36 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/qDe0MZlLqUV2bS+yPdRyv8cLLwKpaIF2i6DQ3lg
-	CMuM8pBOXjajP5
-Subject: Re: [PATCH RT 2/4] wait-simple: Simple waitqueue implementation
-From: Mike Galbraith <efault@gmx.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-In-Reply-To: <1326890703.17534.76.camel@gandalf.stny.rr.com>
-References: <20120118034531.335521323@goodmis.org>
-	 <20120118034700.245278561@goodmis.org>
-	 <1326878928.7482.2.camel@marge.simson.net>
-	 <1326890703.17534.76.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Jan 2012 14:40:17 +0100
-Message-ID: <1326894017.12502.7.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1757534Ab2ARNk5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 08:40:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59474 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757499Ab2ARNk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 08:40:56 -0500
+Date: Wed, 18 Jan 2012 14:40:53 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH] mm: memcg: remove checking reclaim order in soft limit
+ reclaim
+Message-ID: <20120118134053.GD31112@tiehlicka.suse.cz>
+References: <CAJd=RBBdDriMhfetM2AWGzgxiJ1DDs-W4Ff9_1Z8DUgbyQmSkA@mail.gmail.com>
+ <20120117131601.GB14907@tiehlicka.suse.cz>
+ <CAJd=RBBcL5RuW1wC_Yh=gy2Ja8wqJ6jhf28zNi1n6MJ=+0=m2Q@mail.gmail.com>
+ <20120117140712.GC14907@tiehlicka.suse.cz>
+ <CAJd=RBAyqPwKERQL4JyCO38gjE=y8_qasHTbLtMGWqtZ1JFnUg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBAyqPwKERQL4JyCO38gjE=y8_qasHTbLtMGWqtZ1JFnUg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-18 at 07:45 -0500, Steven Rostedt wrote:
-> On Wed, 2012-01-18 at 10:28 +0100, Mike Galbraith wrote:
-> > > +
-> > > +void __init_swait_head(struct swait_head *head, struct lock_class_key *key)
-> > > +{
-> > > +	raw_spin_lock_init(&head->lock);
-> > > +	lockdep_set_class(&head->lock, key);
-> > > +	INIT_LIST_HEAD(&head->list);
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(__init_swait_head);
-> > 
-> > #include <linux/module.h> ?
-> 
-> Did it fail to compile for you?  The 3.2 version included linux/export.h
-> which didn't exist, and that failed the compile for me. I removed it an
-> it compiled fine. But perhaps I should have replaced it with module.h.
-> I'll look into it.
+On Wed 18-01-12 20:30:41, Hillf Danton wrote:
+> On Tue, Jan 17, 2012 at 10:07 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Tue 17-01-12 21:29:52, Hillf Danton wrote:
+> >> On Tue, Jan 17, 2012 at 9:16 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> > Hi,
+> >> >
+> >> > On Tue 17-01-12 20:47:59, Hillf Danton wrote:
+> >> >> If async order-O reclaim expected here, it is settled down when setting up scan
+> >> >> control, with scan priority hacked to be zero. Other than that, deny of reclaim
+> >> >> should be removed.
+> >> >
+> >> > Maybe I have misunderstood you but this is not right. The check is to
+> >> > protect from the _global_ reclaim with order > 0 when we prevent from
+> >> > memcg soft reclaim.
+> >> >
+> >> need to bear mm hog in this way?
+> >
+> > Could you be more specific? Are you trying to fix any particular
+> > problem?
+> >
+> My thought is simple, the outcome of softlimit reclaim depends little on the
+> value of reclaim order, zero or not, and only exceeding is reclaimed, so
+> selective response to swapd's request is incorrect.
 
-I saw compiler warning go zinging by, stopped the build and added the
-include.  Trying to use the posted patches doesn't work without digging
-out the signature damage, so it was easier to make my own.. and I too
-just spanked the non-existent include :)
+OK, got your point, finally. Let's add Balbir (the proposed patch can
+be found at https://lkml.org/lkml/2012/1/17/166) to the CC list because
+this seems to be a design decision.
 
-	-Mike 
+I always thought that this is because we want non-userspace (high order)
+mem pressure to be handled by the global reclaim only. And it makes some
+sense to me because it is little bit strange to reclaim for order-0
+while the request is for an higher order. I guess this might lead to an
+extensive and pointless reclaiming because we might end up with many
+free pages which cannot satisfy higher order allocation.
 
+On the other hand, it is true that the documentation says that the soft
+limit is considered when "the system detects memory contention or low
+memory" which doesn't say that the contention comes from memcg accounted
+memory.
+
+Anyway this changes the current behavior so it would better come with
+much better justification which shows that over reclaim doesn't happen
+and that we will not see higher latencies with higher order allocations.
+
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
