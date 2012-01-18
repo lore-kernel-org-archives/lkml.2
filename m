@@ -1,117 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab2ARJPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:15:48 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:63083 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756843Ab2ARJPm (ORCPT
+	id S1757148Ab2ARJMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:12:55 -0500
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:51643 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757004Ab2ARJMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:15:42 -0500
+	Wed, 18 Jan 2012 04:12:51 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
+        <linus.walleij@linaro.org>, <ulf.hansson@stericsson.com>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <egtvedt@samfundet.no>, <hskinnemoen@gmail.com>,
+        <kernel@pengutronix.de>, <perex@perex.cz>,
+        <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
+        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
+Subject: [PATCH V2 02/12] dmaengine: Add flow controller information to dma_slave_config
+Date: Wed, 18 Jan 2012 14:41:49 +0530
+Message-ID: <5f9ec59562e86536c4123f61891b95590293030f.1326876464.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.8.110.g4cb5d
+In-Reply-To: <cover.1326876464.git.viresh.kumar@st.com>
+References: <cover.1326876464.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-	<1326788038-29141-2-git-send-email-minchan@kernel.org>
-	<CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
-	<4F15A34F.40808@redhat.com>
-	<alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-	<84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com>
-Date: Wed, 18 Jan 2012 11:15:41 +0200
-X-Google-Sender-Auth: d8xVX3HLIe9OovWpAKNHFUW2PNA
-Message-ID: <CAOJsxLGiG_Bsp8eMtqCjFToxYAPCE4HC9XCebpZ+-G8E3gg5bw@mail.gmail.com>
-Subject: Re: [RFC 1/3] /dev/low_mem_notify
-From: Pekka Enberg <penberg@kernel.org>
-To: leonid.moiseichuk@nokia.com
-Cc: riel@redhat.com, minchan@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mel@csn.ul.ie, rientjes@google.com, kosaki.motohiro@gmail.com,
-        hannes@cmpxchg.org, mtosatti@redhat.com, akpm@linux-foundation.org,
-        rhod@redhat.com, kosaki.motohiro@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 11:06 AM,  <leonid.moiseichuk@nokia.com> wrote:
-> Would be possible to not use percents for thesholds? Accounting in pages even
-> not so difficult to user-space.
+Flow controller is programmable for few controllers and there are few
+intelligent peripherals like, Synopsys JPEG controller, that needs to be a flow
+controller of DMA transfers on dest side.
 
-How does that work with memory hotplug?
+For this, currently two drivers, pl08x and dw_dmac, support flow controller to
+be passed from platform to these drivers.
 
-On Wed, Jan 18, 2012 at 11:06 AM,  <leonid.moiseichuk@nokia.com> wrote:
-> Also, looking on vmnotify_match I understand that events propagated to
-> user-space only in case threshold trigger change state from 0 to 1 but not
-> back, 1-> 0 is very useful event as well.
->
-> Would be possible to use for threshold pointed value(s) e.g. according to
-> enum zone_state_item, because kinds of memory to track could be different?
-> E.g. to tracking paging activity NR_ACTIVE_ANON and NR_ACTIVE_FILE could be
-> interesting, not only free.
+Perhaps, this should be a part of struct dma_slave_config. This patch adds
+another field device_fc to this structure. User drivers must pass this as true
+if they want to be flow controller of certain transfers.
 
-I don't think there's anything in the ABI that would prevent that.
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ include/linux/dmaengine.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
->> +struct vmnotify_event {
->> +     /* Size of the struct for ABI extensibility. */
->> +     __u32                   size;
->> +
->> +     __u64                   nr_avail_pages;
->> +
->> +     __u64                   nr_swap_pages;
->> +
->> +     __u64                   nr_free_pages;
->> +};
->
-> Two fields here most likely session-constant, (nr_avail_pages and
-> nr_swap_pages), seems not much sense to report them in every event.  If we
-> have memory/swap hotplug user-space can use sysinfo() call.
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 5532bb8..dd1915f 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -25,6 +25,7 @@
+ #include <linux/uio.h>
+ #include <linux/scatterlist.h>
+ #include <linux/bitmap.h>
++#include <linux/types.h>
+ #include <asm/page.h>
+ 
+ /**
+@@ -330,6 +331,9 @@ enum dma_slave_buswidth {
+  * may or may not be applicable on memory sources.
+  * @dst_maxburst: same as src_maxburst but for destination target
+  * mutatis mutandis.
++ * @device_fc: Flow Controller Settings for ccfg register. Only valid for slave
++ * channels. Fill with 'true' if peripheral should be flow controller. Direction
++ * will be selected at Runtime.
+  *
+  * This struct is passed in as configuration data to a DMA engine
+  * in order to set up a certain channel for DMA transport at runtime.
+@@ -356,6 +360,7 @@ struct dma_slave_config {
+ 	enum dma_slave_buswidth dst_addr_width;
+ 	u32 src_maxburst;
+ 	u32 dst_maxburst;
++	bool device_fc;
+ };
+ 
+ static inline const char *dma_chan_name(struct dma_chan *chan)
+-- 
+1.7.8.110.g4cb5d
 
-I actually changed the ABI to look like this:
-
-struct vmnotify_event {
-        /*
-         * Size of the struct for ABI extensibility.
-         */
-        __u32                   size;
-
-        __u64                   attrs;
-
-        __u64                   attr_values[];
-};
-
-So userspace can decide which fields to include in notifications.
-
-On Wed, Jan 18, 2012 at 11:06 AM,  <leonid.moiseichuk@nokia.com> wrote:
->> +static void vmnotify_sample(struct vmnotify_watch *watch) {
-> ...
->> +     si_meminfo(&si);
->> +     event.nr_avail_pages    = si.totalram;
->> +
->> +#ifdef CONFIG_SWAP
->> +     si_swapinfo(&si);
->> +     event.nr_swap_pages     = si.totalswap;
->> +#endif
->> +
->
-> Why not to use global_page_state() directly? si_meminfo() and especial
-> si_swapinfo are quite expensive call.
-
-Sure, we can do that. Feel free to send a patch :-).
-
->> +static void vmnotify_start_timer(struct vmnotify_watch *watch) {
->> +     u64 sample_period = watch->config.sample_period_ns;
->> +
->> +     hrtimer_init(&watch->timer, CLOCK_MONOTONIC,
->> HRTIMER_MODE_REL);
->> +     watch->timer.function = vmnotify_timer_fn;
->> +
->> +     hrtimer_start(&watch->timer, ns_to_ktime(sample_period),
->> +HRTIMER_MODE_REL_PINNED); }
->
-> Do I understand correct you allocate timer for every user-space client and
-> propagate events every pointed interval?  What will happened with system if
-> we have a timer but need to turn CPU off? The timer must not be a reason to
-> wakeup if user-space is sleeping.
-
-No idea what happens. The sampling code is just a proof of concept thing and I
-expect it to be buggy as hell. :-)
-
-			Pekka
