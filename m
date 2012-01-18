@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab2ARJMf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:12:35 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58988 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756427Ab2ARJMb (ORCPT
+	id S1757200Ab2ARJM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:12:59 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:33163 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756833Ab2ARJMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:12:31 -0500
-Date: Wed, 18 Jan 2012 14:32:32 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH v9 3.2 2/9] uprobes: handle breakpoint and signal step
- exception.
-Message-ID: <20120118090232.GE15447@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
- <20120110114842.17610.27081.sendpatchset@srdronam.in.ibm.com>
- <20120118083906.GA4697@bandura.brq.redhat.com>
+	Wed, 18 Jan 2012 04:12:51 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
+        <linus.walleij@linaro.org>, <ulf.hansson@stericsson.com>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <egtvedt@samfundet.no>, <hskinnemoen@gmail.com>,
+        <kernel@pengutronix.de>, <perex@perex.cz>,
+        <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
+        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
+Subject: [PATCH V2 06/12] dmaengine/dw_dmac: Use dev_get_platdata() instead of accessing dev directly
+Date: Wed, 18 Jan 2012 14:41:53 +0530
+Message-ID: <7ee05856ef8235eeb31bea1b5ab2e898037d9ffd.1326876464.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.8.110.g4cb5d
+In-Reply-To: <cover.1326876464.git.viresh.kumar@st.com>
+References: <cover.1326876464.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120118083906.GA4697@bandura.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12011809-6148-0000-0000-000002B77535
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Srikar,
-> 
->   Can we use existing SET_IP() instead of set_instruction_pointer() ?
-> 
+Use already defined function dev_get_platdata() instead of accessing
+pdev->dev.data.
 
-Oleg had already commented about this in one his uprobes reviews.
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ drivers/dma/dw_dmac.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The GET_IP/SET_IP available in include/asm-generic/ptrace.h doesnt work
-on all archs. Atleast it doesnt work on powerpc when I tried it.
-
-Also most archs define instruction_pointer(). So I thought (rather Peter
-Zijlstra suggested the name set_instruction_pointer())
-set_instruction_pointer was a better bet than SET_IP. I 
-
-Also I dont see any usage for SET_IP/GET_IP.
-
-May be we should have something like this in
-include/asm-generic/ptrace.h
-
-#ifdef instruction_pointer
-#define GET_IP(regs)		(instruction_pointer(regs))
-
-#define set_instruction_pointer(regs, val) (instruction_pointer(regs) = (val))
-
-#define SET_IP(regs, val)	(set_instruction_pointer(regs,val))
-
-#endif
-
-or should we do away with GET_IP/SET_IP esp since there are no many
-users?
-
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 1577394..f3aecb3 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1369,7 +1369,7 @@ static int __init dw_probe(struct platform_device *pdev)
+ 	int			err;
+ 	int			i;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = dev_get_platdata(&pdev->dev);
+ 	if (!pdata || pdata->nr_channels > DW_DMA_MAX_NR_CHANNELS)
+ 		return -EINVAL;
+ 
 -- 
-Thanks and Regards
-Srikar
+1.7.8.110.g4cb5d
 
