@@ -1,208 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835Ab2ARLGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 06:06:12 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:36509
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751141Ab2ARLGK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 06:06:10 -0500
-X-SpamScore: -14
-X-BigFish: VS-14(zz9371I168aJ542M1432N98dKzz1202hzz8275dhz2dhc1ahc1bh2a8h668h839h8e2h8e3h944hbe9k)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@linaro.org>
-CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: RE: Pinmux bindings proposal
-Thread-Topic: Pinmux bindings proposal
-Thread-Index: AczSMvpNTKYWSKFeSLCZTyHqrIN5SAB+76JwAD04RoAACvoLgAAAhMwAABzEW6A=
-Date: Wed, 18 Jan 2012 11:06:05 +0000
-Message-ID: <7FE21149F4667147B645348EC6057885095125@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC6057885091DEA@039-SN2MPN1-013.039d.mgd.msft.net>
- <20120117082334.GA31295@S2101-09.ap.freescale.net>
- <7FE21149F4667147B645348EC6057885092D56@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF17801D22F5@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D22F5@HQMAIL01.nvidia.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.198]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751958Ab2ARLK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 06:10:29 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:46350 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab2ARLK2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 06:10:28 -0500
+Date: Wed, 18 Jan 2012 06:08:30 -0500 (EST)
+From: Andrew Jones <drjones@redhat.com>
+To: drjones@redhat.com, rientjes@google.com, mingo@elte.hu,
+        david.woodhouse@intel.com
+Cc: linux-kernel@vger.kernel.org, rientjes@google.com,
+        akpm@linux-foundation.org, mingo@elte.hu,
+        david woodhouse <david.woodhouse@intel.com>, gregkh@suse.de,
+        davem@davemloft.net, axboe@kernel.dk, arnd@arndb.de, holt@sgi.com,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com,
+        jesper nilsson <jesper.nilsson@axis.com>, dhowells@redhat.com,
+        takata@linux-m32r.org, geert@linux-m68k.org,
+        yasutake koichi <yasutake.koichi@jp.panasonic.com>, jonas@southpole.se,
+        kyle@mcmartin.ca, deller@gmx.de, jejb@parisc-linux.org,
+        chris@zankel.net, greg@kroah.com, davej@redhat.com, airlied@linux.ie,
+        jkosina@suse.cz, mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+Message-ID: <b6315f9b-0ead-4de4-a8f5-ed619f852c6c@zmail13.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1326295008-29795-1-git-send-email-drjones@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+X-Originating-IP: [10.34.1.174]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@nvidia.com]
-> Sent: Wednesday, January 18, 2012 3:29 AM
-> To: Dong Aisheng-B29396; Shawn Guo
-> Cc: linus.walleij@stericsson.com; s.hauer@pengutronix.de;
-> rob.herring@calxeda.com; kernel@pengutronix.de; cjb@laptop.org; Simon Glass
-> (sjg@chromium.org); Dong Aisheng; linux-kernel@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; devicetree-discuss@lists.ozlabs.org
-> Subject: RE: Pinmux bindings proposal
-> Importance: High
+
+
+----- Original Message -----
+> Commit 6a108a14fa35 renamed CONFIG_EMBEDDED to CONFIG_EXPERT with the
+> justification that EMBEDDED was being used with a broader scope. It
+> was
+> no longer just being used to expose standard options to embedded
+> kernel
+> configs for tweaking, but rather for all "non-standard" kernel
+> configs.
+> This is nice, because now developers have a way to clean up the
+> config
+> menu by adding 'if EXPERT' to all entries in their Kconfig files that
+> should rarely have a non-default value selected (hint1: it would be
+> nice
+> if developers would do this, hint2: it would also be nice if
+> developers
+> would do this rather than making these types of options silent, and
+> thus
+> impossible to override).
 > 
-> Dong Aisheng wrote at Tuesday, January 17, 2012 2:47 AM:
-> > Shawn Guo wrote at Tuesday, January 17, 2012 4:24 PM:
-> > > On Mon, Jan 16, 2012 at 12:50:02PM +0000, Dong Aisheng-B29396 wrote:
-> > > > Stephen Warren wrote:
-> > > ...
-> > > > >                         mux =
-> > > > >                                 <&tegra_pmx TEGRA_PMX_PG_DTA
-> TEGRA_PMX_MUX_1>
-> > > > >                                 <&tegra_pmx TEGRA_PMX_PG_DTD
-> TEGRA_PMX_MUX_1>
-> > > > >                                 /* Syntax example */
-> > > > >                                 <&foo_pmx FOO_PMX_PG_X
-> > > > > FOO_PMX_MUX_0>;
-> > > >
-> > > > I'm still think how do we construct the pinmux map for such binding.
-> > > > The format you're using is:
-> > > > <&pmx_controller_phandle muxable_entity_id selected_function> For
-> > > > contruct pinmux map, we need to know at least 3 things for a device:
-> > > > a) pinctrl device b) function name c) group name.
-> > > > For a, we can get it from this binding.
-> > > > But for b and c, since they are constants, how to convert to name string?
-> > >
-> > > I guess, for function name, it should be retrieved from the client
-> > > device node, and for the group name, it should be retrieved from the node
-> here.
-> >
-> > I guess Stephen's idea is to retrieving the function name and group
-> > name From the pinctrl driver since Tagre prefers to define those
-> > things in driver Rather than in board file or soc.dts file.
-> > But it does not fit for IMX since we define it in soc.dts.
+> Unfortunately, EMBEDDED was also being used to modify the defaults of
+> some of these options to selections more appropriate for embedded
+> kernels. Since the renaming was a simple global search-replace, if
+> developers were to follow hints 1 and 2 above for non-embedded
+> kernels,
+> then they may find unexpected changes in their configs after turning
+> on
+> EXPERT.
 > 
-> You can still get the data from the driver, even if the driver got the data from
-> the DT instead of static tables.
+> This patch attempts to untangle these two, making EXPERT true to its
+> purpose, which is to only expose standard options for tweaking, and
+> EMBEDDED to resume use as a default option modifier. The patch was
+> made
+> with the following four steps, which could not be split into separate
+> patches without breaking configs
 > 
-The problem is that the pinmux map parsing is earlier than parsing the pinmux data,
-And the driver still have no chance to run.
-This is using bus notifier case.
-For scanning case, the pinmux map parsing could be later than driver running.
-
-> > > For above example, the function name can be picked from sdhci device
-> > > node pinctr-names property I proposed,
-> >
-> > If I understand correctly, the pinctrl-names property you proposed
-> > represents The pin group state.
+> 1. Make sure EMBEDDED does nothing, i.e. s/EMBEDDED/EXPERT/. There
+> were
+> only three places EMBEDDED was used.
 > 
-> Yes, that's my understanding.
+> 2. Add CONFIG_EXPERT=y to all configs that had CONFIG_EMBEDDED=y (and
+> not CONFIG_EXPERT=y already) to make sure step1 has no effect. This
+> step
+> isn't strictly necessary since EMBEDDED selects EXPERT, but I wanted
+> the
+> configs expressing the new need explicitly. Only 13 *_defconfig
+> files.
 > 
-> ...
-> > And in this way we're still using virtual groups.
-> > It has no big difference as we did before like:
-> > pinmux-groups {
-> >         uart4grp: group@0 {
-> >                 grp-name = "uart4grp";
-> >                 grp-pins = <107 108>;
-> >                 grp-mux = <4 4>;
-> >         };
-> >
-> >         sd4grp: group@1 {
-> >                 grp-name = "sd4grp";
-> >                 grp-pins = <170 171 180 181 182 183 184 185 186 187>;
-> >                 grp-mux = <0 0 1 1 1 1 1 1 1 1>;
-> >         };
-> > };
+> 3. Move all side effects (default changes) from EXPERT to EMBEDDED
 > 
-> I'd prefer not to call these virtual groups, since "group" already has a meaning
-> to the pinctrl subsystem that is somewhat different. As you've probably noticed,
-> I've been using the term "pre-defined/canned pin configuration"!
+> 4. Add CONFIG_EMBEDDED=y to all configs that had CONFIG_EXPERT=y (and
+> not CONFIG_EMBEDDED=y already) to make sure step3 has no effect.
 > 
-> > The real problem is do we need to support individual pin mux Or still
-> > using virtual pin group?
-> >
-> > For the way Stephen proposed, we can only support individual pin mux
-> > Since IMX pins are not grouped together in HW.
+> I certainly didn't test this for every touched config. However, I did
+> test it for one config and got the expected results;
+>     Before patch:
+>         1. diff config.orig orig.EXPERT   -- shows many changes
+>         2. diff config.orig orig.EMBEDDED -- shows same changes as
+>         (1)
+>                                              plus EMBEDDED on
+>     After patch:
+>         3. diff config.orig config.new    -- no change
+>         4. diff config.orig new.EXPERT    -- only 1 change, EXPERT on
+>         5. diff config.orig new.EMBEDDED  -- shows same changes as
+>         (2)
 > 
-> I think the "mux" and "config" properties I had in my proposal should deal
-> purely with raw HW entities; nothing virtual/pre-defined/canned/...
-> 
-The question here is we defining a common model for pinctrl dt binding and
-different SoC may have different characteristics like between Tegra and IMX.
-So the proposal based on one SoC's raw HW entities should fit other SoCs.
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> ---
 
-> You can get what you're calling "virtual groups" simply by defining a bunch of
-> pinmux configuration nodes in the pin controller's device node and exclusively
-> referencing those in the per-device pinctrl properties.
->
-Yes, for the pin config I think we have done some agreement.
-Now i'm still thinking if the mux way we discussed here fits IMX.
-For example:
-> 	pinmux_sdhci: pinmux-sdhci {
-> 		mux =
-> 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_MUX_1>
-> 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_MUX_1>;
-> 	};
-It may work well for Tegra.
-When pinctrl core parsing the mux proterty, it will creat each maps
-For each entry in the list.
-But for IMX like:
-> > 	pinmux_usdhc1: pinmux-usdhc1 {
-> > 		mux = <IMX6Q_PAD_SD1_DAT1 0>
-> > 		      <IMX6Q_PAD_SD1_DAT2 0>
-> > 		      ...
-> > 	};
-Each entry in the list is PIN rather than group.
-So we cannot create each map for each entry in the list except we treat the PIN as
-A group(this will cause a huge maps and predefined groups and functions).
+This patch is effectively a partial revert of 6a108a14fa35, and has now
+been nacked by David Rientjes (author of 6a108a14fa35). However, IMO,
+there hasn't been a sufficient technical explanation for why. I've now
+added Ingo Molnar and David Woodhouse to the 'To:', in order to try and
+bring the patch to their attention. Both are listed as having reviewed or
+acked 6a108a14fa35, so I would appreciate their opinions on this patch as
+well.
 
-A little different way I'm thinking now is cover the mux difference(pin or group)
-between Tegra and IMX in Pinctrl driver, then we may not need the second mux value
-(e.g: TEGRA_PMX_MUX_1)in the standard mux property:
-The mux property can become:
-pinmux_sdhci: pinmux-sdhci {
-	mux =
-		<&tegra_pmx TEGRA_PMX_PG_DTA_X>
-		<&tegra_pmx TEGRA_PMX_PG_DTD_Y>;
-};
-The group TEGRA_PMX_PG_DTA_X should already know it's mux value(TEGRA_PMX_MUX_1) for a specific
-Function.
-
-For IMX, it could be like:
-pinmux_sdhci: pinmux-sdhci {
-	mux =
-		<&imx_pmx &pinmux_sd1grp>;
-};
-
-For cover the difference whether the pingroups are defined in drive or soc.dts file.
-The second param could be a name, like:
-pinmux_sdhci: pinmux-sdhci {
-	mux =
-		<&imx_pmx "sd1grp">;
-};
-
-And the using is still like:
-sdhci@c8000200 {
-    ...
-    pinctrl = <&pinmux_sdhci> <&pinconf_sdhci_active>
-              <&pinmux_sdhci> <&pinconf_sdhci_suspend>;
-    /* Number of entries in pinctrl for each in pinctrl-names */
-    pinctrl-entries = <2 2>;
-    pinctrl-names = "active", "suspend"; };
-
-Another reason for this mode is that maybe some SoCs even does not have mux function for
-Each pin or group. And current pinctrl subsystem design also does not have this conception.
-
-Regards
-Dong Aisheng
-
-
+Drew
