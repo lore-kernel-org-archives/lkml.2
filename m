@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab2ARMpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 07:45:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:58068 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727Ab2ARMpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 07:45:06 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=qAqWnOW7K_4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=WMQGHCxBd6kvcYGyDNQA:9 a=6EqvEbmhcTZh4zUIdTEA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326890703.17534.76.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 2/4] wait-simple: Simple waitqueue implementation
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 18 Jan 2012 07:45:03 -0500
-In-Reply-To: <1326878928.7482.2.camel@marge.simson.net>
-References: <20120118034531.335521323@goodmis.org>
-	 <20120118034700.245278561@goodmis.org>
-	 <1326878928.7482.2.camel@marge.simson.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757416Ab2ARMpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 07:45:33 -0500
+Received: from solca.med.ec ([200.105.240.90]:60753 "EHLO mail.solca.med.ec"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753806Ab2ARMpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 07:45:31 -0500
+Message-ID: <55520.41.203.64.130.1326891175.squirrel@mail.solca.med.ec>
+Date: Wed, 18 Jan 2012 07:52:55 -0500 (ECT)
+Subject: Webmaster de alerta de seguridad!
+From: "Sistema Aadministrador" <info@webmaster.org>
+Reply-To: webmasterhelphesk211@w.cn
+User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18652.007
+X-TM-AS-Result: No--13.338-4.5-31-10
+X-imss-scan-details: No--13.338-4.5-31-10
+X-TM-AS-User-Approved-Sender: No
+X-TMASE-MatchedRID: K+CFeiFfGWW1kIlSNVYD5dryw1mdfScHca/ggv+7qeDzianWyjZMXhik
+	988tkZgrjGpJoH5VDrbqaaih62qIKNsusYTjedx+uvMNT71wDMxz9Fop37BCmPprS3qGyPXN0F6
+	8OFyaXJSFHZ49wMSqxSIKJeiWQwcgPtZ2pIq9nXqDqdxJHN7pKjSy+JZh7aWYSEhejMhkPsK3ZU
+	xdypu1tFik2xT6HoDjB0mgKhgkwv3wEbvIbd0e0+2mvDCRavgPsWP+/fIfKSYSGCXF4Dtc4BXCh
+	7cipd0mI3ZBGEgpfDfKGDTqY/7Dw9kanAWP/2Rkb6gaVWythNCQusO/rDMajw1zh82zzB8c2+RE
+	ejUdkPZBbjrqgYq10wyJo92rqUMbSqYnKOPDAhXkWaPd8zwtSMRB0bsfrpPIfiAqrjYtFiRzlnm
+	0Fh6poEM0VnSW9XgM+lAgKQ4YhdwG6qC6vhRpin7cGd19dSFd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-18 at 10:28 +0100, Mike Galbraith wrote:
-> > +
-> > +void __init_swait_head(struct swait_head *head, struct lock_class_key *key)
-> > +{
-> > +	raw_spin_lock_init(&head->lock);
-> > +	lockdep_set_class(&head->lock, key);
-> > +	INIT_LIST_HEAD(&head->list);
-> > +}
-> > +EXPORT_SYMBOL_GPL(__init_swait_head);
-> 
-> #include <linux/module.h> ?
 
-Did it fail to compile for you?  The 3.2 version included linux/export.h
-which didn't exist, and that failed the compile for me. I removed it an
-it compiled fine. But perhaps I should have replaced it with module.h.
-I'll look into it.
+Alerta de seguridad,
 
-Thanks!
+Un virus DGTJTO se ha detectado en su cuenta de Webmail. su correo web
+cuenta tiene que ser protegida en nuestro VQZZF nueva de seguro! McAfee
+anti-virus 2011/1012 versión para evitar daños a nuestra base de datos y
+su importancia archivos y mensajes. Sólo tiene que rellenar los datos
+solicitados a continuación y enviar de vuelta a nosotros para la
+protección de sus archivos y nuestra base de datos para evitar la
+propagación de el virus.
 
--- Steve
+Dirección de correo electrónico:
+Nombre de Usuario:
+contraseña:
+Vuelva a escribir-Contraseña:
+Código Anti-Virus: QQ1 76!
+
+Webmaster Webmail. Tenga en cuenta que la contraseña será encriptada y su
+correo de cuotas también se actualizarán para su seguridad.
+
+Importante * Por favor, toda esta información completa y correctamente
+de lo contrario por razones de seguridad que puede tener que cerrar su
+webmail Temporarily.We cuenta gracias por su pronta atención a este
+matter.Please entender que esta es una medida de protección que se
+pretende ayudar a protegerlo a usted ya su cuenta de webmail. Nos
+disculpamos por cualquier inconveniente.
+
 
 
