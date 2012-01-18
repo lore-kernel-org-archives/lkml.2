@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904Ab2ARPR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 10:17:28 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1393 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757719Ab2ARPR0 (ORCPT
+	id S1757902Ab2ARPUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 10:20:43 -0500
+Received: from mga06.intel.com ([134.134.136.21]:52688 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757786Ab2ARPUm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 10:17:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 18 Jan 2012 07:17:26 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH V1 2/2] regulator: tps65910: Initialize n_voltages for rails.
-Date: Wed, 18 Jan 2012 20:47:16 +0530
-Message-Id: <1326899836-14470-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 18 Jan 2012 10:20:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <29789.1326899624@redhat.com>
+References: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
+	<20111202184406.21874.65285.stgit@warthog.procyon.org.uk>
+	<CALLzPKZFShWGxxic8zMfTxoj6Q+t7-sC90wp5J790VRmg-O09g@mail.gmail.com>
+	<26123.1326889583@redhat.com>
+	<CALLzPKb4EycNZAd_80x-+p-iJ94CHerngOFZZmdrLpoJ+bYRMQ@mail.gmail.com>
+	<29789.1326899624@redhat.com>
+Date: Wed, 18 Jan 2012 17:20:40 +0200
+Message-ID: <CALLzPKZ8voNPoyfTznq+_gPThbW6rqdGKLBztZ8qkesM2qtziQ@mail.gmail.com>
+Subject: Re: [PATCH 08/21] KEYS: Add signature verification facility [ver #3]
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
+        alan.cox@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initializing the number of voltages supported by different
-rails of pmic device tps65911.
+On Wed, Jan 18, 2012 at 5:13 PM, David Howells <dhowells@redhat.com> wrote:
+> Kasatkin, Dmitry <dmitry.kasatkin@intel.com> wrote:
+>
+>> Yes. it is clear...
+>> Would it be possible to have pass data (uncompleted) hash?
+>
+> Yes, provided it's not finalised.  Also, with the current code it would have
+> to be a shash, but I think I should be able to support the passing in of an
+> async hash by exporting the state from that and importing the state into a
+> shash using the crypto layer export and import functions.
+>
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/regulator/tps65910-regulator.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+I thought about export/import.
+But I think export/Import is hash driver implementation specific...
+Cannot use ahash state for shash...
 
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index 6742418..3ac5f91 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -188,56 +188,67 @@ static struct tps_info tps65911_regs[] = {
- 		.name = "VDD1",
- 		.min_uV = 600000,
- 		.max_uV = 4500000,
-+		.table_len = 73,
- 	},
- 	{
- 		.name = "VDD2",
- 		.min_uV = 600000,
- 		.max_uV = 4500000,
-+		.table_len = 73,
- 	},
- 	{
- 		.name = "VDDCTRL",
- 		.min_uV = 600000,
- 		.max_uV = 1400000,
-+		.table_len = 65,
- 	},
- 	{
- 		.name = "LDO1",
- 		.min_uV = 1000000,
- 		.max_uV = 3300000,
-+		.table_len = 47,
- 	},
- 	{
- 		.name = "LDO2",
- 		.min_uV = 1000000,
- 		.max_uV = 3300000,
-+		.table_len = 47,
- 	},
- 	{
- 		.name = "LDO3",
- 		.min_uV = 1000000,
- 		.max_uV = 3300000,
-+		.table_len = 24,
- 	},
- 	{
- 		.name = "LDO4",
- 		.min_uV = 1000000,
- 		.max_uV = 3300000,
-+		.table_len = 47,
- 	},
- 	{
- 		.name = "LDO5",
- 		.min_uV = 1000000,
- 		.max_uV = 3300000,
-+		.table_len = 24,
- 	},
- 	{
- 		.name = "LDO6",
- 		.min_uV = 1000000,
- 		.max_uV = 3300000,
-+		.table_len = 24,
- 	},
- 	{
- 		.name = "LDO7",
- 		.min_uV = 1000000,
- 		.max_uV = 3300000,
-+		.table_len = 24,
- 	},
- 	{
- 		.name = "LDO8",
- 		.min_uV = 1000000,
- 		.max_uV = 3300000,
-+		.table_len = 24,
- 	},
- };
- 
--- 
-1.7.1.1
+As you said in repose to later patch, you could provide some function  to
+build a final metadata buffer out of signature to finalize the hash...
 
+- Dmitry
+
+
+> David
