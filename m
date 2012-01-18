@@ -1,154 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab2ARLvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 06:51:37 -0500
-Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:58448 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2ARLve (ORCPT
+	id S1753078Ab2ARLwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 06:52:13 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50216 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab2ARLwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 06:51:34 -0500
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] hid-multitouch: add support for trackpads
-Date: Wed, 18 Jan 2012 12:51:06 +0100
-Message-Id: <1326887468-5148-2-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1326887468-5148-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1326887468-5148-1-git-send-email-benjamin.tissoires@enac.fr>
+	Wed, 18 Jan 2012 06:52:10 -0500
+Date: Wed, 18 Jan 2012 11:53:24 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Robert Morell <rmorell@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, sumit.semwal@linaro.org, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Expanding the use of DMA buffers in 3.3
+Message-ID: <20120118115324.634bc940@pyramind.ukuu.org.uk>
+In-Reply-To: <1326845297-6233-1-git-send-email-rmorell@nvidia.com>
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
+	<1326845297-6233-1-git-send-email-rmorell@nvidia.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* some multitouch trackpads present the touch usage. This needs to be
-filtered as it will conflict with mt-implementation.
-* trackpads send BTN_TOOL_* to notify how many fingers are present
-(this is used by xorg to use synaptics instead of generic evdev)
-* trackpads like Perixx 701 are not different from a hid point of view
-from a touchscreen, and we need to manually set them as touchpad.
+> in mind.  It would be unfortunate if restricting its use to only
+> GPL-licensed modules caused dma-buf adoption to be limited.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
- drivers/hid/hid-multitouch.c |   43 ++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 37 insertions(+), 6 deletions(-)
+You appear confused. I'll say this again is my lawyer advises me that for
+the benefit of any future enforcement actions I should remind people
+each time it comes up.
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 24fc442..ef59140 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -1,9 +1,9 @@
- /*
-  *  HID driver for multitouch panels
-  *
-- *  Copyright (c) 2010-2011 Stephane Chatty <chatty@enac.fr>
-- *  Copyright (c) 2010-2011 Benjamin Tissoires <benjamin.tissoires@gmail.com>
-- *  Copyright (c) 2010-2011 Ecole Nationale de l'Aviation Civile, France
-+ *  Copyright (c) 2010-2012 Stephane Chatty <chatty@enac.fr>
-+ *  Copyright (c) 2010-2012 Benjamin Tissoires <benjamin.tissoires@gmail.com>
-+ *  Copyright (c) 2010-2012 Ecole Nationale de l'Aviation Civile, France
-  *
-  *  This code is partly based on hid-egalax.c:
-  *
-@@ -67,6 +67,7 @@ struct mt_class {
- 	__s32 sn_height;	/* Signal/noise ratio for height events */
- 	__s32 sn_pressure;	/* Signal/noise ratio for pressure events */
- 	__u8 maxcontacts;
-+	bool is_indirect;	/* true for touchpads */
- };
- 
- struct mt_device {
-@@ -265,17 +266,31 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
- 	struct mt_class *cls = &td->mtclass;
-+	int code;
- 
- 	/* Only map fields from TouchScreen or TouchPad collections.
-          * We need to ignore fields that belong to other collections
-          * such as Mouse that might have the same GenericDesktop usages. */
- 	if (field->application == HID_DG_TOUCHSCREEN)
- 		set_bit(INPUT_PROP_DIRECT, hi->input->propbit);
--	else if (field->application == HID_DG_TOUCHPAD)
--		set_bit(INPUT_PROP_POINTER, hi->input->propbit);
--	else
-+	else if (field->application != HID_DG_TOUCHPAD)
- 		return 0;
- 
-+	/* In case of an indirect device (touchpad), we need to add
-+	 * specific BTN_TOOL_* to be handled by the synaptics xorg
-+	 * driver.
-+	 * We also consider that touchscreens providing buttons are touchpads.
-+	 */
-+	if (field->application == HID_DG_TOUCHPAD ||
-+	    (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON ||
-+	    cls->is_indirect) {
-+		set_bit(INPUT_PROP_POINTER, hi->input->propbit);
-+		set_bit(BTN_TOOL_FINGER, hi->input->keybit);
-+		set_bit(BTN_TOOL_DOUBLETAP, hi->input->keybit);
-+		set_bit(BTN_TOOL_TRIPLETAP, hi->input->keybit);
-+		set_bit(BTN_TOOL_QUADTAP, hi->input->keybit);
-+	}
-+
- 	/* eGalax devices provide a Digitizer.Stylus input which overrides
- 	 * the correct Digitizers.Finger X/Y ranges.
- 	 * Let's just ignore this input. */
-@@ -389,9 +404,19 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				td->last_field_index = field->index;
- 			return -1;
- 		}
-+		case HID_DG_TOUCH:
-+			/* Legacy devices use TIPSWITCH and not TOUCH.
-+			 * Let's just ignore this field. */
-+			return -1;
- 		/* let hid-input decide for the others */
- 		return 0;
- 
-+	case HID_UP_BUTTON:
-+		code = ((usage->hid - 1) & HID_USAGE) + BTN_MOUSE;
-+		hid_map_usage(hi, usage, bit, max, EV_KEY, code);
-+		input_set_capability(hi->input, EV_KEY, code);
-+		return 1;
-+
- 	case 0xff000000:
- 		/* we do not want to map these: no input-oriented meaning */
- 		return -1;
-@@ -453,6 +478,7 @@ static void mt_complete_slot(struct mt_device *td)
- static void mt_emit_event(struct mt_device *td, struct input_dev *input)
- {
- 	int i;
-+	int finger_count = 0;
- 
- 	for (i = 0; i < td->maxcontacts; ++i) {
- 		struct mt_slot *s = &(td->slots[i]);
-@@ -477,12 +503,14 @@ static void mt_emit_event(struct mt_device *td, struct input_dev *input)
- 			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
- 			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
- 			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, minor);
-+			finger_count++;
- 		}
- 		s->seen_in_this_frame = false;
- 
- 	}
- 
- 	input_mt_report_pointer_emulation(input, true);
-+	input_mt_report_finger_count(input, finger_count);
- 	input_sync(input);
- 	td->num_received = 0;
- }
-@@ -538,6 +566,9 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
- 			if (value)
- 				td->num_expected = value;
- 			break;
-+		case HID_DG_TOUCH:
-+			/* do nothing */
-+			break;
- 
- 		default:
- 			/* fallback to the generic hidinput handling */
--- 
-1.7.4.4
+For a Linux kernel containing any code I own the code is under the GNU
+public license v2 (in some cases or later), I have never given permission
+for that code to be used as part of a combined or derivative work which
+contains binary chunks. I have never said that modules are somehow
+magically outside the GPL and I am doubtful that in most cases a work
+containing binary modules for a Linux kernel is compatible with the
+licensing, although I accept there may be some cases that it is.
 
+Alan
