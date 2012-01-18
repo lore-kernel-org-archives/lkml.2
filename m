@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab2ARP1N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 10:27:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37428 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757891Ab2ARP1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757922Ab2ARP1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 10:27:12 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39121 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757885Ab2ARP1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jan 2012 10:27:10 -0500
-Date: Wed, 18 Jan 2012 16:27:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha <handai.szj@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
-Message-ID: <20120118152708.GG31112@tiehlicka.suse.cz>
-References: <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
- <CALWz4izwNBN_qcSsqg-qYw-Esc9vBL3=4cv3Wsg1jf6001_fWQ@mail.gmail.com>
- <20120112085904.GG24386@cmpxchg.org>
- <CALWz4iz3sQX+pCr19rE3_SwV+pRFhDJ7Lq-uJuYBq6u3mRU3AQ@mail.gmail.com>
- <20120113224424.GC1653@cmpxchg.org>
- <4F158418.2090509@gmail.com>
- <20120117145348.GA3144@cmpxchg.org>
- <CAFj3OHWY2Biw54gaGeH5fkxzgOhxn7NAibeYT_Jmga-_ypNSRg@mail.gmail.com>
- <20120118092509.GI24386@cmpxchg.org>
- <4F16AC27.1080906@gmail.com>
+Message-ID: <4F16E4BC.5080100@gmail.com>
+Date: Wed, 18 Jan 2012 23:26:52 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F16AC27.1080906@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Li Wang <liwang@nudt.edu.cn>
+CC: ecryptfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tyler Hicks <tyhicks@canonical.com>,
+        Dustin Kirkland <kirkland@canonical.com>
+Subject: Re: [PATCH] eCryptfs: infinite loop bug
+References: <12011815300568720b5d1587bb777fed0d5b016f0854@nudt.edu.cn>
+In-Reply-To: <12011815300568720b5d1587bb777fed0d5b016f0854@nudt.edu.cn>
+Content-Type: multipart/mixed;
+ boundary="------------000501060202090503000905"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 18-01-12 19:25:27, Sha wrote:
-[...]
-> Er... I'm even more confused: mem_cgroup_soft_limit_reclaim indeed
-> choses the biggest soft-limit excessor first, but in the succeeding reclaim
-> mem_cgroup_hierarchical_reclaim just selects a child cgroup  by css_id
+This is a multi-part message in MIME format.
+--------------000501060202090503000905
+Content-Type: text/plain; charset=gbk; format=flowed
+Content-Transfer-Encoding: 7bit
 
-mem_cgroup_soft_limit_reclaim picks up the hierarchy root (most
-excessing one) and mem_cgroup_hierarchical_reclaim reclaims from that
-subtree). It doesn't care who exceeds the soft limit under that
-hierarchy it just tries to push the root under its limit as much as it
-can. This is what Johannes tried to explain in the other email in the
-thred.
+On 01/18/2012 03:30 PM, Li Wang wrote:
+> Hi,
+>    There is an infinite loop bug in eCryptfs, to make it present,
+> just truncate to generate a huge file (>= 4G) on a 32-bit machine
+> under the plain text foleder mounted with eCryptfs, a simple command
+> 'truncate -s 4G dummy' is enough. Note: 4GB is smaller than 4G,
+> therefore the following command 'truncate -s 4GB dummy' will not trigger this bug.
+> The bug comes from a data overflow, the patch below fixes it.
+>
+>
 
-> which has nothing to do with soft limit (see mem_cgroup_select_victim).
-> IMHO, it's not a genuine hierarchical reclaim.
+Hi,
 
-It is hierarchical because it iterates over hierarchy it is not and
-never was recursively soft-hierarchical...
+Your patch is not correctly generated, you need to make the diff on top 
+of the source tree.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Also, after reviewing the code, I think there are more places need to 
+fix. Can you try my patch below?
+
+Thanks.
+
+---->
+
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+
+
+--------------000501060202090503000905
+Content-Type: text/x-patch;
+ name="ecryptfs-loff_t.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ecryptfs-loff_t.diff"
+
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index a9f29b1..9ca9c17 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -653,7 +653,7 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
+ 			 loff_t offset, size_t size);
+ int ecryptfs_write_lower_page_segment(struct inode *ecryptfs_inode,
+ 				      struct page *page_for_lower,
+-				      size_t offset_in_page, size_t size);
++				      loff_t offset_in_page, size_t size);
+ int ecryptfs_write(struct inode *inode, char *data, loff_t offset, size_t size);
+ int ecryptfs_read_lower(char *data, loff_t offset, size_t size,
+ 			struct inode *ecryptfs_inode);
+diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
+index 3745f7c..93d80c4 100644
+--- a/fs/ecryptfs/read_write.c
++++ b/fs/ecryptfs/read_write.c
+@@ -72,7 +72,7 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
+  */
+ int ecryptfs_write_lower_page_segment(struct inode *ecryptfs_inode,
+ 				      struct page *page_for_lower,
+-				      size_t offset_in_page, size_t size)
++				      loff_t offset_in_page, size_t size)
+ {
+ 	char *virt;
+ 	loff_t offset;
+@@ -128,15 +128,15 @@ int ecryptfs_write(struct inode *ecryptfs_inode, char *data, loff_t offset,
+ 		pos = offset;
+ 	while (pos < (offset + size)) {
+ 		pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
+-		size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
+-		size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
+-		size_t total_remaining_bytes = ((offset + size) - pos);
++		loff_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
++		loff_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
++		loff_t total_remaining_bytes = ((offset + size) - pos);
+ 
+ 		if (num_bytes > total_remaining_bytes)
+ 			num_bytes = total_remaining_bytes;
+ 		if (pos < offset) {
+ 			/* remaining zeros to write, up to destination offset */
+-			size_t total_remaining_zeros = (offset - pos);
++			loff_t total_remaining_zeros = (offset - pos);
+ 
+ 			if (num_bytes > total_remaining_zeros)
+ 				num_bytes = total_remaining_zeros;
+
+--------------000501060202090503000905--
