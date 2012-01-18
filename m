@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab2ARX1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 18:27:09 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:38571 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752638Ab2ARX1H (ORCPT
+	id S1755553Ab2ARX1g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 18:27:36 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:35828 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755412Ab2ARX1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 18:27:07 -0500
-Date: Wed, 18 Jan 2012 15:26:51 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>,
+	Wed, 18 Jan 2012 18:27:32 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: david@lang.hm, "H. Peter Anvin" <hpa@zytor.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
         Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] SHM_UNLOCK: fix long unpreemptible section
-In-Reply-To: <20120118143718.663b8cf5.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1201181457450.1256@eggly.anvils>
-References: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils> <alpine.LSU.2.00.1201141615440.1338@eggly.anvils> <20120118143718.663b8cf5.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
+References: <20120117142759.GE16213@moon>
+	<CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
+	<20120117144452.GG16213@moon> <4F15C249.3000602@zytor.com>
+	<m1obu29fnf.fsf@fess.ebiederm.org>
+	<alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm>
+	<20120118224956.GF15652@moon>
+Date: Wed, 18 Jan 2012 15:29:50 -0800
+In-Reply-To: <20120118224956.GF15652@moon> (Cyrill Gorcunov's message of "Thu,
+	19 Jan 2012 02:49:56 +0400")
+Message-ID: <m1zkdk4mj5.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/X6o4v0Hma6omnwqxT1HIBYe5eP9fQvs8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jan 2012, Andrew Morton wrote:
-> On Sat, 14 Jan 2012 16:18:43 -0800 (PST)
-> Hugh Dickins <hughd@google.com> wrote:
-> 
-> > scan_mapping_unevictable_pages() is used to make SysV SHM_LOCKed pages
-> > evictable again once the shared memory is unlocked.  It does this with
-> > pagevec_lookup()s across the whole object (which might occupy most of
-> > memory), and takes 300ms to unlock 7GB here.  A cond_resched() every
-> > PAGEVEC_SIZE pages would be good.
->... 
-> Is -stable backporting really warranted?  AFAICT the only thing we're
-> fixing here is a long latency glitch during a rare operation on large
-> machines.  Usually it will be on only one CPU, too.
+Cyrill Gorcunov <gorcunov@gmail.com> writes:
 
-True: I'm not sure if it amounts to -stable material or not.
-I see you've taken out its Cc: stable line: that's fine by me, but...
+> On Wed, Jan 18, 2012 at 02:05:31PM -0800, david@lang.hm wrote:
+> ...
+>> >>
+>> >>Why on Earth would user space need to know which order in memory certain
+>> >>kernel objects are?
+>> >
+>> >For checkpoint restart and for some other kinds of introspection what is
+>> >needed is a comparison function to see if two processes share the same
+>> >object.  The most interesting of these objects from a checkpoint restart case
+>> >are file descriptors, and there can be a lot of file descriptors.
+>> >
+>> >The order in memory does not matter.  What does matter is that the
+>> >comparison function return some ordering between objects.  The algorithm
+>> >for figuring out of N items which of them are duplicates is O(N^2) if
+>> >the comparison function can only return equal or not equal.  The
+>> >algorithm for finding duplications is only O(NlogN) if the comparison
+>> >function will return an ordering among the objects.
+>> 
+>> so what you really want is a syscall that can take a list of objects
+>> instead of having to do a syscall per object. right?
+>> 
+>
+> It doesn't matter. Even if we take a list of objects the kernel either
+> should return us some ordering info or find duplicates, in any case it
+> makes things more complex i think. So we wanted to bring some minimum
+> into kernel leaving the rest of work to user-space.
 
-> "[PATCH 2/2] SHM_UNLOCK: fix Unevictable pages stranded after swap"
-> does loko like -stable material, so omitting 1/1 will probably screw
-> things up :(
+Agreed a syscall does the duplication is probably not the way to go.
 
-Sort of, but they both(?) needed respinning for -stable anyway.
-Even against 3.2, there's some little change in vmscan.c that generates
-a reject.  Greg has now closed down 3.1.N (which would have been tiresome
-to port to, because it was still supporting a second caller of check_move),
-and by your argument above it's not worth porting 1/2 back to 2.6.32.  So
-I think 2/2 can just go into 3.2.N, dragging 1/2 along in its slipstream
-(if you can have a slipstream in front of you).
+ A syscall that takes a huge list of objects would solve any security
+concerns that we have with returning the object order to user space if
+done carefully, but it would require a bunch of additional user space
+and kernel memory.
 
-I ordered them that way because 1/2 fixes an old, and 2/2 a recent, bug.
+Sometimes taking a data structure transforming it into a weird form for
+a specific task and then transforming the data structure back to it's
+original form is a useful way to go.  So I think a general kernel object
+deduplicating system call is an interesting plan B, but a straight
+comparison function if we can make it work is a lot more flexible and
+useful.
 
-> > Resend in the hope that it can get into 3.3.
-> 
-> That we can do ;)
-
-Thank you!
-
-> > +#else
-> > +void scan_mapping_unevictable_pages(struct address_space *mapping)
-> > +{
-> > +}
-> > +#endif /* CONFIG_SHMEM */
-> 
-> Inlining the CONFIG_SHMEM=n stub would have been mroe efficient.
-
-True, though in 2/2 it morphs into shmem_unlock_mapping() over
-in shmem.c, and we seem to have the convention that TINY's !SHMEM
-stubs live as non-inline functions there - probably no good reason
-for that, just reflects their historical origins in tiny-shmem.c.
-A grand saving to make some other time ;)
-
-Hugh
+Eric
