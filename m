@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab2ARSov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 13:44:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29612 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758047Ab2ARSot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 13:44:49 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: [PATCHv6 0/7] ftrace, perf: Adding support to use function trace
-Date: Wed, 18 Jan 2012 19:44:28 +0100
-Message-Id: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
-References: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
+	id S1758090Ab2ARSun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 13:50:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58042 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755359Ab2ARSul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 13:50:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1201181257540.1343-100000@iolanthe.rowland.org>
+References: <3908561D78D1C84285E8C5FCA982C28F01CF24@ORSMSX104.amr.corp.intel.com>
+ <Pine.LNX.4.44L0.1201181257540.1343-100000@iolanthe.rowland.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 18 Jan 2012 19:50:20 +0100
+Message-ID: <CAPXgP10Du4nJ_hdfwqV0Fr6XEVkTMO6jZ_TS_T-J-grDG7nKJw@mail.gmail.com>
+Subject: Re: [PATCH] mce: fix warning messages about static struct mce_device
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Greg KH <gregkh@suse.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Sergei Trofimovich <slyich@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Borislav Petkov <bp@amd64.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "prasad@linux.vnet.ibm.com" <prasad@linux.vnet.ibm.com>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "gouders@et.bocholt.fh-gelsenkirchen.de" 
+	<gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Marcos Souza <marcos.mage@gmail.com>,
+        "justinmattock@gmail.com" <justinmattock@gmail.com>,
+        Jeff Chua <jeff.chua.linux@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-here's another version of perf support for function trace
-with filter. 
+On Wed, Jan 18, 2012 at 19:10, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-attached patches:
-  1/7 ftrace: Change filter/notrace set functions to return exit code
-  2/7 ftrace: Add enable/disable ftrace_ops control interface
-  3/7 ftrace, perf: Add open/close tracepoint perf registration actions
-  4/7 ftrace, perf: Add add/del tracepoint perf registration actions
-  5/7 ftrace, perf: Add support to use function tracepoint in perf
-  6/7 ftrace, perf: Distinguish ftrace function event field type
-  7/7 ftrace, perf: Add filter support for function trace event
+> There's nothing special about the driver model code in this respect.
+> The same restriction applies wherever object lifetimes are controlled
+> by reference counting.
 
-v6 changes:
-  2/7 - added comments to FTRACE_OPS_FL_* bits enum
-  5/7 - added more info to the change log regarding ftrace_ops enable/disable
-  7/7 - rebased to the latest filter changes
+Right. But it might not be obvious what 's the background here:
 
-v5 changes:
-  7/7 - fixed to properly support ',' in filter expressions
+An allocated device object(memory) usually represents an actual
+device(hardware). The object can have N users. Every of the users is
+required to take a reference to the object, which pins the object's
+memory as long as any of the N users might need to access it.
 
-v4 changes:
-  2/7 - FL_GLOBAL_CONTROL changed to FL_GLOBAL_CONTROL_MASK
-      - changed WARN_ON_ONCE() to include the !preempt_count()
-      - changed this_cpu_ptr to per_cpu_ptr
+In a hotplug world, we deal with device-removal.  On disconnect, we
+usually just orphan the object, we remove it from visibility,
+disconnect the device <-> object relation.
 
-  ommited Fix possible NULL dereferencing in __ftrace_hash_rec_update
-  (2/8 in v3)
+All of the  N users with a reference can still access the memory, they
+just do not talk to a real device anymore. The invalidated/orphaned
+state is communicated otherwise by locks and flags in the device
+object. Only after all of the N users left the object alone, the
+memory of the orphan if free'd.
 
-v3 changes:
-  3/8 - renamed __add/remove_ftrace_ops
-      - fixed preemtp_enable/recursion_clear order in ftrace_ops_control_func 
-      - renamed/commented API functions -  enable/disable_ftrace_function
-  
-  ommited graph tracer workarounf patch 10/10  
+If in the time-window between disconnecting the object from the device
+and freeing the orphaned object's memory, the same device comes back,
+we allocate a new object which is associated with the device. It
+usually has the same name and same properties as the original one.
 
-v2 changes:
- 01/10 - keeping the old fix instead of adding hash_has_contents func
-         I'll send separating patchset for this
- 02/10 - using different way to avoid the issue (3/9 in v1)
- 03/10 - using the way proposed by Steven for controling ftrace_ops
-         (4/9 in v1)
- 06/10 - added check ensuring the ftrace:function event could be used by
-         root only (7/9 in v1)
- 08/10 - added more description (8/9 in v1)
- 09/10 - changed '&&' operator to '||' which seems more suitable
-         in this case (9/9 in v1)
+This way, the new object is full functional, does not conflict with
+the older one, and also all the users of the old memory are still fine
+and can cleanup a lazy as they need without much synchronization.
 
-thanks,
-jirka
----
- include/linux/ftrace.h             |   61 ++++++++++-
- include/linux/ftrace_event.h       |    9 +-
- include/linux/perf_event.h         |    3 +
- kernel/trace/ftrace.c              |  140 +++++++++++++++++++++--
- kernel/trace/trace.h               |   11 ++-
- kernel/trace/trace_event_perf.c    |  214 +++++++++++++++++++++++++++++-------
- kernel/trace/trace_events.c        |   12 ++-
- kernel/trace/trace_events_filter.c |  172 +++++++++++++++++++++++++++--
- kernel/trace/trace_export.c        |   53 ++++++++-
- kernel/trace/trace_kprobe.c        |    8 +-
- kernel/trace/trace_syscalls.c      |   18 +++-
- 11 files changed, 617 insertions(+), 84 deletions(-)
+Now, all that might not apply to machinecheck, and it might be that
+machinecheck is fully able to handle all that just fine with the
+statically allocated same memory -- allocating new device memory on
+hotplug is still the model that should always be preferred over any
+other, if possible.
+
+It's usually the simplest safest and most flexible for anything that
+can come and go at any time, and memory which might be in used by
+other running code.
+
+And hey, filesystems work successful with this model since ages.
+Nobody invented anything new here. Device hotplug/unplug/cleanup is
+not much different from create/unlink/release. Open/truncate is
+usually much harder to manage in concurrency situations. :)
+
+Kay
