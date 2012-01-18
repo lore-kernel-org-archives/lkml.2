@@ -1,127 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab2AROCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 09:02:05 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52426 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757529Ab2AROCD (ORCPT
+	id S1757587Ab2AROEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 09:04:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:53416 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757529Ab2AROEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 09:02:03 -0500
+	Wed, 18 Jan 2012 09:04:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "AnilKumar, Chimata" <anilkumar@ti.com>
+Subject: Re: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
+Date: Wed, 18 Jan 2012 14:03:47 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
+Cc: "greg@kroah.com" <greg@kroah.com>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, lm-sensors@lm-sensors.org,
+        linux-input@vger.kernel.org, Jean Delvare <khali@linux-fr.org>
+References: <1324617892-14576-1-git-send-email-anilkumar@ti.com> <331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com>
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20120118134053.GD31112@tiehlicka.suse.cz>
-References: <CAJd=RBBdDriMhfetM2AWGzgxiJ1DDs-W4Ff9_1Z8DUgbyQmSkA@mail.gmail.com>
-	<20120117131601.GB14907@tiehlicka.suse.cz>
-	<CAJd=RBBcL5RuW1wC_Yh=gy2Ja8wqJ6jhf28zNi1n6MJ=+0=m2Q@mail.gmail.com>
-	<20120117140712.GC14907@tiehlicka.suse.cz>
-	<CAJd=RBAyqPwKERQL4JyCO38gjE=y8_qasHTbLtMGWqtZ1JFnUg@mail.gmail.com>
-	<20120118134053.GD31112@tiehlicka.suse.cz>
-Date: Wed, 18 Jan 2012 22:01:57 +0800
-Message-ID: <CAJd=RBAs3_ic+0UbZ_Bn4tBp_t2-HuohcRrWD1d6M2oSYRNYmQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: memcg: remove checking reclaim order in soft limit reclaim
-From: Hillf Danton <dhillf@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201181403.47806.arnd@arndb.de>
+X-Provags-ID: V02:K0:01pztwpn/rrNN9Fh94434kP8wllta3GaZor6t/ML+wz
+ AA0lYGbjtnorptdJlL6v2UbgZSQusrUOF25ca5BnDzV936o4S2
+ 3XYZCUlmcjM9FvwiAu5bKsNdefKs+ItC9wCIROr3bEoZ/ZQ2m+
+ q+vgiiR1QHDApamj1vTeYgKgkXeChT8vD1lPu0e7l/Phk0RjTn
+ UxrCL+/8ibmMgBhuMvGdb7zwiecyXS/GRgFdI5bCEY6T3IhAkJ
+ 4w26hrB5oA5Ew0mJ8mgRpymtpwiDo8kfwolnrvDF13gNl2oU7s
+ l7RD55egh8CfSus7g2uKq2Jw6vv14WgQcOOAezkIpJaU02PcgB
+ A/bkBjG8fEytceIQPBXk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 9:40 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Wed 18-01-12 20:30:41, Hillf Danton wrote:
->> On Tue, Jan 17, 2012 at 10:07 PM, Michal Hocko <mhocko@suse.cz> wrote:
->> > On Tue 17-01-12 21:29:52, Hillf Danton wrote:
->> >> On Tue, Jan 17, 2012 at 9:16 PM, Michal Hocko <mhocko@suse.cz> wrote:
->> >> > Hi,
->> >> >
->> >> > On Tue 17-01-12 20:47:59, Hillf Danton wrote:
->> >> >> If async order-O reclaim expected here, it is settled down when setting up scan
->> >> >> control, with scan priority hacked to be zero. Other than that, deny of reclaim
->> >> >> should be removed.
->> >> >
->> >> > Maybe I have misunderstood you but this is not right. The check is to
->> >> > protect from the _global_ reclaim with order > 0 when we prevent from
->> >> > memcg soft reclaim.
->> >> >
->> >> need to bear mm hog in this way?
->> >
->> > Could you be more specific? Are you trying to fix any particular
->> > problem?
->> >
->> My thought is simple, the outcome of softlimit reclaim depends little on the
->> value of reclaim order, zero or not, and only exceeding is reclaimed, so
->> selective response to swapd's request is incorrect.
->
-> OK, got your point, finally. Let's add Balbir (the proposed patch can
-> be found at https://lkml.org/lkml/2012/1/17/166) to the CC list because
-> this seems to be a design decision.
->
-> I always thought that this is because we want non-userspace (high order)
-> mem pressure to be handled by the global reclaim only. And it makes some
-> sense to me because it is little bit strange to reclaim for order-0
-> while the request is for an higher order. I guess this might lead to an
-> extensive and pointless reclaiming because we might end up with many
-> free pages which cannot satisfy higher order allocation.
->
-> On the other hand, it is true that the documentation says that the soft
-> limit is considered when "the system detects memory contention or low
-> memory" which doesn't say that the contention comes from memcg accounted
-> memory.
->
-> Anyway this changes the current behavior so it would better come with
-> much better justification which shows that over reclaim doesn't happen
-> and that we will not see higher latencies with higher order allocations.
->
+On Tuesday 17 January 2012, AnilKumar, Chimata wrote:
+> Hi All,
+> 
+> Recalling the patch, provide the comments if there are any if not please include
+> this patch to v3.3 kernel.
 
-As the function shows, the checked reclaim order is not used, but the
-scan control is prepared with order(= 0), which is called async order-0
-reclaim in my tern, then your worries on over reclaim and higher latencies
-could be removed, I think 8-)
+As Mark and Greg said, 3.4 would be appropriate.
 
-Thanks
-Hillf
+> +static ssize_t lis3lv02d_range_set(struct device *dev,
+> +				struct device_attribute *attr, const char *buf,
+> +				size_t count)
+> +{
+> +	unsigned long range;
+> +
+> +	if (strict_strtoul(buf, 0, &range))
+> +		return -EINVAL;
+> +
+> +	lis3_dev.g_range = range;
+> +	lis3lv02d_update_g_range(&lis3_dev);
+> +
+> +	return count;
+> +}
+> +
+>  static DEVICE_ATTR(selftest, S_IRUSR, lis3lv02d_selftest_show, NULL);
+>  static DEVICE_ATTR(position, S_IRUGO, lis3lv02d_position_show, NULL);
+>  static DEVICE_ATTR(rate, S_IRUGO | S_IWUSR, lis3lv02d_rate_show,
+>  					    lis3lv02d_rate_set);
+> +static DEVICE_ATTR(range, S_IRUGO | S_IWUSR, lis3lv02d_range_show,
+> +					    lis3lv02d_range_set);
 
-unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
-						gfp_t gfp_mask, bool noswap,
-						struct zone *zone,
-						unsigned long *nr_scanned)
-{
-	struct scan_control sc = {
-		.nr_scanned = 0,
-		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-		.may_writepage = !laptop_mode,
-		.may_unmap = 1,
-		.may_swap = !noswap,
-		.order = 0,
-		.target_mem_cgroup = memcg,
-	};
-	struct mem_cgroup_zone mz = {
-		.mem_cgroup = memcg,
-		.zone = zone,
-	};
+I think you need to document this new attribute in the Documentation
+directory, unless I missed the other patch doing this.
 
-	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
-			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
+On a more general topic, do we have a kernel-wide policy for accelerometer
+drivers? AFAICT, we currently have three subsystems that contain 
+accelerometer drivers, plus a few ad-hoc ones like this, which is a
+rather unpleasant situation. What I found are these:
 
-	trace_mm_vmscan_memcg_softlimit_reclaim_begin(0,
-						      sc.may_writepage,
-						      sc.gfp_mask);
+$ git grep -l accelerometer drivers/ | manual_grep
+drivers/hwmon/applesmc.c
+   (one hwmon sysfs attribute for x/y/z)
+drivers/input/misc/adxl34x.c
+   (lots of sysfs attributes, input_report_key)
+drivers/input/misc/cma3000_d0x.c
+   (input_report_abs)
+drivers/input/misc/kxtj9.c
+   (input_report_abs, plus one aux sysfs attribute)
+drivers/macintosh/ams/ams-core.c
+   (one sysfs attribute for x/y/z)
+drivers/misc/lis3lv02d/
+   (multiple sysfs attributes)
+drivers/platform/x86/hdaps.c
+   (multiple sysfs attributes, only x/y)
+drivers/platform/x86/hp_accel.c
+   (hooks into drivers/misc/lis3lv02d/)
+drivers/staging/iio/accel/kxsd9.c
+   (iio)
+drivers/staging/iio/accel/sca3000_core.c
+   (iio plus extra attributes)
 
-	/*
-	 * NOTE: Although we can get the priority field, using it
-	 * here is not a good idea, since it limits the pages we can scan.
-	 * if we don't reclaim here, the shrink_zone from balance_pgdat
-	 * will pick up pages from other mem cgroup's as well. We hack
-	 * the priority and make it zero.
-	 */
-	shrink_mem_cgroup_zone(0, &mz, &sc);
+While I'm not blaming you for the current situation, but I think the
+situation is no longer sustainable and we need to decide on one place
+and interface for these to go in the long run so we don't grow even
+more nonstandard interfaces.
 
-	trace_mm_vmscan_memcg_softlimit_reclaim_end(sc.nr_reclaimed);
+Any opinions where they should live? input, iio or a new subsystem?
 
-	*nr_scanned = sc.nr_scanned;
-	return sc.nr_reclaimed;
-}
+	Arnd
