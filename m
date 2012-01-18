@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab2ARBLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 20:11:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50438 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab2ARBLQ (ORCPT
+	id S1755515Ab2ARBRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 20:17:33 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:28373 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315Ab2ARBRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 20:11:16 -0500
-Date: Tue, 17 Jan 2012 17:11:12 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: Kernel crash in icq_free_icq_rcu
-Message-ID: <20120118011112.GB32160@htj.dyndns.org>
-References: <20120117201823.GD19223@redhat.com>
- <20120117214834.GD26207@google.com>
- <20120117220715.GB23527@redhat.com>
- <CANejiEUfAxR-DFH+eRQUbmc1jKHSkcBP1RxuRQ-9JKLU=1Ds0w@mail.gmail.com>
- <20120118010323.GA32160@htj.dyndns.org>
- <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jan 2012 20:17:32 -0500
+X-AuditID: cbfee60f-b7bceae00000240c-d0-4f161daba0ce
+Date: Wed, 18 Jan 2012 01:17:31 +0000 (GMT)
+From: JONGMAN HEO <jongman.heo@samsung.com>
+Subject: build failure with current linus tree
+To: linux-kernel@vger.kernel.org
+Reply-to: jongman.heo@samsung.com
+MIME-version: 1.0
+X-MTR: 20120118011621422@jongman.heo
+Msgkey: 20120118011621422@jongman.heo
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120118010825751@jongman.heo
+X-ParentMTR: 20120118010825751@jongman.heo
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <27516709.76321326849450926.JavaMail.weblogic@epml05>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0I1HcNw021218
 
-On Wed, Jan 18, 2012 at 09:05:26AM +0800, Shaohua Li wrote:
-> > Vivek is seeing the problem while switching elevators.  Are you too?
-> > Or is it during normal operation?
-> same here. I had some problems when I debug my ioscheduler, but
-> eventually found even switching cfq and noop can trigger oops.
 
-Hmmm... maybe quiescing isn't working as expected and kmem cache is
-being destroyed with live icq's.  I'll try to reproduce it.
+With current linus git (commit a25a2b84), I got following build error,
 
-Thanks.
+arch/x86/kernel/vm86_32.c: In function ??do_sys_vm86??:
+arch/x86/kernel/vm86_32.c:340: error: implicit declaration of function ??__audit_syscall_exit??
+make[3]: *** [arch/x86/kernel/vm86_32.o] Error 1
 
--- 
-tejun
+I do not have CONFIG_AUDITSYSCALL in my .config.
+
+Regards,
+Jongman.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
