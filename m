@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab2ARHm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 02:42:27 -0500
-Received: from mail.nudt.edu.cn ([61.187.54.11]:60824 "HELO nudt.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753023Ab2ARHm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 02:42:26 -0500
-Date: Wed, 18 Jan 2012 15:30:05 +0800
-From: "Li Wang" <liwang@nudt.edu.cn>
-Subject: [PATCH] eCryptfs: infinite loop bug
-To: ecryptfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-Id: <12011815300568720b5d1587bb777fed0d5b016f0854@nudt.edu.cn>
+	id S1755966Ab2ARHto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 02:49:44 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50754 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab2ARHtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 02:49:43 -0500
+Date: Wed, 18 Jan 2012 16:49:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC 1/3] /dev/low_mem_notify
+Message-ID: <20120118074930.GA18621@barrios-desktop.redhat.com>
+References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
+ <1326788038-29141-2-git-send-email-minchan@kernel.org>
+ <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
+ <4F15A34F.40808@redhat.com>
+ <alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
+ <20120117232025.GB903@barrios-desktop.redhat.com>
+ <alpine.LFD.2.02.1201180905040.2488@tux.localdomain>
 MIME-Version: 1.0
-X-Mailer: eYou WebMail 5.0.3
-X-Eyou-Client: 113.246.87.202
-Content-Type: text/plain;
- charset="GBK"
-X-Eyou-Sender: <liwang@nudt.edu.cn>
-X-Eyou-MID: <7e0cf36d898be996a126fa5fbb3bfe3c>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1201180905040.2488@tux.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0I7gmE9022589
 
-Hi,
-  There is an infinite loop bug in eCryptfs, to make it present,
-just truncate to generate a huge file (>= 4G) on a 32-bit machine 
-under the plain text foleder mounted with eCryptfs, a simple command
-'truncate -s 4G dummy' is enough. Note: 4GB is smaller than 4G,
-therefore the following command 'truncate -s 4GB dummy' will not trigger this bug.
-The bug comes from a data overflow, the patch below fixes it.
+On Wed, Jan 18, 2012 at 09:16:49AM +0200, Pekka Enberg wrote:
+> On Wed, 18 Jan 2012, Minchan Kim wrote:
+> >I didn't look into your code(will do) but as I read description,
+> >still I don't convince we need really some process specific threshold like 99%
+> >I think application can know it by polling /proc/meminfo without this mechanism
+> >if they really want.
+> 
+> I'm not sure if we need arbitrary threshold either. However, we need
+> to support the following cases:
+> 
+>   - We're about to swap
+> 
+>   - We're about to run out of memory
+> 
+>   - We're about to start OOM killing
+> 
+> and I don't think your patch solves that. One possibility is to implement:
 
-Cheers,
-Li Wang
+I think my patch can extend it but your ABI looks good to me than my approach.
 
----
+> 
+>   VMNOTIFY_TYPE_ABOUT_TO_SWAP
+>   VMNOTIFY_TYPE_ABOUT_TO_OOM
+>   VMNOTIFY_TYPE_ABOUT_TO_OOM_KILL
 
-signed-off-by: Li Wang <liwang@nudt.edu.cn >
-               Yunchuan Wen (wenyunchuan@kylinos.com.cn )
+Yes. We can define some levels.
 
---- read_write.c.orig 2012-01-18 10:39:26.000000000 +0800
-+++ read_write.c 2012-01-18 19:48:41.484196221 +0800
-@@ -130,7 +130,7 @@ int ecryptfs_write(struct inode *ecryptf
-   pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
-   size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
-   size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
--  size_t total_remaining_bytes = ((offset + size) - pos);
-+  loff_t total_remaining_bytes = ((offset + size) - pos);
- 
-   if (num_bytes > total_remaining_bytes)
-    num_bytes = total_remaining_bytes;
+1. page cache reclaim
+2. code page reclaim
+3. anonymous page swap out
+4. OOM kill.
 
 
+Application might handle it differenlty by the memory pressure level.
 
---- read_write.c.orig	2012-01-18 10:39:26.000000000 +0800
-+++ read_write.c	2012-01-18 19:48:41.484196221 +0800
-@@ -130,7 +130,7 @@ int ecryptfs_write(struct inode *ecryptf
- 		pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
- 		size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
- 		size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
--		size_t total_remaining_bytes = ((offset + size) - pos);
-+		loff_t total_remaining_bytes = ((offset + size) - pos);
- 
- 		if (num_bytes > total_remaining_bytes)
- 			num_bytes = total_remaining_bytes;
+> 
+> and maybe rip out support for arbitrary thresholds. Does that more
+> reasonable?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Currently, Nokia people seem to want process specific thresholds so 
+we might need it.
+
+> 
+> As for polling /proc/meminfo, I'd much rather deliver stats as part
+> of vmnotify_read() because it's easier to extend the ABI rather than
+> adding new fields to /proc/meminfo.
+
+Agree.
+
+> 
+> On Wed, 18 Jan 2012, Minchan Kim wrote:
+> >I would like to notify when system has a trobule with memory pressure without
+> >some process specific threshold. Of course, applicatoin can't expect it.(ie,
+> >application can know system memory pressure by /proc/meminfo but it can't know
+> >when swapout really happens). Kernel low mem notify have to give such notification
+> >to user space, I think.
+> 
+> It should be simple to add support for VMNOTIFY_TYPE_MEM_PRESSURE
+> that uses your hooks.
+
+Indeed.
+
+> 
+> 			Pekka
