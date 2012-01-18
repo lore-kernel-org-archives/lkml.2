@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab2ARJM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:12:26 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33941 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756427Ab2ARJMX (ORCPT
+	id S1756936Ab2ARJMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:12:35 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58988 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756427Ab2ARJMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:12:23 -0500
-Message-ID: <4F168CF3.5090400@gmail.com>
-Date: Wed, 18 Jan 2012 04:12:19 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
+	Wed, 18 Jan 2012 04:12:31 -0500
+Date: Wed, 18 Jan 2012 14:32:32 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-References: <20120117142759.GE16213@moon> <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com> <20120117144452.GG16213@moon> <4F15C249.3000602@zytor.com> <m1obu29fnf.fsf@fess.ebiederm.org> <20120118080103.GA2889@moon>
-In-Reply-To: <20120118080103.GA2889@moon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH v9 3.2 2/9] uprobes: handle breakpoint and signal step
+ exception.
+Message-ID: <20120118090232.GE15447@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
+ <20120110114842.17610.27081.sendpatchset@srdronam.in.ibm.com>
+ <20120118083906.GA4697@bandura.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120118083906.GA4697@bandura.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12011809-6148-0000-0000-000002B77535
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(1/18/12 3:01 AM), Cyrill Gorcunov wrote:
-> On Tue, Jan 17, 2012 at 01:35:00PM -0800, Eric W. Biederman wrote:
->> "H. Peter Anvin"<hpa@zytor.com>  writes:
->>
->>> On 01/17/2012 06:44 AM, Cyrill Gorcunov wrote:
->>>> On Tue, Jan 17, 2012 at 04:38:14PM +0200, Alexey Dobriyan wrote:
->>>>> On 1/17/12, Cyrill Gorcunov<gorcunov@gmail.com>  wrote:
->>>>>> +#define KCMP_EQ		0
->>>>>> +#define KCMP_LT		1
->>>>>> +#define KCMP_GT		2
->>>>>
->>>>> LT and GT are meaningless.
->>>>>
->>>>
->>>> I found symbolic names better than open-coded values. But sure,
->>>> if this is problem it could be dropped.
->>>>
->>>> Or you mean that in general anything but 'equal' is useless?
->>>>
->>>
->>> Why on Earth would user space need to know which order in memory certain
->>> kernel objects are?
->>
->> For checkpoint restart and for some other kinds of introspection what is
->> needed is a comparison function to see if two processes share the same
->> object.  The most interesting of these objects from a checkpoint restart case
->> are file descriptors, and there can be a lot of file descriptors.
->>
->> The order in memory does not matter.  What does matter is that the
->> comparison function return some ordering between objects.  The algorithm
->> for figuring out of N items which of them are duplicates is O(N^2) if
->> the comparison function can only return equal or not equal.  The
->> algorithm for finding duplications is only O(NlogN) if the comparison
->> function will return an ordering among the objects.
->
-> Yes, thanks Eric, I missed this text in patch description, my bad. And
-> yes, performance will degrade with plain eq/ne approach. But as Pavel
-> stated in another email
+> Srikar,
+> 
+>   Can we use existing SET_IP() instead of set_instruction_pointer() ?
+> 
 
-I think Eric only said gt/lt compare is useful. We don't need to expose bare
-pointer order. example, kcmp(rotate(ptr, per-task-random-value)) is enough
-hide the critical information. I think.
+Oleg had already commented about this in one his uprobes reviews.
+
+The GET_IP/SET_IP available in include/asm-generic/ptrace.h doesnt work
+on all archs. Atleast it doesnt work on powerpc when I tried it.
+
+Also most archs define instruction_pointer(). So I thought (rather Peter
+Zijlstra suggested the name set_instruction_pointer())
+set_instruction_pointer was a better bet than SET_IP. I 
+
+Also I dont see any usage for SET_IP/GET_IP.
+
+May be we should have something like this in
+include/asm-generic/ptrace.h
+
+#ifdef instruction_pointer
+#define GET_IP(regs)		(instruction_pointer(regs))
+
+#define set_instruction_pointer(regs, val) (instruction_pointer(regs) = (val))
+
+#define SET_IP(regs, val)	(set_instruction_pointer(regs,val))
+
+#endif
+
+or should we do away with GET_IP/SET_IP esp since there are no many
+users?
+
+-- 
+Thanks and Regards
+Srikar
 
