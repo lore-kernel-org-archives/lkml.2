@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab2ARQrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 11:47:05 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:60103 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab2ARQrD (ORCPT
+	id S932210Ab2ARQsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 11:48:10 -0500
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:40433 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab2ARQsI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 11:47:03 -0500
-Message-ID: <4F16F781.3040700@gmail.com>
-Date: Wed, 18 Jan 2012 11:46:57 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 18 Jan 2012 11:48:08 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+References: <1324617892-14576-1-git-send-email-anilkumar@ti.com> <331ABD5ECB02734CA317220B2BBEABC13177CDA4@DBDE01.ent.ti.com> <201201181403.47806.arnd@arndb.de>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <201201181403.47806.arnd@arndb.de>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Pavel Emelyanov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andrey Vagin <avagin@openvz.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-References: <20120117142759.GE16213@moon> <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com> <20120117144452.GG16213@moon> <4F15C249.3000602@zytor.com> <m1obu29fnf.fsf@fess.ebiederm.org> <20120118080103.GA2889@moon> <4F168CF3.5090400@gmail.com> <4F168E93.5010000@parallels.com> <4F168F8C.8090504@gmail.com> <20120118115700.GO1968@moon>
-In-Reply-To: <20120118115700.GO1968@moon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
+From: Jonathan Cameron <jic23@cam.ac.uk>
+Date: Wed, 18 Jan 2012 16:47:41 +0000
+To: Arnd Bergmann <arnd@arndb.de>, "AnilKumar, Chimata" <anilkumar@ti.com>
+CC: "greg@kroah.com" <greg@kroah.com>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, lm-sensors@lm-sensors.org,
+        linux-input@vger.kernel.org, Jean Delvare <khali@linux-fr.org>
+Message-ID: <b659db7b-2ef1-49b8-9752-a0601226cc6e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(1/18/12 6:57 AM), Cyrill Gorcunov wrote:
-> On Wed, Jan 18, 2012 at 04:23:24AM -0500, KOSAKI Motohiro wrote:
->> (1/18/12 4:19 AM), Pavel Emelyanov wrote:
->>>> I think Eric only said gt/lt compare is useful. We don't need to expose bare
->>>> pointer order. example, kcmp(rotate(ptr, per-task-random-value)) is enough
->>>> hide the critical information. I think.
->>>
->>> The per-task might break thinks up in case
->>>
->>> (tsk1->file != tsk2->file)&&   (rotate(tsk1->file, tsk1->random) == rotate(tsk2->file, tsk2->rotate))
->>
->> I meant,
->>
->> (tsk1->file != tsk2->file)&&  (rotate(tsk1->file, caller_task->random) == rotate(tsk2->file, caller_task->random))
->>
->>
->>>
->>> but I agree, that the overall idea of comparing not bare pointers, but those poisoned with
->>> some global value can address the Peter's concerns about rootkits.
+
+
+Arnd Bergmann <arnd@arndb.de> wrote:
+
+>On Tuesday 17 January 2012, AnilKumar, Chimata wrote:
+>> Hi All,
+>> 
+>> Recalling the patch, provide the comments if there are any if not
+>please include
+>> this patch to v3.3 kernel.
 >
-> Guys, can we stick with something simplier? I could use hashes here (again?!) or
-> even aes encoded pointers extended to 128 bits as it was proposed too. But
-> maybe we can live with something more simplier?
-
-The problem of hashes is,
-
-  - SHA1 didn't provide correct "equal or not" policy. (and I don't think sha1 is faster than kcmp)
-  - Poisoned pointer can be used to restore original bare pointer.
-
-Do this have the same issue?
-
-
-> We could export EQ/NE for regular users (which might be usefull for less
-> frequently used objects such as namespaces I guess). And GT/LT for root
-> only.
+>As Mark and Greg said, 3.4 would be appropriate.
 >
-> Does it look better? Does the change log tells enough?
+>> +static ssize_t lis3lv02d_range_set(struct device *dev,
+>> +				struct device_attribute *attr, const char *buf,
+>> +				size_t count)
+>> +{
+>> +	unsigned long range;
+>> +
+>> +	if (strict_strtoul(buf, 0, &range))
+>> +		return -EINVAL;
+>> +
+>> +	lis3_dev.g_range = range;
+>> +	lis3lv02d_update_g_range(&lis3_dev);
+>> +
+>> +	return count;
+>> +}
+>> +
+>>  static DEVICE_ATTR(selftest, S_IRUSR, lis3lv02d_selftest_show,
+>NULL);
+>>  static DEVICE_ATTR(position, S_IRUGO, lis3lv02d_position_show,
+>NULL);
+>>  static DEVICE_ATTR(rate, S_IRUGO | S_IWUSR, lis3lv02d_rate_show,
+>>  					    lis3lv02d_rate_set);
+>> +static DEVICE_ATTR(range, S_IRUGO | S_IWUSR, lis3lv02d_range_show,
+>> +					    lis3lv02d_range_set);
+>
+>I think you need to document this new attribute in the Documentation
+>directory, unless I missed the other patch doing this.
+>
+>On a more general topic, do we have a kernel-wide policy for
+>accelerometer
+>drivers? AFAICT, we currently have three subsystems that contain 
+>accelerometer drivers, plus a few ad-hoc ones like this, which is a
+>rather unpleasant situation. What I found are these:
+>
+>$ git grep -l accelerometer drivers/ | manual_grep
+>drivers/hwmon/applesmc.c
+>   (one hwmon sysfs attribute for x/y/z)
+>drivers/input/misc/adxl34x.c
+>   (lots of sysfs attributes, input_report_key)
+>drivers/input/misc/cma3000_d0x.c
+>   (input_report_abs)
+>drivers/input/misc/kxtj9.c
+>   (input_report_abs, plus one aux sysfs attribute)
+>drivers/macintosh/ams/ams-core.c
+>   (one sysfs attribute for x/y/z)
+>drivers/misc/lis3lv02d/
+>   (multiple sysfs attributes)
+>drivers/platform/x86/hdaps.c
+>   (multiple sysfs attributes, only x/y)
+>drivers/platform/x86/hp_accel.c
+>   (hooks into drivers/misc/lis3lv02d/)
+>drivers/staging/iio/accel/kxsd9.c
+>   (iio)
+>drivers/staging/iio/accel/sca3000_core.c
+>   (iio plus extra attributes)
+>
+For what it is worth there are a total of nine iio acceleration drivers. Some are special purpose though.
+>While I'm not blaming you for the current situation, but I think the
+>situation is no longer sustainable and we need to decide on one place
+>and interface for these to go in the long run so we don't grow even
+>more nonstandard interfaces.
+>
+>Any opinions where they should live? input, iio or a new subsystem?
+>
+Personal thought is that straight 3d devices very directed at input should go there. Iio has a few wrinkles left for the in kernel interfaces needed for a bridge to input. For starters the pull and push data interfaces have not merged yet (in staging) and we have not started on in kernel acess to non data events yet(thresholds).  Still happy to take them when we can support usecases fully. 
+Of course any help getting there would be most welcome!
 
-I dislike. Just EQ/NE is better than "root only" behavior change. it's misleading.
-If you dislike GT/LT, please just delete it.
+Jonathan
 
+>	Arnd
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
