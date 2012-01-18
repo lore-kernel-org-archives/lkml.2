@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab2ARJZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:25:27 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:41613 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757028Ab2ARJZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:25:23 -0500
-Date: Wed, 18 Jan 2012 10:25:09 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Sha <handai.szj@gmail.com>
-Cc: Ying Han <yinghan@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
-Message-ID: <20120118092509.GI24386@cmpxchg.org>
-References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
- <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
- <CALWz4izwNBN_qcSsqg-qYw-Esc9vBL3=4cv3Wsg1jf6001_fWQ@mail.gmail.com>
- <20120112085904.GG24386@cmpxchg.org>
- <CALWz4iz3sQX+pCr19rE3_SwV+pRFhDJ7Lq-uJuYBq6u3mRU3AQ@mail.gmail.com>
- <20120113224424.GC1653@cmpxchg.org>
- <4F158418.2090509@gmail.com>
- <20120117145348.GA3144@cmpxchg.org>
- <CAFj3OHWY2Biw54gaGeH5fkxzgOhxn7NAibeYT_Jmga-_ypNSRg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFj3OHWY2Biw54gaGeH5fkxzgOhxn7NAibeYT_Jmga-_ypNSRg@mail.gmail.com>
+	id S1757244Ab2ARJ3C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:29:02 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:41125 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757193Ab2ARJ3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 04:29:00 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19RMXUg4nNRXU3mcbAphUeVGMYDFK+OPdeFntxLGn
+	RNY2ZNtSJuYmy9
+Subject: Re: [PATCH RT 2/4] wait-simple: Simple waitqueue implementation
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+In-Reply-To: <20120118034700.245278561@goodmis.org>
+References: <20120118034531.335521323@goodmis.org>
+	 <20120118034700.245278561@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Jan 2012 10:28:48 +0100
+Message-ID: <1326878928.7482.2.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 03:17:25PM +0800, Sha wrote:
-> > > I don't think it solve the root of the problem, example:
-> > > root
-> > > -> A (hard limit 20G, soft limit 12G, usage 20G)
-> > >   -> A1 ( soft limit 2G,   usage 1G)
-> > >   -> A2 ( soft limit 10G, usage 19G)
-> > >          ->B1 (soft limit 5G, usage 4G)
-> > >          ->B2 (soft limit 5G, usage 15G)
-> > >
-> > > Now A is hitting its hard limit and start hierarchical reclaim under A.
-> > > If we choose B1 to go through mem_cgroup_over_soft_limit, it will
-> > > return true because its parent A2 has a large usage and will lead to
-> > > priority=0 reclaiming. But in fact it should be B2 to be punished.
-> 
-> > Because A2 is over its soft limit, the whole hierarchy below it should
-> > be preferred over A1, so both B1 and B2 should be soft limit reclaimed
-> > to be consistent with behaviour at the root level.
-> 
-> Well it is just the behavior that I'm expecting actually. But with my
-> humble comprehension, I can't catch the soft-limit-based hierarchical
-> reclaiming under the target cgroup (A2) in the current implementation
-> or after the patch. Both the current mem_cgroup_soft_reclaim or
-> shrink_zone select victim sub-cgroup by mem_cgroup_iter, but it
-> doesn't take soft limit into consideration, do I left anything ?
+Greetings,
 
-No, currently soft limits are ignored if pressure originates from
-below root_mem_cgroup.
+On Tue, 2012-01-17 at 22:45 -0500, Steven Rostedt wrote:
 
-But iff soft limits are applied right now, they are applied
-hierarchically, see mem_cgroup_soft_limit_reclaim().
+> diff --git a/kernel/wait-simple.c b/kernel/wait-simple.c
+> new file mode 100644
+> index 0000000..7f1cb72
+> --- /dev/null
+> +++ b/kernel/wait-simple.c
+> @@ -0,0 +1,62 @@
+> +/*
+> + * Simple waitqueues without fancy flags and callbacks
+> + *
+> + * (C) 2011 Thomas Gleixner <tglx@linutronix.de>
+> + *
+> + * Based on kernel/wait.c
+> + *
+> + * For licencing details see kernel-base/COPYING
+> + */
+> +#include <linux/init.h>
+> +#include <linux/sched.h>
+> +#include <linux/wait-simple.h>
+> +
+> +void __init_swait_head(struct swait_head *head, struct lock_class_key *key)
+> +{
+> +	raw_spin_lock_init(&head->lock);
+> +	lockdep_set_class(&head->lock, key);
+> +	INIT_LIST_HEAD(&head->list);
+> +}
+> +EXPORT_SYMBOL_GPL(__init_swait_head);
 
-In my opinion, the fact that soft limits are ignored when pressure is
-triggered sub-root_mem_cgroup is an artifact of the per-zone tree, so
-I allowed soft limits to be taken into account below root_mem_cgroup.
+#include <linux/module.h> ?
 
-But IMO, this is something different from how soft limit reclaim is
-applied once triggered: currently, soft limit reclaim applies to a
-whole hierarchy, including all children.  And this I left unchanged.
+	-Mike
+
