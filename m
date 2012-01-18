@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab2ARX1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 18:27:36 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:35828 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412Ab2ARX1c (ORCPT
+	id S1753175Ab2ARX3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 18:29:19 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44843 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab2ARX3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 18:27:32 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: david@lang.hm, "H. Peter Anvin" <hpa@zytor.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-References: <20120117142759.GE16213@moon>
-	<CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
-	<20120117144452.GG16213@moon> <4F15C249.3000602@zytor.com>
-	<m1obu29fnf.fsf@fess.ebiederm.org>
-	<alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm>
-	<20120118224956.GF15652@moon>
-Date: Wed, 18 Jan 2012 15:29:50 -0800
-In-Reply-To: <20120118224956.GF15652@moon> (Cyrill Gorcunov's message of "Thu,
-	19 Jan 2012 02:49:56 +0400")
-Message-ID: <m1zkdk4mj5.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 18 Jan 2012 18:29:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/X6o4v0Hma6omnwqxT1HIBYe5eP9fQvs8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <4F173F48.2070604@zytor.com>
+References: <20120116183730.GB21112@redhat.com> <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
+ <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+ <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+ <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+ <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+ <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+ <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+ <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+ <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com> <4F1737C9.3070905@zytor.com>
+ <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com> <4F173F48.2070604@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Jan 2012 15:28:54 -0800
+X-Google-Sender-Auth: eU3ubJL_aCaSTG8vF-pinhquuFA
+Message-ID: <CA+55aFw3kv_JRsSCQEf6fQd0gX939MuoevDxFtcXkPY+bmyjtA@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Roland McGrath <mcgrathr@google.com>, Indan Zupancic <indan@nul.nu>,
+        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
+        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov <gorcunov@gmail.com> writes:
-
-> On Wed, Jan 18, 2012 at 02:05:31PM -0800, david@lang.hm wrote:
-> ...
->> >>
->> >>Why on Earth would user space need to know which order in memory certain
->> >>kernel objects are?
->> >
->> >For checkpoint restart and for some other kinds of introspection what is
->> >needed is a comparison function to see if two processes share the same
->> >object.  The most interesting of these objects from a checkpoint restart case
->> >are file descriptors, and there can be a lot of file descriptors.
->> >
->> >The order in memory does not matter.  What does matter is that the
->> >comparison function return some ordering between objects.  The algorithm
->> >for figuring out of N items which of them are duplicates is O(N^2) if
->> >the comparison function can only return equal or not equal.  The
->> >algorithm for finding duplications is only O(NlogN) if the comparison
->> >function will return an ordering among the objects.
->> 
->> so what you really want is a syscall that can take a list of objects
->> instead of having to do a syscall per object. right?
->> 
+On Wed, Jan 18, 2012 at 1:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 >
-> It doesn't matter. Even if we take a list of objects the kernel either
-> should return us some ordering info or find duplicates, in any case it
-> makes things more complex i think. So we wanted to bring some minimum
-> into kernel leaving the rest of work to user-space.
+> I think we can obviously agree that regsets is the only way to go for
+> any kind of new state.
 
-Agreed a syscall does the duplication is probably not the way to go.
+So I really don't necessarily agree at all.
 
- A syscall that takes a huge list of objects would solve any security
-concerns that we have with returning the object order to user space if
-done carefully, but it would require a bunch of additional user space
-and kernel memory.
+Exactly because there is a heavy burden to introducing new models.
+It's not only relatively much more kernel code, it's also relatively
+much more painful for user code. If we can hide it in existing
+structures, user code is *much* better off, because any existing code
+to get the state will just continue to work. Otherwise, you need to
+have the code to figure out the new structures (how do you compile it
+without the new kernel headers?), you need to do the extra accesses
+conditionally etc etc.
 
-Sometimes taking a data structure transforming it into a weird form for
-a specific task and then transforming the data structure back to it's
-original form is a useful way to go.  So I think a general kernel object
-deduplicating system call is an interesting plan B, but a straight
-comparison function if we can make it work is a lot more flexible and
-useful.
+There's a real cost to introducing new interfaces. There's a *reason*
+people try to make do with old ones.
 
-Eric
+          Linus
