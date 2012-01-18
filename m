@@ -1,114 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab2ARJca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:32:30 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59765 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757028Ab2ARJc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:32:26 -0500
-Date: Wed, 18 Jan 2012 10:31:38 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Greg KH <gregkh@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Sergei Trofimovich <slyich@gmail.com>, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>, justinmattock@gmail.com,
-        Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: Re: [PATCH] mce: fix warning messages about static struct mce_device
-Message-ID: <20120118093138.GC5842@elte.hu>
-References: <20120116224028.GA5072@suse.de>
- <20120117083843.GC13181@elte.hu>
- <20120117155125.GB13778@suse.de>
+	id S1757273Ab2ARJcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:32:47 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:9006 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab2ARJco convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 04:32:44 -0500
+X-SpamScore: -13
+X-BigFish: VS-13(zz1521M542M1432Nzz1202hzzz2dhc1ahc1bh2a8h668h839h8e2h8e3h944hbe9k61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@linaro.org>
+CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: RE: Pinmux bindings proposal
+Thread-Topic: Pinmux bindings proposal
+Thread-Index: AczSMvpNTKYWSKFeSLCZTyHqrIN5SAB+76JwAD04RoAAFvnvAAARF20g
+Date: Wed, 18 Jan 2012 09:32:40 +0000
+Message-ID: <7FE21149F4667147B645348EC6057885094F47@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC6057885091DEA@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20120117082334.GA31295@S2101-09.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17801D22EB@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D22EB@HQMAIL01.nvidia.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.198]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117155125.GB13778@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@nvidia.com]
+....
 
-* Greg KH <gregkh@suse.de> wrote:
-
-> On Tue, Jan 17, 2012 at 09:38:43AM +0100, Ingo Molnar wrote:
-> > 
-> > * Greg KH <gregkh@suse.de> wrote:
-> > 
-> > > diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> > > index f35ce43..6aefb14 100644
-> > > --- a/arch/x86/include/asm/mce.h
-> > > +++ b/arch/x86/include/asm/mce.h
-> > > @@ -151,7 +151,7 @@ static inline void enable_p5_mce(void) {}
-> > >  
-> > >  void mce_setup(struct mce *m);
-> > >  void mce_log(struct mce *m);
-> > > -DECLARE_PER_CPU(struct device, mce_device);
-> > > +extern struct device *mce_device[CONFIG_NR_CPUS];
-> > 
-> > Minor nit, i don't think we have any other such [CONFIG_NR_CPUS] 
-> > pattern in the kernel.
-> > 
-> > This should be something like:
-> > 
-> >   DECLARE_PER_CPU(struct device *, mce_device);
+> > Considering the different pinctrl configurations for the same client
+> > device usually share the same pinmux and only pinconf varies.  It may
+> > worth introducing another level phandle reference.  Something like the
+> > following:
 > 
-> That is what we used to have, but with just a static struct 
-> device. [...]
-
-Which was fine in itself for a per CPU data structure - wouldnt 
-the warning be fixed by memset()-ing before registering the 
-device or such, if device registry absolutely needs a pre-zeroed 
-buffer?
-
-I still think there must be some bug/assumption lurking in the 
-device layer - do you require all device allocations to be one 
-via zalloc()? Seems like a weird and unrobust requirement.
-
-I don't object to the quick fix that gets rid of the warnings, 
-but that quick fix came at the price of leaving the real bug 
-unfixed and at the price of introducing a new ugliness ;-)
-
-> [...] We really don't need this to be in the per-cpu area, a 
-> flat array should be just fine, why can't we use the 
-> CONFIG_NR_CPUS value?  Should we use something else?
-
-By that argument we don't really need PER_CPU() areas to begin 
-with, a flat [CONFIG_NR_CPUS] array is just fine, right?
-
-Amongst other things we use PER_CPU to have an array of just 2 
-elements on a dual core system, even if it boots a 
-CONFIG_NR_CPUS=512 distro kernel. That saves RAM, and with 
-higher CONFIG_NR_CPUS values it adds up quickly.
-
-> > Or the pointer should be attached to the CPU info structure.
+> I don't think there's a need for another level of indirection. The 1:n model I
+> was talking about already handles this, I believe. See below.
 > 
-> Ok, I have no objection to that, do you want me to make a 
-> patch doing that, now that this is already in Linus's tree?
+> > 	pinmux_sdhci: pinmux-sdhci {
+> > 		mux =
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_MUX_1>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_MUX_1>;
+> > 	};
+> >
+> > 	pinconf_sdhci_active: pinconf-sdhci-active {
+> > 		config =
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_SLEW_RATE 4>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_SLEW_RATE 8>;
+> > 	};
+> >
+> > 	pinconf_sdhci_suspend: pinconf-sdhci-suspend {
+> > 		config =
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_TRISTATE 1>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_TRISTATE 1>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_SLEW_RATE 4>
+> > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_SLEW_RATE 8>;
+> > 	};
+> 
+> Those 3 nodes make sense to me.
+> 
+> > 	pinctrl_sdhci_active: pinctrl-sdhci-active {
+> > 		pinmux = <&pinmux_sdhci>;
+> > 		pinconf = <&pinconf_sdhci_active>;
+> > 	};
+> >
+> > 	pinctrl_sdhci_suspend: pinctrl-sdhci-suspend {
+> > 		pinmux = <&pinmux_sdhci>;
+> > 		pinconf = <&pinconf_sdhci_suspend>;
+> > 	};
+> 
+> I think we can avoid those 2 nodes.
+> 
+> > 	sdhci@c8000200 {
+> > 		...
+> > 		pinctrl = <&pinctrl_sdhci_active> <&pinctrl_sdhci_suspend>;
+> > 		pinctrl-names = "active", "suspend";
+> > 	};
+> 
+> And rewrite that node as:
+> 
+> sdhci@c8000200 {
+>     ...
+>     pinctrl = <&pinmux_sdhci> <&pinconf_sdhci_active>
+>               <&pinmux_sdhci> <&pinconf_sdhci_suspend>;
+>     pinctrl-names = "active", "active", "suspend", "suspend"; };
+> 
+> The only slight disadvantage here is that the person constructing the
+> pinctrl/pinctrl-names properties needs to know to explicitly list both the
+> separate mux/config phandles for each value in pinctrl-names. Still, this seems
+> a reasonable compromise; the user is still picking from a bunch of pre-
+> defined/canned nodes, they simply need to list 2 (or n in
+> general) of them for each state.
+> 
+> > This will be pretty useful for imx6 usdhc case, which will have 3
+> > pinctrl configuration for each usdhc device (imx6 has 4 usdhc
+> > devices), pinctrl-50mhz, pinctrl-100mhz and pinctrl-200mhz.  All these
+> > 3 states have the exactly same pinmux settings, and only varies on pinconf.
+> 
+> Yes, I definitely agree there's a need for this.
+> 
+> As an aside, I wonder if the following would be any better:
+> 
+> sdhci@c8000200 {
+>     ...
+>     pinctrl = <&pinmux_sdhci> <&pinconf_sdhci_active>
+>               <&pinmux_sdhci> <&pinconf_sdhci_suspend>;
+>     /* Number of entries in pinctrl for each in pinctrl-names */
+>     pinctrl-entries = <2 2>;
+>     pinctrl-names = "active", "suspend"; };
+> 
+> That seems more complex though.
+> 
+This makes sense to me.
 
-Would be nice if you could do that or some other equivalent 
-solution, i'd really not like to see the [CONFIG_NR_CPUS] 
-pattern to spread in the kernel, we spent a lot of time getting 
-rid of such uses ;-)
+Regards
+Dong Aisheng
 
-Thanks,
 
-	Ingo
