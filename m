@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2ARBBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 20:01:03 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45469 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab2ARBBC (ORCPT
+	id S1754250Ab2ARBCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 20:02:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44009 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab2ARBCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 20:01:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120117220715.GB23527@redhat.com>
-References: <20120117201823.GD19223@redhat.com>
-	<20120117214834.GD26207@google.com>
-	<20120117220715.GB23527@redhat.com>
-Date: Wed, 18 Jan 2012 09:01:00 +0800
-X-Google-Sender-Auth: 8xPeF0zQdlzK7qPoDBp65YKWTLg
-Message-ID: <CANejiEUfAxR-DFH+eRQUbmc1jKHSkcBP1RxuRQ-9JKLU=1Ds0w@mail.gmail.com>
-Subject: Re: Kernel crash in icq_free_icq_rcu
-From: Shaohua Li <shaohua.li@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 17 Jan 2012 20:02:08 -0500
+X-Authority-Analysis: v=2.0 cv=Hf6Wv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=v8bH6B52KJQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=yyCqClCEbQdwXsrae9IA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326848525.17534.66.camel@gandalf.stny.rr.com>
+Subject: Re: rt-kernel 3.0.14-rt31: BUG: sleeping function called from
+ invalid context
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Karsten Wiese <fzuuzf@googlemail.com>
+Cc: John Kacur <jkacur@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 17 Jan 2012 20:02:05 -0500
+In-Reply-To: <201201180053.52617.fzuuzf@googlemail.com>
+References: <CAONaPpFjfGiKKGAzrQNk+MF4k50nRf+wMU8H9491NgHyJrUkyw@mail.gmail.com>
+	 <201201180053.52617.fzuuzf@googlemail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/18 Vivek Goyal <vgoyal@redhat.com>:
-> On Tue, Jan 17, 2012 at 01:48:34PM -0800, Tejun Heo wrote:
->> On Tue, Jan 17, 2012 at 03:18:23PM -0500, Vivek Goyal wrote:
->> > Hi Tejun,
->> >
->> > With latest linus kernel, I see following crash. I was running some
->> > scripts which create cgroups and launch fio jobs in those groups. In
->> > a separate window I wrote a script to change the IO scheduler on the
->> > device in a loop while IO was happening on the device. After few
->> > seconds I see following. So far I tried it twice and reproduced it
->> > both the times in first few seconds.
->>
->> Does the following patch make any difference?
->
-> Nope. Still can reproduce the issue.
-I had similar issue too. Looks ioc_create_icq finds an icq (in ioc_lookup_icq)
-the icq is in rcu free (it has __rcu_icq_cache set)
+On Wed, 2012-01-18 at 00:53 +0100, Karsten Wiese wrote:
+
+> The bug happens because acpi_ev_gpe_detect does
+> raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags) before it calls
+> acpi_ev_gpe_dispatch.
+
+Correct. I believe there's a fix in the 3.2-rt. I'm working on getting
+the updates from it to the stable tree.
+
+-- Steve
+
+
