@@ -1,122 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab2ARJJY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:09:24 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:38865 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756165Ab2ARJJV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:09:21 -0500
-From: <leonid.moiseichuk@nokia.com>
-To: <penberg@kernel.org>, <riel@redhat.com>
-CC: <minchan@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <mel@csn.ul.ie>,
-        <rientjes@google.com>, <kosaki.motohiro@gmail.com>,
-        <hannes@cmpxchg.org>, <mtosatti@redhat.com>,
-        <akpm@linux-foundation.org>, <rhod@redhat.com>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: RE: [RFC 1/3] /dev/low_mem_notify
-Thread-Topic: [RFC 1/3] /dev/low_mem_notify
-Thread-Index: AQHM1PAILpEwsgBJQ0+ebltvcfq8MpYQOdkAgAB3jICAACXvgIAA9v4A
-Date: Wed, 18 Jan 2012 09:06:06 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
- <1326788038-29141-2-git-send-email-minchan@kernel.org>
- <CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
- <4F15A34F.40808@redhat.com>
- <alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-In-Reply-To: <alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.23.171]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756775Ab2ARJK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:10:29 -0500
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:50358 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756399Ab2ARJK0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 04:10:26 -0500
 MIME-Version: 1.0
-X-OriginalArrivalTime: 18 Jan 2012 09:06:08.0068 (UTC) FILETIME=[6A4BA040:01CCD5C0]
-X-Nokia-AV: Clean
+In-Reply-To: <1326845297-6233-2-git-send-email-rmorell@nvidia.com>
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
+ <1326845297-6233-1-git-send-email-rmorell@nvidia.com> <1326845297-6233-2-git-send-email-rmorell@nvidia.com>
+From: "Semwal, Sumit" <sumit.semwal@ti.com>
+Date: Wed, 18 Jan 2012 14:40:04 +0530
+Message-ID: <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
+Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
+To: Robert Morell <rmorell@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, sumit.semwal@linaro.org, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jan 18, 2012 at 5:38 AM, Robert Morell <rmorell@nvidia.com> wrote:
+> EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
+> issue, and not really an interface".  The dma-buf infrastructure is
+> explicitly intended as an interface between modules/drivers, so it
+> should use EXPORT_SYMBOL instead.
 
-Just couple of observations, which maybe wrong below
++ Konrad, Arnd, Mauro: there were strong objections on using
+EXPORT_SYMBOL in place of EXPORT_SYMBOL_GPL by all 3 of them; I
+suggest we first arrive at a consensus before merging this patch.
 
-> -----Original Message-----
-> From: Pekka Enberg [mailto:penberg@gmail.com] On Behalf Of ext Pekka
-> Enberg
-> Sent: 17 January, 2012 20:51
-....
-
-> +struct vmnotify_config {
-> +	/*
-> +	 * Size of the struct for ABI extensibility.
-> +	 */
-> +	__u32		   size;
-> +
-> +	/*
-> +	 * Notification type bitmask
-> +	 */
-> +	__u64			type;
-> +
-> +	/*
-> +	 * Free memory threshold in percentages [1..99]
-> +	 */
-> +	__u32			free_threshold;
-
-Would be possible to not use percents for thesholds? Accounting in pages even not so difficult to user-space.
-Also, looking on vmnotify_match I understand that events propagated to user-space only in case threshold trigger change state from 0 to 1 but not back, 1-> 0 is very useful event as well.
-
-Would be possible to use for threshold pointed value(s) e.g. according to enum zone_state_item, because kinds of memory to track could be different?
-E.g. to tracking paging activity NR_ACTIVE_ANON and NR_ACTIVE_FILE could be interesting, not only free.
-
-> +
-> +	/*
-> +	 * Sample period in nanoseconds
-> +	 */
-> +	__u64			sample_period_ns;
-> +};
-> +
-....
-> +struct vmnotify_event {
-> +	/* Size of the struct for ABI extensibility. */
-> +	__u32			size;
-> +
-> +	__u64			nr_avail_pages;
-> +
-> +	__u64			nr_swap_pages;
-> +
-> +	__u64			nr_free_pages;
-> +};
-
-Two fields here most likely session-constant, (nr_avail_pages and nr_swap_pages), seems not much sense to report them in every event.
-If we have memory/swap hotplug user-space can use sysinfo() call.
-
-> +static void vmnotify_sample(struct vmnotify_watch *watch) {
-...
-> +	si_meminfo(&si);
-> +	event.nr_avail_pages	= si.totalram;
-> +
-> +#ifdef CONFIG_SWAP
-> +	si_swapinfo(&si);
-> +	event.nr_swap_pages	= si.totalswap;
-> +#endif
-> +
-
-Why not to use global_page_state() directly? si_meminfo() and especial si_swapinfo are quite expensive call.
-
-> +static void vmnotify_start_timer(struct vmnotify_watch *watch) {
-> +	u64 sample_period = watch->config.sample_period_ns;
-> +
-> +	hrtimer_init(&watch->timer, CLOCK_MONOTONIC,
-> HRTIMER_MODE_REL);
-> +	watch->timer.function = vmnotify_timer_fn;
-> +
-> +	hrtimer_start(&watch->timer, ns_to_ktime(sample_period),
-> +HRTIMER_MODE_REL_PINNED); }
-
-Do I understand correct you allocate timer for every user-space client and propagate events every pointed interval?
-What will happened with system if we have a timer but need to turn CPU off? The timer must not be a reason to wakeup if user-space is sleeping.
-
+Best regards,
+~Sumit.
+<snip>
