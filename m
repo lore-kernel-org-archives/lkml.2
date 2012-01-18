@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab2ARWEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 17:04:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44461 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab2ARWEt (ORCPT
+	id S1753389Ab2ARWGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 17:06:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55029 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab2ARWGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 17:04:49 -0500
-Date: Wed, 18 Jan 2012 14:04:44 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
-        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
-Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
- to unlock_system_sleep()
-Message-ID: <20120118220444.GB21533@google.com>
-References: <4F16C24A.4050007@linux.vnet.ibm.com>
- <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com>
- <4F16F94C.4020000@linux.vnet.ibm.com>
- <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com>
- <4F16FF0D.1030606@linux.vnet.ibm.com>
- <20120118173037.GE30664@google.com>
- <4F171BF8.50803@linux.vnet.ibm.com>
- <20120118193040.GA28538@google.com>
- <4F17217E.5040805@linux.vnet.ibm.com>
- <4F172B8D.8050408@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F172B8D.8050408@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 18 Jan 2012 17:06:05 -0500
+Date: Wed, 18 Jan 2012 14:06:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Tony Luck <tony.luck@intel.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] ramoops: use pstore interface
+Message-Id: <20120118140603.0fc22302.akpm@linux-foundation.org>
+In-Reply-To: <20120117235852.GA4877@www.outflux.net>
+References: <20120117235852.GA4877@www.outflux.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 01:59:01AM +0530, Srivatsa S. Bhat wrote:
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
-> 
-> Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
-> [un]lock_system_sleep() APIs" introduced an undesirable change in the
-> behaviour of unlock_system_sleep() since freezer_count() internally calls
-> try_to_freeze() - which we don't need in unlock_system_sleep().
-> 
-> And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
-> [un]lock_system_sleep()" made these APIs wide-spread. This caused a
-> regression in suspend-to-disk where snapshot_read() and snapshot_write()
-> were getting frozen due to the try_to_freeze embedded in
-> unlock_system_sleep(), since these functions were invoked when the freezing
-> condition was still in effect.
-> 
-> Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
-> and dropping the try_to_freeze() part. Not only will this fix the
-> regression but this will also ensure that the API only does what it is
-> intended to do, and nothing more, under the hood.
-> 
-> While at it, make the code more correct and robust by ensuring that the
-> PF_FREEZER_SKIP flag gets cleared with pm_mutex held, to avoid a race with
-> the freezer.
-> 
-> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+On Tue, 17 Jan 2012 15:58:52 -0800
+Kees Cook <keescook@chromium.org> wrote:
 
-Acked-by: Tejun Heo <tj@kernel.org>
+> Instead of using /dev/mem directly and forcing userspace to know (or
+> extract) where the platform has defined persistent memory, how many
+> slots it has, the sizes, etc, use the common pstore infrastructure to
+> handle Oops gathering and extraction. This presents a much easier to
+> use filesystem-based view to the memory region. This also means that any
+> other tools that are written to understand pstore will automatically be
+> able to process ramoops too.
+> 
+> ...
+>
+> --- a/drivers/char/Kconfig
+> +++ b/drivers/char/Kconfig
+> @@ -603,6 +603,7 @@ source "drivers/s390/char/Kconfig"
+>  config RAMOOPS
+>  	tristate "Log panic/oops to a RAM buffer"
+>  	depends on HAS_IOMEM
+> +	depends on PSTORE
+>  	default n
+>  	help
+>  	  This enables panic and oops messages to be logged to a circular
 
-Thanks!
+I think this is the right thing to do, but boy I hate it.  You sit
+there wondering "wtf do I need to enable so I can use feature X".  I
+sometimes use menuconfig's search feature, other times go trawl the
+Kconfig files.  There should be a capability in Kconfig to just turn on
+the terminal feature, enabling any precondition features on the way. 
+Everyone loves Kconfig.
 
--- 
-tejun
+>
+> ...
+>
+>  static int __exit ramoops_remove(struct platform_device *pdev)
+>  {
+> +#if 0
+> +	/* TODO(kees): We cannot unload ramoops since pstore doesn't support
+> +	 * unregistering yet.
+> +	 */
+
+Well that sucks.  Is pstore getting fixed?
+
+>  	struct ramoops_context *cxt = &oops_cxt;
+>  
+> -	if (kmsg_dump_unregister(&cxt->dump) < 0)
+> -		pr_warn("could not unregister kmsg_dumper\n");
+> -
+>  	iounmap(cxt->virt_addr);
+>  	release_mem_region(cxt->phys_addr, cxt->size);
+> +	cxt->max_count = 0;
+> +
+> +	/* TODO(kees): When pstore supports unregistering, call it here. */
+> +	kfree(cxt->pstore.buf);
+> +	cxt->pstore.bufsize = 0;
+> +
+>  	return 0;
+> +#endif
+> +	return -EBUSY;
+>  }
+>  
+>  static struct platform_driver ramoops_driver = {
+
