@@ -1,138 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab2ARF2A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 00:28:00 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55405 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab2ARF16 (ORCPT
+	id S1757043Ab2ARFc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 00:32:27 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50703 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab2ARFc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 00:27:58 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 18 Jan 2012 14:26:38 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
-Message-Id: <20120118142638.11667d2c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120113121645.GA1653@cmpxchg.org>
-References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
-	<1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
-	<20120112105427.4b80437b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120113121645.GA1653@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jan 2012 00:32:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <NEXT-4f15c399e3e1b1.80658410@nextmail.ru>
+References: <NEXT-4f15c399e3e1b1.80658410@nextmail.ru>
+Date: Wed, 18 Jan 2012 11:02:24 +0530
+Message-ID: <CAD2nsn1a9q3n3dED1L6bomgsf1fP5TA9Tb9v+q9j=xjqdO2i3Q@mail.gmail.com>
+Subject: Re: ath9k crash 3.2-rc7
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Content-Type: multipart/mixed; boundary=f46d043c7da2cadeb404b6c6c592
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012 13:16:56 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+--f46d043c7da2cadeb404b6c6c592
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, Jan 12, 2012 at 10:54:27AM +0900, KAMEZAWA Hiroyuki wrote:
+2012/1/18 MR <g7af0ec1e3ea1e7b1@nextmail.ru>:
+> =A0> =A0> Turned out I got lucky previous time.
+> =A0> =A0>
+> =A0> >This time I went to the other AP, spent some time under it, roamed
+> back
+> =A0> and
+> =A0> =A0>
+> =A0> =A0>WiFi didn't disappear. I didn't even lose XMPP connections in th=
+e
+> =A0> process.
+> =A0> =A0>
+> =A0> =A0>
+> =A0> =A0>Maybe debug printing (which prints a lot) managed to introduce s=
+ome
+> =A0> extra
+> =A0> =A0> delays into some race condition.
+> =A0> =A0>
+> =A0> > I hope I will have time to test this more on Monday. Tomorrow I wi=
+ll
+> be
+> =A0>
+> =A0> =A0> using WiFi less than usual.
+> =A0>
+> =A0>Now I went a few time back and forth, spent a lot of time under
+> previously
+> =A0>
+> =A0> risky AP and still there are no problems..
+> =A0>
+> =A0> I wonder if maybe a congested AP could help.. But unclear how to obt=
+ain
+> =A0> that quickly and reliably.
+>
+> Even with debugging off WiFi works reliably across different conditions.
+>
 
-> > Thank you for your work and the result seems atractive and code is much
-> > simpler. My small concerns are..
-> > 
-> > 1. This approach may increase latency of direct-reclaim because of priority=0.
-> 
-> I think strictly speaking yes, but note that with kswapd being less
-> likely to get stuck in hammering on one group, the need for allocators
-> to enter direct reclaim itself is reduced.
-> 
-> However, if this really becomes a problem in real world loads, the fix
-> is pretty easy: just ignore the soft limit for direct reclaim.  We can
-> still consider it from hard limit reclaim and kswapd.
-> 
-> > 2. In a case numa-spread/interleave application run in its own container, 
-> >    pages on a node may paged-out again and again becasue of priority=0
-> >    if some other application runs in the node.
-> >    It seems difficult to use soft-limit with numa-aware applications.
-> >    Do you have suggestions ?
-> 
-> This is a question about soft limits in general rather than about this
-> particular patch, right?
-> 
+you can test frequent roaming with the attached script. also you can
+test roaming, after enabling ASPM(attached script, courtesy: Luis)
+please completely read and understand
+http://linuxwireless.org/en/users/Documentation/ASPM
+incorrect tweak may cause hardware issues.
 
-Partially, yes. My concern is related to "1".
+--=20
+shafi
 
-Assume an application is binded to some cpu/node and try to allocate memory.
-If its memcg's usage is over softlimit, this application will play bad because
-newly allocated memory will be reclaim target soon, again....
+--f46d043c7da2cadeb404b6c6c592
+Content-Type: application/x-sh; name="roam-script.sh"
+Content-Disposition: attachment; filename="roam-script.sh"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gxjw9ni60
 
+IyEvYmluL2Jhc2gKIyBDb3B5cmlnaHQgKGMpIDIwMTAgTHVpcyBSLiBSb2RyaWd1ZXogPG1jZ3Jv
+ZkBnbWFpbC5jb20+CiMKIyBQZXJtaXNzaW9uIHRvIHVzZSwgY29weSwgbW9kaWZ5LCBhbmQvb3Ig
+ZGlzdHJpYnV0ZSB0aGlzIHNvZnR3YXJlIGZvciBhbnkKIyBwdXJwb3NlIHdpdGggb3Igd2l0aG91
+dCBmZWUgaXMgaGVyZWJ5IGdyYW50ZWQsIHByb3ZpZGVkIHRoYXQgdGhlIGFib3ZlCiMgY29weXJp
+Z2h0IG5vdGljZSBhbmQgdGhpcyBwZXJtaXNzaW9uIG5vdGljZSBhcHBlYXIgaW4gYWxsIGNvcGll
+cy4KIwojIFRIRSBTT0ZUV0FSRSBJUyBQUk9WSURFRCAiQVMgSVMiIEFORCBUSEUgQVVUSE9SIERJ
+U0NMQUlNUyBBTEwgV0FSUkFOVElFUwojIFdJVEggUkVHQVJEIFRPIFRISVMgU09GVFdBUkUgSU5D
+TFVESU5HIEFMTCBJTVBMSUVEIFdBUlJBTlRJRVMgT0YKIyBNRVJDSEFOVEFCSUxJVFkgQU5EIEZJ
+VE5FU1MuIElOIE5PIEVWRU5UIFNIQUxMIFRIRSBBVVRIT1IgQkUgTElBQkxFIEZPUgojIEFOWSBT
+UEVDSUFMLCBESVJFQ1QsIElORElSRUNULCBPUiBDT05TRVFVRU5USUFMIERBTUFHRVMgT1IgQU5Z
+IERBTUFHRVMKIyBXSEFUU09FVkVSIFJFU1VMVElORyBGUk9NIExPU1MgT0YgVVNFLCBEQVRBIE9S
+IFBST0ZJVFMsIFdIRVRIRVIgSU4gQU4KIyBBQ1RJT04gT0YgQ09OVFJBQ1QsIE5FR0xJR0VOQ0Ug
+T1IgT1RIRVIgVE9SVElPVVMgQUNUSU9OLCBBUklTSU5HIE8KCiMgUHJldHR5IGNvbG9ycwpHUkVF
+Tj0iXDAzM1swMTszMm0iCllFTExPVz0iXDAzM1swMTszM20iCk5PUk1BTD0iXDAzM1swMG0iCkJM
+VUU9IlwwMzNbMzRtIgpSRUQ9IlwwMzNbMzFtIgpQVVJQTEU9IlwwMzNbMzVtIgpDWUFOPSJcMDMz
+WzM2bSIKCmlmIFsgJCMgLW5lIDEgXTsgdGhlbgoJZWNobyAtZSAiVXNhZ2U6ICQwIDxTU0lEPiIK
+CWV4aXQKZmkKClNTSUQ9IiQxIgoKIyBhc3N1bWVzIHlvdSBoYXZlIGEgY29udHJvbCBpbnRlcmZh
+Y2UgZXhwb3NlZCwKIyBJZiB5b3Ugd2FudCB0byB1c2UgdGhpcyB3aXRoIG5ldHdvcmstbWFuYWdl
+ciBlbnN1cmUKIyB5b3UgbW9kaWZ5IHlvdXIgZGJ1cyBzZXR0aW5ncyBmb3Igd3BhX3N1cHBsaWNh
+bnQuIFRoaXMgaXMKIyBkb2N1bWVudGVkIGhlcmU6CiMKIyBodHRwOi8vd2lyZWxlc3Mua2VybmVs
+Lm9yZy9lbi91c2Vycy9Eb2N1bWVudGF0aW9uL3dwYV9zdXBwbGljYW50I0VuYWJsaW5nX2NvbnRy
+b2xfaW50ZXJmYWNlX2FuZF9ubDgwMjExX2RyaXZlcgoKZWNobyAtZSAiJHtDWUFOfUlzc3Vpbmcg
+Zmlyc3Qgc2Nhbi4uLiR7Tk9STUFMfSIKCiNFU1M9IjAwOjIzOjY5OjNiOjVlOjcwIDAwOjEwOjE4
+OjkwOjNhOmFhIgpFU1M9IjAwOjAzOjdGOjBGOjRCOjk4IDAwOjEwOjE4OjkwOjNBOjlFIgoKIyBI
+T01FIDcwMSBUYXlsb3IgU3QKI0VTUz0iNjg6N2Y6NzQ6M2I6YjE6MGYgNjg6N2Y6NzQ6M2I6YjE6
+MTAiCgpDT1VOVD0kKGVjaG8gJEVTUyB8IHdjIC13KQoKZWNobyAtZSAiJHtSRUR9JENPVU5UICR7
+Tk9STUFMfUFQcyBmb3VuZCBvbiBFU1MgJHtHUkVFTn0kU1NJRCR7Tk9STUFMfSwgZ29pbmcgdG8g
+cm9hbSBiZXR3ZWVuIHRoZW0gbm93IgplY2hvIC1lICJBUCBsaXN0OiR7Tk9STUFMfSIKCmVjaG8g
+LWUgIlx0JHtHUkVFTn1CU1NcdFx0XHQke1lFTExPV31GcmVxJHtOT1JNQUx9Igpmb3IgaSBpbiAk
+RVNTOyBkbwoJRlJFUT0kKHN1ZG8gd3BhX2NsaSBzY2FuX3Jlc3VsdHN8IGdyZXAgJGkgfCBhd2sg
+J3twcmludCAkMn0nKQoJZWNobyAtZSAiXHQke0dSRUVOfSRpXHQke1lFTExPV30kRlJFUSIKZG9u
+ZQoKd2hpbGUgdHJ1ZTsgZG8KCWZvciBpIGluICRFU1M7IGRvCgkJRlJFUT0kKHN1ZG8gd3BhX2Ns
+aSBzY2FuX3Jlc3VsdHN8IGdyZXAgJGkgfCBhd2sgJ3twcmludCAkMn0nKQoJCWVjaG8gLWUgIiR7
+Tk9STUFMfVJvYW1pbmcgdG8gJHtDWUFOfSR7U1NJRH0gJHtHUkVFTn0ke2l9ICR7WUVMTE9XfSR7
+RlJFUX0gJHtOT1JNQUx9TUh6Li4uIgoJCXN1ZG8gd3BhX2NsaSByb2FtICRpOwoJCXNsZWVwIDI7
+Cglkb25lOwpkb25lCg==
+--f46d043c7da2cadeb404b6c6c592
+Content-Type: application/octet-stream; name=enable-aspm
+Content-Disposition: attachment; filename=enable-aspm
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gxjwba0o1
 
-> And if I understand correctly, the problem you are referring to is
-> this: an application and parts of a soft-limited container share a
-> node, the soft limit setting means that the container's pages on that
-> node are reclaimed harder.  At that point, the container's share on
-> that node becomes tiny, but since the soft limit is oblivious to
-> nodes, the expansion of the other application pushes the soft-limited
-> container off that node completely as long as the container stays
-> above its soft limit with the usage on other nodes.
-> 
-> What would you think about having node-local soft limits that take the
-> node size into account?
-> 
-> 	local_soft_limit = soft_limit * node_size / memcg_size
-> 
-> The soft limit can be exceeded globally, but the container is no
-> longer pushed off a node on which it's only occupying a small share of
-> memory.
-> 
-Yes, I think this kind of care is required.
-What is the 'node_size' here ? size of pgdat ?
-size of per-node usage in the memcg ?
-
-
-> Putting it into proportion of the memcg size, not overall memory size
-> has the following advantages:
-> 
->   1. if the container is sitting on only one of several available
->   nodes without exceeding the limit globally, the memcg will not be
->   reclaimed harder just because it has a relatively large share of the
->   node.
-> 
->   2. if the soft limit excess is ridiculously high, the local soft
->   limits will be pushed down, so the tolerance for smaller shares on
->   nodes goes down in proportion to the global soft limit excess.
-> 
-> Example:
-> 
-> 	4G soft limit * 2G node / 4G container = 2G node-local limit
-> 
-> The container is globally within its soft limit, so the local limit is
-> at least the size of the node.  It's never reclaimed harder compared
-> to other applications on the node.
-> 
-> 	4G soft limit * 2G node / 5G container = ~1.6G node-local limit
-> 
-
-
-
-> Here, it will experience more pressure initially, but it will level
-> off when the shrinking usage and the thereby increasing node-local
-> soft limit meet.  From that point on, the container and the competing
-> application will be treated equally during reclaim.
-> 
-> Finally, if the container is 16G in size, i.e. 300% in excess, the
-> per-node tolerance is at 512M node-local soft limit, which IMO strikes
-> a good balance between zero tolerance and still applying some stress
-> to the hugely oversized container when other applications (with
-> virtually unlimited soft limits) want to run on the same node.
-> 
-> What do you think?
-
-I like the idea. Another idea is changing 'priority' based on per-node stats
-if not too complicated...
-
-Thanks,
--Kame
-
-
-
-
+IyEvYmluL2Jhc2gKIyBDb3B5cmlnaHQgKGMpIDIwMTAgTHVpcyBSLiBSb2RyaWd1ZXogPG1jZ3Jv
+ZkBnbWFpbC5jb20+CiMKIyBQZXJtaXNzaW9uIHRvIHVzZSwgY29weSwgbW9kaWZ5LCBhbmQvb3Ig
+ZGlzdHJpYnV0ZSB0aGlzIHNvZnR3YXJlIGZvciBhbnkKIyBwdXJwb3NlIHdpdGggb3Igd2l0aG91
+dCBmZWUgaXMgaGVyZWJ5IGdyYW50ZWQsIHByb3ZpZGVkIHRoYXQgdGhlIGFib3ZlCiMgY29weXJp
+Z2h0IG5vdGljZSBhbmQgdGhpcyBwZXJtaXNzaW9uIG5vdGljZSBhcHBlYXIgaW4gYWxsIGNvcGll
+cy4KIwojIFRIRSBTT0ZUV0FSRSBJUyBQUk9WSURFRCAiQVMgSVMiIEFORCBUSEUgQVVUSE9SIERJ
+U0NMQUlNUyBBTEwgV0FSUkFOVElFUwojIFdJVEggUkVHQVJEIFRPIFRISVMgU09GVFdBUkUgSU5D
+TFVESU5HIEFMTCBJTVBMSUVEIFdBUlJBTlRJRVMgT0YKIyBNRVJDSEFOVEFCSUxJVFkgQU5EIEZJ
+VE5FU1MuIElOIE5PIEVWRU5UIFNIQUxMIFRIRSBBVVRIT1IgQkUgTElBQkxFIEZPUgojIEFOWSBT
+UEVDSUFMLCBESVJFQ1QsIElORElSRUNULCBPUiBDT05TRVFVRU5USUFMIERBTUFHRVMgT1IgQU5Z
+IERBTUFHRVMKIyBXSEFUU09FVkVSIFJFU1VMVElORyBGUk9NIExPU1MgT0YgVVNFLCBEQVRBIE9S
+IFBST0ZJVFMsIFdIRVRIRVIgSU4gQU4KIyBBQ1RJT04gT0YgQ09OVFJBQ1QsIE5FR0xJR0VOQ0Ug
+T1IgT1RIRVIgVE9SVElPVVMgQUNUSU9OLCBBUklTSU5HIE9VVCBPRgojIE9SIElOIENPTk5FQ1RJ
+T04gV0lUSCBUSEUgVVNFIE9SIFBFUkZPUk1BTkNFIE9GIFRISVMgU09GVFdBUkUuCgoKIyBBU1BN
+IFR1bmluZyBzY3JpcHQKIwojIFRoaXMgc2NyaXB0IGxldHMgeW91IGVuYWJsZSBBU1BNIG9uIHlv
+dXIgZGV2aWNlcyBpbiBjYXNlIHlvdXIgQklPUwojIGRvZXMgbm90IGhhdmUgaXQgZW5hYmxlZCBm
+b3Igc29tZSByZWFzb24uIElmIHlvdXIgQklPUyBkb2VzIG5vdCBoYXZlCiMgaXQgZW5hYmxlZCBp
+dCBpcyB1c3VhbGx5IGZvciBhIGdvb2QgcmVhc29uIHNvIHlvdSBzaG91bGQgb25seSB1c2UgdGhp
+cyBpZgojIHlvdSBrbm93IHdoYXQgeW91IGFyZSBkb2luZy4gVHlwaWNhbGx5IHlvdSB3b3VsZCBv
+bmx5IG5lZWQgdG8gZW5hYmxlCiMgQVNQTSBtYW51YWxseSB3aGVuIGRvaW5nIGRldmVsb3BtZW50
+IGFuZCB1c2luZyBhIGNhcmQgdGhhdCB0eXBpY2FsbHkKIyBpcyBub3QgcHJlc2VudCBvbiBhIGxh
+cHRvcCwgb3IgdXNpbmcgdGhlIGNhcmRidXMgc2xvdC4gVGhlIEJJT1MgdHlwaWNhbGx5CiMgZGlz
+YWJsZXMgQVNQTSBmb3IgZm9yZWlnbiBjYXJkcyBhbmQgb24gdGhlIGNhcmRidXMgc2xvdC4gQ2hl
+Y2sgYWxzbwojIGlmIHlvdSBtYXkgbmVlZCB0byBkbyBvdGhlciB0aGluZ3MgdGhhbiB3aGF0IGlz
+IGJlbG93IG9uIHlvdXIgdmVuZG9yCiMgZG9jdW1lbnRhdGlvbi4KIwojIFRvIHVzZSB0aGlzIHNj
+cmlwdCBZb3Ugd2lsbCBuZWVkIGZvciBub3cgdG8gYXQgbGVhc3QgcXVlcnkgeW91ciBkZXZpY2UK
+IyBQQ0kgZW5kcG9pbnQgYW5kIHJvb3QgY29tcGxleCBhZGRyZXNzZXMgdXNpbmcgdGhlIGNvbnZl
+bnRpb24gb3V0cHV0IGJ5CiMgbHNwY2k6IFs8YnVzPl06WzxzbG90Pl0uWzxmdW5jPl0KIwojIEZv
+ciBleGFtcGxlOgojCiMgMDM6MDAuMCBOZXR3b3JrIGNvbnRyb2xsZXI6IEF0aGVyb3MgQ29tbXVu
+aWNhdGlvbnMgSW5jLiBBUjkzMDAgV2lyZWxlc3MgTEFOIGFkYXB0b3IgKHJldiAwMQojIDAwOjFj
+LjEgUENJIGJyaWRnZTogSW50ZWwgQ29ycG9yYXRpb24gODI4MDFIIChJQ0g4IEZhbWlseSkgUENJ
+IEV4cHJlc3MgUG9ydCAyIChyZXYgMDMpCiMKIyBUaGUgcm9vdCBjb21wbGV4IGZvciB0aGUgZW5k
+cG9pbnQgY2FuIGJlIGZvdW5kIHVzaW5nIGxzcGNpIC10CiMKIyBGb3IgbW9yZSBkZXRhaWxzIHJl
+ZmVyIHRvOgojCiMgaHR0cDovL3dpcmVsZXNzLmtlcm5lbC5vcmcvZW4vdXNlcnMvRG9jdW1lbnRh
+dGlvbi9BU1BNCgojIFlvdSBqdXN0IG5lZWQgdG8gbW9kaWZ5IHRoZXNlIHRocmVlIHZhbHVlczoK
+ClJPT1RfQ09NUExFWD0iMDA6MWMuMyIKRU5EUE9JTlQ9IjA1OjAwLjAiCgojIFdlJ2xsIG9ubHkg
+ZW5hYmxlIHRoZSBsYXN0IDIgYml0cyBieSB1c2luZyBhIG1hc2sKIyBvZiA6MyB0byBzZXRwY2ks
+IHRoaXMgd2lsbCBlbnN1cmUgd2Uga2VlcCB0aGUgZXhpc3RpbmcKIyB2YWx1ZXMgb24gdGhlIGJ5
+dGUuCiMKIyBIZXggIEJpbmFyeSAgTWVhbmluZwojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0K
+IyAwICAgIDBiMDAgICAgTDAgb25seQojIDEgICAgMGIwMSAgICBMMHMgb25seQojIDIgICAgMGIx
+MCAgICBMMSBvbmx5CiMgMyAgICAwYjExICAgIEwxIGFuZCBMMHMKQVNQTV9TRVRUSU5HPTIKCmZ1
+bmN0aW9uIGFzcG1fc2V0dGluZ190b19zdHJpbmcoKQp7CgljYXNlICQxIGluCgkwKQoJCWVjaG8g
+LWUgIlx0JHtCTFVFfUwwIG9ubHkke05PUk1BTH0sICR7UkVEfUFTUE0gZGlzYWJsZWQke05PUk1B
+TH0iCgkJOzsKCTEpCgkJOzsKCTIpCgkJZWNobyAtZSAiXHQke0dSRUVOfUwxIG9ubHkke05PUk1B
+TH0iCgkJOzsKCTMpCgkJZWNobyAtZSAiXHQke0dSRUVOfUwxIGFuZCBMMHMke05PUk1BTH0iCgkJ
+OzsKCSopCgkJZWNobyAtZSAiXHQke1JFRH1JbnZhbGlkJHtOT1JNQUx9IgoJCTs7Cgllc2FjCn0K
+CgojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjCiMgRG8gbm90IGVkaXQgYmVsb3cgaGVyZSB1bmxlc3MgeW91IGFyZSBzZW5k
+aW5nIG1lIGEgcGF0Y2gKIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwojCiMgVE9ETzogcGF0Y2hlcyBhcmUgd2VsY29tZWQg
+dG8gbWUgdW50aWwgd2Ugc3VibWl0IHRvIHRvCiMgICAgICAgUENJIFV0aWxpdGllcyB1cHN0cmVh
+bS4KIwojIFRoaXMgY2FuIGJlIGltcHJvdmVkIGJ5IGluIHRoaXMgb3JkZXI6CiMKIwkqIEFjY2Vw
+dCBhcmd1bWVudHMgZm9yIGVuZHBvaW50IGFuZCByb290IGNvbXBsZXggYWRkcmVzcywgYW5kCiMJ
+ICBkZXNpcmVkIEFTUE0gc2V0dGluZ3MKIwkqIExvb2sgZm9yIHlvdXIgQVNQTSBjYXBhYmlsaXRp
+ZXMgYnkgcXVlcmluZyB5b3VyCiMJICBMbmtDYXAgcmVnaXN0ZXIgZmlyc3QuIFVzZSB0aGVzZSB2
+YWx1ZXMgdG8gbGV0IHlvdQojCSAgc2VsZWN0IHdoZXRoZXIgeW91IHdhbnQgdG8gZW5hYmxlIG9u
+bHkgTDEgb3IgTDEgJiBMMHMKIwkqIFNlYXJjaGluZyBmb3IgeW91ciByb290IGNvbXBsZXggZm9y
+IHlvdQojCSogU2VhcmNoIGZvciB5b3VyIFBDSSBkZXZpY2UgYnkgdXNpbmcgdGhlIGRyaXZlcgoj
+CSogRGlzYWJsZSB5b3VyIGRyaXZlciBhbmQgYXNrIHRvIHJlYm9vdCA/CiMJKiBSZXdyaXRlIGlu
+IEMKIwkqIFdyaXRlIG5jdXJzZXMgaW50ZXJmYWNlIFsgd2lzaGxpc3QgXQojCSogV3JpdGUgR1RL
+L1FUIGludGVyZmFjZSBbIHdpc2hsaXN0IF0KIwkqIFN1Ym1pdCB1cHN0cmVhbSBhcyBhc3BtLmMg
+dG8gdGhlIFBDSSBVdGlsaXRpZXMsIHdoaWNoIGFyZQojCSAgbWFpbnRhaW5lZCBieSBNYXJ0aW4g
+TWFyZXMgPG1qQHVjdy5jej4KCiMgUHJldHR5IGNvbG9ycwpHUkVFTj0iXDAzM1swMTszMm0iCllF
+TExPVz0iXDAzM1swMTszM20iCk5PUk1BTD0iXDAzM1swMG0iCkJMVUU9IlwwMzNbMzRtIgpSRUQ9
+IlwwMzNbMzFtIgpQVVJQTEU9IlwwMzNbMzVtIgpDWUFOPSJcMDMzWzM2bSIKVU5ERVJMSU5FPSJc
+MDMzWzAybSIKCiMgd2UgY2FuIHN1cmVseSByZWFkIHRoZSBzcGVjIHRvIGdldCBhIGJldHRlciB2
+YWx1ZQpNQVhfU0VBUkNIPTIwClNFQVJDSF9DT1VOVD0xCkFTUE1fQllURV9BRERSRVNTPSJJTlZB
+TElEIgoKUk9PVF9QUkVTRU5UPSQobHNwY2kgfCBncmVwIC1jICIkUk9PVF9DT01QTEVYVCIpCkVO
+RFBPSU5UX1BSRVNFTlQ9JChsc3BjaSB8IGdyZXAgLWMgIiRFTkRQT0lOVCIpCgppZiBbWyAkKGlk
+IC11KSAhPSAwIF1dOyB0aGVuCgllY2hvICJUaGlzIG5lZWRzIHRvIGJlIHJ1biBhcyByb290IgoJ
+ZXhpdCAxCmZpCgppZiBbWyAkUk9PVF9QUkVTRU5UIC1lcSAwIF1dOyB0aGVuCgllY2hvICJSb290
+IGNvbXBsZXggJFJPT1RfQ09NUExFWCBpcyBub3QgcHJlc2VudCIKCWV4aXQKZmkKCmlmIFtbICRF
+TkRQT0lOVF9QUkVTRU5UIC1lcSAwIF1dOyB0aGVuCgllY2hvICJFbmRwb2ludCAkRU5EUE9JTlQg
+aXMgbm90IHByZXNlbnQiCglleGl0CmZpCgojIFhYWDogbHNwY2kgLXMgc29tZV9kZXZpY2Vfbm90
+X2V4aXN0aW5nIGRvZXMgbm90IHJldHVybiBwb3NpdGl2ZQojIGlmIHRoZSBkZXZpY2UgZG9lcyBu
+b3QgZXhpc3QsIGZpeCB0aGlzIHVwc3RyZWFtCmZ1bmN0aW9uIGRldmljZV9wcmVzZW50KCkKewoK
+CVBSRVNFTlQ9JChsc3BjaSB8IGdyZXAgLWMgIiQxIikKCUNPTVBMQUlOVD0iJHtSRUR9bm90IHBy
+ZXNlbnQke05PUk1BTH0iCgoJaWYgW1sgJFBSRVNFTlQgLWVxIDAgXV07IHRoZW4KCQlpZiBbWyAk
+MiAhPSAicHJlc2VudCIgXV07IHRoZW4KCQkJQ09NUExBSU5UPSIke1JFRH1kaXNhcHBlYXJlZCR7
+Tk9STUFMfSIKCQlmaQoKCQllY2hvIC1lICJEZXZpY2UgJHtCTFVFfSR7MX0ke05PUk1BTH0gJENP
+TVBMQUlOVCIgCgkJcmV0dXJuIDEKCWZpCglyZXR1cm4gMAp9CgpmdW5jdGlvbiBmaW5kX2FzcG1f
+Ynl0ZV9hZGRyZXNzKCkKewoJZGV2aWNlX3ByZXNlbnQgJEVORFBPSU5UIHByZXNlbnQKCWlmIFtb
+ICQ/IC1uZSAwIF1dOyB0aGVuCgkJZXhpdAoJZmkKCglTRUFSQ0g9JChzZXRwY2kgLXMgJDEgMzQu
+YikKCSMgV2Uga25vdyBvbiB0aGUgZmlyc3Qgc2VhcmNoICRTRUFSQ0ggd2lsbCBub3QgYmUKCSMg
+MTAgYnV0IHRoaXMgc2ltcGxpZmllcyB0aGUgaW1wbGVtZW50YXRpb24uCgl3aGlsZSBbWyAkU0VB
+UkNIICE9IDEwICYmICRTRUFSQ0hfQ09VTlQgLWxlICRNQVhfU0VBUkNIIF1dOyBkbwoJCUVORF9T
+RUFSQ0g9JChzZXRwY2kgLXMgJDEgJHtTRUFSQ0h9LmIpCgoJCSMgQ29udmVydCBoZXggZGlnaXRz
+IHRvIHVwcGVyY2FzZSBmb3IgYmMKCQlTRUFSQ0hfVVBQRVI9JChwcmludGYgIiVYIiAweCR7U0VB
+UkNIfSkKCgkJaWYgW1sgJEVORF9TRUFSQ0ggPSAxMCBdXTsgdGhlbgoJCQlBU1BNX0JZVEVfQURE
+UkVTUz0kKGVjaG8gIm9iYXNlPTE2OyBpYmFzZT0xNjsgJFNFQVJDSF9VUFBFUiArIDEwIiB8IGJj
+KQoJCQlicmVhawoJCWZpCgoJCVNFQVJDSD0kKGVjaG8gIm9iYXNlPTE2OyBpYmFzZT0xNjsgJFNF
+QVJDSCArIDEiIHwgYmMpCgkJU0VBUkNIPSQoc2V0cGNpIC1zICQxICR7U0VBUkNIfS5iKQoKCQls
+ZXQgU0VBUkNIX0NPVU5UPSRTRUFSQ0hfQ09VTlQrMQoJZG9uZQoKCWlmIFtbICRTRUFSQ0hfQ09V
+TlQgLWdlICRNQVhfU0VBUkNIIF1dOyB0aGVuCgkJZWNobyAtZSAiTG9uZyBsb29wIHdoaWxlIGxv
+b2tpbmcgZm9yIEFTUE0gd29yZCBmb3IgJDEiCgkJcmV0dXJuIDEKCWZpCglyZXR1cm4gMAp9Cgpm
+dW5jdGlvbiBlbmFibGVfYXNwbV9ieXRlKCkKewoJZGV2aWNlX3ByZXNlbnQgJDEgcHJlc2VudAoJ
+aWYgW1sgJD8gLW5lIDAgXV07IHRoZW4KCQlleGl0CglmaQoKCWZpbmRfYXNwbV9ieXRlX2FkZHJl
+c3MgJDEKCWlmIFtbICQ/IC1uZSAwIF1dOyB0aGVuCgkJcmV0dXJuIDEKCWZpCgoJQVNQTV9CWVRF
+X0hFWD0kKHNldHBjaSAtcyAkMSAke0FTUE1fQllURV9BRERSRVNTfS5iKQoJQVNQTV9CWVRFX0hF
+WD0kKHByaW50ZiAiJVgiIDB4JHtBU1BNX0JZVEVfSEVYfSkKCSMgc2V0cGNpIGRvZXNuJ3Qgc3Vw
+cG9ydCBhIG1hc2sgb24gdGhlIHF1ZXJ5IHlldCwgb25seSBvbiB0aGUgc2V0LAoJIyBzbyB0byB2
+ZXJpZnkgYSBzZXR0aW5nIG9uIGEgbWFzayB3ZSBoYXZlIG5vIG90aGVyIG9wdG9pbiBidXQKCSMg
+dG8gZG8gZG8gdGhpcyBzdHVmZiBvdXJzZWx2ZXMuCglERVNJUkVEX0FTUE1fQllURV9IRVg9JChw
+cmludGYgIiVYIiAkKCggKDB4JHtBU1BNX0JZVEVfSEVYfSAmIH4weDcpIHwweCR7QVNQTV9TRVRU
+SU5HfSkpKQoKCWlmIFtbICRBU1BNX0JZVEVfQUREUkVTUyA9ICJJTlZBTElEIiBdXTsgdGhlbgoJ
+CWVjaG8gLWUgIk5vIEFTUE0gYnl0ZSBjb3VsZCBiZSBmb3VuZCBmb3IgJChsc3BjaSAtcyAkMSki
+CgkJcmV0dXJuCglmaQoKCWVjaG8gLWUgIiQobHNwY2kgLXMgJDEpIgoJZWNobyAtZW4gIlx0JHtZ
+RUxMT1d9MHgke0FTUE1fQllURV9BRERSRVNTfSR7Tk9STUFMfSA6ICR7Q1lBTn0weCR7QVNQTV9C
+WVRFX0hFWH0ke0dSRUVOfSAtLT4gJHtCTFVFfTB4JHtERVNJUkVEX0FTUE1fQllURV9IRVh9JHtO
+T1JNQUx9IC4uLiAiCgoJZGV2aWNlX3ByZXNlbnQgJDEgcHJlc2VudAoJaWYgW1sgJD8gLW5lIDAg
+XV07IHRoZW4KCQlleGl0CglmaQoKCSMgQXZvaWQgc2V0dGluZyBpZiBhbHJlYWR5IHNldAoJaWYg
+W1sgJEFTUE1fQllURV9IRVggPSAkREVTSVJFRF9BU1BNX0JZVEVfSEVYIF1dOyB0aGVuCgkJZWNo
+byAtZSAiWyR7R1JFRU59U1VDRVNTJHtOT1JNQUx9XSAoJHtHUkVFTn1hbHJlYWR5IHNldCR7Tk9S
+TUFMfSkiCgkJYXNwbV9zZXR0aW5nX3RvX3N0cmluZyAkQVNQTV9TRVRUSU5HCgkJcmV0dXJuIDAK
+CWZpCgoJIyBUaGlzIG9ubHkgd3JpdGVzIHRoZSBsYXN0IDMgYml0cwoJc2V0cGNpIC1zICQxICR7
+QVNQTV9CWVRFX0FERFJFU1N9LmI9JHtBU1BNX1NFVFRJTkd9OjMKCglzbGVlcCAzCgoJQUNUVUFM
+X0FTUE1fQllURV9IRVg9JChzZXRwY2kgLXMgJDEgJHtBU1BNX0JZVEVfQUREUkVTU30uYikKCUFD
+VFVBTF9BU1BNX0JZVEVfSEVYPSQocHJpbnRmICIlWCIgMHgke0FDVFVBTF9BU1BNX0JZVEVfSEVY
+fSkKCgkjIERvIG5vdCByZXRyeSB0aGlzIGlmIGl0IGZhaWxlZCwgaWYgaXQgZmFpbGVkIHRvIHNl
+dC4KCSMgTGlrZXkgaWYgaXQgZmFpbGVkIGl0cyBhIGdvb2QgcmVhc29uIGFuZCB5b3Ugc2hvdWxk
+IGxvb2sKCSMgaW50byB0aGF0LgoJaWYgW1sgJEFDVFVBTF9BU1BNX0JZVEVfSEVYICE9ICRERVNJ
+UkVEX0FTUE1fQllURV9IRVggXV07IHRoZW4KCQllY2hvIC1lICJcdFske1JFRH1GQUlMJHtOT1JN
+QUx9XSAoMHgke0FDVFVBTF9BU1BNX0JZVEVfSEVYfSkiCgkJcmV0dXJuIDEKCWZpCgoJZWNobyAt
+ZSAiXHRbJHtHUkVFTn1TVUNDRVNTXSR7Tk9STUFMfV0iCglhc3BtX3NldHRpbmdfdG9fc3RyaW5n
+ICRBU1BNX1NFVFRJTkcKCglyZXR1cm4gMAp9CgpkZXZpY2VfcHJlc2VudCAkRU5EUE9JTlQgbm90
+X3N1cmUKaWYgW1sgJD8gLW5lIDAgXV07IHRoZW4KCWV4aXQKZmkKCmVjaG8gLWUgIiR7Q1lBTn1S
+b290IGNvbXBsZXgke05PUk1BTH06IgplbmFibGVfYXNwbV9ieXRlICRST09UX0NPTVBMRVgKZWNo
+bwoKZWNobyAtZSAiJHtDWUFOfUVuZHBvaW50JHtOT1JNQUx9OiIKZW5hYmxlX2FzcG1fYnl0ZSAk
+RU5EUE9JTlQKZWNobwo=
+--f46d043c7da2cadeb404b6c6c592--
