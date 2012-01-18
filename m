@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab2AREVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 23:21:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51412 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837Ab2AREVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 23:21:22 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=w8ftPpTke-cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=QsuO9HH-RwI-fmukELEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326860480.17534.71.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 0/4] [ANNOUNCE] 3.0.14-rt32-rc1
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Tue, 17 Jan 2012 23:21:20 -0500
-In-Reply-To: <20120118034531.335521323@goodmis.org>
-References: <20120118034531.335521323@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757093Ab2AREVi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 23:21:38 -0500
+Received: from trent.utfs.org ([194.246.123.103]:47911 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756985Ab2AREVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 23:21:36 -0500
+X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jan 2012 23:21:36 EST
+Date: Tue, 17 Jan 2012 20:13:45 -0800 (PST)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linuxppc-dev@lists.ozlabs.org
+Subject: =?UTF-8?Q?error=3A_=E2=80=98cpus=5Fin=5Fcrash=E2=80=99_defined_but_not_used?=
+Message-ID: <alpine.DEB.2.01.1201172006310.2895@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 22:45 -0500, Steven Rostedt wrote:
-> Dear RT Folks,
-> 
-> This is the RT stable review cycle of patch 3.0.14-rt32-rc1.
-> 
+Hi,
 
-Note, I know that mainline is at 3.0.17, but I want to test these
-patches first before I merge in the stable tree.
+compiling today's git (mainline, a25a2b8) on powerpc32 gives:
 
-After this is released, I'll make a 3.0.17-rt33 (or 3.0.18-rt33 if that
-appears first ;-)
+  CC      arch/powerpc/kernel/crash.o
+cc1: warnings being treated as errors
+/usr/local/src/linux-2.6-git/arch/powerpc/kernel/crash.c:49: error: 
+‘cpus_in_crash’ defined but not used
+make[2]: *** [arch/powerpc/kernel/crash.o] Error 1
+make[1]: *** [arch/powerpc/kernel] Error 2
+make: *** [sub-make] Error 2
 
--- Steve
+I think I've seen some discussion on the list where 
+"treat-warnings-as-errors" for powerpc were discussed a while ago, but 
+cannot remember for sure right now. Full .config:
 
+    http://nerdbynature.de/bits/3.2.0/
 
+Thanks,
+Christian.
+-- 
+BOFH excuse #149:
+
+Dew on the telephone lines.
