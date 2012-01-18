@@ -1,145 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2ARD2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 22:28:01 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37647 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151Ab2ARD17 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 22:27:59 -0500
-Date: Tue, 17 Jan 2012 19:27:56 -0800
-From: mark gross <markgross@thegnar.org>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Cc: markgross@thegnar.org, "Turquette, Mike" <mturquette@ti.com>,
-        linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>
-Subject: Re: [PATCH 1/2] PM / devfreq: add min/max_freq limit requested by
- users.
-Message-ID: <20120118032756.GC27153@mgross-G62>
-Reply-To: markgross@thegnar.org
-References: <1326276130-4042-1-git-send-email-myungjoo.ham@samsung.com>
- <CAJOA=zMkRxx=PhznO5VSb3H4bSx7oTYiazesasYY_X7SzSf48A@mail.gmail.com>
- <CAJ0PZbRKknwF1LwJP6M93-GPXJ9xKuzZnDjZMF8C1id026-X4A@mail.gmail.com>
- <20120113044757.GB6004@mgross-G62>
- <CAJ0PZbTMuJfBL4iZyc=R4TkdfFuh1_XzV-KQr73330PUt6fcNQ@mail.gmail.com>
+	id S1756776Ab2ARDpH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 22:45:07 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:9541
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754351Ab2ARDpF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 22:45:05 -0500
+X-SpamScore: -5
+X-BigFish: VS-5(zz168aJ1432Nzz1202hzz8275chz2dhc1ahc1bh2a8h668h839h8e2h8e3h944hbe9k)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Stephen Warren <swarren@nvidia.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: RE: Pinmux bindings proposal
+Thread-Topic: Pinmux bindings proposal
+Thread-Index: AczSMvpNTKYWSKFeSLCZTyHqrIN5SAB+76JwAD04RoAACvoLgAABPUMAAA81xtA=
+Date: Wed, 18 Jan 2012 03:44:59 +0000
+Message-ID: <7FE21149F4667147B645348EC6057885093AD9@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC6057885091DEA@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20120117082334.GA31295@S2101-09.ap.freescale.net>
+ <7FE21149F4667147B645348EC6057885092D56@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20120117141322.GA31687@S2101-09.ap.freescale.net>
+In-Reply-To: <20120117141322.GA31687@S2101-09.ap.freescale.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.198]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJ0PZbTMuJfBL4iZyc=R4TkdfFuh1_XzV-KQr73330PUt6fcNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Either my mail reader is acting up or this email is a bit off topic.  It
-seems to be talking about DVFS/ondemand sampling rates when the
-discussion has been about anding CPU operating frequency constraint
-requests to pm_qos
-
-On Tue, Jan 17, 2012 at 07:32:05PM +0900, MyungJoo Ham wrote:
-> On Fri, Jan 13, 2012 at 1:47 PM, mark gross <markgross@thegnar.org> wrote:
-> > On Thu, Jan 12, 2012 at 11:08:44AM +0900, MyungJoo Ham wrote:
-> >>
-> >> In practice, we have been using min/max to test DVFS behaviors and its
-> >> side effects. And we are going to use them to 1. restrict power
-> >> consumption forcibly by the platform software if it is too hot or the
-> >> battery is low, and to 2. guarantee the minimum performance for
-> >> specific tasks controlled by the platform software.
-> >>
-> >> Anyway, the reason 2 could be tackled by pm-qos if we allow more
-> >> options in pm-qos with 1. pm qos type to enforce DVFS response time.
-> > what would pm_qos do with DVFS response time?  What power management
-> > knob would it enable a constraint for?
+....
+> > > It may worth introducing
+> > > another level phandle reference.  Something like the following:
+> > >
+> > > 	pinmux_sdhci: pinmux-sdhci {
+> > > 		mux =
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_MUX_1>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_MUX_1>;
+> > > 	};
+> > >
+> > > 	pinconf_sdhci_active: pinconf-sdhci-active {
+> > > 		config =
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_SLEW_RATE 4>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_SLEW_RATE 8>;
+> > > 	};
+> > >
+> > > 	pinconf_sdhci_suspend: pinconf-sdhci-suspend {
+> > > 		config =
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_TRISTATE 1>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_TRISTATE 1>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_SLEW_RATE 4>
+> > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_SLEW_RATE 8>;
+> > > 	};
+> > >
+> > The config makes sense to me.
+> > The only question is how to get group name to match with the predefined groups.
 > >
-> > pm_qos doesn't do anything but enable power throttling code to consider
-> > a constraint on how far to throttle "something".  pm_qos has no
-> > enforcement power.
+> I still incline to say there should not be any predefined groups for DT case, if
+> we choose to find the group in use only when pinmux_get() gets called. 
+Then we have too issue I said before:
+1) Inconsistent issue
+sysfs pinmux map entry has different meaning
+2) need to change the pinmux_maps from arrays to list for better to dynamically
+Insert the new created pinmux map detected.
+But this does affect the non-dt case a lot.
+
+> Even if
+> you insist to have a global scanning on device tree for all groups to create the
+> pinmux mapping table, those predefined groups can only be created by your
+> scanning code, 
+The predefined groups and functions are in soc.dts file and will be parsed
+Independently with the pinmux map table creation.
+
+> so you should know how the name comes from device tree, and you
+> should be able to recreate the name when you are trying to matching the name in
+> the table you created before.
 > 
-> 
-> - The control knob: polling interval of ondemand-like DVFS mechanisms
-> - It's ok to have no enforcement power. The DVFS mechanism only needs
-> an interface (PM QoS seems fine for this) from user space / device
-> drivers to get the response-time requirement.
-> 
-> With some events, we need to adjust DVFS polling interval.
-
-This would be a new type of request.  I don't see it as a pm_qos type of
-data item but, I can see it may be useful.
-
-My first thought is that this should be exported by cpufreq.
-
-> For now, we do this in our devices for user input events (key input,
-> touchscreen input, ...). And some peripheral device drivers want to
-> get "guaranteed response time" depending on their operational modes
-> from memory and bus at the start of their operations.
-> 
-> With user input events, user may (doing something heavy) or may not
-> (doing something light) want fast reaction from CPU/MEM/GPU/... in
-> many occasions, and we cannot determine it until the DVFS polling has
-> been done.
-> 
-> In average, with near 100% threshold, ondemand-like governors will
-> take 1.5 x polling interval to response. In a system with 100ms
-> polling interval, DVFS mechanism will take usuallly 150ms (and up to
-> 200ms) to react and this is significantly noticable to human users.
-> With 60Hz display system, this is loss of almost 10 frames.
-
-Do you really want to change the sampling rate of the DVFS governors or
-just use a pm_qos request to limit to minimum frequency the governor
-goes for and use a timer to modtime to remove the request on every UI
-event from the touch screen driver interrupt handler?
-
-> In order to address this, a touch event handler (or any
-> thread/callback or anything deals with it) may request QoS with an
-> incoming event to reduce polling interval temporarily.
-> 
-> Although PM-QoS does not have the QoS Type for this kind of metric;
-> however, DVFS response time seems to be another QoS metric candidate.
-
-sure its a candidate but I think perhaps an export from cpufreq may be a
-good candidate too.  But, I like my timer scheme best.
-
-However; this still needs a pm_qos class for cpu_min_feq to work.
-
---mark
-
-> 
-> 
+> > Besides per pin group configuration support, we may also want per pin
+> > configuration Support as the latest patch sent by Linus.
+> > http://www.spinics.net/lists/arm-kernel/msg155712.html
 > >
-> >> 2. pm qos type to enforce graphics performance. And adding a duration
-> >> option to pm-qos requests will be helpful (sort of a helper function):
-> >> i.e., pm_qos_timed_request(struct pm_qos_request *req, int
-> >> pm_qos_class, s32 value, unsigned long duration_ms);
+> This binding proposal has covered both pin and group configuration, as the
+> second parameter of 'config' property could be either a pin or group which
+> depends the on whether the configurable entity at HW level is a pin or group.
+> 
+The pinctrl driver does not know if it's group or pin.
+We may find a way to identify it.
+
+> ...
+> 
+> > > > If "muxable entities" is pins on IMX, I'm wondering how we define
+> > > > the predefined Functions and groups or if we still need to do that.
+> > > >
+> > > Let's put this in the example below.
+> > >
+> > > 	pinmux_usdhc1: pinmux-usdhc1 {
+> > > 		mux = <IMX6Q_PAD_SD1_DAT1 0>
+> > > 		      <IMX6Q_PAD_SD1_DAT2 0>
+> > > 		      ...
+> > > 	};
+> > >
+> > Yes, I agree.
+> > And in this way we're still using virtual groups.
+> > It has no big difference as we did before like:
+> > pinmux-groups {
+> >         uart4grp: group@0 {
+> >                 grp-name = "uart4grp";
+> >                 grp-pins = <107 108>;
+> >                 grp-mux = <4 4>;
+> >         };
 > >
-> > What would be good units for graphics throughput?
-> > Where in the graphics driver would you insert the equivalent of cpufreq?
-> > to control the GPU core frequency?
+> >         sd4grp: group@1 {
+> >                 grp-name = "sd4grp";
+> >                 grp-pins = <170 171 180 181 182 183 184 185 186 187>;
+> >                 grp-mux = <0 0 1 1 1 1 1 1 1 1>;
+> >         };
+> > };
+> >
+> You are right.  They are fundamentally same and just in different format.
 > 
-> I've not thought about this much yet. I've just seen the need for QoS
-> requirements from GPU people because DVFS mechanism loses a frame or
-> frames often during GPU usage without QoS information.
+> > The real problem is do we need to support individual pin mux Or still
+> > using virtual pin group?
+> > For the way Stephen proposed, we can only support individual pin mux
+> > Since IMX pins are not grouped together in HW.
+> >
+> I do not see any problem here.  If you look at the first column of 'mux'
+> property of node pinmux-usdhc1, it is a group of pins for usdhc1.
+> Isn't it one virtual pin group for usdhc1?
 > 
-> I'm not so familiar with GPUs, so I can't be sure about the metric for
-> graphics throughput. However, could it be "FLOPS", "triangles per
-> second", or GPU clock speed?
-> 
-> We have GPU DVFS drivers in linux/drivers/media/video/..., which
-> controls GPU core frequency and measures GPU usage. However, they can
-> be implemented with devfreq framework and move into drivers/devfreq/
-> later.
-> 
-> 
-> 
-> Cheers!
-> MyungJoo.
-> 
-> 
-> -- 
-> MyungJoo Ham, Ph.D.
-> Mobile Software Platform Lab, DMC Business, Samsung Electronics
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+If we treat the whole pins in 'mux' property as a group,
+There may be potential inconsistent issue since Tegra will treat each
+One in the list of 'mux' as a group.
+And it would be a problem for pinctrl core to parse it in a standard way.
+
+Regards
+Dong Aisheng
+
+
