@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab2ARPGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 10:06:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42831 "EHLO mx1.redhat.com"
+	id S1757835Ab2ARPNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 10:13:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36522 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757835Ab2ARPGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 10:06:21 -0500
-Message-ID: <1326899083.2937.14.camel@localhost>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-From: Eric Paris <eparis@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Date: Wed, 18 Jan 2012 10:04:43 -0500
-In-Reply-To: <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
-References: <20120116183730.GB21112@redhat.com>
-	 <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
-	 <20120117164523.GA17070@redhat.com>
-	 <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
-	 <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
-	 <20120117170512.GB17070@redhat.com>
-	 <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
-	 <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
-	 <20120118015013.GR11715@one.firstfloor.org>
-	 <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
-	 <20120118022217.GS11715@one.firstfloor.org>
-	 <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
-	 <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
-	 <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757647Ab2ARPNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 10:13:16 -0500
+Date: Wed, 18 Jan 2012 16:13:13 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH] mm: memcg: remove checking reclaim order in soft limit
+ reclaim
+Message-ID: <20120118151313.GF31112@tiehlicka.suse.cz>
+References: <CAJd=RBBdDriMhfetM2AWGzgxiJ1DDs-W4Ff9_1Z8DUgbyQmSkA@mail.gmail.com>
+ <20120117131601.GB14907@tiehlicka.suse.cz>
+ <CAJd=RBBcL5RuW1wC_Yh=gy2Ja8wqJ6jhf28zNi1n6MJ=+0=m2Q@mail.gmail.com>
+ <20120117140712.GC14907@tiehlicka.suse.cz>
+ <CAJd=RBAyqPwKERQL4JyCO38gjE=y8_qasHTbLtMGWqtZ1JFnUg@mail.gmail.com>
+ <20120118134053.GD31112@tiehlicka.suse.cz>
+ <CAJd=RBAs3_ic+0UbZ_Bn4tBp_t2-HuohcRrWD1d6M2oSYRNYmQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBAs3_ic+0UbZ_Bn4tBp_t2-HuohcRrWD1d6M2oSYRNYmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 22:25 -0800, Linus Torvalds wrote:
+On Wed 18-01-12 22:01:57, Hillf Danton wrote:
+> On Wed, Jan 18, 2012 at 9:40 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Wed 18-01-12 20:30:41, Hillf Danton wrote:
+> >> On Tue, Jan 17, 2012 at 10:07 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> > On Tue 17-01-12 21:29:52, Hillf Danton wrote:
+> >> >> On Tue, Jan 17, 2012 at 9:16 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> >> > Hi,
+> >> >> >
+> >> >> > On Tue 17-01-12 20:47:59, Hillf Danton wrote:
+> >> >> >> If async order-O reclaim expected here, it is settled down when setting up scan
+> >> >> >> control, with scan priority hacked to be zero. Other than that, deny of reclaim
+> >> >> >> should be removed.
+> >> >> >
+> >> >> > Maybe I have misunderstood you but this is not right. The check is to
+> >> >> > protect from the _global_ reclaim with order > 0 when we prevent from
+> >> >> > memcg soft reclaim.
+> >> >> >
+> >> >> need to bear mm hog in this way?
+> >> >
+> >> > Could you be more specific? Are you trying to fix any particular
+> >> > problem?
+> >> >
+> >> My thought is simple, the outcome of softlimit reclaim depends little on the
+> >> value of reclaim order, zero or not, and only exceeding is reclaimed, so
+> >> selective response to swapd's request is incorrect.
+> >
+> > OK, got your point, finally. Let's add Balbir (the proposed patch can
+> > be found at https://lkml.org/lkml/2012/1/17/166) to the CC list because
+> > this seems to be a design decision.
+> >
+> > I always thought that this is because we want non-userspace (high order)
+> > mem pressure to be handled by the global reclaim only. And it makes some
+> > sense to me because it is little bit strange to reclaim for order-0
+> > while the request is for an higher order. I guess this might lead to an
+> > extensive and pointless reclaiming because we might end up with many
+> > free pages which cannot satisfy higher order allocation.
+> >
+> > On the other hand, it is true that the documentation says that the soft
+> > limit is considered when "the system detects memory contention or low
+> > memory" which doesn't say that the contention comes from memcg accounted
+> > memory.
+> >
+> > Anyway this changes the current behavior so it would better come with
+> > much better justification which shows that over reclaim doesn't happen
+> > and that we will not see higher latencies with higher order allocations.
+> >
+> 
+> As the function shows, the checked reclaim order is not used, but the
+> scan control is prepared with order(= 0), which is called async order-0
+> reclaim in my tern, then your worries on over reclaim and higher latencies
+> could be removed, I think 8-)
 
-> Of course, limiting things so that you cannot map the same page
-> executably *and* writably is one solution - and a good idea regardless
-> - so secure environments can still exist. But even then you could have
-> races in a multi-threaded environment (they'd just be *much* harder to
-> trigger for an attacker).
+Not really. My concern was that memcg will reclaim for order-0 while the
+kswapd reclaims for order-N so after we reclaimed something from cgroups
+we finally start reclaiming for order-N.
 
-Gratuitous SELinux for the win e-mail!  (Feel free to delete now)  We
-typically, for all confined domains, do not allow mapping anonymous
-memory both W and X.  Actually you can't even map it W and then map it
-X...
-
-Now if there is file which you have both W and X SELinux permissions
-(which is rare, but not impossible) you could map it in two places.  So
-we can (and do) build SELinux sandboxes which address this.
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
