@@ -1,57 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab2ARPaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 10:30:18 -0500
-Received: from mail.servus.at ([193.170.194.20]:47398 "EHLO mail.servus.at"
+	id S1756243Ab2ARPby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 10:31:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60513 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757910Ab2ARPaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 10:30:16 -0500
-X-Greylist: delayed 1488 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Jan 2012 10:30:16 EST
-Message-ID: <4F16DFB0.2060404@oberhumer.com>
-Date: Wed, 18 Jan 2012 16:05:20 +0100
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Organization: oberhumer.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1751141Ab2ARPbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 10:31:52 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] KEYS: Allow special keyrings to be cleared
+To: jmorris@namei.org
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve Dickson <steved@redhat.com>
+Date: Wed, 18 Jan 2012 15:31:45 +0000
+Message-ID: <20120118153145.30490.61734.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: chris.mason@oracle.com, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>
-Subject: Re: Updated btrfs/crypto snappy interface ready for merging
-References: <1326414530-10789-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1326414530-10789-1-git-send-email-andi@firstfloor.org>
-X-no-Archive: yes
-X-Oberhumer-Conspiracy: There is no conspiracy. Trust us.
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-13 01:28, Andi Kleen wrote:
-> Here's a slightly updated version of the BTRFS snappy interface.
-> snappy is a faster compression algorithm that provides similar
-> compression as LZO, but generally better performance.
+The kernel contains some special internal keyrings, for instance the DNS
+resolver keyring :
 
-I'd like to note that the LZO version in the current Linux kernel is
-rather outdated - it seems to be based on the 2005 release.
+2a93faf1 I-----     1 perm 1f030000     0     0 keyring   .dns_resolver: empty
 
-In fact the latest version LZO 2.06 does compress both slightly faster and
-better than snappy 1.0.4 when benchmarking the Calgary and Silesia
-compression corpus (tested with gcc 4.6 on Nehalem & Sandy Bridge).
+It would occasionally be useful to allow the contents of such keyrings to be
+flushed by root (cache invalidation).
 
-Furthermore please be aware that from a pure compression point of view
-snappy et al. are very close cousins of LZO (strictly byte-aligned LZ77)
-that mainly differ in implementation issues like using a table to
-number of branches - and indeed similar optimizations could be applied
-to any version.
+Allow a flag to be set on a keyring to mark that someone possessing the
+sysadmin capability can clear the keyring, even without normal write access to
+the keyring.
 
-I'm not sure if there is an official kernel maintainer of LZO, but I'd
-offer to assist you updating to the latest version and eliminating
-any possible performance issues.
+Set this flag on the special keyrings created by the DNS resolver, the NFS
+identity mapper and the CIFS identity mapper.
 
-Cheers,
-Markus
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: Steve Dickson <steved@redhat.com>
+---
 
--- 
-Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
+ Documentation/networking/dns_resolver.txt |    4 ++++
+ Documentation/security/keys.txt           |    4 ++++
+ fs/cifs/cifsacl.c                         |    1 +
+ fs/nfs/idmap.c                            |    1 +
+ include/linux/key.h                       |    1 +
+ net/dns_resolver/dns_key.c                |    1 +
+ security/keys/keyctl.c                    |   15 ++++++++++++++-
+ 7 files changed, 26 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/networking/dns_resolver.txt b/Documentation/networking/dns_resolver.txt
+index 7f531ad..d86adcd 100644
+--- a/Documentation/networking/dns_resolver.txt
++++ b/Documentation/networking/dns_resolver.txt
+@@ -102,6 +102,10 @@ implemented in the module can be called after doing:
+      If _expiry is non-NULL, the expiry time (TTL) of the result will be
+      returned also.
+ 
++The kernel maintains an internal keyring in which it caches looked up keys.
++This can be cleared by any process that has the CAP_SYS_ADMIN capability by
++the use of KEYCTL_KEYRING_CLEAR on the keyring ID.
++
+ 
+ ===============================
+ READING DNS KEYS FROM USERSPACE
+diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+index 4d75931..713ec23 100644
+--- a/Documentation/security/keys.txt
++++ b/Documentation/security/keys.txt
+@@ -554,6 +554,10 @@ The keyctl syscall functions are:
+      process must have write permission on the keyring, and it must be a
+      keyring (or else error ENOTDIR will result).
+ 
++     This function can also be used to clear special kernel keyrings if they
++     are appropriately marked if the user has CAP_SYS_ADMIN capability.  The
++     DNS resolver cache keyring is an example of this.
++
+ 
+  (*) Link a key into a keyring:
+ 
+diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
+index 72ddf23..854749d 100644
+--- a/fs/cifs/cifsacl.c
++++ b/fs/cifs/cifsacl.c
+@@ -556,6 +556,7 @@ init_cifs_idmap(void)
+ 
+ 	/* instruct request_key() to use this special keyring as a cache for
+ 	 * the results it looks up */
++	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
+ 	cred->thread_keyring = keyring;
+ 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
+ 	root_cred = cred;
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index 2c05f19..a1bbf77 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -198,6 +198,7 @@ int nfs_idmap_init(void)
+ 	if (ret < 0)
+ 		goto failed_put_key;
+ 
++	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
+ 	cred->thread_keyring = keyring;
+ 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
+ 	id_resolver_cache = cred;
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 5253471..1600ebf 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -155,6 +155,7 @@ struct key {
+ #define KEY_FLAG_IN_QUOTA	3	/* set if key consumes quota */
+ #define KEY_FLAG_USER_CONSTRUCT	4	/* set if key is being constructed in userspace */
+ #define KEY_FLAG_NEGATIVE	5	/* set if key is negative */
++#define KEY_FLAG_ROOT_CAN_CLEAR	6	/* set if key can be cleared by root without permission */
+ 
+ 	/* the description string
+ 	 * - this is used to match a key against search criteria
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index fa000d2..c73bba3 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -281,6 +281,7 @@ static int __init init_dns_resolver(void)
+ 
+ 	/* instruct request_key() to use this special keyring as a cache for
+ 	 * the results it looks up */
++	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
+ 	cred->thread_keyring = keyring;
+ 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
+ 	dns_resolver_cache = cred;
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 0b3f5d7..6523599 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -388,11 +388,24 @@ long keyctl_keyring_clear(key_serial_t ringid)
+ 	keyring_ref = lookup_user_key(ringid, KEY_LOOKUP_CREATE, KEY_WRITE);
+ 	if (IS_ERR(keyring_ref)) {
+ 		ret = PTR_ERR(keyring_ref);
++
++		/* Root is permitted to invalidate certain special keyrings */
++		if (capable(CAP_SYS_ADMIN)) {
++			keyring_ref = lookup_user_key(ringid, 0, 0);
++			if (IS_ERR(keyring_ref))
++				goto error;
++			if (test_bit(KEY_FLAG_ROOT_CAN_CLEAR,
++				     &key_ref_to_ptr(keyring_ref)->flags))
++				goto clear;
++			goto error_put;
++		}
++
+ 		goto error;
+ 	}
+ 
++clear:
+ 	ret = keyring_clear(key_ref_to_ptr(keyring_ref));
+-
++error_put:
+ 	key_ref_put(keyring_ref);
+ error:
+ 	return ret;
+
