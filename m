@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab2ARTHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 14:07:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35607 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455Ab2ARTHk (ORCPT
+	id S1753140Ab2ARTUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 14:20:18 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54028 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab2ARTUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 14:07:40 -0500
-Message-ID: <4F171873.9040308@kernel.dk>
-Date: Wed, 18 Jan 2012 20:07:31 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	Wed, 18 Jan 2012 14:20:16 -0500
+Message-ID: <4F171B6B.2040303@gmail.com>
+Date: Wed, 18 Jan 2012 14:20:11 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        koverstreet@google.com, Neil Brown <neilb@suse.de>
-Subject: Re: Kernel crash in icq_free_icq_rcu
-References: <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com> <20120118011112.GB32160@htj.dyndns.org> <1326850253.22361.619.camel@sli10-conroe> <1326866602.22361.624.camel@sli10-conroe> <20120118135126.GB30204@redhat.com> <20120118142005.GC30204@redhat.com> <20120118160957.GB30664@google.com> <4F16F245.9000708@kernel.dk> <4F16F3CA.90904@kernel.dk> <20120118163638.GD30204@redhat.com> <20120118171029.GD30664@google.com>
-In-Reply-To: <20120118171029.GD30664@google.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Venki Pallipadi <venki@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+References: <1326852454-26117-1-git-send-email-venki@google.com> <4F165EB4.9090309@gmail.com> <CABeCy1Y+02K3wiKra+w6UWy9ZVJh3-EajsFB6BwKgZwW3ma9BQ@mail.gmail.com>
+In-Reply-To: <CABeCy1Y+02K3wiKra+w6UWy9ZVJh3-EajsFB6BwKgZwW3ma9BQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-18 18:10, Tejun Heo wrote:
-> Hello, Vivek.
-> 
-> On Wed, Jan 18, 2012 at 11:36:38AM -0500, Vivek Goyal wrote:
->> Not calling ioscheduler during plug merge will allow merging of sync/async
->> requests together. I guess we wouldn't want that. The only check we can
->> skip in case of plug merge, is whether bio and rq beong to same task/cfqq
->> or not.
+(1/18/12 1:52 PM), Venki Pallipadi wrote:
+> On Tue, Jan 17, 2012 at 9:55 PM, KOSAKI Motohiro
+> <kosaki.motohiro@gmail.com>  wrote:
+>> (1/17/12 9:07 PM), Venkatesh Pallipadi wrote:
+>>> Kernel's notion of possible cpus (from include/linux/cpumask.h)
+>>>    *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
+>>>
+>>>    *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
+>>>    *  that it is possible might ever be plugged in at anytime during the
+>>>    *  life of that system boot.
+>>>
+>>>    #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
+>>>
+>>> and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
+>>> and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
+>>>
+>>> i.e, We needlessly go through this mask based calculation everytime
+>>> num_possible_cpus() is called.
+>>>
+>>> The problem is there with cpu_online_mask() as well, which is fixed value at
+>>> boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
+>>> in HOTPLUG case.
+>>>
+>>> Though most of the callers of these two routines are init time (with few
+>>> exceptions of runtime calls), it is cleaner to use variables
+>>> and not go through this repeated mask based calculation.
+>>>
+>>> Signed-off-by: Venkatesh Pallipadi<venki@google.com>
+>>> ---
+>>>    include/linux/cpumask.h |    8 ++++++--
+>>>    kernel/cpu.c            |    9 +++++++++
+>>>    2 files changed, 15 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+>>> index 4f7a632..2eb04dd 100644
+>>> --- a/include/linux/cpumask.h
+>>> +++ b/include/linux/cpumask.h
+>>> @@ -80,9 +80,13 @@ extern const struct cpumask *const cpu_online_mask;
+>>>    extern const struct cpumask *const cpu_present_mask;
+>>>    extern const struct cpumask *const cpu_active_mask;
+>>>
+>>> +extern int nr_online_cpus;
+>>> +
+>>>    #if NR_CPUS>    1
+>>> -#define num_online_cpus()    cpumask_weight(cpu_online_mask)
+>>> -#define num_possible_cpus()  cpumask_weight(cpu_possible_mask)
+>>> +
+>>> +#define num_online_cpus()    (nr_online_cpus)
+>>> +#define num_possible_cpus()  (nr_cpu_ids)
 >>
->> May be separate elevator functions for plug merge (without lock) and
->> elevator merge (with lock) will do?
-> 
-> I don't think so.  As I wrote before, plugging is about issuing, not
-> scheduling.  In a sense, it's a block layer service to upper layers to
-> make building larger request easier such that block layer users can do
-> "plug - issue multiple bios of whatever size - flush" instead of
-> having to manually build series of maximum sized bios.  As such, bios
-> submitted during a single plugging fare naturally expected to be for
-> the same purpose.  They all belong to single IO unit after all.
-> 
-> Note that although request is involved in plug merging, the request
-> isn't known to elevator (other than set_request(), that is).  The only
-> reason we go half-way through request issuing, stash request, do plug
-> merging and then do the rest on flush is because block layer doesn't
-> have a way to deal with arbitrarily sized bios.  We're piggy backing
-> on request merge logic because that's the only way we know how to
-> group bios.
-> 
-> In the long run, I think plugging should be done with bios.  There's
-> no reason to care about requests at that level.  We're just collecting
-> bios issued as a unit and are likely to be close to each other.  If
-> request_queue can deal with arbitrarily sized bios (and list of them),
-> we can simply collect bios and flush down on unplug.  This would be
-> much cleaner, make plugging useable for bio based drivers and allow
-> simplifying stacking drivers.
+>> nr_cpu_ids mean maximum cpu id of cpus. if cpu id are sparse, maximum id
+>> doesn't match number of cpus.
+>>
+>
+> Yes. But will it be sparse in any arch? I saw some of the users of
+> num_possible_cpus() doing things like allocating a buffer for that
+> size and then indexing it using get_cpu(). So, I thought it would be
+> better to use the existing nr_cpu_ids instead of inventing another
+> variable. If indeed any arch is depending on this being sparse, we can
+> have a new variable similar to num_possible_cpus and also audit all
+> users of num_possible_cpus to see whether they should be using
+> nr_cpu_ids instead.
 
-In the longer term, plugging and merging should be much less needed.
-Most file systems should have done this upfront already, so the need for
-it should be much smaller. For the eventual multiqueue setup, I don't
-plan on doing much work around merging at all. Perhaps some basic
-merging for when it hits the final queue, but not at submit time.
+If my remember is correct, sparc does.
 
--- 
-Jens Axboe
 
