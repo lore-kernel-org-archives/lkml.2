@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab2ARJhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 04:37:06 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40798 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757271Ab2ARJhE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:37:04 -0500
-Date: Wed, 18 Jan 2012 09:36:20 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com, rajeev-dlh.kumar@st.com,
-        bhupesh.sharma@st.com, linus.walleij@linaro.org, mirko.gardi@st.com,
-        perex@perex.cz, vipin.kumar@st.com, vipulkumar.samar@st.com,
-        egtvedt@samfundet.no, pratyush.anand@st.com, deepak.sikri@st.com,
-        cjb@laptop.org, hskinnemoen@gmail.com, bhavna.yadav@st.com,
-        armando.visconti@st.com, shiraz.hashim@st.com, amit.virdi@st.com,
-        vincenzo.frascino@st.com, ulf.hansson@stericsson.com,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viresh.linux@gmail.com,
-        kernel@pengutronix.de
-Subject: Re: [PATCH V2 08/12] dmaengine/dw_dmac: Unmap all memory buffers
-	after completion of slave transfers
-Message-ID: <20120118093620.GC1068@n2100.arm.linux.org.uk>
-References: <cover.1326876464.git.viresh.kumar@st.com> <ba53f229f3f594bfe0459b01a9ebb4d9b2c15882.1326876464.git.viresh.kumar@st.com>
+	id S932145Ab2ARJkK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:40:10 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33137 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757104Ab2ARJkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 04:40:05 -0500
+Date: Wed, 18 Jan 2012 10:39:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [GIT PULL] tracing: make signal tracepoints more useful
+Message-ID: <20120118093944.GD5842@elte.hu>
+References: <20120110174509.GA30802@redhat.com>
+ <20120113182015.GA3902@redhat.com>
+ <20120115182441.GA24694@redhat.com>
+ <20120116074540.GE15641@elte.hu>
+ <1326717070.7642.144.camel@gandalf.stny.rr.com>
+ <20120116125329.GB31667@elte.hu>
+ <20120116151001.GB12817@redhat.com>
+ <CA+55aFwBW3abeSGoRMZBKERmSKk76Xm+uv7N+ZajvqOyv=aH3g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ba53f229f3f594bfe0459b01a9ebb4d9b2c15882.1326876464.git.viresh.kumar@st.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CA+55aFwBW3abeSGoRMZBKERmSKk76Xm+uv7N+ZajvqOyv=aH3g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 02:41:55PM +0530, Viresh Kumar wrote:
-> Currently, after completion of transfer, source address or destination address
-> of only the first LLI descriptor is unmapped. And length passed for unmap is
-> total length of all descriptors in the list. Which means unmapping code assumed
-> that the memory buffers pointed to by the descriptors will be physically
-> contiguous, which might not be the case. It is possible for other drivers to
-> pass sglist to slave_sg(), in which all buffers are scattered throughout the
-> memory.
-> 
-> This patch intends to fix this wrong expectation of dw_dmac. Now, first desc
-> will not contain total length of transfer. But individual descriptors will
-> contain their individual lengths. Finally, we will call unmap for all
-> descriptors.
 
-NAK.  For reasons stated previously and subsequently ignored.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Mon, Jan 16, 2012 at 7:10 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > But do we really need to keep the old tracepoint? IOW, what 
+> > if we simply rename it and add more info?
+> 
+> Quite frankly, unless somebody can point to something that 
+> breaks, I'd rather just change the existing one.
+> 
+> Nobody outside of a few special cases uses tracepoints. 
+> *nobody*.  The only apps I have ever seen that matters to 
+> anybody ends up being latencytop and powertop. If those two 
+> have been tested and don't care, I don't think we should care.
+
+Correct. (There's also sysprof and perf - both should be fine.)
+
+As i said in my very first mail:
+
+> [...] Which apps/tools rely on the old tracepoint? If it's 
+> exactly zero apps then we might be able to change it, but this 
+> needs to be investigated.
+
+I resisted Steve's "this ABI change is safe by design" notion 
+which is somewhat of a disease. It is probably fine but not by 
+definition.
+
+Thanks,
+
+	Ingo
