@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab2ARI7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 03:59:40 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:37169 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756165Ab2ARI7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 03:59:38 -0500
-X-IronPort-AV: E=Sophos;i="4.71,528,1320624000"; 
-   d="scan'208";a="10108939"
-Subject: Re: [PATCH] add netconsole support for xen-netfront
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Tina Yang <tina.yang@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gurudas.pai@oracle.com" <gurudas.pai@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-In-Reply-To: <4F160113.1030503@oracle.com>
-References: <1326271956-25565-1-git-send-email-zhenzhong.duan@oracle.com>
-	 <20120112141745.GA7685@phenom.dumpdata.com>
-	 <1326452769.17210.331.camel@zakaz.uk.xensource.com>
-	 <4F15EB3E.3060700@oracle.com> <20120117215100.GA25367@phenom.dumpdata.com>
-	 <4F160113.1030503@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Wed, 18 Jan 2012 08:59:36 +0000
-Message-ID: <1326877176.29475.37.camel@dagon.hellion.org.uk>
+	id S1756707Ab2ARJBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:01:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756165Ab2ARJBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 04:01:16 -0500
+Message-ID: <4F168A49.8000606@redhat.com>
+Date: Wed, 18 Jan 2012 10:00:57 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [PATCH stable 3/4] block: fail SCSI passthrough ioctls on partition
+ devices
+References: <1326772723.2819.167.camel@deadeye>  <1326773222.2819.172.camel@deadeye> <4F1545A4.3000809@redhat.com> <1326862077.2819.210.camel@deadeye>
+In-Reply-To: <1326862077.2819.210.camel@deadeye>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 23:15 +0000, Tina Yang wrote:
-> On 1/17/2012 1:51 PM, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Jan 17, 2012 at 01:42:22PM -0800, Tina Yang wrote:
-> >> On 1/13/2012 3:06 AM, Ian Campbell wrote:
-> >> Although netdump is now obsolete, I think it's always a good practice
-> >> to preserve caller's irq status as we had a very bad experience
-> >> chasing a similar problem caused by such a irq change in RDS
-> > Did you find the culprit of it? Was there a patch for that in the
-> > upstream kernel?
-> Yes.  It has nothing to do with net drivers but same cause
-> elsewhere in the kernel.
+On 01/18/2012 05:47 AM, Ben Hutchings wrote:
+> >     Changes with respect to 3.3: return -ENOTTY from scsi_verify_blk_ioctl
+> >     and -ENOIOCTLCMD from sd_compat_ioctl. ]
+>
+> But in 2.6.32, compat_sys_ioctl will end up returning EINVAL rather than
+> ENOTTY for an unhandled ioctl number.
 
-I didn't think start_xmit could be called with interrupts disabled or
-from interrupt context but perhaps I am wrong about that or perhaps
-netconsole changes things?
+No, it won't.  The ioctl will percolate up the non-compat path and then 
+sd_ioctl will return ENOTTY.
 
-Right, Documentation/networking/netdevices.txt states that start_xmit
-can be called with interrupts disabled by netconsole and therefore using
-the irqsave/restore locking in this function is, AFAICT, correct.
+> Also, since we're denying ioctls
+> for security reasons rather than because we don't know how to handle
+> them, I don't think there's any harm in doing this.
 
-> >> in the not too long ago past.
-> > OK, it sounds like it was issues in the past but might not be the
-> > case anymore.
-> >
-> > Could please re-test it without that spinlock irqsave patch using
-> > the upstream kernel (or just UEK2 since it is an 3.0 type kernel).
-> Shouldn't be the case now, but don't know about the future.
-> The fact is as long as there is a new caller that has the expectation
-> of preserved irq status, it would be a problem.
+There is harm.  You'll be blacklisting also the standard block device 
+ioctls, and those won't work on 32-on-64 anymore.  A system with 32-bit 
+userland will likely not boot anymore.  This is also somewhat exchanged 
+in my original exchange with Linus.
 
-The question is not so much what may or may not be a problem in the
-future but what the requirements of this function are, in particular
-those imposed by the network stack for the start_xmit function.
-
-> As Ian said, some net drivers have been cautious in this regard already by
-> saving/restoring the status, but apparently not everyone.
-
-I was talking about the interrupt/poll handler here since I hadn't yet
-noticed that the locking change was also in start_xmit and not just the
-poll/interrupt paths (which was actually just code motion and not a
-locking change in any case).
-
-Ian.
-
-
+Paolo
