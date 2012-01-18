@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab2ASADi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 19:03:38 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:41623 "EHLO
+	id S1756152Ab2ASAEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 19:04:16 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:41625 "EHLO
 	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab2ASADh (ORCPT
+	with ESMTP id S1753182Ab2ASADh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jan 2012 19:03:37 -0500
 From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
@@ -14,9 +14,9 @@ Cc: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
         "Thomas Gleixner" <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
         "Vivien Didelot" <vivien.didelot@savoirfairelinux.com>
-Subject: [PATCH v4 3/4] x86/platform: (TS-5500) add LED support
-Date: Wed, 18 Jan 2012 18:52:10 -0500
-Message-Id: <1326930731-21215-4-git-send-email-vivien.didelot@savoirfairelinux.com>
+Subject: [PATCH v4 4/4] x86/platform: (TS-5500) add ADC support
+Date: Wed, 18 Jan 2012 18:52:11 -0500
+Message-Id: <1326930731-21215-5-git-send-email-vivien.didelot@savoirfairelinux.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1326930731-21215-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 References: <1326930731-21215-1-git-send-email-vivien.didelot@savoirfairelinux.com>
@@ -29,221 +29,520 @@ From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
 Signed-off-by: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
 Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 ---
- arch/x86/platform/ts5500/Kconfig      |    7 ++
+ arch/x86/platform/ts5500/Kconfig      |    7 +
  arch/x86/platform/ts5500/Makefile     |    1 +
- arch/x86/platform/ts5500/ts5500_led.c |  180 +++++++++++++++++++++++++++++++++
- 3 files changed, 188 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/platform/ts5500/ts5500_led.c
+ arch/x86/platform/ts5500/ts5500_adc.c |  478 +++++++++++++++++++++++++++++++++
+ 3 files changed, 486 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/platform/ts5500/ts5500_adc.c
 
 diff --git a/arch/x86/platform/ts5500/Kconfig b/arch/x86/platform/ts5500/Kconfig
-index 62095c9..76f777f 100644
+index 76f777f..f1a5f1d 100644
 --- a/arch/x86/platform/ts5500/Kconfig
 +++ b/arch/x86/platform/ts5500/Kconfig
-@@ -13,3 +13,10 @@ config TS5500_GPIO
+@@ -20,3 +20,10 @@ config TS5500_LED
  	default y
  	help
- 	  This enables support for the DIO headers for GPIO usage.
+ 	  This option enables support for the on-chip LED.
 +
-+config TS5500_LED
-+	tristate "TS-5500 LED Support"
-+	depends on TS5500 && LEDS_CLASS
++config TS5500_ADC
++	tristate "TS-5500 ADC"
++	depends on TS5500 && HWMON=y
 +	default y
 +	help
-+	  This option enables support for the on-chip LED.
++      Support for the A/D converter on Technologic Systems TS-5500 SBCs.
 diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
-index 71c1398..88eccc9 100644
+index 88eccc9..dcf46d8 100644
 --- a/arch/x86/platform/ts5500/Makefile
 +++ b/arch/x86/platform/ts5500/Makefile
-@@ -1,2 +1,3 @@
+@@ -1,3 +1,4 @@
  obj-$(CONFIG_TS5500)			+= ts5500.o
  obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
-+obj-$(CONFIG_TS5500_LED)		+= ts5500_led.o
-diff --git a/arch/x86/platform/ts5500/ts5500_led.c b/arch/x86/platform/ts5500/ts5500_led.c
+ obj-$(CONFIG_TS5500_LED)		+= ts5500_led.o
++obj-$(CONFIG_TS5500_ADC)		+= ts5500_adc.o
+diff --git a/arch/x86/platform/ts5500/ts5500_adc.c b/arch/x86/platform/ts5500/ts5500_adc.c
 new file mode 100644
-index 0000000..1c78ec2
+index 0000000..fc4560f
 --- /dev/null
-+++ b/arch/x86/platform/ts5500/ts5500_led.c
-@@ -0,0 +1,180 @@
++++ b/arch/x86/platform/ts5500/ts5500_adc.c
+@@ -0,0 +1,478 @@
 +/*
-+ * Technologic Systems TS-5500 boards - LED driver
++ * Technologic Systems TS-5500 boards - Mapped MAX197 ADC driver
 + *
 + * Copyright (c) 2010-2012 Savoir-faire Linux Inc.
-+ *	Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
++ *          Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
 + *
-+ * Portions Copyright (c) 2008 Compulab, Ltd.
-+ *	Mike Rapoport <mike@compulab.co.il>
++ * Portions Copyright (C) 2008 Marc Pignat <marc.pignat@hevs.ch>
 + *
-+ * Portions Copyright (c) 2006-2008 Marvell International Ltd.
-+ *	Eric Miao <eric.miao@marvell.com>
-+ *
-+ * Based on drivers/leds/leds-da903x.c from linux-2.6.32.8.
++ * The driver uses direct access for communication with the ADC.
++ * Should work unchanged with the MAX199 chip.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ * The TS-5500 uses a CPLD to abstract the interface to a MAX197.
 + */
 +
++#include <linux/init.h>
 +#include <linux/module.h>
 +#include <linux/kernel.h>
-+#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/delay.h>
 +#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/sysfs.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/mutex.h>
 +#include <linux/slab.h>
 +#include <linux/io.h>
-+#include <linux/leds.h>
 +#include "ts5500.h"
 +
-+/**
-+ * struct ts5500_led - LED structure
-+ * @cdev:		LED class device structure.
-+ * @ioaddr:		LED I/O address.
++#define TS5500_ADC_CTRL_REG		0x195	/* Conversion state register */
++#define TS5500_ADC_INIT_LSB_REG		0x196	/* Init conv. / LSB register */
++#define TS5500_ADC_MSB_REG		0x197	/* MSB register */
++/*
++ * Control bits of A/D command
++ * bits 0-2:	selected channel (0 - 7)
++ * bits 3:	uni/bipolar (0 = unipolar (ie 0 to +5V))
++ *			    (1 = bipolar (ie -5 to +5V))
++ * bit 4:	selected range (0 = 5v range, 1 = 10V range)
++ * bit 5-7:	padded zero (unused)
 + */
-+struct ts5500_led {
-+	struct led_classdev	cdev;
-+	int			ioaddr;
-+	int			bit;
++
++#define TS5500_ADC_CHANNELS_MAX		8	/* 0 to 7 channels on device */
++
++#define TS5500_ADC_BIPOLAR		0x08
++#define TS5500_ADC_UNIPOLAR		0x00
++#define TS5500_ADC_RANGE_5V		0x00	/* 0 to 5V range */
++#define TS5500_ADC_RANGE_10V		0x10	/* 0 to 10V range */
++
++#define TS5500_ADC_READ_DELAY		15	/* usec */
++#define TS5500_ADC_READ_BUSY_MASK	0x01
++#define TS5500_ADC_NAME			"MAX197 (8 channels)"
++
++/**
++ * struct ts5500_adc_platform_data
++ * @name:	Name of the device.
++ * @ioaddr:	I/O address containing:
++ *		.data:		Data register for conversion reading.
++ *		.ctrl:		A/D Control Register (bit 0 = 0 when
++ *				conversion completed).
++ * @read:	Information about conversion reading, with:
++ *		.delay:		Delay before next conversion.
++ *		.busy_mask:	Control register bit 0 equals 1 means
++ *				conversion is not completed yet.
++ * @ctrl:	Data tables addressable by [polarity][range].
++ * @ranges:	Ranges.
++ *		.min:		Min value.
++ *		.max:		Max value.
++ * @scale:	Polarity/Range coefficients to scale raw conversion reading.
++ */
++struct ts5500_adc_platform_data {
++	const char *name;
++	struct {
++		int data;
++		int ctrl;
++	} ioaddr;
++	struct {
++		u8 delay;
++		u8 busy_mask;
++	} read;
++	u8 ctrl[2][2];
++	struct {
++		int min[2][2];
++		int max[2][2];
++	} ranges;
++	int scale[2][2];
 +};
 +
-+static void ts5500_led_set(struct led_classdev *led_cdev,
-+			   enum led_brightness value)
++#define ts5500_adc_test_bit(bit, map)	(test_bit(bit, map) != 0)
++
++/**
++ * struct ts5500_adc_chip
++ * @hwmon_dev:		The hwmon device.
++ * @lock:		Read/Write mutex.
++ * @spec:		The mapped MAX197 platform data.
++ * @polarity:		bitmap for polarity.
++ * @range:		bitmap for range.
++ */
++struct ts5500_adc_chip {
++	struct device *hwmon_dev;
++	struct mutex lock;
++	struct ts5500_adc_platform_data spec;
++	DECLARE_BITMAP(polarity, TS5500_ADC_CHANNELS_MAX);
++	DECLARE_BITMAP(range, TS5500_ADC_CHANNELS_MAX);
++};
++
++static s32 ts5500_adc_scale(struct ts5500_adc_chip *chip, s16 raw,
++			    int polarity, int range)
 +{
-+	struct ts5500_led *led = container_of(led_cdev, struct ts5500_led,
-+					      cdev);
-+	outb(!!value, led->ioaddr);
++	s32 scaled = raw;
++
++	scaled *= chip->spec.scale[polarity][range];
++	scaled /= 10000;
++
++	return scaled;
 +}
 +
-+static struct led_info ts5500_led_info = {
-+	.name = "ts5500_led",
-+	.default_trigger = "ts5500_led",
-+	.flags = TS5500_LED_MASK
-+};
++static int ts5500_adc_range(struct ts5500_adc_chip *chip, int is_min,
++			       int polarity, int range)
++{
++	if (is_min)
++		return chip->spec.ranges.min[polarity][range];
++	return chip->spec.ranges.max[polarity][range];
++}
 +
-+static struct led_platform_data ts5500_led_platform_data = {
-+	.num_leds = 1,
-+	.leds = &ts5500_led_info
-+};
++static int ts5500_adc_strtol(const char *buf, long *value, int range1,
++				int range2)
++{
++	if (strict_strtol(buf, 10, value))
++		return -EINVAL;
 +
-+static struct resource ts5500_led_resources[] = {
-+	{
-+		.name = "ts5500_led",
-+		.start = TS5500_LED_JMPRS_REG,
-+		.end = TS5500_LED_JMPRS_REG,
-+		.flags = IORESOURCE_IO
++	if (range1 < range2)
++		*value = SENSORS_LIMIT(*value, range1, range2);
++	else
++		*value = SENSORS_LIMIT(*value, range2, range1);
++
++	return 0;
++}
++
++static struct ts5500_adc_chip *ts5500_adc_get_drvdata(struct device *dev)
++{
++	return platform_get_drvdata(to_platform_device(dev));
++}
++
++/**
++ * ts5500_adc_show_range() - Display range on user output
++ *
++ * Function called on read access on
++ * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_{min,max}
++ */
++static ssize_t ts5500_adc_show_range(struct device *dev,
++				 struct device_attribute *devattr, char *buf)
++{
++	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++	int is_min = attr->nr != 0;
++	int polarity, range;
++
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
++
++	polarity = ts5500_adc_test_bit(attr->index, chip->polarity);
++	range = ts5500_adc_test_bit(attr->index, chip->range);
++
++	mutex_unlock(&chip->lock);
++
++	return sprintf(buf, "%d\n",
++		       ts5500_adc_range(chip, is_min, polarity, range));
++}
++
++/**
++ * ts5500_adc_store_range() - Write range from user input
++ *
++ * Function called on write access on
++ * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_{min,max}
++ */
++static ssize_t ts5500_adc_store_range(struct device *dev,
++				  struct device_attribute *devattr,
++				  const char *buf, size_t count)
++{
++	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++	int is_min = attr->nr != 0;
++	int range1 = ts5500_adc_range(chip, is_min, 0, 0);
++	int range2 = ts5500_adc_range(chip, is_min, 1, 1);
++	long value;
++
++	if (ts5500_adc_strtol(buf, &value, range1, range2))
++		return -EINVAL;
++
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
++
++	if (abs(value) > 5000)
++		set_bit(attr->index, chip->range);
++	else
++		clear_bit(attr->index, chip->range);
++
++	if (is_min) {
++		if (value < 0)
++			set_bit(attr->index, chip->polarity);
++		else
++			clear_bit(attr->index, chip->polarity);
++	}
++
++	mutex_unlock(&chip->lock);
++
++	return count;
++}
++
++/**
++ * ts5500_adc_show_input() - Show channel input
++ *
++ * Function called on read access on
++ * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_input
++ */
++static ssize_t ts5500_adc_show_input(struct device *dev,
++				     struct device_attribute *devattr,
++				     char *buf)
++{
++	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	int polarity, range;
++	int ret;
++	u8 command;
++
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
++
++	polarity = ts5500_adc_test_bit(attr->index, chip->polarity);
++	range = ts5500_adc_test_bit(attr->index, chip->range);
++
++	command = attr->index | chip->spec.ctrl[polarity][range];
++
++	outb(command, chip->spec.ioaddr.data);
++
++	udelay(chip->spec.read.delay);
++	ret = inb(chip->spec.ioaddr.ctrl);
++
++	if (ret & chip->spec.read.busy_mask) {
++		dev_err(dev, "device not ready (ret=0x0%x, try=%d)\n", ret,
++			range);
++		ret = -EIO;
++	} else {
++		/* LSB of conversion is at 0x196 and MSB is at 0x197 */
++		u8 lsb = inb(chip->spec.ioaddr.data);
++		u8 msb = inb(chip->spec.ioaddr.data + 1);
++		s16 raw = (msb << 8) | lsb;
++		s32 scaled = ts5500_adc_scale(chip, raw, polarity, range);
++
++		ret = sprintf(buf, "%d\n", scaled);
++	}
++
++	mutex_unlock(&chip->lock);
++	return ret;
++}
++
++static ssize_t ts5500_adc_show_name(struct device *dev,
++	struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "%s\n", ts5500_adc_get_drvdata(dev)->spec.name);
++}
++
++#define TS5500_ADC_HWMON_CHANNEL(chan)				\
++	SENSOR_DEVICE_ATTR(in##chan##_input, S_IRUGO,		\
++			   ts5500_adc_show_input, NULL, chan);	\
++	SENSOR_DEVICE_ATTR_2(in##chan##_max, S_IRUGO | S_IWUSR,	\
++			     ts5500_adc_show_range,		\
++			     ts5500_adc_store_range, 0, chan);	\
++	SENSOR_DEVICE_ATTR_2(in##chan##_min, S_IRUGO | S_IWUSR,	\
++			     ts5500_adc_show_range,		\
++			     ts5500_adc_store_range, 1, chan)	\
++
++#define TS5500_ADC_SYSFS_CHANNEL(chan)				\
++	&sensor_dev_attr_in##chan##_input.dev_attr.attr,	\
++	&sensor_dev_attr_in##chan##_max.dev_attr.attr,		\
++	&sensor_dev_attr_in##chan##_min.dev_attr.attr
++
++static DEVICE_ATTR(name, S_IRUGO, ts5500_adc_show_name, NULL);
++
++static TS5500_ADC_HWMON_CHANNEL(0);
++static TS5500_ADC_HWMON_CHANNEL(1);
++static TS5500_ADC_HWMON_CHANNEL(2);
++static TS5500_ADC_HWMON_CHANNEL(3);
++static TS5500_ADC_HWMON_CHANNEL(4);
++static TS5500_ADC_HWMON_CHANNEL(5);
++static TS5500_ADC_HWMON_CHANNEL(6);
++static TS5500_ADC_HWMON_CHANNEL(7);
++
++static const struct attribute_group ts5500_adc_sysfs_group = {
++	.attrs = (struct attribute *[]) {
++		&dev_attr_name.attr,
++		TS5500_ADC_SYSFS_CHANNEL(0),
++		TS5500_ADC_SYSFS_CHANNEL(1),
++		TS5500_ADC_SYSFS_CHANNEL(2),
++		TS5500_ADC_SYSFS_CHANNEL(3),
++		TS5500_ADC_SYSFS_CHANNEL(4),
++		TS5500_ADC_SYSFS_CHANNEL(5),
++		TS5500_ADC_SYSFS_CHANNEL(6),
++		TS5500_ADC_SYSFS_CHANNEL(7),
++		NULL
 +	}
 +};
 +
-+static void ts5500_led_release(struct device *dev)
++static int __devinit ts5500_adc_probe(struct platform_device *pdev)
++{
++	struct ts5500_adc_platform_data *pdata = pdev->dev.platform_data;
++	struct ts5500_adc_chip *chip;
++	int ret;
++
++	if (pdata == NULL)
++		return -ENODEV;
++
++	chip = kzalloc(sizeof *chip, GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	chip->spec = *pdata;
++
++	mutex_init(&chip->lock);
++	mutex_lock(&chip->lock);
++
++	ret = sysfs_create_group(&pdev->dev.kobj, &ts5500_adc_sysfs_group);
++	if (ret) {
++		dev_err(&pdev->dev, "sysfs_create_group failed.\n");
++		goto error_unlock_and_free;
++	}
++
++	chip->hwmon_dev = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(chip->hwmon_dev)) {
++		dev_err(&pdev->dev, "hwmon_device_register failed.\n");
++		ret = PTR_ERR(chip->hwmon_dev);
++		goto error_unregister_device;
++	}
++
++	platform_set_drvdata(pdev, chip);
++	mutex_unlock(&chip->lock);
++	return 0;
++
++error_unregister_device:
++	sysfs_remove_group(&pdev->dev.kobj, &ts5500_adc_sysfs_group);
++
++error_unlock_and_free:
++	mutex_unlock(&chip->lock);
++	kfree(chip);
++	return ret;
++}
++
++static void ts5500_adc_release(struct device *dev)
 +{
 +	/* noop */
 +}
 +
-+static struct platform_device ts5500_led_device = {
-+	.name = "ts5500_led",
-+	.resource = ts5500_led_resources,
-+	.num_resources = ARRAY_SIZE(ts5500_led_resources),
-+	.id = -1,
-+	.dev = {
-+		.platform_data = &ts5500_led_platform_data,
-+		.release = ts5500_led_release
-+	}
-+};
-+
-+static int __devinit ts5500_led_probe(struct platform_device *pdev)
-+{
-+	struct led_platform_data *pdata = pdev->dev.platform_data;
-+	struct ts5500_led *led;
-+	struct resource *res;
-+	int ret;
-+
-+	if (pdata == NULL || !pdata->num_leds) {
-+		dev_err(&pdev->dev, "No platform data available\n");
-+		return -ENODEV;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Failed to get I/O resource\n");
-+		return -EBUSY;
-+	}
-+
-+	led = kzalloc(sizeof(struct ts5500_led), GFP_KERNEL);
-+	if (led == NULL) {
-+		dev_err(&pdev->dev, "Failed to alloc memory for LED device\n");
-+		return -ENOMEM;
-+	}
-+
-+	led->cdev.name = pdata->leds[0].name;
-+	led->cdev.default_trigger = pdata->leds[0].default_trigger;
-+	led->cdev.brightness_set = ts5500_led_set;
-+	led->cdev.brightness = LED_OFF;
-+
-+	led->ioaddr = res->start;
-+	led->bit = pdata->leds[0].flags;
-+
-+	ret = led_classdev_register(pdev->dev.parent, &led->cdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to register LED\n");
-+		goto err;
-+	}
-+
-+	platform_set_drvdata(pdev, led);
-+	return 0;
-+
-+err:
-+	kfree(led);
-+	return ret;
-+}
-+
-+static int __devexit ts5500_led_remove(struct platform_device *pdev)
-+{
-+	struct ts5500_led *led = platform_get_drvdata(pdev);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	led_classdev_unregister(&led->cdev);
-+	kfree(led);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver ts5500_led_driver = {
-+	.driver = {
-+		.name = "ts5500_led",
-+		.owner = THIS_MODULE
++static struct resource ts5500_adc_resources[] = {
++	{
++		.name  = "ts5500_adc" "-data",
++		.start = TS5500_ADC_INIT_LSB_REG,
++		.end   = TS5500_ADC_MSB_REG,
++		.flags = IORESOURCE_IO,
 +	},
-+	.probe = ts5500_led_probe,
-+	.remove = __devexit_p(ts5500_led_remove)
++	{
++		.name  = "ts5500_adc" "-ctrl",
++		.start = TS5500_ADC_CTRL_REG,
++		.end   = TS5500_ADC_CTRL_REG,
++		.flags = IORESOURCE_IO,
++	}
 +};
 +
-+static int __init ts5500_led_init(void)
++static struct ts5500_adc_platform_data ts5500_adc_platform_data = {
++	.name = TS5500_ADC_NAME,
++	.ioaddr = {
++		.data = TS5500_ADC_INIT_LSB_REG,
++		.ctrl = TS5500_ADC_CTRL_REG,
++	},
++	.read = {
++		.delay     = TS5500_ADC_READ_DELAY,
++		.busy_mask = TS5500_ADC_READ_BUSY_MASK,
++	},
++	.ctrl = {
++		{ TS5500_ADC_UNIPOLAR | TS5500_ADC_RANGE_5V,
++		  TS5500_ADC_UNIPOLAR | TS5500_ADC_RANGE_10V },
++		{ TS5500_ADC_BIPOLAR  | TS5500_ADC_RANGE_5V,
++		  TS5500_ADC_BIPOLAR  | TS5500_ADC_RANGE_10V },
++	},
++	.ranges = {
++		.min = {
++			{  0,     0 },
++			{ -5000, -10000 },
++		},
++		.max = {
++			{  5000,  10000 },
++			{  5000,  10000 },
++		},
++	},
++	.scale = {
++		{ 12207, 24414 },
++		{ 24414, 48828 },
++	},
++};
++
++static struct platform_device ts5500_adc_device = {
++	.name = "ts5500_adc",
++	.id = -1,
++	.resource = ts5500_adc_resources,
++	.num_resources = ARRAY_SIZE(ts5500_adc_resources),
++	.dev = {
++		.platform_data = &ts5500_adc_platform_data,
++		.release = ts5500_adc_release,
++	},
++};
++
++static int __devexit ts5500_adc_remove(struct platform_device *pdev)
++{
++	struct ts5500_adc_chip *chip = platform_get_drvdata(pdev);
++
++	mutex_lock(&chip->lock);
++	hwmon_device_unregister(chip->hwmon_dev);
++	sysfs_remove_group(&pdev->dev.kobj, &ts5500_adc_sysfs_group);
++	platform_set_drvdata(pdev, NULL);
++	mutex_unlock(&chip->lock);
++	kfree(chip);
++
++	return 0;
++}
++
++static struct platform_driver ts5500_adc_driver = {
++	.driver	= {
++		.name	= "ts5500_adc",
++		.owner	= THIS_MODULE,
++	},
++	.probe	= ts5500_adc_probe,
++	.remove	= __devexit_p(ts5500_adc_remove)
++};
++
++static int __init ts5500_adc_init(void)
 +{
 +	int ret;
 +
-+	ret = platform_driver_register(&ts5500_led_driver);
++	ret = platform_driver_register(&ts5500_adc_driver);
 +	if (ret)
 +		goto error_out;
 +
-+	ret = platform_device_register(&ts5500_led_device);
++	ret = platform_device_register(&ts5500_adc_device);
 +	if (ret)
 +		goto error_device_register;
 +
 +	return 0;
 +
 +error_device_register:
-+	platform_driver_unregister(&ts5500_led_driver);
++	platform_driver_unregister(&ts5500_adc_driver);
 +error_out:
 +	return ret;
 +}
-+module_init(ts5500_led_init);
++module_init(ts5500_adc_init);
 +
-+static void __exit ts5500_led_exit(void)
++static void __exit ts5500_adc_exit(void)
 +{
-+	platform_driver_unregister(&ts5500_led_driver);
-+	platform_device_unregister(&ts5500_led_device);
++	platform_driver_unregister(&ts5500_adc_driver);
++	platform_device_unregister(&ts5500_adc_device);
 +}
-+module_exit(ts5500_led_exit);
++module_exit(ts5500_adc_exit);
 +
-+MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("TS-5500 mapped MAX197 ADC device driver");
 +MODULE_AUTHOR("Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>");
-+MODULE_DESCRIPTION("LED driver for Technologic Systems TS-5500");
++MODULE_LICENSE("GPL");
 -- 
 1.7.6.5
 
