@@ -1,73 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab2ARWuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 17:50:04 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41716 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab2ARWuC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 17:50:02 -0500
-Date: Thu, 19 Jan 2012 02:49:56 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: david@lang.hm
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-Message-ID: <20120118224956.GF15652@moon>
-References: <20120117142759.GE16213@moon>
- <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
- <20120117144452.GG16213@moon>
- <4F15C249.3000602@zytor.com>
- <m1obu29fnf.fsf@fess.ebiederm.org>
- <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm>
+	id S1754907Ab2ARWvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 17:51:23 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49193 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751323Ab2ARWvV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 17:51:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120118224304.GJ2431@linux.vnet.ibm.com>
+References: <1326826563-32215-1-git-send-email-sjg@chromium.org>
+	<1326826563-32215-3-git-send-email-sjg@chromium.org>
+	<20120117201036.6d99f98f@pyramind.ukuu.org.uk>
+	<20120118041720.GA2431@linux.vnet.ibm.com>
+	<CAPnjgZ1GJatR15dVsq-+hAWhD7eaLhtN737QvBaor_=0+K+6wA@mail.gmail.com>
+	<20120118214215.GH2431@linux.vnet.ibm.com>
+	<CAPnjgZ1g0Gf8ZCavAbmxjJXxxk9duf1ybbEUNo9L-DHBxyXx-g@mail.gmail.com>
+	<20120118224304.GJ2431@linux.vnet.ibm.com>
+Date: Wed, 18 Jan 2012 14:51:20 -0800
+X-Google-Sender-Auth: 8xVPLzSiR7Y9Kxub6OjS5lCrGl0
+Message-ID: <CAPnjgZ3Rg80YE6qFNB+VxqX9aPd4oQYsDa2pGAsEsJHiNFYAbw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
+From: Simon Glass <sjg@chromium.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 02:05:31PM -0800, david@lang.hm wrote:
-...
-> >>
-> >>Why on Earth would user space need to know which order in memory certain
-> >>kernel objects are?
-> >
-> >For checkpoint restart and for some other kinds of introspection what is
-> >needed is a comparison function to see if two processes share the same
-> >object.  The most interesting of these objects from a checkpoint restart case
-> >are file descriptors, and there can be a lot of file descriptors.
-> >
-> >The order in memory does not matter.  What does matter is that the
-> >comparison function return some ordering between objects.  The algorithm
-> >for figuring out of N items which of them are duplicates is O(N^2) if
-> >the comparison function can only return equal or not equal.  The
-> >algorithm for finding duplications is only O(NlogN) if the comparison
-> >function will return an ordering among the objects.
-> 
-> so what you really want is a syscall that can take a list of objects
-> instead of having to do a syscall per object. right?
-> 
+Hi Paul,
 
-It doesn't matter. Even if we take a list of objects the kernel either
-should return us some ordering info or find duplicates, in any case it
-makes things more complex i think. So we wanted to bring some minimum
-into kernel leaving the rest of work to user-space.
+On Wed, Jan 18, 2012 at 2:43 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
+>> Hi Paul,
+>>
+>> On Wed, Jan 18, 2012 at 1:42 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Wed, Jan 18, 2012 at 01:08:13PM -0800, Simon Glass wrote:
+>> >> [+cc Rafael J. Wysocki <rjw@sisk.pl> who I think wrote the wakeup.c code]
+>> >>
+>> >> Hi Alan, Paul,
+>> >>
+>> >> On Tue, Jan 17, 2012 at 8:17 PM, Paul E. McKenney
+>> >> <paulmck@linux.vnet.ibm.com> wrote:
+>> >> > On Tue, Jan 17, 2012 at 08:10:36PM +0000, Alan Cox wrote:
+>> >> >> On Tue, 17 Jan 2012 10:56:03 -0800
+>> >> >> Simon Glass <sjg@chromium.org> wrote:
+>> >> >>
+>> >> >> > Since serial_core now does not make serial ports wake-up capable by
+>> >> >> > default, add a parameter to support this feature in the 8250 UART.
+>> >> >> > This is the only UART where I think this feature is useful.
+>> >> >>
+>> >> >> NAK
+>> >> >>
+>> >> >> Things should just work for users. Magic parameters is not an
+>> >> >> improvement. If its a performance problem someone needs to fix the rcu
+>> >> >> sync overhead or stop using rcu on that path.
+>> >>
+>> >> OK fair enough, I agree. Every level I move down the source tree
+>> >> affects more people though.
+>> >>
+>> >> >
+>> >> > I must say that I lack context here, even after looking at the patch,
+>> >> > but the synchronize_rcu_expedited() primitives can be used if the latency
+>> >> > of synchronize_rcu() is too large.
+>> >> >
+>> >>
+>> >> Let me provide a bit of context. The serial_core code seems to be the
+>> >> only place in the kernel that does this:
+>> >>
+>> >>               device_init_wakeup(tty_dev, 1);
+>> >>               device_set_wakeup_enable(tty_dev, 0);
+>> >>
+>> >> The first call makes the device wakeup capable and enables wakeup, The
+>> >> second call disabled wakeup.
+>> >>
+>> >> The code that removes the wakeup source looks like this:
+>> >>
+>> >> void wakeup_source_remove(struct wakeup_source *ws)
+>> >> {
+>> >>       if (WARN_ON(!ws))
+>> >>               return;
+>> >>
+>> >>       spin_lock_irq(&events_lock);
+>> >>       list_del_rcu(&ws->entry);
+>> >>       spin_unlock_irq(&events_lock);
+>> >>       synchronize_rcu();
+>> >> }
+>> >>
+>> >> The sync is there because we are about to destroy the actual ws
+>> >> structure (in wakeup_source_destroy()). I wonder if it should be in
+>> >> wakeup_source_destroy() but that wouldn't help me anyway.
+>> >>
+>> >> synchronize_rcu_expedited() is a bit faster but not really fast
+>> >> enough. Anyway surely people will complain if I put this in the wakeup
+>> >> code - it will affect all wakeup users. It seems to me that the right
+>> >> solution is to avoid enabling and then immediately disabling wakeup.
+>> >
+>> > Hmmm...  What hardware are you running this one?  Normally,
+>> > synchronize_rcu_expedited() will be a couple of orders of magnitude
+>> > faster than synchronize_rcu().
+>> >
+>> >> I assume we can't and shouldn't change device_init_wakeup() . We could
+>> >> add a call like device_init_wakeup_disabled() which makes the device
+>> >> wakeup capable but does not actually enable it. Does that work?
+>> >
+>> > If the only reason for the synchronize_rcu() is to defer the pair of
+>> > kfree()s in wakeup_source_destroy(), then another possible approach
+>> > would be to remove the synchronize_rcu() from wakeup_source_remove()
+>> > and then use call_rcu() to defer the two kfree()s.
+>> >
+>> > If this is a reasonable change to make, the approach is as follows:
+>> >
+>> > 1.      Add a struct rcu_head to wakeup_source, call it "rcu".
+>> >        Or adjust the following to suit your choice of name.
+>> >
+>> > 2.      Replace the pair of kfree()s with:
+>> >
+>> >                call_rcu(&ws->rcu, wakeup_source_destroy_rcu);
+>> >
+>> > 3.      Create the wakeup_source_destroy_rcu() as follows:
+>> >
+>> >        static void wakeup_source_destroy_rcu(struct rcu_head *head)
+>> >        {
+>> >                struct wakeup_source *ws =
+>> >                        container_of(head, struct wakeup_source, rcu);
+>> >
+>> >                kfree(ws->name);
+>> >                kfree(ws);
+>> >        }
+>> >
+>> > Of course, this assumes that it is OK for wakeup_source_unregister()
+>> > to return before the memory is freed up.  This often is OK, but there
+>> > are some cases where the caller requires that there be no further
+>> > RCU readers with access to the old data.  In these cases, you really
+>> > do need the wait.
+>>
+>> Thanks very much for that. I'm not sure if it is a reasonable change,
+>> but it does bug me that we add it to a data structure knowing that we
+>> will immediately remove it!
+>>
+>> >From what I can see, making a device wakeup-enabled mostly happens on
+>> init or in response to a request to the driver (presumably from user
+>> space). In the latter case I suspect the synchronise_rcu() is fine. In
+>> the former it feels like we should make up our minds which of the
+>> three options is required (incapable, capable but not enabled, capable
+>> and enabled).
+>>
+>> I will try a patch first based on splitting the two options (capable
+>> and enable) and see if that get a NAK.
+>>
+>> Then I will come back to your solution - it seems fine to me and not a
+>> lot of code. Do we have to worry about someone enabling, disabled,
+>> enabling and then disabling wakeup quickly? Will this method break in
+>> that case if the second call to call_rcu() uses the same wc->rcu?
+>
+> There are a couple of questions here, let me take them one at a time:
+>
+> 1.      If you just disabled, can you immediately re-enable?
+>
+>        The answer is "yes".  The reason that this works is that you
+>        allocate a new structure for the re-enabling, and that new
+>        structure has its own rcu_head field.
+>
+> 2.      If you repeatedly disable and re-enable in a tight loop,
+>        can this cause problems?
+>
+>        The answer to this is also "yes" -- you can run the system
+>        out of memory doing that.  However, there are a number of
+>        simple ways to avoid this problem:
+>
+>        a.      Do a synchronize_rcu() on every (say) thousandth
+>                disable operation.
+>
+>        b.      As above, but only do the synchronize_rcu() if
+>                all 1,000 disable operations occurred within
+>                (say) a second of each other.
+>
+>        c.      As above, but actually count the number of
+>                pending call_rcu() callbacks.
+>
+>        Both (a) and (b) can be carried out on a per-CPU basis if there
+>        is no convenient locked structure in which to track the state.
+>        You cannot carry (c) out on a per-CPU basis because RCU callbacks
+>        can sometimes be invoked on a different CPU from the one that
+>        call_rcu()ed them.  Rare, but it can happen.
+>
+>        I would expect that option (a) would work in almost all cases.
+>
+> If this can be exercised freely from user space, then you probably
+> really do need #2 above.
 
-(and, btw, Eric, I'm really sorry that I didn't mentioned this sorting
- problem at the very first email).
+OK I see, thank you. It does sound a bit complicated although the
+chances of anyone actually doing this are probably remote.
 
-	Cyrill
+I will send my patch to avoid getting into this situation and see what
+you think.
+
+Regards,
+Simon
