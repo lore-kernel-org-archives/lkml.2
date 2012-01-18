@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab2ARHD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 02:03:59 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:44624 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab2ARHD6 (ORCPT
+	id S1755579Ab2ARHIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 02:08:25 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:2906
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753311Ab2ARHIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 02:03:58 -0500
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, Simon Glass <sjg@chromium.org>
-Subject: [PATCH v2] ARM: Adjust backtrace messages to line up with x86 kernel
-Date: Tue, 17 Jan 2012 23:03:51 -0800
-Message-Id: <1326870231-30987-1-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1326831362-28703-1-git-send-email-sjg@chromium.org>
-References: <1326831362-28703-1-git-send-email-sjg@chromium.org>
+	Wed, 18 Jan 2012 02:08:23 -0500
+X-SpamScore: 0
+X-BigFish: PS0(zzzz1202hzz8275bhz2fhc1ahc1bh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:207.46.4.139;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0602HT004.namprd06.prod.outlook.com;RD:none;EFVD:NLI
+Message-ID: <4F166FC9.8030906@ixiacom.com>
+Date: Tue, 17 Jan 2012 23:07:53 -0800
+From: Earl Chew <echew@ixiacom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] Fix seq_file mishandling of consecutive pread() invocations.
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [216.23.154.50]
+X-MS-Exchange-CrossPremises-AuthSource: SN2PRD0602HT004.namprd06.prod.outlook.com
+X-MS-Exchange-CrossPremises-AuthAs: Internal
+X-MS-Exchange-CrossPremises-AuthMechanism: 06
+X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
+X-OrganizationHeadersPreserved: SN2PRD0602HT004.namprd06.prod.outlook.com
+X-OriginatorOrg: ixiacom.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is nice to print the backtrace message on its own line, and also
-regardless of the setting of CONFIG_ARM_UNWIND. This means that tools
-which parse the backtrace don't need a special case for the first line.
-It also makes it more like the x86 kernel output.
+The following program illustrates the problem:
 
-I believe we should also put KERN_EMERG at the start of this. Otherwise
-it won't appear in console output (although it will appear in the logs
-after a reboot).
+    char buf[8192];
 
-Signed-off-by: Simon Glass <sjg@chromium.org>
+    int fd = open("/proc/self/maps", O_RDONLY);
+
+    n = pread(fd, buf, sizeof(buf), 0);
+    printf("%d\n", n);
+
+    /* lseek(fd, 0, SEEK_CUR); */ /* Uncomment to work around */
+
+    n = pread(fd, buf, sizeof(buf), 0);
+    printf("%d\n", n);
+
+The second printf() prints zero, but uncommenting the lseek()
+corrects the behaviour of seq_file.
+
+To fix, make seq_read() mirror seq_lseek() when processing changes in *ppos.
+Restore m->version first, then if required traverse and update read_pos
+on success.
+
+Signed-off-by: Earl Chew <echew@ixiacom.com>
 ---
-Changes in v2:
-- Fix typo and remove \n from non CONFIG_ARM_UNWIND path
-- Remove __func__ from the unwind_backtrace() function
+ fs/seq_file.c |   28 +++++++++++++++-------------
+ 1 files changed, 15 insertions(+), 13 deletions(-)
 
- arch/arm/kernel/traps.c  |    3 ++-
- arch/arm/kernel/unwind.c |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 99a5727..3d3cae2 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -165,6 +165,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
- #ifdef CONFIG_ARM_UNWIND
- static inline void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
- {
-+	printk(KERN_EMERG "Backtrace:\n");
- 	unwind_backtrace(regs, tsk);
- }
- #else
-@@ -173,7 +174,7 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
- 	unsigned int fp, mode;
- 	int ok = 1;
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index dba43c3..7a45306 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -140,9 +140,21 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
  
--	printk("Backtrace: ");
-+	printk(KERN_EMERG "Backtrace: ");
+ 	mutex_lock(&m->lock);
  
- 	if (!tsk)
- 		tsk = current;
-diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index 00df012..451852a 100644
---- a/arch/arm/kernel/unwind.c
-+++ b/arch/arm/kernel/unwind.c
-@@ -410,7 +410,7 @@ void unwind_backtrace(struct pt_regs *regs, struct task_struct *tsk)
- 	struct stackframe frame;
- 	register unsigned long current_sp asm ("sp");
++	/*
++	 * seq_file->op->..m_start/m_stop/m_next may do special actions
++	 * or optimisations based on the file->f_version, so we want to
++	 * pass the file->f_version to those methods.
++	 *
++	 * seq_file->version is just copy of f_version, and seq_file
++	 * methods can treat it simply as file version.
++	 * It is copied in first and copied out after all operations.
++	 * It is convenient to have it as  part of structure to avoid the
++	 * need of passing another argument to all the seq_file methods.
++	 */
++	m->version = file->f_version;
++
+ 	/* Don't assume *ppos is where we left it */
+ 	if (unlikely(*ppos != m->read_pos)) {
+-		m->read_pos = *ppos;
+ 		while ((err = traverse(m, *ppos)) == -EAGAIN)
+ 			;
+ 		if (err) {
+@@ -152,21 +164,11 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+ 			m->index = 0;
+ 			m->count = 0;
+ 			goto Done;
++		} else {
++			m->read_pos = *ppos;
+ 		}
+ 	}
  
--	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
-+	pr_debug("(regs = %p tsk = %p)\n", regs, tsk);
- 
- 	if (!tsk)
- 		tsk = current;
+-	/*
+-	 * seq_file->op->..m_start/m_stop/m_next may do special actions
+-	 * or optimisations based on the file->f_version, so we want to
+-	 * pass the file->f_version to those methods.
+-	 *
+-	 * seq_file->version is just copy of f_version, and seq_file
+-	 * methods can treat it simply as file version.
+-	 * It is copied in first and copied out after all operations.
+-	 * It is convenient to have it as  part of structure to avoid the
+-	 * need of passing another argument to all the seq_file methods.
+-	 */
+-	m->version = file->f_version;
+ 	/* grab buffer if we didn't have one */
+ 	if (!m->buf) {
+ 		m->buf = kmalloc(m->size = PAGE_SIZE, GFP_KERNEL);
 -- 
-1.7.7.3
+1.7.0.4
+
+
 
