@@ -1,155 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab2ARTWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 14:22:45 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:58149 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab2ARTWn (ORCPT
+	id S1753048Ab2ARTYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 14:24:42 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15378 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab2ARTYl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 14:22:43 -0500
-Message-ID: <4F171BF8.50803@linux.vnet.ibm.com>
-Date: Thu, 19 Jan 2012 00:52:32 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Wed, 18 Jan 2012 14:24:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 18 Jan 2012 11:24:18 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Wed, 18 Jan 2012 11:24:16 -0800
+Subject: RE: Pinmux bindings proposal
+Thread-Topic: Pinmux bindings proposal
+Thread-Index: AczSMvpNTKYWSKFeSLCZTyHqrIN5SAB+76JwAD04RoAACvoLgAABPUMAAA81xtAAIJSrwA==
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1780DAAE97@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC6057885091DEA@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20120117082334.GA31295@S2101-09.ap.freescale.net>
+ <7FE21149F4667147B645348EC6057885092D56@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20120117141322.GA31687@S2101-09.ap.freescale.net>
+ <7FE21149F4667147B645348EC6057885093AD9@039-SN2MPN1-013.039d.mgd.msft.net>
+In-Reply-To: <7FE21149F4667147B645348EC6057885093AD9@039-SN2MPN1-013.039d.mgd.msft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
-        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
-Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
- to unlock_system_sleep()
-References: <201201172345.15010.rjw@sisk.pl> <201201180015.56510.rjw@sisk.pl> <4F16C24A.4050007@linux.vnet.ibm.com> <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com> <4F16F94C.4020000@linux.vnet.ibm.com> <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com> <4F16FF0D.1030606@linux.vnet.ibm.com> <20120118173037.GE30664@google.com>
-In-Reply-To: <20120118173037.GE30664@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011819-3864-0000-0000-000001054FB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2012 11:00 PM, Tejun Heo wrote:
+Dong Aisheng wrote at Tuesday, January 17, 2012 8:45 PM:
+....
+> > > > It may worth introducing
+> > > > another level phandle reference.  Something like the following:
+> > > >
+> > > > 	pinmux_sdhci: pinmux-sdhci {
+> > > > 		mux =
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_MUX_1>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_MUX_1>;
+> > > > 	};
+> > > >
+> > > > 	pinconf_sdhci_active: pinconf-sdhci-active {
+> > > > 		config =
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_SLEW_RATE 4>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_SLEW_RATE 8>;
+> > > > 	};
+> > > >
+> > > > 	pinconf_sdhci_suspend: pinconf-sdhci-suspend {
+> > > > 		config =
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_TRISTATE 1>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_TRISTATE 1>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_SLEW_RATE 4>
+> > > > 			<&tegra_pmx TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_SLEW_RATE 8>;
+> > > > 	};
+> > >
+> > > The config makes sense to me.
+> > > The only question is how to get group name to match with the predefined groups.
+> >
+> > I still incline to say there should not be any predefined groups for DT case, if
+> > we choose to find the group in use only when pinmux_get() gets called.
+>
+> Then we have too issue I said before:
+> 1) Inconsistent issue
+> sysfs pinmux map entry has different meaning
 
-> Hello, Srivatsa.
-> 
-> On Wed, Jan 18, 2012 at 10:49:09PM +0530, Srivatsa S. Bhat wrote:
->> I agree, but I was trying to keep the comment from growing too long ;)
-> 
-> It doesn't have to be long.  It just has to give some meaning to the
-> decision.  AFAICS, it is correct to call try_to_freeze() on
-> unlock_system_sleep() regardless of 20sec window.  There's no
-> guarantee the unlocking task is gonna hit try_to_freeze() elsewhere
-> and not calling it actually makes the interface buggy.
-> 
+Ah.
 
+When you talked about the pinmux map table being inconsistent between
+the board and device tree case, I thought your main/only concern was
+the enumeration timing issue; that with a board file, the entire map
+was available at boot yet with DT it might not be complete if we didn't
+explicitly search the whole DT for pinmux configuration nodes.
 
-Not really -
+However, I think you're also concerned that if we force the DT to use
+only pure HW groups (or none at all if the HW doesn't use groups), then
+that would be different from a board file which did use "virtual groups".
 
-In short, there is a *key* difference between:
+So I'm sure you can predict what my answer is! Don't use "virtual groups"
+in the board case /either/; if the HW doesn't do groups, don't have the
+pinctrl driver pretend that it does.
 
-freezer_do_not_count() - freezer_count()
+As a response, you'll say that this makes life harder for authors of the
+pinmux mapping table, because then they have to list out every single
+pin's mux state instead of picking between various pre-defined configur-
+ations that would have been provided by "virtual groups". I believe you
+can solve this by providing these pre-defined configurations using macros
+instead of "virtual groups". Each macro would simply contain a bunch of
+pinmux mapping table initialization entries, and the board file author
+could simply use the relevant macros when writing their mapping table:
 
-vs
+Some SoC header:
 
-lock_system_sleep() - unlock_system_sleep()
+#define PMX_MAP_SDIO4_ATB_GMA_GME \
+        PINMUX_MAP("default", "pinctrl-foo", "atb", "sdio4"), \
+        PINMUX_MAP("default", "pinctrl-foo", "gma", "sdio4"), \
+        PINMUX_MAP("default", "pinctrl-foo", "gme", "sdio4")
 
-And that is, the latter pair acquire and release pm_mutex -
-and the freezer doesn't do *anything* without first acquiring the same
-pm_mutex.
+Board file:
 
-Which is convincing enough to start believing that try_to_freeze()
-might be unnecessary in the latter pair.
+static struct pinmux_map pmx_map[] = {
+    /* Using a pre-defined configuration */
+    PMX_MAP_SDIO4_ATB_GMA_GME,
+    /* Custom stuff if needed */
+    PINMUX_MAP("default", "pinctrl-foo", "xyz", "pqrs")
+};
 
-Now, more explanation follows:
-Consider the 2 cases below:
+(This kind of thing is exactly why I pushed to allow the pinmux mapping
+table to contain multiple entries for the same "name"+device combination)
 
-Some random code:
+> 2) need to change the pinmux_maps from arrays to list for better to dynamically
+> Insert the new created pinmux map detected.
+> But this does affect the non-dt case a lot.
 
-Case 1:
+I believe the pinctrl subsystem already supports multiple map tables to
+be registered. I do recall some discussion that there was work left to
+do here. Either way, this is purely an implementation detail that's
+almost entirely hidden with the pinctrl subsystem, and I don't think
+influences the device tree binding design at all.
 
-/* Was doing something */
+...
+> > so you should know how the name comes from device tree, and you
+> > should be able to recreate the name when you are trying to matching the name in
+> > the table you created before.
+> >
+> > > Besides per pin group configuration support, we may also want per pin
+> > > configuration Support as the latest patch sent by Linus.
+> > > http://www.spinics.net/lists/arm-kernel/msg155712.html
+> >
+> > This binding proposal has covered both pin and group configuration, as the
+> > second parameter of 'config' property could be either a pin or group which
+> > depends the on whether the configurable entity at HW level is a pin or group.
+>
+> The pinctrl driver does not know if it's group or pin.
+> We may find a way to identify it.
 
-freezer_do_not_count();
+The common binding simply states that the entities identified in the
+mux and config properties are "muxable entities". It's up to the
+individual pin controller's binding to define what a "muxable entity"
+is. For HW that muxes pins, this should be a pin. For HW that muxes
+groups, this should be a group.
 
-/* Important work */
+Now, the pinctrl subsystem only knows about muxing whole groups. If
+the HW muxes per pin rather than per group, its pinctrl driver must
+currently define a group for each pin, containing just that pin, and
+use those groups in the mapping table. I'd originally hoped that the
+mapping table entries could refer to either pins or groups, but that's
+not what is implemented now. So, we could change that in pinctrl, or
+just create these single-pin groups within the relevant pinctrl drivers.
+That's certainly what I did for Tegra30 (which muxes per pin unlike
+Tegra20 which muxes per group).
 
-freezer_count();
+When parsing the device tree, something is going to need to convert the
+integer values in device tree to the names that the pinctrl core uses.
+This should be a function in the individual pinctrl driver. Hence, it
+can easily handle the two difference cases I mention above.
 
-Case 2:
+(Re: the last paragraph, I notice you raised some issues re: the order
+of pinctrl driver probe v.s. when the pinmux map can be created. I'll
+address those issues elsewhere where you raise them)
 
-/* Was doing something */
-
-lock_system_sleep();
-
-/* Important work */
-
-unlock_system_sleep();
-
-In case 1, we asked the freezer to ignore us until we are done with some
-"important" work. And precisely because we interfered with the freezer
-trying to freeze us, it is our duty to cooperate with the freezer when
-our "important" work is finished. Which is why we call try_to_freeze()
-inside freezer_count().
-
-However, in case 2, the same story as above applies, but with a catch:
-After we asked the freezer to ignore us, we could not even *start* doing our
-"important" work! Because, we were waiting for pm_mutex, since the freezer
-had got hold of it!
-
-So we get to do our "important work" only when the freezer and all other
-PM operations after that is done. And here is another catch: Once we start
-doing our "important work", no PM operation (freezing in particular) can begin,
-because now *we* have acquired the pm_mutex :-)
-
-So to summarize, calling try_to_freeze() inside some generic freezer_count()
-is justified and _needed_. But in case of unlock_system_sleep(), as I depicted
-in my previous post, it wouldn't buy us anything at all! (because freezing
-wouldn't have even begun by then).
-
-[ And in the case of freezer_count(), your point is right that calling
-try_to_freeze() is not to help the freezer meet its 20sec deadline - the
-freezer could have finished its work and gone away long before we completed
-our "important" work. So the real reason why we call try_to_freeze in
-freezer_count is that when some PM operation is running which requires tasks
-to be frozen, we want to respect that condition and get frozen - but we
-probably ended up totally bypassing the freezer by calling freezer_do_not_count,
-but now that we are done with our important work, we want to manually enter
-the refrigerator, to satisfy the freezing condition requested by the PM
-operation in progress and hence avoid any havoc by running any further.]
-
-> That said, it causes a problem because unlock_system_sleep() is called
-> in a special context during later stage of hibernation where the usual
-> expectation - that a freezable task which sees a freezing condition
-> should freeze - doesn't hold.
-> 
-> The correct solution would be somehow marking that condition so that
-> either try_to_freeze() doesn't get invoked or gets nullified -
-
-
-Even I thought this would be the right solution at first, but then realized
-that having try_to_freeze() inside unlock_system_sleep() is not at all
-essential, to begin with.
-
-And not having try_to_freeze() within unlock_system_sleep() automatically
-solves the hibernation problem. In fact, it does even better:
-Later stages of hibernation would no longer be a "special context" to watch
-out for!
-
-> e.g. making the SKIP thing a counter and ensure the hibernating task
-> has it elevated throughout the whole process.  Alternatively, if the
-> code path is limited enough, using a different version of the unlock
-> function, unlock_system_sleep_nofreeze() or whatever, would work too -
-> this is a popular approach for synchronization functions which
-> interacts with scheduler and preemption.
-> 
-> For now, as a quick fix, maybe not calling try_to_freeze()
-> unconditionally is okay, I don't know, but it's a hack.
-> 
-
-
-Somehow I don't think its a hack, based on my perception as described
-above. But feel free to prove me wrong :-)
- 
-Regards,
-Srivatsa S. Bhat
+-- 
+nvpublic
 
