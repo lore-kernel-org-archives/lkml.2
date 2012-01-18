@@ -1,109 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab2ARJpa (ORCPT <rfc822;w@1wt.eu>);
+	id S1757331Ab2ARJpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 04:45:33 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:39928 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757286Ab2ARJpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jan 2012 04:45:30 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:54305 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757104Ab2ARJp2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 04:45:28 -0500
-Date: Wed, 18 Jan 2012 15:15:06 +0530
-From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amba-pl011: do not disable RTS during shutdown
-Message-ID: <20120118094505.GA889@bnru02.bnr.st.com>
-References: <1326796189-21722-1-git-send-email-shreshthakumar.sahu@stericsson.com>
- <20120117184047.GE22472@flint.arm.linux.org.uk>
+Date: Wed, 18 Jan 2012 10:45:23 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
+Message-ID: <20120118094523.GJ24386@cmpxchg.org>
+References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
+ <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
+ <20120113120406.GC17060@tiehlicka.suse.cz>
+ <20120113155001.GB1653@cmpxchg.org>
+ <20120113163423.GG17060@tiehlicka.suse.cz>
+ <CALWz4iyj4SMMyYhbuZ3HUq-jvcZUCGarceYY7vxm4b7X=yvCMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120117184047.GE22472@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALWz4iyj4SMMyYhbuZ3HUq-jvcZUCGarceYY7vxm4b7X=yvCMg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-data type of old_cr was bool in patchv2, corrected in this patchv3
+On Fri, Jan 13, 2012 at 01:45:30PM -0800, Ying Han wrote:
+> On Fri, Jan 13, 2012 at 8:34 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Fri 13-01-12 16:50:01, Johannes Weiner wrote:
+> >> On Fri, Jan 13, 2012 at 01:04:06PM +0100, Michal Hocko wrote:
+> >> > On Tue 10-01-12 16:02:52, Johannes Weiner wrote:
+> > [...]
+> >> > > +bool mem_cgroup_over_softlimit(struct mem_cgroup *root,
+> >> > > +                        struct mem_cgroup *memcg)
+> >> > > +{
+> >> > > + if (mem_cgroup_disabled())
+> >> > > +         return false;
+> >> > > +
+> >> > > + if (!root)
+> >> > > +         root = root_mem_cgroup;
+> >> > > +
+> >> > > + for (; memcg; memcg = parent_mem_cgroup(memcg)) {
+> >> > > +         /* root_mem_cgroup does not have a soft limit */
+> >> > > +         if (memcg == root_mem_cgroup)
+> >> > > +                 break;
+> >> > > +         if (res_counter_soft_limit_excess(&memcg->res))
+> >> > > +                 return true;
+> >> > > +         if (memcg == root)
+> >> > > +                 break;
+> >> > > + }
+> >> > > + return false;
+> >> > > +}
+> >> >
+> >> > Well, this might be little bit tricky. We do not check whether memcg and
+> >> > root are in a hierarchy (in terms of use_hierarchy) relation.
+> >> >
+> >> > If we are under global reclaim then we iterate over all memcgs and so
+> >> > there is no guarantee that there is a hierarchical relation between the
+> >> > given memcg and its parent. While, on the other hand, if we are doing
+> >> > memcg reclaim then we have this guarantee.
+> >> >
+> >> > Why should we punish a group (subtree) which is perfectly under its soft
+> >> > limit just because some other subtree contributes to the common parent's
+> >> > usage and makes it over its limit?
+> >> > Should we check memcg->use_hierarchy here?
+> >>
+> >> We do, actually.  parent_mem_cgroup() checks the res_counter parent,
+> >> which is only set when ->use_hierarchy is also set.
+> >
+> > Of course I am blind.. We do not setup res_counter parent for
+> > !use_hierarchy case. Sorry for noise...
+> > Now it makes much better sense. I was wondering how !use_hierarchy could
+> > ever work, this should be a signal that I am overlooking something
+> > terribly.
+> >
+> > [...]
+> >> > > @@ -2121,8 +2121,16 @@ static void shrink_zone(int priority, struct zone *zone,
+> >> > >                   .mem_cgroup = memcg,
+> >> > >                   .zone = zone,
+> >> > >           };
+> >> > > +         int epriority = priority;
+> >> > > +         /*
+> >> > > +          * Put more pressure on hierarchies that exceed their
+> >> > > +          * soft limit, to push them back harder than their
+> >> > > +          * well-behaving siblings.
+> >> > > +          */
+> >> > > +         if (mem_cgroup_over_softlimit(root, memcg))
+> >> > > +                 epriority = 0;
+> >> >
+> >> > This sounds too aggressive to me. Shouldn't we just double the pressure
+> >> > or something like that?
+> >>
+> >> That's the historical value.  When I tried priority - 1, it was not
+> >> aggressive enough.
+> >
+> > Probably because we want to reclaim too much. Maybe we should do
+> > reduce nr_to_reclaim (ugly) or reclaim only overlimit groups until certain
+> > priority level as Ying suggested in her patchset.
+> 
+> I plan to post that change on top of this, and this patch set does the
+> basic stuff to allow us doing further improvement.
+> 
+> I still like the design to skip over_soft_limit cgroups until certain
+> priority. One way to set up the soft limit for each cgroup is to base
+> on its actual working set size, and we prefer to punish A first with
+> lots of page cache ( cold file pages above soft limit) than reclaiming
+> anon pages from B ( below soft limit ). Unless we can not get enough
+> pages reclaimed from A, we will start reclaiming from B.
+> 
+> This might not be the ideal solution, but should be a good start. Thoughts?
 
->From 5500b7d25b5382026bc9392a9b44c3c69bf172b0 Mon Sep 17 00:00:00 2001
-From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Date: Tue, 17 Jan 2012 11:00:26 +0530
-Subject: [PATCHv3] amba-pl011: do not disable RTS during shutdown
+I don't like this design at all because unless you add weird code to
+detect if soft limits apply to any memcgs on the reclaimed hierarchy
+you may iterate over the same bunch of memcgs doing nothing for
+several times.  For example in the default case of no softlimits set
+anywhere and you repeatedly walk ALL memcgs in the system doing jack
+until you reach your threshold priority level.  Elegant is something
+else in my book.
 
-In present driver, shutdown clears RTS and DTR in CR register. But the
-documentation "Documentation/serial/driver" suggests not to disable
-RTS and DTR in shutdown(). Also RTS and DTR is preserved between shutdown
-and startup calls, i.e. these are restored in startup if they were enabled
-while doing shutdown. So that if RTS and DTR are set using pl011_set_mctrl
-then it should continue even after shutdown->startup sequence.
-For throttling/unthrottling user should call pl011_set_mctrl.
-
-Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/tty/serial/amba-pl011.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index 6958594..62ff7da 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -159,6 +159,7 @@ struct uart_amba_port {
- 	unsigned int		fifosize;	/* vendor-specific */
- 	unsigned int		lcrh_tx;	/* vendor-specific */
- 	unsigned int		lcrh_rx;	/* vendor-specific */
-+	unsigned int		old_cr;		/* state during shutdown */
- 	bool			autorts;
- 	char			type[12];
- 	bool			interrupt_may_hang; /* vendor-specific */
-@@ -1411,7 +1412,9 @@ static int pl011_startup(struct uart_port *port)
- 	while (readw(uap->port.membase + UART01x_FR) & UART01x_FR_BUSY)
- 		barrier();
- 
--	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
-+	/* restore RTS and DTR */
-+	cr = (uap->old_cr & (UART011_CR_RTS | UART011_CR_DTR));
-+	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
- 	/* Clear pending error interrupts */
-@@ -1469,6 +1472,7 @@ static void pl011_shutdown_channel(struct uart_amba_port *uap,
- static void pl011_shutdown(struct uart_port *port)
- {
- 	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	unsigned int cr;
- 
- 	/*
- 	 * disable all interrupts
-@@ -1488,9 +1492,16 @@ static void pl011_shutdown(struct uart_port *port)
- 
- 	/*
- 	 * disable the port
-+	 * disable the port. It should not disable RTS and DTR.
-+	 * Also RTS and DTR state should be preserved to restore
-+	 * it during startup().
- 	 */
- 	uap->autorts = false;
--	writew(UART01x_CR_UARTEN | UART011_CR_TXE, uap->port.membase + UART011_CR);
-+	cr = readw(uap->port.membase + UART011_CR);
-+	uap->old_cr = cr;
-+	cr &= (UART011_CR_RTS | UART011_CR_DTR);
-+	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
-+	writew(cr, uap->port.membase + UART011_CR);
- 
- 	/*
- 	 * disable break condition and fifos
-@@ -1905,6 +1916,7 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
- 	uap->vendor = vendor;
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
-+	uap->old_cr = 0;
- 	uap->fifosize = vendor->fifosize;
- 	uap->interrupt_may_hang = vendor->interrupt_may_hang;
- 	uap->port.dev = &dev->dev;
--- 
-1.7.4.3
-
+Once we invert soft limits to mean guarantees and make the default
+soft limit not infinity but zero, then we can ignore memcgs below
+their soft limit for a few priority levels just fine because being
+below the soft limit is the exception.  But I don't really want to
+make this quite invasive behavioural change a requirement for a
+refactoring patch if possible.
