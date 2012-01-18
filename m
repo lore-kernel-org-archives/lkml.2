@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab2ARN7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 08:59:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757529Ab2ARN7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 08:59:51 -0500
-Date: Wed, 18 Jan 2012 14:59:39 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control
- interface
-Message-ID: <20120118135939.GF19019@m.redhat.com>
-References: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
- <1325495060-6402-1-git-send-email-jolsa@redhat.com>
- <1325495060-6402-3-git-send-email-jolsa@redhat.com>
- <20120117014209.GB24200@somewhere.redhat.com>
+	id S1757564Ab2AROA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 09:00:58 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45480 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757529Ab2AROA5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 09:00:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117014209.GB24200@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.GSO.4.62.1201180733450.26200@umail>
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
+	<1326845297-6233-2-git-send-email-rmorell@nvidia.com>
+	<CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
+	<201201181214.12055.arnd@arndb.de>
+	<CAPM=9txEgGgbim5Gtz5=Cr5Mf3NrQCx0D=0dQu25gtPTzjSM7Q@mail.gmail.com>
+	<Pine.GSO.4.62.1201180733450.26200@umail>
+Date: Wed, 18 Jan 2012 14:00:54 +0000
+Message-ID: <CAPM=9twKT8V9b_g0vChiNGm_J0jVBgrnhJQjnNDD1QzOMp=aoQ@mail.gmail.com>
+Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
+From: Dave Airlie <airlied@gmail.com>
+To: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Robert Morell <rmorell@nvidia.com>, sumit.semwal@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 02:42:12AM +0100, Frederic Weisbecker wrote:
-> On Mon, Jan 02, 2012 at 10:04:15AM +0100, Jiri Olsa wrote:
-> > Adding a way to temporarily enable/disable ftrace_ops. The change
-> > follows the same way as 'global' ftrace_ops are done.
-> > 
-> > Introducing 2 global ftrace_ops - control_ops and ftrace_control_list
-> > which take over all ftrace_ops registered with FTRACE_OPS_FL_CONTROL
-> > flag. In addition new per cpu flag called 'disabled' is also added to
-> > ftrace_ops to provide the control information for each cpu.
-> > 
-> > When ftrace_ops with FTRACE_OPS_FL_CONTROL is registered, it is
-> > set as disabled for all cpus.
-> > 
-> > The ftrace_control_list contains all the registered 'control' ftrace_ops.
-> > The control_ops provides function which iterates ftrace_control_list
-> > and does the check for 'disabled' flag on current cpu.
-> > 
-> > Adding 2 inline functions ftrace_function_enable/ftrace_function_disable,
-> > which enable/disable the ftrace_ops for given cpu.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> 
-> So this is used to implement pmu->add() / -> del(). But perf_tp_event_match()
-> already takes care of that by checking PERF_HES_STOPPED.
-> 
-> Now what you are doing here is an interesting optimization as it doesn't even
-> call on ftrace_ops that have called pmu->del().
-> 
-> I'm not against the idea but I want to ensure this is really your purpose
-> and it would be nice to put some words about that in the changelog as
-> well as in PATCH 4/7.
+On Wed, Jan 18, 2012 at 1:55 PM, Ilija Hadzic
+<ihadzic@research.bell-labs.com> wrote:
+>
+>
+>
+> On Wed, 18 Jan 2012, Dave Airlie wrote:
+>
+>>
+>> The problem is the x86 nvidia binary driver does sit outside of
+>> subsystems, and I forsee wanting to share buffers with it from the
+>> Intel driver in light of the optimus hardware. Although nouveau exists
+>> and I'd much rather nvidia get behind that wrt the kernel stuff, I
+>> don't forsee that happening.
+>>
+>
+> Please correct me if I blab a nonsense here, but just the other day, we have
+> seen a different thread in which it was decided that user cannot turn on
+> buffer sharing at compile time explicitly, but rather a driver that needs it
+> would turn it on automatically.
+>
+> Doesn't that alone exclude out-of-tree drivers? In other words if you have
+> two out-of-tree drivers that want to use DMA buffer sharing, and no other
+> enabled driver in the kernel enables it implicitly, then such a kernel won't
+> make it possible for said two drivers to work.
 
-well, to say the truth I missed the PERF_HES_STOPPED possibility ;)
-since I was up to disabling ftrace_ops completely when it's not used..
+Well the use case at least on x86 would be open x86 driver sharing
+with closed nvidia driver, if two closed drivers wanted to share I'd
+except them to do it internally anyways.
 
-but as you said it's faster, so I'd stay with it..
+> Frankly, I never understood this "low-level interface" argument that is
+> kicked around when EXPORT_SYMBOL_GPL topic is brought up. My view to
+> EXPORT_SYMBOL vs. EXPORT_SYMBOL_GPL is that it really boils down to license
+> controversy about binary/proprietary modules in Linux kernel. To me it's
+> about whether the authors of certain code (for mostly phylosophical reasons)
+> agree that their (GPL) code is OK or not OK to link against non-GPL module.
+>
+> From that angle, I am not sure if it is ethical at all to modify how the
+> symbol is exported without explicit consent of the original author
+> (regardless of what we think about GPL/proprietary modules covtroversy). So
+> if NVidia needs to link DMA buffer sharing against their proprietary driver,
+> they should have explicit permission from the original author to turn its
+> symbols into EXPORT_SYMBOL.
 
-I'll try to make some comment about that and repost the patch
+Which is the point of their patch, to ask permission from the author.
 
-> 
-> >  include/linux/ftrace.h |   42 +++++++++++++++++
-> >  kernel/trace/ftrace.c  |  119 +++++++++++++++++++++++++++++++++++++++++++++---
-> >  kernel/trace/trace.h   |    2 +
-> >  3 files changed, 156 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> > index 523640f..0d43a2b 100644
-> > --- a/include/linux/ftrace.h
-> > +++ b/include/linux/ftrace.h
-> > @@ -35,12 +35,14 @@ enum {
-> >  	FTRACE_OPS_FL_ENABLED		= 1 << 0,
-> >  	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
-> >  	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
-> > +	FTRACE_OPS_FL_CONTROL		= 1 << 3,
-> 
-> Please comment the role of this flag. In fact it would be nice to have
-> a comment that explains all these. GLOBAL and DYNAMIC don't actually give
-> much clues alone.
-
-I'll comment those as well..
-
-thanks,
-jirka
+Dave.
