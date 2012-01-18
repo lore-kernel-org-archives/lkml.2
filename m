@@ -1,83 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab2ARXBS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 18:01:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55436 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab2ARXBQ (ORCPT
+	id S1755335Ab2ARXHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 18:07:24 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:48993 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915Ab2ARXHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 18:01:16 -0500
-Date: Wed, 18 Jan 2012 15:01:14 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, Theodore Tso <tytso@mit.edu>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH v5.4 00/13] crc32c: Add faster algorithm and self-test
- code
-Message-Id: <20120118150114.2e2dac2d.akpm@linux-foundation.org>
-In-Reply-To: <20120118222733.4079.13377.stgit@elm3c44.beaverton.ibm.com>
-References: <20120118222733.4079.13377.stgit@elm3c44.beaverton.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jan 2012 18:07:22 -0500
+From: Simon Glass <sjg@chromium.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Simon Glass <sjg@chromium.org>
+Subject: [PATCH 1/2] power: Add function to init wakeup capability without enabling
+Date: Wed, 18 Jan 2012 15:07:06 -0800
+Message-Id: <1326928027-20610-1-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1326826563-32215-3-git-send-email-sjg@chromium.org>
+References: <1326826563-32215-3-git-send-email-sjg@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jan 2012 14:27:33 -0800
-"Darrick J. Wong" <djwong@us.ibm.com> wrote:
+device_init_wakeup() offers two options:
 
-> This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
-> software crc32c implementation.  It removes the crc32c implementation in
-> crypto/ in favor of using the stamped-out one in lib/.  There is also a change
-> to Kconfig so that the kernel builder can pick an implementation best suited
-> for the hardware.
-> 
-> The motivation for this patchset is that I am working on adding full metadata
-> checksumming to ext4.  As far as performance impact of adding checksumming
-> goes, I see nearly no change with a standard mail server ffsb simulation.  On a
-> test that involves only file creation and deletion and extent tree writes, I
-> see a drop of about 50 pcercent with the current kernel crc32c implementation;
-> this improves to a drop of about 20 percent with the enclosed crc32c code.
-> 
-> When metadata is usually a small fraction of total IO, this new implementation
-> doesn't help much because metadata is usually a small fraction of total IO.
-> However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
-> tree), then this patch speeds up the operation substantially.
-> 
-> Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
-> should improve their speed as well.  I have not yet quantified that, however.
-> This latest submission combines Bob's patches from late August 2011 with mine
-> so that they can be one coherent patch set.  Please excuse my inability to
-> combine some of the patches; I've been advised to leave Bob's patches alone and
-> build atop them instead. :/
-> 
-> Since the last posting, I've also collected some crc32c test results on a bunch
-> of different x86/powerpc/sparc platforms.  The results can be viewed here:
-> http://goo.gl/sgt3i ; the "crc32-kern-le" and "crc32c" columns describe the
-> performance of the kernel's current crc32 and crc32c software implementations.
-> The "crc32c-by8-le" column shows crc32c performance with this patchset applied.
-> I expect crc32 performance to be roughly the same.
-> 
-> The two _boost columns at the right side of the spreadsheet shows how much
-> faster the new implementation is over the old one.  As you can see, crc32 rises
-> substantially, and crc32c experiences a huge increase.
+1. Wakeup capable and wakeup enabled
+2  Not wakeup capable and not wakeup enabled
 
-I grabbed this lot, so it will turn up in linux-next soon.
+serial_core wants a third option:
 
-There are quite a lot of clients of the crc32 code.  net, netfilter and
-wireless are prominent, but there are others everywhere.
+3. Wakeup capable but not wakeup enabled (yet)
 
-So I cc'ed various other mailing lists just as a heads-up that this
-work is inbound and will hopefully yield performance improvements.  But
-of course, it might also yield bugs.
+Add a new init routine which takes a flag indicating which of the three
+options is required. This avoids creating and then destroying the wakeup
+source to no purpose, and a sometimes large rcu_synchronise() delay.
+
+Q: What is a good name for the new function?
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+---
+ drivers/base/power/wakeup.c |   26 ++++++++++++++++++++++----
+ include/linux/pm_wakeup.h   |   22 +++++++++++++++++++---
+ 2 files changed, 41 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+index caf995f..ae3b3c5 100644
+--- a/drivers/base/power/wakeup.c
++++ b/drivers/base/power/wakeup.c
+@@ -273,7 +273,7 @@ EXPORT_SYMBOL_GPL(device_set_wakeup_capable);
+ /**
+  * device_init_wakeup - Device wakeup initialization.
+  * @dev: Device to handle.
+- * @enable: Whether or not to enable @dev as a wakeup device.
++ * @flags: flags PM_WAKEUP_...
+  *
+  * By default, most devices should leave wakeup disabled.  The exceptions are
+  * devices that everyone expects to be wakeup sources: keyboards, power buttons,
+@@ -281,19 +281,37 @@ EXPORT_SYMBOL_GPL(device_set_wakeup_capable);
+  * own wakeup requests but merely forward requests from one bus to another
+  * (like PCI bridges) should have wakeup enabled by default.
+  */
+-int device_init_wakeup(struct device *dev, bool enable)
++int device_init_wakeup_flag(struct device *dev, int flags)
+ {
+ 	int ret = 0;
+ 
+-	if (enable) {
++	if (flags & PM_WAKEUP_CAP) {
+ 		device_set_wakeup_capable(dev, true);
+-		ret = device_wakeup_enable(dev);
++		if (flags & PM_WAKEUP_EN)
++			ret = device_wakeup_enable(dev);
+ 	} else {
++		WARN_ON(flags & PM_WAKEUP_EN);
+ 		device_set_wakeup_capable(dev, false);
+ 	}
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(device_init_wakeup_flag);
++
++/**
++ * device_init_wakeup - Device wakeup initialization.
++ * @dev: Device to handle.
++ * @enable: Whether or not to enable @dev as a wakeup device.
++ *
++ * By default, most devices should leave wakeup disabled.  The exceptions are
++ * devices that everyone expects to be wakeup sources: keyboards, power buttons,
++ * possibly network interfaces, etc.
++ */
++int device_init_wakeup(struct device *dev, bool enable)
++{
++	return device_init_wakeup_flag(dev, enable ? PM_WAKEUP_CAP_EN :
++				       PM_WAKEUP_NONE);
++}
+ EXPORT_SYMBOL_GPL(device_init_wakeup);
+ 
+ /**
+diff --git a/include/linux/pm_wakeup.h b/include/linux/pm_wakeup.h
+index a32da96..3035875 100644
+--- a/include/linux/pm_wakeup.h
++++ b/include/linux/pm_wakeup.h
+@@ -56,6 +56,14 @@ struct wakeup_source {
+ 	unsigned int		active:1;
+ };
+ 
++/* Flags for device_init_wakeup_flag() */
++enum {
++	PM_WAKEUP_NONE,		/* Not wakeup capable */
++	PM_WAKEUP_CAP,		/* Wakeup capable but not enabled */
++	PM_WAKEUP_EN,		/* Don't use */
++	PM_WAKEUP_CAP_EN,	/* Wakeup capable and enabled */
++};
++
+ #ifdef CONFIG_PM_SLEEP
+ 
+ /*
+@@ -83,6 +91,7 @@ extern int device_wakeup_enable(struct device *dev);
+ extern int device_wakeup_disable(struct device *dev);
+ extern void device_set_wakeup_capable(struct device *dev, bool capable);
+ extern int device_init_wakeup(struct device *dev, bool val);
++extern int device_init_wakeup_flag(struct device *dev, int flags);
+ extern int device_set_wakeup_enable(struct device *dev, bool enable);
+ extern void __pm_stay_awake(struct wakeup_source *ws);
+ extern void pm_stay_awake(struct device *dev);
+@@ -139,13 +148,20 @@ static inline int device_set_wakeup_enable(struct device *dev, bool enable)
+ 	return 0;
+ }
+ 
+-static inline int device_init_wakeup(struct device *dev, bool val)
++static inline device_init_wakeup_flag(struct device *dev, int flags)
+ {
+-	device_set_wakeup_capable(dev, val);
+-	device_set_wakeup_enable(dev, val);
++	device_set_wakeup_capable(dev, flags & PM_WAKEUP_CAP);
++	if (flags & PM_WAKEUP_EN)
++		device_set_wakeup_enable(dev, true);
+ 	return 0;
+ }
+ 
++static inline int device_init_wakeup(struct device *dev, bool enable)
++{
++	return device_init_wakeup_flag(enable ? PM_WAKEUP_CAP_EN :
++				       PM_WAKEUP_NONE);
++}
++
+ static inline bool device_may_wakeup(struct device *dev)
+ {
+ 	return dev->power.can_wakeup && dev->power.should_wakeup;
+-- 
+1.7.7.3
 
