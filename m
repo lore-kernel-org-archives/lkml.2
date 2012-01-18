@@ -1,166 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab2ARPby (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 10:31:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab2ARPbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 10:31:52 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] KEYS: Allow special keyrings to be cleared
-To: jmorris@namei.org
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve Dickson <steved@redhat.com>
-Date: Wed, 18 Jan 2012 15:31:45 +0000
-Message-ID: <20120118153145.30490.61734.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1757389Ab2ARPdI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 10:33:08 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:49735 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2ARPdH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 10:33:07 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX195OzaAk2XX+vE3ixyu6S99
+Date: Wed, 18 Jan 2012 07:32:56 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Dong Aisheng <dongas86@gmail.com>
+Subject: Re: Pinmux bindings proposal
+Message-ID: <20120118153256.GB22818@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <20120116182808.GG4223@ponder.secretlab.ca>
+ <20120118141329.GA22818@atomide.com>
+ <CAAQ0ZWTtYz3Lg7=Xz29m07j_k8yA95hn6cyk92SAJ4iGJRT_gw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAQ0ZWTtYz3Lg7=Xz29m07j_k8yA95hn6cyk92SAJ4iGJRT_gw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel contains some special internal keyrings, for instance the DNS
-resolver keyring :
+* Shawn Guo <shawn.guo@linaro.org> [120118 05:57]:
+> On 18 January 2012 22:13, Tony Lindgren <tony@atomide.com> wrote:
+> > Hi,
+> >
+> > * Grant Likely <grant.likely@secretlab.ca> [120116 09:55]:
+> >> On Fri, Jan 13, 2012 at 12:39:42PM -0800, Stephen Warren wrote:
+> >> >                 pinmux =
+> >> >                         <"default" &pmx_sdhci_active>
+> >> >                         <"suspend" &pmx_sdhci_suspend>;
+> >> >
+> >> >                 /* 1:n example: */
+> >> >                 pinmux =
+> >> >                         <"default" &pmx_sdhci_mux_a>
+> >> >                         <"default" &pmx_sdhci_pincfg_a>
+> >> >                         <"suspend" &pmx_sdhci_mux_a>
+> >> >                         <"suspend" &pmx_sdhci_pincfg_a_suspend>;
+> >>
+> >>
+> >> Yeah, don't do this.  Mixing phandle, string and cell values in a
+> >> property gets messy and could become troublesome to parse.  I've
+> >> backed away from it in the clk binding.
+> >
+> > Yup, that's because the string is embedded directly into the mixed
+> > mode array and will likely make the following data unaligned. That
+> > means it's extremely flakey to parse, and will lead into horrible
+> > errors if you have typos in the .dts file.. Tried that and gave up
+> > on it.
+> >
+> > I think I've found a way to avoid using names at all, assuming we set
+> > each pin as a phandle for the drivers to use :)
+> >
+> The problem with doing that is we will have to represent each pin as a
+> node in device tree.  For imx6q case, we have 197 pins.  Doing so will
+> bloat the device tree.
 
-2a93faf1 I-----     1 perm 1f030000     0     0 keyring   .dns_resolver: empty
+Sure there's some overhead. I've got it working with 220 pins, it's
+not too bad as threre's not much string parsing involved.
 
-It would occasionally be useful to allow the contents of such keyrings to be
-flushed by root (cache invalidation).
+I don't have all the devices mapping the pins though. The .dtb for
+omap4 is about 25k now.
 
-Allow a flag to be set on a keyring to mark that someone possessing the
-sysadmin capability can clear the keyring, even without normal write access to
-the keyring.
+If we wanted to avoid adding phandles for each pin, then we could do:
 
-Set this flag on the special keyrings created by the DNS resolver, the NFS
-identity mapper and the CIFS identity mapper.
+serial@0x48020000 {
+	compatible = "ti,8250";
+	reg = <0x48020000 0x100>;
+	reg-shift = <2>;
+	interrupts = <106>;
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Acked-by: Steve Dickson <steved@redhat.com>
----
+	/* controller, offset, value */
+	pins = <&mux1 0xabcd 0x10
+                &mux1 0xabcf 0x0>;
+};
 
- Documentation/networking/dns_resolver.txt |    4 ++++
- Documentation/security/keys.txt           |    4 ++++
- fs/cifs/cifsacl.c                         |    1 +
- fs/nfs/idmap.c                            |    1 +
- include/linux/key.h                       |    1 +
- net/dns_resolver/dns_key.c                |    1 +
- security/keys/keyctl.c                    |   15 ++++++++++++++-
- 7 files changed, 26 insertions(+), 1 deletions(-)
+But then the .dts file becomes an unreadable matrix unless we have
+a preprocessor..
 
-diff --git a/Documentation/networking/dns_resolver.txt b/Documentation/networking/dns_resolver.txt
-index 7f531ad..d86adcd 100644
---- a/Documentation/networking/dns_resolver.txt
-+++ b/Documentation/networking/dns_resolver.txt
-@@ -102,6 +102,10 @@ implemented in the module can be called after doing:
-      If _expiry is non-NULL, the expiry time (TTL) of the result will be
-      returned also.
- 
-+The kernel maintains an internal keyring in which it caches looked up keys.
-+This can be cleared by any process that has the CAP_SYS_ADMIN capability by
-+the use of KEYCTL_KEYRING_CLEAR on the keyring ID.
-+
- 
- ===============================
- READING DNS KEYS FROM USERSPACE
-diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
-index 4d75931..713ec23 100644
---- a/Documentation/security/keys.txt
-+++ b/Documentation/security/keys.txt
-@@ -554,6 +554,10 @@ The keyctl syscall functions are:
-      process must have write permission on the keyring, and it must be a
-      keyring (or else error ENOTDIR will result).
- 
-+     This function can also be used to clear special kernel keyrings if they
-+     are appropriately marked if the user has CAP_SYS_ADMIN capability.  The
-+     DNS resolver cache keyring is an example of this.
-+
- 
-  (*) Link a key into a keyring:
- 
-diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
-index 72ddf23..854749d 100644
---- a/fs/cifs/cifsacl.c
-+++ b/fs/cifs/cifsacl.c
-@@ -556,6 +556,7 @@ init_cifs_idmap(void)
- 
- 	/* instruct request_key() to use this special keyring as a cache for
- 	 * the results it looks up */
-+	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
- 	cred->thread_keyring = keyring;
- 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
- 	root_cred = cred;
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index 2c05f19..a1bbf77 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -198,6 +198,7 @@ int nfs_idmap_init(void)
- 	if (ret < 0)
- 		goto failed_put_key;
- 
-+	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
- 	cred->thread_keyring = keyring;
- 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
- 	id_resolver_cache = cred;
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 5253471..1600ebf 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -155,6 +155,7 @@ struct key {
- #define KEY_FLAG_IN_QUOTA	3	/* set if key consumes quota */
- #define KEY_FLAG_USER_CONSTRUCT	4	/* set if key is being constructed in userspace */
- #define KEY_FLAG_NEGATIVE	5	/* set if key is negative */
-+#define KEY_FLAG_ROOT_CAN_CLEAR	6	/* set if key can be cleared by root without permission */
- 
- 	/* the description string
- 	 * - this is used to match a key against search criteria
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index fa000d2..c73bba3 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -281,6 +281,7 @@ static int __init init_dns_resolver(void)
- 
- 	/* instruct request_key() to use this special keyring as a cache for
- 	 * the results it looks up */
-+	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
- 	cred->thread_keyring = keyring;
- 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
- 	dns_resolver_cache = cred;
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 0b3f5d7..6523599 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -388,11 +388,24 @@ long keyctl_keyring_clear(key_serial_t ringid)
- 	keyring_ref = lookup_user_key(ringid, KEY_LOOKUP_CREATE, KEY_WRITE);
- 	if (IS_ERR(keyring_ref)) {
- 		ret = PTR_ERR(keyring_ref);
-+
-+		/* Root is permitted to invalidate certain special keyrings */
-+		if (capable(CAP_SYS_ADMIN)) {
-+			keyring_ref = lookup_user_key(ringid, 0, 0);
-+			if (IS_ERR(keyring_ref))
-+				goto error;
-+			if (test_bit(KEY_FLAG_ROOT_CAN_CLEAR,
-+				     &key_ref_to_ptr(keyring_ref)->flags))
-+				goto clear;
-+			goto error_put;
-+		}
-+
- 		goto error;
- 	}
- 
-+clear:
- 	ret = keyring_clear(key_ref_to_ptr(keyring_ref));
--
-+error_put:
- 	key_ref_put(keyring_ref);
- error:
- 	return ret;
+Regards,
 
+Tony
