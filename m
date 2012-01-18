@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab2ARBUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 20:20:22 -0500
-Received: from lo.gmane.org ([80.91.229.12]:60623 "EHLO lo.gmane.org"
+	id S1755983Ab2ARBaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 20:30:19 -0500
+Received: from mga14.intel.com ([143.182.124.37]:33141 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181Ab2ARBUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 20:20:20 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH 2/3] block: prevent duplicated bio completion report
-Date: Wed, 18 Jan 2012 10:20:03 +0900
-Message-ID: <4F161E43.5040705@gmail.com>
-References: <1326763928-1972-1-git-send-email-namhyung.kim@lge.com> <1326763928-1972-2-git-send-email-namhyung.kim@lge.com> <20120117174520.GB6762@google.com>
+	id S1754260Ab2ARBaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 20:30:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="57470373"
+Subject: Re: Kernel crash in icq_free_icq_rcu
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+In-Reply-To: <20120118011112.GB32160@htj.dyndns.org>
+References: <20120117201823.GD19223@redhat.com>
+	 <20120117214834.GD26207@google.com> <20120117220715.GB23527@redhat.com>
+	 <CANejiEUfAxR-DFH+eRQUbmc1jKHSkcBP1RxuRQ-9JKLU=1Ds0w@mail.gmail.com>
+	 <20120118010323.GA32160@htj.dyndns.org>
+	 <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com>
+	 <20120118011112.GB32160@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Jan 2012 09:30:53 +0800
+Message-ID: <1326850253.22361.619.camel@sli10-conroe>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: 121.50.20.41
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-In-Reply-To: <20120117174520.GB6762@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2012-01-17 at 17:11 -0800, Tejun Heo wrote:
+> On Wed, Jan 18, 2012 at 09:05:26AM +0800, Shaohua Li wrote:
+> > > Vivek is seeing the problem while switching elevators.  Are you too?
+> > > Or is it during normal operation?
+> > same here. I had some problems when I debug my ioscheduler, but
+> > eventually found even switching cfq and noop can trigger oops.
+> 
+> Hmmm... maybe quiescing isn't working as expected and kmem cache is
+> being destroyed with live icq's.  I'll try to reproduce it.
+this debug patch seems to fix for me.
 
-2012-01-18 2:45 AM, Tejun Heo wrote:
-> Hello,
->
-> On Tue, Jan 17, 2012 at 10:32:07AM +0900, Namhyung Kim wrote:
->> Since previous patch make block_bio_complete TP working,
->> it will generate duplicated BLK_TA_COMPLETEs for bounced
->> bios. Fix it.
->>
->> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
->> Cc: Tejun Heo <tj@kernel.org>
->
-> This and the third patch should probably be merged to the first patch.
-> As it currently stands, it introduces window where spurious events are
-> generated.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index e6c05a9..c6a8ef5 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -872,11 +872,11 @@ retry:
+ 	spin_unlock_irq(q->queue_lock);
+ 
+ 	/* create icq if missing */
+-	if (unlikely(et->icq_cache && !icq))
++	if (unlikely(et->icq_cache && !icq && (rw_flags & REQ_ELVPRIV)))
+ 		icq = ioc_create_icq(q, gfp_mask);
+ 
+ 	/* rqs are guaranteed to have icq on elv_set_request() if requested */
+-	if (likely(!et->icq_cache || icq))
++	if (likely(!et->icq_cache || icq || !(rw_flags & REQ_ELVPRIV)))
+ 		rq = blk_alloc_request(q, icq, rw_flags, gfp_mask);
+ 
+ 	if (unlikely(!rq)) {
 
-OK, will do.
-
-
->
->> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
->> index 4053cbd4490e..45cd0074a1c8 100644
->> --- a/include/linux/blk_types.h
->> +++ b/include/linux/blk_types.h
->> @@ -97,6 +97,9 @@ struct bio {
->>   #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
->>   #define bio_flagged(bio, flag)	((bio)->bi_flags&  (1<<  (flag)))
->>
->> +/* masked bio's won't report its completion via tracepoint */
->> +#define BIO_COMPLETE_MASK	(1<<  BIO_BOUNCED)
->
-> And, who's setting this flag?
-
-__blk_queue_bounce() does.
-
-
->
->>   /*
->>    * top 4 bits of bio flags indicate the pool this bio came from
->>    */
->> diff --git a/include/trace/events/block.h b/include/trace/events/block.h
->> index 96955f4828b3..72888542e186 100644
->> --- a/include/trace/events/block.h
->> +++ b/include/trace/events/block.h
->> @@ -219,7 +219,8 @@ TRACE_EVENT_CONDITION(block_bio_complete,
->>
->>   	TP_ARGS(q, bio, error),
->>
->> -	TP_CONDITION(bio->bi_bdev != NULL),
->> +	TP_CONDITION(bio->bi_bdev != NULL&&
->> +		     !(bio->bi_flags&  BIO_COMPLETE_MASK)),
->
-> Bounced bio's are separate bio's too and I don't think masking its
-> completion from the TP itself is a good idea.  As I wrote before, why
-> not do this from blktrace code?
-
-Because blktrace cannot know about the bi_flags, as I said before. :) 
-And although the bounced bio's are separate ones, they aren't queued 
-separately. They just get replaced on the way.
-
-Besides, I think accounting wait_time of them will result in an invalid 
-value unless it's handled somehow in block_bio_bounce and/or 
-block_rq_issue TP.
-
-
-Thanks,
-Namhyung
 
