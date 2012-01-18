@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2ARWkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 17:40:53 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:36477 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab2ARWkw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 17:40:52 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Tony Luck <tony.luck@intel.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 18 Jan 2012 17:40:30 -0500
-Subject: RE: [PATCH v5] ramoops: use pstore interface
-Thread-Topic: [PATCH v5] ramoops: use pstore interface
-Thread-Index: AczWLsuZ7aQTQ+bNQMW+ML2cJY3APgAAocAA
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DA7A7F226@USINDEVS01.corp.hds.com>
-References: <20120117235852.GA4877@www.outflux.net>
-	<20120118140603.0fc22302.akpm@linux-foundation.org>
- <CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
-In-Reply-To: <CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1755277Ab2ARWlO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 17:41:14 -0500
+Received: from fieldses.org ([174.143.236.118]:35510 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755214Ab2ARWlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 17:41:11 -0500
+Date: Wed, 18 Jan 2012 17:41:08 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Subject: Re: [patch] nfsd: don't allow zero length strings in cache_parse()
+Message-ID: <20120118224107.GC27205@fieldses.org>
+References: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
+ <20120116115258.GC3294@mwanda>
+ <20120116155031.GC1750@fieldses.org>
+ <20120118095601.GE3356@mwanda>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1201180241
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120118095601.GE3356@mwanda>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>  static int __exit ramoops_remove(struct platform_device *pdev)
->>>  {
->>> +#if 0
->>> +     /* TODO(kees): We cannot unload ramoops since pstore doesn't support
->>> +      * unregistering yet.
->>> +      */
->>
->> Well that sucks.  Is pstore getting fixed?
->
->Tony, any plans for changing this? I'm ready when it does! :)
->
->
+On Wed, Jan 18, 2012 at 12:56:02PM +0300, Dan Carpenter wrote:
+> There is no point in passing a zero length string here and quite a
+> few of that cache_parse() implementations will Oops if count is
+> zero.
 
-I have an question about this.
+Thanks, I'll apply.
 
-Are there any specific usecases you need to unload ramoops?
+Could we clean up any checks in cache_parse() that are unnecessary now?
 
-If users really would like to get kernel messages, unregistering ramoops is not needed.
+--b.
 
-Seiji
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+> index 465df9a..8c6598e 100644
+> --- a/net/sunrpc/cache.c
+> +++ b/net/sunrpc/cache.c
+> @@ -828,6 +828,8 @@ static ssize_t cache_do_downcall(char *kaddr, const char __user *buf,
+>  {
+>  	ssize_t ret;
+>  
+> +	if (count == 0)
+> +		return -EINVAL;
+>  	if (copy_from_user(kaddr, buf, count))
+>  		return -EFAULT;
+>  	kaddr[count] = '\0';
+
+
