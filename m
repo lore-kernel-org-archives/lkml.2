@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab2ARSLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 13:11:00 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:53542 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932327Ab2ARSK6 (ORCPT
+	id S1756037Ab2ARSRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 13:17:15 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51199 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab2ARSRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 13:10:58 -0500
-Date: Wed, 18 Jan 2012 13:10:57 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Luck, Tony" <tony.luck@intel.com>
-cc: Greg KH <gregkh@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Sergei Trofimovich <slyich@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Borislav Petkov <bp@amd64.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "prasad@linux.vnet.ibm.com" <prasad@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "gouders@et.bocholt.fh-gelsenkirchen.de" 
-	<gouders@et.bocholt.fh-gelsenkirchen.de>,
-        Marcos Souza <marcos.mage@gmail.com>,
-        "justinmattock@gmail.com" <justinmattock@gmail.com>,
-        Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: RE: [PATCH] mce: fix warning messages about static struct mce_device
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F01CF24@ORSMSX104.amr.corp.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1201181257540.1343-100000@iolanthe.rowland.org>
+	Wed, 18 Jan 2012 13:17:14 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4F16AFB1020000780006D671@nat28.tlf.novell.com>
+References: <4F05D992020000780006AA09@nat28.tlf.novell.com>
+ <20120106110519.GA32673@elte.hu> <4F16AFB1020000780006D671@nat28.tlf.novell.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Jan 2012 10:16:51 -0800
+X-Google-Sender-Auth: gxFpBTQmT-8SE0J3lfosYDJNUeI
+Message-ID: <CA+55aFxKkfKNKqt4rWanWXX3g2p0-K+=SVeAR8H-TLAXTqTZjg@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: fix memset() to support sizes of 4Gb and above
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jan 2012, Luck, Tony wrote:
+On Wed, Jan 18, 2012 at 2:40 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>
+>> For example the kernel's memcpy routine in slightly faster than
+>> glibc's:
+>
+> This is an illusion - since the kernel's memcpy_64.S also defines a
+> "memcpy" (not just "__memcpy"), the static linker resolves the
+> reference from mem-memcpy.c against this one. Apparent
+> performance differences rather point at effects like (guessing)
+> branch prediction (using the second vs the first entry of
+> routines[]). After fixing this, on my Westmere box glibc's is quite
+> a bit slower than the unrolled kernel variant (4% fewer
+> instructions, but about 15% more cycles).
 
-> Greg said:
-> > It was already fixed that way, but the problem is that you can not have
-> > statically allocated 'struct device' objects in the system.
-> 
-> and then Alan said:
-> > There's an additional requirement: Device structures may not be reused.  
-> > Not even if the caller clears all the fields to 0 in between.  That was
-> > the real bug in the original code -- and adding a dummy release routine
-> > wouldn't fix it.
-> 
-> There seems to be some curious logic happening here which I don't understand
-> at all. How can the code that deals with 'struct device' tell whether it was
-> statically declared or dynamically allocated? Why would it care?
-> 
-> What happens if we play by the rules using a dynamic structure and do
-> 
->  device_register() + device_create_file(dev)
->    ...
->  device_remove_file(dev) + device_unregister()
-> 
-> then later come back to re-add this and by pure random fluke kzalloc()
-> gives us back the exact same block of memory that we used for dev before?
+Please don't bother doing memcpy performance analysis using hot-cache
+cases (or entirely cold-cache for that matter) and/or big memory
+copies.
 
-Okay, that's a reasonable question.
+The *normal* memory copy size tends to be in the 10-30 byte range, and
+the cache issues (both code *and* data) are unclear. Running
+microbenchmarks is almost always counter-productive, since it actually
+shows numbers for something that has absolutely *nothing* to do with
+the actual patterns.
 
-> By Alan's logic we are screwed - we are re-using the same device structure
-> (unless kfree() + kzalloc() does some magic pixie dust thing so that this
-> same block of memory is now not the same device structure we had before, even
-> though it has the same address).
+End result: people do crazy things and tune memcpy for their
+benchmarks, doing things like instruction (or prefetch) scheduling
+that only makes the code more complicated, and has no actual basis in
+reality. And then other people are afraid to touch the end result,
+even though it's shit - simply because it *looks* like it was done
+with lots of actual testing and effort. Never mind that all the
+testing and effort was likely crap.
 
-No, it's a new structure that just happens to occupy the same address
-as the old structure.  :-)  The real point is that kzalloc() won't give
-you that address for the new structure before kfree() has deallocated
-the old one.
-
-Normally kfree() would be called by the release routine.  Therefore if
-kzalloc() gives you the same address, you can be sure that the release
-routine has run.  The problem with statically allocated device
-structures is that they generally don't have release routines (as in
-this MCE case).
-
-Now if you had a static structure and you gave it a release routine
-then yes -- you could reuse it _provided_ you waited for the release
-routine to be called first.  But that's not under your control; the
-release routine won't be called until all the references have been
-dropped, which can take an arbitrarily long time.  It's better to avoid 
-the whole issue by not using static allocation.
-
-> In summary - I can totally buy the argument that you must start with a zeroed
-> struct device (and that it is just fine that device_unregister() doesn't waste
-> cpu cycles cleaning up the structure just in case someone will re-use it, because
-> that isn't going to be the common case).
-> 
-> I just don't understand the magical difference between a static structure that
-> has been memset() to all zero, and a dynamic block returned from kzalloc().
-
-The difference is that a block returned from kzalloc() is _known_ not
-to have any pre-existing references.  A static structure that has been
-reset to all zero may still have some; in general you can't know.
-
-There's nothing special about the driver model code in this respect.  
-The same restriction applies wherever object lifetimes are controlled
-by reference counting.
-
-Alan Stern
-
+                  Linus
