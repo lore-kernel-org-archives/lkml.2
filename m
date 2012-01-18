@@ -1,134 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab2ARWhW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 17:37:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55240 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab2ARWhU (ORCPT
+	id S1754833Ab2ARWiK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 17:38:10 -0500
+Received: from mga01.intel.com ([192.55.52.88]:37155 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751344Ab2ARWiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 17:37:20 -0500
-Date: Wed, 18 Jan 2012 14:37:18 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] SHM_UNLOCK: fix long unpreemptible section
-Message-Id: <20120118143718.663b8cf5.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1201141615440.1338@eggly.anvils>
-References: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils>
-	<alpine.LSU.2.00.1201141615440.1338@eggly.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jan 2012 17:38:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108471070"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>
+CC: Marco Stornelli <marco.stornelli@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v5] ramoops: use pstore interface
+Thread-Topic: [PATCH v5] ramoops: use pstore interface
+Thread-Index: AQHM1XUTvkd48sBDKkeD64dAtx+V3JYTNe6A//96tMA=
+Date: Wed, 18 Jan 2012 22:37:45 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F01D107@ORSMSX104.amr.corp.intel.com>
+References: <20120117235852.GA4877@www.outflux.net>
+ <20120118140603.0fc22302.akpm@linux-foundation.org>
+In-Reply-To: <20120118140603.0fc22302.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Jan 2012 16:18:43 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
-
-> scan_mapping_unevictable_pages() is used to make SysV SHM_LOCKed pages
-> evictable again once the shared memory is unlocked.  It does this with
-> pagevec_lookup()s across the whole object (which might occupy most of
-> memory), and takes 300ms to unlock 7GB here.  A cond_resched() every
-> PAGEVEC_SIZE pages would be good.
-> 
-> However, KOSAKI-san points out that this is called under shmem.c's
-> info->lock, and it's also under shm.c's shm_lock(), both spinlocks.
-> There is no strong reason for that: we need to take these pages off
-> the unevictable list soonish, but those locks are not required for it.
-> 
-> So move the call to scan_mapping_unevictable_pages() from shmem.c's
-> unlock handling up to shm.c's unlock handling.  Remove the recently
-> added barrier, not needed now we have spin_unlock() before the scan.
-> 
-> Use get_file(), with subsequent fput(), to make sure we have a
-> reference to mapping throughout scan_mapping_unevictable_pages():
-> that's something that was previously guaranteed by the shm_lock().
-> 
-> Remove shmctl's lru_add_drain_all(): we don't fault in pages at
-> SHM_LOCK time, and we lazily discover them to be Unevictable later,
-> so it serves no purpose for SHM_LOCK; and serves no purpose for
-> SHM_UNLOCK, since pages still on pagevec are not marked Unevictable.
-> 
-> The original code avoided redundant rescans by checking VM_LOCKED
-> flag at its level: now avoid them by checking shp's SHM_LOCKED.
-> 
-> The original code called scan_mapping_unevictable_pages() on a
-> locked area at shm_destroy() time: perhaps we once had accounting
-> cross-checks which required that, but not now, so skip the overhead
-> and just let inode eviction deal with them.
-> 
-> Put check_move_unevictable_page() and scan_mapping_unevictable_pages()
-> under CONFIG_SHMEM (with stub for the TINY case when ramfs is used),
-> more as comment than to save space; comment them used for SHM_UNLOCK.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: stable@vger.kernel.org [back to 2.6.32 but will need respins]
-
-Is -stable backporting really warranted?  AFAICT the only thing we're
-fixing here is a long latency glitch during a rare operation on large
-machines.  Usually it will be on only one CPU, too.
-
-"[PATCH 2/2] SHM_UNLOCK: fix Unevictable pages stranded after swap"
-does loko like -stable material, so omitting 1/1 will probably screw
-things up :(
-
-
-> Resend in the hope that it can get into 3.3.
-
-That we can do ;)
-
+> > +	/* TODO(kees): We cannot unload ramoops since pstore doesn't support
+> > +	 * unregistering yet.
+> > +	 */
 >
-> ...
->
-> --- mmotm.orig/mm/vmscan.c	2012-01-06 10:04:54.000000000 -0800
-> +++ mmotm/mm/vmscan.c	2012-01-06 10:06:13.941943604 -0800
-> @@ -3499,6 +3499,7 @@ int page_evictable(struct page *page, st
->  	return 1;
->  }
->  
-> +#ifdef CONFIG_SHMEM
->  /**
->   * check_move_unevictable_page - check page for evictability and move to appropriate zone lru list
->   * @page: page to check evictability and move to appropriate lru list
-> @@ -3509,6 +3510,8 @@ int page_evictable(struct page *page, st
->   *
->   * Restrictions: zone->lru_lock must be held, page must be on LRU and must
->   * have PageUnevictable set.
-> + *
-> + * This function is only used for SysV IPC SHM_UNLOCK.
->   */
->  static void check_move_unevictable_page(struct page *page, struct zone *zone)
->  {
-> @@ -3545,6 +3548,8 @@ retry:
->   *
->   * Scan all pages in mapping.  Check unevictable pages for
->   * evictability and move them to the appropriate zone lru list.
-> + *
-> + * This function is only used for SysV IPC SHM_UNLOCK.
->   */
->  void scan_mapping_unevictable_pages(struct address_space *mapping)
->  {
-> @@ -3590,9 +3595,14 @@ void scan_mapping_unevictable_pages(stru
->  		pagevec_release(&pvec);
->  
->  		count_vm_events(UNEVICTABLE_PGSCANNED, pg_scanned);
-> +		cond_resched();
->  	}
-> -
->  }
-> +#else
-> +void scan_mapping_unevictable_pages(struct address_space *mapping)
-> +{
-> +}
-> +#endif /* CONFIG_SHMEM */
+> Well that sucks.  Is pstore getting fixed?
 
-Inlining the CONFIG_SHMEM=n stub would have been mroe efficient.
+While it might be useful for developers who have machines that
+support multiple back-ends to load & unload - there really isn't
+any credible end-user case for it - so it has a very low priority.
+Perhaps zero (it would complicate the code for no useful purpose).
+
+Even for development there's a lot of re-booting (after all, pstore
+is really about saving the kernel log when the system crashes :-).
+
+-Tony
