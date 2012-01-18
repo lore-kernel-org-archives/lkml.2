@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020Ab2ARSXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 13:23:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60026 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab2ARSXu (ORCPT
+	id S1758049Ab2ARSYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 13:24:16 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:58320 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729Ab2ARSYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 13:23:50 -0500
-Date: Wed, 18 Jan 2012 22:23:44 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
- v6
-Message-ID: <20120118182344.GD2889@moon>
-References: <20120116153231.GF2998@moon>
- <4F15EA53.8030405@gmail.com>
- <20120118135809.GA10105@redhat.com>
- <20120118142156.GR1968@moon>
- <20120118143631.GA11776@redhat.com>
-MIME-Version: 1.0
+	Wed, 18 Jan 2012 13:24:14 -0500
+Date: Wed, 18 Jan 2012 19:24:11 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Martin Mares <mj@ucw.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Jamie Lokier <jamie@shareable.org>,
+        Andi Kleen <andi@firstfloor.org>, Indan Zupancic <indan@nul.nu>,
+        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
+Message-ID: <20120118182411.GT11715@one.firstfloor.org>
+References: <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com> <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <CA+55aFyVTh4SQjjcf3x9BSzULttNVcmG9FyaKzhok=2_804xWA@mail.gmail.com> <20120118023114.GA9643@alboin.amr.corp.intel.com> <CA+55aFyEde=PLkgsx+FECRrX-dSsOSQkeY_by5=+hnkQhj5hFw@mail.gmail.com> <mj+md-20120118.134958.22774.nikam@ucw.cz>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120118143631.GA11776@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <mj+md-20120118.134958.22774.nikam@ucw.cz>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 03:36:31PM +0100, Oleg Nesterov wrote:
-> On 01/18, Cyrill Gorcunov wrote:
-> >
-> > So Oleg, I think you meant something like below? Comment is moved down an
-> > list_empty over siblings remans, right?
-> 
-> Yes, except the comment still looks misleading to me.
-> 
-> Otherwise looks correct, but I'll try to re-check once again with
-> the fresh head. Although I think you should remove me from CC: after
-> I found the nonexistent bug ;)
-> 
+> Not everybody. There are programs which try hard to distinguish between
+> int80 and syscall. One such example is a sandbox for programming contests
+> I wrote several years ago. It analyses the instruction before EIP and as
+> it does not allow threads nor executing writeable memory, it should be
+> correct.
 
-There is no way back from CC ;)
+There are other ways to break it, like using the syscall itself to change
+input arguments or using ptrace from another process and other ways.
 
-> This is minor, but "freshly created" looks very confusing to me.
-> What does it mean? We hold tasklist, we can't race with fork().
-> 
+Generally there are so many races with ptrace that if you want to do
+things like that it's better to use a LSM. That's what they are for.
 
-Hmm. Sure we keep a lock here, but changes might happen between reads
-If only I'm not missing something again.
+-Andi
 
-Look which scenario I've had in mind. We have a task A and children B,C,D,E.
-... Here my scenario ended and I realised that you're right. I'll update
-the comment.
-
-> Yes we can miss a child, but this has nothing to do with "freshly".
-> Just suppose that the parent sleeps, but N children exit after we
-> printed their tids. Now the slow paths skips N extra children, we
-> miss N tasks.
-> 
-> Oleg.
-> 
-
-	Cyrill
