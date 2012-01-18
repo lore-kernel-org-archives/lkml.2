@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab2ARCcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 21:32:22 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40002 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531Ab2ARCcU (ORCPT
+	id S1756734Ab2ARCei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 21:34:38 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53370 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756531Ab2ARCeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 21:32:20 -0500
-Message-ID: <4F162F28.4010001@linux.vnet.ibm.com>
-Date: Wed, 18 Jan 2012 10:32:08 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Tue, 17 Jan 2012 21:34:36 -0500
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: improve trace events of vmexit/mmio/ioport
-References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EE9B.9020901@linux.vnet.ibm.com> <4F13EFFB.90706@redhat.com> <4F14DCBB.3060207@linux.vnet.ibm.com> <20120117115558.GB17420@amt.cnet> <4F15B08D.5090000@gmail.com>
-In-Reply-To: <4F15B08D.5090000@gmail.com>
+In-Reply-To: <7vwr8pok7w.fsf@alter.siamese.dyndns.org>
+References: <7vehuyosaa.fsf@alter.siamese.dyndns.org> <CAH5451nSMcJ50fu2qtMkw4zPpx-Kg-k-jqCcpryu+pkC8JX8rw@mail.gmail.com>
+ <7vwr8pok7w.fsf@alter.siamese.dyndns.org>
+From: Andrew Ardill <andrew.ardill@gmail.com>
+Date: Wed, 18 Jan 2012 13:34:14 +1100
+Message-ID: <CAH5451mz7NpDyL9O708siBdgSC7eXZi=VWk5qd2Ghm0PmWZ9NQ@mail.gmail.com>
+Subject: Re: Using signed tag in pull requests
+To: Junio C Hamano <gitster@pobox.com>
+Cc: git@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011802-8256-0000-0000-000000EC00E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2012 01:31 AM, David Ahern wrote:
-
-
->>>>
->>>> Relying on the existing tracepoints will make the tool work on older
->>>> kernels.
->>>>
->>>
->>>
->>> We can drop all new events, but unfortunately, the information of the origin
->>> tracepoints is not enough, at least vcpu_id need be traced in theses events
->>> to match its events. Yes?
+On 18 January 2012 12:47, Junio C Hamano <gitster@pobox.com> wrote:
+> Andrew Ardill <andrew.ardill@gmail.com> writes:
+>
+>>> Starting from Git release v1.7.9, a contributor can add a signed tag to
+>>> the commit at the tip of the history and ask the integrator to pull that
+>>> signed tag. When the integrator runs `git pull`, the signed tag is
+>>> automatically verified to assure that the history is not tampered with.
+>>> In addition, the resulting merge commit records the content of the signed
+>>> tag, so that other people can verify that the branch merged by the
+>>> contributor was signed by the contributor, without fetching the signed tag
 >>
->> Yes, and if you don't add completed events, you'll have to use kvm_entry 
->> whose collection adds a lot of overhead.
-> 
-> 
-> vcpus run as threads and hence have their own tid which is available in
-> the perf samples.
-> 
+>> I think you mean to say 'the branch merged by the integrator was signed
+>> by the contributor'.
+>
+> Definitely. I'll update my local copy.
+>
+> Thanks for spotting this.
 
-
-Nice, thanks for your information, David!
-
-> There is an ongoing 'discussion' about modifying existing tracepoints
-> which your proposed patch violates. This is the start of it:
-> 
-
-
-Hmm, i think we can still add completed tracepoints in the new version kernel,
-if old version kernel is used, we can fall back to use kvm_entry instead?
-
-And there is a exception for mmio read, in current code, the mmio read event is
-actually used to trace the time when then read emulation is completed, i think
-we can add a tracepoint like mmio_read_begin to trace the start time of mmio read.
-So:
-- for the new kernel, we use mmio_read_begion and kvm_mmio(READ...) to calculate
-  start time and end time.
-- for the old kernel, we use kvm_exit and kvm_mmio(READ...) to calculate start time
-  and end time.
-
-Your idea?
-
+No worries. That's the whole point right? :D
