@@ -1,163 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab2ARDUz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 22:20:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61352 "EHLO
+	id S1756825Ab2ARD2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 22:28:01 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37647 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151Ab2ARDUx (ORCPT
+	with ESMTP id S1755151Ab2ARD17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 22:20:53 -0500
-Date: Wed, 18 Jan 2012 11:32:12 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: Pinmux bindings proposal
-Message-ID: <20120118033209.GB563@S2101-09.ap.freescale.net>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
- <20120114070858.GG1810@S2101-09.ap.freescale.net>
- <74CDBE0F657A3D45AFBB94109FB122FF17801D22C7@HQMAIL01.nvidia.com>
+	Tue, 17 Jan 2012 22:27:59 -0500
+Date: Tue, 17 Jan 2012 19:27:56 -0800
+From: mark gross <markgross@thegnar.org>
+To: MyungJoo Ham <myungjoo.ham@gmail.com>
+Cc: markgross@thegnar.org, "Turquette, Mike" <mturquette@ti.com>,
+        linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>
+Subject: Re: [PATCH 1/2] PM / devfreq: add min/max_freq limit requested by
+ users.
+Message-ID: <20120118032756.GC27153@mgross-G62>
+Reply-To: markgross@thegnar.org
+References: <1326276130-4042-1-git-send-email-myungjoo.ham@samsung.com>
+ <CAJOA=zMkRxx=PhznO5VSb3H4bSx7oTYiazesasYY_X7SzSf48A@mail.gmail.com>
+ <CAJ0PZbRKknwF1LwJP6M93-GPXJ9xKuzZnDjZMF8C1id026-X4A@mail.gmail.com>
+ <20120113044757.GB6004@mgross-G62>
+ <CAJ0PZbTMuJfBL4iZyc=R4TkdfFuh1_XzV-KQr73330PUt6fcNQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D22C7@HQMAIL01.nvidia.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJ0PZbTMuJfBL4iZyc=R4TkdfFuh1_XzV-KQr73330PUt6fcNQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 10:47:14AM -0800, Stephen Warren wrote:
-> Shawn Guo wrote at Saturday, January 14, 2012 12:09 AM:
-> > On Fri, Jan 13, 2012 at 12:39:42PM -0800, Stephen Warren wrote:
-...
-> > >                 /* 1:n example: */
-> > >                 pinmux =
-> > >                         <"default" &pmx_sdhci_mux_a>
-> > >                         <"default" &pmx_sdhci_pincfg_a>
-> > >                         <"suspend" &pmx_sdhci_mux_a>
-> > >                         <"suspend" &pmx_sdhci_pincfg_a_suspend>;
-> > 
-> > I personally do not like the 1:n binding.  To me, any particular pinctrl
-> > configuration, e.g. pmx_sdhci_active, should consist of a pair of pinmux
-> > and pinconf, which should be given by the pmx_sdhci_active node.
-> 
-> Just a further explanation on my original code: I always intended that
-> each entry in that list was a full pinmux configuration that could include
-> mux and pin configuration settings. Thus, the above is more like:
-> 
-> pinctrl = 
->     <"default" &pmx_sdhci_a>
->     <"default" &pmx_sdhci_overrides>
-> 
-> (overrides rather than explicit separate mux/config; the separate mux
-> And config were just an example use case).
-> 
-> My thoughts here:
-> 
-> With this binding, we can certainly define a lot of pre-defined/canned
-> configurations to a set of pins. However, there are so many pin config
-> options (at least on Tegra) for different aspects of drive strength, slew
-> rate, ... that I sincerely doubt every single board is going to be able
-> to use one of those pre-defined/canned *exactly* without changes. The ways
-> to cope with these small board-specific differences are:
-> 
-> a) Cut/paste the entire pre-defined/canned configuration and tweak it
-> as necessary. You can do this with the 1:1 model.
-> 
-> b) Use the pre-defined/canned as a base, then modify it to add extra
-> configuration options, or change existing configuration options, as
-> appropriate. I think the 1:n model works best for this. Given previous
-> comments, I'd now propose the following syntax for a 1:n model:
-> 
-> 
->     pinctrl = <&pmx_sdhci_a>, <&pmx_sdhci_overrides>, <&pmx_sdhci_suspend>;
->     pinctrl-names = "default", "default", "suspend";
-> 
-> This should be easy to implement; instead of roughly:
-> 
-> prop = get_prop(np, "pinctrl-names");
-> index = find_index(prop, "default");
-> handle_pinctrl_prop(np, "pinctrl", index);
-> 
-> something more like:
-> 
-> prop = get_prop(np, "pinctrl-names");
-> prev = NULL;
-> while (find_index(prop, "default", &prev))
->     handle_pinctrl_prop(np, "pinctrl", index);
-> 
-Ok, I get it.  It seems a comprehensive design to me then.
+Either my mail reader is acting up or this email is a bit off topic.  It
+seems to be talking about DVFS/ondemand sampling rates when the
+discussion has been about anding CPU operating frequency constraint
+requests to pm_qos
 
-> ...
-> > >                 /*
-> > >                  * The actual definition of the complete state of the
-> > >                  * pinmux as required by some driver.
-> > >                  *
-> > >                  * These can be either directly in the device node, or
-> > >                  * somewhere in tegra20.dtsi in order to provide pre-
-> > >                  * selected/common configurations. Hence, they're referred
-> > >                  * to by phandle above.
-> > >                  */
-> > >                 pmx_sdhci_active: {
-> > >                         /*
-> > >                          * Pin mux settings. Mandatory?
-> > >                          * Not mandatory if the 1:1 mentioned above is
-> > >                          * extended to 1:n.
-> > >                          *
-> > >                          * Format is <&pmx_controller_phandle muxable_entity_id
-> > >                          * selected_function>.
-> > >                          *
-> > >                          * The pmx phandle is required since there may be more
-> > >                          * than one pinmux controller in the system. Even if
-> > >                          * this node is inside the pinmux controller itself, I
-> > >                          * think it's simpler to just always have this field
-> > >                          * present in the binding for consistency.
-> > >                          *
-> > 
-> > I prefer to just put such nodes inside pinctrl controller itself and
-> > drop those phandles.
+On Tue, Jan 17, 2012 at 07:32:05PM +0900, MyungJoo Ham wrote:
+> On Fri, Jan 13, 2012 at 1:47 PM, mark gross <markgross@thegnar.org> wrote:
+> > On Thu, Jan 12, 2012 at 11:08:44AM +0900, MyungJoo Ham wrote:
+> >>
+> >> In practice, we have been using min/max to test DVFS behaviors and its
+> >> side effects. And we are going to use them to 1. restrict power
+> >> consumption forcibly by the platform software if it is too hot or the
+> >> battery is low, and to 2. guarantee the minimum performance for
+> >> specific tasks controlled by the platform software.
+> >>
+> >> Anyway, the reason 2 could be tackled by pm-qos if we allow more
+> >> options in pm-qos with 1. pm qos type to enforce DVFS response time.
+> > what would pm_qos do with DVFS response time?  What power management
+> > knob would it enable a constraint for?
+> >
+> > pm_qos doesn't do anything but enable power throttling code to consider
+> > a constraint on how far to throttle "something".  pm_qos has no
+> > enforcement power.
 > 
-> My rationale here:
 > 
-> Forcing those nodes to be inside the controller node forces us to store
-> any board-specific custom configurations or overrides in the controller
-> node too; I'd simply prefer the flexibility to put them anywhere.
+> - The control knob: polling interval of ondemand-like DVFS mechanisms
+> - It's ok to have no enforcement power. The DVFS mechanism only needs
+> an interface (PM QoS seems fine for this) from user space / device
+> drivers to get the response-time requirement.
 > 
-Hmm, this type of flexibility does not make too much point to me.  On
-the contrary, it's good to have a centralized place for these nodes,
-so that they can be well organized and people can find them easily.
+> With some events, we need to adjust DVFS polling interval.
 
-> Equally, I want SoC vendors to be able to choose whether to use these
-> pre-defined/canned configuration nodes at all. If you do use them, putting
-> them into the controller node makes perfect sense. If you don't use them,
-> putting the pin configuration nodes into the individual device nodes (in
-> the board.dts file) makes much more sense.
-> 
-Having 'pinctrl' phandle point to a configuration node which is in the
-same device node looks odd to me.  I'd rather define these configuration
-nodes in <board>.dts still under controller node.
+This would be a new type of request.  I don't see it as a pm_qos type of
+data item but, I can see it may be useful.
 
-> Having each property start with the phandle of the relevant controller
-> is also far more consistent with the way all the GPIO, IRQ, ... bindings
-> work.
-> 
-The GPIO and IRQ gets only one level phandle reference from device node
-to the destination, while you are proposing two levels of phandle
-reference for pinctrl.  Having 'pinctrl' phandle point to the
-configuration node which sits under controller node seems well aligned
-with GPIO and IRQ etc to me.
+My first thought is that this should be exported by cpufreq.
 
--- 
-Regards,
-Shawn
+> For now, we do this in our devices for user input events (key input,
+> touchscreen input, ...). And some peripheral device drivers want to
+> get "guaranteed response time" depending on their operational modes
+> from memory and bus at the start of their operations.
+> 
+> With user input events, user may (doing something heavy) or may not
+> (doing something light) want fast reaction from CPU/MEM/GPU/... in
+> many occasions, and we cannot determine it until the DVFS polling has
+> been done.
+> 
+> In average, with near 100% threshold, ondemand-like governors will
+> take 1.5 x polling interval to response. In a system with 100ms
+> polling interval, DVFS mechanism will take usuallly 150ms (and up to
+> 200ms) to react and this is significantly noticable to human users.
+> With 60Hz display system, this is loss of almost 10 frames.
+
+Do you really want to change the sampling rate of the DVFS governors or
+just use a pm_qos request to limit to minimum frequency the governor
+goes for and use a timer to modtime to remove the request on every UI
+event from the touch screen driver interrupt handler?
+
+> In order to address this, a touch event handler (or any
+> thread/callback or anything deals with it) may request QoS with an
+> incoming event to reduce polling interval temporarily.
+> 
+> Although PM-QoS does not have the QoS Type for this kind of metric;
+> however, DVFS response time seems to be another QoS metric candidate.
+
+sure its a candidate but I think perhaps an export from cpufreq may be a
+good candidate too.  But, I like my timer scheme best.
+
+However; this still needs a pm_qos class for cpu_min_feq to work.
+
+--mark
+
+> 
+> 
+> >
+> >> 2. pm qos type to enforce graphics performance. And adding a duration
+> >> option to pm-qos requests will be helpful (sort of a helper function):
+> >> i.e., pm_qos_timed_request(struct pm_qos_request *req, int
+> >> pm_qos_class, s32 value, unsigned long duration_ms);
+> >
+> > What would be good units for graphics throughput?
+> > Where in the graphics driver would you insert the equivalent of cpufreq?
+> > to control the GPU core frequency?
+> 
+> I've not thought about this much yet. I've just seen the need for QoS
+> requirements from GPU people because DVFS mechanism loses a frame or
+> frames often during GPU usage without QoS information.
+> 
+> I'm not so familiar with GPUs, so I can't be sure about the metric for
+> graphics throughput. However, could it be "FLOPS", "triangles per
+> second", or GPU clock speed?
+> 
+> We have GPU DVFS drivers in linux/drivers/media/video/..., which
+> controls GPU core frequency and measures GPU usage. However, they can
+> be implemented with devfreq framework and move into drivers/devfreq/
+> later.
+> 
+> 
+> 
+> Cheers!
+> MyungJoo.
+> 
+> 
+> -- 
+> MyungJoo Ham, Ph.D.
+> Mobile Software Platform Lab, DMC Business, Samsung Electronics
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
