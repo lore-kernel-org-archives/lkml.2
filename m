@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab2ARBHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 20:07:43 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53287 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754212Ab2ARBHk (ORCPT
+	id S1754462Ab2ARBLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 20:11:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50438 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab2ARBLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 20:07:40 -0500
+	Tue, 17 Jan 2012 20:11:16 -0500
+Date: Tue, 17 Jan 2012 17:11:12 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: Kernel crash in icq_free_icq_rcu
+Message-ID: <20120118011112.GB32160@htj.dyndns.org>
+References: <20120117201823.GD19223@redhat.com>
+ <20120117214834.GD26207@google.com>
+ <20120117220715.GB23527@redhat.com>
+ <CANejiEUfAxR-DFH+eRQUbmc1jKHSkcBP1RxuRQ-9JKLU=1Ds0w@mail.gmail.com>
+ <20120118010323.GA32160@htj.dyndns.org>
+ <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <7vehuyosaa.fsf@alter.siamese.dyndns.org>
-References: <7vehuyosaa.fsf@alter.siamese.dyndns.org>
-From: Andrew Ardill <andrew.ardill@gmail.com>
-Date: Wed, 18 Jan 2012 12:07:18 +1100
-Message-ID: <CAH5451nSMcJ50fu2qtMkw4zPpx-Kg-k-jqCcpryu+pkC8JX8rw@mail.gmail.com>
-Subject: Re: Using signed tag in pull requests
-To: Junio C Hamano <gitster@pobox.com>
-Cc: git@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks pretty good Junio, though one of the lines was a bit confusing:
+On Wed, Jan 18, 2012 at 09:05:26AM +0800, Shaohua Li wrote:
+> > Vivek is seeing the problem while switching elevators.  Are you too?
+> > Or is it during normal operation?
+> same here. I had some problems when I debug my ioscheduler, but
+> eventually found even switching cfq and noop can trigger oops.
 
-On 18 January 2012 09:53, Junio C Hamano <gitster@pobox.com> wrote:
+Hmmm... maybe quiescing isn't working as expected and kmem cache is
+being destroyed with live icq's.  I'll try to reproduce it.
 
-> Starting from Git release v1.7.9, a contributor can add a signed tag to
-> the commit at the tip of the history and ask the integrator to pull that
-> signed tag. When the integrator runs `git pull`, the signed tag is
-> automatically verified to assure that the history is not tampered with.
-> In addition, the resulting merge commit records the content of the signed
-> tag, so that other people can verify that the branch merged by the
-> contributor was signed by the contributor, without fetching the signed tag
+Thanks.
 
-I think you mean to say 'the branch merged by the integrator was signed
-by the contributor'. If you are talking about two separate contributors, or
-the same contributor merging one of her own branches, the wording can
-likely be improved.
-
-> used to validate the pull request separately and keeping it in the refs
-> namespace.
-
-Overall it was easy to understand and makes the whole workflow quite clear.
-
-Regards,
-Andrew Ardill
+-- 
+tejun
