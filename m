@@ -1,138 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab2ARRTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 12:19:20 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53006 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932290Ab2ARRTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 12:19:19 -0500
-Message-ID: <4F16FF0D.1030606@linux.vnet.ibm.com>
-Date: Wed, 18 Jan 2012 22:49:09 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S932333Ab2ARRTm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 12:19:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932288Ab2ARRTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 12:19:40 -0500
+Date: Wed, 18 Jan 2012 18:12:10 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Chris Evans <scarybeasts@gmail.com>
+Cc: Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
+        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
+	[RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
+Message-ID: <20120118171210.GB16835@redhat.com>
+References: <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com> <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com> <20120118170006.GA16835@redhat.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
-        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
-Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
- to unlock_system_sleep()
-References: <201201172345.15010.rjw@sisk.pl>	<201201180015.56510.rjw@sisk.pl> <4F16C24A.4050007@linux.vnet.ibm.com> <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com> <4F16F94C.4020000@linux.vnet.ibm.com> <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com>
-In-Reply-To: <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011807-1396-0000-0000-0000008D1FDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120118170006.GA16835@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tejun,
+On 01/18, Oleg Nesterov wrote:
+>
+> On 01/17, Chris Evans wrote:
+> >
+> > 1) Tracee is compromised; executes fork() which is syscall that isn't allowed
+> > 2) Tracee traps
+> > 2b) Tracee could take a SIGKILL here
+> > 3) Tracer looks at registers; bad syscall
+> > 3b) Or tracee could take a SIGKILL here
+> > 4) The only way to stop the bad syscall from executing is to rewrite
+> > orig_eax (PTRACE_CONT + SIGKILL only kills the process after the
+> > syscall has finished)
+> > 5) Disaster: the tracee took a SIGKILL so any attempt to address it by
+> > pid (such as PTRACE_SETREGS) fails.
+> > 6) Syscall fork() executes; possible unsupervised process now running
+> > since the tracer wasn't expecting the fork() to be allowed.
+>
+> As for fork() in particular, it can't succeed after SIGKILL.
+>
+> But I agree, probably it makes sense to change ptrace_stop() to check
+> fatal_signal_pending() and do do_group_exit(SIGKILL) after it sleeps
+> in TASK_TRACED. Or we can change tracehook_report_syscall_entry()
+>
+> 	-	return 0;
+> 	+	return !fatal_signal_pending();
+>
+> (no, I do not literally mean the change above)
+>
+> Not only for security. The current behaviour sometime confuses the
+> users. Debugger sends SIGKILL to the tracee and assumes it should
+> die asap, but the tracee exits only after syscall.
 
-On 01/18/2012 10:28 PM, Tejun Heo wrote:
+Something like the patch below.
 
-> Hello,
-> 
-> On Wed, Jan 18, 2012 at 8:54 AM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> +       /*
->> +        * Don't use freezer_count() because we don't want the call to
->> +        * try_to_freeze() here.
->> +        *
->> +        * Reason:
->> +        * unlock_system_sleep() gets called in snapshot_read() and
->> +        * snapshot_write() when the freezing condition is still in effect.
->> +        * Which means, if we use try_to_freeze() here, it would make them
->> +        * enter the refrigerator, thus causing suspend-to-disk to lockup.
->> +        */
-> 
-> Yeap, much better but wouldn't it be better if the description was
-> higher level?  ie. Explain why try_to_freeze() doesn't make sense for
-> this operation semantically and then, optionally, give an example of
-> breakage.  It usually is lack of proper rationale / reasoning that
-> confuses people reading the code.
-> 
+Oleg.
 
-
-I agree, but I was trying to keep the comment from growing too long ;)
-
-In fact, before updating that patch, I wrote up the following description
-but then didn't post it. I know you are asking me to update the comment
-in the code, but let me post my original description as well, atleast just
-because I took the effort to write it up ;)
-
-Explanation as to why try_to_freeze() must not be used in
-unlock_system_sleep():
-
-We don't want try_to_freeze() here because of 2 reasons:
-
-a) It is unnecessary at this point:
-   Freezing always begins and ends in a piece of code which is protected by
-   pm_mutex. 
-
-   Some code piece, say "X":             PM/Freezer call path:
-
-				         grab pm_mutex
-				         start freezing tasks
-   [-- lock_system_sleep() --]
-				         skip freezing "X" since
-				        it called freezer_do_not_count()
-
-				         freezing succeeded.
-				         Other things get done (suspend
-				         or hibernate etc).
-
-				         release pm_mutex
-
-   lock_system_sleep()
-   (it is only *now* that this
-   function returned since pm_mutex
-   had been grabbed all this while
-   by the PM path.)
-
-				          Let us say another PM operation
-				          like suspend/hibernate begins.
-					   So try to grab pm_mutex.
-
-   /* do something */
-
-   unlock_system_sleep()
-   //Point 1
-
-                		          It is only now that we acquire
-					  pm_mutex.
-					  So freezing for example, can
-					  start only now.
-					  //Point 2
-
-
->From the above depiction, it is clear that try_to_freeze() at Point 1 is
-pointless because freezing can only begin much later, at Point 2.
-When freezer_count() is called in some generic code, the try_to_freeze() is
-justified because, we had asked the freezer to skip us earlier, and now we
-want the freezer to consider us again. And hence, just in case the freezer
-is about to give up based on its 20 second timeout, we are extra-cooperative
-- we immediately call try_to_freeze() ourselves.
-
-However, in the unlock_system_sleep() case, the freezer won't be anywhere
-near its 20 second timeout, because freezing wouldn't have begun at all!
-Freezing would start only after we release the pm_mutex in
-unlock_system_sleep.
-
-So, considering all this, try_to_freeze() is not needed in
-unlock_system_sleep() path.
-
-b) A more important reason why try_to_freeze() should not be used here is that
-   it causes suspend-to-disk to lock up, as pointed out by Rafael.
-   So its no longer "pointless/unnecessary", it is now "known to make things
-   fail and hence not allowed".
-
-//End of my description :)
-
-I'll see how best I can summarize this in a short comment and post an updated
-patch when I'm done.
-
-Regards,
-Srivatsa S. Bhat
+--- x/include/linux/tracehook.h
++++ x/include/linux/tracehook.h
+@@ -54,12 +54,12 @@ struct linux_binprm;
+ /*
+  * ptrace report for syscall entry and exit looks identical.
+  */
+-static inline void ptrace_report_syscall(struct pt_regs *regs)
++static inline int ptrace_report_syscall(struct pt_regs *regs)
+ {
+ 	int ptrace = current->ptrace;
+ 
+ 	if (!(ptrace & PT_PTRACED))
+-		return;
++		return 0;
+ 
+ 	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
+ 
+@@ -72,6 +72,8 @@ static inline void ptrace_report_syscall
+ 		send_sig(current->exit_code, current, 1);
+ 		current->exit_code = 0;
+ 	}
++
++	return fatal_signal_pending(current);
+ }
+ 
+ /**
+@@ -96,8 +98,7 @@ static inline void ptrace_report_syscall
+ static inline __must_check int tracehook_report_syscall_entry(
+ 	struct pt_regs *regs)
+ {
+-	ptrace_report_syscall(regs);
+-	return 0;
++	return ptrace_report_syscall(regs);
+ }
+ 
+ /**
 
