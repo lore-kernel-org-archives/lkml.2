@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab2ARQuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 11:50:55 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49279 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab2ARQuy convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 18 Jan 2012 11:50:54 -0500
-Message-Id: <4F170679020000780006D85B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 18 Jan 2012 16:50:49 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <mingo@elte.hu>, "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        <tglx@linutronix.de>, <luca@luca-barbieri.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ix86: atomic64 assembly improvements
-References: <4F16E41B020000780006D7A5@nat28.tlf.novell.com>
- <4F16F505.8040809@zytor.com>
-In-Reply-To: <4F16F505.8040809@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S932224Ab2ARQyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 11:54:55 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:45745 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab2ARQyy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 11:54:54 -0500
+Message-ID: <4F16F94C.4020000@linux.vnet.ibm.com>
+Date: Wed, 18 Jan 2012 22:24:36 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
+        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
+Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
+ to unlock_system_sleep()
+References: <201201172345.15010.rjw@sisk.pl>	<201201180015.56510.rjw@sisk.pl> <4F16C24A.4050007@linux.vnet.ibm.com> <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com>
+In-Reply-To: <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011806-1396-0000-0000-0000008D1B26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 18.01.12 at 17:36, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> On 01/18/2012 06:24 AM, Jan Beulich wrote:
->> The cmpxchg8b variants of "set" and "xchg" are really identical, and
->> hence don't need to be repeated: %ebx and %ecx don't need to be copied
->> into %eax and %edx respectively (this is only necessary when desiring
->> to only read the stored value), and the LOCK prefix should also be used
->> in "set" (other than the comment that is now being removed was saying,
->> there is - to my knowledge - no *architectural* guarantee that aligned
->> 64-bit writes would always be carried out atomically).
+Hello Tejun,
+
+On 01/18/2012 09:12 PM, Tejun Heo wrote:
+
+> Hello,
 > 
-> EWHAT?
+> On Wed, Jan 18, 2012 at 4:59 AM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> +       /*
+>> +        * Don't use freezer_count() because we don't want the
+>> +        * call to try_to_freeze() here.
+>> +        */
 > 
-> It's atomic in the same way a MOV is atomic.
+> Please explain "why" here.
+>
 
-Then please point me to where this is documented.
 
-As I understand it, there is nothing keeping the CPU (or something
-down the bus) from executing the unlocked version as two 32-bit
-reads followed by two 32-bit writes.
+Ok, how about the following patch?
+----
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
 
-> The CPU could, in fact, execute the locked version at all if the
-> unlocked version didn't behave like that.
+Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
+[un]lock_system_sleep() APIs" introduced an undesirable change in the
+behaviour of unlock_system_sleep() since freezer_count() internally calls
+try_to_freeze() - which we don't need in unlock_system_sleep().
 
-Assuming you meant "could not", that's not true: As long as the
-external world has a way to know that both items are locked (think
-of the old bus lock mechanism when there were no caches yet),
-it can very well do so.
+And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
+[un]lock_system_sleep()" made these APIs wide-spread. This caused a
+regression in suspend-to-disk where snapshot_read() and snapshot_write()
+were getting frozen due to the try_to_freeze embedded in
+unlock_system_sleep(), since these functions were invoked when the freezing
+condition was still in effect.
 
-I do not question that in practice all CPUs behave as described,
-but without an architectural guarantee (and with the code in
-question not being used in hot paths afaik) I see no reason why
-it should depend on undefined behavior.
+Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
+and dropping the try_to_freeze() part. Not only will this fix the
+regression but this will also ensure that the API only does what it is
+intended to do, and nothing more, under the hood.
 
-Jan
+Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-> Unless you have a specific instance where you think this might be
-> violated, please let me know.
-> 
-> 	-hpa
-> 
-> -- 
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
+ include/linux/suspend.h |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 95040cc..6e76380 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -364,7 +364,18 @@ static inline void lock_system_sleep(void)
+ static inline void unlock_system_sleep(void)
+ {
+ 	mutex_unlock(&pm_mutex);
+-	freezer_count();
++
++	/*
++	 * Don't use freezer_count() because we don't want the call to
++	 * try_to_freeze() here.
++	 *
++	 * Reason:
++	 * unlock_system_sleep() gets called in snapshot_read() and
++	 * snapshot_write() when the freezing condition is still in effect.
++	 * Which means, if we use try_to_freeze() here, it would make them
++	 * enter the refrigerator, thus causing suspend-to-disk to lockup.
++	 */
++	current->flags &= ~PF_FREEZER_SKIP;
+ }
+ 
+ #else /* !CONFIG_PM_SLEEP */
 
 
