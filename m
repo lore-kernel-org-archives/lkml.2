@@ -1,152 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab2ARU3P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 15:29:15 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:47173 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757352Ab2ARU3O (ORCPT
+	id S1757979Ab2ARUi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 15:38:57 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:51207 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757135Ab2ARUiz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 15:29:14 -0500
-Message-ID: <4F172B8D.8050408@linux.vnet.ibm.com>
-Date: Thu, 19 Jan 2012 01:59:01 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Wed, 18 Jan 2012 15:38:55 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
-        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
-Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
- to unlock_system_sleep()
-References: <201201172345.15010.rjw@sisk.pl> <201201180015.56510.rjw@sisk.pl> <4F16C24A.4050007@linux.vnet.ibm.com> <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com> <4F16F94C.4020000@linux.vnet.ibm.com> <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com> <4F16FF0D.1030606@linux.vnet.ibm.com> <20120118173037.GE30664@google.com> <4F171BF8.50803@linux.vnet.ibm.com> <20120118193040.GA28538@google.com> <4F17217E.5040805@linux.vnet.ibm.com>
-In-Reply-To: <4F17217E.5040805@linux.vnet.ibm.com>
+In-Reply-To: <20120118094523.GJ24386@cmpxchg.org>
+References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
+	<1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
+	<20120113120406.GC17060@tiehlicka.suse.cz>
+	<20120113155001.GB1653@cmpxchg.org>
+	<20120113163423.GG17060@tiehlicka.suse.cz>
+	<CALWz4iyj4SMMyYhbuZ3HUq-jvcZUCGarceYY7vxm4b7X=yvCMg@mail.gmail.com>
+	<20120118094523.GJ24386@cmpxchg.org>
+Date: Wed, 18 Jan 2012 12:38:54 -0800
+Message-ID: <CALWz4iw85UZ4k1T8THhq=gnm0yEFW_=+7d9xtmcSfNm4sx5CAA@mail.gmail.com>
+Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
+From: Ying Han <yinghan@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011820-8256-0000-0000-000000EF2FD0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 01:16 AM, Srivatsa S. Bhat wrote:
-
-> On 01/19/2012 01:00 AM, Tejun Heo wrote:
-> 
->> Hello,
+On Wed, Jan 18, 2012 at 1:45 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Fri, Jan 13, 2012 at 01:45:30PM -0800, Ying Han wrote:
+>> On Fri, Jan 13, 2012 at 8:34 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>> > On Fri 13-01-12 16:50:01, Johannes Weiner wrote:
+>> >> On Fri, Jan 13, 2012 at 01:04:06PM +0100, Michal Hocko wrote:
+>> >> > On Tue 10-01-12 16:02:52, Johannes Weiner wrote:
+>> > [...]
+>> >> > > +bool mem_cgroup_over_softlimit(struct mem_cgroup *root,
+>> >> > > +                        struct mem_cgroup *memcg)
+>> >> > > +{
+>> >> > > + if (mem_cgroup_disabled())
+>> >> > > +         return false;
+>> >> > > +
+>> >> > > + if (!root)
+>> >> > > +         root = root_mem_cgroup;
+>> >> > > +
+>> >> > > + for (; memcg; memcg = parent_mem_cgroup(memcg)) {
+>> >> > > +         /* root_mem_cgroup does not have a soft limit */
+>> >> > > +         if (memcg == root_mem_cgroup)
+>> >> > > +                 break;
+>> >> > > +         if (res_counter_soft_limit_excess(&memcg->res))
+>> >> > > +                 return true;
+>> >> > > +         if (memcg == root)
+>> >> > > +                 break;
+>> >> > > + }
+>> >> > > + return false;
+>> >> > > +}
+>> >> >
+>> >> > Well, this might be little bit tricky. We do not check whether memcg and
+>> >> > root are in a hierarchy (in terms of use_hierarchy) relation.
+>> >> >
+>> >> > If we are under global reclaim then we iterate over all memcgs and so
+>> >> > there is no guarantee that there is a hierarchical relation between the
+>> >> > given memcg and its parent. While, on the other hand, if we are doing
+>> >> > memcg reclaim then we have this guarantee.
+>> >> >
+>> >> > Why should we punish a group (subtree) which is perfectly under its soft
+>> >> > limit just because some other subtree contributes to the common parent's
+>> >> > usage and makes it over its limit?
+>> >> > Should we check memcg->use_hierarchy here?
+>> >>
+>> >> We do, actually.  parent_mem_cgroup() checks the res_counter parent,
+>> >> which is only set when ->use_hierarchy is also set.
+>> >
+>> > Of course I am blind.. We do not setup res_counter parent for
+>> > !use_hierarchy case. Sorry for noise...
+>> > Now it makes much better sense. I was wondering how !use_hierarchy could
+>> > ever work, this should be a signal that I am overlooking something
+>> > terribly.
+>> >
+>> > [...]
+>> >> > > @@ -2121,8 +2121,16 @@ static void shrink_zone(int priority, struct zone *zone,
+>> >> > >                   .mem_cgroup = memcg,
+>> >> > >                   .zone = zone,
+>> >> > >           };
+>> >> > > +         int epriority = priority;
+>> >> > > +         /*
+>> >> > > +          * Put more pressure on hierarchies that exceed their
+>> >> > > +          * soft limit, to push them back harder than their
+>> >> > > +          * well-behaving siblings.
+>> >> > > +          */
+>> >> > > +         if (mem_cgroup_over_softlimit(root, memcg))
+>> >> > > +                 epriority = 0;
+>> >> >
+>> >> > This sounds too aggressive to me. Shouldn't we just double the pressure
+>> >> > or something like that?
+>> >>
+>> >> That's the historical value.  When I tried priority - 1, it was not
+>> >> aggressive enough.
+>> >
+>> > Probably because we want to reclaim too much. Maybe we should do
+>> > reduce nr_to_reclaim (ugly) or reclaim only overlimit groups until certain
+>> > priority level as Ying suggested in her patchset.
 >>
->> On Thu, Jan 19, 2012 at 12:52:32AM +0530, Srivatsa S. Bhat wrote:
->>> Somehow I don't think its a hack, based on my perception as described
->>> above. But feel free to prove me wrong :-)
+>> I plan to post that change on top of this, and this patch set does the
+>> basic stuff to allow us doing further improvement.
 >>
->> Thanks for the explanation.  Yeah, I agree and it's much simpler this
->> way, which is nice.  So, in short, because freezing state can't change
->> across lock_system_sleep(), there's no reason to check for freezing
->> state on unlock and this nicely resolves the freezer problem together.
+>> I still like the design to skip over_soft_limit cgroups until certain
+>> priority. One way to set up the soft limit for each cgroup is to base
+>> on its actual working set size, and we prefer to punish A first with
+>> lots of page cache ( cold file pages above soft limit) than reclaiming
+>> anon pages from B ( below soft limit ). Unless we can not get enough
+>> pages reclaimed from A, we will start reclaiming from B.
 >>
-> 
-> 
-> Absolutely!
-> 
->> The only thing to be careful is, then, we need to set and clear SKIP
->> inside pm_mutex.
->>
-> 
-> 
-> Not exactly. We need to set SKIP before grabbing pm_mutex and clear it
-> inside pm_mutex. The reason is that we decided to set SKIP in the first
-> place just to avoid the freezer from declaring failure when we are
-> blocked on pm_mutex. If we move it to *after* mutex_lock(&pm_mutex), that
-> original intention itself is not satisfied, and we will hit freezing
-> failures - IOW making the set and clear exercise useless!
-> 
-> So, something like this should work perfectly:
-> 
-> lock_system_sleep()
-> {
-> 	freezer_do_not_count();
-> 	mutex_lock(&pm_mutex);
-> 	current->flags &= ~PF_FREEZER_SKIP;
-> }
-> 
-> But in the interest of making the code look a bit symmetric, we can do:
-> 
-> lock_system_sleep()
-> {
-> 	freezer_do_not_count();
-> 	mutex_lock(&pm_mutex);
-> }
-> 
-> unlock_system_sleep()
-> {
-> 	current->flags &= ~PF_FREEZER_SKIP;
-> 	mutex_unlock(&pm_mutex);
-> }
->  
+>> This might not be the ideal solution, but should be a good start. Thoughts?
+>
+> I don't like this design at all because unless you add weird code to
+> detect if soft limits apply to any memcgs on the reclaimed hierarchy
+> you may iterate over the same bunch of memcgs doing nothing for
+> several times.  For example in the default case of no softlimits set
+> anywhere and you repeatedly walk ALL memcgs in the system doing jack
+> until you reach your threshold priority level.  Elegant is something
+> else in my book.
 
+Agree that change isn't ready until the default soft limit is changed to "0".
 
-So how about this patch, with the comment updated?
-(and the changelog updated as well to reflect the movement of code)
+> Once we invert soft limits to mean guarantees and make the default
+> soft limit not infinity but zero, then we can ignore memcgs below
+> their soft limit for a few priority levels just fine because being
+> below the soft limit is the exception.  But I don't really want to
+> make this quite invasive behavioural change a requirement for a
+> refactoring patch if possible.
 
----
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
+Sounds reasonable to me.
 
-Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
-[un]lock_system_sleep() APIs" introduced an undesirable change in the
-behaviour of unlock_system_sleep() since freezer_count() internally calls
-try_to_freeze() - which we don't need in unlock_system_sleep().
-
-And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
-[un]lock_system_sleep()" made these APIs wide-spread. This caused a
-regression in suspend-to-disk where snapshot_read() and snapshot_write()
-were getting frozen due to the try_to_freeze embedded in
-unlock_system_sleep(), since these functions were invoked when the freezing
-condition was still in effect.
-
-Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
-and dropping the try_to_freeze() part. Not only will this fix the
-regression but this will also ensure that the API only does what it is
-intended to do, and nothing more, under the hood.
-
-While at it, make the code more correct and robust by ensuring that the
-PF_FREEZER_SKIP flag gets cleared with pm_mutex held, to avoid a race with
-the freezer.
-
-Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- include/linux/suspend.h |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 95040cc..cb9d3f4 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -363,8 +363,23 @@ static inline void lock_system_sleep(void)
- 
- static inline void unlock_system_sleep(void)
- {
-+	/*
-+	 * Don't use freezer_count() because we don't want the call to
-+	 * try_to_freeze() here.
-+	 *
-+	 * Reason:
-+	 * Fundamentally, we just don't need it, because freezing condition
-+	 * doesn't come into effect until we release the pm_mutex lock,
-+	 * since the freezer always works with pm_mutex held.
-+	 *
-+	 * More importantly, in the case of hibernation,
-+	 * unlock_system_sleep() gets called in snapshot_read() and
-+	 * snapshot_write() when the freezing condition is still in effect.
-+	 * Which means, if we use try_to_freeze() here, it would make them
-+	 * enter the refrigerator, thus causing hibernation to lockup.
-+	 */
-+	current->flags &= ~PF_FREEZER_SKIP;
- 	mutex_unlock(&pm_mutex);
--	freezer_count();
- }
- 
- #else /* !CONFIG_PM_SLEEP */
-
-
+--Ying
