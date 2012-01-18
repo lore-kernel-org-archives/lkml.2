@@ -1,101 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab2ARDRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 22:17:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:22980 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755151Ab2ARDRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 22:17:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="108161907"
-Subject: Re: x86/mce: machine check warning during poweroff
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-In-Reply-To: <4F1544EA.5060907@linux.vnet.ibm.com>
-References: <20120111000051.GA28874@dztty>
-	 <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
-	 <4F10929E.8070007@linux.vnet.ibm.com>
-	 <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
-	 <4F10BDF7.8030306@linux.vnet.ibm.com>
-	 <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
-	 <4F10EB5B.5060804@linux.vnet.ibm.com>
-	 <1326766892.16150.21.camel@sbsiddha-desk.sc.intel.com>
-	 <4F1544EA.5060907@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel
-Date: Tue, 17 Jan 2012 19:17:04 -0800
-Message-ID: <1326856624.5291.20.camel@sbsiddha-mobl2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756813Ab2ARDUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 22:20:55 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61352 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151Ab2ARDUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 22:20:53 -0500
+Date: Wed, 18 Jan 2012 11:32:12 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: Pinmux bindings proposal
+Message-ID: <20120118033209.GB563@S2101-09.ap.freescale.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <20120114070858.GG1810@S2101-09.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17801D22C7@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D22C7@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 15:22 +0530, Srivatsa S. Bhat wrote:
-> Thanks for the patch, but unfortunately it doesn't fix the problem!
-> Exactly the same stack traces are seen during a CPU Hotplug stress test.
-> (I didn't even have to stress it - it is so fragile that just a script
-> to offline all cpus except the boot cpu was good enough to reproduce the
-> problem easily.)
+On Tue, Jan 17, 2012 at 10:47:14AM -0800, Stephen Warren wrote:
+> Shawn Guo wrote at Saturday, January 14, 2012 12:09 AM:
+> > On Fri, Jan 13, 2012 at 12:39:42PM -0800, Stephen Warren wrote:
+...
+> > >                 /* 1:n example: */
+> > >                 pinmux =
+> > >                         <"default" &pmx_sdhci_mux_a>
+> > >                         <"default" &pmx_sdhci_pincfg_a>
+> > >                         <"suspend" &pmx_sdhci_mux_a>
+> > >                         <"suspend" &pmx_sdhci_pincfg_a_suspend>;
+> > 
+> > I personally do not like the 1:n binding.  To me, any particular pinctrl
+> > configuration, e.g. pmx_sdhci_active, should consist of a pair of pinmux
+> > and pinconf, which should be given by the pmx_sdhci_active node.
+> 
+> Just a further explanation on my original code: I always intended that
+> each entry in that list was a full pinmux configuration that could include
+> mux and pin configuration settings. Thus, the above is more like:
+> 
+> pinctrl = 
+>     <"default" &pmx_sdhci_a>
+>     <"default" &pmx_sdhci_overrides>
+> 
+> (overrides rather than explicit separate mux/config; the separate mux
+> And config were just an example use case).
+> 
+> My thoughts here:
+> 
+> With this binding, we can certainly define a lot of pre-defined/canned
+> configurations to a set of pins. However, there are so many pin config
+> options (at least on Tegra) for different aspects of drive strength, slew
+> rate, ... that I sincerely doubt every single board is going to be able
+> to use one of those pre-defined/canned *exactly* without changes. The ways
+> to cope with these small board-specific differences are:
+> 
+> a) Cut/paste the entire pre-defined/canned configuration and tweak it
+> as necessary. You can do this with the 1:1 model.
+> 
+> b) Use the pre-defined/canned as a base, then modify it to add extra
+> configuration options, or change existing configuration options, as
+> appropriate. I think the 1:n model works best for this. Given previous
+> comments, I'd now propose the following syntax for a 1:n model:
+> 
+> 
+>     pinctrl = <&pmx_sdhci_a>, <&pmx_sdhci_overrides>, <&pmx_sdhci_suspend>;
+>     pinctrl-names = "default", "default", "suspend";
+> 
+> This should be easy to implement; instead of roughly:
+> 
+> prop = get_prop(np, "pinctrl-names");
+> index = find_index(prop, "default");
+> handle_pinctrl_prop(np, "pinctrl", index);
+> 
+> something more like:
+> 
+> prop = get_prop(np, "pinctrl-names");
+> prev = NULL;
+> while (find_index(prop, "default", &prev))
+>     handle_pinctrl_prop(np, "pinctrl", index);
+> 
+Ok, I get it.  It seems a comprehensive design to me then.
 
-hmm, that's weird. with the patch, sched_ilb_notifier() should have
-cleared the cpu going offline from the nohz.idle_cpus_mask. And this
-should have happened after that cpu is removed from active mask. So
-no-one else should add that cpu back to the nohz.idle_cpus_mask and this
-should prevent the issue from happening.
+> ...
+> > >                 /*
+> > >                  * The actual definition of the complete state of the
+> > >                  * pinmux as required by some driver.
+> > >                  *
+> > >                  * These can be either directly in the device node, or
+> > >                  * somewhere in tegra20.dtsi in order to provide pre-
+> > >                  * selected/common configurations. Hence, they're referred
+> > >                  * to by phandle above.
+> > >                  */
+> > >                 pmx_sdhci_active: {
+> > >                         /*
+> > >                          * Pin mux settings. Mandatory?
+> > >                          * Not mandatory if the 1:1 mentioned above is
+> > >                          * extended to 1:n.
+> > >                          *
+> > >                          * Format is <&pmx_controller_phandle muxable_entity_id
+> > >                          * selected_function>.
+> > >                          *
+> > >                          * The pmx phandle is required since there may be more
+> > >                          * than one pinmux controller in the system. Even if
+> > >                          * this node is inside the pinmux controller itself, I
+> > >                          * think it's simpler to just always have this field
+> > >                          * present in the binding for consistency.
+> > >                          *
+> > 
+> > I prefer to just put such nodes inside pinctrl controller itself and
+> > drop those phandles.
+> 
+> My rationale here:
+> 
+> Forcing those nodes to be inside the controller node forces us to store
+> any board-specific custom configurations or overrides in the controller
+> node too; I'd simply prefer the flexibility to put them anywhere.
+> 
+Hmm, this type of flexibility does not make too much point to me.  On
+the contrary, it's good to have a centralized place for these nodes,
+so that they can be well organized and people can find them easily.
 
-I could reproduce the problem easily with out the patch but when I
-applied the patch I couldn't recreate the issue. Srivatsa, can you
-please re-check the kernel you tested indeed has the fix?
+> Equally, I want SoC vendors to be able to choose whether to use these
+> pre-defined/canned configuration nodes at all. If you do use them, putting
+> them into the controller node makes perfect sense. If you don't use them,
+> putting the pin configuration nodes into the individual device nodes (in
+> the board.dts file) makes much more sense.
+> 
+Having 'pinctrl' phandle point to a configuration node which is in the
+same device node looks odd to me.  I'd rather define these configuration
+nodes in <board>.dts still under controller node.
 
-re-Reviewing the code/patch also doesn't give me a hint.
+> Having each property start with the phandle of the relevant controller
+> is also far more consistent with the way all the GPIO, IRQ, ... bindings
+> work.
+> 
+The GPIO and IRQ gets only one level phandle reference from device node
+to the destination, while you are proposing two levels of phandle
+reference for pinctrl.  Having 'pinctrl' phandle point to the
+configuration node which sits under controller node seems well aligned
+with GPIO and IRQ etc to me.
 
-> I have a few questions regarding the synchronization with CPU Hotplug.
-> What guarantees that the code which selects and IPIs the new ilb is totally
-> race-free with respect to CPU hotplug and we will never IPI an offline CPU?
-
-So, nohz_balancer_kick() gets called only from interrupts disabled.
-During that time (from selecting the ilb_cpu to sending the IPI), no cpu
-can go offline. As the offline happens from the stop-machine process
-context with interrupts disabled.
-
-Only thing we need to make sure is the offlined cpu shouldn't be part of
-the nohz.idle_cpus_mask and for post 3.2 code, posted patch ensures
-that.
-
-For 3.2 and before, when a cpu exits tickless idle, it gets removed from
-the nohz.idle_cpus_mask (and also from the nohz.load_balancer). And if
-the cpu is not in the active mask (while going offline), subsequent
-calls to select_nohz_load_balancer() ensures that the cpu going down
-doesn't update the nohz structures. So I thought 3.2 shouldn't exhibit
-this problem.
-
-
-> (As demonstrated above, this issue is in 3.2-rc7
-> as well.)
-
-hmm, don't think we ran into this before 3.2. So, what am I missing from
-the above? I will try to reproduce it on 3.2 too.
-
-thanks,
-suresh
-
+-- 
+Regards,
+Shawn
