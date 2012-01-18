@@ -1,46 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2ARDPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 22:15:23 -0500
-Received: from ozlabs.org ([203.10.76.45]:44046 "EHLO ozlabs.org"
+	id S1756803Ab2ARDRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 22:17:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:22980 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755151Ab2ARDPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 22:15:22 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Olof Johansson <olof@lixom.net>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] modules: fix build error with !CONFIG_MODULE_UNLOAD
-In-Reply-To: <CAOesGMgTqKxKMQ3SW4kJVKyNdHGPS0pJTXtmHFzwgM3RJYfNnA@mail.gmail.com>
-References: <1326673943-26105-1-git-send-email-olof@lixom.net> <87aa5nhohv.fsf@rustcorp.com.au> <CAOesGMgTqKxKMQ3SW4kJVKyNdHGPS0pJTXtmHFzwgM3RJYfNnA@mail.gmail.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 18 Jan 2012 13:26:47 +1030
-Message-ID: <87fwfdzpjk.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755151Ab2ARDRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jan 2012 22:17:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108161907"
+Subject: Re: x86/mce: machine check warning during poweroff
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+In-Reply-To: <4F1544EA.5060907@linux.vnet.ibm.com>
+References: <20120111000051.GA28874@dztty>
+	 <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
+	 <4F10929E.8070007@linux.vnet.ibm.com>
+	 <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
+	 <4F10BDF7.8030306@linux.vnet.ibm.com>
+	 <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
+	 <4F10EB5B.5060804@linux.vnet.ibm.com>
+	 <1326766892.16150.21.camel@sbsiddha-desk.sc.intel.com>
+	 <4F1544EA.5060907@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel
+Date: Tue, 17 Jan 2012 19:17:04 -0800
+Message-ID: <1326856624.5291.20.camel@sbsiddha-mobl2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jan 2012 22:23:32 -0800, Olof Johansson <olof@lixom.net> wrote:
-> On Mon, Jan 16, 2012 at 3:32 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> > On Sun, 15 Jan 2012 16:32:23 -0800, Olof Johansson <olof@lixom.net> wrote:
-> >> Looks like the "module_flags_taint" helper was added under an #ifdef
-> >> CONFIG_MODULE_UNLOAD block, move it out of it.
-> >>
-> >> Fixes:
-> >>
-> >> kernel/module.c: In function 'show_taint':
-> >> kernel/module.c:1024:2: error: implicit declaration of function 'module_flags_taint'
-> >>
-> >> Signed-off-by: Olof Johansson <olof@lixom.net>
-> >
-> > Applied.
-> 
-> 
-> It looks like Linus already took an equivalent patch (shortly after I
-> had sent mine). You can drop it to avoid conflicts.
+On Tue, 2012-01-17 at 15:22 +0530, Srivatsa S. Bhat wrote:
+> Thanks for the patch, but unfortunately it doesn't fix the problem!
+> Exactly the same stack traces are seen during a CPU Hotplug stress test.
+> (I didn't even have to stress it - it is so fragile that just a script
+> to offline all cpus except the boot cpu was good enough to reproduce the
+> problem easily.)
 
-Indeed, I dropped it when I re-synced.
+hmm, that's weird. with the patch, sched_ilb_notifier() should have
+cleared the cpu going offline from the nohz.idle_cpus_mask. And this
+should have happened after that cpu is removed from active mask. So
+no-one else should add that cpu back to the nohz.idle_cpus_mask and this
+should prevent the issue from happening.
 
-Thanks,
-Rusty.
+I could reproduce the problem easily with out the patch but when I
+applied the patch I couldn't recreate the issue. Srivatsa, can you
+please re-check the kernel you tested indeed has the fix?
+
+re-Reviewing the code/patch also doesn't give me a hint.
+
+> I have a few questions regarding the synchronization with CPU Hotplug.
+> What guarantees that the code which selects and IPIs the new ilb is totally
+> race-free with respect to CPU hotplug and we will never IPI an offline CPU?
+
+So, nohz_balancer_kick() gets called only from interrupts disabled.
+During that time (from selecting the ilb_cpu to sending the IPI), no cpu
+can go offline. As the offline happens from the stop-machine process
+context with interrupts disabled.
+
+Only thing we need to make sure is the offlined cpu shouldn't be part of
+the nohz.idle_cpus_mask and for post 3.2 code, posted patch ensures
+that.
+
+For 3.2 and before, when a cpu exits tickless idle, it gets removed from
+the nohz.idle_cpus_mask (and also from the nohz.load_balancer). And if
+the cpu is not in the active mask (while going offline), subsequent
+calls to select_nohz_load_balancer() ensures that the cpu going down
+doesn't update the nohz structures. So I thought 3.2 shouldn't exhibit
+this problem.
+
+
+> (As demonstrated above, this issue is in 3.2-rc7
+> as well.)
+
+hmm, don't think we ran into this before 3.2. So, what am I missing from
+the above? I will try to reproduce it on 3.2 too.
+
+thanks,
+suresh
+
