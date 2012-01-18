@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab2ARERc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jan 2012 23:17:32 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:37530 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756855Ab2ARERa (ORCPT
+	id S1757029Ab2AREVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jan 2012 23:21:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51412 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837Ab2AREVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jan 2012 23:17:30 -0500
-Date: Tue, 17 Jan 2012 20:17:21 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Simon Glass <sjg@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
-Message-ID: <20120118041720.GA2431@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1326826563-32215-1-git-send-email-sjg@chromium.org>
- <1326826563-32215-3-git-send-email-sjg@chromium.org>
- <20120117201036.6d99f98f@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120117201036.6d99f98f@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12011804-3270-0000-0000-0000034A8A92
+	Tue, 17 Jan 2012 23:21:22 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=w8ftPpTke-cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=QsuO9HH-RwI-fmukELEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326860480.17534.71.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH RT 0/4] [ANNOUNCE] 3.0.14-rt32-rc1
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 17 Jan 2012 23:21:20 -0500
+In-Reply-To: <20120118034531.335521323@goodmis.org>
+References: <20120118034531.335521323@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 08:10:36PM +0000, Alan Cox wrote:
-> On Tue, 17 Jan 2012 10:56:03 -0800
-> Simon Glass <sjg@chromium.org> wrote:
+On Tue, 2012-01-17 at 22:45 -0500, Steven Rostedt wrote:
+> Dear RT Folks,
 > 
-> > Since serial_core now does not make serial ports wake-up capable by
-> > default, add a parameter to support this feature in the 8250 UART.
-> > This is the only UART where I think this feature is useful.
+> This is the RT stable review cycle of patch 3.0.14-rt32-rc1.
 > 
-> NAK
-> 
-> Things should just work for users. Magic parameters is not an
-> improvement. If its a performance problem someone needs to fix the rcu
-> sync overhead or stop using rcu on that path.
 
-I must say that I lack context here, even after looking at the patch,
-but the synchronize_rcu_expedited() primitives can be used if the latency
-of synchronize_rcu() is too large.
+Note, I know that mainline is at 3.0.17, but I want to test these
+patches first before I merge in the stable tree.
 
-							Thanx, Paul
+After this is released, I'll make a 3.0.17-rt33 (or 3.0.18-rt33 if that
+appears first ;-)
+
+-- Steve
+
 
