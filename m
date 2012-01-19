@@ -1,37 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab2ASROe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 12:14:34 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:40528 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab2ASROd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 12:14:33 -0500
-Message-ID: <4F184F67.5080507@parallels.com>
-Date: Thu, 19 Jan 2012 21:14:15 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1755955Ab2ASRPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 12:15:44 -0500
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:56307 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab2ASRPm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 12:15:42 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+References: <1324617892-14576-1-git-send-email-anilkumar@ti.com> <201201181403.47806.arnd@arndb.de> <20120118213635.GB3401@gmail.com> <201201191426.45923.arnd@arndb.de>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <201201191426.45923.arnd@arndb.de>
 MIME-Version: 1.0
-To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] lis3lv02d: Add STMicroelectronics lis33ldlh digital
+From: Jonathan Cameron <jic23@cam.ac.uk>
+Date: Thu, 19 Jan 2012 17:15:10 +0000
+To: Arnd Bergmann <arnd@arndb.de>, Andi <andi.shyti@gmail.com>
+CC: "AnilKumar, Chimata" <anilkumar@ti.com>, "greg@kroah.com" <greg@kroah.com>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/5] SUNRPC: make caches network namespace aware
-References: <20120119144517.9957.59143.stgit@localhost6.localdomain6>
-In-Reply-To: <20120119144517.9957.59143.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, lm-sensors@lm-sensors.org,
+        linux-input@vger.kernel.org, Jean Delvare <khali@linux-fr.org>
+Message-ID: <b5adb97c-8b5a-43ed-a750-cf5c5b6adb0c@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, this patch set has some bugs.
-I'll resend fixed version soon.
+
+
+Arnd Bergmann <arnd@arndb.de> wrote:
+
+>On Wednesday 18 January 2012, Andi wrote:
+>> What do you mean with "kernel-wide policy for accelerometer drivers"?
+>> As far as I know, accelerometer drivers are written between the i2c
+>driver and the
+>> input driver.
+>> The input driver provides already some accelerometer specific event
+>types, ABS_X, ABS_Y, ABS_Z,
+>> in your opinion isn't it enough?
+>> If you mean something like collecting common properties like g range
+>or frequency or whatever in a
+>> standard interface, then I think that accelerometers are quite
+>different as devices and sometimes
+>> it could be difficult to arrange a common interface.
+>
+>The problem is that we have some drivers using the input subsystem,
+>some
+>drivers using the iio subsystem and some drivers using none of these
+>but
+>interfacing with user space using some homegrown method, see my list:
+>
+>> > $ git grep -l accelerometer drivers/ | manual_grep
+>> > drivers/hwmon/applesmc.c
+>> >    (one hwmon sysfs attribute for x/y/z)
+>> > drivers/input/misc/adxl34x.c
+>> >    (lots of sysfs attributes, input_report_key)
+>> > drivers/input/misc/cma3000_d0x.c
+>> >    (input_report_abs)
+>> > drivers/input/misc/kxtj9.c
+>> >    (input_report_abs, plus one aux sysfs attribute)
+>> > drivers/macintosh/ams/ams-core.c
+>> >    (one sysfs attribute for x/y/z)
+>> > drivers/misc/lis3lv02d/
+>> >    (multiple sysfs attributes)
+>> > drivers/platform/x86/hdaps.c
+>> >    (multiple sysfs attributes, only x/y)
+>> > drivers/platform/x86/hp_accel.c
+>> >    (hooks into drivers/misc/lis3lv02d/)
+>> > drivers/staging/iio/accel/kxsd9.c
+>> >    (iio)
+>> > drivers/staging/iio/accel/sca3000_core.c
+>> >    (iio plus extra attributes)
+>
+>If all drivers were using the input subsystem in the way you describe,
+>that would be a good solution, but right now the majority of the
+>drivers don't do this.
+Also worth noting that there are numerous devices that are completely inappropriate for human input. Take specialised impact and vibration accelerometers. Very high speed sampling for short time periods. I agree that your bog standard 3 axis sub 10 g accelerometer belongs in input. The kxsd9 and lis3lo2dq in iio are there for historical reasons and because they are very handy for testing our bridging to input. That said it should ultimately make very little difference to user space if they are accessing a true input device or a iio device via an input bridge.  I also think that actually there is very little in the way of unusual controls for accelerometers particularly those designed for human input. Not standardizing gain or sampling frequency control is lazy. Even filtering and fft controls can and should be standardised. Doing that is a large part of what iio is about.
+>
+>	Arnd
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
