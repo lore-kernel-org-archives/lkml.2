@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab2ASWMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 17:12:39 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:56713 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666Ab2ASWMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 17:12:35 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Hung task when calling clone() due to netfilter/slab
-References: <1326558605.19951.7.camel@lappy>
-	<1326561043.5287.24.camel@edumazet-laptop>
-	<1326632384.11711.3.camel@lappy>
-	<1326648305.5287.78.camel@edumazet-laptop>
-	<alpine.DEB.2.00.1201170910130.4800@router.home>
-	<1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1201170927020.4800@router.home>
-	<1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1201170942240.4800@router.home>
-	<alpine.DEB.2.00.1201171620590.14697@router.home>
-	<m1bopz2ws3.fsf@fess.ebiederm.org>
-Date: Thu, 19 Jan 2012 14:15:01 -0800
-In-Reply-To: <m1bopz2ws3.fsf@fess.ebiederm.org> (Eric W. Biederman's message
-	of "Thu, 19 Jan 2012 13:43:40 -0800")
-Message-ID: <m14nvr2vbu.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755933Ab2ASWOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 17:14:23 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39968 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751706Ab2ASWOU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 17:14:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19MCBUkM7+PGgbIOBbAlM1IIXPztNzbwXU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <CAE9FiQXj8W4G_SRKCFU-gHJRZ+qENPAs8WAcZA_PVgoageHcoQ@mail.gmail.com>
+References: <20120118003335.467.71863.stgit@bhelgaas.mtv.corp.google.com>
+ <20120118003512.467.60770.stgit@bhelgaas.mtv.corp.google.com>
+ <CAE9FiQXvLAJVY-t8EJHkJgugtRsPdT9SS=60vA+by6qMCd5-Wg@mail.gmail.com>
+ <CAErSpo7xgJmT=gs8axiY-OseyurqwUEqYixm692kmZAoA-2sNw@mail.gmail.com>
+ <CAE9FiQUMEv+=mXzGc_muM_zTQ14S8tVex+bYgyyM1F++37Cu8w@mail.gmail.com>
+ <CAErSpo7Awb97fn=bZECqaf4RF4Tmkh1_sUf6_Vk+jgv5jCYNTw@mail.gmail.com> <CAE9FiQXj8W4G_SRKCFU-gHJRZ+qENPAs8WAcZA_PVgoageHcoQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 19 Jan 2012 15:13:57 -0700
+Message-ID: <CAErSpo5cAQVJq858QGi0N_TM91PsKj0jzvUUT8_yA9ezf_wXAQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] PCI: restrict subordinate buses to those reachable
+ via host bridge
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ram Pai <linuxram@us.ibm.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
-
-> Christoph Lameter <cl@linux.com> writes:
+On Thu, Jan 19, 2012 at 1:42 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Jan 18, 2012 at 9:46 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Wed, Jan 18, 2012 at 10:27 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> On Wed, Jan 18, 2012 at 8:52 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>> If we make a quirk for this machine, we still have the question of
+>>>> what to do with my patches.  I assert that if Linux ever reconfigures
+>>>> any bus numbers or does any configuration of hot-added P2P bridges, it
+>>>> must pay attention to the host bridge bus number window.  Therefore, I
+>>>> think we need something like this series even if we make a quirk.
+>>>
+>>> We may need more smart way to find unused bus range instead of just
+>>> just max+1 and ++max.
+>>>
+>>> For example:  one bridge (A) have two child bridges (B and C),
+>>> A: bus range: 10-2f
+>>> B: bus range: 11-1f
+>>> C: bus range: 20-2f
+>>>
+>>> when some broken case happen, B bus BIOS assigned bus range will be
+>>> all cleared in first pass.
+>>> but C bus is ok.  but in second bus, bus will be assigned to 30- .
+>>> that is totally wrong, We should still
+>>> try to use bus 11-1f at first for bus B.
+>>
+>> Yes, I agree we may need a better way to choose bus numbers in the
+>> first place.  My current patch (3/4) doesn't change how we choose
+>> them; it only rejects invalid ones.
 >
->> Another version that drops the slub lock for both invocations of sysfs
->> functions from kmem_cache_create. The invocation from slab_sysfs_init
->> is not a problem since user space is not active at that point.
->>
->>
->> Subject: slub: Do not take the slub lock while calling into sysfs
->>
->> This patch avoids holding the slub_lock during kmem_cache_create()
->> when calling sysfs. It is possible because kmem_cache_create()
->> allocates the kmem_cache object and therefore is the only one context
->> that can access the newly created object. It is therefore possible
->> to drop the slub_lock early. We defer the adding of the new kmem_cache
->> to the end of processing because the new kmem_cache structure would
->> be reachable otherwise via scans over slabs. This allows sysfs_slab_add()
->> to run without holding any locks.
->>
->> The case is different if we are creating an alias instead of a new
->> kmem_cache structure. In that case we can also drop the slub lock
->> early because we have taken a refcount on the kmem_cache structure.
->> It therefore cannot vanish from under us.
->> But if the sysfs_slab_alias() call fails we can no longer simply
->> decrement the refcount since the other references may have gone
->> away in the meantime. Call kmem_cache_destroy() to cause the
->> refcount to be decremented and the kmem_cache structure to be
->> freed if all references are gone.
->>
->> Signed-off-by: Christoph Lameter <cl@linux.com>
+> come out draft about bus number tracking and allocate bus range instead.
 >
-> I am dense.  Is the deadlock here that you are fixing slub calling sysfs
-> with the slub_lock held but sysfs then calling kmem_cache_zalloc?
->
-> I don't see what sysfs is doing in the creation path that would cause
-> a deadlock except for using slab.
+> please check attached patch.
 
-Oh.  I see.  The problem is calling kobject_uevent (which happens to
-live in slabs sysfs_slab_add) with a lock held.  And kobject_uevent
-makes a blocking call to userspace.
+It's a pain to comment on attached patches vs. inline ones.
 
-No locks held seems to be a good policy on that one.
+You added bus_max to pci_scan_root_bus().  I'd prefer to pass a
+pointer to a struct resource, as we do for io & mem resources.  I'd
+like to move away from pci_scan_root_bus() and toward a
+pci_scan_host_bridge() (as in the patches I posted) that takes all the
+host bridge-related info: parent, domain, resources (including bus
+number range), ops, sysdata.  I don't like the current scheme of
+"create it with defaults and fix them later."
 
-Eric
+The printk %pR format supports bus numbers so you don't need to print
+them by hand.
+
+struct pci_bus already has secondary & subordinate.  I don't think
+adding a "struct resource busn_res" adds useful information except for
+the root bus, where the bus number range comes from something external
+like _CRS rather than from the upstream bridge config.
+
+This makes pci_scan_bridge() significantly more ugly than it already
+is.  I think it needs to get broken up.
