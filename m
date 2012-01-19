@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab2ASQqs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:46:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40843 "EHLO mx1.redhat.com"
+	id S1756779Ab2ASQt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:49:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47895 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755323Ab2ASQqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:46:46 -0500
-Date: Thu, 19 Jan 2012 11:46:41 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/12] blkcg: kill the mind-bending blkg->dev
-Message-ID: <20120119164641.GA15561@redhat.com>
-References: <1326935490-11827-1-git-send-email-tj@kernel.org>
- <1326935490-11827-13-git-send-email-tj@kernel.org>
- <20120119154919.GA10908@redhat.com>
- <20120119163056.GH5198@google.com>
+	id S1755323Ab2ASQtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 11:49:24 -0500
+Date: Thu, 19 Jan 2012 16:49:19 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Sasha Levin <levinsasha928@gmail.com>, hannes <hannes@cmpxchg.org>,
+        mhocko@suse.cz, bsingharora@gmail.com, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [BUG] kernel BUG at mm/memcontrol.c:1074!
+Message-ID: <20120119164919.GE3143@suse.de>
+References: <1326949826.5016.5.camel@lappy>
+ <20120119122354.66eb9820.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.LSU.2.00.1201181932040.2287@eggly.anvils>
+ <20120119130353.0ca97435.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20120119163056.GH5198@google.com>
+In-Reply-To: <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 08:30:56AM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Jan 19, 2012 at 10:49:19AM -0500, Vivek Goyal wrote:
-> > > Let stat and conf read functions get device name from
-> > > blkg->q->backing_dev_info.dev and pass it down to printing functions
-> > > and remove blkg->dev.
+On Wed, Jan 18, 2012 at 09:16:09PM -0800, Hugh Dickins wrote:
 > > 
-> > I think one of the reasons for not using blkg->q->backing_dev_info.dev was
-> > that there were still drivers where multiple gendisks were sharing the
-> > request queue.
+> > Another question is who pushes pages to LRU before setting pc->mem_cgroup..
+> > Anyway, I think we need to fix memcg to be LRU_IMMEDIATE aware.
 > 
-> Hmmm... is that relevant?  The configurations / stats are per
-> cgroup-request_queue pair.  How does multiple genhd's sharing a queue
-> make any difference?  Also, the fill_dev_details functions were using
-> the same q->backing_dev_info to fill it in, so it's not like it was
-> using anything different.
+> I don't think so: Mel agreed that the patch could not go forward as is,
+> without an additional pageflag, and asked Andrew to drop it from mmotm
+> in mail on 29th December (I didn't notice an mm-commits message to say
+> akpm did drop it, and marc is blacked out in protest for today, so I
+> cannot check: but certainly akpm left it out of his push to Linus).
+> 
+> Oh, and Mel noticed another bug in it on the 30th, that the PageLRU
+> check in the function you quote above is wrong: see PATCH 11/11 thread.
+> 
 
-You are right. Looks like it should not make any difference. Also looks
-like bdi->dev points to first disk on the queue and ignores later ones.
+Yes, that patch is broken. According to the mm-commits list, it was
+"withdrawn" on December 30th. I do not know why it is still in
+linux-next but AFAIK, it is not expected to end up in mainline. I do not
+have a fixed version of the patch at the moment.
 
-int bdi_register(struct backing_dev_info *bdi, struct device *parent,
-                const char *fmt, ...)
-{       
-        if (bdi->dev)   /* The driver needs to use separate queues per
-device */
-                return 0;
-}
-
-So if a queue is being shared by multiple disks, then any throttling rule
-on the device will practically trated a rule on the queue and will be
-effective on all the devices cumulatively. So sounds fine.
-
-Thanks
-Vivek
+-- 
+Mel Gorman
+SUSE Labs
