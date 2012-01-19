@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab2ASVGM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 16:06:12 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36179 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932818Ab2ASVGK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 16:06:10 -0500
+	id S1751361Ab2ASVQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 16:16:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38132 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750993Ab2ASVQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 16:16:32 -0500
+Message-ID: <4F188817.3090104@zytor.com>
+Date: Thu, 19 Jan 2012 13:16:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1326991117.17534.132.camel@gandalf.stny.rr.com>
-References: <CAONaPpFjfGiKKGAzrQNk+MF4k50nRf+wMU8H9491NgHyJrUkyw@mail.gmail.com>
-	<201201180053.52617.fzuuzf@googlemail.com>
-	<1326848525.17534.66.camel@gandalf.stny.rr.com>
-	<CAONaPpGHULxDZXBTprkCy9vKPH46gHOiQs6GM_ysfP2znDqqXg@mail.gmail.com>
-	<1326991117.17534.132.camel@gandalf.stny.rr.com>
-Date: Thu, 19 Jan 2012 22:06:09 +0100
-X-Google-Sender-Auth: Iez1A-lKIpM9Nh9hkOZ2OgWy8vw
-Message-ID: <CAONaPpHJM1GKdRCdvw97AsBSRQk1oHUt6u2bGJRoin+e59Wbzg@mail.gmail.com>
-Subject: Re: rt-kernel 3.0.14-rt31: BUG: sleeping function called from invalid context
-From: John Kacur <jkacur@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Karsten Wiese <fzuuzf@googlemail.com>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: dmsetup fails on latest kernel
+References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com> <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
+In-Reply-To: <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: multipart/mixed;
+ boundary="------------020104080804060708030908"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 5:38 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2012-01-19 at 17:16 +0100, John Kacur wrote:
->
->> I'm testing v3.0.14-rt32-rc1, and it greatly reduced the number of
->> these, but I still got one during boot.
->>
->> [   11.938649] BUG: sleeping function called from invalid context at
->> /home/jkacur/rt.linux.git/kernel/rtmutex.c:645
->> [   11.938651] in_atomic(): 1, irqs_disabled(): 1, pid: 168, name: irq/9-acpi
->> [   11.938653] 1 lock held by irq/9-acpi/168:
->> [   11.938653]  #0:  (acpi_gbl_gpe_lock){......}, at:
->> [<ffffffff8123881d>] acpi_ev_gpe_detect+0x31/0x110
->
-> Could you test 3.2-rt. If that has the issue then we know we have more
-> to fix. If not, we know I missed a patch.
->
+This is a multi-part message in MIME format.
+--------------020104080804060708030908
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-I tested with v3.2-rt10 and the issue is not there.
+Here is a patch which should fix this problem.  I will run a few more
+tests and then push it with the rest of the urgent queue to Linus.
 
-I also examined your patches and couldn't find anything wrong with
-them, and for larks tried applying
-cpumask-disable-offstack-on-rt.patch from v3.2-rt10
-all to no avail, the problem is still there.
+	-hpa
 
-Thanks
-John
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
+
+--------------020104080804060708030908
+Content-Type: text/x-patch;
+ name="0001-x86-syscall-Need-__ARCH_WANT_SYS_IPC-for-32-bits.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-x86-syscall-Need-__ARCH_WANT_SYS_IPC-for-32-bits.patch"
+
+>From 497e064320506cd15f7bdd659204b576c80bf24e Mon Sep 17 00:00:00 2001
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 19 Jan 2012 12:41:25 -0800
+Subject: [PATCH] x86, syscall: Need __ARCH_WANT_SYS_IPC for 32 bits
+
+In checkin
+
+  303395ac3bf3 x86: Generate system call tables and unistd_*.h from tables
+
+the feature macros in <asm/unistd.h> were unified between 32 and 64
+bits.  Unfortunately 32 bits requires __ARCH_WANT_SYS_IPC and this was
+inadvertently dropped.
+
+Reported-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com
+---
+ arch/x86/include/asm/unistd.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/unistd.h b/arch/x86/include/asm/unistd.h
+index b4a3db7..21f77b8 100644
+--- a/arch/x86/include/asm/unistd.h
++++ b/arch/x86/include/asm/unistd.h
+@@ -7,6 +7,7 @@
+ #  include <asm/unistd_32.h>
+ #  define __ARCH_WANT_IPC_PARSE_VERSION
+ #  define __ARCH_WANT_STAT64
++#  define __ARCH_WANT_SYS_IPC
+ #  define __ARCH_WANT_SYS_OLD_MMAP
+ #  define __ARCH_WANT_SYS_OLD_SELECT
+ 
+-- 
+1.7.6.5
+
+
+--------------020104080804060708030908--
