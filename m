@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751054Ab2ASFGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 00:06:53 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52439 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab2ASFGv convert rfc822-to-8bit (ORCPT
+	id S1751345Ab2ASFQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 00:16:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44878 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab2ASFQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 00:06:51 -0500
+	Thu, 19 Jan 2012 00:16:29 -0500
+Date: Wed, 18 Jan 2012 21:16:09 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Sasha Levin <levinsasha928@gmail.com>, hannes <hannes@cmpxchg.org>,
+        mhocko@suse.cz, bsingharora@gmail.com, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [BUG] kernel BUG at mm/memcontrol.c:1074!
+In-Reply-To: <20120119130353.0ca97435.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
+References: <1326949826.5016.5.camel@lappy> <20120119122354.66eb9820.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1201181932040.2287@eggly.anvils> <20120119130353.0ca97435.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
-References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-	<20120108221342.GA7058@ime.usp.br>
-	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
-	<20120109112207.7f993845@jbarnes-desktop>
-	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
-	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
-	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
-	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
-	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
-	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
-	<20120113115946.GA10615@ime.usp.br>
-	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
-	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
-	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
-	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
-	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
-Date: Wed, 18 Jan 2012 21:06:50 -0800
-X-Google-Sender-Auth: QcSvetzHqn6J98l-7VNkpXEzSuw
-Message-ID: <CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/18 Rogério Brito <rbrito@ime.usp.br>:
->
-> Regarding these options, Yinghai, the options which I enabled once I
-> typed "make oldconfig" were:
->
-> CONFIG_PCI_PRI
-> CONFIG_PCI_PASID
+On Thu, 19 Jan 2012, KAMEZAWA Hiroyuki wrote:
+> On Wed, 18 Jan 2012 19:41:44 -0800 (PST)
+> Hugh Dickins <hughd@google.com> wrote:
+> > 
+> > I notice that, unlike Linus's git, this linux-next still has
+> > mm-isolate-pages-for-immediate-reclaim-on-their-own-lru.patch in.
+> > 
+> > I think that was well capable of oopsing in mem_cgroup_lru_del_list(),
+> > since it didn't always know which lru a page belongs to.
+> > 
+> > I'm going to be optimistic and assume that was the cause.
+> > 
+> Hmm, because the log hits !memcg at lru "del", the page should be added
+> to LRU somewhere and the lru must be determined by pc->mem_cgroup.
+> 
+> Once set, pc->mem_cgroup is not cleared, just overwritten. AFAIK, there is
+> only one chance to set pc->mem_cgroup as NULL... initalization.
+> I wonder why it hits lru_del() rather than lru_add()...
+> ................
+> 
+> Ahhhh, ok, it seems you are right. the patch has following kinds of codes
+> ==
+> +static void pagevec_putback_immediate_fn(struct page *page, void *arg)
+> +{
+> +       struct zone *zone = page_zone(page);
+> +
+> +       if (PageLRU(page)) {
+> +               enum lru_list lru = page_lru(page);
+> +               list_move(&page->lru, &zone->lru[lru].list);
+> +       }
+> +}
+> ==
+> ..this will bypass mem_cgroup_lru_add(), and we can see bug in lru_del()
+> rather than lru_add()..
 
-should be not related.
+I've not thought it through in detail (and your questioning reminds me
+that the worst I saw from that patch was updating of the wrong counts,
+leading to underflow, then livelock from the mismatch between empty list
+and enormous count: I never saw an oops from it, and may be mistaken).
 
->
->> Please enable CONFIG_BOOT_PRINTK_DELAY in your .config
->>
->> and boot with "boot_delay=1000" or even "boot_delay=5000"
->>
->> then video capture could help.
->
-> I did just that and uploaded a video from Linus's git tree with the
-> options above to:
->
->    http://youtu.be/_dYhkWHfep0
->
-> It took a long time to boot (about 7 minutes), but all details are
-> there, I hope.  I can repeat the same steps for your for-pci2 branch,
-> if you want me to.
+> 
+> Another question is who pushes pages to LRU before setting pc->mem_cgroup..
+> Anyway, I think we need to fix memcg to be LRU_IMMEDIATE aware.
 
-yes, please esp need patch.
+I don't think so: Mel agreed that the patch could not go forward as is,
+without an additional pageflag, and asked Andrew to drop it from mmotm
+in mail on 29th December (I didn't notice an mm-commits message to say
+akpm did drop it, and marc is blacked out in protest for today, so I
+cannot check: but certainly akpm left it out of his push to Linus).
 
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=e3a7a7d4ea1b6a2be82ef454096aff7856c14de5
+Oh, and Mel noticed another bug in it on the 30th, that the PageLRU
+check in the function you quote above is wrong: see PATCH 11/11 thread.
 
-Thanks
-
-Yinghai
+Hugh
