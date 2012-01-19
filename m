@@ -1,44 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2ASOpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 09:45:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36483 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437Ab2ASOpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 09:45:06 -0500
-Message-ID: <4F182C55.7040305@zytor.com>
-Date: Thu, 19 Jan 2012 06:44:37 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1755306Ab2ASOrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 09:47:13 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61699 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab2ASOrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 09:47:08 -0500
+Date: Thu, 19 Jan 2012 18:47:00 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
+ v6
+Message-ID: <20120119144700.GE31379@moon>
+References: <20120116153231.GF2998@moon>
+ <4F15EA53.8030405@gmail.com>
+ <20120118135809.GA10105@redhat.com>
+ <20120118142156.GR1968@moon>
+ <20120118143631.GA11776@redhat.com>
+ <20120118182344.GD2889@moon>
+ <20120118190725.GE2889@moon>
+ <20120119141051.GA9652@redhat.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: mingo@elte.hu, "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        tglx@linutronix.de, luca@luca-barbieri.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ix86: atomic64 assembly improvements
-References: <4F16E41B020000780006D7A5@nat28.tlf.novell.com> <4F16F505.8040809@zytor.com> <4F170679020000780006D85B@nat28.tlf.novell.com> <4F1705A8.301@zytor.com> <4F17EDE9020000780006D97A@nat28.tlf.novell.com>
-In-Reply-To: <4F17EDE9020000780006D97A@nat28.tlf.novell.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120119141051.GA9652@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 01:18 AM, Jan Beulich wrote:
+On Thu, Jan 19, 2012 at 03:10:51PM +0100, Oleg Nesterov wrote:
+> On 01/18, Cyrill Gorcunov wrote:
+> >
+> > I suppose it might be something like below. I've updated comment and
+> > quoted your comment there just I wont forget this next time I'll be
+> > reading the source. Thanks!
 > 
-> But the code is supposed to be correct even when caches are disabled
-> (in which case LOCK# will continue to be used even on modern CPUs),
-> and this case clearly isn't covered by the current implementation. It
-> may be a good idea to adjust the patch description accordingly, but I
-> see no reason to change the patch itself.
+> I believe the patrch is correct.
+> 
+> But... Cyrill, I am wondering how much will you hate me if I make
+> yet another attempt to delay this patch.
 > 
 
-It doesn't have anything to do with caches on or off.
+I'm ready to do any iterations until patch become correct. It's better
+to spend some time now than later.
 
-	-hpa
+> > +static int children_seq_open(struct inode *inode, struct file *file)
+> > +{
+> > +	struct proc_pid_children_iter *iter = NULL;
+> > +	struct task_struct *task = NULL;
+> > +	int ret = 0;
+> > +
+> > +	task = get_proc_task(inode);
+> > +	if (!task) {
+> > +		ret = -ENOENT;
+> > +		goto err;
+> > +	}
+> 
+> For what??
+> 
+> > +	if (!ret) {
+> > +		struct seq_file *m = file->private_data;
+> > +		m->private = iter;
+> > +
+> > +		iter->pid_start = get_pid(task_pid(task));
+> 
+> This is what we need, right? So can't we remove this "task_struct *task"
+> and simply do
+> 
+> 		iter->pid_start = get_ppid(proc_pid(inode));
+> 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Yeah, this one will be cleaner. Thanks!
 
+> ?
+> 
+> And while this is absolutely cosmetic probably ->parent_pid is
+> a bit better name, but this is up to you.
+> 
+
+Yeah, I'll change the name, I liked this one more.
+
+	Cyrill
