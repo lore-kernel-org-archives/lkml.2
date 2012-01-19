@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab2ASGp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 01:45:57 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54987 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab2ASGpz (ORCPT
+	id S1752481Ab2ASGzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 01:55:50 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42748 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab2ASGzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 01:45:55 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 19 Jan 2012 15:44:36 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, hannes <hannes@cmpxchg.org>,
-        mhocko@suse.cz, bsingharora@gmail.com, Dave Jones <davej@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [BUG] kernel BUG at mm/memcontrol.c:1074!
-Message-Id: <20120119154436.aed0d6bb.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120119145250.acf3ccc8.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1326949826.5016.5.camel@lappy>
-	<20120119145250.acf3ccc8.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jan 2012 01:55:47 -0500
+Date: Thu, 19 Jan 2012 10:55:41 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: david@lang.hm, "H. Peter Anvin" <hpa@zytor.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
+Message-ID: <20120119065541.GA31379@moon>
+References: <20120117142759.GE16213@moon>
+ <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
+ <20120117144452.GG16213@moon>
+ <4F15C249.3000602@zytor.com>
+ <m1obu29fnf.fsf@fess.ebiederm.org>
+ <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm>
+ <20120118224956.GF15652@moon>
+ <m1zkdk4mj5.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1zkdk4mj5.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jan 2012 14:52:50 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> On Thu, 19 Jan 2012 07:10:26 +0200
-> Sasha Levin <levinsasha928@gmail.com> wrote:
+On Wed, Jan 18, 2012 at 03:29:50PM -0800, Eric W. Biederman wrote:
+> >
+> > It doesn't matter. Even if we take a list of objects the kernel either
+> > should return us some ordering info or find duplicates, in any case it
+> > makes things more complex i think. So we wanted to bring some minimum
+> > into kernel leaving the rest of work to user-space.
 > 
-> > The problem is, that it looks like this has triggered a BUG() in the memory cgroup code:
-> > 
-> > [  526.737227] ------------[ cut here ]------------
-> > [  526.738032] 
-> > [  526.738032] invalid opcode: 0000 [#1] PREEMPT SMP 
-> > [  526.738032] CPU 0 
-> > [  526.738032] Pid: 1091, comm: kswapd0 Not tainted 3.2.0-next-20120119-sasha #128  
-> > [  526.738032] RIP: 0010:[<ffffffff811c4b4a>]  [<ffffffff811c4b4a>] mem_cgroup_lru_del_list+0xca/0xd0
-> > [  526.738032] RSP: 0018:ffff8800127139a0  EFLAGS: 00010046
-> > [  526.738032] RAX: 0000000000000001 RBX: ffffea0000358300 RCX: 0000000000000000
-> > [  526.738032] RDX: ffff880012c0b800 RSI: 0000000000000000 RDI: 0000000000000000
-> > [  526.738032] RBP: ffff8800127139b0 R08: ffff880012713ad0 R09: 0000000000000001
-> > [  526.738032] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000002
-> > [  526.738032] R13: ffffea0000358300 R14: ffffea0000358320 R15: 0000000000000001
-> > [  526.738032] FS:  0000000000000000(0000) GS:ffff880013a00000(0000) knlGS:0000000000000000
-> > [  526.738032] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [  526.738032] CR2: 00007fea7fa42e66 CR3: 000000000c42a000 CR4: 00000000000406f0
-> > [  526.738032] DR0: ffffffff810aaee0 DR1: 0000000000000000 DR2: 0000000000000000
-> > [  526.738032] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000600
-> > [  526.738032] Process kswapd0 (pid: 1091, threadinfo ffff880012712000, task ffff880012f7d840)
-> > [  526.738032] Stack:
-> > [  526.738032]  ffff880012c0b968 ffff880012c0b968 ffff8800127139c0 ffffffff811c4f0a
-> > [  526.738032]  ffff880012713a70 ffffffff81178c63 ffff8800127139e0 ffffea00000cbba0
-> > [  526.738032]  ffff880012713a40 ffff880012713b08 0000000000000001 ffffffffffffffff
-> > [  526.738032] Call Trace:
-> > [  526.738032]  [<ffffffff811c4f0a>] mem_cgroup_lru_del+0x3a/0x40
-> > [  526.738032]  [<ffffffff81178c63>] isolate_lru_pages+0xe3/0x330
-> > [  526.738032]  [<ffffffff8117a11e>] ? shrink_inactive_list+0xce/0x480
-> > [  526.738032]  [<ffffffff8117a153>] shrink_inactive_list+0x103/0x480
-> > [  526.738032]  [<ffffffff811c2a46>] ? mem_cgroup_iter+0x176/0x310
-> > [  526.738032]  [<ffffffff810e2c55>] ? sched_clock_local+0x25/0x90
-> > [  526.738032]  [<ffffffff8117ac04>] shrink_mem_cgroup_zone+0x3f4/0x580
-> > [  526.738032]  [<ffffffff81107cfe>] ? put_lock_stats.clone.18+0xe/0x40
-> > [  526.738032]  [<ffffffff8117adfe>] shrink_zone+0x6e/0xa0
-> > [  526.738032]  [<ffffffff8117be65>] balance_pgdat+0x545/0x750
-> > [  526.738032]  [<ffffffff810de1ed>] ? sub_preempt_count+0x9d/0xd0
-> > [  526.738032]  [<ffffffff8117c233>] kswapd+0x1c3/0x320
-> > [  526.738032]  [<ffffffff810cee30>] ? abort_exclusive_wait+0xb0/0xb0
-> > [  526.738032]  [<ffffffff8117c070>] ? balance_pgdat+0x750/0x750
-> > [  526.738032]  [<ffffffff810ce06e>] kthread+0xbe/0xd0
-> > [  526.738032]  [<ffffffff82585df4>] kernel_thread_helper+0x4/0x10
-> > [  526.738032]  [<ffffffff810d8c88>] ? finish_task_switch+0x78/0x100
-> > [  526.738032]  [<ffffffff825840f8>] ? retint_restore_args+0x13/0x13
-> > [  526.738032]  [<ffffffff810cdfb0>] ? kthread_flush_work_fn+0x10/0x10
-> > [  526.738032]  [<ffffffff82585df0>] ? gs_change+0x13/0x13
-> > [  526.738032] Code: 8b 1c 24 4c 8b 64 24 08 c9 c3 0f 1f 80 00 00 00 00 8b 4b 68 eb ba 0f 1f 00 0f b6 4b 68 bb 01 00 00 00 d3 e3 48 63 cb eb c2 0f 0b <0f> 0b 0f 1f 40 00 55 48 89 e5 48 83 ec 60 48 89 5d d8 4c 89 65 
-> > [  526.738032] RIP  [<ffffffff811c4b4a>] mem_cgroup_lru_del_list+0xca/0xd0
-> > [  526.738032]  RSP <ffff8800127139a0>
-> > [  526.738032] ---[ end trace 866f4f6c624b8d58 ]---
+> Agreed a syscall does the duplication is probably not the way to go.
 > 
-> my memo here.
+>  A syscall that takes a huge list of objects would solve any security
+> concerns that we have with returning the object order to user space if
+> done carefully, but it would require a bunch of additional user space
+> and kernel memory.
 > 
-> 1. This is caused by pc->mem_cgroup was NULL at mem_cgroup_lru_del().
+
+yes, an it increase syscall time itself since we will have to provide
+this memory dynamically
+
+> Sometimes taking a data structure transforming it into a weird form for
+> a specific task and then transforming the data structure back to it's
+> original form is a useful way to go.  So I think a general kernel object
+> deduplicating system call is an interesting plan B, but a straight
+> comparison function if we can make it work is a lot more flexible and
+> useful.
 > 
-> 2. IIUC, PageLRU(page) should be true to cause this BUG. Then,
->    there is a page whose pc->mem_cgroup == NULL but PageLRU(page)==true.
->    But, memcg's lru_add() routine accesses pc->mem_cgroup...so it should
->    cause NULL pointer access if the page was added to LRU with pc->mem_cgroup is NULL.
-> 
->    One possibility is that the page was PageLRU set but not added to memcg's LRU
->    ... added to zone's LRU directly..
->    Or PageLRU(page) was true but not added to any lru list without pc->mem_cgroup updates.
-> 
-> 3. IIUC, There is no routine to set pc->mem_cgroup as NULL once page is used.
->    But I need to check it....
-> 
-I'm very sorry ...I misunderstood from the beginning..
-The BUG_ON() was
- VM_BUG_ON(MEM_CGROUP_ZSTAT(mz, lru) < (1 << compound_order(page)));
 
-I didn't notice this one. sorry.
+I hope the root-only restriction would resolve the potential security
+problem, since as I mentioned if I've hijacked the machine and already
+goot root -- mem order is not that interesting info I could obtain from
+such computer :)
 
-Then, as Hugh pointed out, that patch seems doubtful.
-As Hugh said, the patch 6699ba077ebcdeb7bde7e2644a39b9e5bf6a7e8a will be
-dropped and the issue will disappear (I hope.)
-
-Thanks,
--Kame
-
-
-
-
+	Cyrill
