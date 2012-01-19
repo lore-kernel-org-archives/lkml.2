@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2ASJeQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 04:34:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47925 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756088Ab2ASJeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 04:34:12 -0500
-Date: Thu, 19 Jan 2012 10:34:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH] memcg: remove unnecessary thp check at page stat
- accounting
-Message-ID: <20120119093410.GB13932@tiehlicka.suse.cz>
-References: <20120119161445.b3a8a9d2.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1756580Ab2ASJph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 04:45:37 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34438 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756088Ab2ASJpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 04:45:35 -0500
+Date: Thu, 19 Jan 2012 10:45:13 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Huang Shijie <b32955@freescale.com>, vinod.koul@intel.com,
+        artem.bityutskiy@intel.com, shijie8@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        LW@KARO-electronics.de, alsa-devel@alsa-project.org,
+        b29396@freescale.com
+Subject: Re: [PATCH 00/10] patch set about the MXS-DMA
+Message-ID: <20120119094513.GB2630@pengutronix.de>
+References: <1326953767-24155-1-git-send-email-b32955@freescale.com>
+ <20120119091034.GH2247@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i9LlY+UWpKt15+FH"
 Content-Disposition: inline
-In-Reply-To: <20120119161445.b3a8a9d2.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120119091034.GH2247@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 19-01-12 16:14:45, KAMEZAWA Hiroyuki wrote:
-> Thank you very much for reviewing previous RFC series.
-> This is a patch against memcg-devel and linux-next (can by applied without HUNKs).
-> 
-> ==
-> 
-> From 64641b360839b029bb353fbd95f7554cc806ed05 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 12 Jan 2012 16:08:33 +0900
-> Subject: [PATCH] memcg: remove unnecessary thp check in mem_cgroup_update_page_stat()
-> 
-> commit 58b318ecf(memcg-devel)
->     memcg: make mem_cgroup_split_huge_fixup() more efficient
-> removes move_lock_page_cgroup() in thp-split path.
 
-I wouldn't refer to something which will change its commit id by its
-SHA. I guess the subject is sufficient. Btw. do we really need to
-mention this? Is it just to make sure that this doesn't get merged
-withtout the mentioned patch?
+--i9LlY+UWpKt15+FH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> So, We do not have to check PageTransHuge in mem_cgroup_update_page_stat
-> and fallback into the locked accounting because both move charge and thp
-> split up are done with compound_lock so they cannot race. update vs.
-> move is protected by the mem_cgroup_stealed sufficiently.
-> 
-> PageTransHuge pages shouldn't appear in this code path currently because
-> we are tracking only file pages at the moment but later we are planning
-> to track also other pages (e.g. mlocked ones).
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > [2] patch 6 ~ patch 10: rewrite the last parameter of mxs_dma_prep_slav=
+e_sg().
+>=20
+> For the sake of bitsec, at least patches #7 and #8 need to be one patch.
+> That said, if I apply the series and then check out the commit at patch
+> #7, you need to all mxs-dma client drivers, mxs-mmc, gpmi do not break.
 
-Other than that
-Acked-by: Michal Hocko <mhocko@suse.cz>
+I'd say patch 6-10 should be squashed, simply. My personal preference is
+to change #9 to simply read the register when needed and do not expand
+the struct, but this is a minor thing.
 
-> ---
->  mm/memcontrol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 5073474..fb2dfc3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1801,7 +1801,7 @@ void mem_cgroup_update_page_stat(struct page *page,
->  	if (unlikely(!memcg || !PageCgroupUsed(pc)))
->  		goto out;
->  	/* pc->mem_cgroup is unstable ? */
-> -	if (unlikely(mem_cgroup_stealed(memcg)) || PageTransHuge(page)) {
-> +	if (unlikely(mem_cgroup_stealed(memcg))) {
->  		/* take a lock against to access pc->mem_cgroup */
->  		move_lock_page_cgroup(pc, &flags);
->  		need_unlock = true;
-> -- 
-> 1.7.4.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Regards,
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--i9LlY+UWpKt15+FH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk8X5ikACgkQD27XaX1/VRs1iQCfelj5s+udWkk+1mkd1T8lCB82
+3T8An1b3bxZeJWRtXbyP/0da2ymYEMRs
+=PAKK
+-----END PGP SIGNATURE-----
+
+--i9LlY+UWpKt15+FH--
