@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab2ASMTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 07:19:14 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58139 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751055Ab2ASMTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 07:19:12 -0500
-Date: Thu, 19 Jan 2012 13:18:59 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, tglx@linutronix.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86-64: fix memset() to support sizes of 4Gb and above
-Message-ID: <20120119121859.GA3936@elte.hu>
-References: <4F05D992020000780006AA09@nat28.tlf.novell.com>
- <20120106110519.GA32673@elte.hu>
- <4F16AFB1020000780006D671@nat28.tlf.novell.com>
- <CA+55aFxKkfKNKqt4rWanWXX3g2p0-K+=SVeAR8H-TLAXTqTZjg@mail.gmail.com>
- <4F17D8EB020000780006D943@nat28.tlf.novell.com>
+	id S1753294Ab2ASMVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 07:21:13 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:36795 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab2ASMVK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 07:21:10 -0500
+Date: Thu, 19 Jan 2012 15:22:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: walter harms <wharms@bfs.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch 2/2] [media] ds3000: off by one in ds3000_read_snr()
+Message-ID: <20120119122202.GJ3294@mwanda>
+References: <20120117073021.GB11358@elgon.mountain>
+ <4F16FC26.80306@bfs.de>
+ <20120119093327.GI3356@mwanda>
+ <4F17EFE1.3060804@bfs.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UlxN1C6awaFNesUv"
 Content-Disposition: inline
-In-Reply-To: <4F17D8EB020000780006D943@nat28.tlf.novell.com>
+In-Reply-To: <4F17EFE1.3060804@bfs.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090209.4F180AAF.004E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jan Beulich <JBeulich@suse.com> wrote:
+--UlxN1C6awaFNesUv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >>> On 18.01.12 at 19:16, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > On Wed, Jan 18, 2012 at 2:40 AM, Jan Beulich <JBeulich@suse.com> wrote:
-> >>
-> >>> For example the kernel's memcpy routine in slightly faster than
-> >>> glibc's:
-> >>
-> >> This is an illusion - since the kernel's memcpy_64.S also defines a
-> >> "memcpy" (not just "__memcpy"), the static linker resolves the
-> >> reference from mem-memcpy.c against this one. Apparent
-> >> performance differences rather point at effects like (guessing)
-> >> branch prediction (using the second vs the first entry of
-> >> routines[]). After fixing this, on my Westmere box glibc's is quite
-> >> a bit slower than the unrolled kernel variant (4% fewer
-> >> instructions, but about 15% more cycles).
-> > 
-> > Please don't bother doing memcpy performance analysis using 
-> > hot-cache cases (or entirely cold-cache for that matter) 
-> > and/or big memory copies.
-> 
-> I realize that - I just was asked to do this analysis, to 
-> (hopefully) turn down arguments against the $subject patch.
+On Thu, Jan 19, 2012 at 11:26:41AM +0100, walter harms wrote:
+> >> perhaps it is more useful to do it in the check above ?
+> >=20
+> > It looks like the check is correct but we need to shift all the
+> > values by one.  Again, I don't have this hardware, I'm just going by
+> > the context.
+> >=20
+> I do not have the hardware either so this is pure theoretical.
+>=20
+> Access to the data field depends on the value of dvbs2_noise_reading/tmp
+> even when the data are reasonable like 50/100 snr_reading would become 0
+> and the index suddenly is -1.
+>=20
 
-The other problem with such repeated measurements, beyond their 
-very isolated and artificially sterile nature, is what i 
-mentioned: the inter-test variability is not enough to signal 
-the real variance that occurs in a live system. That too can be 
-deceiving.
+It's a good point.  I will redo the patch.
 
-Note that your patch is a special case which makes measurement 
-easier: from the nature of your changes i expected *at most* 
-some minimal micro-performance impact, not any larger access 
-pattern related changes.
+regards,
+dan carpenter
 
-But Linus is right that this cannot be generalized to the 
-typical patch.
 
-So i realize all those limitations and fully agree with being 
-aware of them, but compared to measuring *nothing* (which is the 
-current status quo) we have to start *somewhere*.
+--UlxN1C6awaFNesUv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> > The *normal* memory copy size tends to be in the 10-30 byte 
-> > range, and the cache issues (both code *and* data) are 
-> > unclear. Running microbenchmarks is almost always 
-> > counter-productive, since it actually shows numbers for 
-> > something that has absolutely *nothing* to do with the 
-> > actual patterns.
-> 
-> This is why I added a way to do meaningful measurement on 
-> small size operations (albeit still cache-hot) with perf.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-We could add a test point for 10 and a 30 bytes, and the two 
-corner cases: one measurement with an I$ that is trashing and a 
-measurement where the D$ is trashing in a non-trivial way.
+iQIcBAEBAgAGBQJPGArpAAoJEOnZkXI/YHqRwskP/j9aQf1pbxNH68xqOf+Cm1ze
+gBOj1sjE8ErJ5eS5+OmL0NrN6+Brc8Hm32/Lq77yM0KrjrBnYtI5XeFKqppEKZUp
+BJ9b8XypMNGGsv/Q83v/c/Fl2Bl0vnMxmelzvzZzMitcjfWuxUQLyJA6+kTlzMz/
+Cdg9LreevLRRt+g0efGRrvdUqxUmtwgJEl8VXCsoVY1gAIl8yl4GY+RVPUYVHLbn
+je9lTJKi1SjNhSY2v5bPptqkT777LAF4Wxpy0qw20ZJbuTMejrTN67F83nxWl45G
++rgUo59THtYlaZrgx0NFXq3YCPfu2TEM2IX1zz/3rwTJgI82Imyk2vJI+H5xmbmd
++w3SM29/wN4EPHk4eJ4CTDiv3Qq1+5+UdNpst38X4646H/PG9nQeMgzmgnVgo2Vn
+AouSq8YFVVQpgLqFFBa3UgTIf7OfkQIf3W4vhEwNCrx4LzIpIHsLX0Qt6/0NJNtD
+srNjoKir3XzXA6Q5OhdcMJmh26n3mRzrPnvRSGHQLCn26rR05EGmxxFyT5U75JV6
+FyLnOxfps05KzAwllffrSXeAi+E3aKETI7ZlKLiBbNxGuszbi2qiu/Wh/sOPFM2I
+0Fj7fQPdDIUtQHzJ0c5H+5v472Cl5Gy/IqrT6OCu7z7mzDllBfWYzwIe1U6+hKbd
+SiJs0ZAA1RxMSuIr/Y+p
+=QBye
+-----END PGP SIGNATURE-----
 
-( I have used test-code before to achieve high I$ trashing: a
-  function with a million NOPs. )
-
-Once we have the typical sizes and the edge cases covered we can 
-at least hope that reality is a healthy mix of all those 
-"eigen-vectors".
-
-Once we have that in place we can at least have one meaningful 
-result: if a patch improves *all* these edge cases on the CPU 
-models that matter, then it's typically true that it will 
-improve the generic 'mixed' workload as well.
-
-If a patch is not so clear-cut then it has to be measured with 
-real loads as well, etc.
-
-Anyway, i'll apply your current patches and play with them a 
-bit.
-
-Thanks,
-
-	Ingo
+--UlxN1C6awaFNesUv--
