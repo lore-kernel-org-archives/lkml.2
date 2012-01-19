@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab2ASH3s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 02:29:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56601 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2ASH3r (ORCPT
+	id S1753156Ab2ASHbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 02:31:09 -0500
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:45942 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab2ASHbH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 02:29:47 -0500
-Date: Wed, 18 Jan 2012 23:29:41 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: tsoni@codeaurora.org, kyle.manna@fuel7.com, aghayal@codeaurora.org,
-        vapier@gentoo.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1] input: keyboard: Add interrupt keyboard driver.
-Message-ID: <20120119072941.GA9668@core.coreip.homeip.net>
-References: <1326778915-2678-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 19 Jan 2012 02:31:07 -0500
+Message-Id: <4F17D4C2020000A100008B19@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 19 Jan 2012 08:30:58 +0100
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: Change request: "scsi: killing requests for dead queue"
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1326778915-2678-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laxman,
+Hi!
 
-On Tue, Jan 17, 2012 at 11:11:55AM +0530, Laxman Dewangan wrote:
-> This driver enables the key detection of the keys which
-> are connected to interrupt lines.
-> Each key is capable of generating an interrupt, and the
-> statesi (pressed or released) cannot be found by any
-> mechanism.
-> A key press event generated when interrupt occurs, and
-> based on the debounce time setting, a key release event
-> is generated. There is no need to read the state of the
-> keys.
+I have a change request: I saw three message that I couldn't bring into context with any other event (SLES11 SP1 (2.6.32.49-0.3-default)):
+
+Jan 18 15:33:04 h03 kernel: [2866825.805434] scsi: killing requests for dead queue
+Jan 18 15:33:04 h03 kernel: [2866825.812129] scsi: killing requests for dead queue
+Jan 18 15:33:04 h03 kernel: [2866825.815553] scsi: killing requests for dead queue
+
+Unfortunately the kernel message doesn't give some kind of queue identifier, so that's hard to correlate with any other events.
+
+Can this message be improved to include some variable output?
+
+Regards,
+Ulrich Windl
 
 
-Is it possible to modify gpio_keys to skip requesting and settin up
-certain gpios and and use it instead of a brand new driver?
-
--- 
-Dmitry
