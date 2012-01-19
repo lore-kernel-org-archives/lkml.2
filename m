@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab2ASRwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 12:52:19 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:21888 "EHLO relay.sw.ru"
+	id S932650Ab2ASRxN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 12:53:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37410 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932613Ab2ASRwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 12:52:16 -0500
-Message-ID: <4F18583F.1000209@parallels.com>
-Date: Thu, 19 Jan 2012 21:51:59 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+	id S932485Ab2ASRxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 12:53:10 -0500
+Message-ID: <4F18584F.7060603@zytor.com>
+Date: Thu, 19 Jan 2012 09:52:15 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 3/5] SUNRPC: create GSS auth cache per network namespace
-References: <20120119144517.9957.59143.stgit@localhost6.localdomain6> <20120119144922.9957.39352.stgit@localhost6.localdomain6> <20120119163149.GD527@fieldses.org> <4F184D28.3030207@parallels.com> <20120119174002.GA2907@fieldses.org>
-In-Reply-To: <20120119174002.GA2907@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Michael D Labriola <mlabriol@gdeb.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
+        michael.d.labriola@gmail.com, Ingo Molnar <mingo@elte.hu>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, support@versalogic.com,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Subject: Re: [PATCH] x86, reboot: skip DMI checks if reboot set by user
+References: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>	<20120117195841.48fe8236@pyramind.ukuu.org.uk> <OFD4BB6876.6D903346-ON8525798A.00550E62-8525798A.005562A3@gdeb.com> <20120119154504.710e202e@pyramind.ukuu.org.uk> <OF8642E997.5ED041E1-ON8525798A.0056983A-8525798A.0056E05B@LocalDomain> <OF2B909250.6078896E-ON8525798A.0058FF49-8525798A.0061AEA1@gdeb.com>
+In-Reply-To: <OF2B909250.6078896E-ON8525798A.0058FF49-8525798A.0061AEA1@gdeb.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.01.2012 21:40, J. Bruce Fields пишет:
-> On Thu, Jan 19, 2012 at 09:04:40PM +0400, Stanislav Kinsbursky wrote:
->> 19.01.2012 20:31, J. Bruce Fields пишет:
->>> On Thu, Jan 19, 2012 at 06:49:23PM +0400, Stanislav Kinsbursky wrote:
->>>> @@ -1000,6 +996,7 @@ static int svcauth_gss_handle_init(struct svc_rqst *rqstp,
->>>>   	struct xdr_netobj tmpobj;
->>>>   	struct rsi *rsip, rsikey;
->>>>   	int ret;
->>>> +	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
->>>
->>> OK, so you're getting the network namespace out of the rqstp, and, then
->>> passing it down, makes sense.  And:
->>>
->>>> @@ -1079,6 +1076,7 @@ svcauth_gss_accept(struct svc_rqst *rqstp, __be32 *authp)
->>>>   	__be32		*rpcstart;
->>>>   	__be32		*reject_stat = resv->iov_base + resv->iov_len;
->>>>   	int		ret;
->>>> +	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
->>>
->>> ... same for the gss cache.  Looks good.
->>>
->>> How do you plan to test this?
->>>
->>
->> Do you mean something special or in general?
->> Currently I validate all my chages in container by using simple test environment.
->> I would be appreciate for any hints to tests, than can help.
+On 01/19/2012 09:46 AM, Michael D Labriola wrote:
 >
-> The server needs to be tested after these changes, and we need to make
-> sure the caches affected still work.
+> Random question...  why do we have a reboot_init function that does DMI
+> checking with reboot_dmi_table (callbacks are mostly set_bios_reboot, but
+> there is a single set_kbd_reboot) and also a pci_reboot_init which does
+> the DMI check again using a separate pci_reboot_dmi_table (all callbacks
+> are to set_pci_reboot)?
 >
-> (I suspect the gid cache code will oops if it's used after these
-> patches, since the table is left NULl?)
->
-> And then we should also test in a container environment, with different
-> instances of mountd and rpc.svcidmapd running in each container, to
-> verify that the right thing happens.
+> Wouldn't it make more sense to do a single DMI scan using one big table?
 >
 
-Ok. I'll test server with 2-nd version of these patches tomorrow and reply with 
-the results.
-Thanks, Bruce.
+Yes, and such a patch would be appreciated.
 
+The reason it is as it is dates back to before the 32-64 bit 
+unification, as far as I know.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+(BIOS reboot is currently not supported on 64 bits, mainly.)
+
+	-hpa
+
