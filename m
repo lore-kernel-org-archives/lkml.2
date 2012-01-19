@@ -1,115 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2ASBLh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 20:11:37 -0500
+	id S1754515Ab2ASBLj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 20:11:39 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:52870 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab2ASBLf (ORCPT
+	with ESMTP id S1751748Ab2ASBLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 20:11:35 -0500
+	Wed, 18 Jan 2012 20:11:37 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: [PATCHSET] blkcg: kill policy node and blkg->dev
-Date: Wed, 18 Jan 2012 17:11:18 -0800
-Message-Id: <1326935490-11827-1-git-send-email-tj@kernel.org>
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/12] blkcg: obtaining blkg should be enclosed inside rcu_read_lock()
+Date: Wed, 18 Jan 2012 17:11:19 -0800
+Message-Id: <1326935490-11827-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1326935490-11827-1-git-send-email-tj@kernel.org>
+References: <1326935490-11827-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+When looking up or creating blkg's, both blk-throttle and cfq-iosched
+drops rcu_read_lock() right after lookup is complete.  This isn't
+safe.  Refcnt isn't incremented at that point and rcu lock is the only
+thing holding the blkg.  It shouldn't be dropped until after refcnt is
+incremented by the caller.
 
-This is the first of three (maybe four) patchset series trying to
-cleanup block cgroup API.
+Update throtl_get_tg() and cfq_get_cfqg() such that they are called
+and return under rcu_read_lock() and let their callers manage rcu
+locking appropriately.
 
-<rant>
-The current state of blkcg API is extremely sad.  From the first
-glance, it looks as though it's built with some modular design in mind
-with policy registration and all but the whole thing is one giant
-unholy spaghetti mess which renders the phrase "layer violation"
-meaningless as it's unclear whether it exists at all from the
-beginning.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-throttle.c |   18 ++++++------------
+ block/cfq-iosched.c  |   11 +++++------
+ 2 files changed, 11 insertions(+), 18 deletions(-)
 
-I've been looking at the code for three weeks now.  I've done a lot of
-code cleanups all around the kernel and seen a lot of scary/messy
-stuff, but blkcg takes the worst spot without any shred of doubt.  We
-really shouldn't have code like this in the kernel.
-</rant>
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 5eed6a7..ae53056 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -313,25 +313,23 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+ 	if (unlikely(blk_queue_dead(q)))
+ 		return NULL;
+ 
+-	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
+ 	tg = throtl_find_tg(td, blkcg);
+-	if (tg) {
+-		rcu_read_unlock();
++	if (tg)
+ 		return tg;
+-	}
+ 
+ 	/*
+ 	 * Need to allocate a group. Allocation of group also needs allocation
+ 	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
+ 	 * we need to drop rcu lock and queue_lock before we call alloc.
+ 	 */
+-	rcu_read_unlock();
+ 	spin_unlock_irq(q->queue_lock);
++	rcu_read_unlock();
+ 
+ 	tg = throtl_alloc_tg(td);
+ 
+ 	/* Group allocated and queue is still alive. take the lock */
++	rcu_read_lock();
+ 	spin_lock_irq(q->queue_lock);
+ 
+ 	/* Make sure @q is still alive */
+@@ -343,7 +341,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+ 	/*
+ 	 * Initialize the new group. After sleeping, read the blkcg again.
+ 	 */
+-	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
+ 
+ 	/*
+@@ -354,7 +351,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+ 
+ 	if (__tg) {
+ 		kfree(tg);
+-		rcu_read_unlock();
+ 		return __tg;
+ 	}
+ 
+@@ -365,7 +361,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+ 	}
+ 
+ 	throtl_init_add_tg_lists(td, tg, blkcg);
+-	rcu_read_unlock();
+ 	return tg;
+ }
+ 
+@@ -1127,7 +1122,6 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 	 * basic fields like stats and io rates. If a group has no rules,
+ 	 * just update the dispatch stats in lockless manner and return.
+ 	 */
+-
+ 	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
+ 	tg = throtl_find_tg(td, blkcg);
+@@ -1137,11 +1131,9 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 		if (tg_no_rule_group(tg, rw)) {
+ 			blkiocg_update_dispatch_stats(&tg->blkg, bio->bi_size,
+ 					rw, rw_is_sync(bio->bi_rw));
+-			rcu_read_unlock();
+-			goto out;
++			goto out_unlock_rcu;
+ 		}
+ 	}
+-	rcu_read_unlock();
+ 
+ 	/*
+ 	 * Either group has not been allocated yet or it is not an unlimited
+@@ -1199,6 +1191,8 @@ queue_bio:
+ 
+ out_unlock:
+ 	spin_unlock_irq(q->queue_lock);
++out_unlock_rcu:
++	rcu_read_unlock();
+ out:
+ 	return throttled;
+ }
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index ee55019..9f6219f 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1128,13 +1128,10 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
+ 	struct cfq_group *cfqg = NULL, *__cfqg = NULL;
+ 	struct request_queue *q = cfqd->queue;
+ 
+-	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
+ 	cfqg = cfq_find_cfqg(cfqd, blkcg);
+-	if (cfqg) {
+-		rcu_read_unlock();
++	if (cfqg)
+ 		return cfqg;
+-	}
+ 
+ 	/*
+ 	 * Need to allocate a group. Allocation of group also needs allocation
+@@ -1164,7 +1161,6 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
+ 
+ 	if (__cfqg) {
+ 		kfree(cfqg);
+-		rcu_read_unlock();
+ 		return __cfqg;
+ 	}
+ 
+@@ -1172,7 +1168,6 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
+ 		cfqg = &cfqd->root_group;
+ 
+ 	cfq_init_add_cfqg_lists(cfqd, cfqg, blkcg);
+-	rcu_read_unlock();
+ 	return cfqg;
+ }
+ 
+@@ -2860,6 +2855,8 @@ cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
+ 	struct cfq_group *cfqg;
+ 
+ retry:
++	rcu_read_lock();
++
+ 	cfqg = cfq_get_cfqg(cfqd);
+ 	cic = cfq_cic_lookup(cfqd, ioc);
+ 	/* cic always exists here */
+@@ -2875,6 +2872,7 @@ retry:
+ 			cfqq = new_cfqq;
+ 			new_cfqq = NULL;
+ 		} else if (gfp_mask & __GFP_WAIT) {
++			rcu_read_unlock();
+ 			spin_unlock_irq(cfqd->queue->queue_lock);
+ 			new_cfqq = kmem_cache_alloc_node(cfq_pool,
+ 					gfp_mask | __GFP_ZERO,
+@@ -2900,6 +2898,7 @@ retry:
+ 	if (new_cfqq)
+ 		kmem_cache_free(cfq_pool, new_cfqq);
+ 
++	rcu_read_unlock();
+ 	return cfqq;
+ }
+ 
+-- 
+1.7.7.3
 
-Alright, I just needed to get that out of my system.  We all do a lot
-of horrible things.  I know I've been and still am, so let's just
-concentrate on getting it better from here on.
-
-blk-cgroup, blk-throttle and cfq-iosched are pretty tightly tangled
-and untangling requires seemingly unrelated changes and addition of
-some transitional stuff.  Some are in this patchset but they'll be
-more prominent in the second patchset.  With that said, this patchset
-concentrates on removing blkio_policy_node and blkio_group->dev.
-
-blkio_policy_node carries configuration per cgroup-request_queue
-association separately from the matching blkio_group.  The goal seems
-to be allowing configuration of missing devices and retaining
-configuration across hot unplug/plug cycles.  Such behavior is very
-different from existing conventions, misleading and unnecessary.  This
-patchset moves configuration to blkio_group and removes
-blkio_policy_node.
-
-blkg->dev removal is much simpler.  blkg->dev is used to print out
-device number when printing out per-device configurations or
-statistics.  The device name can be easily determined by following the
-associated request_queue from blkg instead.
-
-This patchset contains the following 12 patches.
-
-  0001-blkcg-obtaining-blkg-should-be-enclosed-inside-rcu_r.patch
-  0002-cfq-don-t-register-propio-policy-if-CONFIG_CFQ_GROUP.patch
-  0003-elevator-clear-auxiliary-data-earlier-during-elevato.patch
-  0004-elevator-make-elevator_init_fn-return-0-errno.patch
-  0005-blkcg-update-blkg-get-functions-take-blkio_cgroup-as.patch
-  0006-blkcg-use-q-and-plid-instead-of-opaque-void-for-blki.patch
-  0007-blkcg-add-blkio_policy-array-and-allow-one-policy-pe.patch
-  0008-blkcg-use-the-usual-get-blkg-path-for-root-blkio_gro.patch
-  0009-blkcg-factor-out-blkio_group-creation.patch
-  0010-blkcg-don-t-allow-or-retain-configuration-of-missing.patch
-  0011-blkcg-kill-blkio_policy_node.patch
-  0012-blkcg-kill-the-mind-bending-blkg-dev.patch
-
-0001 is rcu locking fix.  Applying to mainline as fix is probably a
-good idea.
-
-0002 is misc cfq prep.
-
-0003-0004 update elevator.  Elevator switch behavior is changed once
-more to simplify elevator init/exit paths.
-
-0005-0009 prepare blkcg for further changes.  Two policy operations
-and new one policy per policy ID restriction are added.  All will be
-removed as cleanup progresses further.
-
-0010-0011 move blkcg configuration into blkg and drop policy node.
-
-0012 drops blkg->dev.
-
-This patchset is on top of linus#master (4ba3069fea "Merge branch
-'for-next' of git://../nab/target-pending") and available in the
-following git branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-kill-pn
-
-Thanks.
-
- block/blk-cgroup.c       |  635 +++++++++++++++--------------------------------
- block/blk-cgroup.h       |   91 ++----
- block/blk-core.c         |    6 
- block/blk-throttle.c     |  259 +++++--------------
- block/cfq-iosched.c      |  237 +++++------------
- block/cfq.h              |    7 
- block/deadline-iosched.c |    8 
- block/elevator.c         |   90 +++---
- block/noop-iosched.c     |    8 
- include/linux/elevator.h |    2 
- 10 files changed, 436 insertions(+), 907 deletions(-)
-
---
-tejun
