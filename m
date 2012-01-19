@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab2ASPyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 10:54:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40071 "EHLO mx1.redhat.com"
+	id S932416Ab2ASPzl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:55:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3324 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932281Ab2ASPyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 10:54:49 -0500
-Date: Thu, 19 Jan 2012 10:54:45 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/12] blkcg: obtaining blkg should be enclosed inside
- rcu_read_lock()
-Message-ID: <20120119155445.GB10908@redhat.com>
-References: <1326935490-11827-1-git-send-email-tj@kernel.org>
- <1326935490-11827-2-git-send-email-tj@kernel.org>
- <20120119100729.GA2649@redhat.com>
- <20120119153938.GA5198@google.com>
+	id S932171Ab2ASPzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 10:55:36 -0500
+Date: Thu, 19 Jan 2012 17:57:48 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, jan.kiszka@siemens.com,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: deliver msix interrupts from irq handler
+Message-ID: <20120119155748.GA6340@redhat.com>
+References: <20120118181023.GA4140@redhat.com>
+ <20120119072123.GE9571@redhat.com>
+ <20120119134957.GC4009@redhat.com>
+ <20120119150217.GA20920@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120119153938.GA5198@google.com>
+In-Reply-To: <20120119150217.GA20920@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 07:39:38AM -0800, Tejun Heo wrote:
-> Hello, Vivek.
-> 
-> On Thu, Jan 19, 2012 at 05:07:29AM -0500, Vivek Goyal wrote:
-> > On Wed, Jan 18, 2012 at 05:11:19PM -0800, Tejun Heo wrote:
-> > > When looking up or creating blkg's, both blk-throttle and cfq-iosched
-> > > drops rcu_read_lock() right after lookup is complete.  This isn't
-> > > safe.  Refcnt isn't incremented at that point and rcu lock is the only
-> > > thing holding the blkg.  It shouldn't be dropped until after refcnt is
-> > > incremented by the caller.
+On Thu, Jan 19, 2012 at 05:02:17PM +0200, Gleb Natapov wrote:
+> On Thu, Jan 19, 2012 at 03:49:57PM +0200, Michael S. Tsirkin wrote:
+> > > > +	irq_rt = rcu_dereference(kvm->irq_routing);
+> > > > +	if (irq < irq_rt->nr_rt_entries)
+> > > > +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link) {
+> > > > +			if (ei->type == KVM_IRQ_ROUTING_MSI)
+> > > > +				ret = kvm_set_msi(e, kvm, irq_source_id, level,
+> > > > +						  host_irq);
+> > > > +			else
+> > > > +				ret = -EWOULDBLOCK;
+> > > > +			break;
+> > > > +		}
+> > > > +	rcu_read_unlock_bh();
+> > > > +	return ret;
+> > > > +}
+> > > > +
+> > > Share implementation with kvm_set_irq().
 > > 
-> > throtl_get_tg() and cfq_get_cfqg() are called with queue lock held and
-> > tg and cfqg are protected by queue lock as they can not go away as long
-> > as queue lock is held.
+> > I considered this. There are several reasons not to do it:
+> > - Amount of common code is very small
+> Why? Just pass msi_only flag to kvm_set_irq() and skip an entry if flag is
+> set and entry type is not msi.
 > 
-> Ah, right.
-> 
-> > I had used rcu read lock to access blkcg pointer here. That's why when
-> > we are done with accessing blkcg, we drop rcu read lock and return back
-> > to caller with group pointer, which is aready holding either a queue
-> > lock or rcu read lock to protect returned group pointer.
-> >
-> > So if we are protecting blkcg using rcu, then it should make sense to
-> > take that lock inside throtl_get_tg() and cfq_get_cfqg() respectively and
-> > it should not be left to the caller?
-> 
-> No, no matter whatever synchronization scheme is in use, the code is
-> seriously screwed up if it's doing something like,
-> 
-> 	lock();
-> 	a = lookup();
-> 	unlock();
-> 	return a;
-> 
-> You should *NEVER* be doing that.
+> > - As it's separate, it's more obvious that it can't block (kvm_set_irq can block)
+> >   We can even tag kvm_set_irq with might_sleep.
+> They can still be two separate function calling common one.
 
-I guess ioc_lookup_icq() is doing something similar. We call it under
-queue lock. Take rcu lock inside for sanity of radix tree and then 
-release rcu lock and return icq.
+No, the common code is the surrounding foreach loop,
+the internal if branch is different.
 
-Thanks
-Vivek
+> > - This is way simpler and faster as we can do operations directly,
+> >   instead of copying the irq out, and as it's datapath
+> >   an optimization is I think justified.
+> I really do not think the copy of one small data structure will be
+> measurable. If it is (has to be proven) we can optimize that two
+> in the common code.
+> 
+> --
+> 			Gleb.
