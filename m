@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab2ASGPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 01:15:43 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:1872
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752769Ab2ASGPj (ORCPT
+	id S1752717Ab2ASGPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 01:15:34 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:47249
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752546Ab2ASGP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 01:15:39 -0500
-X-SpamScore: 6
-X-BigFish: VS6(z5105h2005kzzz1202h1082kzz8275bhz2dhc1bhc31hc1ah2a8h668h839h)
+	Thu, 19 Jan 2012 01:15:29 -0500
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275bhz2dhc1bhc31hc1ah2a8h668h839h)
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
 From: Huang Shijie <b32955@freescale.com>
 To: <vinod.koul@intel.com>
 CC: <shawn.guo@linaro.org>, <artem.bityutskiy@intel.com>, <shijie8@gmail.com>,
@@ -18,9 +19,9 @@ CC: <shawn.guo@linaro.org>, <artem.bityutskiy@intel.com>, <shijie8@gmail.com>,
         <linux-kernel@vger.kernel.org>, <w.sang@pengutronix.de>,
         <LW@KARO-electronics.de>, <alsa-devel@alsa-project.org>,
         <b29396@freescale.com>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH 09/10] MTD/GPMI : add a new field `gpmi_version`
-Date: Thu, 19 Jan 2012 14:16:06 +0800
-Message-ID: <1326953767-24155-10-git-send-email-b32955@freescale.com>
+Subject: [PATCH 06/10] MXS-DMA : add more flags for MXS-DMA
+Date: Thu, 19 Jan 2012 14:16:03 +0800
+Message-ID: <1326953767-24155-7-git-send-email-b32955@freescale.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1326953767-24155-1-git-send-email-b32955@freescale.com>
 References: <1326953767-24155-1-git-send-email-b32955@freescale.com>
@@ -31,55 +32,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add this field to store the GPMI verison.
+[1] Background :
+    The GPMI does ECC read page operation with a DMA chain consist of three DMA
+    Command Structures. The middle one of the chain is used to enable the BCH,
+    and read out the NAND page.
+
+    The WAIT4END(wait for command end) is a comunication signal between
+    the GPMI and MXS-DMA.
+
+[2] The current DMA code sets the WAIT4END bit at the last one, such as:
+
+    +-----+               +-----+                      +-----+
+    | cmd | ------------> | cmd | ------------------>  | cmd |
+    +-----+               +-----+                      +-----+
+                                                          ^
+                                                          |
+                                                          |
+                                                     set WAIT4END here
+
+    This chain works fine in the mx23/mx28.
+
+[3] But in the new GPMI version (used in MX50/MX60), the WAIT4END bit should
+    be set not only at the last DMA Command Structure,
+    but also at the middle one, such as:
+
+    +-----+               +-----+                      +-----+
+    | cmd | ------------> | cmd | ------------------>  | cmd |
+    +-----+               +-----+                      +-----+
+                             ^                            ^
+                             |                            |
+                             |                            |
+                        set WAIT4END here too        set WAIT4END here
+
+   If we do not set WAIT4END, the BCH maybe stall in "ECC reading page" state.
+   In the next ECC write page operation, a DMA-timeout occurs.
+   This has been catched in the MX6Q board.
+
+In order to fix the bug, we should let the driver to
+set the proper DMA flags in the DMA command structrues.
+
+So add the new flags for MXS-DMA.
+The driver can use these flags to control the DMA in a more flexible way.
 
 Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c  |    3 +++
- drivers/mtd/nand/gpmi-nand/gpmi-nand.h |    4 ++++
- drivers/mtd/nand/gpmi-nand/gpmi-regs.h |    2 ++
- 3 files changed, 9 insertions(+), 0 deletions(-)
+ include/linux/mxs-dma.h |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-index 7f68042..5b73ae5 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -133,6 +133,9 @@ int gpmi_init(struct gpmi_nand_data *this)
- 	if (ret)
- 		goto err_out;
+diff --git a/include/linux/mxs-dma.h b/include/linux/mxs-dma.h
+index 203d7c4..3ef73b8 100644
+--- a/include/linux/mxs-dma.h
++++ b/include/linux/mxs-dma.h
+@@ -11,6 +11,32 @@
  
-+	/* Read out the GPMI version */
-+	this->gpmi_version = readl(r->gpmi_regs + HW_GPMI_VERSION);
-+
- 	/* Choose NAND mode. */
- 	writel(BM_GPMI_CTRL1_GPMI_MODE, r->gpmi_regs + HW_GPMI_CTRL1_CLR);
+ #include <linux/dmaengine.h>
  
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-index 1c7fdbb..5c277e3 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-@@ -132,6 +132,10 @@ struct gpmi_nand_data {
- 	/* Flash Hardware */
- 	struct nand_timing	timing;
- 
-+	/* GPMI hardware version */
-+#define GPMI_VERSION_0501	(0x05010000)
-+	u32			gpmi_version;
++/*
++ * The drivers use these flags for ->device_prep_slave_sg() :
++ *    [1] If there is only one DMA command in the DMA chain, the code should be:
++ *            ......
++ *            ->device_prep_slave_sg(MXS_DMA_F_WAIT4END);
++ *            ......
++ *    [2] If there are two DMA commands in the DMA chain, the code should be
++ *            ......
++ *            ->device_prep_slave_sg(0);
++ *            ......
++ *            ->device_prep_slave_sg(MXS_DMA_F_LASTONE);
++ *            ......
++ *    [3] If there are more than two DMA commands in the DMA chain, the code
++ *        should be:
++ *            ......
++ *            ->device_prep_slave_sg(0);                 // First
++ *            ......
++ *            ->device_prep_slave_sg(MXS_DMA_F_APPEND [| MXS_DMA_F_WAIT4END]);
++ *            ......
++ *            ->device_prep_slave_sg(MXS_DMA_F_LASTONE); // Last
++ */
++#define MXS_DMA_F_APPEND	(1 << 0)
++#define MXS_DMA_F_WAIT4END	(1 << 1)
 +
- 	/* BCH */
- 	struct bch_geometry	bch_geometry;
- 	struct completion	bch_done;
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-regs.h b/drivers/mtd/nand/gpmi-nand/gpmi-regs.h
-index 8343124..f005b24 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-regs.h
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-regs.h
-@@ -169,4 +169,6 @@
- #define HW_GPMI_DEBUG					0x000000c0
- #define MX23_BP_GPMI_DEBUG_READY0			28
- #define MX23_BM_GPMI_DEBUG_READY0	(1 << MX23_BP_GPMI_DEBUG_READY0)
++#define MXS_DMA_F_LASTONE	(MXS_DMA_F_APPEND | MXS_DMA_F_WAIT4END)
 +
-+#define HW_GPMI_VERSION					0x000000d0
- #endif
+ struct mxs_dma_data {
+ 	int chan_irq;
+ };
 -- 
 1.7.0.4
 
