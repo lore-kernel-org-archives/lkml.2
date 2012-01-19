@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab2ASQBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:01:38 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:40521 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab2ASQBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:01:37 -0500
-Date: Thu, 19 Jan 2012 16:01:13 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-Message-ID: <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk>
-References: <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <20120118015013.GR11715@one.firstfloor.org>
- <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
- <20120118022217.GS11715@one.firstfloor.org>
- <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
- <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
- <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
- <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
- <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
- <CAObL_7FsNQaPQg-3=AO9RuMNZZsRgDSJYPhPevDKERws9vQJWg@mail.gmail.com>
+	id S932493Ab2ASQBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:01:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27189 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932468Ab2ASQBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 11:01:53 -0500
+Date: Thu, 19 Jan 2012 16:55:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+	entry v6
+Message-ID: <20120119155529.GA14412@redhat.com>
+References: <20120116153231.GF2998@moon> <4F15EA53.8030405@gmail.com> <20120118135809.GA10105@redhat.com> <20120118142156.GR1968@moon> <20120118143631.GA11776@redhat.com> <20120118182344.GD2889@moon> <20120118190725.GE2889@moon> <20120119141051.GA9652@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAObL_7FsNQaPQg-3=AO9RuMNZZsRgDSJYPhPevDKERws9vQJWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120119141051.GA9652@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Lutomirski wrote:
-> It's reasonable, obvious, and even more wrong than it appears.  On
-> Xen, there's an extra 64-bit GDT entry, and it gets used by default.
-> (I got bitten by this in some iteration of the vsyscall emulation
-> patches -- see user_64bit_mode for the correct and
-> unusable-from-user-mode way to do this.)
+On 01/19, Oleg Nesterov wrote:
+>
+> On 01/18, Cyrill Gorcunov wrote:
+> >
+> > I suppose it might be something like below. I've updated comment and
+> > quoted your comment there just I wont forget this next time I'll be
+> > reading the source. Thanks!
+>
+> I believe the patrch is correct.
+>
+> But... Cyrill, I am wondering how much will you hate me if I make
+> yet another attempt to delay this patch.
 
-Here it is:
+Cough... and another attempt...
 
-	static inline bool user_64bit_mode(struct pt_regs *regs)
-	{
-	#ifndef CONFIG_PARAVIRT
-		/*
-		 * On non-paravirt systems, this is the only long mode CPL 3
-		 * selector.  We do not allow long mode selectors in the LDT.
-		 */
-		return regs->cs == __USER_CS;
-	#else
-		/* Headers are too twisted for this to go in paravirt.h. */
-		return regs->cs == __USER_CS || regs->cs == pv_info.extra_user_64bit_cs;
-	#endif
-	}
+> > +static int children_seq_open(struct inode *inode, struct file *file)
+> > +{
+> > +	struct proc_pid_children_iter *iter = NULL;
+> > +	struct task_struct *task = NULL;
+> > +	int ret = 0;
+> > +
+> > +	task = get_proc_task(inode);
+> > +	if (!task) {
+> > +		ret = -ENOENT;
+> > +		goto err;
+> > +	}
+>
+> For what??
+>
+> > +	if (!ret) {
+> > +		struct seq_file *m = file->private_data;
+> > +		m->private = iter;
+> > +
+> > +		iter->pid_start = get_pid(task_pid(task));
+>
+> This is what we need, right? So can't we remove this "task_struct *task"
+> and simply do
+>
+> 		iter->pid_start = get_ppid(proc_pid(inode));
+>
+> ?
+>
+> And while this is absolutely cosmetic probably ->parent_pid is
+> a bit better name, but this is up to you.
 
-Perhaps userspace can do that.
-Would it be right for a ptracer to say:
+Thinking more... I am not sure, but do we really need
+proc_pid_children_iter at all??
 
-   CS == 0x23 -> 32-bit
-   (CS & 4)   -> 32-bit (LDT, "we do not allow long mode selectors in the LDT")
-   else       -> 64-bit (__USER_CS or some other GDT entry which must be pv_info's)
+It is very possibly I missed something, but we can get both
+parent_pid and pid_ns from inode, right? so can't we just remember
+inode in seq->private?
 
-I.e. assume that no other *GDT* CS values are available to userspace?
-There are other 32-bit GDT entries, but are they not all for data or kernel use only?
+Oleg.
 
--- Jamie
