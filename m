@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab2ASUaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 15:30:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37976 "EHLO mail.zytor.com"
+	id S932985Ab2ASUce (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 15:32:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62236 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932705Ab2ASUaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 15:30:20 -0500
-Message-ID: <4F187D54.602@zytor.com>
-Date: Thu, 19 Jan 2012 12:30:12 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S932705Ab2ASUcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 15:32:33 -0500
+Date: Thu, 19 Jan 2012 15:32:25 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/12] blkcg: kill blkio_policy_node
+Message-ID: <20120119203225.GA4421@redhat.com>
+References: <1326935490-11827-1-git-send-email-tj@kernel.org>
+ <1326935490-11827-12-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: dmsetup fails on latest kernel
-References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com> <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com> <4F187980.2000306@zytor.com> <CA+55aFxNVaJ8AYXka8khUnkzr=tND9+SMpQ9CU0KFDbvxAJY0Q@mail.gmail.com>
-In-Reply-To: <CA+55aFxNVaJ8AYXka8khUnkzr=tND9+SMpQ9CU0KFDbvxAJY0Q@mail.gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326935490-11827-12-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 12:17 PM, Linus Torvalds wrote:
-> On Thu, Jan 19, 2012 at 12:13 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> Could you please send me:
->>
->> a) your full strace;
->> b) arch/x86/kernel/syscall_32.o from your build?
-> 
-> Btw, the strace before-and-after (working vs nonworking) would
-> probably be useful. They aren't easily comparable (all the random
-> pointers change depending on allocations etc), but some scripting and
-> editing out pointer values might make the difference be obvious.
-> 
->                          Linus
+On Wed, Jan 18, 2012 at 05:11:29PM -0800, Tejun Heo wrote:
 
-Possible.  I have actually reproduced it and reduced it to a small test
-case already, so I hopefully will have it nailed down soon.
+[..]
+> @@ -1413,14 +1110,10 @@ static int blkio_weight_write(struct blkio_cgroup *blkcg, u64 val)
+>  	spin_lock_irq(&blkcg->lock);
+>  	blkcg->weight = (unsigned int)val;
+>  
+> -	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+> -		pn = blkio_policy_search_node(blkcg, blkg->dev,
+> -				BLKIO_POLICY_PROP, BLKIO_PROP_weight_device);
+> -		if (pn)
+> -			continue;
+> +	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node)
+> +		if (blkg->plid == plid && !blkg->conf.weight)
+> +			blkio_update_group_weight(blkg, blkcg->weight);
 
-	-hpa
+Tejun,
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Why do we check for blkg->conf.weight=0 here. Even if a group already has
+weight and if user has changed the cgroup weight later, that update should
+be propogated to all the groups on all the queues.
 
+Where do we assign default cgroup weight to a blkg upon creation? May be at
+group create time, we just need to copy blkcg->weight to blkg.conf.weight.
+
+Thanks
+Vivek
