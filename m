@@ -1,122 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab2ASMkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 07:40:12 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49112 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab2ASMkJ (ORCPT
+	id S1756637Ab2ASMwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 07:52:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53060 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2ASMwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 07:40:09 -0500
-Subject: [PATCH trivial] mm: make get_mm_counter static-inline
-To: Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 19 Jan 2012 16:40:05 +0400
-Message-ID: <20120119124005.21946.18651.stgit@zurg>
-User-Agent: StGit/0.15
+	Thu, 19 Jan 2012 07:52:40 -0500
+Date: Thu, 19 Jan 2012 21:04:06 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Huang Shijie <b32955@freescale.com>
+Cc: vinod.koul@intel.com, artem.bityutskiy@intel.com, shijie8@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, LW@KARO-electronics.de,
+        alsa-devel@alsa-project.org, b29396@freescale.com
+Subject: Re: [PATCH 01/10] MXS-DMA : move the mxs-dma.h to a more common place
+Message-ID: <20120119130404.GI2247@S2101-09.ap.freescale.net>
+References: <1326953767-24155-1-git-send-email-b32955@freescale.com>
+ <1326953767-24155-2-git-send-email-b32955@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326953767-24155-2-git-send-email-b32955@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes get_mm_counter() always static inline,
-it is simple enough for that. And remove unused set_mm_counter()
+On Thu, Jan 19, 2012 at 02:15:58PM +0800, Huang Shijie wrote:
+> Move the header to a more common place.
+> The DMA engine is not only used in mx23/mx28, but also used
+> in mx50/mx6q.
+> It will also be used in the future chips.
+> 
+> Rename it to mxs-dma.h
+> 
+> Signed-off-by: Huang Shijie <b32955@freescale.com>
+> ---
+>  arch/arm/mach-mxs/include/mach/dma.h |   28 ----------------------------
+>  include/linux/mxs-dma.h              |   28 ++++++++++++++++++++++++++++
+>  2 files changed, 28 insertions(+), 28 deletions(-)
+>  delete mode 100644 arch/arm/mach-mxs/include/mach/dma.h
+>  create mode 100644 include/linux/mxs-dma.h
+> 
+I'm wondering if it would be better to create folder include/linux/fsl
+for mxs-dma.h accommodation, so that any headers that need to shared
+between mxs and imx later can find a place.  Considering that Freescale
+has many IPs shared between MPCxxx (PowerPC) and i.MX (ARM) families,
+it could also be a good place for any headers that need to be shared
+between these two product lines from Freescale.
 
-bloat-o-meter:
-
-add/remove: 0/1 grow/shrink: 4/12 up/down: 99/-341 (-242)
-function                                     old     new   delta
-try_to_unmap_one                             886     952     +66
-sys_remap_file_pages                        1214    1230     +16
-dup_mm                                      1684    1700     +16
-do_exit                                     2277    2278      +1
-zap_page_range                               208     205      -3
-unmap_region                                 304     296      -8
-static.oom_kill_process                      554     546      -8
-try_to_unmap_file                           1716    1700     -16
-getrusage                                    925     909     -16
-flush_old_exec                              1704    1688     -16
-static.dump_header                           416     390     -26
-acct_update_integrals                        218     187     -31
-do_task_stat                                2986    2954     -32
-get_mm_counter                                34       -     -34
-xacct_add_tsk                                371     334     -37
-task_statm                                   172     118     -54
-task_mem                                     383     323     -60
-
-try_to_unmap_one() grows because update_hiwater_rss() now completely inline.
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- include/linux/mm.h |   21 +++++++++++----------
- mm/memory.c        |   18 ------------------
- 2 files changed, 11 insertions(+), 28 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 17b27cd..378bcce 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1058,19 +1058,20 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
- /*
-  * per-process(per-mm_struct) statistics.
-  */
--static inline void set_mm_counter(struct mm_struct *mm, int member, long value)
--{
--	atomic_long_set(&mm->rss_stat.count[member], value);
--}
--
--#if defined(SPLIT_RSS_COUNTING)
--unsigned long get_mm_counter(struct mm_struct *mm, int member);
--#else
- static inline unsigned long get_mm_counter(struct mm_struct *mm, int member)
- {
--	return atomic_long_read(&mm->rss_stat.count[member]);
--}
-+	long val = atomic_long_read(&mm->rss_stat.count[member]);
-+
-+#ifdef SPLIT_RSS_COUNTING
-+	/*
-+	 * counter is updated in asynchronous manner and may go to minus.
-+	 * But it's never be expected number for users.
-+	 */
-+	if (val < 0)
-+		val = 0;
- #endif
-+	return (unsigned long)val;
-+}
- 
- static inline void add_mm_counter(struct mm_struct *mm, int member, long value)
- {
-diff --git a/mm/memory.c b/mm/memory.c
-index fa2f04e..f31fb6e 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -160,24 +160,6 @@ static void check_sync_rss_stat(struct task_struct *task)
- 		__sync_task_rss_stat(task, task->mm);
- }
- 
--unsigned long get_mm_counter(struct mm_struct *mm, int member)
--{
--	long val = 0;
--
--	/*
--	 * Don't use task->mm here...for avoiding to use task_get_mm()..
--	 * The caller must guarantee task->mm is not invalid.
--	 */
--	val = atomic_long_read(&mm->rss_stat.count[member]);
--	/*
--	 * counter is updated in asynchronous manner and may go to minus.
--	 * But it's never be expected number for users.
--	 */
--	if (val < 0)
--		return 0;
--	return (unsigned long)val;
--}
--
- void sync_mm_rss(struct task_struct *task, struct mm_struct *mm)
- {
- 	__sync_task_rss_stat(task, mm);
-
+-- 
+Regards,
+Shawn
