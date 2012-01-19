@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082Ab2ASVAt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 16:00:49 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:32946 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932818Ab2ASVAr convert rfc822-to-8bit (ORCPT
+	id S933088Ab2ASVGM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 16:06:12 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:36179 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932818Ab2ASVGK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 16:00:47 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Chen Gong <gong.chen@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Thu, 19 Jan 2012 15:58:56 -0500
-Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
- smp_send_stop()
-Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
- below smp_send_stop()
-Thread-Index: AQHMy9CqWb3Eal+luUidUg+JrwynPJX+IWHAgAAOOECAAJk+gIAGFpuAgACYuICAASNngIAAuA6AgACm9AD//5HLQIADWlqQgAlb+CU=
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DA7B65F2A@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com>
- <20120105210123.GI5650@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827BBD8@USINDEVS01.corp.hds.com>
- <4F0BAB33.2090201@linux.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
- <4F0D3A0B.4090709@linux.intel.com> <20120111172544.GS5650@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28FD61F@ORSMSX104.amr.corp.intel.com>,<32727E9A83EE9A42A1F0906295A3A77B2C78F49973@USINDEVS01.corp.hds.com>
-In-Reply-To: <32727E9A83EE9A42A1F0906295A3A77B2C78F49973@USINDEVS01.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Jan 2012 16:06:10 -0500
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1201190226
+In-Reply-To: <1326991117.17534.132.camel@gandalf.stny.rr.com>
+References: <CAONaPpFjfGiKKGAzrQNk+MF4k50nRf+wMU8H9491NgHyJrUkyw@mail.gmail.com>
+	<201201180053.52617.fzuuzf@googlemail.com>
+	<1326848525.17534.66.camel@gandalf.stny.rr.com>
+	<CAONaPpGHULxDZXBTprkCy9vKPH46gHOiQs6GM_ysfP2znDqqXg@mail.gmail.com>
+	<1326991117.17534.132.camel@gandalf.stny.rr.com>
+Date: Thu, 19 Jan 2012 22:06:09 +0100
+X-Google-Sender-Auth: Iez1A-lKIpM9Nh9hkOZ2OgWy8vw
+Message-ID: <CAONaPpHJM1GKdRCdvw97AsBSRQk1oHUt6u2bGJRoin+e59Wbzg@mail.gmail.com>
+Subject: Re: rt-kernel 3.0.14-rt31: BUG: sleeping function called from invalid context
+From: John Kacur <jkacur@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Karsten Wiese <fzuuzf@googlemail.com>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony,
-
-Do you have any comments?
-
-________________________________________
-
-Tony,
-
-I understand you are seriously concerned about reliability of pstore.
-And I'm in the same position.
-
-But I still suggest to move kmsg_dump() below smp_send_stop().
-
->The 20% of me that isn't buying this
->still has worries that smp_send_stop() might fail in one of several ways:
->1) Fails to actually stop one or more other cpus (this is similar to our
->current situation where other cpus may interfere with us saving kmsg in
->pstore).
-
-I don't understand this case. Have you ever experienced some specific cases
-failing to stop cpus?
-
-As for x86, this case will never happen if not cpus are broken.
-
->2) Causes another fault, thus recursively entering the panic path.
->3) Hangs - causing us to miss saving to pstore.
-
-These concerns are not just smp_send_stop().
-
-In panic(), there are some function calls above kmsg_dump().
- Ex. dump_stack(), printk(), crash_kexec()....
-If they panic/hang, same issues will happen.
-
-So, 2) and 3) are not reasonable reasons for rejecting to move kmsg_dump() below smp_send_stop().
-
+On Thu, Jan 19, 2012 at 5:38 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2012-01-19 at 17:16 +0100, John Kacur wrote:
 >
->I don't know what can be done to resolve this - it is hard to make a
->100% convincing argument about the execution of any code in the panic
->path.
+>> I'm testing v3.0.14-rt32-rc1, and it greatly reduced the number of
+>> these, but I still got one during boot.
+>>
+>> [   11.938649] BUG: sleeping function called from invalid context at
+>> /home/jkacur/rt.linux.git/kernel/rtmutex.c:645
+>> [   11.938651] in_atomic(): 1, irqs_disabled(): 1, pid: 168, name: irq/9-acpi
+>> [   11.938653] 1 lock held by irq/9-acpi/168:
+>> [   11.938653]  #0:  (acpi_gbl_gpe_lock){......}, at:
+>> [<ffffffff8123881d>] acpi_ev_gpe_detect+0x31/0x110
+>
+> Could you test 3.2-rt. If that has the issue then we know we have more
+> to fix. If not, we know I missed a patch.
+>
 
-One of the ways we have confidence is doing more testing.
-As for kdump, LKDTM is used for checking regressions of kdump.
+I tested with v3.2-rt10 and the issue is not there.
 
-If pstore works with LKDTM, we can prove that pstore has minimal reliabliy.
-(I don't know if we need additional testing at this time.)
+I also examined your patches and couldn't find anything wrong with
+them, and for larks tried applying
+cpumask-disable-offstack-on-rt.patch from v3.2-rt10
+all to no avail, the problem is still there.
 
-Seiji
-
+Thanks
+John
