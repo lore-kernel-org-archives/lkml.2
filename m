@@ -1,64 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab2ASLwi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 06:52:38 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3337 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab2ASLwh (ORCPT
+	id S1751803Ab2ASLxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 06:53:17 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50721 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751432Ab2ASLxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 06:52:37 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 19 Jan 2012 03:52:36 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH] rtc: twl: optimize IRQ bit access
-Date: Thu, 19 Jan 2012 17:22:22 +0530
-Message-Id: <1326973942-11576-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-X-NVConfidentiality: public
+	Thu, 19 Jan 2012 06:53:16 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: Add support for padding between register and address
+Date: Thu, 19 Jan 2012 11:53:13 +0000
+Message-Id: <1326973993-26179-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
+Some devices, especially those with high speed control interfaces, require
+padding between the register and the data. Support this in the regmap API
+by providing a pad_bits configuration parameter.
 
-As TWL RTC driver is having a cached copy of enabled RTC interrupt bits
-in variable rtc_irq_bits, that can be checked before really setting
-or masking any of the interrupt bits.
+Only devices with integer byte counts are supported.
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/rtc/rtc-twl.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/base/regmap/internal.h |    1 +
+ drivers/base/regmap/regmap.c   |   32 +++++++++++++++++++++-----------
+ include/linux/regmap.h         |    2 ++
+ 3 files changed, 24 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
-index a0236a0..b1f6c8b 100644
---- a/drivers/rtc/rtc-twl.c
-+++ b/drivers/rtc/rtc-twl.c
-@@ -176,6 +176,10 @@ static int set_rtc_irq_bit(unsigned char bit)
- 	unsigned char val;
- 	int ret;
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 1a02b75..e33f1be 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -22,6 +22,7 @@ struct regcache_ops;
+ struct regmap_format {
+ 	size_t buf_size;
+ 	size_t reg_bytes;
++	size_t pad_bytes;
+ 	size_t val_bytes;
+ 	void (*format_write)(struct regmap *map,
+ 			     unsigned int reg, unsigned int val);
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index be10a4f..e9c2ac0 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -160,7 +160,9 @@ struct regmap *regmap_init(struct device *dev,
+ 	mutex_init(&map->lock);
+ 	map->format.buf_size = (config->reg_bits + config->val_bits) / 8;
+ 	map->format.reg_bytes = config->reg_bits / 8;
++	map->format.pad_bytes = config->pad_bits / 8;
+ 	map->format.val_bytes = config->val_bits / 8;
++	map->format.buf_size += map->format.pad_bytes;
+ 	map->dev = dev;
+ 	map->bus = bus;
+ 	map->max_register = config->max_register;
+@@ -235,7 +237,7 @@ struct regmap *regmap_init(struct device *dev,
+ 	    !(map->format.format_reg && map->format.format_val))
+ 		goto err_map;
  
-+	/* if the bit is set, return from here */
-+	if (rtc_irq_bits & bit)
-+		return 0;
-+
- 	val = rtc_irq_bits | bit;
- 	val &= ~BIT_RTC_INTERRUPTS_REG_EVERY_M;
- 	ret = twl_rtc_write_u8(val, REG_RTC_INTERRUPTS_REG);
-@@ -193,6 +197,10 @@ static int mask_rtc_irq_bit(unsigned char bit)
- 	unsigned char val;
- 	int ret;
+-	map->work_buf = kmalloc(map->format.buf_size, GFP_KERNEL);
++	map->work_buf = kzalloc(map->format.buf_size, GFP_KERNEL);
+ 	if (map->work_buf == NULL) {
+ 		ret = -ENOMEM;
+ 		goto err_map;
+@@ -329,23 +331,28 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
+ 	 * send the work_buf directly, otherwise try to do a gather
+ 	 * write.
+ 	 */
+-	if (val == map->work_buf + map->format.reg_bytes)
++	if (val == (map->work_buf + map->format.pad_bytes +
++		    map->format.reg_bytes))
+ 		ret = map->bus->write(map->dev, map->work_buf,
+-				      map->format.reg_bytes + val_len);
++				      map->format.reg_bytes +
++				      map->format.pad_bytes +
++				      val_len);
+ 	else if (map->bus->gather_write)
+ 		ret = map->bus->gather_write(map->dev, map->work_buf,
+-					     map->format.reg_bytes,
++					     map->format.reg_bytes +
++					     map->format.pad_bytes,
+ 					     val, val_len);
  
-+	/* if the bit is clear, return from here */
-+	if (!(rtc_irq_bits & bit))
-+		return 0;
-+
- 	val = rtc_irq_bits & ~bit;
- 	ret = twl_rtc_write_u8(val, REG_RTC_INTERRUPTS_REG);
- 	if (ret == 0)
+ 	/* If that didn't work fall back on linearising by hand. */
+ 	if (ret == -ENOTSUPP) {
+-		len = map->format.reg_bytes + val_len;
+-		buf = kmalloc(len, GFP_KERNEL);
++		len = map->format.reg_bytes + map->format.pad_bytes + val_len;
++		buf = kzalloc(len, GFP_KERNEL);
+ 		if (!buf)
+ 			return -ENOMEM;
+ 
+ 		memcpy(buf, map->work_buf, map->format.reg_bytes);
+-		memcpy(buf + map->format.reg_bytes, val, val_len);
++		memcpy(buf + map->format.reg_bytes + map->format.pad_bytes,
++		       val, val_len);
+ 		ret = map->bus->write(map->dev, buf, len);
+ 
+ 		kfree(buf);
+@@ -387,10 +394,12 @@ int _regmap_write(struct regmap *map, unsigned int reg,
+ 
+ 		return ret;
+ 	} else {
+-		map->format.format_val(map->work_buf + map->format.reg_bytes,
+-				       val);
++		map->format.format_val(map->work_buf + map->format.reg_bytes
++				       + map->format.pad_bytes, val);
+ 		return _regmap_raw_write(map, reg,
+-					 map->work_buf + map->format.reg_bytes,
++					 map->work_buf +
++					 map->format.reg_bytes +
++					 map->format.pad_bytes,
+ 					 map->format.val_bytes);
+ 	}
+ }
+@@ -473,7 +482,8 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	trace_regmap_hw_read_start(map->dev, reg,
+ 				   val_len / map->format.val_bytes);
+ 
+-	ret = map->bus->read(map->dev, map->work_buf, map->format.reg_bytes,
++	ret = map->bus->read(map->dev, map->work_buf,
++			     map->format.reg_bytes + map->format.pad_bytes,
+ 			     val, val_len);
+ 
+ 	trace_regmap_hw_read_done(map->dev, reg,
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index eb93921..a6ed6e6 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -44,6 +44,7 @@ struct reg_default {
+  * Configuration for the register map of a device.
+  *
+  * @reg_bits: Number of bits in a register address, mandatory.
++ * @pad_bits: Number of bits of padding between register and value.
+  * @val_bits: Number of bits in a register value, mandatory.
+  *
+  * @writeable_reg: Optional callback returning true if the register
+@@ -74,6 +75,7 @@ struct reg_default {
+  */
+ struct regmap_config {
+ 	int reg_bits;
++	int pad_bits;
+ 	int val_bits;
+ 
+ 	bool (*writeable_reg)(struct device *dev, unsigned int reg);
 -- 
-1.7.1.1
+1.7.7.3
 
