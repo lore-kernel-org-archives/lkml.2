@@ -1,308 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab2ASPvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 10:51:20 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59766 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102Ab2ASPvS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 10:51:18 -0500
-Date: Thu, 19 Jan 2012 19:51:13 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
+	id S932340Ab2ASPvl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:51:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8654 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756102Ab2ASPvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 10:51:38 -0500
+Date: Thu, 19 Jan 2012 16:45:22 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: [PATCH] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v7
-Message-ID: <20120119155112.GF31379@moon>
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20120119154522.GA14058@redhat.com>
+References: <20120106152356.GA23995@redhat.com> <20120106182535.GJ9511@google.com> <20120111160730.GA24556@redhat.com> <20120112003102.GB9511@google.com> <20120112170728.GA25717@redhat.com> <20120112175725.GD9511@google.com> <20120113152010.GA19215@redhat.com> <20120113182750.GD18166@google.com> <20120114173648.GA32543@redhat.com> <20120118231742.GS18166@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120118231742.GS18166@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If it's needed I can wrap all this with CONFIG_CHECKPOINT_RESTORE, should I?
+On 01/18, Mandeep Singh Baines wrote:
+>
+> Oleg Nesterov (oleg@redhat.com) wrote:
+> > On 01/13, Mandeep Singh Baines wrote:
+> > >
+> > > Case 3: g is some other thread
+> > >
+> > > In this case, g MUST be current
+> >
+> > Why? This is not true.
+>
+> Here is my thinking:
+>
+> The terminating condition, t != g, assumes that you can get back to
+> g. If g is unhashed, there is no guarantee you'll ever get back to it.
+> Holding a reference does not prevent unhashing.
+>
+> for_each_process avoids unhashing by starting and ending at init_task
+> (which can never be unhashed).
 
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v7
+Yes,
 
-When we do checkpoint of a task we need to know the list of children
-the task, has but there is no easy and fast way to generate reverse
-parent->children chain from arbitrary <pid> (while a parent pid is
-provided in "PPid" field of /proc/<pid>/status).
+> As you pointed out a while back, this doesn't work for:
+>
+> do_each_thread(g, t){
+>   do_something(t);
+> } while_each_thread(g, t)
+>
+> because g can be unhashed.
+>
+> However, you should be able to use while_each_thread if you are current.
+> Being current would prevent 'g' from being unhashed.
 
-So instead of walking over all pids in the system (creating one big process
-tree in memory, just to figure out which children a task has) -- we add
-explicit /proc/<pid>/task/<tid>/children entry, because the kernel already has
-this kind of information but it is not yet exported.
+Ah, I misunderstood you. Yes, sure.
 
-This is a first level children, not the whole process tree.
+> other than, do_each_thread/while_each_thread, all other callers
+> of while_each_thread() are starting at current. Otherwise, how do
+> you guarantee that it terminates.
 
-v2:
- - Kame suggested to use a separated /proc/<pid>/children entry
-   instead of poking /proc/<pid>/status
- - Andew suggested to use rcu facility instead of locking
-   tasklist_lock
- - Tejun pointed that non-seekable seq file might not be
-   enough for tasks with large number of children
+Hm, still can't understand...
 
-v3:
- - To be on a safe side use %lu format for pid_t printing
+> I see at least one example, coredump_wait() that uses while_each_thread
+> starting at current. I didn't find any cases where while_each_thread
+> starts anywhere other than current or group_leader.
 
-v4:
- - New line get printed when sequence ends not at seq->stop,
-   a nit pointed by Tejun
- - Documentation update
- - tasklist_lock is back, Oleg pointed that ->children list
-   is actually not rcu-safe
+Probably you meant zap_threads/zap_process, not coredump_wait?
 
-v5:
- - Oleg suggested to make /proc/<pid>/task/<tid>/children
-   instead of global /proc/<pid>/children, which eliminates
-   hardness related to threads and children migration, and
-   allows patch to be a way simplier.
+zap_process() is fine, we hold ->siglock. But zap_threads does _not_
+start at current, may be you misread the g == tsk->group_leader check
+in the main for_each_process() loop ? But most probably we simply
+misunderstand each other a bit, see below.
 
-v6:
- - Drop ptrace_may_access tests, pids are can be found anyway
-   so nothing to protect here.
- - Update comments and docs, pointed by Oleg.
+However it starts at ->group_leader, so it won't suffer if we restrict
+the lockless while_each_thread_rcu().
 
-v7:
- - Use get_pid over proc-pid directly, to simplify
-   code, pointed by Oleg.
+> > But I guess this doesn't matter, I think I am
+> > starting to understand why our discussion was a bit confusing.
+> >
+> > The problem is _not_ exec/de_thread by itself. The problem is that
+> > while_each_thread(g, t) can race with removing 'g' from the list.
+> > IOW, list_for_each_rcu-like things assume that the head of the list
+> > is "stable" but this is not true.
+> >
+> > And note that de_thread() does not matter in this sense, only
+> > __unhash_process()->list_del_rcu(&p->thread_group) does matter.
+> >
+> > Now. If 'g' is the group leader, we should only worry about exec,
+> > otherwise it can't disappear before other threads.
+> >
+> > But if it is not the group leader, it can simply exit and
+> > while_each_thread(g, t) can never stop by the same reason.
+> >
+>
+> I think we are on the same page. Your explanation is consistent with
+> my understanding.
+>
+> Some other thoughts:
+>
+> I suspect that other than do_each_thread()/while_each_thread() or
+> for_each_thread()/while_each_thread() where 'g' is the group_leader,
+> 'g' MUST be current. So the only cases to consider are:
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- Documentation/filesystems/proc.txt |   18 ++++
- fs/proc/array.c                    |  147 +++++++++++++++++++++++++++++++++++++
- fs/proc/base.c                     |    1 
- fs/proc/internal.h                 |    1 
- 4 files changed, 167 insertions(+)
+I didn't try to grep, but I do not know any example of the lockless
+while_each_thread() which starts at current.
 
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -40,6 +40,7 @@ Table of Contents
-   3.4	/proc/<pid>/coredump_filter - Core dump filtering settings
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
-+  3.7   /proc/<pid>/task/<tid>/children - Information about task children
- 
-   4	Configuring procfs
-   4.1	Mount options
-@@ -1549,6 +1550,23 @@ then the kernel's TASK_COMM_LEN (current
- comm value.
- 
- 
-+3.7	/proc/<pid>/task/<tid>/children - Information about task children
-+-------------------------------------------------------------------------
-+This file provides a fast way to retrieve first level children pids
-+of a task pointed by <pid>/<tid> pair. The format is a space separated
-+stream of pids.
-+
-+Note the "first level" here -- if a child has own children they will
-+not be listed here, one needs to read /proc/<children-pid>/task/<tid>/children
-+to obtain the descendants.
-+
-+Since this interface is intended to be fast and cheap it doesn't
-+guarantee to provide precise results and some children might be
-+skipped, especially if they've exited right after we printed their
-+pids, so one need to either stop or freeze processes being inspected
-+if precise results are needed.
-+
-+
- ------------------------------------------------------------------------------
- Configuring procfs
- ------------------------------------------------------------------------------
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -547,3 +547,150 @@ int proc_pid_statm(struct seq_file *m, s
- 
- 	return 0;
- }
-+
-+struct proc_pid_children_iter {
-+	struct pid_namespace *pid_ns;
-+	struct pid *parent_pid;
-+};
-+
-+static struct pid *
-+get_children_pid(struct proc_pid_children_iter *iter, struct pid *pid_prev, loff_t pos)
-+{
-+	struct task_struct *start, *task;
-+	struct pid *pid = NULL;
-+
-+	read_lock(&tasklist_lock);
-+
-+	start = pid_task(iter->parent_pid, PIDTYPE_PID);
-+	if (!start)
-+		goto out;
-+
-+	/*
-+	 * Lets try to continue searching first, this gives
-+	 * us significant speedup on children-rich processes.
-+	 */
-+	if (pid_prev) {
-+		task = pid_task(pid_prev, PIDTYPE_PID);
-+		if (task && task->real_parent == start &&
-+		    !(list_empty(&task->sibling))) {
-+			if (list_is_last(&task->sibling, &start->children))
-+				goto out;
-+			task = list_first_entry(&task->sibling,
-+						struct task_struct, sibling);
-+			pid = get_pid(task_pid(task));
-+			goto out;
-+		}
-+	}
-+
-+	/*
-+	 * Slow search case.
-+	 *
-+	 * We might miss some children here if children
-+	 * are exited while we were not holding the lock,
-+	 * but it was never promised to be accurate that
-+	 * much.
-+	 *
-+	 * "Just suppose that the parent sleeps, but N children
-+	 *  exit after we printed their tids. Now the slow paths
-+	 *  skips N extra children, we miss N tasks." (c)
-+	 *
-+	 * So one need to stop or freeze the leader and all
-+	 * its children to get a precise result.
-+	 */
-+	list_for_each_entry(task, &start->children, sibling) {
-+		if (pos-- == 0) {
-+			pid = get_pid(task_pid(task));
-+			break;
-+		}
-+	}
-+
-+out:
-+	read_unlock(&tasklist_lock);
-+	return pid;
-+}
-+
-+static int children_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct proc_pid_children_iter *iter = seq->private;
-+	unsigned long pid = (unsigned long)pid_nr_ns(v, iter->pid_ns);
-+
-+	return seq_printf(seq, " %lu", pid);
-+}
-+
-+static void *children_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	return get_children_pid(seq->private, NULL, *pos);
-+}
-+
-+static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct proc_pid_children_iter *iter = seq->private;
-+	struct pid *pid = NULL;
-+
-+	pid = get_children_pid(iter, v, *pos + 1);
-+	if (!pid)
-+		seq_printf(seq, "\n");
-+	put_pid(v);
-+
-+	++*pos;
-+	return pid;
-+}
-+
-+static void children_seq_stop(struct seq_file *seq, void *v)
-+{
-+	put_pid(v);
-+}
-+
-+static const struct seq_operations children_seq_ops = {
-+	.start	= children_seq_start,
-+	.next	= children_seq_next,
-+	.stop	= children_seq_stop,
-+	.show	= children_seq_show,
-+};
-+
-+static int children_seq_open(struct inode *inode, struct file *file)
-+{
-+	struct proc_pid_children_iter *iter = NULL;
-+	struct task_struct *task = NULL;
-+	int ret = 0;
-+
-+	iter = kmalloc(sizeof(*iter), GFP_KERNEL);
-+	if (!iter) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	ret = seq_open(file, &children_seq_ops);
-+	if (!ret) {
-+		struct seq_file *m = file->private_data;
-+		m->private = iter;
-+
-+		iter->parent_pid = get_pid(proc_pid(inode));
-+		iter->pid_ns = inode->i_sb->s_fs_info;
-+	}
-+
-+err:
-+	if (ret)
-+		kfree(iter);
-+
-+	return ret;
-+}
-+
-+int children_seq_release(struct inode *inode, struct file *file)
-+{
-+	struct seq_file *m = file->private_data;
-+	struct proc_pid_children_iter *iter = m->private;
-+
-+	put_pid(iter->parent_pid);
-+	kfree(iter);
-+
-+	seq_release(inode, file);
-+	return 0;
-+}
-+
-+const struct file_operations proc_tid_children_operations = {
-+	.open    = children_seq_open,
-+	.read    = seq_read,
-+	.llseek  = seq_lseek,
-+	.release = children_seq_release,
-+};
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -3454,6 +3454,7 @@ static const struct pid_entry tid_base_s
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
- 	REG("maps",      S_IRUGO, proc_maps_operations),
-+	REG("children",  S_IRUGO, proc_tid_children_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps", S_IRUGO, proc_numa_maps_operations),
- #endif
-Index: linux-2.6.git/fs/proc/internal.h
-===================================================================
---- linux-2.6.git.orig/fs/proc/internal.h
-+++ linux-2.6.git/fs/proc/internal.h
-@@ -53,6 +53,7 @@ extern int proc_pid_statm(struct seq_fil
- 				struct pid *pid, struct task_struct *task);
- extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
- 
-+extern const struct file_operations proc_tid_children_operations;
- extern const struct file_operations proc_maps_operations;
- extern const struct file_operations proc_numa_maps_operations;
- extern const struct file_operations proc_smaps_operations;
+I guess this is the source of confusion.
+
+> > I'll try to recheck my thinking once again, what do you think? Anything
+> > else we could miss?
+>
+> Yeah, the ->group_leader solution seems the most promising. It seems
+> correct (ignoring barriers) and should work for all supported cases:
+>
+> 1) when g is group_leader
+> 2) when g is current
+
+OK, thanks.
+
+I'll try to investigate if we can remove
+
+	leader->group_leader = tsk;
+
+from de_thread(). In fact I already thought about this change a long
+ago without any connection to while_each_thread(). This assignment
+looks "assymetrical" compared to other threads we kill. But we did
+have a reason (reasons?). Hopefully, the only really important reason
+was already removed by 087806b1.
+
+Oleg.
+
