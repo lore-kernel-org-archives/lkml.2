@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab2ASTiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 14:38:17 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64051 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab2ASTiN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 14:38:13 -0500
+	id S932814Ab2ASTjC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 14:39:02 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48296 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932675Ab2ASTjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 14:39:00 -0500
+Date: Thu, 19 Jan 2012 20:38:20 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Sergei Trofimovich <slyich@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Borislav Petkov <bp@amd64.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "prasad@linux.vnet.ibm.com" <prasad@linux.vnet.ibm.com>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "gouders@et.bocholt.fh-gelsenkirchen.de" 
+	<gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Marcos Souza <marcos.mage@gmail.com>,
+        "justinmattock@gmail.com" <justinmattock@gmail.com>,
+        Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: [PATCH] mce: fix warning messages about static struct mce_device
+Message-ID: <20120119193820.GA28362@elte.hu>
+References: <4F181ACF.20505@linux.vnet.ibm.com>
+ <Pine.LNX.4.44L0.1201191007541.1447-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7Gigcvurpa5J9FHrrdFkBHw7GSrP=e6nT4FFweGZz4+fg@mail.gmail.com>
-References: <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
- <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
- <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
- <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
- <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
- <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
- <CAObL_7FsNQaPQg-3=AO9RuMNZZsRgDSJYPhPevDKERws9vQJWg@mail.gmail.com>
- <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk> <CA+55aFyZ-=4J1hVSAJiBiZKgpvuh-t54KPjLijRmU=cBtdi3-w@mail.gmail.com>
- <CAObL_7Gigcvurpa5J9FHrrdFkBHw7GSrP=e6nT4FFweGZz4+fg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 19 Jan 2012 11:37:50 -0800
-X-Google-Sender-Auth: Xt_HjK5W1w4_2x5g3eSft33z5sE
-Message-ID: <CA+55aFyJoLMA_uJfRfy2obCfbqs=RVLkHch67h-fQ=0DCbrS0w@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Jamie Lokier <jamie@shareable.org>, Indan Zupancic <indan@nul.nu>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1201191007541.1447-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 11:30 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->
-> Unless you're writing a debugger and you want to disassemble the code
-> that's being executed (i.e. normal code, not a system call).  I wonder
-> how gdb guesses whether the cpu is in long mode.
 
-Yes, if you need to disassemble user space you would need to figure
-out the mode.
+* Alan Stern <stern@rowland.harvard.edu> wrote:
 
-I would suggest looking at 'rip/rsp' first, though, and just say that
-if it's >32-bit, it's flat mode. Only if both rsp and rip fit in 32
-bits should you even bother start guessing.
+> Or to put it another way, even though no code takes references 
+> to these device structures (can you really guarantee that even 
+> now?), [...]
 
-Because technically I suspect you really do need to look it up in the
-segment descriptors, and I don't think we have that kind of interface
-(nor do I think we really want to expose one).
+That's a good question. Do these devices get exposed to 
+user-space access via sysfs somehow, where such an extra 
+reference could materialize?
 
-                          Linus
+> [...] how do you prevent references being taken in future 
+> versions of the kernel?  Calling memset while there still are 
+> outstanding references very definitely _is_ a bug.
+
+Unless there's a reference i missed the 'refcounting' here is 
+very simple and does not exist at all.
+
+IMHO you should not impose complexity and abstraction on code 
+just because. Now i don't care much about the extra pointer, but 
+the [NR_CPUS] array was doubly ugly (and Greg promised to fix 
+that, so no problems from me).
+
+So the conclusion is that the reasons stated here don't really 
+apply. The one i mentioned *does* apply: the original bug was 
+due to sloppy life time rules of this driver buffer, and that 
+came back to bite us. Making it dynamic solves that kind of 
+problem. In that sense the warning is fine too.
+
+Thanks,
+
+	Ingo
