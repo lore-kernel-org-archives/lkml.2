@@ -1,167 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab2ASQL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:11:57 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:47797 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab2ASQLx (ORCPT
+	id S932486Ab2ASQM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:12:59 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52923 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171Ab2ASQM5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:11:53 -0500
-Date: Thu, 19 Jan 2012 16:11:27 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Chris Evans <scarybeasts@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-Message-ID: <20120119161127.GP7180@jl-vm1.vm.bytemark.co.uk>
-References: <20120118015013.GR11715@one.firstfloor.org>
- <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
- <20120118022217.GS11715@one.firstfloor.org>
- <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
- <CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com>
- <fbc1f44dffce6079fa7ec827c1b1e40e.squirrel@webmail.greenhost.nl>
- <CAMnK33WAUA7bNFKA8BmLHq9+sdMV9xeOvZ8T1iZSH1GFKNe3ZQ@mail.gmail.com>
- <54555afe915a79f7e77ee0f44ee6cb67.squirrel@webmail.greenhost.nl>
- <CAMnK33WUTvZER9XoGAKsuh27iF3W6qMfJ3nxWfgSa4-jouO=Sw@mail.gmail.com>
- <35485e9b3a228fc3b19e93066f5a11df.squirrel@webmail.greenhost.nl>
+	Thu, 19 Jan 2012 11:12:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35485e9b3a228fc3b19e93066f5a11df.squirrel@webmail.greenhost.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+Date: Thu, 19 Jan 2012 08:12:57 -0800
+X-Google-Sender-Auth: rF0wrtWLDxAkDWqk8pFRH-g5shg
+Message-ID: <CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: Yinghai Lu <yinghai@kernel.org>
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Indan Zupancic wrote:
-> On Thu, January 19, 2012 09:16, Chris Evans wrote:
-> > On Wed, Jan 18, 2012 at 4:14 PM, Indan Zupancic <indan@nul.nu> wrote:
-> >> On Wed, January 18, 2012 22:13, Chris Evans wrote:
-> >>> On Wed, Jan 18, 2012 at 4:12 AM, Indan Zupancic <indan@nul.nu> wrote:
-> >>>> On Wed, January 18, 2012 06:43, Chris Evans wrote:
-> >>>>> 2) Tracee traps
-> >>>>> 2b) Tracee could take a SIGKILL here
-> >>>>> 3) Tracer looks at registers; bad syscall
-> >>>>> 3b) Or tracee could take a SIGKILL here
-> >>>>> 4) The only way to stop the bad syscall from executing is to rewrite
-> >>>>> orig_eax (PTRACE_CONT + SIGKILL only kills the process after the
-> >>>>> syscall has finished)
-> >>>>
-> >>>> Yes, we rewrite it to -1.
-> >>>>
-> >>>>> 5) Disaster: the tracee took a SIGKILL so any attempt to address it by
-> >>>>> pid (such as PTRACE_SETREGS) fails.
-> >>>>
-> >>>> I assume that if a task can execute system calls and we get ptrace events
-> >>>> for that, that we can do other ptrace operations too. Are you saying that
-> >>>> the kernel has this ptrace gap between SIGKILL and task exit where ptrace
-> >>>> doesn't work but the task continues executing system calls? That would be
-> >>>> a huge bug, but it seems very unlikely too, as the task is stopped and
-> >>>> shouldn't be able to disappear till it is continued by the tracer.
-> >>>>
-> >>>> I mean, really? That would be stupid.
-> >>
-> >> Okay, I tested this scenario and you're right, we're screwed.
-> >>
-> >> What the hell guys?
-> >
-> > Steady on :) ptrace() has never been sold as a technology upon which
-> > its safe to build security solutions.
-> 
-> Well, that can be said of pretty much all kernel functionality.
-> That is no excuse for crazy behaviour.
-> 
-> I more or less fixed it by turning all SIGKILLs into SIGTERMs.
-> Perhaps I should use a more obscure signal instead.
-> 
-> >> What about other PID checks in the kernel, are they still
-> >> safe if the process looks dead but is still active? Or is it a ptrace-only
-> >> problem?
-> >>
-> >>>> If true we have to work around it by disallowing SIGKILL and just sending
-> >>>> them ourselves within the jail. Meh.
-> >>
-> >> I guess this helps a bit. It doesn't prevent external signals, but prisoners
-> >> don't have control over that.
-> >
-> > Well.... a prisoner may be able to play other tricks:
-> > - Allocate lots of memory... kernel may start spraying around SIGKILLs
-> > - Sending SIGKILL via prctl()
-> 
-> prctl is disallowed within our jail. Did you had PR_SET_PDEATHSIG in mind?
-> But doesn't the tracer become the parent when ptracing or not for this?
-> Or were you thinking about enabling SECCOMP and counting on the SIGKILL
-> being process-wide instead of thread-specific?
-> 
-> > - Sending SIGKILL via fcntl()
-> 
-> I haven't written the fcntl demultiplexor yet, but I missed fcntl could
-> be used for sending signals. I knew there was whacky stuff in there, but
-> didn't expect it to be that bad. Thanks.
-> 
-> > - Sending SIGKILL via clone()
-> 
-> How? And can you send it to another process than yourself?
-> 
-> >
-> >>
-> >> Is this SIGKILL specific or is it true for all task ending signals?
-> >
-> > Can't remember - try it?
-> 
-> Tried: It's safe with SIGTERM, so I assume the others are fine too.
-> I'll double check though...
-> 
-> >>
-> >>>> How will you avoid file path races with BPF?
-> >>>
-> >>> There is typically no need for file-path based access control in an FTP server.
-> >>> Take for example anonymous FTP, which will typically be inside a
-> >>> chroot() to /var/ftp. Inside that filesystem tree -- if you can open()
-> >>> it, you can have it.
-> >>
-> >> Ah, you count on having root access. We don't.
-> >>
-> >> Do you know any more crazy security destroying holes?
-> >
-> > Try spraying SIGCONT and / or SIGSTOP at tracees. It may be possible
-> > to confuse the tracer about whether a SIGTRAP event is syscall entry
-> > or exit.
-> 
-> Yes, heard about that weirdness before, but it's all ignored. We're
-> using PTRACE_O_TRACESYSGOOD.
-> 
-> > Try doing an execve() that fails. May cause similar state confusion in
-> > the tracer.
-> 
-> Our jailer pretty much ignores all signals and only handles syscalls
-> and task exits. We actually check execve's return value to know if we
-> have to do our stuff or not.
+2012/1/19 Rogério Brito <rbrito@ime.usp.br>:
+>> yes, please esp need patch.
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=e3a7a7d4ea1b6a2be82ef454096aff7856c14de5
+>
+> With CONFIG_BOOT_PRINTK_DELAY enabled and with "boot_delay=500" on the
+> command line, I checked out the for-pci2 branch of your tree and this
+> is what I get:
+>
+>    http://youtu.be/bWEme7iFD7g
+>
+> If you want me to, say, recompile Linus's vanilla tree with only a few
+> selected patches, please let me know. I will now try to test some
+> other combinations of the options passed to the kernel.
 
-Take a look at the file README-linux-ptrace in recent strace Git.
-(Thanks Denys!)
+resource allocating for transparent bridge resizing works well and as expected.
 
-It describes some *really* ugly things Linux does to ptrace on execve
-when there are threads: The most exciting being the return value is
-sent to a different tid than called execve(), and other tids magically
-disappear without notification.
+looks like quirk for usb hand off cause problem.
 
-You can use PTRACE_O_TRACEEXEC to see if the execve() succeeds, btw.
-It has the useful side-effect of preventing the legacy behaviour of
-SIGTRAP being sent as a normal queued signal after successful execve().
+can you try another branch in my tree?
 
--- Jamie
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+usb_smi_disable_early
+
+it will do usb hand off very early.
+
+you can do:
+
+mkdir linux-2.6 || exit -1
+cd linux-2.6
+
+git init-db
+# Add Linus's tree as a remote
+git remote add linus
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+
+git remote add yinghai
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+
+git remote update
+
+later will only do:
+
+git remote update
+
+git checkout -b rb_2012_01_19a linus/master
+git merge yinghai/usb_smi_disable_early
+
+
+Thanks
+
+Yinghai
