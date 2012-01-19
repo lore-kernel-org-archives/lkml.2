@@ -1,229 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab2ASOkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 09:40:37 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:36711 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab2ASOkd (ORCPT
+	id S1753246Ab2ASOlq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 09:41:46 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:34772 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751437Ab2ASOlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 09:40:33 -0500
-Message-ID: <4F182B59.9000807@linux.vnet.ibm.com>
-Date: Thu, 19 Jan 2012 20:10:25 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Thu, 19 Jan 2012 09:41:44 -0500
+Date: Thu, 19 Jan 2012 09:41:41 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH 2/2] jump labels/x86: Use etiher 5 byte or 2 byte jumps
+Message-ID: <20120119144141.GA547@Krystal>
+References: <20120118195340.767928915@goodmis.org> <20120118195926.797694014@goodmis.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Tejun Heo <tj@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
-        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
-Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
- to unlock_system_sleep()
-References: <201201172345.15010.rjw@sisk.pl> <4F17217E.5040805@linux.vnet.ibm.com> <4F172B8D.8050408@linux.vnet.ibm.com> <201201182322.58301.rjw@sisk.pl>
-In-Reply-To: <201201182322.58301.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011904-5140-0000-0000-0000009E09A6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120118195926.797694014@goodmis.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 09:03:57 up 421 days, 19:07,  3 users,  load average: 0.07, 0.03,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 03:52 AM, Rafael J. Wysocki wrote:
-
-> On Wednesday, January 18, 2012, Srivatsa S. Bhat wrote:
->> On 01/19/2012 01:16 AM, Srivatsa S. Bhat wrote:
->>
->>> On 01/19/2012 01:00 AM, Tejun Heo wrote:
->>>
->>>> Hello,
->>>>
->>>> On Thu, Jan 19, 2012 at 12:52:32AM +0530, Srivatsa S. Bhat wrote:
->>>>> Somehow I don't think its a hack, based on my perception as described
->>>>> above. But feel free to prove me wrong :-)
->>>>
->>>> Thanks for the explanation.  Yeah, I agree and it's much simpler this
->>>> way, which is nice.  So, in short, because freezing state can't change
->>>> across lock_system_sleep(), there's no reason to check for freezing
->>>> state on unlock and this nicely resolves the freezer problem together.
->>>>
->>>
->>>
->>> Absolutely!
->>>
->>>> The only thing to be careful is, then, we need to set and clear SKIP
->>>> inside pm_mutex.
->>>>
->>>
->>>
->>> Not exactly. We need to set SKIP before grabbing pm_mutex and clear it
->>> inside pm_mutex. The reason is that we decided to set SKIP in the first
->>> place just to avoid the freezer from declaring failure when we are
->>> blocked on pm_mutex. If we move it to *after* mutex_lock(&pm_mutex), that
->>> original intention itself is not satisfied, and we will hit freezing
->>> failures - IOW making the set and clear exercise useless!
->>>
->>> So, something like this should work perfectly:
->>>
->>> lock_system_sleep()
->>> {
->>> 	freezer_do_not_count();
->>> 	mutex_lock(&pm_mutex);
->>> 	current->flags &= ~PF_FREEZER_SKIP;
->>> }
->>>
->>> But in the interest of making the code look a bit symmetric, we can do:
->>>
->>> lock_system_sleep()
->>> {
->>> 	freezer_do_not_count();
->>> 	mutex_lock(&pm_mutex);
->>> }
->>>
->>> unlock_system_sleep()
->>> {
->>> 	current->flags &= ~PF_FREEZER_SKIP;
->>> 	mutex_unlock(&pm_mutex);
->>> }
->>>  
->>
->>
->> So how about this patch, with the comment updated?
->> (and the changelog updated as well to reflect the movement of code)
->>
->> ---
->> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
->>
->> Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
->> [un]lock_system_sleep() APIs" introduced an undesirable change in the
->> behaviour of unlock_system_sleep() since freezer_count() internally calls
->> try_to_freeze() - which we don't need in unlock_system_sleep().
->>
->> And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
->> [un]lock_system_sleep()" made these APIs wide-spread. This caused a
->> regression in suspend-to-disk where snapshot_read() and snapshot_write()
->> were getting frozen due to the try_to_freeze embedded in
->> unlock_system_sleep(), since these functions were invoked when the freezing
->> condition was still in effect.
->>
->> Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
->> and dropping the try_to_freeze() part. Not only will this fix the
->> regression but this will also ensure that the API only does what it is
->> intended to do, and nothing more, under the hood.
->>
->> While at it, make the code more correct and robust by ensuring that the
->> PF_FREEZER_SKIP flag gets cleared with pm_mutex held, to avoid a race with
->> the freezer.
->>
->> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> So, I'd prefer lock_system_sleep() to be open-coded too, to
-> avoid situations in which someone changes freezer_do_not_count()
-> and freezer_count() leaving unmodified unlock_system_sleep() behind.
->
+> Have the jump labels add a "jmp" in the assembly instead
+> of a default nop. This will cause the assembler to put in
+> either a 2 byte or 5 byte jmp depending on where the target
+> lable is.
+> 
+> Then at compile time, the update_jump_label code will replace
+> the jmps with either 2 or 5 byte nops.
+> 
+> On boot up, the code can be examined to see if the jump label
+> uses either a 2 or 5 byte nop and replace it.
+> 
+> By allowing the jump labels to be 2 bytes, it speeds up the
+> nops, not only 2 byte nops are faster than 5 byte nops, but also
+> because it saves on cache foot print.
+> 
+>    text    data     bss     dec     hex filename
+> 13403667 3666856 2998272 20068795 13239bb ../nobackup/mxtest/vmlinux-old
+> 13398536 3666856 2998272 20063664 13225b0 ../nobackup/mxtest/vmlinux-new
+> 
+> Converting the current v3.2 trace points saved 5,131 bytes.
+> As more places use jump labels, this will have a bigger savings.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/Kconfig                  |    1 +
+>  arch/x86/include/asm/jump_label.h |    2 +-
+>  arch/x86/kernel/jump_label.c      |   86 ++++++++++++++++++++++++++++++++++---
+>  3 files changed, 81 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index efb4294..b5004c1 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -61,6 +61,7 @@ config X86
+>  	select HAVE_ARCH_KMEMCHECK
+>  	select HAVE_USER_RETURN_NOTIFIER
+>  	select HAVE_ARCH_JUMP_LABEL
+> +	select HAVE_BUILD_TIME_JUMP_LABEL
+>  	select HAVE_TEXT_POKE_SMP
+>  	select HAVE_GENERIC_HARDIRQS
+>  	select HAVE_SPARSE_IRQ
+> diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+> index a32b18c..872b3e1 100644
+> --- a/arch/x86/include/asm/jump_label.h
+> +++ b/arch/x86/include/asm/jump_label.h
+> @@ -14,7 +14,7 @@
+>  static __always_inline bool arch_static_branch(struct jump_label_key *key)
+>  {
+>  	asm goto("1:"
+> -		JUMP_LABEL_INITIAL_NOP
+> +		"jmp %l[l_yes]\n"
 
+Is it possible that the compiler choose a jump that is not 2 or 5-byte ?
+e.g. a jmp rel16 (e9 opcode) on 32-bit x86, or any of the other
+instruction listed under the JMP-Jump instruction in the Intel insn
+manual ?
 
-Hehe, actually, I had left lock_system_sleep() as it is, intentionally, due to
-a far-fetched idea to keep the code sane: I felt that people who go through
-this code would naturally feel tempted to replace any open-coded stuff (if
-possible) with the appropriate function call. And my rationale was that when
-they see that lock_system_sleep() has a function call but
-unlock_system_sleep() has been open-coded, they would immediately know that
-this was not yet another case of "oh I wasn't aware of this function,
-hence I open-coded it", but it was rather "I was very much aware of the
-available functions, but I chose to open-code it intentionally - so touch it
-only if you really know what you are doing" :-)
+>  		".pushsection __jump_table,  \"aw\" \n\t"
+>  		_ASM_ALIGN "\n\t"
+>  		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+> diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+> index ea9d5f2f..d5b84de 100644
+> --- a/arch/x86/kernel/jump_label.c
+> +++ b/arch/x86/kernel/jump_label.c
+> @@ -16,12 +16,27 @@
+>  
+>  #ifdef HAVE_JUMP_LABEL
+>  
+> +static unsigned char nop_short[] = { P6_NOP2 };
+> +
+> +/* These are the nops added at compile time */
+> +#ifdef CONFIG_X86_32
+> +static unsigned char default_nop[5] = { 0x3e, 0x8d, 0x74, 0x26, 0x00 };
+> +#else
+> +static unsigned char default_nop[5] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
+> +#endif
+> +
+> +static int update_nops;
+> +
+>  union jump_code_union {
+>  	char code[JUMP_LABEL_NOP_SIZE];
+>  	struct {
+>  		char jump;
+>  		int offset;
+> -	} __attribute__((packed));
+> +	} __packed;
+> +	struct {
+> +		char jump_short;
+> +		char offset_short;
+> +	} __packed;
+>  };
+>  
+>  static void __jump_label_transform(struct jump_entry *entry,
+> @@ -29,20 +44,70 @@ static void __jump_label_transform(struct jump_entry *entry,
+>  				   void *(*poker)(void *, const void *, size_t))
+>  {
+>  	union jump_code_union code;
+> +	unsigned char nop;
+> +	unsigned char op;
+> +	unsigned size;
+> +	void *ip = (void *)entry->code;
+> +	void *ideal = (void *)ideal_nops[NOP_ATOMIC5];
 
-And I guess, now that job of guarding the code from "obvious code cleanups"
-like that would be done by the comment I added as per Tejun's suggestion.
-And moreover, your point to open-code in lock_system_sleep() sounds more
-compelling than my far-fetched idea :-) So okay, I will open-code it.. 
+"void *" should possibly be "unsigned char *" here to respect the nop
+place-holder typing.
 
-> Also, have you actually tested this?
+> +
+> +	/* Use probe_kernel_read()? */
+> +	op = *(unsigned char *)ip;
+> +	nop = ideal_nops[NOP_ATOMIC5][0];
+>  
+>  	if (type == JUMP_LABEL_ENABLE) {
+> -		code.jump = 0xe9;
+> -		code.offset = entry->target -
+> -				(entry->code + JUMP_LABEL_NOP_SIZE);
+> -	} else
+> -		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
+> +		if (op == 0xe9 || op == 0xeb)
+> +			/* Already enabled. Warn? */
 
+This could be caused by failure to run the link-time script, or running
+the transform twice. A warning would indeed be welcome, as this should
+never happen.
 
-Oh I almost forgot to mention: I have not specifically tested this with the
-userspace s2disk utility (part of uswsusp/suspend-utils package) as such.
-I have only tested it in general (by invoking hibernate by writing to
-/sys/power/disk, and testing different levels of pm_test framework etc) to
-ensure that this patch doesn't break anything else.
-So, any help with testing the userspace utilities would be great!
+> +			return;
+> +
+> +		if (memcmp(ip, nop_short, 2) == 0) {
+> +			size = 2;
+> +			code.jump_short = 0xeb;
+> +			code.offset = entry->target -
+> +				(entry->code + 2);
+> +			/* Check for overflow ? */
+> +		} else if (memcmp(ip, ideal, 5) == 0 ||
+> +			   memcmp(ip, default_nop, 5)) {
+> +			size = JUMP_LABEL_NOP_SIZE;
+> +			code.jump = 0xe9;
+> +			code.offset = entry->target - (entry->code + size);
+> +		} else
+> +			BUG();
+>  
+> -	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
+> +	} else {
+> +		/* Check if already disabled */
+> +		if (memcmp(ip, nop_short, 2) == 0)
+> +			return;
+> +
+> +		if (memcmp(ip, ideal, 5) == 0)
+> +			return;
+> +
+> +		/* This may need to update from default to ideal */
+> +		if (update_nops && memcmp(ip, default_nop, 5) == 0) {
+> +			/* Set to the ideal nop */
+> +			size = JUMP_LABEL_NOP_SIZE;
+> +			memcpy(&code, ideal_nops[NOP_ATOMIC5], size);
 
-So Rafael, could you please check if the following patch solves the
-regression for you? Thanks a lot!
+whiteline.
 
----
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
+> +
+> +		} else if (op == 0xe9) {
+> +			/* Replace a 5 byte jmp */
+> +			size = JUMP_LABEL_NOP_SIZE;
+> +			memcpy(&code, ideal_nops[NOP_ATOMIC5], size);
+> +		} else if (op == 0xeb) {
+> +			/* Replace a 2 byte jmp */
+> +			size = 2;
+> +			memcpy(&code, nop_short, size);
+> +		} else
+> +			BUG();
+> +	}
 
-Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
-[un]lock_system_sleep() APIs" introduced an undesirable change in the
-behaviour of unlock_system_sleep() since freezer_count() internally calls
-try_to_freeze() - which we don't need in unlock_system_sleep().
+Thanks,
 
-And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
-[un]lock_system_sleep()" made these APIs wide-spread. This caused a
-regression in suspend-to-disk where snapshot_read() and snapshot_write()
-were getting frozen due to the try_to_freeze embedded in
-unlock_system_sleep(), since these functions were invoked when the freezing
-condition was still in effect.
+Mathieu
 
-Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
-and dropping the try_to_freeze() part. Not only will this fix the
-regression but this will also ensure that the API only does what it is
-intended to do, and nothing more, under the hood.
+> +
+> +	(*poker)((void *)entry->code, &code, size);
+>  }
+>  
+>  void arch_jump_label_transform(struct jump_entry *entry,
+>  			       enum jump_label_type type)
+>  {
+> +	/* All nops should be updated to the ideal nop by now */
+> +	update_nops = 0;
+> +
+>  	get_online_cpus();
+>  	mutex_lock(&text_mutex);
+>  	__jump_label_transform(entry, type, text_poke_smp);
+> @@ -53,6 +118,13 @@ void arch_jump_label_transform(struct jump_entry *entry,
+>  void arch_jump_label_transform_static(struct jump_entry *entry,
+>  				      enum jump_label_type type)
+>  {
+> +	/*
+> +	 * If the default nop does not equal the ideal nop, then
+> +	 * update them.
+> +	 */
+> +	if (memcmp(default_nop, ideal_nops[NOP_ATOMIC5], 5) != 0)
+> +		update_nops = 1;
+> +
+>  	__jump_label_transform(entry, type, text_poke_early);
+>  }
+>  
+> -- 
+> 1.7.8.3
+> 
+> 
 
-While at it, make the code more correct and robust by ensuring that the
-PF_FREEZER_SKIP flag gets cleared with pm_mutex held, to avoid a race with
-the freezer.
-
-Also, to be on the safer side, open-code freezer_do_not_count() as well
-(inside lock_system_sleep()), to ensure that any unrelated modification to
-freezer[_do_not]_count() does not break things again!
-
-Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- include/linux/suspend.h |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 95040cc..91784a4 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -357,14 +357,29 @@ extern bool pm_save_wakeup_count(unsigned int count);
- 
- static inline void lock_system_sleep(void)
- {
--	freezer_do_not_count();
-+	current->flags |= PF_FREEZER_SKIP;
- 	mutex_lock(&pm_mutex);
- }
- 
- static inline void unlock_system_sleep(void)
- {
-+	/*
-+	 * Don't use freezer_count() because we don't want the call to
-+	 * try_to_freeze() here.
-+	 *
-+	 * Reason:
-+	 * Fundamentally, we just don't need it, because freezing condition
-+	 * doesn't come into effect until we release the pm_mutex lock,
-+	 * since the freezer always works with pm_mutex held.
-+	 *
-+	 * More importantly, in the case of hibernation,
-+	 * unlock_system_sleep() gets called in snapshot_read() and
-+	 * snapshot_write() when the freezing condition is still in effect.
-+	 * Which means, if we use try_to_freeze() here, it would make them
-+	 * enter the refrigerator, thus causing hibernation to lockup.
-+	 */
-+	current->flags &= ~PF_FREEZER_SKIP;
- 	mutex_unlock(&pm_mutex);
--	freezer_count();
- }
- 
- #else /* !CONFIG_PM_SLEEP */
-
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
