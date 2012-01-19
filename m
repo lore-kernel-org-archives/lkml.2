@@ -1,88 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab2ASBU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 20:20:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36592 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756397Ab2ASBUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 20:20:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="98072266"
-Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
-From: Shaohua Li <shaohua.li@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, jmoyer@redhat.com, zhu.yanhai@gmail.com
-In-Reply-To: <20120118130425.GA30204@redhat.com>
-References: <20120108221615.GA4198@dastard>
-	 <1326071375.22361.543.camel@sli10-conroe>
-	 <20120115224532.GD3174@redhat.com>
-	 <1326688590.22361.578.camel@sli10-conroe>
-	 <20120116071132.GE3174@redhat.com>
-	 <1326700541.22361.607.camel@sli10-conroe>
-	 <20120116082927.GF3174@redhat.com>
-	 <1326762388.22361.613.camel@sli10-conroe>
-	 <20120117090220.GB15511@redhat.com>
-	 <1326849637.22361.616.camel@sli10-conroe>
-	 <20120118130425.GA30204@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Jan 2012 09:21:06 +0800
-Message-ID: <1326936066.22361.646.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1756603Ab2ASBVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 20:21:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50868 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab2ASBVV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 20:21:21 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=hWLV2ybA3-MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=3HDBlxybAAAA:8 a=mfsAAkI7Veszhf-8CM0A:9 a=oFz5ZeeIvxrJ2XDWv20A:7 a=PUjeQqilurYA:10 a=m2JXGx9I94EA:10 a=wsGCWCuoV-xCaadu:21 a=0JdBYekHvc0n7tz-:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326936079.17534.97.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 3/5] nf_log: Export dump_packet() and dump_mac_header()
+ functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Richard Weinberger <rw@linutronix.de>
+Cc: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Date: Wed, 18 Jan 2012 20:21:19 -0500
+In-Reply-To: <1326926610-17830-4-git-send-email-rw@linutronix.de>
+References: <1326926610-17830-1-git-send-email-rw@linutronix.de>
+	 <1326926610-17830-4-git-send-email-rw@linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-18 at 08:04 -0500, Vivek Goyal wrote:
-> On Wed, Jan 18, 2012 at 09:20:37AM +0800, Shaohua Li wrote:
+On Wed, 2012-01-18 at 23:43 +0100, Richard Weinberger wrote:
+> From: Richard Weinberger <richard@nod.at>
 > 
-> [..]
-> > > I think trying to make to make CFQ work (Or trying to come up with CFQ
-> > > like IOPS scheduler) on these fast devices might not lead us anywhere.
-> > If only performance matters, I'd rather use noop for ssd. There is
-> > requirement to have cgroup support (maybe ioprio) to give different
-> > tasks different bandwidth.
+
+Let me guess. You left out the change logs in protest to SOPA and PIPA?
+
+-- Steve
+
 > 
-> Sure but the issue is that we need to idle in an effort to prioritize
-> a task and idling kills performance. So you can implement something but
-> I have doubts that on a fast hardware it is going to be very useful.
-I didn't do idle in fiops. If workload iodepth is low, this will cause
-fairness problem and I just leave it be. There is no way to make low
-iodepth workload fair without performance sacrifice. CFQ for SSD has the
-same problem too.
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  include/net/netfilter/nf_log.h |   19 +++++++++++++++++++
+>  net/ipv4/netfilter/ipt_LOG.c   |   12 +++++++-----
+>  net/ipv6/netfilter/ip6t_LOG.c  |   12 +++++++-----
+>  3 files changed, 33 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/net/netfilter/nf_log.h b/include/net/netfilter/nf_log.h
+> index e991bd0..c0f2b27 100644
+> --- a/include/net/netfilter/nf_log.h
+> +++ b/include/net/netfilter/nf_log.h
+> @@ -61,5 +61,24 @@ void nf_log_packet(u_int8_t pf,
+>  		   const struct net_device *out,
+>  		   const struct nf_loginfo *li,
+>  		   const char *fmt, ...);
+> +struct sbuff;
+> +void ipt_dump_packet(struct sbuff *m,
+> +	const struct nf_loginfo *info,
+> +	const struct sk_buff *skb,
+> +	unsigned int iphoff);
+> +
+> +void ipt_dump_mac_header(struct sbuff *m,
+> +	const struct nf_loginfo *info,
+> +	const struct sk_buff *skb);
+> +
+> +void ip6t_dump_packet(struct sbuff *m,
+> +	const struct nf_loginfo *info,
+> +	const struct sk_buff *skb,
+> +	unsigned int iphoff,
+> +	int recurse);
+> +
+> +void ip6t_dump_mac_header(struct sbuff *m,
+> +	const struct nf_loginfo *info,
+> +	const struct sk_buff *skb);
+>  
+>  #endif /* _NF_LOG_H */
+> diff --git a/net/ipv4/netfilter/ipt_LOG.c b/net/ipv4/netfilter/ipt_LOG.c
+> index d76d6c9..8ec9d2b 100644
+> --- a/net/ipv4/netfilter/ipt_LOG.c
+> +++ b/net/ipv4/netfilter/ipt_LOG.c
+> @@ -31,7 +31,7 @@ MODULE_AUTHOR("Netfilter Core Team <coreteam@netfilter.org>");
+>  MODULE_DESCRIPTION("Xtables: IPv4 packet logging to syslog");
+>  
+>  /* One level of recursion won't kill us */
+> -static void dump_packet(struct sbuff *m,
+> +void ipt_dump_packet(struct sbuff *m,
+>  			const struct nf_loginfo *info,
+>  			const struct sk_buff *skb,
+>  			unsigned int iphoff)
+> @@ -270,7 +270,7 @@ static void dump_packet(struct sbuff *m,
+>  			/* Max length: 3+maxlen */
+>  			if (!iphoff) { /* Only recurse once. */
+>  				sb_add(m, "[");
+> -				dump_packet(m, info, skb,
+> +				ipt_dump_packet(m, info, skb,
+>  					    iphoff + ih->ihl*4+sizeof(_icmph));
+>  				sb_add(m, "] ");
+>  			}
+> @@ -362,8 +362,9 @@ static void dump_packet(struct sbuff *m,
+>  	/* maxlen =  IP + ICMP +  IP + max(TCP,UDP,ICMP,unknown) */
+>  	/* maxlen = 230+   91  + 230 + 252 = 803 */
+>  }
+> +EXPORT_SYMBOL_GPL(ipt_dump_packet);
+>  
+> -static void dump_mac_header(struct sbuff *m,
+> +void ipt_dump_mac_header(struct sbuff *m,
+>  			    const struct nf_loginfo *info,
+>  			    const struct sk_buff *skb)
+>  {
+> @@ -399,6 +400,7 @@ fallback:
+>  	}
+>  	sb_add(m, " ");
+>  }
+> +EXPORT_SYMBOL_GPL(ipt_dump_mac_header);
+>  
+>  static struct nf_loginfo default_loginfo = {
+>  	.type	= NF_LOG_TYPE_LOG,
+> @@ -443,9 +445,9 @@ ipt_log_packet(u_int8_t pf,
+>  #endif
+>  
+>  	if (in != NULL)
+> -		dump_mac_header(m, loginfo, skb);
+> +		ipt_dump_mac_header(m, loginfo, skb);
+>  
+> -	dump_packet(m, loginfo, skb, 0);
+> +	ipt_dump_packet(m, loginfo, skb, 0);
+>  
+>  	sb_close(m);
+>  }
+> diff --git a/net/ipv6/netfilter/ip6t_LOG.c b/net/ipv6/netfilter/ip6t_LOG.c
+> index e6af8d7..c6abacb 100644
+> --- a/net/ipv6/netfilter/ip6t_LOG.c
+> +++ b/net/ipv6/netfilter/ip6t_LOG.c
+> @@ -34,7 +34,7 @@ struct in_device;
+>  #include <linux/netfilter_ipv6/ip6t_LOG.h>
+>  
+>  /* One level of recursion won't kill us */
+> -static void dump_packet(struct sbuff *m,
+> +void ip6t_dump_packet(struct sbuff *m,
+>  			const struct nf_loginfo *info,
+>  			const struct sk_buff *skb, unsigned int ip6hoff,
+>  			int recurse)
+> @@ -341,7 +341,7 @@ static void dump_packet(struct sbuff *m,
+>  			/* Max length: 3+maxlen */
+>  			if (recurse) {
+>  				sb_add(m, "[");
+> -				dump_packet(m, info, skb,
+> +				ip6t_dump_packet(m, info, skb,
+>  					    ptr + sizeof(_icmp6h), 0);
+>  				sb_add(m, "] ");
+>  			}
+> @@ -371,8 +371,9 @@ static void dump_packet(struct sbuff *m,
+>  	if (!recurse && skb->mark)
+>  		sb_add(m, "MARK=0x%x ", skb->mark);
+>  }
+> +EXPORT_SYMBOL(ip6t_dump_packet);
+>  
+> -static void dump_mac_header(struct sbuff *m,
+> +void ip6t_dump_mac_header(struct sbuff *m,
+>  			    const struct nf_loginfo *info,
+>  			    const struct sk_buff *skb)
+>  {
+> @@ -422,6 +423,7 @@ fallback:
+>  	} else
+>  		sb_add(m, " ");
+>  }
+> +EXPORT_SYMBOL(ip6t_dump_mac_header);
+>  
+>  static struct nf_loginfo default_loginfo = {
+>  	.type	= NF_LOG_TYPE_LOG,
+> @@ -453,9 +455,9 @@ ip6t_log_packet(u_int8_t pf,
+>  	       out ? out->name : "");
+>  
+>  	if (in != NULL)
+> -		dump_mac_header(m, loginfo, skb);
+> +		ip6t_dump_mac_header(m, loginfo, skb);
+>  
+> -	dump_packet(m, loginfo, skb, skb_network_offset(skb), 1);
+> +	ip6t_dump_packet(m, loginfo, skb, skb_network_offset(skb), 1);
+>  
+>  	sb_close(m);
+>  }
 
-> Another issue is that with flash based storage, it can drive really deep
-> queue depths. If that's the case, then just ioscheduler can't solve the
-> prioritazaion issues (until and unless ioscheduler does not drive deep
-> queue depths and kills performance). We need some kind of cooperation
-> from device (like device understanding the notion of iopriority), so
-> that device can prioritize the requests and one need not to idle. That
-> way, we might be able to get service differentiation while getting
-> reasonable throughput.
-SSD is still like normal disk in terms of queue depth. Don't know the
-iodepth of pcie flash card. If the queue depth of such card is very big
-(I suppose there is a limitation, because after a critical point
-increasing queue depth doesn't increase device performance), we
-definitely need reconsider this.
-
-it would be great device let ioscheduler know more info. In my mind, I
-hope device can dynamatically adjust its queue depth. For example, in my
-ssd, if request size is 4k, I get max throughput with queue depth 32. If
-request size is 128k, just 2 queue depth is enough to get peek
-throughput. If device can stop fetching request after 2 128k requests
-pending, this will solve some fairness issues for low iodepth workload.
-Unfortunately device capacity for different request size highly depends
-on vendor. The fiops request size scale tries to solve the issue, but I
-still didn't find a good scale model for this yet.
-
-I suppose device can not do good prioritization if workload iodepth is
-low. If there are just few requests pending, nobody (device or
-ioscheduler) can do correct judgment in such case because there isn't
-enough info.
-
-Thanks,
-Shaohua
 
