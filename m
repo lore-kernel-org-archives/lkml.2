@@ -1,219 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754Ab2ASTNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 14:13:54 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37354 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932537Ab2ASTNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 14:13:52 -0500
-Date: Thu, 19 Jan 2012 11:13:37 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Simon Glass <sjg@chromium.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
-Message-ID: <20120119191337.GB2373@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1326826563-32215-1-git-send-email-sjg@chromium.org>
- <CAPnjgZ1g0Gf8ZCavAbmxjJXxxk9duf1ybbEUNo9L-DHBxyXx-g@mail.gmail.com>
- <20120118224304.GJ2431@linux.vnet.ibm.com>
- <201201190102.58788.rjw@sisk.pl>
- <20120119013731.GK2431@linux.vnet.ibm.com>
- <CAPnjgZ1zFHzihG51qHM-dk5Ou5vig0JL62LNFATmDwbQo_r+FQ@mail.gmail.com>
+	id S932758Ab2ASTOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 14:14:47 -0500
+Received: from mx1.gd-ms.com ([153.11.250.40]:33455 "EHLO mx1.gd-ms.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756762Ab2ASTOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 14:14:44 -0500
+In-Reply-To: <4F18584F.7060603@zytor.com>
+References: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>	<20120117195841.48fe8236@pyramind.ukuu.org.uk> <OFD4BB6876.6D903346-ON8525798A.00550E62-8525798A.005562A3@gdeb.com> <20120119154504.710e202e@pyramind.ukuu.org.uk> <OF8642E997.5ED041E1-ON8525798A.0056983A-8525798A.0056E05B@LocalDomain> <OF2B909250.6078896E-ON8525798A.0058FF49-8525798A.0061AEA1@gdeb.com> <4F18584F.7060603@zytor.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
+        michael.d.labriola@gmail.com, Ingo Molnar <mingo@elte.hu>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, support@versalogic.com,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPnjgZ1zFHzihG51qHM-dk5Ou5vig0JL62LNFATmDwbQo_r+FQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12011919-4242-0000-0000-0000008E7459
+Subject: Re: [PATCH] x86, reboot: skip DMI checks if reboot set by user
+X-KeepSent: E1B368BB:B6249713-8525798A:00692513;
+ type=4; name=$KeepSent
+Message-ID: <OFE1B368BB.B6249713-ON8525798A.00692513-8525798A.0069B44E@gdeb.com>
+From: Michael D Labriola <mlabriol@gdeb.com>
+Date: Thu, 19 Jan 2012 14:14:32 -0500
+X-GDMEncrypt: FALSE
+X-GDMMarking: NOT_SENSITIVE
+Content-Type: text/plain; charset="US-ASCII"
+X-GDM-EVAL: score: /30; hits: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 06:35:56PM -0800, Simon Glass wrote:
-> Hi Paul,
-> 
-> On Wed, Jan 18, 2012 at 5:37 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Jan 19, 2012 at 01:02:58AM +0100, Rafael J. Wysocki wrote:
-> >> On Wednesday, January 18, 2012, Paul E. McKenney wrote:
-> >> > On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
-> >> > > Hi Paul,
-> >> > >
-> >> > > On Wed, Jan 18, 2012 at 1:42 PM, Paul E. McKenney
-> >> > > <paulmck@linux.vnet.ibm.com> wrote:
-> >> > > > On Wed, Jan 18, 2012 at 01:08:13PM -0800, Simon Glass wrote:
-> >> > > >> [+cc Rafael J. Wysocki <rjw@sisk.pl> who I think wrote the wakeup.c code]
-> >> > > >>
-> >> > > >> Hi Alan, Paul,
-> >> > > >>
-> >> > > >> On Tue, Jan 17, 2012 at 8:17 PM, Paul E. McKenney
-> >> > > >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> > > >> > On Tue, Jan 17, 2012 at 08:10:36PM +0000, Alan Cox wrote:
-> >> > > >> >> On Tue, 17 Jan 2012 10:56:03 -0800
-> >> > > >> >> Simon Glass <sjg@chromium.org> wrote:
-> >> > > >> >>
-> >> > > >> >> > Since serial_core now does not make serial ports wake-up capable by
-> >> > > >> >> > default, add a parameter to support this feature in the 8250 UART.
-> >> > > >> >> > This is the only UART where I think this feature is useful.
-> >> > > >> >>
-> >> > > >> >> NAK
-> >> > > >> >>
-> >> > > >> >> Things should just work for users. Magic parameters is not an
-> >> > > >> >> improvement. If its a performance problem someone needs to fix the rcu
-> >> > > >> >> sync overhead or stop using rcu on that path.
-> >> > > >>
-> >> > > >> OK fair enough, I agree. Every level I move down the source tree
-> >> > > >> affects more people though.
-> >> > > >>
-> >> > > >> >
-> >> > > >> > I must say that I lack context here, even after looking at the patch,
-> >> > > >> > but the synchronize_rcu_expedited() primitives can be used if the latency
-> >> > > >> > of synchronize_rcu() is too large.
-> >> > > >> >
-> >> > > >>
-> >> > > >> Let me provide a bit of context. The serial_core code seems to be the
-> >> > > >> only place in the kernel that does this:
-> >> > > >>
-> >> > > >>               device_init_wakeup(tty_dev, 1);
-> >> > > >>               device_set_wakeup_enable(tty_dev, 0);
-> >> > > >>
-> >> > > >> The first call makes the device wakeup capable and enables wakeup, The
-> >> > > >> second call disabled wakeup.
-> >> > > >>
-> >> > > >> The code that removes the wakeup source looks like this:
-> >> > > >>
-> >> > > >> void wakeup_source_remove(struct wakeup_source *ws)
-> >> > > >> {
-> >> > > >>       if (WARN_ON(!ws))
-> >> > > >>               return;
-> >> > > >>
-> >> > > >>       spin_lock_irq(&events_lock);
-> >> > > >>       list_del_rcu(&ws->entry);
-> >> > > >>       spin_unlock_irq(&events_lock);
-> >> > > >>       synchronize_rcu();
-> >> > > >> }
-> >> > > >>
-> >> > > >> The sync is there because we are about to destroy the actual ws
-> >> > > >> structure (in wakeup_source_destroy()). I wonder if it should be in
-> >> > > >> wakeup_source_destroy() but that wouldn't help me anyway.
-> >> > > >>
-> >> > > >> synchronize_rcu_expedited() is a bit faster but not really fast
-> >> > > >> enough. Anyway surely people will complain if I put this in the wakeup
-> >> > > >> code - it will affect all wakeup users. It seems to me that the right
-> >> > > >> solution is to avoid enabling and then immediately disabling wakeup.
-> >> > > >
-> >> > > > Hmmm...  What hardware are you running this one?  Normally,
-> >> > > > synchronize_rcu_expedited() will be a couple of orders of magnitude
-> >> > > > faster than synchronize_rcu().
-> >> > > >
-> >> > > >> I assume we can't and shouldn't change device_init_wakeup() . We could
-> >> > > >> add a call like device_init_wakeup_disabled() which makes the device
-> >> > > >> wakeup capable but does not actually enable it. Does that work?
-> >> > > >
-> >> > > > If the only reason for the synchronize_rcu() is to defer the pair of
-> >> > > > kfree()s in wakeup_source_destroy(), then another possible approach
-> >> > > > would be to remove the synchronize_rcu() from wakeup_source_remove()
-> >> > > > and then use call_rcu() to defer the two kfree()s.
-> >> > > >
-> >> > > > If this is a reasonable change to make, the approach is as follows:
-> >> > > >
-> >> > > > 1.      Add a struct rcu_head to wakeup_source, call it "rcu".
-> >> > > >        Or adjust the following to suit your choice of name.
-> >> > > >
-> >> > > > 2.      Replace the pair of kfree()s with:
-> >> > > >
-> >> > > >                call_rcu(&ws->rcu, wakeup_source_destroy_rcu);
-> >> > > >
-> >> > > > 3.      Create the wakeup_source_destroy_rcu() as follows:
-> >> > > >
-> >> > > >        static void wakeup_source_destroy_rcu(struct rcu_head *head)
-> >> > > >        {
-> >> > > >                struct wakeup_source *ws =
-> >> > > >                        container_of(head, struct wakeup_source, rcu);
-> >> > > >
-> >> > > >                kfree(ws->name);
-> >> > > >                kfree(ws);
-> >> > > >        }
-> >> > > >
-> >> > > > Of course, this assumes that it is OK for wakeup_source_unregister()
-> >> > > > to return before the memory is freed up.  This often is OK, but there
-> >> > > > are some cases where the caller requires that there be no further
-> >> > > > RCU readers with access to the old data.  In these cases, you really
-> >> > > > do need the wait.
-> >> > >
-> >> > > Thanks very much for that. I'm not sure if it is a reasonable change,
-> >> > > but it does bug me that we add it to a data structure knowing that we
-> >> > > will immediately remove it!
-> >> > >
-> >> > > >From what I can see, making a device wakeup-enabled mostly happens on
-> >> > > init or in response to a request to the driver (presumably from user
-> >> > > space). In the latter case I suspect the synchronise_rcu() is fine. In
-> >> > > the former it feels like we should make up our minds which of the
-> >> > > three options is required (incapable, capable but not enabled, capable
-> >> > > and enabled).
-> >> > >
-> >> > > I will try a patch first based on splitting the two options (capable
-> >> > > and enable) and see if that get a NAK.
-> >> > >
-> >> > > Then I will come back to your solution - it seems fine to me and not a
-> >> > > lot of code. Do we have to worry about someone enabling, disabled,
-> >> > > enabling and then disabling wakeup quickly? Will this method break in
-> >> > > that case if the second call to call_rcu() uses the same wc->rcu?
-> >> >
-> >> > There are a couple of questions here, let me take them one at a time:
-> >> >
-> >> > 1.  If you just disabled, can you immediately re-enable?
-> >> >
-> >> >     The answer is "yes".  The reason that this works is that you
-> >> >     allocate a new structure for the re-enabling, and that new
-> >> >     structure has its own rcu_head field.
-> >> >
-> >> > 2.  If you repeatedly disable and re-enable in a tight loop,
-> >> >     can this cause problems?
-> >> >
-> >> >     The answer to this is also "yes" -- you can run the system
-> >> >     out of memory doing that.  However, there are a number of
-> >> >     simple ways to avoid this problem:
-> >> >
-> >> >     a.      Do a synchronize_rcu() on every (say) thousandth
-> >> >             disable operation.
-> >> >
-> >> >     b.      As above, but only do the synchronize_rcu() if
-> >> >             all 1,000 disable operations occurred within
-> >> >             (say) a second of each other.
-> >> >
-> >> >     c.      As above, but actually count the number of
-> >> >             pending call_rcu() callbacks.
-> >> >
-> >> >     Both (a) and (b) can be carried out on a per-CPU basis if there
-> >> >     is no convenient locked structure in which to track the state.
-> >> >     You cannot carry (c) out on a per-CPU basis because RCU callbacks
-> >> >     can sometimes be invoked on a different CPU from the one that
-> >> >     call_rcu()ed them.  Rare, but it can happen.
-> >> >
-> >> >     I would expect that option (a) would work in almost all cases.
-> >> >
-> >> > If this can be exercised freely from user space, then you probably
-> >> > really do need #2 above.
-> >>
-> >> Yes, you can, but then I'd say it's not necessary for user space to
-> >> be able to carry that out in a tight loop.  So, it seems, alternatively,
-> >> we could make that loop a bit less tight, e.g. by adding an arbitrary
-> >> sleep to the user space interface for the "disable" case.
+"H. Peter Anvin" <hpa@zytor.com> wrote on 01/19/2012 12:52:15 PM:
+
+> On 01/19/2012 09:46 AM, Michael D Labriola wrote:
 > >
-> > Good point, that would work just as well and be simpler.
+> > Random question...  why do we have a reboot_init function that does 
+DMI
+> > checking with reboot_dmi_table (callbacks are mostly set_bios_reboot, 
+but
+> > there is a single set_kbd_reboot) and also a pci_reboot_init which 
+does
+> > the DMI check again using a separate pci_reboot_dmi_table (all 
+callbacks
+> > are to set_pci_reboot)?
+> >
+> > Wouldn't it make more sense to do a single DMI scan using one big 
+table?
+> >
 > 
-> OK, well I am expecting that this will now be a very small patch to
-> change just serial_core.
+> Yes, and such a patch would be appreciated.
 > 
-> Thanks for your help with this.
+> The reason it is as it is dates back to before the 32-64 bit 
+> unification, as far as I know.
+> 
+> (BIOS reboot is currently not supported on 64 bits, mainly.)
 
-Glad to help, and even more glad that Alan and Rafael were able to help.  ;-)
+Well, that does complicate it a bit.  I'll gin something up and see what
+you think.  I guess it will involve having an #ifdef CONFIG_X86_32 block
+inside a single dmi_table structure for the BIOS quirks.
 
-							Thanx, Paul
+Actually, set_kbd_reboot is inside the current X86_32 only block, along
+with the one DMI callback that uses it.  Is this correct?
+
+
+---
+Michael D Labriola
+Electric Boat
+mlabriol@gdeb.com
+401-848-8871 (desk)
+401-848-8513 (lab)
+401-316-9844 (cell)
+
+
+ 
 
