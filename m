@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab2ASWXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 17:23:12 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40975 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab2ASWXL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 17:23:11 -0500
+	id S1755857Ab2ASWbI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 17:31:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37233 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752850Ab2ASWbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 17:31:03 -0500
+Date: Thu, 19 Jan 2012 17:30:56 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/12] blkcg: kill blkio_policy_node
+Message-ID: <20120119223056.GC4421@redhat.com>
+References: <1326935490-11827-1-git-send-email-tj@kernel.org>
+ <1326935490-11827-12-git-send-email-tj@kernel.org>
+ <20120119203225.GA4421@redhat.com>
+ <20120119220306.GK5198@google.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5cAQVJq858QGi0N_TM91PsKj0jzvUUT8_yA9ezf_wXAQ@mail.gmail.com>
-References: <20120118003335.467.71863.stgit@bhelgaas.mtv.corp.google.com>
-	<20120118003512.467.60770.stgit@bhelgaas.mtv.corp.google.com>
-	<CAE9FiQXvLAJVY-t8EJHkJgugtRsPdT9SS=60vA+by6qMCd5-Wg@mail.gmail.com>
-	<CAErSpo7xgJmT=gs8axiY-OseyurqwUEqYixm692kmZAoA-2sNw@mail.gmail.com>
-	<CAE9FiQUMEv+=mXzGc_muM_zTQ14S8tVex+bYgyyM1F++37Cu8w@mail.gmail.com>
-	<CAErSpo7Awb97fn=bZECqaf4RF4Tmkh1_sUf6_Vk+jgv5jCYNTw@mail.gmail.com>
-	<CAE9FiQXj8W4G_SRKCFU-gHJRZ+qENPAs8WAcZA_PVgoageHcoQ@mail.gmail.com>
-	<CAErSpo5cAQVJq858QGi0N_TM91PsKj0jzvUUT8_yA9ezf_wXAQ@mail.gmail.com>
-Date: Thu, 19 Jan 2012 14:23:10 -0800
-X-Google-Sender-Auth: k4OULH9NgiPZT1C9h30yOoD8afo
-Message-ID: <CAE9FiQWH0KqsC3Yin0TS+RVCvtjTi6j5wa6aUf19qU3xuQsmOA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] PCI: restrict subordinate buses to those reachable
- via host bridge
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ram Pai <linuxram@us.ibm.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120119220306.GK5198@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 2:13 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Thu, Jan 19, 2012 at 1:42 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> please check attached patch.
->
-> It's a pain to comment on attached patches vs. inline ones.
+On Thu, Jan 19, 2012 at 02:03:06PM -0800, Tejun Heo wrote:
 
-Sorry, gmail does not allow inline patch.
+[..]
+> > Why do we check for blkg->conf.weight=0 here. Even if a group already has
+> > weight and if user has changed the cgroup weight later, that update should
+> > be propogated to all the groups on all the queues.
+> 
+> Maybe I misread the code but if explicit per-device config exists,
+> cgroup-wide writes are ignored, no?  The original code searches for
+> matching pn and if it exists, continues without updating.
+> 
+> > Where do we assign default cgroup weight to a blkg upon creation? May be at
+> > group create time, we just need to copy blkcg->weight to blkg.conf.weight.
+> 
+> We don't.  blk->conf.weight is set only on explicit per-device
+> configuration.  It's gonna be removed eventually after config
+> definition and handling are moved into policies.
 
->
-> You added bus_max to pci_scan_root_bus().  I'd prefer to pass a
-> pointer to a struct resource, as we do for io & mem resources.
+Ok. So blkg->conf.weight is set only for per device weights. For groups
+using cgroup weight, I see that cfq inherits it during group creation.
+Any updates to cgroup weight are sent only if per device weight is not
+set. Previously we used to do this check by looking for policy node and
+you are checking for blkg.weight. That clarifies it. Thank.
 
-Well that depends.
-
-> I'd
-> like to move away from pci_scan_root_bus() and toward a
-> pci_scan_host_bridge() (as in the patches I posted) that takes all the
-> host bridge-related info: parent, domain, resources (including bus
-> number range), ops, sysdata.  I don't like the current scheme of
-> "create it with defaults and fix them later."
-
-No, struct host bridge is bad idea.  you are tracking host bridge and
-peer root bus the same time.
-
->
-> The printk %pR format supports bus numbers so you don't need to print
-> them by hand.
-
-later. will remove the debug print.
-
->
-> struct pci_bus already has secondary & subordinate.  I don't think
-> adding a "struct resource busn_res" adds useful information except for
-> the root bus, where the bus number range comes from something external
-> like _CRS rather than from the upstream bridge config.
-
-no, we need that to tracking the busn usage. aka insert them into
-iobusn_resource tree.
-
-late it should be convert to list head even. for handling transparent bridge.
-
->
-> This makes pci_scan_bridge() significantly more ugly than it already
-> is.  I think it needs to get broken up.
-
-Sure.
-
-Yinghai
+Thanks
+Vivek
