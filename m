@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab2ASPKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 10:10:54 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45354 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab2ASPKw convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 19 Jan 2012 10:10:52 -0500
-Message-Id: <4F1840CA020000780006DB79@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 19 Jan 2012 15:11:54 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <mingo@elte.hu>, "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        <tglx@linutronix.de>, <luca@luca-barbieri.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ix86: atomic64 assembly improvements
-References: <4F16E41B020000780006D7A5@nat28.tlf.novell.com>
- <4F16F505.8040809@zytor.com>
- <4F170679020000780006D85B@nat28.tlf.novell.com> <4F1705A8.301@zytor.com>
- <4F17EDE9020000780006D97A@nat28.tlf.novell.com>
- <4F182C55.7040305@zytor.com>
- <4F183BCA020000780006DB68@nat28.tlf.novell.com>
- <4F182FCB.2090300@zytor.com>
-In-Reply-To: <4F182FCB.2090300@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756317Ab2ASPNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:13:24 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:46142 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753091Ab2ASPNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 10:13:21 -0500
+Date: Thu, 19 Jan 2012 10:13:20 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: Ingo Molnar <mingo@elte.hu>, Kay Sievers <kay.sievers@vrfy.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Sergei Trofimovich <slyich@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Borislav Petkov <bp@amd64.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "prasad@linux.vnet.ibm.com" <prasad@linux.vnet.ibm.com>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "gouders@et.bocholt.fh-gelsenkirchen.de" 
+	<gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Marcos Souza <marcos.mage@gmail.com>,
+        "justinmattock@gmail.com" <justinmattock@gmail.com>,
+        Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: [PATCH] mce: fix warning messages about static struct mce_device
+In-Reply-To: <4F181ACF.20505@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1201191007541.1447-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 19.01.12 at 15:59, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> On 01/19/2012 06:50 AM, Jan Beulich wrote:
->>>
->>> It doesn't have anything to do with caches on or off.
->>
->> How does it not? If any part of the bus topology is only 32 bits wide,
->> a 64-bit read or write simply can't be executed atomically without
->> asserting LOCK#.
->>
+On Thu, 19 Jan 2012, Srivatsa S. Bhat wrote:
+
+> On 01/19/2012 06:02 PM, Ingo Molnar wrote:
+
+> > But this is not what happened here - it's a special piece of 
+> > fundamental hardware that doesnt hot-plug separately from the 
+> > CPU and that has just a single "user".
+> > 
+> > So i'm curious, why wasn't the memset() enough? It should have 
+> > resolved the bug AFAICS.
+> > 
 > 
-> Furthermore, if you're going down that rathole then we can't even trust 
-> MOV (nor, for that matter, can you trust LOCK in a lot of 
+> 
+>  It did! The memset _did_ fix the bug.
 
-No - (general register) MOV is at most 32 bits wide.
+But will it continue to fix the bug in the future?
 
-> circumstances.)  In short, you need to be extremely careful about what 
-> you do to uncached memory *at all* (and you need to know exactly what is 
-> behind this bus) but pessimizing these kinds of construct for that 
-> reason is wrong in the extreme.
+Or to put it another way, even though no code takes references to these
+device structures (can you really guarantee that even now?), how do you
+prevent references being taken in future versions of the kernel?  
+Calling memset while there still are outstanding references very
+definitely _is_ a bug.
 
-Okay, despite not being fully convinced I'll undo the folding of set and
-xchg then, and re-submit.
+IIRC, it used to be completely impossible to prevent this from
+happening because sysfs would take references whenever user tasks
+opened attribute files.  Sysfs no longer does this, but the basic
+principle of defensive programming still applies.
 
-Jan
+Alan Stern
 
