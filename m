@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab2ASQ1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:27:13 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:58723 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932244Ab2ASQ1K (ORCPT
+	id S932592Ab2ASQ1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:27:25 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50613 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932244Ab2ASQ1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:27:10 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Date: Thu, 19 Jan 2012 17:27:09 +0100
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.4; x86_64; ; )
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Ohad Ben-Cohen" <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Stuart Yoder <b08248@gmail.com>, Scott Wood <scottwood@freescale.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-References: <1326983405-319-1-git-send-email-joerg.roedel@amd.com> <201201191646.13798.laurent.pinchart@ideasonboard.com> <20120119160739.GB2205@amd.com>
-In-Reply-To: <20120119160739.GB2205@amd.com>
+	Thu, 19 Jan 2012 11:27:24 -0500
+Date: Thu, 19 Jan 2012 20:27:18 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
+ v6
+Message-ID: <20120119162718.GA32568@moon>
+References: <20120116153231.GF2998@moon>
+ <4F15EA53.8030405@gmail.com>
+ <20120118135809.GA10105@redhat.com>
+ <20120118142156.GR1968@moon>
+ <20120118143631.GA11776@redhat.com>
+ <20120118182344.GD2889@moon>
+ <20120118190725.GE2889@moon>
+ <20120119141051.GA9652@redhat.com>
+ <20120119155529.GA14412@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201191727.10176.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120119155529.GA14412@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-
-On Thursday 19 January 2012 17:07:39 Joerg Roedel wrote:
-> On Thu, Jan 19, 2012 at 04:46:13PM +0100, Laurent Pinchart wrote:
-> > > +struct iommu_domain_geometry {
-> > > +	u64 aperture_start;	/* First address that can be mapped    */
-> > > +	u64 aperture_end;	/* Last address that can be mapped     */
-> > 
-> > Would it make sense to use a platform-dependent type that represents
-> > physical addresses instead of u64 ?
+On Thu, Jan 19, 2012 at 04:55:29PM +0100, Oleg Nesterov wrote:
 > 
-> Well, u64 is a catch-all datatype which should suit all drivers. Is this
-> a problem at ARM?
-
-No, it's not a problem for ARM, at least to my knowledge. It just struck me as 
-weird, as we have specific data types for other kinds of addresses (such as 
-dma_addr_t).
-
-> We can also go the more complicated way of introducing an iova_addr_t or
-> something. But if possible I would like to avoid that.
+> Thinking more... I am not sure, but do we really need
+> proc_pid_children_iter at all??
 > 
-> > > @@ -62,7 +70,8 @@ enum iommu_attr {
-> > > 
-> > >   * @unmap: unmap a physically contiguous memory region from an iommu
-> > > 
-> > > domain * @iova_to_phys: translate iova to physical address
-> > > 
-> > >   * @domain_has_cap: domain capabilities query
-> > > 
-> > > - * @commit: commit iommu domain
-> > > + * @domain_get_attr: Query domain attributes
-> > > + * @domain_set_attr: Change domain attributes
-> > 
-> > This belongs to the previous patch.
+> It is very possibly I missed something, but we can get both
+> parent_pid and pid_ns from inode, right? so can't we just remember
+> inode in seq->private?
 > 
-> Right, I change that.
 
--- 
-Regards,
+Good point. Letme check if we will need to call for ihold then...
+(/me scratchig the head)
 
-Laurent Pinchart
+	Cyrill
