@@ -1,169 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab2ASSiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 13:38:13 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58371 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932543Ab2ASSiM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 13:38:12 -0500
+	id S932709Ab2ASSwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 13:52:50 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:49992 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932454Ab2ASSwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 13:52:49 -0500
+Message-ID: <4F186678.9010303@interlog.com>
+Date: Thu, 19 Jan 2012 13:52:40 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20120119182019.GI22818@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
-	<CAJuYYwQoh4_SnA9wmy4x+cG0w0hGukxTkODWtcSw_2QHYuDsrg@mail.gmail.com>
-	<20120119165607.GG22818@atomide.com>
-	<CAJuYYwQB1pDu-JS5o3XPA1D8WbVcwbdtD43M4y7PeJNWeNXxQQ@mail.gmail.com>
-	<20120119182019.GI22818@atomide.com>
-Date: Fri, 20 Jan 2012 00:08:10 +0530
-Message-ID: <CAJuYYwQouBDP6dL0B8QOaF0_JsbR7fysySZ5ebcF4op9aTQqbQ@mail.gmail.com>
-Subject: Re: Pinmux bindings proposal
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Ritesh Raj Sarraf <rrs@researchut.com>,
+        "Robin H. Johnson" <robbat2@gentoo.org>,
+        Martin Pitt <mpitt@debian.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        ronnie sahlberg <ronniesahlberg@gmail.com>
+Subject: [Announce] sg3_utils-1.33 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 January 2012 23:50, Tony Lindgren <tony@atomide.com> wrote:
-> * Thomas Abraham <thomas.abraham@linaro.org> [120119 09:05]:
->>
->> On 19 January 2012 22:26, Tony Lindgren <tony@atomide.com> wrote:
->> > * Thomas Abraham <thomas.abraham@linaro.org> [120119 04:37]:
->> >>
->> >> i2c0: i2c@18000000 {
->> >>         [... other properties ...]
->> >>         pinctrl-active = <&pctrl0 5 0 2 3 0>,
->> >>                              <&pctrl0 5 1 2 3 0>;
->> >>         pinctrl-suspend = <&pctrl0 5 0 2 0 0>,
->> >>                                 <&pctrl0 5 1 2 0 0>;
->> >> };
->> >
->> > Maybe we should have just the active/suspend/off flags in the
->> > same array? Otherwise we'll end up unnecessarily repeating the
->> > the pin information. See the pins + #pin-args example I posted,
->> > which is otherwise similar.
->>
->> Yes, I agree. That would be better.
->
-> OK great.
->
->> >
->> >> In the example above, the specifier of pinctrl-* is specific for
->> >> Samsung io-pad controllers. Its format/syntax would be mainly
->> >> dependent on the io-pad controller used, the above is only an example
->> >> for Samsung io-pad controller. In the above node, the format of the
->> >> pinctrl-* specifier is
->> >>
->> >> property-name = <phandle of the pin-controller
->> >>                            pin bank within the pin-controller
->> >>                            pin number within the pin-bank
->> >>                            pin-mux function number
->> >>                            pull up/down config
->> >>                            drive strength config>;
->> >
->> > Are these all just bits in one register? If so, let's say you
->> > have 16-bits per pin, we might be able to share the generic
->> > pinmux-simple.c driver I have almost ready..
->>
->> no, these get written to different registers, one for pinmux, one for
->> pull up/down and one for drive strength. It would be helpful of your
->> pinmux-simple.c can support writes to multiple registers also.
->
-> Hmm yeah that should be doable, and actually we have the old legacy
-> omap1510 set up with three different registers per pin..
->
-> The question is: Do we want to add the on/idle/off modes for each
-> pin in .dts, or do we want to have the driver set the dynamic muxing
-> flags separately?
->
+sg3_utils is a package of command line utilities for sending
+SCSI and some ATA commands to devices. This package targets
+the linux kernel (lk) 2.6 and lk 2.4 series. It also has
+ports to FreeBSD, Tru64, Solaris, and Windows (cygwin and mingw).
 
-It would be better to include the pin muxing and config options in the
-node of a device. So a i2c device node would have pin mux and pin
-config options listed in its node. But this means, each board dts file
-would have to repeat this information. On the other hand, describing
-mux and config options for each pin in a SoC dtsi file would be too
-much of information. I would go with the first option.
+This version reworks the sg_ses utility again. Real world testing
+has shown up many shortcomings in the sg_ses code plus there are
+plenty of (partially) broken SES device out there, some of which
+can now be handled. This version tracks various changes made by
+www.t10.org since July 2011.
 
+For an overview of sg3_utils and downloads see this page:
+     http://sg.danny.cz/sg/sg3_utils.html
+A new page has been added to describe the latest rework of
+the sg_ses utility (for enclosure devices):
+     http://sg.danny.cz/sg/sg_ses.html
+The SG_IO ioctl is discussed at:
+     http://sg.danny.cz/sg/sg_io.html
+A full changelog can be found at:
+     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
 
->> > The format would then be
->> >
->> >        #pin-args <4>;
->> >        ...
->> >
->> >        /*    controller  offset on   idle off */
->> >        pins = <&pinctrl0 0x0030 0x15 0x15 0x7>;
->> >
->> >> * Using the pinmux/pinconfig specifier in device nodes to configure hardware.
->> >>
->> >> A driver (for a device instantiated from device tree) would require
->> >> code to be made aware of the pinmux/pinconfig options available. The
->> >> typical sequence in a probe function would be as below.
->> >>
->> >> (a) call of_get_named_gpio() to get the gpio number. In case of
->> >> Samsung pinctrl driver, the pinctrl driver itself provides the gpiolib
->> >> functionality and it attaches a gpio specifier translator with the
->> >> gpio_chip. This translator is capable of translating the pinctrl-* and
->> >> returning a gpio number.
->> >>
->> >> (b) gpio_request() the gpio number obtained in step (a) above.
->> >>
->> >> (c) Repeat steps (a) and (b) until all the gpios required by the
->> >> driver are requested. In case a request fails, give up all the
->> >> successfully requested gpio and return failure.
->> >
->> > Can't the driver do this to request the gpio pins that you
->> > can get from DT and pinmux? Even if you need to do dynamic pinmuxing
->> > to GPIO pins for wake-up events, you can do that from the driver
->> > as long as you get the GPIO number for the pin from mux code.
->>
->> Yes, it is the driver that finds out the gpio number from dt and
->> requests it. Maybe, I did not understand your point here.
->
-> Oh ok, sorry I misunderstood thinking you want to do all that in the
-> pinmux driver..
->
->> With the approach that I mentioned in the previous email, there are no
->> pinmux, pin groups or pin desc tables built from dt. Each device node
->> specifies what needs to configured (pinmux,pinconfig) and the code
->> using that device node uses pinctrl driver to get those
->> pinmux/pinconfig values written to the hardware registers.
->>
->> Does the dt support for pinmux/pinconfig that you are developing build
->> the pinmux, pin groups or pin desc tables? Do drivers have to call
->> pinmux_{get/put}() or pin_config_set() functions even in dt case?
->
-> Yeah the pinmux/pingroups and functions are built from the DT. Drivers
-> would have to still call pinmux_get and set right now. But some of this
-> could probably be automatically done using runtime PM?
->
+A release announcement will be sent to freshmeat.net .
 
-I would like to understand the need for populating the
-pinmux/pingroups tables from dt. The question here is when we have
-something like
+Changelog for sg3_utils-1.33 [20120118] [svn: r435]
+   - sg_ses: major rework of indexes (again), now two level
+   - sg_write_buffer: new --specific option for mode specific
+     field; new mode 13 (spc4r32)
+   - sg_vpd: add hp3par volume info vendor VPD page
+     - fix 'scsi ports' [0x88] page problem
+     - add 'sinq' pseudo page for standard inquiry response
+     - add power consumption page
+   - sg_format: add --poll= option for request sense polling
+     - improve handling of disks > 2 TB and DIF (protection)
+   - sg_logs: LB provision lpage extra (sbc3r28)
+   - sg_modes: application tag mpage subcode 0xf0->0x2
+   - sg_write_same: no prot fields when wrprotect=0
+   - sg_get_lba_status: reflect change in sbc3r25 to Parameter
+     Data Length response field (offset reduced from 8 to 4)
+   - sg_inq, sg_vpd: sync with spc4r33
+   - win32: change DataBufferOffset type per MSDN; caused
+     problem with 64 bit machines (with buffered interface)
+   - sg_luns: tweak documentation for vendor specific reports
+   - add man pages for scsi_loging_level, scsi_mandat,
+     scsi_satl and scsi_temperature
 
-pins = <&pinctrl0 0x0030 0x15 0x15 0x7>;
+Changelog for sg3_utils-1.32 [20110730] [svn: r410]
+   ...
 
-which specifies the values that need to be written to the hardware
-registers, would populating pinmux/pingroup tables from dt required.
-The SoC specific pinctrl driver can provide a way (with the help of
-pinctrl core) to translate these values and write to corresponding
-hardware registers. Is there any particular reason for populating the
-pinmux/pingroups tables from dt?
-
-Thanks,
-Thomas.
+Doug Gilbert
