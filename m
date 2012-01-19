@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361Ab2ASVQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 16:16:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38132 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab2ASVQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 16:16:32 -0500
-Message-ID: <4F188817.3090104@zytor.com>
-Date: Thu, 19 Jan 2012 13:16:07 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-CC: device-mapper development <dm-devel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: dmsetup fails on latest kernel
-References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com> <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
-In-Reply-To: <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: multipart/mixed;
- boundary="------------020104080804060708030908"
+	id S1751572Ab2ASV01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 16:26:27 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:1334 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750993Ab2ASV00 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 16:26:26 -0500
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jan 2012 16:26:26 EST
+X-Mailer: QUALCOMM Windows Eudora Version 7.1.0.9
+Date: Thu, 19 Jan 2012 22:18:10 +0100
+To: linux-kernel@vger.kernel.org
+From: "N. Coesel" <nico@nctdev.nl>
+Subject: Cpufreq shutdown patch (kernel 2.6.35.3)
+Mime-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Message-ID: <CPSMTPM-CMT109lZGdO0011ecc5@CPSMTPM-CMT109.kpnxchange.com>
+X-OriginalArrivalTime: 19 Jan 2012 21:20:09.0190 (UTC) FILETIME=[1F434860:01CCD6F0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020104080804060708030908
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Dear readers,
+I've found a problem in drivers/cpufreq/cpufreq.c. The driver does 
+not execute the exit member of the low level driver when shutting 
+down for a reboot (reset). This potentially leaves the power supply 
+at a too low voltage to boot the system properly. The patch below 
+adds a shutdown function which executes the exit member of the low 
+level driver which allows a system to be properly prepared for a reset.
 
-Here is a patch which should fix this problem.  I will run a few more
-tests and then push it with the rest of the urgent queue to Linus.
+--- drivers/cpufreq/cpufreq.c.orig      2010-08-20 20:55:55.000000000 +0200
++++ drivers/cpufreq/cpufreq.c   2012-01-19 21:50:46.000000000 +0100
+@@ -1431,11 +1431,34 @@ fail:
+         return ret;
+  }
 
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
-
---------------020104080804060708030908
-Content-Type: text/x-patch;
- name="0001-x86-syscall-Need-__ARCH_WANT_SYS_IPC-for-32-bits.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-x86-syscall-Need-__ARCH_WANT_SYS_IPC-for-32-bits.patch"
-
->From 497e064320506cd15f7bdd659204b576c80bf24e Mon Sep 17 00:00:00 2001
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 19 Jan 2012 12:41:25 -0800
-Subject: [PATCH] x86, syscall: Need __ARCH_WANT_SYS_IPC for 32 bits
-
-In checkin
-
-  303395ac3bf3 x86: Generate system call tables and unistd_*.h from tables
-
-the feature macros in <asm/unistd.h> were unified between 32 and 64
-bits.  Unfortunately 32 bits requires __ARCH_WANT_SYS_IPC and this was
-inadvertently dropped.
-
-Reported-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com
----
- arch/x86/include/asm/unistd.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/unistd.h b/arch/x86/include/asm/unistd.h
-index b4a3db7..21f77b8 100644
---- a/arch/x86/include/asm/unistd.h
-+++ b/arch/x86/include/asm/unistd.h
-@@ -7,6 +7,7 @@
- #  include <asm/unistd_32.h>
- #  define __ARCH_WANT_IPC_PARSE_VERSION
- #  define __ARCH_WANT_STAT64
-+#  define __ARCH_WANT_SYS_IPC
- #  define __ARCH_WANT_SYS_OLD_MMAP
- #  define __ARCH_WANT_SYS_OLD_SELECT
- 
--- 
-1.7.6.5
++
++static int cpufreq_shutdown(struct sys_device *sysdev)
++{
++       struct cpufreq_policy *cpu_policy;
++       int cpu = sysdev->id;
++       int ret =0;
++
++       if (!cpu_online(cpu))
++               return 0;
++
++       cpu_policy = cpufreq_cpu_get(cpu);
++       if (!cpu_policy)
++               return -EINVAL;
++
++//     printk("cpufreq_shutdown %d \n", cpu);
++       if (cpufreq_driver->exit)
++               ret = cpufreq_driver->exit(cpu_policy);
++
++       return ret;
++}
++
++
+  static struct sysdev_driver cpufreq_sysdev_driver = {
+         .add            = cpufreq_add_dev,
+         .remove         = cpufreq_remove_dev,
+         .suspend        = cpufreq_suspend,
+         .resume         = cpufreq_resume,
++       .shutdown = cpufreq_shutdown,
+  };
 
 
---------------020104080804060708030908--
+
+Signed of by: Nico Coesel nico@nctdev.nl
+
+
