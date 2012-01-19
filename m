@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab2ASPCY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 10:02:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58925 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753091Ab2ASPCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 10:02:22 -0500
-Date: Thu, 19 Jan 2012 17:02:17 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, jan.kiszka@siemens.com,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: deliver msix interrupts from irq handler
-Message-ID: <20120119150217.GA20920@redhat.com>
-References: <20120118181023.GA4140@redhat.com>
- <20120119072123.GE9571@redhat.com>
- <20120119134957.GC4009@redhat.com>
+	id S1755865Ab2ASPF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:05:26 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38352 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab2ASPFW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 10:05:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120119134957.GC4009@redhat.com>
+In-Reply-To: <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
+References: <1326949826.5016.5.camel@lappy> <20120119122354.66eb9820.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.LSU.2.00.1201181932040.2287@eggly.anvils> <20120119130353.0ca97435.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 19 Jan 2012 10:05:01 -0500
+Message-ID: <CA+1xoqe5zNrx5H66HwkoywHf9FD6QTr2fcAPJSUbEx2KHf1VOg@mail.gmail.com>
+Subject: Re: [BUG] kernel BUG at mm/memcontrol.c:1074!
+To: Hugh Dickins <hughd@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        hannes <hannes@cmpxchg.org>, mhocko@suse.cz, bsingharora@gmail.com,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 03:49:57PM +0200, Michael S. Tsirkin wrote:
-> > > +	irq_rt = rcu_dereference(kvm->irq_routing);
-> > > +	if (irq < irq_rt->nr_rt_entries)
-> > > +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link) {
-> > > +			if (ei->type == KVM_IRQ_ROUTING_MSI)
-> > > +				ret = kvm_set_msi(e, kvm, irq_source_id, level,
-> > > +						  host_irq);
-> > > +			else
-> > > +				ret = -EWOULDBLOCK;
-> > > +			break;
-> > > +		}
-> > > +	rcu_read_unlock_bh();
-> > > +	return ret;
-> > > +}
-> > > +
-> > Share implementation with kvm_set_irq().
-> 
-> I considered this. There are several reasons not to do it:
-> - Amount of common code is very small
-Why? Just pass msi_only flag to kvm_set_irq() and skip an entry if flag is
-set and entry type is not msi.
+On Thu, Jan 19, 2012 at 12:16 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Thu, 19 Jan 2012, KAMEZAWA Hiroyuki wrote:
+>> On Wed, 18 Jan 2012 19:41:44 -0800 (PST)
+>> Hugh Dickins <hughd@google.com> wrote:
+>> >
+>> > I notice that, unlike Linus's git, this linux-next still has
+>> > mm-isolate-pages-for-immediate-reclaim-on-their-own-lru.patch in.
+>> >
+>> > I think that was well capable of oopsing in mem_cgroup_lru_del_list(),
+>> > since it didn't always know which lru a page belongs to.
+>> >
+>> > I'm going to be optimistic and assume that was the cause.
+>> >
+>> Hmm, because the log hits !memcg at lru "del", the page should be added
+>> to LRU somewhere and the lru must be determined by pc->mem_cgroup.
+>>
+>> Once set, pc->mem_cgroup is not cleared, just overwritten. AFAIK, there is
+>> only one chance to set pc->mem_cgroup as NULL... initalization.
+>> I wonder why it hits lru_del() rather than lru_add()...
+>> ................
+>>
+>> Ahhhh, ok, it seems you are right. the patch has following kinds of codes
+>> ==
+>> +static void pagevec_putback_immediate_fn(struct page *page, void *arg)
+>> +{
+>> +       struct zone *zone = page_zone(page);
+>> +
+>> +       if (PageLRU(page)) {
+>> +               enum lru_list lru = page_lru(page);
+>> +               list_move(&page->lru, &zone->lru[lru].list);
+>> +       }
+>> +}
+>> ==
+>> ..this will bypass mem_cgroup_lru_add(), and we can see bug in lru_del()
+>> rather than lru_add()..
+>
+> I've not thought it through in detail (and your questioning reminds me
+> that the worst I saw from that patch was updating of the wrong counts,
+> leading to underflow, then livelock from the mismatch between empty list
+> and enormous count: I never saw an oops from it, and may be mistaken).
+>
+>>
+>> Another question is who pushes pages to LRU before setting pc->mem_cgroup..
+>> Anyway, I think we need to fix memcg to be LRU_IMMEDIATE aware.
+>
+> I don't think so: Mel agreed that the patch could not go forward as is,
+> without an additional pageflag, and asked Andrew to drop it from mmotm
+> in mail on 29th December (I didn't notice an mm-commits message to say
+> akpm did drop it, and marc is blacked out in protest for today, so I
+> cannot check: but certainly akpm left it out of his push to Linus).
+>
+> Oh, and Mel noticed another bug in it on the 30th, that the PageLRU
+> check in the function you quote above is wrong: see PATCH 11/11 thread.
 
-> - As it's separate, it's more obvious that it can't block (kvm_set_irq can block)
->   We can even tag kvm_set_irq with might_sleep.
-They can still be two separate function calling common one.
-
-> - This is way simpler and faster as we can do operations directly,
->   instead of copying the irq out, and as it's datapath
->   an optimization is I think justified.
-I really do not think the copy of one small data structure will be
-measurable. If it is (has to be proven) we can optimize that two
-in the common code.
-
---
-			Gleb.
+So reverting this patch seems to indeed solve the issue (though
+reverting wasn't clean - some minor conflicts in mm/swap.c).
