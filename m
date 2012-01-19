@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab2ASQBz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:01:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932468Ab2ASQBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932473Ab2ASQBx (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 19 Jan 2012 11:01:53 -0500
-Date: Thu, 19 Jan 2012 16:55:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children
-	entry v6
-Message-ID: <20120119155529.GA14412@redhat.com>
-References: <20120116153231.GF2998@moon> <4F15EA53.8030405@gmail.com> <20120118135809.GA10105@redhat.com> <20120118142156.GR1968@moon> <20120118143631.GA11776@redhat.com> <20120118182344.GD2889@moon> <20120118190725.GE2889@moon> <20120119141051.GA9652@redhat.com>
+Received: from mailhub.sw.ru ([195.214.232.25]:30201 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932171Ab2ASQBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 11:01:52 -0500
+Message-ID: <4F183E5D.2020609@parallels.com>
+Date: Thu, 19 Jan 2012 20:01:33 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120119141051.GA9652@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "bfields@fieldses.org" <bfields@fieldses.org>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dr James Bruce Fields <bfields@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/5] SUNRPC: make caches network namespace aware
+References: <20120119144517.9957.59143.stgit@localhost6.localdomain6> <1326986392.6114.1.camel@lade.trondhjem.org> <4F18376C.9090504@parallels.com> <20120119154731.GB527@fieldses.org>
+In-Reply-To: <20120119154731.GB527@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19, Oleg Nesterov wrote:
+19.01.2012 19:47, bfields@fieldses.org пишет:
+> On Thu, Jan 19, 2012 at 07:31:56PM +0400, Stanislav Kinsbursky wrote:
+>> 19.01.2012 19:19, Trond Myklebust пишет:
+>>> On Thu, 2012-01-19 at 18:48 +0400, Stanislav Kinsbursky wrote:
+>>>> One more step towards to "NFS in container".
+>>>> With this patch set caches are allocated per network namespace.
+>>>>
+>>>> The following series consists of:
+>>>>
+>>>> ---
+>>>>
+>>>> Stanislav Kinsbursky (5):
+>>>>        SUNRPC: cache creation and destruction routines introduced
+>>>>        SUNRPC: create unix gid cache per network namespace
+>>>>        SUNRPC: create GSS auth cache per network namespace
+>>>>        SUNRPC: ip map cache per network namespace cleanup
+>>>>        SUNRPC: generic cache register routines removed
+>>>
+>>> The patches look good, and I've applied them for now in my 'devel'
+>>> branch so we can test them, but I'd like to get an Ack/Nack from Bruce
+>>> before committing to merging them.
+>>>
+>>
+>> Cool, thanks.
+>> BTW, these patches depends on patch "NFSd: use
+>> network-namespace-aware cache registering routines", which Bruce
+>> took already (and it's even in linux-next already), but not in your
+>> devel tree for some reason.
 >
-> On 01/18, Cyrill Gorcunov wrote:
-> >
-> > I suppose it might be something like below. I've updated comment and
-> > quoted your comment there just I wont forget this next time I'll be
-> > reading the source. Thanks!
+> And Linus has pulled those, so if Trond bases his tree on -rc1, he'll
+> have "NFSd: use network-namespace-aware cache registering routines".
 >
-> I believe the patrch is correct.
+> You know best what you're planning to submit over the next cycle, and
+> what the dependencies are, and which side (client or server) it's likely
+> to touch more.  So, your choice, I think.  If necessary Trond and I can
+> probably do a merge between us at some point.
 >
-> But... Cyrill, I am wondering how much will you hate me if I make
-> yet another attempt to delay this patch.
 
-Cough... and another attempt...
+Actually, I'm not going to patch NFSd in this cycle. Some more NFS and Lockd 
+patches will follow soon.
+So, probably, Trond's tree suits better.
 
-> > +static int children_seq_open(struct inode *inode, struct file *file)
-> > +{
-> > +	struct proc_pid_children_iter *iter = NULL;
-> > +	struct task_struct *task = NULL;
-> > +	int ret = 0;
-> > +
-> > +	task = get_proc_task(inode);
-> > +	if (!task) {
-> > +		ret = -ENOENT;
-> > +		goto err;
-> > +	}
->
-> For what??
->
-> > +	if (!ret) {
-> > +		struct seq_file *m = file->private_data;
-> > +		m->private = iter;
-> > +
-> > +		iter->pid_start = get_pid(task_pid(task));
->
-> This is what we need, right? So can't we remove this "task_struct *task"
-> and simply do
->
-> 		iter->pid_start = get_ppid(proc_pid(inode));
->
-> ?
->
-> And while this is absolutely cosmetic probably ->parent_pid is
-> a bit better name, but this is up to you.
 
-Thinking more... I am not sure, but do we really need
-proc_pid_children_iter at all??
-
-It is very possibly I missed something, but we can get both
-parent_pid and pid_ns from inode, right? so can't we just remember
-inode in seq->private?
-
-Oleg.
-
+-- 
+Best regards,
+Stanislav Kinsbursky
