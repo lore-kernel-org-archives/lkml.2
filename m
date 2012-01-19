@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab2ASLMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 06:12:19 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57190 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab2ASLMP convert rfc822-to-8bit (ORCPT
+	id S1755259Ab2ASLQX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 06:16:23 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:48766 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750848Ab2ASLQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 06:12:15 -0500
+	Thu, 19 Jan 2012 06:16:19 -0500
+Date: Thu, 19 Jan 2012 16:45:58 +0530
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] amba-pl011: clear previous interrupts before
+ request_irq
+Message-ID: <20120119111558.GB6115@bnru02.bnr.st.com>
+References: <1326796493-16080-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+ <20120118100410.GB889@bnru02.bnr.st.com>
+ <20120118114100.064e2c8f@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAGAKE8_wL0GcbjDNWOw4sa8euxZyGDgkdW9EgohpmG48Qk3-nQ@mail.gmail.com>
-References: <CAGAKE8_zLr9nrQ_-cXQGzycFo6746t8OzKK6DpCd9tcahyRfPQ@mail.gmail.com>
-	<CAGAKE8_wL0GcbjDNWOw4sa8euxZyGDgkdW9EgohpmG48Qk3-nQ@mail.gmail.com>
-Date: Thu, 19 Jan 2012 12:12:13 +0100
-X-Google-Sender-Auth: AG7ALAdBzPRdQLQOdkefAkDVUy0
-Message-ID: <CAO+b5-pZofpN7-e8H+toE98j24fby5u8_Nzfzkz_S31u5wDmwA@mail.gmail.com>
-Subject: Re: [Scst-devel] BUG: Process hang when kvm crashed, stacktrace cfs+kvm
-From: Bart Van Assche <bvanassche@acm.org>
-To: kordex <kordex@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu, peterz@infradead.org,
-        kvm@vger.kernel.org, avi@redhat.com,
-        Mikko Kortelainen <mikko.kortelainen@fail-safe.net>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120118114100.064e2c8f@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 11:54 AM, kordex <kordex@gmail.com> wrote:
-> > root@teletex:/usr/src/linux# dmesg
-> > +0x12e7/0x1c50
-> >  [<ffffffff810dc322>] ? page_add_new_anon_rmap+0x52/0xa0
+On Wed, Jan 18, 2012 at 12:41:00 +0100, Alan Cox wrote:
+> >  	/*
+> > +	 * Clear previous interrupts before installing interrupt handler
+> > +	 */
+> > +	spin_lock_irq(&uap->port.lock);
+> > +	uap->im = 0;
+> > +	writew(uap->im, uap->port.membase + UART011_IMSC);
+> > +	writew(0xffff, uap->port.membase + UART011_ICR);
+> > +	spin_unlock_irq(&uap->port.lock);
+> 
+> I'm confused why you use spin_lock_irq before you've enabled the IRQ in
+> the first place but looks fine.
+> 
+> Alan
+Yes, spin_lock_irq for the port is not required as request_irq is not yet
+called for the port.
 
-The above output is truncated - the most interesting part is missing.
-
-Bart.
+Thanks and Regards,
+Shreshtha
