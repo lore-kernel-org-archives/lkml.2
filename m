@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab2ASQim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:38:42 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37147 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab2ASQij (ORCPT
+	id S1756457Ab2ASQi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:38:56 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49615 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab2ASQiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:38:39 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=v8bH6B52KJQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=HF70u1azpJzpN4Y6LUwA:9 a=Hi_-3DyZIYq759NPdvkA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326991117.17534.132.camel@gandalf.stny.rr.com>
-Subject: Re: rt-kernel 3.0.14-rt31: BUG: sleeping function called from
- invalid context
-From: Steven Rostedt <rostedt@goodmis.org>
-To: John Kacur <jkacur@redhat.com>
-Cc: Karsten Wiese <fzuuzf@googlemail.com>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Thu, 19 Jan 2012 11:38:37 -0500
-In-Reply-To: <CAONaPpGHULxDZXBTprkCy9vKPH46gHOiQs6GM_ysfP2znDqqXg@mail.gmail.com>
-References: <CAONaPpFjfGiKKGAzrQNk+MF4k50nRf+wMU8H9491NgHyJrUkyw@mail.gmail.com>
-	 <201201180053.52617.fzuuzf@googlemail.com>
-	 <1326848525.17534.66.camel@gandalf.stny.rr.com>
-	 <CAONaPpGHULxDZXBTprkCy9vKPH46gHOiQs6GM_ysfP2znDqqXg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jan 2012 11:38:55 -0500
+Subject: [PATCH] sched/stats: Keep legacy array expiration field to zero.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: mingo@elte.hu, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Jan 2012 22:37:22 +0600
+Message-ID: <1326991042.6107.4.camel@localhost.localdomain>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-19 at 17:16 +0100, John Kacur wrote:
+ A patch (https://lkml.org/lkml/2012/1/12/224) was sent previously to update scheduler stat documentation to address array expiration field's use. Then Ingo suggest that, we should also make sure that we're exporting a value of zero. So, this patch does those accordingly.
 
-> I'm testing v3.0.14-rt32-rc1, and it greatly reduced the number of
-> these, but I still got one during boot.
-> 
-> [   11.938649] BUG: sleeping function called from invalid context at
-> /home/jkacur/rt.linux.git/kernel/rtmutex.c:645
-> [   11.938651] in_atomic(): 1, irqs_disabled(): 1, pid: 168, name: irq/9-acpi
-> [   11.938653] 1 lock held by irq/9-acpi/168:
-> [   11.938653]  #0:  (acpi_gbl_gpe_lock){......}, at:
-> [<ffffffff8123881d>] acpi_ev_gpe_detect+0x31/0x110
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
 
-Could you test 3.2-rt. If that has the issue then we know we have more
-to fix. If not, we know I missed a patch.
-
--- Steve
+diff --git a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
+index 1cd5d51..8259b34 100644
+--- a/Documentation/scheduler/sched-stats.txt
++++ b/Documentation/scheduler/sched-stats.txt
+@@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
+      1) # of times sched_yield() was called
+ 
+ Next three are schedule() statistics:
+-     2) # of times we switched to the expired queue and reused it
++     2) This field is a legacy array expiration count field used in the O(1)
++	scheduler. We kept it for ABI compatibility, but it is always set to zero.
+      3) # of times schedule() was called
+      4) # of times schedule() left the processor idle
+ 
+diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
+index 2a581ba..903ffa9e 100644
+--- a/kernel/sched/stats.c
++++ b/kernel/sched/stats.c
+@@ -32,9 +32,9 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 
+ 		/* runqueue-specific stats */
+ 		seq_printf(seq,
+-		    "cpu%d %u %u %u %u %u %u %llu %llu %lu",
++		    "cpu%d %u 0 %u %u %u %u %llu %llu %lu",
+ 		    cpu, rq->yld_count,
+-		    rq->sched_switch, rq->sched_count, rq->sched_goidle,
++		    rq->sched_count, rq->sched_goidle,
+ 		    rq->ttwu_count, rq->ttwu_local,
+ 		    rq->rq_cpu_time,
+ 		    rq->rq_sched_info.run_delay, rq->rq_sched_info.pcount);
 
 
