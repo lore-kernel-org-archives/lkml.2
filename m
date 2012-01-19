@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab2ASPGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 10:06:20 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:10469 "EHLO relay.sw.ru"
+	id S932162Ab2ASPGx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:06:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27755 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753091Ab2ASPGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 10:06:15 -0500
-Subject: [PATCH] NFS: decode destination address in proper network namespace
- context
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Thu, 19 Jan 2012 19:05:57 +0400
-Message-ID: <20120119150553.16860.77882.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1755689Ab2ASPGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 10:06:52 -0500
+Message-ID: <4F183182.5000801@redhat.com>
+Date: Thu, 19 Jan 2012 15:06:42 +0000
+From: "Bryn M. Reeves" <bmr@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Niels de Vos <ndevos@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: Invalidate the cache for a parent block-device
+ if blkdev_issue_flush() was called for a partition
+References: <4F17D95E.7070403@redhat.com>
+In-Reply-To: <4F17D95E.7070403@redhat.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces "init_net" with NFS client's owner net in rpc_pton() call
-in decode_ds_addr().
+On 01/19/2012 08:50 AM, Niels de Vos wrote:
+> Executing a BLKFLSBUF-ioctl on a partition flushes the caches for that
+> partition but reading data through the parent device will still return
+> the old cached data.
+> 
+> The cache for the block-device is not synced if the block-device is kept
+> open (due to a mounted partition, for example). Only when all users for
+> the disk have exited, the cache for the disk is made consistent again.
+> 
+> Calling invalidate_bdev() on the parent block-device in case
+> blkdev_issue_flush() was called for a partition fixes this.
+> 
+> The problem can be worked around by forcing the caches to be flushed
+> with either
+> 	# blockdev --flushbufs ${dev_disk}
+> or
+> 	# echo 3 > /proc/sys/vm/drop_caches
+> 
+> CC: Bryn M. Reeves <bmr@redhat.com>
+> Signed-off-by: Niels de Vos <ndevos@redhat.com>
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Acked-by: Bryn M. Reeves <bmr@redhat.com>
 
----
- fs/nfs/nfs4filelayoutdev.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/fs/nfs/nfs4filelayoutdev.c b/fs/nfs/nfs4filelayoutdev.c
-index 0d8b952..6eb59b0 100644
---- a/fs/nfs/nfs4filelayoutdev.c
-+++ b/fs/nfs/nfs4filelayoutdev.c
-@@ -378,7 +378,7 @@ out:
-  * Currently only supports ipv4, ipv6 and one multi-path address.
-  */
- static struct nfs4_pnfs_ds_addr *
--decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
-+decode_ds_addr(struct net *net, struct xdr_stream *streamp, gfp_t gfp_flags)
- {
- 	struct nfs4_pnfs_ds_addr *da = NULL;
- 	char *buf, *portstr;
-@@ -457,7 +457,7 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
- 
- 	INIT_LIST_HEAD(&da->da_node);
- 
--	if (!rpc_pton(&init_net, buf, portstr-buf, (struct sockaddr *)&da->da_addr,
-+	if (!rpc_pton(net, buf, portstr-buf, (struct sockaddr *)&da->da_addr,
- 		      sizeof(da->da_addr))) {
- 		dprintk("%s: error parsing address %s\n", __func__, buf);
- 		goto out_free_da;
-@@ -625,7 +625,8 @@ decode_device(struct inode *ino, struct pnfs_device *pdev, gfp_t gfp_flags)
- 
- 		mp_count = be32_to_cpup(p); /* multipath count */
- 		for (j = 0; j < mp_count; j++) {
--			da = decode_ds_addr(&stream, gfp_flags);
-+			da = decode_ds_addr(NFS_SERVER(ino)->nfs_client->net,
-+					    &stream, gfp_flags);
- 			if (da)
- 				list_add_tail(&da->da_node, &dsaddrs);
- 		}
-
+Cheers,
+Bryn.
