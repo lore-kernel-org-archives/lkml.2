@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2ASWOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 17:14:23 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39968 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751706Ab2ASWOU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 17:14:20 -0500
+	id S1756244Ab2ASWVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 17:21:09 -0500
+Received: from fieldses.org ([174.143.236.118]:52204 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753927Ab2ASWVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 17:21:05 -0500
+Date: Thu, 19 Jan 2012 17:21:01 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 4/5] SUNRPC: ip map cache per network namespace cleanup
+Message-ID: <20120119222101.GA4929@fieldses.org>
+References: <20120119144517.9957.59143.stgit@localhost6.localdomain6>
+ <20120119144931.9957.78601.stgit@localhost6.localdomain6>
+ <20120119163722.GE527@fieldses.org>
+ <4F184E70.5070902@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXj8W4G_SRKCFU-gHJRZ+qENPAs8WAcZA_PVgoageHcoQ@mail.gmail.com>
-References: <20120118003335.467.71863.stgit@bhelgaas.mtv.corp.google.com>
- <20120118003512.467.60770.stgit@bhelgaas.mtv.corp.google.com>
- <CAE9FiQXvLAJVY-t8EJHkJgugtRsPdT9SS=60vA+by6qMCd5-Wg@mail.gmail.com>
- <CAErSpo7xgJmT=gs8axiY-OseyurqwUEqYixm692kmZAoA-2sNw@mail.gmail.com>
- <CAE9FiQUMEv+=mXzGc_muM_zTQ14S8tVex+bYgyyM1F++37Cu8w@mail.gmail.com>
- <CAErSpo7Awb97fn=bZECqaf4RF4Tmkh1_sUf6_Vk+jgv5jCYNTw@mail.gmail.com> <CAE9FiQXj8W4G_SRKCFU-gHJRZ+qENPAs8WAcZA_PVgoageHcoQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 19 Jan 2012 15:13:57 -0700
-Message-ID: <CAErSpo5cAQVJq858QGi0N_TM91PsKj0jzvUUT8_yA9ezf_wXAQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] PCI: restrict subordinate buses to those reachable
- via host bridge
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ram Pai <linuxram@us.ibm.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F184E70.5070902@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 1:42 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Jan 18, 2012 at 9:46 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Wed, Jan 18, 2012 at 10:27 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> On Wed, Jan 18, 2012 at 8:52 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>> If we make a quirk for this machine, we still have the question of
->>>> what to do with my patches.  I assert that if Linux ever reconfigures
->>>> any bus numbers or does any configuration of hot-added P2P bridges, it
->>>> must pay attention to the host bridge bus number window.  Therefore, I
->>>> think we need something like this series even if we make a quirk.
->>>
->>> We may need more smart way to find unused bus range instead of just
->>> just max+1 and ++max.
->>>
->>> For example:  one bridge (A) have two child bridges (B and C),
->>> A: bus range: 10-2f
->>> B: bus range: 11-1f
->>> C: bus range: 20-2f
->>>
->>> when some broken case happen, B bus BIOS assigned bus range will be
->>> all cleared in first pass.
->>> but C bus is ok.  but in second bus, bus will be assigned to 30- .
->>> that is totally wrong, We should still
->>> try to use bus 11-1f at first for bus B.
->>
->> Yes, I agree we may need a better way to choose bus numbers in the
->> first place.  My current patch (3/4) doesn't change how we choose
->> them; it only rejects invalid ones.
->
-> come out draft about bus number tracking and allocate bus range instead.
->
-> please check attached patch.
+On Thu, Jan 19, 2012 at 09:10:08PM +0400, Stanislav Kinsbursky wrote:
+> 19.01.2012 20:37, J. Bruce Fields Ð¿Ð¸ÑˆÐµÑ‚:
+> >On Thu, Jan 19, 2012 at 06:49:31PM +0400, Stanislav Kinsbursky wrote:
+> >>This patch converts ip_map_cache per network namespace implemenetation to the
+> >>same view, as other caches done in the series.
+> >>Besides generalization, code becomes shorter with this patch.
+> >
+> >Again, isnt' it ip_map_cache, and not one of the dynamically created
+> >cache details, that's being passed to the lookup routines?
+> >
+> >I may just be confused....
+> >
+> 
+> Nope. ip_map_cache was made per network namespace a long time ago.
+> But it was done in other way: no static templates - just allocation
+> and initialization.
+> But static template looks clearer to me. So I've used this approach
+> for other caches. And decided to update ip_map_cache management in
+> the same way.
 
-It's a pain to comment on attached patches vs. inline ones.
+Going and reading the code.... OK, I see what you mean, makes sense.
+Thanks!
 
-You added bus_max to pci_scan_root_bus().  I'd prefer to pass a
-pointer to a struct resource, as we do for io & mem resources.  I'd
-like to move away from pci_scan_root_bus() and toward a
-pci_scan_host_bridge() (as in the patches I posted) that takes all the
-host bridge-related info: parent, domain, resources (including bus
-number range), ops, sysdata.  I don't like the current scheme of
-"create it with defaults and fix them later."
-
-The printk %pR format supports bus numbers so you don't need to print
-them by hand.
-
-struct pci_bus already has secondary & subordinate.  I don't think
-adding a "struct resource busn_res" adds useful information except for
-the root bus, where the bus number range comes from something external
-like _CRS rather than from the upstream bridge config.
-
-This makes pci_scan_bridge() significantly more ugly than it already
-is.  I think it needs to get broken up.
+--b.
