@@ -1,177 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab2ASNKQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 08:10:16 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52917 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab2ASNKN (ORCPT
+	id S1756790Ab2ASNWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 08:22:07 -0500
+Received: from ngcobalt07.manitu.net ([217.11.48.107]:44405 "EHLO
+	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab2ASNWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 08:10:13 -0500
+	Thu, 19 Jan 2012 08:22:03 -0500
+X-manitu-Original-Sender-IP: 86.32.213.40
+X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
+Date: Thu, 19 Jan 2012 14:21:57 +0100
+From: Roland Eggner <edvx1@systemanalysen.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [kmemleak report 0/2] kernel 3.1.6, x86_64
+Message-ID: <20120119132157.GA19789@mobil.systemanalysen.net>
+Reply-To: Roland Eggner <edvx1@systemanalysen.net>
+References: <20120115222932.GA24330@mobil.systemanalysen.net>
+ <CAHkRjk7MGGJE04dgETmqs_SBb8ju2BOiEmei3aV8MRcpof8-GA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
-Date: Thu, 19 Jan 2012 18:40:12 +0530
-Message-ID: <CAJuYYwQoh4_SnA9wmy4x+cG0w0hGukxTkODWtcSw_2QHYuDsrg@mail.gmail.com>
-Subject: Re: Pinmux bindings proposal
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHkRjk7MGGJE04dgETmqs_SBb8ju2BOiEmei3aV8MRcpof8-GA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 January 2012 02:09, Stephen Warren <swarren@nvidia.com> wrote:
-> I thought a bit more about pinmux DT bindings. I came up with something
-> that I like well enough, and is pretty similar to the binding that Dong
-> posted recently. I think it'll work for both Tegra's and IMX's needs.
-> Please take a look!
->
-> Note: I've used named constants below just to make this easier to read.
-> We still don't have a solution to actually use named constants in dtc yet.
->
+On 2012-01-17 Tue 16:53:10, Catalin Marinas wrote:
+> On 15 January 2012 22:29, Roland Eggner <edvx1@systemanalysen.net> wrote:
+> > It looks like memory leaks are “eating” 1G+ after only 1 week uptime … that's
+> > not nice.
+> 
+> Does your system actually lose this memory or they are just be false
+> positives?
 
-[...]
+Looks like lost memory.  More info will follow in my thread
+“[kmemleak reports 1/2]”.
 
-For Samsung io-pad controllers, I had been considering a dt approach
-which has been described below. Kindly review and any comments will be
-helpful.
+> We've known since around 3.1 that kmemleak has some issues
+> with per-cpu memory allocations and reporting false positives. The
+> patches just went in (to be visible in 3.3-rc1). Alternatively, you
+> could cherry-pick them from here:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=shortlog;h=029aeff5db879afd7760f11214b6fea45f76b58e
+> 
+> (commit f528f0b8e5 "kmemleak: Handle percpu memory allocation" is the
+> one you would need)
 
+Cherry-picked “kmemleak: Handle percpu memory allocation” as suggested, it
+applied without fuzz on 3.1.6 source.  The recompiled kernel has been running
+22+ hours.  A wdiff between dmesg reports from the previous and the new kernel
+shows nothing remarkable, kmemleak entries are similar.  3 entries in
+/var/log/messages “comm: modprobe”, too:
 
-* Main points to be considered:
-
-All Samsung SoC's use a io-pad controller that includes gpio, pinmux
-and pinconfig functionality in a single controller, i.e. there is a
-single intermixed address space for gpio/pinmux/pinconfig portions in
-the controller. Additionally, all the drivers for the Samsung SoC's
-setup pinmux/pinconfig in its probe function (and in resume if
-required).
-
-
-* IO Pad controllers in dts file:
-
-The io-pad controller (gpio/pinmux/pinconfig) can be represented in a
-dtsi file as below. There could be multiple io-pad controllers
-supported in the system.
-
-pctrl0: pinctrl@11400000 {
-       compatible = "samsung,exynos4210-pinctrl";
-       reg = <0x11400000 0x1000>;
-       interrupts = <.......>;
-       pin-banks = <....>;
-       [... other properties TBD ...]
-       #pinctrl-cells = <5>;
-};
-
-Each such node instantiates one instance of the pin-controller device.
-The 'struct pinctrl_dev' should include a new member 'struct of_node'
-to point to the corresponding pin-controller node in dt which
-instantiated the controller. The pinctrl_register() function called
-from drivers/pinctrl/pinctrl-xyz.c then registers the pin-controller
-instance.
-
-
-* Specifying the pinmux/pinconfig settings in dts files:
-
-Device nodes which require specific pinmux/pinconfig settings should
-include information about the required settings. For example, a i2c
-controller node in dts file is listed below.
-
-i2c0: i2c@18000000 {
-        [... other properties ...]
-        pinctrl-active = <&pctrl0 5 0 2 3 0>,
-                             <&pctrl0 5 1 2 3 0>;
-        pinctrl-suspend = <&pctrl0 5 0 2 0 0>,
-                                <&pctrl0 5 1 2 0 0>;
-};
-
-In the example above, the specifier of pinctrl-* is specific for
-Samsung io-pad controllers. Its format/syntax would be mainly
-dependent on the io-pad controller used, the above is only an example
-for Samsung io-pad controller. In the above node, the format of the
-pinctrl-* specifier is
-
-property-name = <phandle of the pin-controller
-                           pin bank within the pin-controller
-                           pin number within the pin-bank
-                           pin-mux function number
-                           pull up/down config
-                           drive strength config>;
+grep -A8 '^2012-01-18T15.*kmemleak:' /var/log/messages
+2012-01-18T15:07:58.888737+01:00 mobil kernel: [    5.082708] kmemleak: Kernel memory leak detector initialized
+2012-01-18T15:07:58.888738+01:00 mobil kernel: [    5.082720] kmemleak: Automatic memory scanning thread started
+2012-01-18T15:07:58.888739+01:00 mobil kernel: [    5.088103] rtc_cmos 00:06: setting system clock to 2012-01-18 14:07:34 UTC (1326895654)
+2012-01-18T15:07:58.888740+01:00 mobil kernel: [    5.132408] XFS (sda21): Mounting Filesystem
+2012-01-18T15:07:58.888740+01:00 mobil kernel: [    5.237157] XFS (sda21): Ending clean mount
+2012-01-18T15:07:58.888741+01:00 mobil kernel: [    5.238499] VFS: Mounted root (xfs filesystem) readonly on device 259:5.
+2012-01-18T15:07:58.888743+01:00 mobil kernel: [    5.275538] devtmpfs: mounted
+2012-01-18T15:07:58.888922+01:00 mobil kernel: [    5.277644] Freeing unused kernel memory: 640k freed
+2012-01-18T15:07:58.888924+01:00 mobil kernel: [    6.465105] grsec: mount of proc to /proc by /bin/mount[mount:1093] uid/euid:0/0 gid/egid:0/0, parent /bin/bash[bash:1092] uid/euid:0/0 gid/egid:0/0
+2012-01-18T15:07:58.888925+01:00 mobil kernel: [    6.521311] grsec: mount of sysfs to /sys by /bin/mount[mount:1110] uid/euid:0/0 gid/egid:0/0, parent /bin/bash[bash:1109] uid/euid:0/0 gid/egid:0/0
+--
+2012-01-18T15:21:05.610350+01:00 mobil kernel: [  814.170102] kmemleak: Adding scan area to unknown object at 0xffffffffa0028280
+2012-01-18T15:21:05.610370+01:00 mobil kernel: [  814.170110] Pid: 5266, comm: modprobe Not tainted 3.1.6-grsecurity.roland.1 #2
+2012-01-18T15:21:05.610374+01:00 mobil kernel: [  814.170114] Call Trace:
+2012-01-18T15:21:05.610380+01:00 mobil kernel: [  814.170125]  [<ffffffff81672f56>] kmemleak_scan_area+0x136/0x1a0
+2012-01-18T15:21:05.610384+01:00 mobil kernel: [  814.170134]  [<ffffffff810bcb87>] load_module+0x687/0x1e40
+2012-01-18T15:21:05.610388+01:00 mobil kernel: [  814.170143]  [<ffffffff81307d67>] ? gr_is_capable+0x27/0x40
+2012-01-18T15:21:05.610392+01:00 mobil kernel: [  814.170149]  [<ffffffff810be3a0>] sys_init_module+0x60/0x1f0
+2012-01-18T15:21:05.610396+01:00 mobil kernel: [  814.170157]  [<ffffffff81688e8d>] system_call_fastpath+0x18/0x1d
+2012-01-18T15:21:05.622252+01:00 mobil kernel: [  814.181353] snd_hda_intel 0000:01:00.1: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+--
+2012-01-18T15:21:06.005328+01:00 mobil kernel: [  814.563803] kmemleak: Adding scan area to unknown object at 0xffffffffa002a5a0
+2012-01-18T15:21:06.005355+01:00 mobil kernel: [  814.563811] Pid: 5280, comm: modprobe Not tainted 3.1.6-grsecurity.roland.1 #2
+2012-01-18T15:21:06.005359+01:00 mobil kernel: [  814.563815] Call Trace:
+2012-01-18T15:21:06.005365+01:00 mobil kernel: [  814.563827]  [<ffffffff81672f56>] kmemleak_scan_area+0x136/0x1a0
+2012-01-18T15:21:06.005369+01:00 mobil kernel: [  814.563836]  [<ffffffff810bcb87>] load_module+0x687/0x1e40
+2012-01-18T15:21:06.005374+01:00 mobil kernel: [  814.563845]  [<ffffffff81307d67>] ? gr_is_capable+0x27/0x40
+2012-01-18T15:21:06.005378+01:00 mobil kernel: [  814.563851]  [<ffffffff810be3a0>] sys_init_module+0x60/0x1f0
+2012-01-18T15:21:06.005382+01:00 mobil kernel: [  814.563859]  [<ffffffff81688e8d>] system_call_fastpath+0x18/0x1d
+2012-01-18T15:21:06.070291+01:00 mobil kernel: [  814.628812] kmemleak: Adding scan area to unknown object at 0xffffffffa00e1220
+2012-01-18T15:21:06.070314+01:00 mobil kernel: [  814.628820] Pid: 5286, comm: modprobe Not tainted 3.1.6-grsecurity.roland.1 #2
+2012-01-18T15:21:06.070317+01:00 mobil kernel: [  814.628824] Call Trace:
+2012-01-18T15:21:06.070323+01:00 mobil kernel: [  814.628835]  [<ffffffff81672f56>] kmemleak_scan_area+0x136/0x1a0
+2012-01-18T15:21:06.070327+01:00 mobil kernel: [  814.628844]  [<ffffffff810bcb87>] load_module+0x687/0x1e40
+2012-01-18T15:21:06.070358+01:00 mobil kernel: [  814.628852]  [<ffffffff81307d67>] ? gr_is_capable+0x27/0x40
+2012-01-18T15:21:06.070362+01:00 mobil kernel: [  814.628858]  [<ffffffff810be3a0>] sys_init_module+0x60/0x1f0
+2012-01-18T15:21:06.070366+01:00 mobil kernel: [  814.628867]  [<ffffffff81688e8d>] system_call_fastpath+0x18/0x1d
+2012-01-18T15:21:08.683225+01:00 mobil kernel: [  817.234669] ADDRCONF(NETDEV_UP): eth0: link is not ready
+--
+2012-01-18T15:28:41.805266+01:00 mobil kernel: [ 1269.223947] kmemleak: 1 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+…
 
 
-* Using the pinmux/pinconfig specifier in device nodes to configure hardware.
+So far no significant change in frequency or backtraces of kmemleak reports
+related to both of my issues.  Instead, I got a third issue:
 
-A driver (for a device instantiated from device tree) would require
-code to be made aware of the pinmux/pinconfig options available. The
-typical sequence in a probe function would be as below.
+At 00:30:14 rsyslog wrote a line “kmemleak: 11 new suspected memory leaks”.
+At 01:16:42 the corresponding reports could not be retrieved,
+/sys/kernel/debug/kmemleak appeared like an empty file:
 
-(a) call of_get_named_gpio() to get the gpio number. In case of
-Samsung pinctrl driver, the pinctrl driver itself provides the gpiolib
-functionality and it attaches a gpio specifier translator with the
-gpio_chip. This translator is capable of translating the pinctrl-* and
-returning a gpio number.
+grep '^2012-01-19.*kmemleak' /var/log/messages
+2012-01-19T00:30:14.912242+01:00 mobil kernel: [33681.088527] kmemleak: 11 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+2012-01-19T04:00:19.577597+01:00 mobil kernel: [44744.609118] kmemleak: 18 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+2012-01-19T06:34:24.835594+01:00 mobil kernel: [53966.751077] kmemleak: 282 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+2012-01-19T06:55:06.005658+01:00 mobil kernel: [55204.817278] kmemleak: 1 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+2012-01-19T08:59:18.146598+01:00 mobil kernel: [62638.325944] kmemleak: 1 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
 
-(b) gpio_request() the gpio number obtained in step (a) above.
+history 60 | grep "clear"
+ 7249  2012-01-18 16:50:57  bzip2 -c9 < /sys/kernel/debug/kmemleak > .tmp/"kmemleak $( date '+%F %a %T' ).bz2"  && echo "clear" >> /sys/kernel/debug/kmemleak
+ 7265  2012-01-19 01:16:42  bzip2 -c9 < /sys/kernel/debug/kmemleak > .tmp/"kmemleak $( date '+%F %a %T' ).bz2"  && echo "clear" >> /sys/kernel/debug/kmemleak
+ 7273  2012-01-19 04:15:05  bzip2 -c9 < /sys/kernel/debug/kmemleak > .tmp/"kmemleak $( date '+%F %a %T' ).bz2"  && echo "clear" >> /sys/kernel/debug/kmemleak
+ 7282  2012-01-19 09:16:34  bzip2 -c9 < /sys/kernel/debug/kmemleak > .tmp/"kmemleak $( date '+%F %a %T' ).bz2"  && echo "clear" >> /sys/kernel/debug/kmemleak
 
-(c) Repeat steps (a) and (b) until all the gpios required by the
-driver are requested. In case a request fails, give up all the
-successfully requested gpio and return failure.
-
-(d) For all entries in pinctrl-* property, use
-of_parse_phandles_with_args() and get the pinctrl node pointer and the
-pinctrl specifier. As an example, the i2c driver would do the
-following, incrementing pin-index parameter for each call.
-
-ret = of_parse_phandle_with_args(i2c_np, "pinctrl-active",
-"#pinctrl-cells", pin-index, &pctrl_np, &pctrl_specifier);
-
-(e) There should be a new api in pinctrl subsystem whose signature
-could be something like
-
-int pinctrl_dt_parse_and_set_mux_cfg(struct device_node *, const void *);
-
-For each iteration of step (d) in the driver, this new api will be
-called. The value of pctrl_np and pctrl_specifier obtained from step
-(d) is passed as a parameters to this new api. This api will do the
-following
-
-(e1) Find the pin-controller (struct pinctrl_dev) that has a
-device_node pointer which is same as the first parameter. To recap, it
-was mentioned above that: "The 'struct pinctrl_dev' should include a
-new member 'struct of_node' to point to the corresponding
-pin-controller node in dt which instantiated the controller."
-
-(e2) A new callback 'xlate_pinctrl' is required in 'struct
-pinctrl_ops' which can translate the second parameter of
-'pinctrl_dt_parse_and_set_mux_cfg' function. From the pin controller
-found in step (e1), call pinctrl_dev->desc->pctlops->xlate_pinctrl
-passing the second parameter of 'pinctrl_dt_parse_and_set_mux_cfg'
-function. The pin-controller specific translator function will
-translate the parameter and program the hardware registers. The
-xlate_pinctrl is specific to each pin-controller is it knows how to
-decode the specifier and program the registers.
+ls -l .tmp/"kmemleak 2012-01-19"*.bz2
+-rw-r--r-- 1 root root   14 2012-01-19 01:16:42 .tmp/kmemleak 2012-01-19 Do 01:16:42.bz2
+-rw-r--r-- 1 root root 1598 2012-01-19 04:15:06 .tmp/kmemleak 2012-01-19 Do 04:15:05.bz2
+-rw-r--r-- 1 root root 4041 2012-01-19 09:16:51 .tmp/kmemleak 2012-01-19 Do 09:16:34.bz2
 
 
-The above method may have some elements that are specific to Samsung
-io-pad controller. But the main requirement for the above procedure
-from the pinctrl subsystem is the new API
-'pinctrl_dt_parse_and_set_mux_cfg' and related additions to 'struct
-pinctrl_dev' and ''struct pinctrl_ops'. These additions are generic
-and any io-pad controller could use it.
+Maybe, the cherry-picked patch depends on an other part of your git commit?
 
-Thanks for any feedback.
-
-Regards,
-Thomas.
+Thanks for your work.
+-- 
+Roland Eggner
