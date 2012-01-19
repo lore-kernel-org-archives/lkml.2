@@ -1,111 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab2ASX6G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 18:58:06 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41286 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab2ASX6C (ORCPT
+	id S1757067Ab2ASX6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 18:58:52 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56721 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab2ASX6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 18:58:02 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 20 Jan 2012 08:56:44 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH] memcg: remove PCG_CACHE page_cgroup flag
-Message-Id: <20120120085644.60d14c17.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120119134358.GC13932@tiehlicka.suse.cz>
-References: <20120119181711.8d697a6b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120119134358.GC13932@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jan 2012 18:58:50 -0500
+MIME-Version: 1.0
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 19 Jan 2012 15:58:28 -0800
+X-Google-Sender-Auth: k9SRfDGL_53ekOtxideW2KAgseg
+Message-ID: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
+Subject: Linux 3.3-1 out - merge window closed
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jan 2012 14:43:58 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+So the subject says it all. It's been two weeks(+a day), and 3.3-rc1 is now out.
 
-> On Thu 19-01-12 18:17:11, KAMEZAWA Hiroyuki wrote:
-> > This patch is onto memcg-devel, can be applied to linux-next, too.
-> 
-> Just for record memcg-devel tree should _always_ be compatible with
-> linux-next. It just contains patches which are memcg related to be more
-> stable for memcg specific development.
-> 
-> > 
-> > ==
-> > From 529653c266b0682894d64e4797fcaf6a3c35db25 Mon Sep 17 00:00:00 2001
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Date: Thu, 19 Jan 2012 17:09:41 +0900
-> > Subject: [PATCH] memcg: remove PCG_CACHE
-> > 
-> > We record 'the page is cache' by PCG_CACHE bit to page_cgroup.
-> > Here, "CACHE" means anonymous user pages (and SwapCache). This
-> > doesn't include shmem.
-> 
-> > Consdering callers, at charge/uncharge, the caller should know
-> > what  the page is and we don't need to record it by using 1bit
-> > per page.
-> > 
-> > This patch removes PCG_CACHE bit and make callers of
-> > mem_cgroup_charge_statistics() to specify what the page is.
-> > 
-> > Changelog since RFC.
-> >  - rebased onto memcg-devel
-> >  - rename 'file' to 'not_rss'
-> 
-> The name is confusing.
-> 
-> Other than that the patch looks reasonable. Minor comment bellow:
-> 
+There are a couple of trees I haven't merged on purpose, and there may
+be a few trees I overlooked by mistake. The "on purpose" ones were
+things that looked unfamiliar and I felt I didn't have the bandwidth
+to check. The "mistake" ones would just be things I missed due to
+being busy.
 
-will use 'anon'.
+And it really was a pretty busy merge window. I don't know *why* it
+felt so busy, though. In pure numbers, the merge window seems to have
+been pretty normal - the number of merges and regular commits are
+right where you'd expect them. Part of it was spending what felt like
+(and I think was) a couple of days chasing down two independent
+suspend/resume regressions on my laptop, part of it was a couple of
+just bad pull requests, and some of it was some of the independent
+discussions that were on-going. But none of that is unheard of, so
+what do I know..
 
+Anyway, it's out now, and I'm taking off early for a weekend of beer,
+skiing and poker (not necessarily in that order: "don't drink and
+ski"). No email.
 
-> >  - some cleanup and added comment.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/page_cgroup.h |    8 +-----
-> >  mm/memcontrol.c             |   55 ++++++++++++++++++++++++++----------------
-> >  2 files changed, 35 insertions(+), 28 deletions(-)
-> > 
-> [...]
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index fb2dfc3..de7721d 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> [...]
-> > @@ -2908,9 +2915,15 @@ void mem_cgroup_uncharge_page(struct page *page)
-> >  
-> >  void mem_cgroup_uncharge_cache_page(struct page *page)
-> >  {
-> > +	int ctype;
-> > +
-> >  	VM_BUG_ON(page_mapped(page));
-> >  	VM_BUG_ON(page->mapping);
-> > -	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_CACHE);
-> > +	if (page_is_file_cache(page))
-> > +		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> > +	else
-> > +		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> > +	__mem_cgroup_uncharge_common(page, ctype);
-> 
-> OK, this makes sense but doesn't make any real difference now, so it is
-> more a clean up, right?
-> 
+So if you felt that your pull request was overlooked by mistake (or
+intentionally, but really not so scary that you think I should have a
+really easy time checking it), you have a couple of days to marshal
+your arguments for why I should pull it after all.
 
-Yes. Johannes reuqested to remove this. I'll remove this in v3.
+And if you didn't send your pull request in time: "Phhhthrthtpt!". No
+arguments for that one.
 
-Thanks,
--Kame
+(Stats for those that like them: 20% arch updates (arm, power, mips,
+x86), 60% drivers (networking - wireless in particular, staging,
+media, dri, sound, misc - including getting rid of 'struct sysdev'),
+and 20% random stuff: filesystems, networking, perf etc)
 
-
+                              Linus
