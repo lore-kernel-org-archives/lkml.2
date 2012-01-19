@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab2ASTle (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 14:41:34 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35391 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab2ASTl0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 14:41:26 -0500
+	id S932837Ab2ASTlh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 14:41:37 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55385 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932675Ab2ASTlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 14:41:35 -0500
+Date: Thu, 19 Jan 2012 20:41:08 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Michael D Labriola <mlabriol@gdeb.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
+        michael.d.labriola@gmail.com, Matthew Garrett <mjg59@srcf.ucam.org>,
+        support@versalogic.com, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org
+Subject: Re: [PATCH] x86, reboot: skip DMI checks if reboot set by user
+Message-ID: <20120119194108.GB28362@elte.hu>
+References: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>
+ <20120117195841.48fe8236@pyramind.ukuu.org.uk>
+ <OFD4BB6876.6D903346-ON8525798A.00550E62-8525798A.005562A3@gdeb.com>
+ <20120119154504.710e202e@pyramind.ukuu.org.uk>
+ <OF8642E997.5ED041E1-ON8525798A.0056983A-8525798A.0056E05B@LocalDomain>
+ <OF2B909250.6078896E-ON8525798A.0058FF49-8525798A.0061AEA1@gdeb.com>
+ <4F18584F.7060603@zytor.com>
+ <OFE1B368BB.B6249713-ON8525798A.00692513-8525798A.0069B44E@gdeb.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyJoLMA_uJfRfy2obCfbqs=RVLkHch67h-fQ=0DCbrS0w@mail.gmail.com>
-References: <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
- <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
- <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
- <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
- <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
- <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
- <CAObL_7FsNQaPQg-3=AO9RuMNZZsRgDSJYPhPevDKERws9vQJWg@mail.gmail.com>
- <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk> <CA+55aFyZ-=4J1hVSAJiBiZKgpvuh-t54KPjLijRmU=cBtdi3-w@mail.gmail.com>
- <CAObL_7Gigcvurpa5J9FHrrdFkBHw7GSrP=e6nT4FFweGZz4+fg@mail.gmail.com> <CA+55aFyJoLMA_uJfRfy2obCfbqs=RVLkHch67h-fQ=0DCbrS0w@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 19 Jan 2012 11:41:03 -0800
-X-Google-Sender-Auth: FMzqaPvfHqc9KyJ9Zoraxf0RLc0
-Message-ID: <CA+55aFyUjSR8puXRUCbjKdjcYZJJqCNFkPKaMbBo7_wbpZXd7w@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Jamie Lokier <jamie@shareable.org>, Indan Zupancic <indan@nul.nu>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OFE1B368BB.B6249713-ON8525798A.00692513-8525798A.0069B44E@gdeb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 11:37 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I would suggest looking at 'rip/rsp' first, though, and just say that
-> if it's >32-bit, it's flat mode. Only if both rsp and rip fit in 32
-> bits should you even bother start guessing.
 
-Oh, there's a few other hints you can look at. If 'ds' is zero, you
-might technically be in 32-bit mode, but realistically nothing really
-would work, so you might as well assume you're in long mode.
+* Michael D Labriola <mlabriol@gdeb.com> wrote:
 
-So you can have a lot of heuristics (including just looking at what
-the disassembly itself looks like) if you really want to..
+> > Yes, and such a patch would be appreciated.
+> > 
+> > The reason it is as it is dates back to before the 32-64 bit 
+> > unification, as far as I know.
+> > 
+> > (BIOS reboot is currently not supported on 64 bits, mainly.)
+> 
+> Well, that does complicate it a bit.  I'll gin something up 
+> and see what you think.  I guess it will involve having an
+> #ifdef CONFIG_X86_32 block inside a single dmi_table structure
+> for the BIOS quirks.
 
-                    Linus
+Btw., i'd suggest to keep the two changes in separate patches, 
+so that if any causes problems we can bisect to it separately. 
+The more patches you can reasonably split it up into, the 
+better.
+
+Thanks,
+
+	Ingo
