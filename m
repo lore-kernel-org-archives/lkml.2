@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2ASIaR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 03:30:17 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28798 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab2ASIaN (ORCPT
+	id S1755756Ab2ASIog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 03:44:36 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42216 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755499Ab2ASIoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 03:30:13 -0500
-Message-ID: <4F17D480.6050602@oracle.com>
-Date: Thu, 19 Jan 2012 16:29:52 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Thu, 19 Jan 2012 03:44:13 -0500
+Date: Thu, 19 Jan 2012 16:55:42 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Huang Shijie <b32955@freescale.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, u.kleine-koenig@pengutronix.de
+Subject: Re: [PATCH resent v2 1/2] ioport : add DEFINE_RES_DMA_SIZE_NAMED
+ macro
+Message-ID: <20120119085539.GG2247@S2101-09.ap.freescale.net>
+References: <1326959620-25920-1-git-send-email-b32955@freescale.com>
+ <1326959620-25920-2-git-send-email-b32955@freescale.com>
+ <20120119081427.GF2247@S2101-09.ap.freescale.net>
+ <4F17D2ED.6090502@freescale.com>
+ <4F17D40F.3080803@freescale.com>
 MIME-Version: 1.0
-To: Abhijeet Joglekar <abjoglek@cisco.com>,
-        Venkata Siva Vijayendra Bhamidipati <vbhamidi@cisco.com>,
-        Brian Uchino <buchino@cisco.com>
-CC: Sriharsha <sriharsha.devdas@oracle.com>, Joe Jin <joe.jin@oracle.com>,
-        stable@vger.kernel.org, linux-scsi@vger.kernel.org,
-        andrew thomas <andrew.thomas@oracle.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        Guru Anbalagane <guru.anbalagane@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] [SCSI] fnic: return zero on fnic_reset() success
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4F17D494.007C,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F17D40F.3080803@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When issue LIP by sysfs found write("1") returned 8194, this caused by
-fnic_reset() return SUCCESS to store_fc_private_host_issue_lip().
-Return 0/-1 for fnic_reset() fix this issue.
+On Thu, Jan 19, 2012 at 04:27:59PM +0800, Huang Shijie wrote:
+> 
+> >Hi Shawn:
+> >>I'm not sure the patch is welcomed.  You may want to just use
+> >>DEFINE_RES_NAMED for such cases.
+> >I ever wanted to use DEFINE_RES_NAMED.
+> sorry. I misunderstood your meaning.
+> 
+> I think it's better to add a new macro. use DEFINE_RES_NAMED is not proper.
+> 
+In that case, I can not apply the patch #2 until #1 hits mainline, so
+remember to ping me for applying patch #2 when the first one gets
+merged.
 
-Tested-by: Sriharsha <sriharsha.devdas@oracle.com>
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Cc: Abhijeet Joglekar <abjoglek@cisco.com>
-Cc: Venkata Siva Vijayendra Bhamidipati <vbhamidi@cisco.com>
-Cc: Brian Uchino <buchino@cisco.com>
-CC: stable@vger.kernel.org
----
- drivers/scsi/fnic/fnic_scsi.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
-index c40ce52..e705e5e 100644
---- a/drivers/scsi/fnic/fnic_scsi.c
-+++ b/drivers/scsi/fnic/fnic_scsi.c
-@@ -1662,7 +1662,7 @@ int fnic_reset(struct Scsi_Host *shost)
- {
- 	struct fc_lport *lp;
- 	struct fnic *fnic;
--	int ret = SUCCESS;
-+	int ret = 0;
- 
- 	lp = shost_priv(shost);
- 	fnic = lport_priv(lp);
-@@ -1675,11 +1675,11 @@ int fnic_reset(struct Scsi_Host *shost)
- 	 * reset remote port sessions, and if link is up, begin flogi
- 	 */
- 	if (lp->tt.lport_reset(lp))
--		ret = FAILED;
-+		ret = -1;
- 
- 	FNIC_SCSI_DBG(KERN_DEBUG, fnic->lport->host,
- 		      "Returning from fnic reset %s\n",
--		      (ret == SUCCESS) ?
-+		      (ret == 0) ?
- 		      "SUCCESS" : "FAILED");
- 
- 	return ret;
-@@ -1706,7 +1706,7 @@ int fnic_host_reset(struct scsi_cmnd *sc)
- 	 * scsi-ml tries to send a TUR to every device if host reset is
- 	 * successful, so before returning to scsi, fabric should be up
- 	 */
--	ret = fnic_reset(shost);
-+	ret = (fnic_reset(shost) == 0) ? SUCCESS : FAILED;
- 	if (ret == SUCCESS) {
- 		wait_host_tmo = jiffies + FNIC_HOST_RESET_SETTLE_TIME * HZ;
- 		ret = FAILED;
 -- 
-1.7.7.5
-
+Regards,
+Shawn
