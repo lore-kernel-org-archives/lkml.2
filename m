@@ -1,117 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab2ASXEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 18:04:50 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50015 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab2ASXEr (ORCPT
+	id S1752870Ab2ASXLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 18:11:41 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:52684 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab2ASXLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 18:04:47 -0500
-Message-ID: <4F18A18C.9090302@gmail.com>
-Date: Thu, 19 Jan 2012 17:04:44 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Thu, 19 Jan 2012 18:11:40 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [PATCH] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v7
+References: <20120119155112.GF31379@moon> <20120119174742.GD32568@moon>
+	<20120119175700.GA19627@redhat.com> <20120119180951.GI31379@moon>
+Date: Thu, 19 Jan 2012 15:14:05 -0800
+In-Reply-To: <20120119180951.GI31379@moon> (Cyrill Gorcunov's message of "Thu,
+	19 Jan 2012 22:09:51 +0400")
+Message-ID: <m1ty3r1e0y.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Michael Bohan <mbohan@codeaurora.org>
-CC: grant.likely@secretlab.ca, tglx@linutronix.de,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: irq: Allow for specification of no preallocated
- irqs
-References: <1327013024-22530-1-git-send-email-mbohan@codeaurora.org>
-In-Reply-To: <1327013024-22530-1-git-send-email-mbohan@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/rof7DuOCdiWmoHjfKL8DBrcjK+HO2j9o=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 04:43 PM, Michael Bohan wrote:
-> For cases with SPARSE_IRQ enabled, irqs preallocated with
-> arch_probe_nr_irqs() are already marked as allocated in the
-> allocated_irqs bitmap. As a consequence, irq chip drivers that
-> allocate irqs will feel one of two behaviors:
-> 
-> 1. An allocation will succeed with the starting irq_base one
-> more than the preallocated irqs. This will thus waste the
-> preceeding interrupt resources that were preallocated, unless a
-> legacy chip driver happens to assume ownership of these by some
-> platform definition. The GIC driver is a typical primary chip
-> driver, and abides to the allocation APIs. So this can be a
-> problem in many trivial usecases.
-> 
-> 2. An allocation will fail with < 0. This can also happen in the
-> GIC driver, which interprets this value as meaning the irq_descs
-> are already preallocated. But in Device Tree configurations, the
-> fallback irq_base is -1. This results in an invalid irq_base
-> value.
-> 
-> Looking forward, we are moving towards a world where preallocation
-> of irqs is no longer necessary. irq_domain is scoped to handle all
-> irq_desc allocations in the future. Thus, we should support
-> configurations where the platform wants to preallocate no irqs.
-> 
-> One easy way to achieve this is to allow for
-> machine_desc->nr_irqs < 0, which indicates not to preallocate any
-> interrupts.
-> 
-> Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+Cyrill Gorcunov <gorcunov@gmail.com> writes:
 
-I don't know if you saw my recent series on NR_IRQS clean-up (Make
-mach/irqs.h optional).
+> On Thu, Jan 19, 2012 at 06:57:00PM +0100, Oleg Nesterov wrote:
+>> On 01/19, Cyrill Gorcunov wrote:
+>> >
+>> > On Thu, Jan 19, 2012 at 07:51:12PM +0400, Cyrill Gorcunov wrote:
+>> > > If it's needed I can wrap all this with CONFIG_CHECKPOINT_RESTORE, should I?
+>> > >
+>> > > ---
+>> >
+>> > Oleg, if only I'm not missing something obvious you meant handling like below?
+>> 
+>> Yes, but...
+>> 
+>> > +struct proc_pid_children_iter {
+>> > +	struct pid_namespace *pid_ns;
+>> > +	struct pid *parent_pid;
+>> > +};
+>> 
+>> you forgot to remove this definition.
+>> 
+>
+> No, I rather forgot to quilt refresh :)
+>
+>> > +static int children_seq_show(struct seq_file *seq, void *v)
+>> > +{
+>> > +	struct inode *inode = seq->private;
+>> > +	unsigned long pid;
+>> > +
+>> > +	pid = (unsigned long)pid_nr_ns(v, inode->i_sb->s_fs_info);
+>> > +	return seq_printf(seq, " %lu", pid);
+>> > +}
+>> 
+>> just noticed... why unsigned long and %lu? afaics pid_t/%d should work
+>> without any typecasts.
+>> 
+>
+> I'm not sure how important it is, but Andrew mentioned in one of email
+> that we might be moving from pid_t from int to long one day (which of
+> course will require extreme huge work on checking code where int->long
+> transition might cause problems). So I thought why should I wait then?
+>
+> [ Andrew, am I correct? ]
 
-No doubt that arch_probe_nr_irqs is doing the wrong thing on ARM, but no
-pre-allocation is not what we want either. We ultimately want
-arch_probe_nr_irqs to return NR_IRQS_LEGACY (16) to reserve IRQ0 (aka
-NO_IRQ) and legacy ISA IRQs. With my series, NR_IRQS is set to
-NR_IRQS_LEGACY for SPARSE_IRQ. You can accomplish the same thing without
-that series by setting .nr_irqs to NR_IRQS for non-DT and to
-NR_IRQS_LEGACY for DT. For platforms to work in single kernel builds,
-they will need to select SPARSE_IRQ.
+It is going to take a lot to get to a > 32bit pid value.  I would not
+worry about it today unless there is some 64bit arch somewhere that defines
+pid_t as long.
 
-Rob
-
-> ---
->  arch/arm/include/asm/mach/arch.h |    2 +-
->  arch/arm/kernel/irq.c            |   14 ++++++++++++--
->  2 files changed, 13 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-> index d7692ca..cc6506a 100644
-> --- a/arch/arm/include/asm/mach/arch.h
-> +++ b/arch/arm/include/asm/mach/arch.h
-> @@ -22,7 +22,7 @@ struct machine_desc {
->  	const char *const 	*dt_compat;	/* array of device tree
->  						 * 'compatible' strings	*/
->  
-> -	unsigned int		nr_irqs;	/* number of IRQs */
-> +	int			nr_irqs;	/* number of IRQs */
->  
->  #ifdef CONFIG_ZONE_DMA
->  	unsigned long		dma_zone_size;	/* size of DMA-able area */
-> diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-> index 3efd82c..f74b173 100644
-> --- a/arch/arm/kernel/irq.c
-> +++ b/arch/arm/kernel/irq.c
-> @@ -129,8 +129,18 @@ void __init init_IRQ(void)
->  #ifdef CONFIG_SPARSE_IRQ
->  int __init arch_probe_nr_irqs(void)
->  {
-> -	nr_irqs = machine_desc->nr_irqs ? machine_desc->nr_irqs : NR_IRQS;
-> -	return nr_irqs;
-> +	/*
-> +	 * machine_desc->nr_irqs < 0 is a special case that
-> +	 * specifies not to preallocate any irq_descs.
-> +	 */
-> +	if (machine_desc->nr_irqs < 0) {
-> +		nr_irqs = 0;
-> +		return nr_irqs;
-> +	} else {
-> +		nr_irqs = machine_desc->nr_irqs ?
-> +			  machine_desc->nr_irqs : NR_IRQS;
-> +		return nr_irqs;
-> +	}
->  }
->  #endif
->  
-
+Eric
