@@ -1,283 +1,601 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab2ASCnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 21:43:22 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49082 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163Ab2ASCnU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 21:43:20 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 19 Jan 2012 11:42:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Balbir Singh <bsingharora@gmail.com>, akpm@linux-foundation.org
-Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
-Message-Id: <20120119114206.653b88bd.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1326912662-18805-1-git-send-email-asharma@fb.com>
-References: <1326912662-18805-1-git-send-email-asharma@fb.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757161Ab2ASC7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 21:59:16 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:47154 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753197Ab2ASC7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 21:59:15 -0500
+Date: Wed, 18 Jan 2012 18:55:49 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+CC: x86@kernel.org, Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 4/4] x86/platform: (TS-5500) add ADC support
+Message-ID: <20120119025549.GA20804@ericsson.com>
+References: <1326930731-21215-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <1326930731-21215-5-git-send-email-vivien.didelot@savoirfairelinux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1326930731-21215-5-git-send-email-vivien.didelot@savoirfairelinux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jan 2012 10:51:02 -0800
-Arun Sharma <asharma@fb.com> wrote:
-
-> This enables malloc optimizations where we might
-> madvise(..,MADV_DONTNEED) a page only to fault it
-> back at a different virtual address.
+On Wed, Jan 18, 2012 at 06:52:11PM -0500, Vivien Didelot wrote:
+> From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
 > 
-> To ensure that we don't leak sensitive data to
-> unprivileged processes, we enable this optimization
-> only for pages that are reused within a memory
-> cgroup.
-> 
-> The idea is to make this opt-in both at the mmap()
-> level and cgroup level so the default behavior is
-> unchanged after the patch.
-> 
-> TODO: Ask for a VM_UNINITIALIZED bit
-> TODO: Implement a cgroup level opt-in flag
-> 
-
-Hmm, then, 
-1. a new task jumped into this cgroup can see any uncleared data...
-2. if a memcg pointer is reused, the information will be leaked.
-3. If VM_UNINITALIZED is set, the process can see any data which
-   was freed by other process which doesn't know VM_UNINITALIZED at all.
-
-4. The process will be able to see file cache data which the it has no
-   access right if it's accessed by memcg once.
-
-3 & 4 seems too danger.
-
-Isn't it better to have this as per-task rather than per-memcg ?
-And just allow to reuse pages the page has freed ?
-
-
-Thanks,
--Kame
-
-
-> To: linux-kernel@vger.kernel.org
-> Cc: linux-mm@kvack.org
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: akpm@linux-foundation.org
-> Signed-off-by: Arun Sharma <asharma@fb.com>
+> Signed-off-by: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 > ---
->  include/asm-generic/mman-common.h |    6 +-----
->  include/linux/highmem.h           |    6 ++++++
->  include/linux/mm.h                |    2 ++
->  include/linux/mman.h              |    1 +
->  include/linux/page_cgroup.h       |   29 +++++++++++++++++++++++++++++
->  init/Kconfig                      |    2 +-
->  mm/mempolicy.c                    |   29 +++++++++++++++++++++++------
->  7 files changed, 63 insertions(+), 12 deletions(-)
+>  arch/x86/platform/ts5500/Kconfig      |    7 +
+>  arch/x86/platform/ts5500/Makefile     |    1 +
+>  arch/x86/platform/ts5500/ts5500_adc.c |  478 +++++++++++++++++++++++++++++++++
+>  3 files changed, 486 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/platform/ts5500/ts5500_adc.c
 > 
-> diff --git a/include/asm-generic/mman-common.h b/include/asm-generic/mman-common.h
-> index 787abbb..71e079f 100644
-> --- a/include/asm-generic/mman-common.h
-> +++ b/include/asm-generic/mman-common.h
-> @@ -19,11 +19,7 @@
->  #define MAP_TYPE	0x0f		/* Mask for type of mapping */
->  #define MAP_FIXED	0x10		/* Interpret addr exactly */
->  #define MAP_ANONYMOUS	0x20		/* don't use a file */
-> -#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
-> -# define MAP_UNINITIALIZED 0x4000000	/* For anonymous mmap, memory could be uninitialized */
-> -#else
-> -# define MAP_UNINITIALIZED 0x0		/* Don't support this flag */
-> -#endif
-> +#define MAP_UNINITIALIZED 0x4000000	/* For anonymous mmap, memory could be uninitialized */
->  
->  #define MS_ASYNC	1		/* sync memory asynchronously */
->  #define MS_INVALIDATE	2		/* invalidate the caches */
-> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-> index 3a93f73..caae922 100644
-> --- a/include/linux/highmem.h
-> +++ b/include/linux/highmem.h
-> @@ -4,6 +4,7 @@
->  #include <linux/fs.h>
->  #include <linux/kernel.h>
->  #include <linux/mm.h>
-> +#include <linux/page_cgroup.h>
->  #include <linux/uaccess.h>
->  #include <linux/hardirq.h>
->  
-> @@ -156,6 +157,11 @@ __alloc_zeroed_user_highpage(gfp_t movableflags,
->  	struct page *page = alloc_page_vma(GFP_HIGHUSER | movableflags,
->  			vma, vaddr);
->  
-> +#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
-> +	if (!page_needs_clearing(page, vma))
-> +		return page;
-> +#endif
-> +
->  	if (page)
->  		clear_user_highpage(page, vaddr);
->  
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 4baadd1..c6bab01 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -118,6 +118,8 @@ extern unsigned int kobjsize(const void *objp);
->  #define VM_SAO		0x20000000	/* Strong Access Ordering (powerpc) */
->  #define VM_PFN_AT_MMAP	0x40000000	/* PFNMAP vma that is fully mapped at mmap time */
->  #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
-> +#define VM_UNINITIALIZED VM_SAO		/* Steal a powerpc bit for now, since we're out
-> +					   of bits for 32 bit archs */
->  
->  /* Bits set in the VMA until the stack is in its final location */
->  #define VM_STACK_INCOMPLETE_SETUP	(VM_RAND_READ | VM_SEQ_READ)
-> diff --git a/include/linux/mman.h b/include/linux/mman.h
-> index 8b74e9b..9bef6c9 100644
-> --- a/include/linux/mman.h
-> +++ b/include/linux/mman.h
-> @@ -87,6 +87,7 @@ calc_vm_flag_bits(unsigned long flags)
->  	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
->  	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
->  	       _calc_vm_trans(flags, MAP_EXECUTABLE, VM_EXECUTABLE) |
-> +	       _calc_vm_trans(flags, MAP_UNINITIALIZED, VM_UNINITIALIZED) |
->  	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
->  }
->  #endif /* __KERNEL__ */
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index 961ecc7..e959869 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -155,6 +155,17 @@ static inline unsigned long page_cgroup_array_id(struct page_cgroup *pc)
->  	return (pc->flags >> PCG_ARRAYID_SHIFT) & PCG_ARRAYID_MASK;
->  }
->  
-> +static int mm_match_cgroup(const struct mm_struct *mm,
-> +			   const struct mem_cgroup *cgroup);
-> +static inline bool page_seen_by_cgroup(struct page *page,
-> +				       const struct mm_struct *mm)
-> +{
-> +	struct page_cgroup *pcg = lookup_page_cgroup(page);
-> +	if (pcg == NULL)
-> +		return false;
-> +	return mm_match_cgroup(mm, pcg->mem_cgroup);
-> +}
-> +
->  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
->  struct page_cgroup;
->  
-> @@ -175,8 +186,26 @@ static inline void __init page_cgroup_init_flatmem(void)
->  {
->  }
->  
-> +static inline bool page_seen_by_cgroup(struct page *page,
-> +				       const struct mm_struct *mm)
-> +{
-> +	return false;
-> +}
-> +
->  #endif /* CONFIG_CGROUP_MEM_RES_CTLR */
->  
-> +static inline bool vma_requests_uninitialized(struct vm_area_struct *vma)
-> +{
-> +	return vma && !vma->vm_file && vma->vm_flags & VM_UNINITIALIZED;
-> +}
-> +
-> +static inline bool page_needs_clearing(struct page *page,
-> +				       struct vm_area_struct *vma)
-> +{
-> +	return !(vma_requests_uninitialized(vma)
-> +		&& page_seen_by_cgroup(page, vma->vm_mm));
-> +}
-> +
->  #include <linux/swap.h>
->  
->  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 43298f9..428e047 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1259,7 +1259,7 @@ endchoice
->  
->  config MMAP_ALLOW_UNINITIALIZED
->  	bool "Allow mmapped anonymous memory to be uninitialized"
-> -	depends on EXPERT && !MMU
-> +	depends on EXPERT
->  	default n
->  	help
->  	  Normally, and according to the Linux spec, anonymous memory obtained
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index c3fdbcb..7c9ab68 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -90,6 +90,7 @@
->  #include <linux/syscalls.h>
->  #include <linux/ctype.h>
->  #include <linux/mm_inline.h>
-> +#include <linux/page_cgroup.h>
->  
->  #include <asm/tlbflush.h>
->  #include <asm/uaccess.h>
-> @@ -1847,6 +1848,11 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
->  	struct zonelist *zl;
->  	struct page *page;
->  
-> +#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
-> +	if (vma_requests_uninitialized(vma))
-> +		gfp &= ~__GFP_ZERO;
-> +#endif
-> +
->  	get_mems_allowed();
->  	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
->  		unsigned nid;
-> @@ -1854,25 +1860,36 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
->  		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
->  		mpol_cond_put(pol);
->  		page = alloc_page_interleave(gfp, order, nid);
-> -		put_mems_allowed();
-> -		return page;
-> +		goto out;
->  	}
->  	zl = policy_zonelist(gfp, pol, node);
->  	if (unlikely(mpol_needs_cond_ref(pol))) {
->  		/*
->  		 * slow path: ref counted shared policy
->  		 */
-> -		struct page *page =  __alloc_pages_nodemask(gfp, order,
-> -						zl, policy_nodemask(gfp, pol));
-> +		page =  __alloc_pages_nodemask(gfp, order,
-> +					       zl, policy_nodemask(gfp, pol));
->  		__mpol_put(pol);
-> -		put_mems_allowed();
-> -		return page;
-> +		goto out;
->  	}
-> +
->  	/*
->  	 * fast path:  default or task policy
->  	 */
->  	page = __alloc_pages_nodemask(gfp, order, zl,
->  				      policy_nodemask(gfp, pol));
-> +
-> +out:
-> +#ifdef CONFIG_MMAP_ALLOW_UNINITIALIZED
-> +	if (page_needs_clearing(page, vma)) {
-> +		int i;
-> +		for (i = 0; i < (1 << order); i++) {
-> +			void *kaddr = kmap_atomic(page + i, KM_USER0);
-> +			clear_page(kaddr);
-> +			kunmap_atomic(kaddr, KM_USER0);
-> +		}
-> +	}
-> +#endif
->  	put_mems_allowed();
->  	return page;
->  }
-> -- 
-> 1.7.4
-> 
-> 
+I can not comment about the other drivers, but this is a hwmon driver, and thus should
+reside in drivers/hwmon and be reviewed and handled on the hwmon mailing list (copied).
 
+Couple of additional comments below; just some things I noticed, not a complete review.
+
+> diff --git a/arch/x86/platform/ts5500/Kconfig b/arch/x86/platform/ts5500/Kconfig
+> index 76f777f..f1a5f1d 100644
+> --- a/arch/x86/platform/ts5500/Kconfig
+> +++ b/arch/x86/platform/ts5500/Kconfig
+> @@ -20,3 +20,10 @@ config TS5500_LED
+>  	default y
+>  	help
+>  	  This option enables support for the on-chip LED.
+> +
+> +config TS5500_ADC
+> +	tristate "TS-5500 ADC"
+> +	depends on TS5500 && HWMON=y
+> +	default y
+> +	help
+> +      Support for the A/D converter on Technologic Systems TS-5500 SBCs.
+> diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
+> index 88eccc9..dcf46d8 100644
+> --- a/arch/x86/platform/ts5500/Makefile
+> +++ b/arch/x86/platform/ts5500/Makefile
+> @@ -1,3 +1,4 @@
+>  obj-$(CONFIG_TS5500)			+= ts5500.o
+>  obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
+>  obj-$(CONFIG_TS5500_LED)		+= ts5500_led.o
+> +obj-$(CONFIG_TS5500_ADC)		+= ts5500_adc.o
+> diff --git a/arch/x86/platform/ts5500/ts5500_adc.c b/arch/x86/platform/ts5500/ts5500_adc.c
+> new file mode 100644
+> index 0000000..fc4560f
+> --- /dev/null
+> +++ b/arch/x86/platform/ts5500/ts5500_adc.c
+> @@ -0,0 +1,478 @@
+> +/*
+> + * Technologic Systems TS-5500 boards - Mapped MAX197 ADC driver
+> + *
+> + * Copyright (c) 2010-2012 Savoir-faire Linux Inc.
+> + *          Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> + *
+> + * Portions Copyright (C) 2008 Marc Pignat <marc.pignat@hevs.ch>
+> + *
+> + * The driver uses direct access for communication with the ADC.
+> + * Should work unchanged with the MAX199 chip.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + *
+> + * The TS-5500 uses a CPLD to abstract the interface to a MAX197.
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/device.h>
+> +#include <linux/delay.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/err.h>
+> +#include <linux/sysfs.h>
+> +#include <linux/hwmon.h>
+> +#include <linux/hwmon-sysfs.h>
+> +#include <linux/mutex.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include "ts5500.h"
+> +
+> +#define TS5500_ADC_CTRL_REG		0x195	/* Conversion state register */
+> +#define TS5500_ADC_INIT_LSB_REG		0x196	/* Init conv. / LSB register */
+> +#define TS5500_ADC_MSB_REG		0x197	/* MSB register */
+> +/*
+> + * Control bits of A/D command
+> + * bits 0-2:	selected channel (0 - 7)
+> + * bits 3:	uni/bipolar (0 = unipolar (ie 0 to +5V))
+> + *			    (1 = bipolar (ie -5 to +5V))
+> + * bit 4:	selected range (0 = 5v range, 1 = 10V range)
+> + * bit 5-7:	padded zero (unused)
+> + */
+> +
+> +#define TS5500_ADC_CHANNELS_MAX		8	/* 0 to 7 channels on device */
+> +
+> +#define TS5500_ADC_BIPOLAR		0x08
+> +#define TS5500_ADC_UNIPOLAR		0x00
+> +#define TS5500_ADC_RANGE_5V		0x00	/* 0 to 5V range */
+> +#define TS5500_ADC_RANGE_10V		0x10	/* 0 to 10V range */
+> +
+> +#define TS5500_ADC_READ_DELAY		15	/* usec */
+> +#define TS5500_ADC_READ_BUSY_MASK	0x01
+> +#define TS5500_ADC_NAME			"MAX197 (8 channels)"
+> +
+> +/**
+> + * struct ts5500_adc_platform_data
+> + * @name:	Name of the device.
+> + * @ioaddr:	I/O address containing:
+> + *		.data:		Data register for conversion reading.
+> + *		.ctrl:		A/D Control Register (bit 0 = 0 when
+> + *				conversion completed).
+> + * @read:	Information about conversion reading, with:
+> + *		.delay:		Delay before next conversion.
+> + *		.busy_mask:	Control register bit 0 equals 1 means
+> + *				conversion is not completed yet.
+> + * @ctrl:	Data tables addressable by [polarity][range].
+> + * @ranges:	Ranges.
+> + *		.min:		Min value.
+> + *		.max:		Max value.
+> + * @scale:	Polarity/Range coefficients to scale raw conversion reading.
+> + */
+> +struct ts5500_adc_platform_data {
+> +	const char *name;
+> +	struct {
+> +		int data;
+> +		int ctrl;
+> +	} ioaddr;
+> +	struct {
+> +		u8 delay;
+> +		u8 busy_mask;
+> +	} read;
+> +	u8 ctrl[2][2];
+
+const ?
+
+> +	struct {
+> +		int min[2][2];
+> +		int max[2][2];
+
+Should those be const ?
+
+> +	} ranges;
+> +	int scale[2][2];
+
+const ?
+
+> +};
+> +
+
+I am a bit lost about this structure and its use. It appears as if you expect that
+there will be other uses besides the one defined here (otherwise the variables would
+not make much sense and you could use defines), yet it is all defined in this file
+and thus static. Please elaborate.
+
+> +#define ts5500_adc_test_bit(bit, map)	(test_bit(bit, map) != 0)
+> +
+Why "!= 0" ? Isn't that implied ? And then why the define to start with ?
+
+> +/**
+> + * struct ts5500_adc_chip
+> + * @hwmon_dev:		The hwmon device.
+> + * @lock:		Read/Write mutex.
+> + * @spec:		The mapped MAX197 platform data.
+> + * @polarity:		bitmap for polarity.
+> + * @range:		bitmap for range.
+> + */
+> +struct ts5500_adc_chip {
+> +	struct device *hwmon_dev;
+> +	struct mutex lock;
+> +	struct ts5500_adc_platform_data spec;
+> +	DECLARE_BITMAP(polarity, TS5500_ADC_CHANNELS_MAX);
+> +	DECLARE_BITMAP(range, TS5500_ADC_CHANNELS_MAX);
+> +};
+> +
+> +static s32 ts5500_adc_scale(struct ts5500_adc_chip *chip, s16 raw,
+> +			    int polarity, int range)
+> +{
+> +	s32 scaled = raw;
+> +
+> +	scaled *= chip->spec.scale[polarity][range];
+> +	scaled /= 10000;
+> +
+> +	return scaled;
+> +}
+> +
+> +static int ts5500_adc_range(struct ts5500_adc_chip *chip, int is_min,
+> +			       int polarity, int range)
+> +{
+> +	if (is_min)
+> +		return chip->spec.ranges.min[polarity][range];
+> +	return chip->spec.ranges.max[polarity][range];
+> +}
+> +
+> +static int ts5500_adc_strtol(const char *buf, long *value, int range1,
+> +				int range2)
+> +{
+> +	if (strict_strtol(buf, 10, value))
+
+checkpatch warning.
+
+> +		return -EINVAL;
+> +
+> +	if (range1 < range2)
+> +		*value = SENSORS_LIMIT(*value, range1, range2);
+> +	else
+> +		*value = SENSORS_LIMIT(*value, range2, range1);
+> +
+> +	return 0;
+> +}
+This function is called exactly once. Why not just embed it in the calling code ?
+
+> +
+> +static struct ts5500_adc_chip *ts5500_adc_get_drvdata(struct device *dev)
+> +{
+> +	return platform_get_drvdata(to_platform_device(dev));
+> +}
+> +
+> +/**
+> + * ts5500_adc_show_range() - Display range on user output
+> + *
+> + * Function called on read access on
+> + * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_{min,max}
+> + */
+> +static ssize_t ts5500_adc_show_range(struct device *dev,
+> +				 struct device_attribute *devattr, char *buf)
+> +{
+> +	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
+> +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+> +	int is_min = attr->nr != 0;
+> +	int polarity, range;
+> +
+> +	if (mutex_lock_interruptible(&chip->lock))
+> +		return -ERESTARTSYS;
+> +
+> +	polarity = ts5500_adc_test_bit(attr->index, chip->polarity);
+> +	range = ts5500_adc_test_bit(attr->index, chip->range);
+> +
+> +	mutex_unlock(&chip->lock);
+> +
+> +	return sprintf(buf, "%d\n",
+> +		       ts5500_adc_range(chip, is_min, polarity, range));
+> +}
+> +
+> +/**
+> + * ts5500_adc_store_range() - Write range from user input
+> + *
+> + * Function called on write access on
+> + * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_{min,max}
+> + */
+> +static ssize_t ts5500_adc_store_range(struct device *dev,
+> +				  struct device_attribute *devattr,
+> +				  const char *buf, size_t count)
+> +{
+> +	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
+> +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+> +	int is_min = attr->nr != 0;
+> +	int range1 = ts5500_adc_range(chip, is_min, 0, 0);
+> +	int range2 = ts5500_adc_range(chip, is_min, 1, 1);
+> +	long value;
+> +
+> +	if (ts5500_adc_strtol(buf, &value, range1, range2))
+> +		return -EINVAL;
+> +
+> +	if (mutex_lock_interruptible(&chip->lock))
+> +		return -ERESTARTSYS;
+> +
+> +	if (abs(value) > 5000)
+> +		set_bit(attr->index, chip->range);
+> +	else
+> +		clear_bit(attr->index, chip->range);
+> +
+> +	if (is_min) {
+> +		if (value < 0)
+> +			set_bit(attr->index, chip->polarity);
+> +		else
+> +			clear_bit(attr->index, chip->polarity);
+> +	}
+> +
+> +	mutex_unlock(&chip->lock);
+> +
+> +	return count;
+> +}
+> +
+> +/**
+> + * ts5500_adc_show_input() - Show channel input
+> + *
+> + * Function called on read access on
+> + * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_input
+> + */
+> +static ssize_t ts5500_adc_show_input(struct device *dev,
+> +				     struct device_attribute *devattr,
+> +				     char *buf)
+> +{
+> +	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
+> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+> +	int polarity, range;
+> +	int ret;
+> +	u8 command;
+> +
+> +	if (mutex_lock_interruptible(&chip->lock))
+> +		return -ERESTARTSYS;
+> +
+> +	polarity = ts5500_adc_test_bit(attr->index, chip->polarity);
+> +	range = ts5500_adc_test_bit(attr->index, chip->range);
+> +
+> +	command = attr->index | chip->spec.ctrl[polarity][range];
+> +
+> +	outb(command, chip->spec.ioaddr.data);
+> +
+> +	udelay(chip->spec.read.delay);
+> +	ret = inb(chip->spec.ioaddr.ctrl);
+> +
+> +	if (ret & chip->spec.read.busy_mask) {
+> +		dev_err(dev, "device not ready (ret=0x0%x, try=%d)\n", ret,
+> +			range);
+
+What does "try=" have to do with the displayed "range" ?
+
+> +		ret = -EIO;
+> +	} else {
+> +		/* LSB of conversion is at 0x196 and MSB is at 0x197 */
+> +		u8 lsb = inb(chip->spec.ioaddr.data);
+> +		u8 msb = inb(chip->spec.ioaddr.data + 1);
+> +		s16 raw = (msb << 8) | lsb;
+> +		s32 scaled = ts5500_adc_scale(chip, raw, polarity, range);
+> +
+> +		ret = sprintf(buf, "%d\n", scaled);
+> +	}
+> +
+> +	mutex_unlock(&chip->lock);
+> +	return ret;
+> +}
+> +
+> +static ssize_t ts5500_adc_show_name(struct device *dev,
+> +	struct device_attribute *devattr, char *buf)
+> +{
+> +	return sprintf(buf, "%s\n", ts5500_adc_get_drvdata(dev)->spec.name);
+> +}
+> +
+> +#define TS5500_ADC_HWMON_CHANNEL(chan)				\
+> +	SENSOR_DEVICE_ATTR(in##chan##_input, S_IRUGO,		\
+> +			   ts5500_adc_show_input, NULL, chan);	\
+> +	SENSOR_DEVICE_ATTR_2(in##chan##_max, S_IRUGO | S_IWUSR,	\
+> +			     ts5500_adc_show_range,		\
+> +			     ts5500_adc_store_range, 0, chan);	\
+> +	SENSOR_DEVICE_ATTR_2(in##chan##_min, S_IRUGO | S_IWUSR,	\
+> +			     ts5500_adc_show_range,		\
+> +			     ts5500_adc_store_range, 1, chan)	\
+> +
+> +#define TS5500_ADC_SYSFS_CHANNEL(chan)				\
+> +	&sensor_dev_attr_in##chan##_input.dev_attr.attr,	\
+> +	&sensor_dev_attr_in##chan##_max.dev_attr.attr,		\
+> +	&sensor_dev_attr_in##chan##_min.dev_attr.attr
+> +
+> +static DEVICE_ATTR(name, S_IRUGO, ts5500_adc_show_name, NULL);
+> +
+> +static TS5500_ADC_HWMON_CHANNEL(0);
+> +static TS5500_ADC_HWMON_CHANNEL(1);
+> +static TS5500_ADC_HWMON_CHANNEL(2);
+> +static TS5500_ADC_HWMON_CHANNEL(3);
+> +static TS5500_ADC_HWMON_CHANNEL(4);
+> +static TS5500_ADC_HWMON_CHANNEL(5);
+> +static TS5500_ADC_HWMON_CHANNEL(6);
+> +static TS5500_ADC_HWMON_CHANNEL(7);
+> +
+Looks good at first glance, but unless I misunderstand something, each define generates
+three structures, yet only the first of those is declared static, the others are global.
+
+> +static const struct attribute_group ts5500_adc_sysfs_group = {
+> +	.attrs = (struct attribute *[]) {
+
+checkpatch error.
+
+> +		&dev_attr_name.attr,
+> +		TS5500_ADC_SYSFS_CHANNEL(0),
+> +		TS5500_ADC_SYSFS_CHANNEL(1),
+> +		TS5500_ADC_SYSFS_CHANNEL(2),
+> +		TS5500_ADC_SYSFS_CHANNEL(3),
+> +		TS5500_ADC_SYSFS_CHANNEL(4),
+> +		TS5500_ADC_SYSFS_CHANNEL(5),
+> +		TS5500_ADC_SYSFS_CHANNEL(6),
+> +		TS5500_ADC_SYSFS_CHANNEL(7),
+> +		NULL
+> +	}
+> +};
+> +
+> +static int __devinit ts5500_adc_probe(struct platform_device *pdev)
+> +{
+> +	struct ts5500_adc_platform_data *pdata = pdev->dev.platform_data;
+> +	struct ts5500_adc_chip *chip;
+> +	int ret;
+> +
+> +	if (pdata == NULL)
+> +		return -ENODEV;
+> +
+> +	chip = kzalloc(sizeof *chip, GFP_KERNEL);
+> +	if (!chip)
+> +		return -ENOMEM;
+> +
+> +	chip->spec = *pdata;
+> +
+> +	mutex_init(&chip->lock);
+> +	mutex_lock(&chip->lock);
+
+Probe function does not need a lock if you rearrange the code below.
+
+> +
+> +	ret = sysfs_create_group(&pdev->dev.kobj, &ts5500_adc_sysfs_group);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "sysfs_create_group failed.\n");
+> +		goto error_unlock_and_free;
+> +	}
+> +
+> +	chip->hwmon_dev = hwmon_device_register(&pdev->dev);
+> +	if (IS_ERR(chip->hwmon_dev)) {
+> +		dev_err(&pdev->dev, "hwmon_device_register failed.\n");
+> +		ret = PTR_ERR(chip->hwmon_dev);
+> +		goto error_unregister_device;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, chip);
+
+Set this before creating sysfs entries.
+
+> +	mutex_unlock(&chip->lock);
+> +	return 0;
+> +
+> +error_unregister_device:
+> +	sysfs_remove_group(&pdev->dev.kobj, &ts5500_adc_sysfs_group);
+> +
+> +error_unlock_and_free:
+> +	mutex_unlock(&chip->lock);
+> +	kfree(chip);
+> +	return ret;
+> +}
+> +
+> +static void ts5500_adc_release(struct device *dev)
+> +{
+> +	/* noop */
+> +}
+
+Is this really needed ? Just wondering.
+
+> +
+> +static struct resource ts5500_adc_resources[] = {
+> +	{
+> +		.name  = "ts5500_adc" "-data",
+> +		.start = TS5500_ADC_INIT_LSB_REG,
+> +		.end   = TS5500_ADC_MSB_REG,
+> +		.flags = IORESOURCE_IO,
+> +	},
+> +	{
+> +		.name  = "ts5500_adc" "-ctrl",
+> +		.start = TS5500_ADC_CTRL_REG,
+> +		.end   = TS5500_ADC_CTRL_REG,
+> +		.flags = IORESOURCE_IO,
+> +	}
+> +};
+> +
+> +static struct ts5500_adc_platform_data ts5500_adc_platform_data = {
+> +	.name = TS5500_ADC_NAME,
+> +	.ioaddr = {
+> +		.data = TS5500_ADC_INIT_LSB_REG,
+> +		.ctrl = TS5500_ADC_CTRL_REG,
+> +	},
+> +	.read = {
+> +		.delay     = TS5500_ADC_READ_DELAY,
+> +		.busy_mask = TS5500_ADC_READ_BUSY_MASK,
+> +	},
+> +	.ctrl = {
+> +		{ TS5500_ADC_UNIPOLAR | TS5500_ADC_RANGE_5V,
+> +		  TS5500_ADC_UNIPOLAR | TS5500_ADC_RANGE_10V },
+> +		{ TS5500_ADC_BIPOLAR  | TS5500_ADC_RANGE_5V,
+> +		  TS5500_ADC_BIPOLAR  | TS5500_ADC_RANGE_10V },
+> +	},
+> +	.ranges = {
+> +		.min = {
+> +			{  0,     0 },
+> +			{ -5000, -10000 },
+> +		},
+> +		.max = {
+> +			{  5000,  10000 },
+> +			{  5000,  10000 },
+> +		},
+> +	},
+> +	.scale = {
+> +		{ 12207, 24414 },
+> +		{ 24414, 48828 },
+> +	},
+> +};
+> +
+> +static struct platform_device ts5500_adc_device = {
+> +	.name = "ts5500_adc",
+> +	.id = -1,
+> +	.resource = ts5500_adc_resources,
+> +	.num_resources = ARRAY_SIZE(ts5500_adc_resources),
+> +	.dev = {
+> +		.platform_data = &ts5500_adc_platform_data,
+> +		.release = ts5500_adc_release,
+> +	},
+> +};
+> +
+Usually all the above would be in a platform file.
+
+> +static int __devexit ts5500_adc_remove(struct platform_device *pdev)
+> +{
+> +	struct ts5500_adc_chip *chip = platform_get_drvdata(pdev);
+> +
+> +	mutex_lock(&chip->lock);
+> +	hwmon_device_unregister(chip->hwmon_dev);
+> +	sysfs_remove_group(&pdev->dev.kobj, &ts5500_adc_sysfs_group);
+> +	platform_set_drvdata(pdev, NULL);
+> +	mutex_unlock(&chip->lock);
+
+Lock not needed here.
+
+> +	kfree(chip);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver ts5500_adc_driver = {
+> +	.driver	= {
+> +		.name	= "ts5500_adc",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +	.probe	= ts5500_adc_probe,
+> +	.remove	= __devexit_p(ts5500_adc_remove)
+> +};
+> +
+> +static int __init ts5500_adc_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = platform_driver_register(&ts5500_adc_driver);
+> +	if (ret)
+> +		goto error_out;
+> +
+> +	ret = platform_device_register(&ts5500_adc_device);
+> +	if (ret)
+> +		goto error_device_register;
+> +
+> +	return 0;
+> +
+> +error_device_register:
+> +	platform_driver_unregister(&ts5500_adc_driver);
+> +error_out:
+> +	return ret;
+> +}
+> +module_init(ts5500_adc_init);
+> +
+> +static void __exit ts5500_adc_exit(void)
+> +{
+> +	platform_driver_unregister(&ts5500_adc_driver);
+> +	platform_device_unregister(&ts5500_adc_device);
+> +}
+> +module_exit(ts5500_adc_exit);
+> +
+> +MODULE_DESCRIPTION("TS-5500 mapped MAX197 ADC device driver");
+> +MODULE_AUTHOR("Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>");
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.7.6.5
+> 
+> 
