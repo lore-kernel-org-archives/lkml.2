@@ -1,95 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932865Ab2ASTsy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 14:48:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49926 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932670Ab2ASTsx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 14:48:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120119171808.GB23144@ubuntu-macmini>
-References: <20120119171808.GB23144@ubuntu-macmini>
-Date: Thu, 19 Jan 2012 14:48:52 -0500
-Message-ID: <CADnq5_MiLE0XSpbrd66003DVxdR9c4MgQav3BD+bWtrKvbf+7Q@mail.gmail.com>
-Subject: Re: radeon issues on MacBook Pro 8,2
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Dave Airlie <airlied@redhat.com>, Alex Deucher <alexander.deucher@amd.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932868Ab2ASTt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 14:49:57 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:43268 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932670Ab2ASTtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 14:49:55 -0500
+Message-ID: <1327002594.6404.27.camel@joe2Laptop>
+Subject: Re: [PATCH] serial: trivial checkpatch fixes in
+ drivers/tty/serial/8250.c
+From: Joe Perches <joe@perches.com>
+To: Simon Glass <sjg@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <trivial@kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
+Date: Thu, 19 Jan 2012 11:49:54 -0800
+In-Reply-To: <1327001868-29941-1-git-send-email-sjg@chromium.org>
+References: <1327001868-29941-1-git-send-email-sjg@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 12:18 PM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> I'm seeing several issues related to the radeon driver on a MacBook Pro
-> 8,2 with the following graphics card:
->
->  ATI Technologies Inc Whistler [AMD Radeon HD 6600M Series] [1002:6741]
->
-> All problems were observed when using kernel version 3.2.1. None are
-> seen when using fglrx.
->
->  1. Excessive power draw. When using the radeon driver ACPI reports a
->    power draw of about 30W on an idle desktop. Using fglrx brings this
->    number down to 15W.
+On Thu, 2012-01-19 at 11:37 -0800, Simon Glass wrote:
+> This makes the file checkpatch clean, fixing these warnings:
 
-The power saving features of the open source driver are not yet as
-good as the closed source driver.  Please see the power management
-section of this page (http://wiki.x.org/wiki/RadeonFeature) for more
-info on the options currently available.
+Some comments...
 
->
->  2. Occasional long delays when suspending. When this happens I see
->    messages like following in dmesg:
->
->      [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs aborting
->      [drm:atom_execute_table_locked] *ERROR* atombios stuck executing D44E (len 62, WS 0, PS 0) @ 0xD46A
->
->    Sometimes one of suspend or resume hangs completely, but I can't
->    tell which and am not sure whether or not it's related. I'm also
->    testing a Mac Mini with the exact same card which does not seem to
->    suffer from this issue.
->
->    I ran a bisections that identified f8d0edd (drm/radeon/kms: improve
->    DP detect logic) as introducing problems with suspend, and reverting
->    this patch on top of 3.2.1 does seem to eliminate both issues.
->
+> This warning remains, since I am not sure how to fix it:
+> error: drivers/tty/serial/8250.c,2929: Macros with complex values should
+> 	be enclosed in parenthesis
 
-That patch doesn't really affect the modesetting paths directly; it
-looks like a red herring to me.
+you can ignore this warning.
 
->  3. When the LVDS panel is powered off and back on, the display
->    flickers, as if the backlight is cycling rapidly between low and
->    high brightness. If the panel is left on this effect gradually
->    lessens and is eventually no longer noticable. This is not seen with
->    fglrx.
->
+> diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
+[]
+> @@ -669,7 +669,8 @@ static void disable_rsa(struct uart_8250_port *up)
+>  		result = !(mode & UART_RSA_MSR_FIFO);
+>  
+>  		if (!result) {
+> -
+> 			serial_outp(up, UART_RSA_MSR, mode & ~UART_RSA_MSR_FIFO);
+> +			serial_outp(up, UART_RSA_MSR, mode
+> +					& ~UART_RSA_MSR_FIFO);
 
-For the sake of tracking this properly, it would probably be best to file a bug:
-https://bugs.freedesktop.org
-Product: DRI
-Component: DRM/Radeon
-What connectors does your card actually have on it?  Please attach a
-copy of your dmesg output and vbios:
-(as root)
-(use lspci to get the bus id)
-cd /sys/bus/pci/devices/<pci bus id>
-echo 1 > rom
-cat rom > /tmp/vbios.rom
-echo 0 > rom
+If it's really necessary to use 80 columns,
+I'd prefer this sort of change be:
+			serial_outp(up, UART_RSA_MSR,
+				    mode & ~UART_RSA_MSR_FIFO);
 
-Also, keep in mind that this is a mac so it's likely there may be
-wonky mac specific problems.
+[]
+> @@ -2006,7 +2010,8 @@ static int serial8250_startup(struct uart_port *port)
+>  	 */
+>  	if (!(up->port.flags & UPF_BUGGY_UART) &&
+>  	    (serial_inp(up, UART_LSR) == 0xff)) {
+> -		printk_ratelimited(KERN_INFO "ttyS%d: LSR safety check engaged!\n",
+> +		printk_ratelimited(KERN_INFO
 
-Alex
+		pr_info_ratelimited()
 
-> Thanks,
-> Seth
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+> @@ -2019,10 +2024,13 @@ static int serial8250_startup(struct uart_port *port)
+>  
+>  		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
+>  
+> -		fctr = serial_inp(up, UART_FCTR) & ~(UART_FCTR_RX|UART_FCTR_TX);
+> -		serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD | UART_FCTR_RX);
+> +		fctr = serial_inp(up, UART_FCTR) &
+> +				  ~(UART_FCTR_RX | UART_FCTR_TX);
+> +		serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD |
+> +			    UART_FCTR_RX);
+
+I think it's better to have all the or's
+on the same line where possible.
+
+		serial_outp(up, UART_FCTR,
+			    fctr | UART_FCTR_TRGD | UART_FCTR_RX);
+
+
+> @@ -3130,7 +3139,8 @@ static struct platform_device *serial8250_isa_devs;
+>   */
+>  static DEFINE_MUTEX(serial_mutex);
+>  
+> -static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *port)
+> +static struct uart_8250_port *serial8250_find_match_or_unused(
+> +						struct uart_port *port)
+
+It might be better to use
+
+static struct uart_8250_port *
+serial8250_find_match_or_unused(struct uart_port *port)
+{
+> @ -3345,10 +3352,12 @@ MODULE_PARM_DESC(share_irqs, "Share IRQs with other non-8250/16x50 devices"
+>  	" (unsafe)");
+>  
+>  module_param(nr_uarts, uint, 0644);
+> -MODULE_PARM_DESC(nr_uarts, "Maximum number of UARTs supported. (1-" __MODULE_STRING(CONFIG_SERIAL_8250_NR_UARTS) ")");
+> +MODULE_PARM_DESC(nr_uarts, "Maximum number of UARTs supported. (1-" \
+> +		 __MODULE_STRING(CONFIG_SERIAL_8250_NR_UARTS) ")");
+
+Broken.
+
+Don't use line continuations with whitespace on the next line.
+Better not use line continations at all except in #defines
+
+ 
+>  module_param(skip_txen_test, uint, 0644);
+> -MODULE_PARM_DESC(skip_txen_test, "Skip checking for the TXEN bug at init time");
+> +MODULE_PARM_DESC(skip_txen_test, \
+> +		"Skip checking for the TXEN bug at init time");
+
+Useless line continuation.
+
+
