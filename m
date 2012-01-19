@@ -1,316 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791Ab2ASTfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 14:35:00 -0500
-Received: from mx1.gd-ms.com ([153.11.250.40]:38440 "EHLO mx1.gd-ms.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932675Ab2ASTe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 14:34:59 -0500
-In-Reply-To: <4F186C62.6000606@zytor.com>
-References: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>	<20120117195841.48fe8236@pyramind.ukuu.org.uk> <OFD4BB6876.6D903346-ON8525798A.00550E62-8525798A.005562A3@gdeb.com> <20120119154504.710e202e@pyramind.ukuu.org.uk> <OF8642E997.5ED041E1-ON8525798A.0056983A-8525798A.0056E05B@LocalDomain> <OF2B909250.6078896E-ON8525798A.0058FF49-8525798A.0061AEA1@gdeb.com> <4F18584F.7060603@zytor.com> <OFE1B368BB.B6249713-ON8525798A.00692513-8525798A.0069B44E@gdeb.com> <4F186C62.6000606@zytor.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
-        michael.d.labriola@gmail.com, Ingo Molnar <mingo@elte.hu>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, support@versalogic.com,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-MIME-Version: 1.0
-Subject: Re: [PATCH] x86, reboot: skip DMI checks if reboot set by user
-X-KeepSent: DCB45687:59B41E0E-8525798A:006AB19B;
- type=4; name=$KeepSent
-Message-ID: <OFDCB45687.59B41E0E-ON8525798A.006AB19B-8525798A.006B8F71@gdeb.com>
-From: Michael D Labriola <mlabriol@gdeb.com>
-Date: Thu, 19 Jan 2012 14:34:48 -0500
-X-GDMEncrypt: FALSE
-X-GDMMarking: NOT_SENSITIVE
-Content-Type: text/plain; charset="US-ASCII"
-X-GDM-EVAL: score: /30; hits: 
+	id S932797Ab2ASTh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 14:37:58 -0500
+Received: from mail-fx0-f74.google.com ([209.85.161.74]:62015 "EHLO
+	mail-fx0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932675Ab2ASThz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 14:37:55 -0500
+From: Simon Glass <sjg@chromium.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jiri Kosina <trivial@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-serial@vger.kernel.org, Simon Glass <sjg@chromium.org>
+Subject: [PATCH] serial: trivial checkpatch fixes in drivers/tty/serial/8250.c
+Date: Thu, 19 Jan 2012 11:37:47 -0800
+Message-Id: <1327001868-29941-1-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin" <hpa@zytor.com> wrote on 01/19/2012 02:17:54 PM:
+This makes the file checkpatch clean, fixing these warnings:
 
-> On 01/19/2012 11:14 AM, Michael D Labriola wrote:
-> >>
-> >> Yes, and such a patch would be appreciated.
-> >>
-> >> The reason it is as it is dates back to before the 32-64 bit 
-> >> unification, as far as I know.
-> >>
-> >> (BIOS reboot is currently not supported on 64 bits, mainly.)
-> > 
-> > Well, that does complicate it a bit.  I'll gin something up and see 
-what
-> > you think.  I guess it will involve having an #ifdef CONFIG_X86_32 
-block
-> > inside a single dmi_table structure for the BIOS quirks.
-> > 
-> > Actually, set_kbd_reboot is inside the current X86_32 only block, 
-along
-> > with the one DMI callback that uses it.  Is this correct?
-> > 
-> 
-> Probably not, although I suspect most of the users of that are 32-bit
-> only systems.
+warning: drivers/tty/serial/8250.c,86: please, no space before tabs
+warning: drivers/tty/serial/8250.c,345: please, no space before tabs
+warning: drivers/tty/serial/8250.c,672: line over 80 characters
+warning: drivers/tty/serial/8250.c,1070: line over 80 characters
+warning: drivers/tty/serial/8250.c,1517: line over 80 characters
+warning: drivers/tty/serial/8250.c,1519: line over 80 characters
+warning: drivers/tty/serial/8250.c,2009: line over 80 characters
+warning: drivers/tty/serial/8250.c,2023: line over 80 characters
+warning: drivers/tty/serial/8250.c,2025: line over 80 characters
+warning: drivers/tty/serial/8250.c,2230: line over 80 characters
+error: drivers/tty/serial/8250.c,2252: code indent should use tabs where
+	possible
+warning: drivers/tty/serial/8250.c,3056: line over 80 characters
+warning: drivers/tty/serial/8250.c,3133: line over 80 characters
+warning: drivers/tty/serial/8250.c,3337: EXPORT_SYMBOL(foo); should
+	immediately follow its function/variable
+warning: drivers/tty/serial/8250.c,3338: EXPORT_SYMBOL(foo); should
+	immediately follow its function/variable
+warning: drivers/tty/serial/8250.c,3348: line over 80 characters
 
-How does this look?  The patch looks kinda nasty because of how much code
-is getting moved around...  Basically, all I did was move the reboot_init
-method and reboot_dmi_table out of the X86_32 block they were in, put the
-quirks that set BIOS reboot inside an X86_32 define block, and then added
-all the PCI quirks into the new, single DMI table.  I did also move the
-set_kbd_reboot method out of the X86_32 block, since all the
-documentation I've run into in the kernel suggests that it's valid for
-X86_64 as well.
+This warning remains, since I am not sure how to fix it:
+error: drivers/tty/serial/8250.c,2929: Macros with complex values should
+	be enclosed in parenthesis
 
-I even tested it by adding an entry to reboot_dmi_table for my machine
-and verified that behavior is the same as before the reorg.
+I am not sure if trivial includes all of the above - please let me know.
 
-Note that this patch got generated from my test tree, so it'll have
-conflicts if applied against v3.2.  I'll rebase it and weed that stuff
-out if you think it's a good idea.
+Signed-off-by: Simon Glass <sjg@chromium.org>
+---
+ drivers/tty/serial/8250.c |   53 ++++++++++++++++++++++++++------------------
+ 1 files changed, 31 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index d840e69..e739737 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -150,6 +150,80 @@ static int __init set_bios_reboot(const struct 
-dmi_system_id *d)
-        return 0;
+diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
+index 9f50c4e..5e72f99 100644
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -83,7 +83,7 @@ static unsigned int skip_txen_test; /* force skip of txen test at init time */
+ 
+ #define PASS_LIMIT	512
+ 
+-#define BOTH_EMPTY 	(UART_LSR_TEMT | UART_LSR_THRE)
++#define BOTH_EMPTY	(UART_LSR_TEMT | UART_LSR_THRE)
+ 
+ 
+ /*
+@@ -342,7 +342,7 @@ static const u8
+ 		[UART_SCR]	= 0x2c
+ 	},
+ 	regmap_out[8] = {
+-		[UART_TX] 	= 0x04,
++		[UART_TX]	= 0x04,
+ 		[UART_IER]	= 0x0c,
+ 		[UART_FCR]	= 0x18,
+ 		[UART_LCR]	= 0x1c,
+@@ -669,7 +669,8 @@ static void disable_rsa(struct uart_8250_port *up)
+ 		result = !(mode & UART_RSA_MSR_FIFO);
+ 
+ 		if (!result) {
+-			serial_outp(up, UART_RSA_MSR, mode & ~UART_RSA_MSR_FIFO);
++			serial_outp(up, UART_RSA_MSR, mode
++					& ~UART_RSA_MSR_FIFO);
+ 			mode = serial_inp(up, UART_RSA_MSR);
+ 			result = !(mode & UART_RSA_MSR_FIFO);
+ 		}
+@@ -865,7 +866,7 @@ static int broken_efr(struct uart_8250_port *up)
+ 	/*
+ 	 * Exar ST16C2550 "A2" devices incorrectly detect as
+ 	 * having an EFR, and report an ID of 0x0201.  See
+-	 * http://linux.derkeiler.com/Mailing-Lists/Kernel/2004-11/4812.html 
++	 * http://linux.derkeiler.com/Mailing-Lists/Kernel/2004-11/4812.html
+ 	 */
+ 	if (autoconfig_read_divisor_id(up) == 0x0201 && size_fifo(up) == 16)
+ 		return 1;
+@@ -1067,7 +1068,8 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+ 		return;
+ 
+ 	DEBUG_AUTOCONF("ttyS%d: autoconf (0x%04lx, 0x%p): ",
+-		       serial_index(&up->port), up->port.iobase, up->port.membase);
++		       serial_index(&up->port), up->port.iobase,
++		       up->port.membase);
+ 
+ 	/*
+ 	 * We really do need global IRQs disabled here - we're going to
+@@ -1514,9 +1516,11 @@ unsigned int serial8250_modem_status(struct uart_8250_port *up)
+ 		if (status & UART_MSR_DDSR)
+ 			up->port.icount.dsr++;
+ 		if (status & UART_MSR_DDCD)
+-			uart_handle_dcd_change(&up->port, status & UART_MSR_DCD);
++			uart_handle_dcd_change(&up->port,
++					       status & UART_MSR_DCD);
+ 		if (status & UART_MSR_DCTS)
+-			uart_handle_cts_change(&up->port, status & UART_MSR_CTS);
++			uart_handle_cts_change(&up->port,
++					       status & UART_MSR_CTS);
+ 
+ 		wake_up_interruptible(&up->port.state->port.delta_msr_wait);
+ 	}
+@@ -2006,7 +2010,8 @@ static int serial8250_startup(struct uart_port *port)
+ 	 */
+ 	if (!(up->port.flags & UPF_BUGGY_UART) &&
+ 	    (serial_inp(up, UART_LSR) == 0xff)) {
+-		printk_ratelimited(KERN_INFO "ttyS%d: LSR safety check engaged!\n",
++		printk_ratelimited(KERN_INFO
++				   "ttyS%d: LSR safety check engaged!\n",
+ 				   serial_index(&up->port));
+ 		return -ENODEV;
+ 	}
+@@ -2019,10 +2024,13 @@ static int serial8250_startup(struct uart_port *port)
+ 
+ 		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
+ 
+-		fctr = serial_inp(up, UART_FCTR) & ~(UART_FCTR_RX|UART_FCTR_TX);
+-		serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD | UART_FCTR_RX);
++		fctr = serial_inp(up, UART_FCTR) &
++				  ~(UART_FCTR_RX | UART_FCTR_TX);
++		serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD |
++			    UART_FCTR_RX);
+ 		serial_outp(up, UART_TRG, UART_TRG_96);
+-		serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD | UART_FCTR_TX);
++		serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD |
++			    UART_FCTR_TX);
+ 		serial_outp(up, UART_TRG, UART_TRG_96);
+ 
+ 		serial_outp(up, UART_LCR, 0);
+@@ -2247,9 +2255,8 @@ static unsigned int serial8250_get_divisor(struct uart_port *port, unsigned int
+ 	return quot;
  }
  
-+extern const unsigned char machine_real_restart_asm[];
-+extern const u64 machine_real_restart_gdt[3];
-+
-+void machine_real_restart(unsigned int type)
-+{
-+       void *restart_va;
-+       unsigned long restart_pa;
-+       void (*restart_lowmem)(unsigned int);
-+       u64 *lowmem_gdt;
-+
-+       local_irq_disable();
-+
-+       /* Write zero to CMOS register number 0x0f, which the BIOS POST
-+          routine will recognize as telling it to do a proper reboot. 
-(Well
-+          that's what this book in front of me says -- it may only apply 
-to
-+          the Phoenix BIOS though, it's not clear).  At the same time,
-+          disable NMIs by setting the top bit in the CMOS address 
-register,
-+          as we're about to do peculiar things to the CPU.  I'm not sure 
-if
-+          `outb_p' is needed instead of just `outb'.  Use it to be on the
-+          safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
-+        */
-+       spin_lock(&rtc_lock);
-+       CMOS_WRITE(0x00, 0x8f);
-+       spin_unlock(&rtc_lock);
-+
-+       /*
-+        * Switch back to the initial page table.
-+        */
-+       load_cr3(initial_page_table);
-+
-+       /* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
-+          this on booting to tell it to "Bypass memory test (also warm
-+          boot)".  This seems like a fairly standard thing that gets set 
-by
-+          REBOOT.COM programs, and the previous reset routine did this
-+          too. */
-+       *((unsigned short *)0x472) = reboot_mode;
-+
-+       /* Patch the GDT in the low memory trampoline */
-+       lowmem_gdt = TRAMPOLINE_SYM(machine_real_restart_gdt);
-+
-+       restart_va = TRAMPOLINE_SYM(machine_real_restart_asm);
-+       restart_pa = virt_to_phys(restart_va);
-+       restart_lowmem = (void (*)(unsigned int))restart_pa;
-+
-+       /* GDT[0]: GDT self-pointer */
-+       lowmem_gdt[0] =
-+               (u64)(sizeof(machine_real_restart_gdt) - 1) +
-+               ((u64)virt_to_phys(lowmem_gdt) << 16);
-+       /* GDT[1]: 64K real mode code segment */
-+       lowmem_gdt[1] =
-+               GDT_ENTRY(0x009b, restart_pa, 0xffff);
-+
-+       /* Jump to the identity-mapped low memory code */
-+       restart_lowmem(type);
-+}
-+#ifdef CONFIG_APM_MODULE
-+EXPORT_SYMBOL(machine_real_restart);
-+#endif
-+
-+#endif /* CONFIG_X86_32 */
-+
-+/*
-+ * Some Apple MacBook and MacBookPro's needs reboot=p to be able to 
-reboot
-+ */
-+static int __init set_pci_reboot(const struct dmi_system_id *d)
-+{
-+       if (reboot_type != BOOT_CF9) {
-+               reboot_type = BOOT_CF9;
-+               printk(KERN_INFO "%s series board detected. "
-+                      "Selecting PCI-method for reboots.\n", d->ident);
-+       }
-+       return 0;
-+}
-+
- static int __init set_kbd_reboot(const struct dmi_system_id *d)
+-void
+-serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+-		          struct ktermios *old)
++void serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
++			       struct ktermios *old)
  {
-        if (reboot_type != BOOT_KBD) {
-@@ -159,7 +233,11 @@ static int __init set_kbd_reboot(const struct 
-dmi_system_id *d)
-        return 0;
+ 	struct uart_8250_port *up =
+ 		container_of(port, struct uart_8250_port, port);
+@@ -2992,6 +2999,7 @@ void serial8250_suspend_port(int line)
+ {
+ 	uart_suspend_port(&serial8250_reg, &serial8250_ports[line].port);
  }
++EXPORT_SYMBOL(serial8250_suspend_port);
  
-+/* This is a single dmi_table handling all reboot quirks.  Note that
-+ * REBOOT_BIOS is only available for 32bit
-+ */
- static struct dmi_system_id __initdata reboot_dmi_table[] = {
-+#ifdef CONFIG_X86_32
-        {       /* Handle problems with rebooting on Dell E520's */
-                .callback = set_bios_reboot,
-                .ident = "Dell E520",
-@@ -309,6 +387,8 @@ static struct dmi_system_id __initdata 
-reboot_dmi_table[] = {
-                        DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
-                },
-        },
-+#endif /* CONFIG_X86_32 */
-+
-        { /* Handle reboot issue on Acer Aspire one */
-                .callback = set_kbd_reboot,
-                .ident = "Acer Aspire One A110",
-@@ -317,96 +397,6 @@ static struct dmi_system_id __initdata 
-reboot_dmi_table[] = {
-                        DMI_MATCH(DMI_PRODUCT_NAME, "AOA110"),
-                },
-        },
--       { }
--};
--
--static int __init reboot_init(void)
--{
--       /* Only do the DMI check if reboot_type hasn't been overridden
--        * on the command line
--        */
--       if (reboot_default) {
--               dmi_check_system(reboot_dmi_table);
--       }
--       return 0;
--}
--core_initcall(reboot_init);
--
--extern const unsigned char machine_real_restart_asm[];
--extern const u64 machine_real_restart_gdt[3];
--
--void machine_real_restart(unsigned int type)
--{
--       void *restart_va;
--       unsigned long restart_pa;
--       void (*restart_lowmem)(unsigned int);
--       u64 *lowmem_gdt;
--
--       local_irq_disable();
--
--       /* Write zero to CMOS register number 0x0f, which the BIOS POST
--          routine will recognize as telling it to do a proper reboot. 
-(Well
--          that's what this book in front of me says -- it may only apply 
-to
--          the Phoenix BIOS though, it's not clear).  At the same time,
--          disable NMIs by setting the top bit in the CMOS address 
-register,
--          as we're about to do peculiar things to the CPU.  I'm not sure 
-if
--          `outb_p' is needed instead of just `outb'.  Use it to be on the
--          safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
--        */
--       spin_lock(&rtc_lock);
--       CMOS_WRITE(0x00, 0x8f);
--       spin_unlock(&rtc_lock);
--
--       /*
--        * Switch back to the initial page table.
--        */
--       load_cr3(initial_page_table);
--
--       /* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
--          this on booting to tell it to "Bypass memory test (also warm
--          boot)".  This seems like a fairly standard thing that gets set 
-by
--          REBOOT.COM programs, and the previous reset routine did this
--          too. */
--       *((unsigned short *)0x472) = reboot_mode;
--
--       /* Patch the GDT in the low memory trampoline */
--       lowmem_gdt = TRAMPOLINE_SYM(machine_real_restart_gdt);
--
--       restart_va = TRAMPOLINE_SYM(machine_real_restart_asm);
--       restart_pa = virt_to_phys(restart_va);
--       restart_lowmem = (void (*)(unsigned int))restart_pa;
--
--       /* GDT[0]: GDT self-pointer */
--       lowmem_gdt[0] =
--               (u64)(sizeof(machine_real_restart_gdt) - 1) +
--               ((u64)virt_to_phys(lowmem_gdt) << 16);
--       /* GDT[1]: 64K real mode code segment */
--       lowmem_gdt[1] =
--               GDT_ENTRY(0x009b, restart_pa, 0xffff);
--
--       /* Jump to the identity-mapped low memory code */
--       restart_lowmem(type);
--}
--#ifdef CONFIG_APM_MODULE
--EXPORT_SYMBOL(machine_real_restart);
--#endif
--
--#endif /* CONFIG_X86_32 */
--
--/*
-- * Some Apple MacBook and MacBookPro's needs reboot=p to be able to 
-reboot
-- */
--static int __init set_pci_reboot(const struct dmi_system_id *d)
--{
--       if (reboot_type != BOOT_CF9) {
--               reboot_type = BOOT_CF9;
--               printk(KERN_INFO "%s series board detected. "
--                      "Selecting PCI-method for reboots.\n", d->ident);
--       }
--       return 0;
--}
--
--static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
-        {       /* Handle problems with rebooting on Apple MacBook5 */
-                .callback = set_pci_reboot,
-                .ident = "Apple MacBook5",
-@@ -474,17 +464,17 @@ static struct dmi_system_id __initdata 
-pci_reboot_dmi_table[] = {
-        { }
- };
- 
--static int __init pci_reboot_init(void)
-+static int __init reboot_init(void)
- {
-        /* Only do the DMI check if reboot_type hasn't been overridden
-         * on the command line
-         */
-        if (reboot_default) {
--               dmi_check_system(pci_reboot_dmi_table);
-+               dmi_check_system(reboot_dmi_table);
-        }
-        return 0;
+ /**
+  *	serial8250_resume_port - resume one serial port
+@@ -3014,6 +3022,7 @@ void serial8250_resume_port(int line)
+ 	}
+ 	uart_resume_port(&serial8250_reg, &up->port);
  }
--core_initcall(pci_reboot_init);
-+core_initcall(reboot_init);
++EXPORT_SYMBOL(serial8250_resume_port);
  
- static inline void kb_wait(void)
+ /*
+  * Register a set of serial devices attached to a platform device.  The
+@@ -3053,8 +3062,8 @@ static int __devinit serial8250_probe(struct platform_device *dev)
+ 		port.irqflags		|= irqflag;
+ 		ret = serial8250_register_port(&port);
+ 		if (ret < 0) {
+-			dev_err(&dev->dev, "unable to register port at index %d "
+-				"(IO%lx MEM%llx IRQ%d): %d\n", i,
++			dev_err(&dev->dev, "unable to register port at "
++				"index %d (IO%lx MEM%llx IRQ%d): %d\n", i,
+ 				p->iobase, (unsigned long long)p->mapbase,
+ 				p->irq, ret);
+ 		}
+@@ -3130,7 +3139,8 @@ static struct platform_device *serial8250_isa_devs;
+  */
+ static DEFINE_MUTEX(serial_mutex);
+ 
+-static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *port)
++static struct uart_8250_port *serial8250_find_match_or_unused(
++						struct uart_port *port)
  {
-
-
+ 	int i;
+ 
+@@ -3334,9 +3344,6 @@ static void __exit serial8250_exit(void)
+ module_init(serial8250_init);
+ module_exit(serial8250_exit);
+ 
+-EXPORT_SYMBOL(serial8250_suspend_port);
+-EXPORT_SYMBOL(serial8250_resume_port);
+-
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Generic 8250/16x50 serial driver");
+ 
+@@ -3345,10 +3352,12 @@ MODULE_PARM_DESC(share_irqs, "Share IRQs with other non-8250/16x50 devices"
+ 	" (unsafe)");
+ 
+ module_param(nr_uarts, uint, 0644);
+-MODULE_PARM_DESC(nr_uarts, "Maximum number of UARTs supported. (1-" __MODULE_STRING(CONFIG_SERIAL_8250_NR_UARTS) ")");
++MODULE_PARM_DESC(nr_uarts, "Maximum number of UARTs supported. (1-" \
++		 __MODULE_STRING(CONFIG_SERIAL_8250_NR_UARTS) ")");
+ 
+ module_param(skip_txen_test, uint, 0644);
+-MODULE_PARM_DESC(skip_txen_test, "Skip checking for the TXEN bug at init time");
++MODULE_PARM_DESC(skip_txen_test, \
++		"Skip checking for the TXEN bug at init time");
+ 
+ #ifdef CONFIG_SERIAL_8250_RSA
+ module_param_array(probe_rsa, ulong, &probe_rsa_count, 0444);
+-- 
+1.7.7.3
 
