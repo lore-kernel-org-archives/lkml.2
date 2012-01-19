@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab2ASRSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 12:18:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56441 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab2ASRSO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 12:18:14 -0500
-Date: Thu, 19 Jan 2012 11:18:08 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Dave Airlie <airlied@redhat.com>, Alex Deucher <alexander.deucher@amd.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: radeon issues on MacBook Pro 8,2
-Message-ID: <20120119171808.GB23144@ubuntu-macmini>
-Mail-Followup-To: Dave Airlie <airlied@redhat.com>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+	id S1757080Ab2ASRUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 12:20:24 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43579 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755508Ab2ASRUW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 12:20:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+	<CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+	<CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+Date: Thu, 19 Jan 2012 15:20:21 -0200
+X-Google-Sender-Auth: nvghCQoPzDwULmrnsDiC9HFJy6A
+Message-ID: <CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm seeing several issues related to the radeon driver on a MacBook Pro
-8,2 with the following graphics card:
+Hi, all.
 
-  ATI Technologies Inc Whistler [AMD Radeon HD 6600M Series] [1002:6741]
+On Thu, Jan 19, 2012 at 14:15, Rogério Brito <rbrito@ime.usp.br> wrote:
+> On Thu, Jan 19, 2012 at 14:12, Yinghai Lu <yinghai@kernel.org> wrote:
+>> looks like quirk for usb hand off cause problem.
+>>
+>> can you try another branch in my tree?
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>> usb_smi_disable_early
 
-All problems were observed when using kernel version 3.2.1. None are
-seen when using fglrx.
+OK, now it seems that we are getting farther. The system boots, even
+mounts the root filesystem, udev starts and, then, when it seems that
+some USB messages are going to appear on the screen, the notebook
+crashes with the same distortion that happened before (with some of
+the last messages appearing being related to OHCI).
 
- 1. Excessive power draw. When using the radeon driver ACPI reports a
-    power draw of about 30W on an idle desktop. Using fglrx brings this
-    number down to 15W.
+If needed, I can try to record what I see and upload to youtube. Do
+you want me to record what I see?
 
- 2. Occasional long delays when suspending. When this happens I see
-    messages like following in dmesg:
+So, even though this is a partial progress, I am happier.
 
-      [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs aborting
-      [drm:atom_execute_table_locked] *ERROR* atombios stuck executing D44E (len 62, WS 0, PS 0) @ 0xD46A
-
-    Sometimes one of suspend or resume hangs completely, but I can't
-    tell which and am not sure whether or not it's related. I'm also
-    testing a Mac Mini with the exact same card which does not seem to
-    suffer from this issue.
-
-    I ran a bisections that identified f8d0edd (drm/radeon/kms: improve
-    DP detect logic) as introducing problems with suspend, and reverting
-    this patch on top of 3.2.1 does seem to eliminate both issues.
-
- 3. When the LVDS panel is powered off and back on, the display
-    flickers, as if the backlight is cycling rapidly between low and
-    high brightness. If the panel is left on this effect gradually
-    lessens and is eventually no longer noticable. This is not seen with
-    fglrx.
 
 Thanks,
-Seth
+
+-- 
+Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
+http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
+DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
