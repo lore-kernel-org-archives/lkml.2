@@ -1,146 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab2ASVl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 16:41:28 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:41718 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab2ASVlZ (ORCPT
+	id S1753922Ab2ASVnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 16:43:00 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38657 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab2ASVm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 16:41:25 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Hung task when calling clone() due to netfilter/slab
-References: <1326558605.19951.7.camel@lappy>
-	<1326561043.5287.24.camel@edumazet-laptop>
-	<1326632384.11711.3.camel@lappy>
-	<1326648305.5287.78.camel@edumazet-laptop>
-	<alpine.DEB.2.00.1201170910130.4800@router.home>
-	<1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1201170927020.4800@router.home>
-	<1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1201170942240.4800@router.home>
-	<alpine.DEB.2.00.1201171620590.14697@router.home>
-Date: Thu, 19 Jan 2012 13:43:40 -0800
-In-Reply-To: <alpine.DEB.2.00.1201171620590.14697@router.home> (Christoph
-	Lameter's message of "Tue, 17 Jan 2012 16:22:09 -0600 (CST)")
-Message-ID: <m1bopz2ws3.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 19 Jan 2012 16:42:58 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] pinctrl: unbreak error messages
+Date: Thu, 19 Jan 2012 22:42:48 +0100
+Message-Id: <1327009368-23624-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.8.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18oxM76k/+6p3qZL85/Jni0bItPCnDpHOA=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter <cl@linux.com> writes:
+It's better to not line break error messages to allow easier grepping
+for them even when the line gets >80 chars. Additionally some minor
+reformating is done.
 
-> Another version that drops the slub lock for both invocations of sysfs
-> functions from kmem_cache_create. The invocation from slab_sysfs_init
-> is not a problem since user space is not active at that point.
->
->
-> Subject: slub: Do not take the slub lock while calling into sysfs
->
-> This patch avoids holding the slub_lock during kmem_cache_create()
-> when calling sysfs. It is possible because kmem_cache_create()
-> allocates the kmem_cache object and therefore is the only one context
-> that can access the newly created object. It is therefore possible
-> to drop the slub_lock early. We defer the adding of the new kmem_cache
-> to the end of processing because the new kmem_cache structure would
-> be reachable otherwise via scans over slabs. This allows sysfs_slab_add()
-> to run without holding any locks.
->
-> The case is different if we are creating an alias instead of a new
-> kmem_cache structure. In that case we can also drop the slub lock
-> early because we have taken a refcount on the kmem_cache structure.
-> It therefore cannot vanish from under us.
-> But if the sysfs_slab_alias() call fails we can no longer simply
-> decrement the refcount since the other references may have gone
-> away in the meantime. Call kmem_cache_destroy() to cause the
-> refcount to be decremented and the kmem_cache structure to be
-> freed if all references are gone.
->
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/pinctrl/pinmux.c |   46 +++++++++++++++++++---------------------------
+ 1 files changed, 19 insertions(+), 27 deletions(-)
 
-I am dense.  Is the deadlock here that you are fixing slub calling sysfs
-with the slub_lock held but sysfs then calling kmem_cache_zalloc?
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index a76a348..0b22037 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -152,8 +152,7 @@ static int pin_request(struct pinctrl_dev *pctldev,
+ 		status = 0;
+ 
+ 	if (status)
+-		dev_err(pctldev->dev, "->request on device %s failed "
+-		       "for pin %d\n",
++		dev_err(pctldev->dev, "->request on device %s failed for pin %d\n",
+ 		       pctldev->desc->name, pin);
+ out_free_pin:
+ 	if (status) {
+@@ -355,21 +354,20 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
+ 	/* First sanity check the new mapping */
+ 	for (i = 0; i < num_maps; i++) {
+ 		if (!maps[i].name) {
+-			pr_err("failed to register map %d: "
+-			       "no map name given\n", i);
++			pr_err("failed to register map %d: no map name given\n",
++					i);
+ 			return -EINVAL;
+ 		}
+ 
+ 		if (!maps[i].ctrl_dev && !maps[i].ctrl_dev_name) {
+-			pr_err("failed to register map %s (%d): "
+-			       "no pin control device given\n",
++			pr_err("failed to register map %s (%d): no pin control device given\n",
+ 			       maps[i].name, i);
+ 			return -EINVAL;
+ 		}
+ 
+ 		if (!maps[i].function) {
+-			pr_err("failed to register map %s (%d): "
+-			       "no function ID given\n", maps[i].name, i);
++			pr_err("failed to register map %s (%d): no function ID given\n",
++					maps[i].name, i);
+ 			return -EINVAL;
+ 		}
+ 
+@@ -442,8 +440,7 @@ static int acquire_pins(struct pinctrl_dev *pctldev,
+ 		ret = pin_request(pctldev, pins[i], func, NULL);
+ 		if (ret) {
+ 			dev_err(pctldev->dev,
+-				"could not get pin %d for function %s "
+-				"on device %s - conflicting mux mappings?\n",
++				"could not get pin %d for function %s on device %s - conflicting mux mappings?\n",
+ 				pins[i], func ? : "(undefined)",
+ 				pinctrl_dev_get_name(pctldev));
+ 			/* On error release all taken pins */
+@@ -473,8 +470,7 @@ static void release_pins(struct pinctrl_dev *pctldev,
+ 	ret = pctlops->get_group_pins(pctldev, group_selector,
+ 				      &pins, &num_pins);
+ 	if (ret) {
+-		dev_err(pctldev->dev, "could not get pins to release for "
+-			"group selector %d\n",
++		dev_err(pctldev->dev, "could not get pins to release for group selector %d\n",
+ 			group_selector);
+ 		return;
+ 	}
+@@ -526,8 +522,7 @@ static int pinmux_check_pin_group(struct pinctrl_dev *pctldev,
+ 		ret = pinctrl_get_group_selector(pctldev, groups[0]);
+ 		if (ret < 0) {
+ 			dev_err(pctldev->dev,
+-				"function %s wants group %s but the pin "
+-				"controller does not seem to have that group\n",
++				"function %s wants group %s but the pin controller does not seem to have that group\n",
+ 				pmxops->get_function_name(pctldev, func_selector),
+ 				groups[0]);
+ 			return ret;
+@@ -535,8 +530,7 @@ static int pinmux_check_pin_group(struct pinctrl_dev *pctldev,
+ 
+ 		if (num_groups > 1)
+ 			dev_dbg(pctldev->dev,
+-				"function %s support more than one group, "
+-				"default-selecting first group %s (%d)\n",
++				"function %s support more than one group, default-selecting first group %s (%d)\n",
+ 				pmxops->get_function_name(pctldev, func_selector),
+ 				groups[0],
+ 				ret);
+@@ -628,10 +622,8 @@ static int pinmux_enable_muxmap(struct pinctrl_dev *pctldev,
+ 
+ 	if (pmx->pctldev && pmx->pctldev != pctldev) {
+ 		dev_err(pctldev->dev,
+-			"different pin control devices given for device %s, "
+-			"function %s\n",
+-			devname,
+-			map->function);
++			"different pin control devices given for device %s, function %s\n",
++			devname, map->function);
+ 		return -EINVAL;
+ 	}
+ 	pmx->dev = dev;
+@@ -695,7 +687,6 @@ static void pinmux_free_groups(struct pinmux *pmx)
+  */
+ struct pinmux *pinmux_get(struct device *dev, const char *name)
+ {
+-
+ 	struct pinmux_map const *map = NULL;
+ 	struct pinctrl_dev *pctldev = NULL;
+ 	const char *devname = NULL;
+@@ -745,8 +736,7 @@ struct pinmux *pinmux_get(struct device *dev, const char *name)
+ 			else if (map->ctrl_dev_name)
+ 				devname = map->ctrl_dev_name;
+ 
+-			pr_warning("could not find a pinctrl device for pinmux "
+-				   "function %s, fishy, they shall all have one\n",
++			pr_warning("could not find a pinctrl device for pinmux function %s, fishy, they shall all have one\n",
+ 				   map->function);
+ 			pr_warning("given pinctrl device name: %s",
+ 				   devname ? devname : "UNDEFINED");
+@@ -932,8 +922,8 @@ static int pinmux_hog_map(struct pinctrl_dev *pctldev,
+ 		 * without any problems, so then we can hog pinmuxes for
+ 		 * all devices that just want a static pin mux at this point.
+ 		 */
+-		dev_err(pctldev->dev, "map %s wants to hog a non-system "
+-			"pinmux, this is not going to work\n", map->name);
++		dev_err(pctldev->dev, "map %s wants to hog a non-system pinmux, this is not going to work\n",
++				map->name);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1122,13 +1112,15 @@ static int pinmux_show(struct seq_file *s, void *what)
+ 
+ 		seq_printf(s, "device: %s function: %s (%u),",
+ 			   pinctrl_dev_get_name(pmx->pctldev),
+-			   pmxops->get_function_name(pctldev, pmx->func_selector),
++			   pmxops->get_function_name(pctldev,
++				   pmx->func_selector),
+ 			   pmx->func_selector);
+ 
+ 		seq_printf(s, " groups: [");
+ 		list_for_each_entry(grp, &pmx->groups, node) {
+ 			seq_printf(s, " %s (%u)",
+-				   pctlops->get_group_name(pctldev, grp->group_selector),
++				   pctlops->get_group_name(pctldev,
++					   grp->group_selector),
+ 				   grp->group_selector);
+ 		}
+ 		seq_printf(s, " ]");
+-- 
+1.7.8.3
 
-I don't see what sysfs is doing in the creation path that would cause
-a deadlock except for using slab.
-
-> ---
->  mm/slub.c |   25 +++++++++++--------------
->  1 file changed, 11 insertions(+), 14 deletions(-)
->
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2012-01-17 09:53:26.599505365 -0600
-> +++ linux-2.6/mm/slub.c	2012-01-17 09:59:57.131497273 -0600
-> @@ -3912,13 +3912,14 @@ struct kmem_cache *kmem_cache_create(con
->  		s->objsize = max(s->objsize, (int)size);
->  		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
->
-> +		up_write(&slub_lock);
->  		if (sysfs_slab_alias(s, name)) {
-> -			s->refcount--;
-> +			kmem_cache_destroy(s);
->  			goto err;
->  		}
-> -		up_write(&slub_lock);
->  		return s;
->  	}
-> +	up_write(&slub_lock);
->
->  	n = kstrdup(name, GFP_KERNEL);
->  	if (!n)
-> @@ -3928,27 +3929,23 @@ struct kmem_cache *kmem_cache_create(con
->  	if (s) {
->  		if (kmem_cache_open(s, n,
->  				size, align, flags, ctor)) {
-> -			list_add(&s->list, &slab_caches);
-> -			if (sysfs_slab_add(s)) {
-> -				list_del(&s->list);
-> -				kfree(n);
-> -				kfree(s);
-> -				goto err;
-> +
-> +			if (sysfs_slab_add(s) == 0) {
-> +				down_write(&slub_lock);
-> +				list_add(&s->list, &slab_caches);
-> +				up_write(&slub_lock);
-> +				return s;
->  			}
-> -			up_write(&slub_lock);
-> -			return s;
->  		}
->  		kfree(n);
->  		kfree(s);
->  	}
->  err:
-> -	up_write(&slub_lock);
->
->  	if (flags & SLAB_PANIC)
->  		panic("Cannot create slabcache %s\n", name);
-> -	else
-> -		s = NULL;
-> -	return s;
-> +
-> +	return NULL;
->  }
->  EXPORT_SYMBOL(kmem_cache_create);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
