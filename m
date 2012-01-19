@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab2ASOt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 09:49:27 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:32178 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab2ASOtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 09:49:24 -0500
-Subject: [PATCH 1/5] SUNRPC: cache creation and destruction routines introduced
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Thu, 19 Jan 2012 18:49:06 +0400
-Message-ID: <20120119144906.9957.59183.stgit@localhost6.localdomain6>
-In-Reply-To: <20120119144517.9957.59143.stgit@localhost6.localdomain6>
-References: <20120119144517.9957.59143.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S932154Ab2ASOth (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 09:49:37 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:24571 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300Ab2ASOte convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 19 Jan 2012 09:49:34 -0500
+Message-Id: <4F183BCA020000780006DB68@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 19 Jan 2012 14:50:34 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: <mingo@elte.hu>, "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        <tglx@linutronix.de>, <luca@luca-barbieri.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ix86: atomic64 assembly improvements
+References: <4F16E41B020000780006D7A5@nat28.tlf.novell.com>
+ <4F16F505.8040809@zytor.com>
+ <4F170679020000780006D85B@nat28.tlf.novell.com> <4F1705A8.301@zytor.com>
+ <4F17EDE9020000780006D97A@nat28.tlf.novell.com>
+ <4F182C55.7040305@zytor.com>
+In-Reply-To: <4F182C55.7040305@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares infrastructure for network namespace aware cache detail
-allocation.
-One note about adding network namespace link to cache structure. It's going to
-be used later in NFS DNS cache parsing routine (nfs_dns_parse for rpc_pton()
-call).
+>>> On 19.01.12 at 15:44, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> On 01/19/2012 01:18 AM, Jan Beulich wrote:
+>> 
+>> But the code is supposed to be correct even when caches are disabled
+>> (in which case LOCK# will continue to be used even on modern CPUs),
+>> and this case clearly isn't covered by the current implementation. It
+>> may be a good idea to adjust the patch description accordingly, but I
+>> see no reason to change the patch itself.
+>> 
+> 
+> It doesn't have anything to do with caches on or off.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+How does it not? If any part of the bus topology is only 32 bits wide,
+a 64-bit read or write simply can't be executed atomically without
+asserting LOCK#.
 
----
- include/linux/sunrpc/cache.h |    4 ++++
- net/sunrpc/cache.c           |   26 ++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-index 590a8ab..259381c 100644
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -117,6 +117,7 @@ struct cache_detail {
- 		struct cache_detail_procfs procfs;
- 		struct cache_detail_pipefs pipefs;
- 	} u;
-+	struct net		*net;
- };
- 
- 
-@@ -202,6 +203,9 @@ extern int cache_register_net(struct cache_detail *cd, struct net *net);
- extern void cache_unregister(struct cache_detail *cd);
- extern void cache_unregister_net(struct cache_detail *cd, struct net *net);
- 
-+extern struct cache_detail *cache_create_net(struct cache_detail *tmpl, struct net *net);
-+extern void cache_destroy_net(struct cache_detail *cd, struct net *net);
-+
- extern void sunrpc_init_cache_detail(struct cache_detail *cd);
- extern void sunrpc_destroy_cache_detail(struct cache_detail *cd);
- extern int sunrpc_cache_register_pipefs(struct dentry *parent, const char *,
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index f128154..9ef5926 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -1662,6 +1662,32 @@ void cache_unregister(struct cache_detail *cd)
- }
- EXPORT_SYMBOL_GPL(cache_unregister);
- 
-+struct cache_detail *cache_create_net(struct cache_detail *tmpl, struct net *net)
-+{
-+	struct cache_detail *cd;
-+
-+	cd = kmemdup(tmpl, sizeof(struct cache_detail), GFP_KERNEL);
-+	if (cd == NULL)
-+		return ERR_PTR(-ENOMEM);
-+
-+	cd->hash_table = kzalloc(cd->hash_size * sizeof(struct cache_head *),
-+				 GFP_KERNEL);
-+	if (cd->hash_table == NULL) {
-+		kfree(cd);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	cd->net = net;
-+	return cd;
-+}
-+EXPORT_SYMBOL_GPL(cache_create_net);
-+
-+void cache_destroy_net(struct cache_detail *cd, struct net *net)
-+{
-+	kfree(cd->hash_table);
-+	kfree(cd);
-+}
-+EXPORT_SYMBOL_GPL(cache_destroy_net);
-+
- static ssize_t cache_read_pipefs(struct file *filp, char __user *buf,
- 				 size_t count, loff_t *ppos)
- {
+Jan
 
