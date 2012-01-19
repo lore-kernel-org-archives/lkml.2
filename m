@@ -1,147 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab2ASOiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 09:38:16 -0500
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:59439
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751437Ab2ASOiK (ORCPT
+	id S1753030Ab2ASOkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 09:40:37 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:36711 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab2ASOkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 09:38:10 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q0JEc2M2031948
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Problem] kernel hangs at boot (bisected 892d208bcf)
-In-Reply-To: <20120119140058.GA19036@arm.com> (Catalin Marinas's message of
-	"Thu, 19 Jan 2012 14:00:58 +0000")
-References: <gi39bcyff8.fsf@mx10.gouders.net> <20120119110121.GC9268@arm.com>
-	<gi1uqvsx8n.fsf@karga.hank.lab> <20120119140058.GA19036@arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Thu, 19 Jan 2012 15:38:01 +0100
-Message-ID: <gik44nrc52.fsf@karga.hank.lab>
+	Thu, 19 Jan 2012 09:40:33 -0500
+Message-ID: <4F182B59.9000807@linux.vnet.ibm.com>
+Date: Thu, 19 Jan 2012 20:10:25 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 19 Jan 2012 15:38:02 +0100 (CET)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Tejun Heo <tj@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
+        "pavel@ucw.cz" <pavel@ucw.cz>, Len Brown <lenb@kernel.org>
+Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
+ to unlock_system_sleep()
+References: <201201172345.15010.rjw@sisk.pl> <4F17217E.5040805@linux.vnet.ibm.com> <4F172B8D.8050408@linux.vnet.ibm.com> <201201182322.58301.rjw@sisk.pl>
+In-Reply-To: <201201182322.58301.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011904-5140-0000-0000-0000009E09A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Catalin Marinas <catalin.marinas@arm.com> writes:
+On 01/19/2012 03:52 AM, Rafael J. Wysocki wrote:
 
-> On Thu, Jan 19, 2012 at 12:16:56PM +0000, Dirk Gouders wrote:
->> Catalin Marinas <catalin.marinas@arm.com> writes:
->> > On Wed, Jan 18, 2012 at 07:32:59PM +0000, Dirk Gouders wrote:
->> >> Freeing unused kernel memory: 608k freed
->> >> kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
->> >> BUG: unable to handle kernel paging request at ffffffff818b232b
->> >> IP: [<ffffffff818b232b>] kmemleak_late_init+0x8a/0x8a
-> ...
->> >> Code: cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc <cc> cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc
->> >> RIP  [<ffffffff818b232b>] kmemleak_late_init+0x8a/0x8a
->> >
->> > I don't really see how kmemleak could cause such error (or any of the
->> > recent changes I have made). It looks like some of the code in the
->> > .init.text section is not executable.
+> On Wednesday, January 18, 2012, Srivatsa S. Bhat wrote:
+>> On 01/19/2012 01:16 AM, Srivatsa S. Bhat wrote:
+>>
+>>> On 01/19/2012 01:00 AM, Tejun Heo wrote:
+>>>
+>>>> Hello,
+>>>>
+>>>> On Thu, Jan 19, 2012 at 12:52:32AM +0530, Srivatsa S. Bhat wrote:
+>>>>> Somehow I don't think its a hack, based on my perception as described
+>>>>> above. But feel free to prove me wrong :-)
+>>>>
+>>>> Thanks for the explanation.  Yeah, I agree and it's much simpler this
+>>>> way, which is nice.  So, in short, because freezing state can't change
+>>>> across lock_system_sleep(), there's no reason to check for freezing
+>>>> state on unlock and this nicely resolves the freezer problem together.
+>>>>
+>>>
+>>>
+>>> Absolutely!
+>>>
+>>>> The only thing to be careful is, then, we need to set and clear SKIP
+>>>> inside pm_mutex.
+>>>>
+>>>
+>>>
+>>> Not exactly. We need to set SKIP before grabbing pm_mutex and clear it
+>>> inside pm_mutex. The reason is that we decided to set SKIP in the first
+>>> place just to avoid the freezer from declaring failure when we are
+>>> blocked on pm_mutex. If we move it to *after* mutex_lock(&pm_mutex), that
+>>> original intention itself is not satisfied, and we will hit freezing
+>>> failures - IOW making the set and clear exercise useless!
+>>>
+>>> So, something like this should work perfectly:
+>>>
+>>> lock_system_sleep()
+>>> {
+>>> 	freezer_do_not_count();
+>>> 	mutex_lock(&pm_mutex);
+>>> 	current->flags &= ~PF_FREEZER_SKIP;
+>>> }
+>>>
+>>> But in the interest of making the code look a bit symmetric, we can do:
+>>>
+>>> lock_system_sleep()
+>>> {
+>>> 	freezer_do_not_count();
+>>> 	mutex_lock(&pm_mutex);
+>>> }
+>>>
+>>> unlock_system_sleep()
+>>> {
+>>> 	current->flags &= ~PF_FREEZER_SKIP;
+>>> 	mutex_unlock(&pm_mutex);
+>>> }
+>>>  
+>>
+>>
+>> So how about this patch, with the comment updated?
+>> (and the changelog updated as well to reflect the movement of code)
+>>
+>> ---
+>> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
+>>
+>> Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
+>> [un]lock_system_sleep() APIs" introduced an undesirable change in the
+>> behaviour of unlock_system_sleep() since freezer_count() internally calls
+>> try_to_freeze() - which we don't need in unlock_system_sleep().
+>>
+>> And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
+>> [un]lock_system_sleep()" made these APIs wide-spread. This caused a
+>> regression in suspend-to-disk where snapshot_read() and snapshot_write()
+>> were getting frozen due to the try_to_freeze embedded in
+>> unlock_system_sleep(), since these functions were invoked when the freezing
+>> condition was still in effect.
+>>
+>> Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
+>> and dropping the try_to_freeze() part. Not only will this fix the
+>> regression but this will also ensure that the API only does what it is
+>> intended to do, and nothing more, under the hood.
+>>
+>> While at it, make the code more correct and robust by ensuring that the
+>> PF_FREEZER_SKIP flag gets cleared with pm_mutex held, to avoid a race with
+>> the freezer.
+>>
+>> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> 
+> So, I'd prefer lock_system_sleep() to be open-coded too, to
+> avoid situations in which someone changes freezer_do_not_count()
+> and freezer_count() leaving unmodified unlock_system_sleep() behind.
 >
-> Ah, the interesting part - 0xcc is the poison value for freed initmem.
-> And from the kernel logs you posted Linux frees the initmem and later
-> calls kmemleak_late_init() which should have been in the .init.text
-> section.
->
-> The kmemleak_late_init() function is defined as:
->
-> static int __init kmemleak_late_init(void)
-> {
-> ...
-> }
-> late_initcall(kmemleak_late_init);
->
-> and it must *not* be called after the initmem has been freed. Was there
-> any change in the x86 or generic code with regards to the freeing of the
-> init memory?
 
-I tried to re-bisect this problem by marking commit
-029aeff5db879afd7760f11214b6fea45f76b58e
-"kmemleak: Add support for memory hotplug" (that I previously considered
-good, because it produces a different output) bad.  The attached output
-shows that kmemleak_late_init is also involved but bisect did not bring
-me a step further:
 
-$ git bisect good f1c84dae0e
-Bisecting: a merge base must be tested
-[c3b92c8787367a8bb53d57d9789b558f1295cc96] Linux 3.1
+Hehe, actually, I had left lock_system_sleep() as it is, intentionally, due to
+a far-fetched idea to keep the code sane: I felt that people who go through
+this code would naturally feel tempted to replace any open-coded stuff (if
+possible) with the appropriate function call. And my rationale was that when
+they see that lock_system_sleep() has a function call but
+unlock_system_sleep() has been open-coded, they would immediately know that
+this was not yet another case of "oh I wasn't aware of this function,
+hence I open-coded it", but it was rather "I was very much aware of the
+available functions, but I chose to open-code it intentionally - so touch it
+only if you really know what you are doing" :-)
 
-Here, I am kind of lost and do not know how to continue.
+And I guess, now that job of guarding the code from "obvious code cleanups"
+like that would be done by the comment I added as per Tejun's suggestion.
+And moreover, your point to open-code in lock_system_sleep() sounds more
+compelling than my far-fetched idea :-) So okay, I will open-code it.. 
 
-Dirk
+> Also, have you actually tested this?
 
-------------------------------------------------------------------------
-Freeing unused kernel memory: 676k freed
-kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
-BUG: unable to handle kernel paging request at ffffffff81892482
-IP: [<ffffffff81892482>] kmemleak_late_init+0x8a/0x8a
-PGD 17cd067 PUD 17d1063 PMD 3c5c8063 PTE 8000000001892163
-Oops: 0011 [#1] SMP 
-CPU 0 
-Modules linked in:
 
-Pid: 1, comm: swapper Not tainted 3.2.0-rc4-00005-g029aeff #4 Bochs Bochs
-RIP: 0010:[<ffffffff81892482>]  [<ffffffff81892482>] kmemleak_late_init+0x8a/0x8a
-RSP: 0018:ffff88003fc03e68  EFLAGS: 00010282
-RAX: 0000000000000001 RBX: ffff88003c59eab8 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff88003c59eab8 RDI: 0000000000000002
-RBP: ffffea0000f16780 R08: ffff88003fc0d480 R09: ffff88003fc120e0
-R10: 0000000000000400 R11: ffffffff81559cd5 R12: ffff88003e005680
-R13: ffffffff810a77da R14: ffff88003c59fa28 R15: ffff88003e342680
-FS:  0000000000000000(0000) GS:ffff88003fc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: ffffffff81892482 CR3: 00000000017cb000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 1, threadinfo ffff88003e272000, task ffff88003e278000)
-Stack:
- ffffffff810faf78 ffffffff817e5280 ffff88003fc0d650 ffffffff817e5280
- ffff88003fc0d680 0000000000000000 ffffffff810a77da ffffffff81983a20
- 0000000a3e273fd8 ffff88003fc03eb0 ffffffff817ca0c8 ffff88003e273fd8
-Call Trace:
- <IRQ> 
- [<ffffffff810faf78>] ? kfree+0xbc/0x11e
- [<ffffffff810a77da>] ? __rcu_process_callbacks+0x19c/0x2a6
- [<ffffffff810a792e>] ? rcu_process_callbacks+0x4a/0x95
- [<ffffffff8106648a>] ? __do_softirq+0xb6/0x171
- [<ffffffff815432ac>] ? call_softirq+0x1c/0x30
- [<ffffffff81032472>] ? do_softirq+0x31/0x67
- [<ffffffff810666ef>] ? irq_exit+0x44/0xa5
- [<ffffffff8104707d>] ? smp_apic_timer_interrupt+0x85/0x95
- [<ffffffff81541dcb>] ? apic_timer_interrupt+0x6b/0x70
- <EOI> 
- [<ffffffff81061aa7>] ? vprintk+0x33b/0x35f
- [<ffffffff8104e39c>] ? change_page_attr_set_clr+0x172/0x329
- [<ffffffff81538d10>] ? printk+0x40/0x45
- [<ffffffff8104c2f3>] ? free_init_pages+0xae/0x110
- [<ffffffff810001c0>] ? init_post+0xe/0xbb
- [<ffffffff81874b8c>] ? kernel_init+0x10f/0x113
- [<ffffffff815431b4>] ? kernel_thread_helper+0x4/0x10
- [<ffffffff81874a7d>] ? start_kernel+0x319/0x319
- [<ffffffff815431b0>] ? gs_change+0xb/0xb
-Code: e8 50 81 ca ff e8 fa d9 86 ff 48 c7 c7 70 b0 7e 81 e8 e3 7c ca ff 48 c7 c7 2f ba 70 81 31 c0 e8 55 68 ca ff 31 c0 48 83 c4 08 c3 
- 53 48 83 ec 08 8b 05 c6 0f 14 00 85 c0 74 08 ff 05 b8 2d 03 
-RIP  [<ffffffff81892482>] kmemleak_late_init+0x8a/0x8a
- RSP <ffff88003fc03e68>
-CR2: ffffffff81892482
----[ end trace 25fd5fd8ecba3a5f ]---
-Kernel panic - not syncing: Fatal exception in interrupt
-Pid: 1, comm: swapper Tainted: G      D      3.2.0-rc4-00005-g029aeff #4
-Call Trace:
- <IRQ>  [<ffffffff81538bcf>] ? panic+0x92/0x193
- [<ffffffff8153bef8>] ? oops_end+0x7e/0x8d
- [<ffffffff81892482>] ? kmemleak_late_init+0x8a/0x8a
- [<ffffffff8104ce7c>] ? no_context+0x1f8/0x205
- [<ffffffff81892482>] ? kmemleak_late_init+0x8a/0x8a
- [<ffffffff810a77da>] ? __rcu_process_callbacks+0x19c/0x2a6
- [<ffffffff8153dd77>] ? do_page_fault+0x1bd/0x3ac
- [<ffffffff810326e5>] ? dump_trace+0x23d/0x24c
- [<ffffffff810fa5a8>] ? set_track+0x5e/0xd9
- [<ffffffff8136043e>] ? blk_done+0xc3/0x101
- [<ffffffff8136043e>] ? blk_done+0xc3/0x101
- [<ffffffff8103b0f9>] ? save_stack_trace+0x2
+Oh I almost forgot to mention: I have not specifically tested this with the
+userspace s2disk utility (part of uswsusp/suspend-utils package) as such.
+I have only tested it in general (by invoking hibernate by writing to
+/sys/power/disk, and testing different levels of pm_test framework etc) to
+ensure that this patch doesn't break anything else.
+So, any help with testing the userspace utilities would be great!
+
+So Rafael, could you please check if the following patch solves the
+regression for you? Thanks a lot!
+
+---
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM / Hibernate: Rewrite unlock_system_sleep() to fix s2disk regression
+
+Commit 33e638b, "PM / Sleep: Use the freezer_count() functions in
+[un]lock_system_sleep() APIs" introduced an undesirable change in the
+behaviour of unlock_system_sleep() since freezer_count() internally calls
+try_to_freeze() - which we don't need in unlock_system_sleep().
+
+And commit bcda53f, "PM / Sleep: Replace mutex_[un]lock(&pm_mutex) with
+[un]lock_system_sleep()" made these APIs wide-spread. This caused a
+regression in suspend-to-disk where snapshot_read() and snapshot_write()
+were getting frozen due to the try_to_freeze embedded in
+unlock_system_sleep(), since these functions were invoked when the freezing
+condition was still in effect.
+
+Fix this by rewriting unlock_system_sleep() by open-coding freezer_count()
+and dropping the try_to_freeze() part. Not only will this fix the
+regression but this will also ensure that the API only does what it is
+intended to do, and nothing more, under the hood.
+
+While at it, make the code more correct and robust by ensuring that the
+PF_FREEZER_SKIP flag gets cleared with pm_mutex held, to avoid a race with
+the freezer.
+
+Also, to be on the safer side, open-code freezer_do_not_count() as well
+(inside lock_system_sleep()), to ensure that any unrelated modification to
+freezer[_do_not]_count() does not break things again!
+
+Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ include/linux/suspend.h |   19 +++++++++++++++++--
+ 1 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 95040cc..91784a4 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -357,14 +357,29 @@ extern bool pm_save_wakeup_count(unsigned int count);
+ 
+ static inline void lock_system_sleep(void)
+ {
+-	freezer_do_not_count();
++	current->flags |= PF_FREEZER_SKIP;
+ 	mutex_lock(&pm_mutex);
+ }
+ 
+ static inline void unlock_system_sleep(void)
+ {
++	/*
++	 * Don't use freezer_count() because we don't want the call to
++	 * try_to_freeze() here.
++	 *
++	 * Reason:
++	 * Fundamentally, we just don't need it, because freezing condition
++	 * doesn't come into effect until we release the pm_mutex lock,
++	 * since the freezer always works with pm_mutex held.
++	 *
++	 * More importantly, in the case of hibernation,
++	 * unlock_system_sleep() gets called in snapshot_read() and
++	 * snapshot_write() when the freezing condition is still in effect.
++	 * Which means, if we use try_to_freeze() here, it would make them
++	 * enter the refrigerator, thus causing hibernation to lockup.
++	 */
++	current->flags &= ~PF_FREEZER_SKIP;
+ 	mutex_unlock(&pm_mutex);
+-	freezer_count();
+ }
+ 
+ #else /* !CONFIG_PM_SLEEP */
+
+
