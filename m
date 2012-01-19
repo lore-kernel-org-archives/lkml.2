@@ -1,81 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab2ASBOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 20:14:51 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50280 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab2ASBOt (ORCPT
+	id S1755169Ab2ASBQk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 20:16:40 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:55319 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab2ASBQi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 20:14:49 -0500
-X-AuditID: 9c930179-b7bf0ae00000132b-d2-4f176e84a76e
-To: undisclosed-recipients:;
-Message-ID: <4F176E82.6030808@gmail.com>
-Date: Thu, 19 Jan 2012 10:14:42 +0900
-From: Namhyung Kim <namhyung@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 18 Jan 2012 20:16:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=FtgJE0ZeLz8Gi64xu+Q
+	ZOwSRSaMmyN7wrYNnEWrrzdQJaLJvEVgjsE44cPUnEStFYh5j4+g+MmRyB7tOtd4
+	plyd+izfJJ1ymnDvhSYNM0xPQAzToGKOh2/JztV7zlEBTeT2ibe3hpyJDCEzYhXx
+	LMeuaBnWmimG0PuuDGux5BjA=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.9.rc2
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 18 Jan 2012 17:16:36 -0800
+Message-ID: <7vpqegjxu3.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-CC: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 2/3] block: prevent duplicated bio completion report
-References: <1326763928-1972-1-git-send-email-namhyung.kim@lge.com> <1326763928-1972-2-git-send-email-namhyung.kim@lge.com> <20120117174520.GB6762@google.com> <4F161E43.5040705@gmail.com>
-In-Reply-To: <4F161E43.5040705@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 3C0153DC-423B-11E1-9DC5-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+A release candidate Git 1.7.9.rc2 is available for testing.
 
-2012-01-18 10:20 AM, Namhyung Kim wrote:
-> Hi,
-> 
-> 2012-01-18 2:45 AM, Tejun Heo wrote:
->>
->>> /*
->>> * top 4 bits of bio flags indicate the pool this bio came from
->>> */
->>> diff --git a/include/trace/events/block.h b/include/trace/events/block.h
->>> index 96955f4828b3..72888542e186 100644
->>> --- a/include/trace/events/block.h
->>> +++ b/include/trace/events/block.h
->>> @@ -219,7 +219,8 @@ TRACE_EVENT_CONDITION(block_bio_complete,
->>>
->>>  	TP_ARGS(q, bio, error),
->>>
->>> - TP_CONDITION(bio->bi_bdev != NULL),
->>> + TP_CONDITION(bio->bi_bdev != NULL &&
->>> + 		!(bio->bi_flags & BIO_COMPLETE_MASK)),
->>
->> Bounced bio's are separate bio's too and I don't think masking its
->> completion from the TP itself is a good idea. As I wrote before, why
->> not do this from blktrace code?
-> 
-> Because blktrace cannot know about the bi_flags, as I said before. :) 
-> And although the bounced bio's are separate ones, they aren't queued 
-> separately. They just get replaced on the way.
+The release tarballs are found at:
 
-Oh, now I guess you meant this:
+    http://code.google.com/p/git-core/downloads/list
 
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index 16fc34a0806f..2ef57fb2566e 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -792,6 +792,9 @@ static void blk_add_trace_bio_complete(void *ignore,
-                                       struct request_queue *q, struct bio *bio,
-                                       int error)
- {
-+       if (bio->bi_flags & BIO_COMPLETE_MASK)
-+               return;
-+
-        blk_add_trace_bio(q, bio, BLK_TA_COMPLETE, error);
- }
+and their SHA-1 checksums are:
+
+4eeaaf8a73006f797e6c23455097684664bf256e  git-1.7.9.rc2.tar.gz
+22aad76c146abe04e8f9bd89b2fbf4b575f434ce  git-htmldocs-1.7.9.rc2.tar.gz
+8565f64f6227fcfba3f768dabdcd9d6037f08842  git-manpages-1.7.9.rc2.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.9.rc2
+tag and the master branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
 
 
-Anyway do you still think masking on TP is not a good idea?
+Git v1.7.9 Release Notes (draft)
+========================
+
+Updates since v1.7.8
+--------------------
+
+ * gitk updates accumulated since early 2011.
+
+ * git-gui updated to 0.16.0.
+
+ * git-p4 (in contrib/) updates.
+
+ * Git uses gettext to translate its most common interface messages
+   into the user's language if translations are available and the
+   locale is appropriately set. Distributors can drop in new PO files
+   in po/ to add new translations.
+
+ * The code to handle username/password for HTTP transaction used in
+   "git push" & "git fetch" learned to talk "credential API" to
+   external programs to cache or store them, to allow integration with
+   platform native keychain mechanisms.
+
+ * The prompted input in the terminal use our own getpass() replacement
+   when possible. HTTP transactions used to ask username without echoing
+   back what was typed, but with this change you will see it as you type.
+
+ * The internal of "revert/cherry-pick" has been tweaked to prepare
+   building more generic "sequencer" on top of the implementation that
+   drives them.
+
+ * "git rev-parse FETCH_HEAD" after "git fetch" without specifying
+   what to fetch from the command line will now show the commit that
+   would be merged if the command were "git pull".
+
+ * "git add" learned to stream large files directly into a packfile
+   instead of writing them into individual loose object files.
+
+ * "git checkout -B <current branch> <elsewhere>" is a more intuitive
+   way to spell "git reset --keep <elsewhere>".
+
+ * "git checkout" and "git merge" learned "--no-overwrite-ignore" option
+   to tell Git that untracked and ignored files are not expendable.
+
+ * "git commit --amend" learned "--no-edit" option to say that the
+   user is amending the tree being recorded, without updating the
+   commit log message.
+
+ * "git commit" and "git reset" re-learned the optimization to prime
+   the cache-tree information in the index, which makes it faster to
+   write a tree object out after the index entries are updated.
+
+ * "git commit" detects and rejects an attempt to stuff NUL byte in
+   the commit log message.
+
+ * "git commit" learned "-S" to GPG-sign the commit; this can be shown
+   with the "--show-signature" option to "git log".
+
+ * fsck and prune are relatively lengthy operations that still go
+   silent while making the end-user wait. They learned to give progress
+   output like other slow operations.
+
+ * The set of built-in function-header patterns for various languages
+   knows MATLAB.
+
+ * "git log --format='<format>'" learned new %g[nNeE] specifiers to
+   show information from the reflog entries when warlking the reflog
+   (i.e. with "-g").
+
+ * "git pull" can be used to fetch and merge an annotated/signed tag,
+   instead of the tip of a topic branch. The GPG signature from the
+   signed tag is recorded in the resulting merge commit for later
+   auditing.
+
+ * "git log" learned "--show-signature" option to show the signed tag
+   that was merged that is embedded in the merge commit. It also can
+   show the signature made on the commit with "git commit -S".
+
+ * "git branch --edit-description" can be used to add descriptive text
+   to explain what a topic branch is about.
+
+ * "git fmt-merge-msg" learned to take the branch description into
+   account when preparing a merge summary that "git merge" records
+   when merging a local branch.
+
+ * "git request-pull" has been updated to convey more information
+   useful for integrators to decide if a topic is worth merging and
+   what is pulled is indeed what the requestor asked to pull,
+   including:
+
+   - the tip of the branch being requested to be merged;
+   - the branch description describing what the topic is about;
+   - the contents of the annotated tag, when requesting to pull a tag.
+
+ * "git pull" learned to notice 'pull.rebase' configuration variable,
+   which serves as a global fallback for setting 'branch.<name>.rebase'
+   configuration variable per branch.
+
+ * "git tag" learned "--cleanup" option to control how the whitespaces
+   and empty lines in tag message are cleaned up.
+
+ * "gitweb" learned to show side-by-side diff.
+
+Also contains minor documentation updates and code clean-ups.
 
 
-Thanks,
-Namhyung
+Fixes since v1.7.8
+------------------
+
+Unless otherwise noted, all the fixes since v1.7.8 in the maintenance
+releases are contained in this release (see release notes to them for
+details).
+
+
+----------------------------------------------------------------
+
+Changes since v1.7.9-rc1 are as follows:
+
+Jakub Narebski (2):
+      gitweb: Fix file links in "grep" search
+      gitweb: Harden "grep" search against filenames with ':'
+
+Jeff King (3):
+      unix-socket: handle long socket pathnames
+      credential-cache: report more daemon connection errors
+      credential-cache: ignore "connection refused" errors
+
+Jonathan Nieder (1):
+      unix-socket: do not let close() or chdir() clobber errno during cleanup
+
+Junio C Hamano (4):
+      pulling signed tag: add howto document
+      Git 1.7.7.6
+      Git 1.7.8.4
+      Git 1.7.9-rc2
+
+Michael Haggerty (2):
+      git-show-ref: fix escaping in asciidoc source
+      git-show-ref doc: typeset regexp in fixed width font
+
+Nguyễn Thái Ngọc Duy (3):
+      Document limited recursion pathspec matching with wildcards
+      diff-index: enable recursive pathspec matching in unpack_trees
+      diff-index: enable recursive pathspec matching in unpack_trees
+
+Thomas Rast (1):
+      word-diff: ignore '\ No newline at eof' marker
+
