@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab2ASPoY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 10:44:24 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52146 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102Ab2ASPoW (ORCPT
+	id S932369Ab2ASPob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:44:31 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49875 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756238Ab2ASPo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 10:44:22 -0500
-Date: Thu, 19 Jan 2012 15:45:04 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Michael D Labriola <mlabriol@gdeb.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kushal Koolwal <kushalkoolwal@gmail.com>,
-        linux-kernel@vger.kernel.org, michael.d.labriola@gmail.com,
-        Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        support@versalogic.com, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86, reboot: skip DMI checks if reboot set by user
-Message-ID: <20120119154504.710e202e@pyramind.ukuu.org.uk>
-In-Reply-To: <OFD4BB6876.6D903346-ON8525798A.00550E62-8525798A.005562A3@gdeb.com>
-References: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>
-	<20120117195841.48fe8236@pyramind.ukuu.org.uk>
-	<OFD4BB6876.6D903346-ON8525798A.00550E62-8525798A.005562A3@gdeb.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jan 2012 10:44:26 -0500
+Date: Thu, 19 Jan 2012 07:44:21 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/12] elevator: make elevator_init_fn() return 0/-errno
+Message-ID: <20120119154421.GB5198@google.com>
+References: <1326935490-11827-1-git-send-email-tj@kernel.org>
+ <1326935490-11827-5-git-send-email-tj@kernel.org>
+ <20120119111151.GC2649@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120119111151.GC2649@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> checking if reboot_type's value is anything other than BOOT_ACPI (which
-> is the default), but that does assume BOOT_ACPI is the default.  What if
-> that's ever changed?  Seems likely to me that whoever changes the default
-> in the future could very easily re-break this at that point.
+Hello,
+
+On Thu, Jan 19, 2012 at 06:11:51AM -0500, Vivek Goyal wrote:
+> On Wed, Jan 18, 2012 at 05:11:22PM -0800, Tejun Heo wrote:
+> > elevator_ops->elevator_init_fn() has a weird return value.  It returns
+> > a void * which the caller should assign to q->elevator->elevator_data
+> > and %NULL return denotes init failure.
+> > 
+> > Update such that it returns integer 0/-errno and sets elevator_data
+> > directly as necessary.
 > 
-> Thoughts?
+> kmalloc() does the same thing. returning pointer means success and null
+> means failure.
 
-Fair point - how about a BOOT_DEFAULT define value if it hasn't been set
-and we can just make it do the same as ACPI in the switch ?
+Yes, allocation functions usually do that.  elevator_init_fn() isn't
+exactly one.  It could be but not necessarily so.  Look at the
+elevator init wrapper in elevator.c.  We shouldn't need something like
+that.
 
-Alan
+> Also elevator initialization might not necessarily mean that you are
+> the active elevator. So cfq_init_queue() assuming that I am the active
+> elevator and setting up q->elevator->elevator_data sounds odd to me.
+
+That was changed by the elvator switch sequence update earlier in this
+series.
+
+We need this change to use common blkg code for root blkg init.
+
+Thanks.
+
+-- 
+tejun
