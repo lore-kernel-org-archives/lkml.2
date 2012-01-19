@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab2ASDwt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 22:52:49 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55118 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab2ASDws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 22:52:48 -0500
-Date: Wed, 18 Jan 2012 19:52:52 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] arm/tegra: add support for tegra30 interrupts
-Message-ID: <20120119035252.GB7145@quad.lixom.net>
-References: <1325770305-21637-1-git-send-email-pdeschrijver@nvidia.com>
+	id S1757356Ab2ASED0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 23:03:26 -0500
+Received: from tundra.namei.org ([65.99.196.166]:42830 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755582Ab2ASEDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 23:03:25 -0500
+Date: Thu, 19 Jan 2012 15:03:20 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        Steve Dickson <steved@redhat.com>
+Subject: Re: [PATCH] KEYS: Allow special keyrings to be cleared
+In-Reply-To: <20120118153145.30490.61734.stgit@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.00.1201191502540.30715@tundra.namei.org>
+References: <20120118153145.30490.61734.stgit@warthog.procyon.org.uk>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325770305-21637-1-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 03:31:45PM +0200, Peter De Schrijver wrote:
-> Tegra30 has 1 extra legacy interrupt controller. Use the GIC ITLinesNumber
-> field to determine how many interrupt controllers we have and initialize
-> appropriately. Also make room for the extra tegra30 interrupts by moving
-> the GPIO IRQ base. This shouldn't affect existing code as it determines the
-> correct IRQ number for GPIOs using TEGRA_GPIO_TO_IRQ().
+On Wed, 18 Jan 2012, David Howells wrote:
+
+> The kernel contains some special internal keyrings, for instance the DNS
+> resolver keyring :
 > 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> Acked-by: Stephen Warren <swarren@nvidia.com>
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> Acked-by: Colin Cross <ccross@android.com>
+> 2a93faf1 I-----     1 perm 1f030000     0     0 keyring   .dns_resolver: empty
+> 
+> It would occasionally be useful to allow the contents of such keyrings to be
+> flushed by root (cache invalidation).
+> 
 
-Thanks, applied.
-
-
--Olof
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next-queue
