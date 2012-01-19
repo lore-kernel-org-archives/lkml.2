@@ -1,289 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab2ASJb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 04:31:59 -0500
-Received: from mail.nudt.edu.cn ([61.187.54.11]:56641 "HELO nudt.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756325Ab2ASJbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 04:31:55 -0500
-Date: Thu, 19 Jan 2012 17:19:20 +0800
-From: "Li Wang" <liwang@nudt.edu.cn>
-Subject: [PATCH] eCryptfs: truncate optimization (sometimes upto 25000x fa
- ster)
-To: dustin.kirkland@gazzang.com, torvalds@linux-foundation.org,
-        ecryptfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Dustin Kirkland" <kirkland@canonical.com>,
-        "Cong Wang" <xiyou.wangcong@gmail.com>,
-        "Tyler Hicks" <tyhicks@canonical.com>, john.johansen@canonical.com,
-        akpm@linux-foundation.org
-Message-Id: <1201191719207c1a8e2a0d7a3f1e88c2fb8597295f6d@nudt.edu.cn>
+	id S1757402Ab2ASJc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 04:32:56 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:43432 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626Ab2ASJcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 04:32:39 -0500
+Date: Thu, 19 Jan 2012 12:33:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: walter harms <wharms@bfs.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch 2/2] [media] ds3000: off by one in ds3000_read_snr()
+Message-ID: <20120119093327.GI3356@mwanda>
+References: <20120117073021.GB11358@elgon.mountain>
+ <4F16FC26.80306@bfs.de>
 MIME-Version: 1.0
-X-Mailer: eYou WebMail 5.0.3
-X-Eyou-Client: 119.39.21.16
-Content-Type: text/plain;
- charset="GBK"
-X-Eyou-Sender: <liwang@nudt.edu.cn>
-X-Eyou-MID: <1eb27cd6aea6df7a8f7c6c9629c88c68>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zgY/UHCnsaNnNXRx"
+Content-Disposition: inline
+In-Reply-To: <4F16FC26.80306@bfs.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4F17E32E.007E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0J9WAqL029922
 
-Hi,
-Many modern disk-based file systems, such as ext4,
-have the truncate optimization feature, kind of delayed allocation, that is, 
-when using 'truncate' to produce a big empty file, the file system will not 
-allocate disk space until real data are written into, as a result, 
-the execution of truncate is very fast and the disk space are saved. 
-However, for eCryptfs, it will actually create a equal-size file, and write zeroes into it, 
-which results in the allocation of disk space and slow disk write operations. 
-Since eCryptfs does not record hole information on disk, therefore, 
-when read out a page of zeroes, eCryptfs can not distinguish actual data 
-(encrypted data happened to be whole zeroes) from hole, 
-therefore, eCryptfs can not rely on the lower file system specific truncate implementation.
-However, there is one thing eCryptfs can do is that eCryptfs does record file size itself
-on the disk, so that it could be aware of the hole at the end of the file. 
-The natural optimization is, while truncate to expand a file to exceed the original size 
-(which occurs in many cases while doing truncate), 
-record the actual file size (after expansion) in the eCryptfs metadata, 
-keep the original size unchanged in the lower file system. 
-When reading, if the file size seen from eCryptfs is bigger than from 
-the lower file system side, it must contain a hole at the end of the file, 
-eCryptfs just return zeroes for that part of data, no disk operations at all, 
-and return them to user application, which casues an extremely fast truncation operation. 
-For example, we mount eCryptfs on top of ext4, run the following command 
-'truncate -s 4G dummy', for the original version, it takes eCryptfs 100 seconds 
-to finish, after our optimization, it takes only 4 miro-second, brings a 25000x speedup.
-The patch below implements the method mentioned above.
 
-BTW: thanks Tyler to warmly remind us regarding the patch format,
-we will follow the rules later to submit the patch. For this truncate optimization issue, 
-we think it better to first post the idea to undergo discussions, for the final code,
-we will make them strictly follow the kernel patch rule.
+--zgY/UHCnsaNnNXRx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cheers,
-Li Wang
+On Wed, Jan 18, 2012 at 06:06:46PM +0100, walter harms wrote:
+>=20
+>=20
+> Am 17.01.2012 08:30, schrieb Dan Carpenter:
+> > This is a static checker patch and I don't have the hardware to test
+> > this, so please review it carefully.  The dvbs2_snr_tab[] array has 80
+> > elements so when we cap it at 80, that's off by one.  I would have
+> > assumed that the test was wrong but in the lines right before we have
+> > the same test but use "snr_reading - 1" as the array offset.  I've done
+> > the same thing here.
+> >=20
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> >=20
+> > diff --git a/drivers/media/dvb/frontends/ds3000.c b/drivers/media/dvb/f=
+rontends/ds3000.c
+> > index af65d01..3f5ae0a 100644
+> > --- a/drivers/media/dvb/frontends/ds3000.c
+> > +++ b/drivers/media/dvb/frontends/ds3000.c
+> > @@ -681,7 +681,7 @@ static int ds3000_read_snr(struct dvb_frontend *fe,=
+ u16 *snr)
+> >  			snr_reading =3D dvbs2_noise_reading / tmp;
+> >  			if (snr_reading > 80)
+> >  				snr_reading =3D 80;
+> > -			*snr =3D -(dvbs2_snr_tab[snr_reading] / 1000);
+> > +			*snr =3D -(dvbs2_snr_tab[snr_reading - 1] / 1000);
+> >  		}
+> >  		dprintk("%s: raw / cooked =3D 0x%02x / 0x%04x\n", __func__,
+> >  				snr_reading, *snr);
+>=20
+> hi dan,
+>=20
+> perhaps it is more useful to do it in the check above ?
 
-Signed-off-by: Li Wang <liwang@nudt.edu.cn>
-               Yunchuan Wen <wenyunchuan@kylinos.com.cn>
+It looks like the check is correct but we need to shift all the
+values by one.  Again, I don't have this hardware, I'm just going by
+the context.
 
----
-  
-diff -prNu a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
---- a/fs/ecryptfs/crypto.c	2012-01-19 15:30:25.656858654 +0800
-+++ b/fs/ecryptfs/crypto.c	2012-01-19 16:59:11.492281195 +0800
-@@ -515,6 +515,7 @@ int ecryptfs_encrypt_page(struct page *p
- 			goto out;
- 		}
- 	}
-+	SetPageMappedToDisk(page);
- 	rc = 0;
- out:
- 	if (enc_extent_page) {
-@@ -599,11 +600,14 @@ out:
-  */
- int ecryptfs_decrypt_page(struct page *page)
- {
-+	loff_t offset;
- 	struct inode *ecryptfs_inode;
- 	struct ecryptfs_crypt_stat *crypt_stat;
- 	char *enc_extent_virt;
- 	struct page *enc_extent_page = NULL;
- 	unsigned long extent_offset;
-+	unsigned long extent_offset_max;
-+	unsigned long zero_nums;
- 	int rc = 0;
- 
- 	ecryptfs_inode = page->mapping->host;
-@@ -618,24 +622,39 @@ int ecryptfs_decrypt_page(struct page *p
- 		goto out;
- 	}
- 	enc_extent_virt = kmap(enc_extent_page);
-+
-+	ecryptfs_lower_offset_for_extent(
-+		&offset, ((page->index * (PAGE_CACHE_SIZE
-+					  / crypt_stat->extent_size))
-+			  ), crypt_stat);
-+	rc = ecryptfs_read_lower(enc_extent_virt, offset,
-+				 PAGE_CACHE_SIZE,
-+				 ecryptfs_inode);
-+	if (rc < 0) {
-+		ecryptfs_printk(KERN_ERR, "Error attempting "
-+				"to read lower page; rc = [%d]"
-+				"\n", rc);
-+		goto out;
-+	}
-+
-+	extent_offset_max = (rc + crypt_stat->extent_size - 1) /
-+		crypt_stat->extent_size;
-+	zero_nums = PAGE_CACHE_SIZE 
-+		- extent_offset_max * crypt_stat->extent_size;
-+
-+	if (zero_nums != 0) {
-+		char *address = kmap(page);
-+		address += PAGE_CACHE_SIZE - zero_nums;
-+		memset(address, 0, zero_nums);
-+		kunmap(page);
-+	}
-+	
-+	if (extent_offset_max == 0)
-+		goto out;
-+
- 	for (extent_offset = 0;
--	     extent_offset < (PAGE_CACHE_SIZE / crypt_stat->extent_size);
-+	     extent_offset < extent_offset_max;
- 	     extent_offset++) {
--		loff_t offset;
--
--		ecryptfs_lower_offset_for_extent(
--			&offset, ((page->index * (PAGE_CACHE_SIZE
--						  / crypt_stat->extent_size))
--				  + extent_offset), crypt_stat);
--		rc = ecryptfs_read_lower(enc_extent_virt, offset,
--					 crypt_stat->extent_size,
--					 ecryptfs_inode);
--		if (rc < 0) {
--			ecryptfs_printk(KERN_ERR, "Error attempting "
--					"to read lower page; rc = [%d]"
--					"\n", rc);
--			goto out;
--		}
- 		rc = ecryptfs_decrypt_extent(page, crypt_stat, enc_extent_page,
- 					     extent_offset);
- 		if (rc) {
-@@ -644,6 +663,7 @@ int ecryptfs_decrypt_page(struct page *p
- 			goto out;
- 		}
- 	}
-+	SetPageMappedToDisk(page);
- out:
- 	if (enc_extent_page) {
- 		kunmap(enc_extent_page);
-diff -prNu a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
---- a/fs/ecryptfs/inode.c	2012-01-19 15:30:25.657858641 +0800
-+++ b/fs/ecryptfs/inode.c	2012-01-19 15:35:58.822693506 +0800
-@@ -811,6 +811,7 @@ static int truncate_upper(struct dentry
- 	struct inode *inode = dentry->d_inode;
- 	struct ecryptfs_crypt_stat *crypt_stat;
- 	loff_t i_size = i_size_read(inode);
-+	loff_t i_lower_size;
- 	loff_t lower_size_before_truncate;
- 	loff_t lower_size_after_truncate;
- 
-@@ -822,8 +823,26 @@ static int truncate_upper(struct dentry
- 	if (rc)
- 		return rc;
- 	crypt_stat = &ecryptfs_inode_to_private(dentry->d_inode)->crypt_stat;
-+	i_lower_size = i_size_read(ecryptfs_inode_to_lower(inode)) 
-+		- ecryptfs_lower_header_size(crypt_stat);
- 	/* Switch on growing or shrinking file */
--	if (ia->ia_size > i_size) {
-+	if (ia->ia_size > i_lower_size) {
-+		if (crypt_stat->flags & ECRYPTFS_ENCRYPTED) {
-+			truncate_setsize(inode, ia->ia_size);
-+			lower_ia->ia_valid &= ~ATTR_SIZE;
-+			rc = ecryptfs_write_inode_size_to_metadata(inode);
-+			if (rc) {
-+				printk(KERN_ERR	"Problem with "
-+				       "ecryptfs_write_inode_size_to_metadata; "
-+					   "rc = [%d]\n", rc);
-+				goto out;
-+			}
-+		} else {
-+			truncate_setsize(inode, ia->ia_size);
-+			lower_ia->ia_size = ia->ia_size;
-+			lower_ia->ia_valid |= ATTR_SIZE;
-+		}
-+	} else if (ia->ia_size > i_size) {
- 		char zero[] = { 0x00 };
- 
- 		lower_ia->ia_valid &= ~ATTR_SIZE;
-@@ -832,7 +851,7 @@ static int truncate_upper(struct dentry
- 		 * the intermediate portion of the previous end of the
- 		 * file and the new and of the file */
- 		rc = ecryptfs_write(inode, zero,
--				    (ia->ia_size - 1), 1);
-+					(ia->ia_size - 1), 1);
- 	} else { /* ia->ia_size < i_size_read(inode) */
- 		/* We're chopping off all the pages down to the page
- 		 * in which ia->ia_size is located. Fill in the end of
-diff -prNu a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
---- a/fs/ecryptfs/mmap.c	2011-10-24 15:10:05.000000000 +0800
-+++ b/fs/ecryptfs/mmap.c	2012-01-19 15:36:02.119652666 +0800
-@@ -52,6 +52,39 @@ struct page *ecryptfs_get_locked_page(st
- 	return page;
- }
- 
-+static int ecryptfs_fill_hole(struct inode *inode, pgoff_t end)
-+{
-+	pgoff_t index;
-+	int rc = 0;
-+	struct inode *lower_inode;
-+	struct ecryptfs_crypt_stat *crypt_stat;
-+
-+	lower_inode = ecryptfs_inode_to_lower(inode);
-+	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
-+
-+	index = (i_size_read(lower_inode) - ecryptfs_lower_header_size(crypt_stat))
-+		>> PAGE_CACHE_SHIFT;
-+
-+	while (index <= end) {
-+		struct page *page = ecryptfs_get_locked_page(inode, index);
-+		if (unlikely(IS_ERR(page))) {
-+			rc = PTR_ERR(page);
-+			goto out;
-+		}
-+		if (!PageMappedToDisk(page))
-+			rc = ecryptfs_encrypt_page(page);
-+		else
-+			rc = 0;
-+		unlock_page(page);
-+		page_cache_release(page);
-+		if (unlikely(rc))
-+			goto out;
-+		++index;
-+	}
-+out:
-+	return rc;
-+}
-+
- /**
-  * ecryptfs_writepage
-  * @page: Page that is locked before this call is made
-@@ -74,6 +107,14 @@ static int ecryptfs_writepage(struct pag
- 		goto out;
- 	}
- 
-+	if (page->index > 0) {
-+		rc = ecryptfs_fill_hole(page->mapping->host, page->index - 1);
-+		if (rc) {
-+			ClearPageUptodate(page);
-+			goto out;
-+		}
-+	}
-+
- 	rc = ecryptfs_encrypt_page(page);
- 	if (rc) {
- 		ecryptfs_printk(KERN_WARNING, "Error encrypting "
-diff -prNu a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
---- a/fs/ecryptfs/read_write.c	2011-10-24 15:10:05.000000000 +0800
-+++ b/fs/ecryptfs/read_write.c	2012-01-19 15:36:02.118652694 +0800
-@@ -177,7 +177,6 @@ int ecryptfs_write(struct inode *ecryptf
- 		kunmap_atomic(ecryptfs_page_virt, KM_USER0);
- 		flush_dcache_page(ecryptfs_page);
- 		SetPageUptodate(ecryptfs_page);
--		unlock_page(ecryptfs_page);
- 		if (crypt_stat->flags & ECRYPTFS_ENCRYPTED)
- 			rc = ecryptfs_encrypt_page(ecryptfs_page);
- 		else
-@@ -185,6 +184,7 @@ int ecryptfs_write(struct inode *ecryptf
- 						ecryptfs_page,
- 						start_offset_in_page,
- 						data_offset);
-+		unlock_page(ecryptfs_page);
- 		page_cache_release(ecryptfs_page);
- 		if (rc) {
- 			printk(KERN_ERR "%s: Error encrypting "
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> thinking about that why not replace the number (80) with ARRAY_SIZE() ?
+
+That would be a cleanup, yes but it could go in a separate patch.
+
+regards,
+dan carpenter
+
+
+--zgY/UHCnsaNnNXRx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPF+NnAAoJEOnZkXI/YHqRu4cQAIwegV2tAdtu3btAoEThma5Q
+zPfEiGleuUk7r2fna9OaX3opVPKPzYIWQcWvKR8S0La9lmbzyTpljUlQJMhv4tx0
+DpGdnjGvTwzh+3sVzudIdUad3f6Db1GDo4xeWZ17cXF91qkXTUYQwlE6+UeZIZod
+UJgTSa0zUTM7FmfpnSsUIPjTMBDCjWhV0VqU6K7pArizGcMkDk5kbKY61tsNHmBe
+R0i/WOdDRb3IPEcgZ7MQS3BhXMB8s96G1vI9ddSIqFSKOsY6ov2qBGE2a1KnTiRI
+p2aalkI59jzCUrT3zAwP/Es2HsBfqrwih59yIoLetEOuTiq7mTTv4CXebIv/uH7K
+RTlgyvULk0+PICTfLSlP18HAzoZxnIElesNdxvo5s/Ou4Fz2nVby0eUlbUblTa5l
+6Q5Ki0laV4GEq7r4wl/llD0ozyKWcCD2IqHpTrObBS0MyI/G9IeSB0npCzmzugTu
+orRM9Zt86UnPUNbNfCPGnTaeLjPR42qBX9+Ub8evB6ydDY94qKBs4if3e3kTNsGB
+F5aCkPU9c9vPCJEvp7C2F84GQ8PayOeZApiavPJZjJBcQ3NPXf6ATE7T1+bZOXA/
+IMGf59OBglCpWKfYMhLM1Hb5RjazcP3q06Jq19rACwYv5E49XLaOBOLac1+BF8Pp
+AbdLt/eWQGDVqfz4b2SO
+=k4bn
+-----END PGP SIGNATURE-----
+
+--zgY/UHCnsaNnNXRx--
