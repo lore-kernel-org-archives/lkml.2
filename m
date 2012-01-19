@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab2ASQi4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:38:56 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49615 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab2ASQiz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:38:55 -0500
-Subject: [PATCH] sched/stats: Keep legacy array expiration field to zero.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: mingo@elte.hu, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Jan 2012 22:37:22 +0600
-Message-ID: <1326991042.6107.4.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932173Ab2ASQjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:39:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753318Ab2ASQjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 11:39:21 -0500
+Date: Thu, 19 Jan 2012 18:39:17 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, jan.kiszka@siemens.com,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: deliver msix interrupts from irq handler
+Message-ID: <20120119163917.GB18770@redhat.com>
+References: <20120118181023.GA4140@redhat.com>
+ <20120119072123.GE9571@redhat.com>
+ <20120119134957.GC4009@redhat.com>
+ <20120119150217.GA20920@redhat.com>
+ <20120119155748.GA6340@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120119155748.GA6340@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- A patch (https://lkml.org/lkml/2012/1/12/224) was sent previously to update scheduler stat documentation to address array expiration field's use. Then Ingo suggest that, we should also make sure that we're exporting a value of zero. So, this patch does those accordingly.
+On Thu, Jan 19, 2012 at 05:57:48PM +0200, Michael S. Tsirkin wrote:
+> On Thu, Jan 19, 2012 at 05:02:17PM +0200, Gleb Natapov wrote:
+> > On Thu, Jan 19, 2012 at 03:49:57PM +0200, Michael S. Tsirkin wrote:
+> > > > > +	irq_rt = rcu_dereference(kvm->irq_routing);
+> > > > > +	if (irq < irq_rt->nr_rt_entries)
+> > > > > +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link) {
+> > > > > +			if (ei->type == KVM_IRQ_ROUTING_MSI)
+> > > > > +				ret = kvm_set_msi(e, kvm, irq_source_id, level,
+> > > > > +						  host_irq);
+> > > > > +			else
+> > > > > +				ret = -EWOULDBLOCK;
+> > > > > +			break;
+> > > > > +		}
+> > > > > +	rcu_read_unlock_bh();
+> > > > > +	return ret;
+> > > > > +}
+> > > > > +
+> > > > Share implementation with kvm_set_irq().
+> > > 
+> > > I considered this. There are several reasons not to do it:
+> > > - Amount of common code is very small
+> > Why? Just pass msi_only flag to kvm_set_irq() and skip an entry if flag is
+> > set and entry type is not msi.
+> > 
+> > > - As it's separate, it's more obvious that it can't block (kvm_set_irq can block)
+> > >   We can even tag kvm_set_irq with might_sleep.
+> > They can still be two separate function calling common one.
+> 
+> No, the common code is the surrounding foreach loop,
+> the internal if branch is different.
+> 
+I do not see any complication whatsoever. The reuse it trivial.
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
-index 1cd5d51..8259b34 100644
---- a/Documentation/scheduler/sched-stats.txt
-+++ b/Documentation/scheduler/sched-stats.txt
-@@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
-      1) # of times sched_yield() was called
- 
- Next three are schedule() statistics:
--     2) # of times we switched to the expired queue and reused it
-+     2) This field is a legacy array expiration count field used in the O(1)
-+	scheduler. We kept it for ABI compatibility, but it is always set to zero.
-      3) # of times schedule() was called
-      4) # of times schedule() left the processor idle
- 
-diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
-index 2a581ba..903ffa9e 100644
---- a/kernel/sched/stats.c
-+++ b/kernel/sched/stats.c
-@@ -32,9 +32,9 @@ static int show_schedstat(struct seq_file *seq, void *v)
- 
- 		/* runqueue-specific stats */
- 		seq_printf(seq,
--		    "cpu%d %u %u %u %u %u %u %llu %llu %lu",
-+		    "cpu%d %u 0 %u %u %u %u %llu %llu %lu",
- 		    cpu, rq->yld_count,
--		    rq->sched_switch, rq->sched_count, rq->sched_goidle,
-+		    rq->sched_count, rq->sched_goidle,
- 		    rq->ttwu_count, rq->ttwu_local,
- 		    rq->rq_cpu_time,
- 		    rq->rq_sched_info.run_delay, rq->rq_sched_info.pcount);
-
-
+--
+			Gleb.
