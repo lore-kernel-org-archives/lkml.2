@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab2ASRwQ (ORCPT <rfc822;w@1wt.eu>);
+	id S932668Ab2ASRwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 12:52:19 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:21888 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932613Ab2ASRwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Jan 2012 12:52:16 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10076 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab2ASRwP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 12:52:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 19 Jan 2012 09:52:14 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chanho Park <chanho61.park@samsung.com>
-Date: Thu, 19 Jan 2012 09:52:13 -0800
-Subject: RE: [PATCH] pinctrl: Fix pinconf_pins_show iteration
-Thread-Topic: [PATCH] pinctrl: Fix pinconf_pins_show iteration
-Thread-Index: AczPeJitzp1+H9lpRmC7+qJ2QNyIDQHWl3hQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB0F3@HQMAIL01.nvidia.com>
-References: <1325882311-7504-1-git-send-email-swarren@nvidia.com>
- <CACRpkdY+qpm1na_fdSEiSeBPQNFYf4JTapVE5o6m07OQiaoPCw@mail.gmail.com>
-In-Reply-To: <CACRpkdY+qpm1na_fdSEiSeBPQNFYf4JTapVE5o6m07OQiaoPCw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Message-ID: <4F18583F.1000209@parallels.com>
+Date: Thu, 19 Jan 2012 21:51:59 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 3/5] SUNRPC: create GSS auth cache per network namespace
+References: <20120119144517.9957.59143.stgit@localhost6.localdomain6> <20120119144922.9957.39352.stgit@localhost6.localdomain6> <20120119163149.GD527@fieldses.org> <4F184D28.3030207@parallels.com> <20120119174002.GA2907@fieldses.org>
+In-Reply-To: <20120119174002.GA2907@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Tuesday, January 10, 2012 2:17 AM:
-> On Fri, Jan 6, 2012 at 9:38 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> 
-> > Commit 706e852 "pinctrl: correct a offset while enumerating pins"
-> > modified the variable used by pinconf_pin_show()'s for loop, but didn't
-> > update the for loop test expression.
-> >
-> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> 
-> OK applied to my fixes branch, will send this along with any other
-> fixes once Torvalds has pulled the pinctrl tree for this merge window.
+19.01.2012 21:40, J. Bruce Fields пишет:
+> On Thu, Jan 19, 2012 at 09:04:40PM +0400, Stanislav Kinsbursky wrote:
+>> 19.01.2012 20:31, J. Bruce Fields пишет:
+>>> On Thu, Jan 19, 2012 at 06:49:23PM +0400, Stanislav Kinsbursky wrote:
+>>>> @@ -1000,6 +996,7 @@ static int svcauth_gss_handle_init(struct svc_rqst *rqstp,
+>>>>   	struct xdr_netobj tmpobj;
+>>>>   	struct rsi *rsip, rsikey;
+>>>>   	int ret;
+>>>> +	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
+>>>
+>>> OK, so you're getting the network namespace out of the rqstp, and, then
+>>> passing it down, makes sense.  And:
+>>>
+>>>> @@ -1079,6 +1076,7 @@ svcauth_gss_accept(struct svc_rqst *rqstp, __be32 *authp)
+>>>>   	__be32		*rpcstart;
+>>>>   	__be32		*reject_stat = resv->iov_base + resv->iov_len;
+>>>>   	int		ret;
+>>>> +	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
+>>>
+>>> ... same for the gss cache.  Looks good.
+>>>
+>>> How do you plan to test this?
+>>>
+>>
+>> Do you mean something special or in general?
+>> Currently I validate all my chages in container by using simple test environment.
+>> I would be appreciate for any hints to tests, than can help.
+>
+> The server needs to be tested after these changes, and we need to make
+> sure the caches affected still work.
+>
+> (I suspect the gid cache code will oops if it's used after these
+> patches, since the table is left NULl?)
+>
+> And then we should also test in a container environment, with different
+> instances of mountd and rpc.svcidmapd running in each container, to
+> verify that the right thing happens.
+>
 
-Linus,
+Ok. I'll test server with 2-nd version of these patches tomorrow and reply with 
+the results.
+Thanks, Bruce.
 
-This still hasn't shown up in next-20120119. Is that expected?
-
-Thanks.
 
 -- 
-nvpublic
-
+Best regards,
+Stanislav Kinsbursky
