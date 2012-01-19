@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab2ASLMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 06:12:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15646 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab2ASLL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 06:11:59 -0500
-Date: Thu, 19 Jan 2012 06:11:51 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/12] elevator: make elevator_init_fn() return 0/-errno
-Message-ID: <20120119111151.GC2649@redhat.com>
-References: <1326935490-11827-1-git-send-email-tj@kernel.org>
- <1326935490-11827-5-git-send-email-tj@kernel.org>
+	id S1755514Ab2ASLMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 06:12:19 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57190 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab2ASLMP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 06:12:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326935490-11827-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGAKE8_wL0GcbjDNWOw4sa8euxZyGDgkdW9EgohpmG48Qk3-nQ@mail.gmail.com>
+References: <CAGAKE8_zLr9nrQ_-cXQGzycFo6746t8OzKK6DpCd9tcahyRfPQ@mail.gmail.com>
+	<CAGAKE8_wL0GcbjDNWOw4sa8euxZyGDgkdW9EgohpmG48Qk3-nQ@mail.gmail.com>
+Date: Thu, 19 Jan 2012 12:12:13 +0100
+X-Google-Sender-Auth: AG7ALAdBzPRdQLQOdkefAkDVUy0
+Message-ID: <CAO+b5-pZofpN7-e8H+toE98j24fby5u8_Nzfzkz_S31u5wDmwA@mail.gmail.com>
+Subject: Re: [Scst-devel] BUG: Process hang when kvm crashed, stacktrace cfs+kvm
+From: Bart Van Assche <bvanassche@acm.org>
+To: kordex <kordex@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu, peterz@infradead.org,
+        kvm@vger.kernel.org, avi@redhat.com,
+        Mikko Kortelainen <mikko.kortelainen@fail-safe.net>,
+        scst-devel <scst-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 05:11:22PM -0800, Tejun Heo wrote:
-> elevator_ops->elevator_init_fn() has a weird return value.  It returns
-> a void * which the caller should assign to q->elevator->elevator_data
-> and %NULL return denotes init failure.
-> 
-> Update such that it returns integer 0/-errno and sets elevator_data
-> directly as necessary.
-> 
+On Thu, Jan 19, 2012 at 11:54 AM, kordex <kordex@gmail.com> wrote:
+> > root@teletex:/usr/src/linux# dmesg
+> > +0x12e7/0x1c50
+> >  [<ffffffff810dc322>] ? page_add_new_anon_rmap+0x52/0xa0
 
-kmalloc() does the same thing. returning pointer means success and null
-means failure.
+The above output is truncated - the most interesting part is missing.
 
-Also elevator initialization might not necessarily mean that you are
-the active elevator. So cfq_init_queue() assuming that I am the active
-elevator and setting up q->elevator->elevator_data sounds odd to me.
-
-Personally, I liked previous interface better. But, let me read rest of
-the patches and see how you have made use of it to do more cleanup.
-
-Thanks
-Vivek
+Bart.
