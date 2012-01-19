@@ -1,217 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab2ASO2X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 09:28:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63524 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751240Ab2ASO2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 09:28:20 -0500
-Date: Thu, 19 Jan 2012 16:30:33 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] kvm: deliver msix interrupts from irq handler
-Message-ID: <20120119143032.GC5294@redhat.com>
-References: <20120118181023.GA4140@redhat.com>
- <4F1806D0.9020208@siemens.com>
+	id S1754206Ab2ASOaX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 09:30:23 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:57986
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752658Ab2ASOaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 09:30:18 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LY1UY6-01-0K9-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Stuart Yoder <b08248@gmail.com>, Scott Wood <scottwood@freescale.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 1/5] iommu: Add domain-attribute handlers
+Date: Thu, 19 Jan 2012 15:30:01 +0100
+Message-ID: <1326983405-319-2-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326983405-319-1-git-send-email-joerg.roedel@amd.com>
+References: <1326983405-319-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F1806D0.9020208@siemens.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 01:04:32PM +0100, Jan Kiszka wrote:
-> On 2012-01-18 19:10, Michael S. Tsirkin wrote:
-> > We can deliver certain interrupts, notably MSIX,
-> > from atomic context.  Add a new API kvm_set_irq_inatomic,
-> > that does exactly that, and use it to implement
-> > an irq handler for msi.
-> > 
-> > This reduces the pressure on scheduler in case
-> > where host and guest irq share a host cpu.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > 
-> > Untested.
-> > Note: this is on top of my host irq patch.
-> > Probably needs to be rebased to be independent
-> > and split up to new API + usage.
-> > 
-> > ---
-> >  include/linux/kvm_host.h |    2 +
-> >  virt/kvm/assigned-dev.c  |   31 +++++++++++++++++++++++++-
-> >  virt/kvm/irq_comm.c      |   52 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 83 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > index f0361bc..e2b89ea 100644
-> > --- a/include/linux/kvm_host.h
-> > +++ b/include/linux/kvm_host.h
-> > @@ -548,6 +548,8 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
-> >  #endif
-> >  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level,
-> >  		int host_irq);
-> > +int kvm_set_irq_inatomic(struct kvm *kvm, int irq_source_id, u32 irq, int level,
-> > +			 int host_irq);
-> >  int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
-> >  		int irq_source_id, int level, int host_irq);
-> >  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
-> > diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-> > index cc4bb7a..73bb001 100644
-> > --- a/virt/kvm/assigned-dev.c
-> > +++ b/virt/kvm/assigned-dev.c
-> > @@ -57,6 +57,14 @@ static int find_index_from_host_irq(struct kvm_assigned_dev_kernel
-> >  	return index;
-> >  }
-> >  
-> > +static irqreturn_t kvm_assigned_dev_msi(int irq, void *dev_id)
-> > +{
-> > +	int ret = kvm_set_irq_inatomic(assigned_dev->kvm,
-> > +				       assigned_dev->irq_source_id,
-> > +				       assigned_dev->guest_irq, 1, irq);
-> > +	return unlikely(ret == -EWOULDBLOCK) ? IRQ_WAKE_THREAD : IRQ_HANDLED;
-> > +}
-> 
-> This function gets unused (in theory) if !__KVM_HAVE_MSIX &&
-> !__KVM_HAVE_MSI. Should be fixed for consistency reasons.
+This patch introduces an extension to the iommu-api to get
+and set attributes for an iommu_domain. Two functions are
+introduced for this:
 
-Does kvm still build with this !__KVM_HAVE_MSI? It does not look like
-it would ...
+	* iommu_domain_get_attr()
+	* iommu_domain_set_attr()
+
+These functions will be used to make the iommu-api suitable
+for GART-like IOMMUs and to implement hardware-specifc
+api-extensions.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/iommu/iommu.c |   20 ++++++++++++++++++++
+ include/linux/iommu.h |   25 +++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 2198b2d..ef54718 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -341,3 +341,23 @@ int iommu_device_group(struct device *dev, unsigned int *groupid)
+ 	return -ENODEV;
+ }
+ EXPORT_SYMBOL_GPL(iommu_device_group);
++
++int iommu_domain_get_attr(struct iommu_domain *domain,
++			  enum iommu_attr attr, void *data)
++{
++	if (!domain->ops->domain_get_attr)
++		return -EINVAL;
++
++	return domain->ops->domain_get_attr(domain, attr, data);
++}
++EXPORT_SYMBOL_GPL(iommu_domain_get_attr);
++
++int iommu_domain_set_attr(struct iommu_domain *domain,
++			  enum iommu_attr attr, void *data)
++{
++	if (!domain->ops->domain_set_attr)
++		return -EINVAL;
++
++	return domain->ops->domain_set_attr(domain, attr, data);
++}
++EXPORT_SYMBOL_GPL(iommu_domain_set_attr);
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index d937580..32d0de1 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -46,6 +46,10 @@ struct iommu_domain {
+ #define IOMMU_CAP_CACHE_COHERENCY	0x1
+ #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
+ 
++enum iommu_attr {
++	DOMAIN_ATTR_MAX,
++};
++
+ #ifdef CONFIG_IOMMU_API
+ 
+ /**
+@@ -75,6 +79,10 @@ struct iommu_ops {
+ 	int (*domain_has_cap)(struct iommu_domain *domain,
+ 			      unsigned long cap);
+ 	int (*device_group)(struct device *dev, unsigned int *groupid);
++	int (*domain_get_attr)(struct iommu_domain *domain,
++			       enum iommu_attr attr, void *data);
++	int (*domain_set_attr)(struct iommu_domain *domain,
++			       enum iommu_attr attr, void *data);
+ 	unsigned long pgsize_bitmap;
+ };
+ 
+@@ -98,6 +106,11 @@ extern void iommu_set_fault_handler(struct iommu_domain *domain,
+ 					iommu_fault_handler_t handler);
+ extern int iommu_device_group(struct device *dev, unsigned int *groupid);
+ 
++extern int iommu_domain_get_attr(struct iommu_domain *domain, enum iommu_attr,
++				 void *data);
++extern int iommu_domain_set_attr(struct iommu_domain *domain, enum iommu_attr,
++				 void *data);
++
+ /**
+  * report_iommu_fault() - report about an IOMMU fault to the IOMMU framework
+  * @domain: the iommu domain where the fault has happened
+@@ -200,6 +213,18 @@ static inline int iommu_device_group(struct device *dev, unsigned int *groupid)
+ 	return -ENODEV;
+ }
+ 
++static inline int iommu_domain_get_attr(struct iommu_domain *domain,
++					enum iommu_attr attr, void *data)
++{
++	return -EINVAL;
++}
++
++static inline int iommu_domain_set_attr(struct iommu_domain *domain,
++					enum iommu_attr attr, void *data)
++{
++	return -EINVAL;
++}
++
+ #endif /* CONFIG_IOMMU_API */
+ 
+ #endif /* __LINUX_IOMMU_H */
+-- 
+1.7.5.4
 
 
-> > +
-> >  static irqreturn_t kvm_assigned_dev_thread(int irq, void *dev_id)
-> >  {
-> >  	struct kvm_assigned_dev_kernel *assigned_dev = dev_id;
-> > @@ -75,6 +83,23 @@ static irqreturn_t kvm_assigned_dev_thread(int irq, void *dev_id)
-> >  }
-> >  
-> >  #ifdef __KVM_HAVE_MSIX
-> > +static irqreturn_t kvm_assigned_dev_msix(int irq, void *dev_id)
-> > +{
-> > +	struct kvm_assigned_dev_kernel *assigned_dev = dev_id;
-> > +	int index = find_index_from_host_irq(assigned_dev, irq);
-> > +	u32 vector;
-> > +	int ret = 0;
-> > +
-> > +	if (index >= 0) {
-> > +		vector = assigned_dev->guest_msix_entries[index].vector;
-> > +		ret = kvm_set_irq_inatomic(assigned_dev->kvm,
-> > +					   assigned_dev->irq_source_id,
-> > +					   vector, 1, irq);
-> > +	}
-> > +
-> > +	return unlikely(ret == -EWOULDBLOCK) ? IRQ_WAKE_THREAD : IRQ_HANDLED;
-> > +}
-> > +
-> >  static irqreturn_t kvm_assigned_dev_thread_msix(int irq, void *dev_id)
-> >  {
-> >  	struct kvm_assigned_dev_kernel *assigned_dev = dev_id;
-> > @@ -266,7 +291,8 @@ static int assigned_device_enable_host_msi(struct kvm *kvm,
-> >  	}
-> >  
-> >  	dev->host_irq = dev->dev->irq;
-> > -	if (request_threaded_irq(dev->host_irq, NULL, kvm_assigned_dev_thread,
-> > +	if (request_threaded_irq(dev->host_irq, kvm_assigned_dev_msi,
-> > +				 kvm_assigned_dev_thread,
-> >  				 0, dev->irq_name, dev)) {
-> >  		pci_disable_msi(dev->dev);
-> >  		return -EIO;
-> > @@ -293,7 +319,8 @@ static int assigned_device_enable_host_msix(struct kvm *kvm,
-> >  
-> >  	for (i = 0; i < dev->entries_nr; i++) {
-> >  		r = request_threaded_irq(dev->host_msix_entries[i].vector,
-> > -					 NULL, kvm_assigned_dev_thread_msix,
-> > +					 kvm_assigned_dev_msix,
-> > +					 kvm_assigned_dev_thread_msix,
-> >  					 0, dev->irq_name, dev);
-> >  		if (r)
-> >  			goto err;
-> > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> > index ba892df..68cd127 100644
-> > --- a/virt/kvm/irq_comm.c
-> > +++ b/virt/kvm/irq_comm.c
-> > @@ -201,6 +201,58 @@ int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level,
-> >  	return ret;
-> >  }
-> >  
-> > +static inline struct kvm_kernel_irq_routing_entry *
-> > +kvm_get_entry(struct kvm *kvm, struct kvm_irq_routing_table *irq_rq, u32 irq)
-> > +{
-> > +	struct kvm_kernel_irq_routing_entry *e;
-> > +	if (likely(irq < irq_rt->nr_rt_entries))
-> > +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link)
-> > +			if (e->type == KVM_IRQ_ROUTING_MSI)
-> > +				return e;
-> > +			else
-> > +				return ERR_PTR(-EWOULDBLOCK);
-> > +	return ERR_PTR(-EINVAL);
-> > +}
-> > +
-> > +/*
-> > + * Deliver an IRQ in an atomic context if we can, or return a failure,
-> > + * user can retry in a process context.
-> > + * Return value:
-> > + *  -EWOULDBLOCK	Can't deliver in atomic context
-> > + *  < 0			Interrupt was ignored (masked or not delivered for other reasons)
-> > + *  = 0			Interrupt was coalesced (previous irq is still pending)
-> > + *  > 0			Number of CPUs interrupt was delivered to
-> 
-> Where do you make use of =0 vs. >0? Not in this patch at least. Do you
-> consider using it for the APIC timer as well?
-
-I think it might be handy in the future. It's an internal function
-(not exported) so I just return what I get without worrying about it
-too much: I didn't need to add code to get this :)
-
-> > + */
-> > +int kvm_set_irq_inatomic(struct kvm *kvm, int irq_source_id, u32 irq, int level,
-> > +			 int host_irq)
-> > +{
-> > +	struct kvm_kernel_irq_routing_entry *e;
-> > +	int ret = -EINVAL;
-> > +	struct kvm_irq_routing_table *irq_rt;
-> > +	struct hlist_node *n;
-> > +
-> > +	trace_kvm_set_irq(irq, level, irq_source_id);
-> > +
-> > +	/*
-> > +	 * We know MSI are safe in interrupt context. They are also
-> > +	 * easy as there's a single routing entry for these GSIs.
-> > +	 * So only handle MSI in an atomic context, for now.
-> > +	 */
-> > +	rcu_read_lock_bh();
-> > +	irq_rt = rcu_dereference(kvm->irq_routing);
-> > +	if (irq < irq_rt->nr_rt_entries)
-> > +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link) {
-> > +			if (ei->type == KVM_IRQ_ROUTING_MSI)
-> > +				ret = kvm_set_msi(e, kvm, irq_source_id, level,
-> > +						  host_irq);
-> > +			else
-> > +				ret = -EWOULDBLOCK;
-> > +			break;
-> > +		}
-> > +	rcu_read_unlock_bh();
-> > +	return ret;
-> > +}
-> > +
-> >  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin)
-> >  {
-> >  	struct kvm_irq_ack_notifier *kian;
-> 
-> Highly welcome feature!
-> 
-> Jan
-
-I think we need to fix MSIX masking now, otherwise delivering interrupt
-faster might get us a storm of interrupts.
-
-> -- 
-> Siemens AG, Corporate Technology, CT T DE IT 1
-> Corporate Competence Center Embedded Linux
