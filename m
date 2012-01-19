@@ -1,74 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab2ASVlF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 16:41:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38203 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab2ASVlB (ORCPT
+	id S1754086Ab2ASVl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 16:41:28 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:41718 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab2ASVlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 16:41:01 -0500
-Date: Thu, 19 Jan 2012 13:40:43 -0800
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-4f2f81a5621de47d42476d0b929be2e0d565df84@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, dmitry.kasatkin@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, dmitry.kasatkin@intel.com,
-        tglx@linutronix.de
-In-Reply-To: <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
-References: <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, syscall:
-  Need __ARCH_WANT_SYS_IPC for 32 bits
-Git-Commit-ID: 4f2f81a5621de47d42476d0b929be2e0d565df84
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 19 Jan 2012 16:41:25 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Christoph Lameter <cl@linux.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Hung task when calling clone() due to netfilter/slab
+References: <1326558605.19951.7.camel@lappy>
+	<1326561043.5287.24.camel@edumazet-laptop>
+	<1326632384.11711.3.camel@lappy>
+	<1326648305.5287.78.camel@edumazet-laptop>
+	<alpine.DEB.2.00.1201170910130.4800@router.home>
+	<1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<alpine.DEB.2.00.1201170927020.4800@router.home>
+	<1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<alpine.DEB.2.00.1201170942240.4800@router.home>
+	<alpine.DEB.2.00.1201171620590.14697@router.home>
+Date: Thu, 19 Jan 2012 13:43:40 -0800
+In-Reply-To: <alpine.DEB.2.00.1201171620590.14697@router.home> (Christoph
+	Lameter's message of "Tue, 17 Jan 2012 16:22:09 -0600 (CST)")
+Message-ID: <m1bopz2ws3.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 19 Jan 2012 13:40:49 -0800 (PST)
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18oxM76k/+6p3qZL85/Jni0bItPCnDpHOA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4f2f81a5621de47d42476d0b929be2e0d565df84
-Gitweb:     http://git.kernel.org/tip/4f2f81a5621de47d42476d0b929be2e0d565df84
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Thu, 19 Jan 2012 12:41:25 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 19 Jan 2012 12:57:09 -0800
+Christoph Lameter <cl@linux.com> writes:
 
-x86, syscall: Need __ARCH_WANT_SYS_IPC for 32 bits
+> Another version that drops the slub lock for both invocations of sysfs
+> functions from kmem_cache_create. The invocation from slab_sysfs_init
+> is not a problem since user space is not active at that point.
+>
+>
+> Subject: slub: Do not take the slub lock while calling into sysfs
+>
+> This patch avoids holding the slub_lock during kmem_cache_create()
+> when calling sysfs. It is possible because kmem_cache_create()
+> allocates the kmem_cache object and therefore is the only one context
+> that can access the newly created object. It is therefore possible
+> to drop the slub_lock early. We defer the adding of the new kmem_cache
+> to the end of processing because the new kmem_cache structure would
+> be reachable otherwise via scans over slabs. This allows sysfs_slab_add()
+> to run without holding any locks.
+>
+> The case is different if we are creating an alias instead of a new
+> kmem_cache structure. In that case we can also drop the slub lock
+> early because we have taken a refcount on the kmem_cache structure.
+> It therefore cannot vanish from under us.
+> But if the sysfs_slab_alias() call fails we can no longer simply
+> decrement the refcount since the other references may have gone
+> away in the meantime. Call kmem_cache_destroy() to cause the
+> refcount to be decremented and the kmem_cache structure to be
+> freed if all references are gone.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-In checkin
+I am dense.  Is the deadlock here that you are fixing slub calling sysfs
+with the slub_lock held but sysfs then calling kmem_cache_zalloc?
 
-  303395ac3bf3 x86: Generate system call tables and unistd_*.h from tables
+I don't see what sysfs is doing in the creation path that would cause
+a deadlock except for using slab.
 
-the feature macros in <asm/unistd.h> were unified between 32 and 64
-bits.  Unfortunately 32 bits requires __ARCH_WANT_SYS_IPC and this was
-inadvertently dropped.
-
-Reported-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com
----
- arch/x86/include/asm/unistd.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/unistd.h b/arch/x86/include/asm/unistd.h
-index b4a3db7..21f77b8 100644
---- a/arch/x86/include/asm/unistd.h
-+++ b/arch/x86/include/asm/unistd.h
-@@ -7,6 +7,7 @@
- #  include <asm/unistd_32.h>
- #  define __ARCH_WANT_IPC_PARSE_VERSION
- #  define __ARCH_WANT_STAT64
-+#  define __ARCH_WANT_SYS_IPC
- #  define __ARCH_WANT_SYS_OLD_MMAP
- #  define __ARCH_WANT_SYS_OLD_SELECT
- 
+> ---
+>  mm/slub.c |   25 +++++++++++--------------
+>  1 file changed, 11 insertions(+), 14 deletions(-)
+>
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c	2012-01-17 09:53:26.599505365 -0600
+> +++ linux-2.6/mm/slub.c	2012-01-17 09:59:57.131497273 -0600
+> @@ -3912,13 +3912,14 @@ struct kmem_cache *kmem_cache_create(con
+>  		s->objsize = max(s->objsize, (int)size);
+>  		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
+>
+> +		up_write(&slub_lock);
+>  		if (sysfs_slab_alias(s, name)) {
+> -			s->refcount--;
+> +			kmem_cache_destroy(s);
+>  			goto err;
+>  		}
+> -		up_write(&slub_lock);
+>  		return s;
+>  	}
+> +	up_write(&slub_lock);
+>
+>  	n = kstrdup(name, GFP_KERNEL);
+>  	if (!n)
+> @@ -3928,27 +3929,23 @@ struct kmem_cache *kmem_cache_create(con
+>  	if (s) {
+>  		if (kmem_cache_open(s, n,
+>  				size, align, flags, ctor)) {
+> -			list_add(&s->list, &slab_caches);
+> -			if (sysfs_slab_add(s)) {
+> -				list_del(&s->list);
+> -				kfree(n);
+> -				kfree(s);
+> -				goto err;
+> +
+> +			if (sysfs_slab_add(s) == 0) {
+> +				down_write(&slub_lock);
+> +				list_add(&s->list, &slab_caches);
+> +				up_write(&slub_lock);
+> +				return s;
+>  			}
+> -			up_write(&slub_lock);
+> -			return s;
+>  		}
+>  		kfree(n);
+>  		kfree(s);
+>  	}
+>  err:
+> -	up_write(&slub_lock);
+>
+>  	if (flags & SLAB_PANIC)
+>  		panic("Cannot create slabcache %s\n", name);
+> -	else
+> -		s = NULL;
+> -	return s;
+> +
+> +	return NULL;
+>  }
+>  EXPORT_SYMBOL(kmem_cache_create);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
