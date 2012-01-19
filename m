@@ -1,195 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab2ARX7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 18:59:32 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40930 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753740Ab2ARX7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 18:59:30 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
-Date: Thu, 19 Jan 2012 01:02:58 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
-Cc: Simon Glass <sjg@chromium.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-serial@vger.kernel.org
-References: <1326826563-32215-1-git-send-email-sjg@chromium.org> <CAPnjgZ1g0Gf8ZCavAbmxjJXxxk9duf1ybbEUNo9L-DHBxyXx-g@mail.gmail.com> <20120118224304.GJ2431@linux.vnet.ibm.com>
-In-Reply-To: <20120118224304.GJ2431@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201190102.58788.rjw@sisk.pl>
+	id S1755452Ab2ASACE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 19:02:04 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:41534 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab2ASACC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 19:02:02 -0500
+Date: Thu, 19 Jan 2012 11:01:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>
+Subject: linux-next: build failure after merge of the cifs tree
+Message-Id: <20120119110153.7ffa3312b2943386750ac7ed@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Jan_2012_11_01_53_+1100_LjsflH7aNU1bec2/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 18, 2012, Paul E. McKenney wrote:
-> On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
-> > Hi Paul,
-> > 
-> > On Wed, Jan 18, 2012 at 1:42 PM, Paul E. McKenney
-> > <paulmck@linux.vnet.ibm.com> wrote:
-> > > On Wed, Jan 18, 2012 at 01:08:13PM -0800, Simon Glass wrote:
-> > >> [+cc Rafael J. Wysocki <rjw@sisk.pl> who I think wrote the wakeup.c code]
-> > >>
-> > >> Hi Alan, Paul,
-> > >>
-> > >> On Tue, Jan 17, 2012 at 8:17 PM, Paul E. McKenney
-> > >> <paulmck@linux.vnet.ibm.com> wrote:
-> > >> > On Tue, Jan 17, 2012 at 08:10:36PM +0000, Alan Cox wrote:
-> > >> >> On Tue, 17 Jan 2012 10:56:03 -0800
-> > >> >> Simon Glass <sjg@chromium.org> wrote:
-> > >> >>
-> > >> >> > Since serial_core now does not make serial ports wake-up capable by
-> > >> >> > default, add a parameter to support this feature in the 8250 UART.
-> > >> >> > This is the only UART where I think this feature is useful.
-> > >> >>
-> > >> >> NAK
-> > >> >>
-> > >> >> Things should just work for users. Magic parameters is not an
-> > >> >> improvement. If its a performance problem someone needs to fix the rcu
-> > >> >> sync overhead or stop using rcu on that path.
-> > >>
-> > >> OK fair enough, I agree. Every level I move down the source tree
-> > >> affects more people though.
-> > >>
-> > >> >
-> > >> > I must say that I lack context here, even after looking at the patch,
-> > >> > but the synchronize_rcu_expedited() primitives can be used if the latency
-> > >> > of synchronize_rcu() is too large.
-> > >> >
-> > >>
-> > >> Let me provide a bit of context. The serial_core code seems to be the
-> > >> only place in the kernel that does this:
-> > >>
-> > >>               device_init_wakeup(tty_dev, 1);
-> > >>               device_set_wakeup_enable(tty_dev, 0);
-> > >>
-> > >> The first call makes the device wakeup capable and enables wakeup, The
-> > >> second call disabled wakeup.
-> > >>
-> > >> The code that removes the wakeup source looks like this:
-> > >>
-> > >> void wakeup_source_remove(struct wakeup_source *ws)
-> > >> {
-> > >>       if (WARN_ON(!ws))
-> > >>               return;
-> > >>
-> > >>       spin_lock_irq(&events_lock);
-> > >>       list_del_rcu(&ws->entry);
-> > >>       spin_unlock_irq(&events_lock);
-> > >>       synchronize_rcu();
-> > >> }
-> > >>
-> > >> The sync is there because we are about to destroy the actual ws
-> > >> structure (in wakeup_source_destroy()). I wonder if it should be in
-> > >> wakeup_source_destroy() but that wouldn't help me anyway.
-> > >>
-> > >> synchronize_rcu_expedited() is a bit faster but not really fast
-> > >> enough. Anyway surely people will complain if I put this in the wakeup
-> > >> code - it will affect all wakeup users. It seems to me that the right
-> > >> solution is to avoid enabling and then immediately disabling wakeup.
-> > >
-> > > Hmmm...  What hardware are you running this one?  Normally,
-> > > synchronize_rcu_expedited() will be a couple of orders of magnitude
-> > > faster than synchronize_rcu().
-> > >
-> > >> I assume we can't and shouldn't change device_init_wakeup() . We could
-> > >> add a call like device_init_wakeup_disabled() which makes the device
-> > >> wakeup capable but does not actually enable it. Does that work?
-> > >
-> > > If the only reason for the synchronize_rcu() is to defer the pair of
-> > > kfree()s in wakeup_source_destroy(), then another possible approach
-> > > would be to remove the synchronize_rcu() from wakeup_source_remove()
-> > > and then use call_rcu() to defer the two kfree()s.
-> > >
-> > > If this is a reasonable change to make, the approach is as follows:
-> > >
-> > > 1.      Add a struct rcu_head to wakeup_source, call it "rcu".
-> > >        Or adjust the following to suit your choice of name.
-> > >
-> > > 2.      Replace the pair of kfree()s with:
-> > >
-> > >                call_rcu(&ws->rcu, wakeup_source_destroy_rcu);
-> > >
-> > > 3.      Create the wakeup_source_destroy_rcu() as follows:
-> > >
-> > >        static void wakeup_source_destroy_rcu(struct rcu_head *head)
-> > >        {
-> > >                struct wakeup_source *ws =
-> > >                        container_of(head, struct wakeup_source, rcu);
-> > >
-> > >                kfree(ws->name);
-> > >                kfree(ws);
-> > >        }
-> > >
-> > > Of course, this assumes that it is OK for wakeup_source_unregister()
-> > > to return before the memory is freed up.  This often is OK, but there
-> > > are some cases where the caller requires that there be no further
-> > > RCU readers with access to the old data.  In these cases, you really
-> > > do need the wait.
-> > 
-> > Thanks very much for that. I'm not sure if it is a reasonable change,
-> > but it does bug me that we add it to a data structure knowing that we
-> > will immediately remove it!
-> > 
-> > >From what I can see, making a device wakeup-enabled mostly happens on
-> > init or in response to a request to the driver (presumably from user
-> > space). In the latter case I suspect the synchronise_rcu() is fine. In
-> > the former it feels like we should make up our minds which of the
-> > three options is required (incapable, capable but not enabled, capable
-> > and enabled).
-> > 
-> > I will try a patch first based on splitting the two options (capable
-> > and enable) and see if that get a NAK.
-> > 
-> > Then I will come back to your solution - it seems fine to me and not a
-> > lot of code. Do we have to worry about someone enabling, disabled,
-> > enabling and then disabling wakeup quickly? Will this method break in
-> > that case if the second call to call_rcu() uses the same wc->rcu?
-> 
-> There are a couple of questions here, let me take them one at a time:
-> 
-> 1.	If you just disabled, can you immediately re-enable?
-> 
-> 	The answer is "yes".  The reason that this works is that you
-> 	allocate a new structure for the re-enabling, and that new
-> 	structure has its own rcu_head field.
-> 
-> 2.	If you repeatedly disable and re-enable in a tight loop,
-> 	can this cause problems?
-> 
-> 	The answer to this is also "yes" -- you can run the system
-> 	out of memory doing that.  However, there are a number of
-> 	simple ways to avoid this problem:
-> 
-> 	a.	Do a synchronize_rcu() on every (say) thousandth
-> 		disable operation.
-> 
-> 	b.	As above, but only do the synchronize_rcu() if
-> 		all 1,000 disable operations occurred within
-> 		(say) a second of each other.
-> 
-> 	c.	As above, but actually count the number of
-> 		pending call_rcu() callbacks.
-> 
-> 	Both (a) and (b) can be carried out on a per-CPU basis if there
-> 	is no convenient locked structure in which to track the state.
-> 	You cannot carry (c) out on a per-CPU basis because RCU callbacks
-> 	can sometimes be invoked on a different CPU from the one that
-> 	call_rcu()ed them.  Rare, but it can happen.
-> 
-> 	I would expect that option (a) would work in almost all cases.
-> 
-> If this can be exercised freely from user space, then you probably
-> really do need #2 above.
+--Signature=_Thu__19_Jan_2012_11_01_53_+1100_LjsflH7aNU1bec2/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, you can, but then I'd say it's not necessary for user space to
-be able to carry that out in a tight loop.  So, it seems, alternatively,
-we could make that loop a bit less tight, e.g. by adding an arbitrary
-sleep to the user space interface for the "disable" case.
+Hi all,
 
-Thanks,
-Rafael
+After merging the cifs tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+fs/cifs/connect.c: In function 'cifs_set_vol_auth':
+fs/cifs/connect.c:3843:17: error: 'CIFSSEC_MUST_LANMAN' undeclared (first u=
+se in this function)
+fs/cifs/connect.c:3843:17: note: each undeclared identifier is reported onl=
+y once for each function it appears in
+
+Caused by commit 8a8798a5ff90 ("cifs: fetch credentials out of keyring
+for non-krb5 auth multiuser mounts").
+
+I have used the cifs tree from next-20120118 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__19_Jan_2012_11_01_53_+1100_LjsflH7aNU1bec2/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPF11xAAoJEECxmPOUX5FEUmoQAIBZIam4rhfZmxkzmOxINfgz
+oH/LrvY4YIRInibFqFnorSRCmLD1oy/zwKWqKw5bHJHxe2QVFVHMhlTB+Z10SWyk
+xP93T0Ik3S8gIXoDwBXPItZKe74xbv4jkxnbJTc3W1dl4W9GfNMLUeFymFjRQtHi
+w1k0cJl9Yua6fT9Y3ftLl5BEDQMi3BtY5wP+DDpWJjymsJPUqBbUHHlDIDJQBpty
+2PuHASnza/aaV8jSPYh7Ylv2+OvMNbCwRDC2bbVKlDKqhmnqJ4pktPWe8gvHToXe
+exDiKF9gWXkcROgndbdOudgkaAdVjq37z4AymfK58RbzoC2AyFSqw28g73zQwS5N
+VR+kdYRdFskuBgEU9V+m2p6H7qYTFDuMTSoIG68yluKd2ynmOgNjHpP47Xz0/P0l
+cFMFnRng3YvM7pDwUPqOPwMujTmx7otJrqHEJ8rn8W1hUIvxHzH6zG+7Lh0/F3n+
+QwHB9Dhe0c8AdqSUyJx7Wom5tYZ2cDSCLAjXZm1tdjhM/zrqKbUkn5T+qvNGUFBL
+hXCT4t/i2i7QMlbQUxClTOJRtl+xGPuijlJaqrcIcYY8KMd5tgpY7Js1v/X28QIa
+QWnhVy48t0VuPmKhCiq+QUqaS6qmdWo3+dVNQbs8MewknfCYb/a9vkw3Jwm0M7/x
+aUsbblcPTv9jsv83DFGl
+=nkk3
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Jan_2012_11_01_53_+1100_LjsflH7aNU1bec2/--
