@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab2ASUce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 15:32:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932705Ab2ASUcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 15:32:33 -0500
-Date: Thu, 19 Jan 2012 15:32:25 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/12] blkcg: kill blkio_policy_node
-Message-ID: <20120119203225.GA4421@redhat.com>
-References: <1326935490-11827-1-git-send-email-tj@kernel.org>
- <1326935490-11827-12-git-send-email-tj@kernel.org>
+	id S932999Ab2ASUkP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 15:40:15 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42380 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932705Ab2ASUkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 15:40:12 -0500
+Message-ID: <4F187FA1.9090006@jp.fujitsu.com>
+Date: Thu, 19 Jan 2012 15:40:01 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326935490-11827-12-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: venki@google.com
+CC: kosaki.motohiro@gmail.com, akpm@linux-foundation.org, travis@sgi.com,
+        srivatsa.bhat@linux.vnet.ibm.com, paul.mckenney@linaro.org,
+        rjw@sisk.pl, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+References: <4F171B6B.2040303@gmail.com> <1327003271-11730-1-git-send-email-venki@google.com>
+In-Reply-To: <1327003271-11730-1-git-send-email-venki@google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 05:11:29PM -0800, Tejun Heo wrote:
+On 1/19/2012 3:01 PM, Venkatesh Pallipadi wrote:
+> Does this look better? Will send separate patch to fix code
+> using num_possible_cpus() when they actually need nr_cpu_ids.
 
-[..]
-> @@ -1413,14 +1110,10 @@ static int blkio_weight_write(struct blkio_cgroup *blkcg, u64 val)
->  	spin_lock_irq(&blkcg->lock);
->  	blkcg->weight = (unsigned int)val;
->  
-> -	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
-> -		pn = blkio_policy_search_node(blkcg, blkg->dev,
-> -				BLKIO_POLICY_PROP, BLKIO_PROP_weight_device);
-> -		if (pn)
-> -			continue;
-> +	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node)
-> +		if (blkg->plid == plid && !blkg->conf.weight)
-> +			blkio_update_group_weight(blkg, blkcg->weight);
+Sound ok to me. but I have two requests.
 
-Tejun,
+ - Please mesure how much time (or cycle) spented by cpumask_weight(cpu_possible_mask).
+ - After your patch, nr_possible_cpus() return different value from before.
+   Please verify this change doesn't makes any side effect.
 
-Why do we check for blkg->conf.weight=0 here. Even if a group already has
-weight and if user has changed the cgroup weight later, that update should
-be propogated to all the groups on all the queues.
 
-Where do we assign default cgroup weight to a blkg upon creation? May be at
-group create time, we just need to copy blkcg->weight to blkg.conf.weight.
-
-Thanks
-Vivek
