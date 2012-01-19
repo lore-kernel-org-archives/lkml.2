@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab2ASReT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 12:34:19 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:38645 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932440Ab2ASReQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 12:34:16 -0500
-X-IronPort-AV: E=Sophos;i="4.71,537,1320652800"; 
-   d="scan'208";a="618428753"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S932584Ab2ASRe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 12:34:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38882 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932532Ab2ASRe5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 12:34:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: [PATCH 0/5] SUNRPC: make caches network namespace aware
-Date: Thu, 19 Jan 2012 09:34:11 -0800
-Message-ID: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430CE01F0E@SACMVEXC2-PRD.hq.netapp.com>
-In-Reply-To: <20120119154731.GB527@fieldses.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 0/5] SUNRPC: make caches network namespace aware
-Thread-Index: AczWwausOa13ahG3RqSJC4hrKwGvEAADquyg
-References: <20120119144517.9957.59143.stgit@localhost6.localdomain6> <1326986392.6114.1.camel@lade.trondhjem.org> <4F18376C.9090504@parallels.com> <20120119154731.GB527@fieldses.org>
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: <bfields@fieldses.org>, "Stanislav Kinsbursky" <skinsbursky@parallels.com>
-Cc: "Dr James Bruce Fields" <bfields@redhat.com>, <linux-nfs@vger.kernel.org>,
-        "Pavel Emelianov" <xemul@parallels.com>, <neilb@suse.de>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "James Bottomley" <jbottomley@parallels.com>, <davem@davemloft.net>,
-        <devel@openvz.org>
-X-OriginalArrivalTime: 19 Jan 2012 17:34:12.0313 (UTC) FILETIME=[8EBC0490:01CCD6D0]
+In-Reply-To: <4F153A3E.8010409@st.com>
+References: <cover.1326707233.git.viresh.kumar@st.com>
+	<5e5d0fcff79b9b78e64c7424317d6b77736eca43.1326707233.git.viresh.kumar@st.com>
+	<20120116105448.GT1068@n2100.arm.linux.org.uk>
+	<4F140DB7.3060300@st.com>
+	<CACRpkdY-4wWeD=3mJiChi6+4=iBMcd3kVh3h4JmDZ5ySXY3KCA@mail.gmail.com>
+	<4F153A3E.8010409@st.com>
+Date: Thu, 19 Jan 2012 18:34:56 +0100
+Message-ID: <CACRpkdZWtBq_g7uem8Rsa7nsnGgyDHjd5oy5M_yJeBRnVB41yA@mail.gmail.com>
+Subject: Re: [PATCH 7/8] dmaengine/dw_dmac: Unmap all memory buffers after
+ completion of slave transfers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Deepak SIKRI <deepak.sikri@st.com>, Bhavna YADAV <bhavna.yadav@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0JHYXQx032453
 
-> -----Original Message-----
-> From: bfields@fieldses.org [mailto:bfields@fieldses.org]
-> Sent: Thursday, January 19, 2012 10:48 AM
-> To: Stanislav Kinsbursky
-> Cc: Myklebust, Trond; Dr James Bruce Fields; linux-nfs@vger.kernel.org;
-> Pavel Emelianov; neilb@suse.de; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; James Bottomley; davem@davemloft.net;
-> devel@openvz.org
-> Subject: Re: [PATCH 0/5] SUNRPC: make caches network namespace aware
-> 
-> On Thu, Jan 19, 2012 at 07:31:56PM +0400, Stanislav Kinsbursky wrote:
-> > 19.01.2012 19:19, Trond Myklebust Ğ¿Ğ¸ÑˆĞµÑ‚:
-> > >On Thu, 2012-01-19 at 18:48 +0400, Stanislav Kinsbursky wrote:
-> > >>One more step towards to "NFS in container".
-> > >>With this patch set caches are allocated per network namespace.
-> > >>
-> > >>The following series consists of:
-> > >>
-> > >>---
-> > >>
-> > >>Stanislav Kinsbursky (5):
-> > >>       SUNRPC: cache creation and destruction routines introduced
-> > >>       SUNRPC: create unix gid cache per network namespace
-> > >>       SUNRPC: create GSS auth cache per network namespace
-> > >>       SUNRPC: ip map cache per network namespace cleanup
-> > >>       SUNRPC: generic cache register routines removed
-> > >
-> > >The patches look good, and I've applied them for now in my 'devel'
-> > >branch so we can test them, but I'd like to get an Ack/Nack from
-> > >Bruce before committing to merging them.
-> > >
-> >
-> > Cool, thanks.
-> > BTW, these patches depends on patch "NFSd: use network-namespace-
-> aware
-> > cache registering routines", which Bruce took already (and it's even
-> > in linux-next already), but not in your devel tree for some reason.
-> 
-> And Linus has pulled those, so if Trond bases his tree on -rc1, he'll have
-> "NFSd: use network-namespace-aware cache registering routines".
+On Tue, Jan 17, 2012 at 10:07 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
 
-OK. In that case I should have them... 
+>> Why do you want to do this?
+>
+> This is because people can pass in flags which are
+> DMA_COMPL_SKIP_SRC_UNMAP, etc.
+>
+> If they are not passed, then DMA driver must do it for them.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+OK I see why it's confusing.
+
+That flag is only for memcpy jobs.
+
+Only memcpy jobs maps/unmaps buffers.
+
+Slave transfers are mapped/unmapped by the driver.
+
+Yours,
+Linus Walleij
