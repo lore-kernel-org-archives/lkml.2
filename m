@@ -1,58 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2ASHwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 02:52:30 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:44051
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753805Ab2ASHw0 (ORCPT
+	id S1753952Ab2ASHyi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 02:54:38 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61431 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab2ASHye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 02:52:26 -0500
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzz8275bhz2dhc1bhc31hc1ah2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-From: Huang Shijie <b32955@freescale.com>
-To: <shawn.guo@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <u.kleine-koenig@pengutronix.de>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH resent v2 1/2] ioport : add DEFINE_RES_DMA_SIZE_NAMED macro
-Date: Thu, 19 Jan 2012 15:53:39 +0800
-Message-ID: <1326959620-25920-2-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1326959620-25920-1-git-send-email-b32955@freescale.com>
-References: <1326959620-25920-1-git-send-email-b32955@freescale.com>
+	Thu, 19 Jan 2012 02:54:34 -0500
+Date: Thu, 19 Jan 2012 10:50:40 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+Message-ID: <20120119075039.GA3517@swordfish.minsk.epam.com>
+References: <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
+ <4F10BDF7.8030306@linux.vnet.ibm.com>
+ <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com>
+ <4F10EB5B.5060804@linux.vnet.ibm.com>
+ <1326766892.16150.21.camel@sbsiddha-desk.sc.intel.com>
+ <4F1544EA.5060907@linux.vnet.ibm.com>
+ <1326856624.5291.20.camel@sbsiddha-mobl2>
+ <4F16C60B.4030903@linux.vnet.ibm.com>
+ <20120118133236.GA3878@swordfish.minsk.epam.com>
+ <1326924509.13915.29.camel@sbsiddha-mobl2>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326924509.13915.29.camel@sbsiddha-mobl2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some DMA resource does have the range more then ones.
+On (01/18/12 14:08), Suresh Siddha wrote:
+> On Wed, 2012-01-18 at 16:32 +0300, Sergey Senozhatsky wrote:
+> > Just a small note, since you're talking about removing CPU from nohz.idle_cpus_mask, 
+> > that I'm able to reproduce this problem not only when offlining CPU, but during
+> > onlininig as well (kernel 3.3):
+> 
+> yes, if the nohz state is not cleared properly during offline, then the
+> issue can happen any time including cpu online etc.
+>
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- include/linux/ioport.h |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Oh, sure. Good point.
 
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 9d57a71..9ea5de4 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -134,8 +134,10 @@ struct resource_list {
- #define DEFINE_RES_IRQ(_irq)						\
- 	DEFINE_RES_IRQ_NAMED((_irq), NULL)
- 
-+#define DEFINE_RES_DMA_SIZE_NAMED(_dma, _size, _name)			\
-+	DEFINE_RES_NAMED((_dma), (_size), (_name), IORESOURCE_DMA)
- #define DEFINE_RES_DMA_NAMED(_dma, _name)				\
--	DEFINE_RES_NAMED((_dma), 1, (_name), IORESOURCE_DMA)
-+	DEFINE_RES_DMA_SIZE_NAMED((_dma), 1, (_name))
- #define DEFINE_RES_DMA(_dma)						\
- 	DEFINE_RES_DMA_NAMED((_dma), NULL)
- 
--- 
-1.7.0.4
+Works for me, here is my:
 
+Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com> 
 
+	Sergey
+
+> Srivatsa, I thought CPU_PRI_SCHED_INACTIVE as INT_MAX for some reason
+> and was expecting sched_ilb_notifier() will be called after setting that
+> cpu as inactive. I am now using CPU_DYING which will be called from the
+> cpu going down.
+> 
+> Here is the v2 version of the fix. Can you folks please give it another
+> try?
+> 
+> Thanks.
+> ---
+> 
+> From: Suresh Siddha <suresh.b.siddha@intel.com>
+> Subject: sched, nohz: fix nohz cpu idle load balancing state with cpu hotplug
+> 
+> With the recent nohz scheduler changes, rq's nohz flag 'NOHZ_TICK_STOPPED'
+> and its associated state doesn't get cleared immediately after the
+> cpu exits idle. This gets cleared as part of the next tick seen on that cpu.
+> 
+> With the cpu offline, we need to clear this state manually. Fix it by
+> registering a cpu notifier which clears the nohz idle load balance
+> state for this rq explicitly.
+> 
+> Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> ---
+>  kernel/sched/fair.c |   34 +++++++++++++++++++++++++++++-----
+>  1 files changed, 29 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 2237ffe..f605e1d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4843,6 +4843,15 @@ static void nohz_balancer_kick(int cpu)
+>  	return;
+>  }
+>  
+> +static inline void clear_nohz_tick_stopped(int cpu)
+> +{
+> +	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
+> +		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+> +		atomic_dec(&nohz.nr_cpus);
+> +		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
+> +	}
+> +}
+> +
+>  static inline void set_cpu_sd_state_busy(void)
+>  {
+>  	struct sched_domain *sd;
+> @@ -4881,6 +4890,12 @@ void select_nohz_load_balancer(int stop_tick)
+>  {
+>  	int cpu = smp_processor_id();
+>  
+> +	/*
+> +	 * If this cpu is going down, then nothing needs to be done.
+> +	 */
+> +	if (!cpu_active(cpu))
+> +		return;
+> +
+>  	if (stop_tick) {
+>  		if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
+>  			return;
+> @@ -4891,6 +4906,18 @@ void select_nohz_load_balancer(int stop_tick)
+>  	}
+>  	return;
+>  }
+> +
+> +static int __cpuinit sched_ilb_notifier(struct notifier_block *nfb,
+> +					unsigned long action, void *hcpu)
+> +{
+> +	switch (action & ~CPU_TASKS_FROZEN) {
+> +	case CPU_DYING:
+> +		clear_nohz_tick_stopped(smp_processor_id());
+> +		return NOTIFY_OK;
+> +	default:
+> +		return NOTIFY_DONE;
+> +	}
+> +}
+>  #endif
+>  
+>  static DEFINE_SPINLOCK(balancing);
+> @@ -5047,11 +5074,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>  	* busy tick after returning from idle, we will update the busy stats.
+>  	*/
+>  	set_cpu_sd_state_busy();
+> -	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
+> -		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
+> -		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+> -		atomic_dec(&nohz.nr_cpus);
+> -	}
+> +	clear_nohz_tick_stopped(cpu);
+>  
+>  	/*
+>  	 * None are in tickless mode and hence no need for NOHZ idle load
+> @@ -5549,6 +5572,7 @@ __init void init_sched_fair_class(void)
+>  
+>  #ifdef CONFIG_NO_HZ
+>  	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
+> +	cpu_notifier(sched_ilb_notifier, 0);
+>  #endif
+>  #endif /* SMP */
+>  
+> 
+> 
