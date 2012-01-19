@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab2ASQbf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:31:35 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55705 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932290Ab2ASQbd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:31:33 -0500
-Date: Thu, 19 Jan 2012 17:31:28 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 1/7] ftrace: Change filter/notrace set functions to
- return exit code
-Message-ID: <20120119163124.GA18056@somewhere>
-References: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
- <1326912275-26405-1-git-send-email-jolsa@redhat.com>
- <1326912275-26405-2-git-send-email-jolsa@redhat.com>
+	id S932595Ab2ASQb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:31:57 -0500
+Received: from fieldses.org ([174.143.236.118]:54306 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932290Ab2ASQbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 11:31:52 -0500
+Date: Thu, 19 Jan 2012 11:31:49 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
+Subject: Re: [PATCH 3/5] SUNRPC: create GSS auth cache per network namespace
+Message-ID: <20120119163149.GD527@fieldses.org>
+References: <20120119144517.9957.59143.stgit@localhost6.localdomain6>
+ <20120119144922.9957.39352.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326912275-26405-2-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120119144922.9957.39352.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 07:44:29PM +0100, Jiri Olsa wrote:
-> Currently the ftrace_set_filter and ftrace_set_notrace functions
-> do not return any return code. So there's no way for ftrace_ops
-> user to tell wether the filter was correctly applied.
-> 
-> The set_ftrace_filter interface returns error in case the filter
-> did not match:
-> 
->   # echo krava > set_ftrace_filter
->   bash: echo: write error: Invalid argument
-> 
-> Changing both ftrace_set_filter and ftrace_set_notrace functions
-> to return zero if the filter was applied correctly or -E* values
-> in case of error.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+On Thu, Jan 19, 2012 at 06:49:23PM +0400, Stanislav Kinsbursky wrote:
+> @@ -1000,6 +996,7 @@ static int svcauth_gss_handle_init(struct svc_rqst *rqstp,
+>  	struct xdr_netobj tmpobj;
+>  	struct rsi *rsip, rsikey;
+>  	int ret;
+> +	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+OK, so you're getting the network namespace out of the rqstp, and, then
+passing it down, makes sense.  And:
+
+> @@ -1079,6 +1076,7 @@ svcauth_gss_accept(struct svc_rqst *rqstp, __be32 *authp)
+>  	__be32		*rpcstart;
+>  	__be32		*reject_stat = resv->iov_base + resv->iov_len;
+>  	int		ret;
+> +	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
+
+... same for the gss cache.  Looks good.
+
+How do you plan to test this?
+
+--b.
