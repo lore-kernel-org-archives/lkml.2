@@ -1,204 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab2ASBig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 20:38:36 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50867 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483Ab2ASBie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 20:38:34 -0500
-Date: Wed, 18 Jan 2012 17:37:32 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Simon Glass <sjg@chromium.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
-Message-ID: <20120119013731.GK2431@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1326826563-32215-1-git-send-email-sjg@chromium.org>
- <CAPnjgZ1g0Gf8ZCavAbmxjJXxxk9duf1ybbEUNo9L-DHBxyXx-g@mail.gmail.com>
- <20120118224304.GJ2431@linux.vnet.ibm.com>
- <201201190102.58788.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201201190102.58788.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12011901-4242-0000-0000-0000008A771F
+	id S1756696Ab2ASBkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 20:40:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58164 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab2ASBkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 20:40:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="113807735"
+Subject: [patch]block: fix NULL icq_cache reference
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120118160713.GA30664@google.com>
+References: <20120117201823.GD19223@redhat.com>
+	 <20120117214834.GD26207@google.com> <20120117220715.GB23527@redhat.com>
+	 <CANejiEUfAxR-DFH+eRQUbmc1jKHSkcBP1RxuRQ-9JKLU=1Ds0w@mail.gmail.com>
+	 <20120118010323.GA32160@htj.dyndns.org>
+	 <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com>
+	 <20120118011112.GB32160@htj.dyndns.org>
+	 <1326850253.22361.619.camel@sli10-conroe>
+	 <1326866602.22361.624.camel@sli10-conroe>
+	 <20120118160713.GA30664@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Jan 2012 09:41:34 +0800
+Message-ID: <1326937294.22361.649.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 01:02:58AM +0100, Rafael J. Wysocki wrote:
-> On Wednesday, January 18, 2012, Paul E. McKenney wrote:
-> > On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
-> > > Hi Paul,
-> > > 
-> > > On Wed, Jan 18, 2012 at 1:42 PM, Paul E. McKenney
-> > > <paulmck@linux.vnet.ibm.com> wrote:
-> > > > On Wed, Jan 18, 2012 at 01:08:13PM -0800, Simon Glass wrote:
-> > > >> [+cc Rafael J. Wysocki <rjw@sisk.pl> who I think wrote the wakeup.c code]
-> > > >>
-> > > >> Hi Alan, Paul,
-> > > >>
-> > > >> On Tue, Jan 17, 2012 at 8:17 PM, Paul E. McKenney
-> > > >> <paulmck@linux.vnet.ibm.com> wrote:
-> > > >> > On Tue, Jan 17, 2012 at 08:10:36PM +0000, Alan Cox wrote:
-> > > >> >> On Tue, 17 Jan 2012 10:56:03 -0800
-> > > >> >> Simon Glass <sjg@chromium.org> wrote:
-> > > >> >>
-> > > >> >> > Since serial_core now does not make serial ports wake-up capable by
-> > > >> >> > default, add a parameter to support this feature in the 8250 UART.
-> > > >> >> > This is the only UART where I think this feature is useful.
-> > > >> >>
-> > > >> >> NAK
-> > > >> >>
-> > > >> >> Things should just work for users. Magic parameters is not an
-> > > >> >> improvement. If its a performance problem someone needs to fix the rcu
-> > > >> >> sync overhead or stop using rcu on that path.
-> > > >>
-> > > >> OK fair enough, I agree. Every level I move down the source tree
-> > > >> affects more people though.
-> > > >>
-> > > >> >
-> > > >> > I must say that I lack context here, even after looking at the patch,
-> > > >> > but the synchronize_rcu_expedited() primitives can be used if the latency
-> > > >> > of synchronize_rcu() is too large.
-> > > >> >
-> > > >>
-> > > >> Let me provide a bit of context. The serial_core code seems to be the
-> > > >> only place in the kernel that does this:
-> > > >>
-> > > >>               device_init_wakeup(tty_dev, 1);
-> > > >>               device_set_wakeup_enable(tty_dev, 0);
-> > > >>
-> > > >> The first call makes the device wakeup capable and enables wakeup, The
-> > > >> second call disabled wakeup.
-> > > >>
-> > > >> The code that removes the wakeup source looks like this:
-> > > >>
-> > > >> void wakeup_source_remove(struct wakeup_source *ws)
-> > > >> {
-> > > >>       if (WARN_ON(!ws))
-> > > >>               return;
-> > > >>
-> > > >>       spin_lock_irq(&events_lock);
-> > > >>       list_del_rcu(&ws->entry);
-> > > >>       spin_unlock_irq(&events_lock);
-> > > >>       synchronize_rcu();
-> > > >> }
-> > > >>
-> > > >> The sync is there because we are about to destroy the actual ws
-> > > >> structure (in wakeup_source_destroy()). I wonder if it should be in
-> > > >> wakeup_source_destroy() but that wouldn't help me anyway.
-> > > >>
-> > > >> synchronize_rcu_expedited() is a bit faster but not really fast
-> > > >> enough. Anyway surely people will complain if I put this in the wakeup
-> > > >> code - it will affect all wakeup users. It seems to me that the right
-> > > >> solution is to avoid enabling and then immediately disabling wakeup.
-> > > >
-> > > > Hmmm...  What hardware are you running this one?  Normally,
-> > > > synchronize_rcu_expedited() will be a couple of orders of magnitude
-> > > > faster than synchronize_rcu().
-> > > >
-> > > >> I assume we can't and shouldn't change device_init_wakeup() . We could
-> > > >> add a call like device_init_wakeup_disabled() which makes the device
-> > > >> wakeup capable but does not actually enable it. Does that work?
-> > > >
-> > > > If the only reason for the synchronize_rcu() is to defer the pair of
-> > > > kfree()s in wakeup_source_destroy(), then another possible approach
-> > > > would be to remove the synchronize_rcu() from wakeup_source_remove()
-> > > > and then use call_rcu() to defer the two kfree()s.
-> > > >
-> > > > If this is a reasonable change to make, the approach is as follows:
-> > > >
-> > > > 1.      Add a struct rcu_head to wakeup_source, call it "rcu".
-> > > >        Or adjust the following to suit your choice of name.
-> > > >
-> > > > 2.      Replace the pair of kfree()s with:
-> > > >
-> > > >                call_rcu(&ws->rcu, wakeup_source_destroy_rcu);
-> > > >
-> > > > 3.      Create the wakeup_source_destroy_rcu() as follows:
-> > > >
-> > > >        static void wakeup_source_destroy_rcu(struct rcu_head *head)
-> > > >        {
-> > > >                struct wakeup_source *ws =
-> > > >                        container_of(head, struct wakeup_source, rcu);
-> > > >
-> > > >                kfree(ws->name);
-> > > >                kfree(ws);
-> > > >        }
-> > > >
-> > > > Of course, this assumes that it is OK for wakeup_source_unregister()
-> > > > to return before the memory is freed up.  This often is OK, but there
-> > > > are some cases where the caller requires that there be no further
-> > > > RCU readers with access to the old data.  In these cases, you really
-> > > > do need the wait.
-> > > 
-> > > Thanks very much for that. I'm not sure if it is a reasonable change,
-> > > but it does bug me that we add it to a data structure knowing that we
-> > > will immediately remove it!
-> > > 
-> > > >From what I can see, making a device wakeup-enabled mostly happens on
-> > > init or in response to a request to the driver (presumably from user
-> > > space). In the latter case I suspect the synchronise_rcu() is fine. In
-> > > the former it feels like we should make up our minds which of the
-> > > three options is required (incapable, capable but not enabled, capable
-> > > and enabled).
-> > > 
-> > > I will try a patch first based on splitting the two options (capable
-> > > and enable) and see if that get a NAK.
-> > > 
-> > > Then I will come back to your solution - it seems fine to me and not a
-> > > lot of code. Do we have to worry about someone enabling, disabled,
-> > > enabling and then disabling wakeup quickly? Will this method break in
-> > > that case if the second call to call_rcu() uses the same wc->rcu?
-> > 
-> > There are a couple of questions here, let me take them one at a time:
-> > 
-> > 1.	If you just disabled, can you immediately re-enable?
-> > 
-> > 	The answer is "yes".  The reason that this works is that you
-> > 	allocate a new structure for the re-enabling, and that new
-> > 	structure has its own rcu_head field.
-> > 
-> > 2.	If you repeatedly disable and re-enable in a tight loop,
-> > 	can this cause problems?
-> > 
-> > 	The answer to this is also "yes" -- you can run the system
-> > 	out of memory doing that.  However, there are a number of
-> > 	simple ways to avoid this problem:
-> > 
-> > 	a.	Do a synchronize_rcu() on every (say) thousandth
-> > 		disable operation.
-> > 
-> > 	b.	As above, but only do the synchronize_rcu() if
-> > 		all 1,000 disable operations occurred within
-> > 		(say) a second of each other.
-> > 
-> > 	c.	As above, but actually count the number of
-> > 		pending call_rcu() callbacks.
-> > 
-> > 	Both (a) and (b) can be carried out on a per-CPU basis if there
-> > 	is no convenient locked structure in which to track the state.
-> > 	You cannot carry (c) out on a per-CPU basis because RCU callbacks
-> > 	can sometimes be invoked on a different CPU from the one that
-> > 	call_rcu()ed them.  Rare, but it can happen.
-> > 
-> > 	I would expect that option (a) would work in almost all cases.
-> > 
-> > If this can be exercised freely from user space, then you probably
-> > really do need #2 above.
+On Wed, 2012-01-18 at 08:07 -0800, Tejun Heo wrote:
+> Hello,
 > 
-> Yes, you can, but then I'd say it's not necessary for user space to
-> be able to carry that out in a tight loop.  So, it seems, alternatively,
-> we could make that loop a bit less tight, e.g. by adding an arbitrary
-> sleep to the user space interface for the "disable" case.
+> On Wed, Jan 18, 2012 at 02:03:22PM +0800, Shaohua Li wrote:
+> > Subject: block: fix NULL icq_cache reference
+> > 
+> > CPU0:					CPU1:
+> > 					switch from cfq to noop
+> > 					   elv_quiesce_start
+> > C: get_request
+> > A:   ioc_create_icq
+> >       alloc icq with cfq
+> > 					   B: do elevator switch
+> > 					       ioc_clear_queue
+> > 					   elv_quiesce_end
+> >       insert icq to ioc
+> > 					switch from noop to cfq
+> > 					    elv_quiesce_start
+> > 					    do elevator switch
+> > 					       ioc_clear_queue
+> > 					    elv_quiesce_end
+> > CPU0 leaves some icq to ioc list after elevator is switching from cfq to noop.
+> > in the second ioc_clear_queue, the ioc has icq in its list, but current
+> > elevator is noop. so ioc_exit_icq will get a NULL et->icq_cache.
+> > 
+> > In above cases, if A runs after B, ioc_create_icq will have a NULL
+> > et->icq_cache, this will trigger another crash.
+> > 
+> > Note, get_request caches et without lock hold. Between C and A, a elevator
+> > switch can start. But we will have elvpriv++, elv_quiesce_start will drain
+> > all requests first. So this will not trigger crash.
+> 
+> Thanks a lot for tracking it down.
+> 
+> Hmmm... but I'm having a difficult time following the description.
+> Maybe we can simplify a bit?  e.g. sth like the following?
+> 
+>   Once a queue is quiesced, it's not supposed to have any elvpriv data
+>   or icq's, and elevator switching depends on that.  Request alloc
+>   path followed the rule for elvpriv data but forgot apply it to
+>   icq's leading to the following crash during elevator switch.
+> 
+>   <oops log>
+> 
+>   Fix it by not allocating icq's if ELVPRIV is not set for the
+>   request.
+I'm trying to explain why there is a crash, but fine to use your
+description.
 
-Good point, that would work just as well and be simpler.
+> > Index: linux/block/blk-core.c
+> > ===================================================================
+> > --- linux.orig/block/blk-core.c	2012-01-18 12:44:13.000000000 +0800
+> > +++ linux/block/blk-core.c	2012-01-18 12:45:28.000000000 +0800
+> > @@ -872,11 +872,11 @@ retry:
+> >  	spin_unlock_irq(q->queue_lock);
+> >  
+> >  	/* create icq if missing */
+> > -	if (unlikely(et->icq_cache && !icq))
+> > +	if (unlikely(et->icq_cache && !icq && (rw_flags & REQ_ELVPRIV)))
+> >  		icq = ioc_create_icq(q, gfp_mask);
+> >  
+> >  	/* rqs are guaranteed to have icq on elv_set_request() if requested */
+> > -	if (likely(!et->icq_cache || icq))
+> > +	if (likely(!et->icq_cache || icq || !(rw_flags & REQ_ELVPRIV)))
+> >  		rq = blk_alloc_request(q, icq, rw_flags, gfp_mask);
+> 
+> Hmmm... I was trying to avoid adding a goto label with the double
+> testing but with REQ_ELVPRIV test added, it looks more confusing.
+> Maybe something like the following is better?
+> 
+> 	/* rqs are guaranteed to have icq on elv_set_request() if requested */
+> 	if ((rw_flags & REQ_ELVPRIV) && unlikely(et->icq_cache && !icq)) {
+> 		icq = ioc_create_icq(q, gfp_mask);
+> 		if (!icq)
+> 			goto fail_icq;
+> 	}
+> 	rq = blk_alloc_request(q, icq, rw_flags, gfp_mask);
+>  fail_icq:
+this is ok.
 
-							Thanx, Paul
+Subject: block: fix NULL icq_cache reference
+
+Vivek reported a kernel crash:
+[   94.217015] BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
+[   94.218004] IP: [<ffffffff81142fae>] kmem_cache_free+0x5e/0x200
+[   94.218004] PGD 13abda067 PUD 137d52067 PMD 0
+[   94.218004] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[   94.218004] CPU 0
+[   94.218004] Modules linked in: [last unloaded: scsi_wait_scan]
+[   94.218004]
+[   94.218004] Pid: 0, comm: swapper/0 Not tainted 3.2.0+ #16 Hewlett-Packard HP xw6600 Workstation/0A9Ch
+[   94.218004] RIP: 0010:[<ffffffff81142fae>]  [<ffffffff81142fae>] kmem_cache_free+0x5e/0x200
+[   94.218004] RSP: 0018:ffff88013fc03de0  EFLAGS: 00010006
+[   94.218004] RAX: ffffffff81e0d020 RBX: ffff880138b3c680 RCX: 00000001801c001b
+[   94.218004] RDX: 00000000003aac1d RSI: ffff880138b3c680 RDI: ffffffff81142fae
+[   94.218004] RBP: ffff88013fc03e10 R08: ffff880137830238 R09: 0000000000000001
+[   94.218004] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+[   94.218004] R13: ffffea0004e2cf00 R14: ffffffff812f6eb6 R15: 0000000000000246
+[   94.218004] FS:  0000000000000000(0000) GS:ffff88013fc00000(0000) knlGS:0000000000000000
+[   94.218004] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   94.218004] CR2: 000000000000001c CR3: 00000001395ab000 CR4: 00000000000006f0
+[   94.218004] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   94.218004] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   94.218004] Process swapper/0 (pid: 0, threadinfo ffffffff81e00000, task ffffffff81e0d020)
+[   94.218004] Stack:
+[   94.218004]  0000000000000102 ffff88013fc0db20 ffffffff81e22700 ffff880139500f00
+[   94.218004]  0000000000000001 000000000000000a ffff88013fc03e20 ffffffff812f6eb6
+[   94.218004]  ffff88013fc03e90 ffffffff810c8da2 ffffffff81e01fd8 ffff880137830240
+[   94.218004] Call Trace:
+[   94.218004]  <IRQ>
+[   94.218004]  [<ffffffff812f6eb6>] icq_free_icq_rcu+0x16/0x20
+[   94.218004]  [<ffffffff810c8da2>] __rcu_process_callbacks+0x1c2/0x420
+[   94.218004]  [<ffffffff810c9038>] rcu_process_callbacks+0x38/0x250
+[   94.218004]  [<ffffffff810405ee>] __do_softirq+0xce/0x3e0
+[   94.218004]  [<ffffffff8108ed04>] ? clockevents_program_event+0x74/0x100
+[   94.218004]  [<ffffffff81090104>] ? tick_program_event+0x24/0x30
+[   94.218004]  [<ffffffff8183ed1c>] call_softirq+0x1c/0x30
+[   94.218004]  [<ffffffff8100422d>] do_softirq+0x8d/0xc0
+[   94.218004]  [<ffffffff81040c3e>] irq_exit+0xae/0xe0
+[   94.218004]  [<ffffffff8183f4be>] smp_apic_timer_interrupt+0x6e/0x99
+[   94.218004]  [<ffffffff8183e330>] apic_timer_interrupt+0x70/0x80
+
+Once a queue is quiesced, it's not supposed to have any elvpriv data or
+icq's, and elevator switching depends on that.  Request alloc path
+followed the rule for elvpriv data but forgot apply it to icq's
+leading to the following crash during elevator switch. Fix it by not
+allocating icq's if ELVPRIV is not set for the request.
+
+Reported-by: Vivek Goyal <vgoyal@redhat.com>
+Tested-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+---
+ block/blk-core.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+Index: linux/block/blk-core.c
+===================================================================
+--- linux.orig/block/blk-core.c	2012-01-19 08:41:01.000000000 +0800
++++ linux/block/blk-core.c	2012-01-19 08:49:06.000000000 +0800
+@@ -872,13 +872,15 @@ retry:
+ 	spin_unlock_irq(q->queue_lock);
+ 
+ 	/* create icq if missing */
+-	if (unlikely(et->icq_cache && !icq))
++	if ((rw_flags & REQ_ELVPRIV) && unlikely(et->icq_cache && !icq)) {
+ 		icq = ioc_create_icq(q, gfp_mask);
++		if (!icq)
++			goto fail_icq;
++	}
+ 
+-	/* rqs are guaranteed to have icq on elv_set_request() if requested */
+-	if (likely(!et->icq_cache || icq))
+-		rq = blk_alloc_request(q, icq, rw_flags, gfp_mask);
++	rq = blk_alloc_request(q, icq, rw_flags, gfp_mask);
+ 
++fail_icq:
+ 	if (unlikely(!rq)) {
+ 		/*
+ 		 * Allocation failed presumably due to memory. Undo anything
+
+
 
