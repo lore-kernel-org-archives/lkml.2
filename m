@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab2ASIog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 03:44:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42216 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755499Ab2ASIoN (ORCPT
+	id S1754582Ab2ASIn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 03:43:59 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36189 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab2ASIn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 03:44:13 -0500
-Date: Thu, 19 Jan 2012 16:55:42 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Huang Shijie <b32955@freescale.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, u.kleine-koenig@pengutronix.de
-Subject: Re: [PATCH resent v2 1/2] ioport : add DEFINE_RES_DMA_SIZE_NAMED
- macro
-Message-ID: <20120119085539.GG2247@S2101-09.ap.freescale.net>
-References: <1326959620-25920-1-git-send-email-b32955@freescale.com>
- <1326959620-25920-2-git-send-email-b32955@freescale.com>
- <20120119081427.GF2247@S2101-09.ap.freescale.net>
- <4F17D2ED.6090502@freescale.com>
- <4F17D40F.3080803@freescale.com>
+	Thu, 19 Jan 2012 03:43:57 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4F17D7B7.3010609@jp.fujitsu.com>
+Date: Thu, 19 Jan 2012 17:43:35 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F17D40F.3080803@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v2] pciehp: Checking pci conf reading to new added device
+ instead of sleep 1s
+References: <1324083165-805-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1324083165-805-1-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 04:27:59PM +0800, Huang Shijie wrote:
-> 
-> >Hi Shawn:
-> >>I'm not sure the patch is welcomed.  You may want to just use
-> >>DEFINE_RES_NAMED for such cases.
-> >I ever wanted to use DEFINE_RES_NAMED.
-> sorry. I misunderstood your meaning.
-> 
-> I think it's better to add a new macro. use DEFINE_RES_NAMED is not proper.
-> 
-In that case, I can not apply the patch #2 until #1 hits mainline, so
-remember to ping me for applying patch #2 when the first one gets
-merged.
+(2011/12/17 9:52), Yinghai Lu wrote:
 
--- 
+<snip.>
+> 
+> -/*
+> - * Read the config data for a PCI device, sanity-check it
+> - * and fill in the dev structure...
+> - */
+> -static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
+> +bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *l,
+> +				 int crs_timeout)
+
+EXPORT_SYMBOL() for pci_bus_read_dev_vendor_id() is needed to build
+pciehp as a kernel module.
+
 Regards,
-Shawn
+Kenji Kaneshige
+
