@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab2ASQbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:31:08 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40322 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932290Ab2ASQbF (ORCPT
+	id S932582Ab2ASQbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:31:35 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55705 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932290Ab2ASQbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:31:05 -0500
-Date: Thu, 19 Jan 2012 08:30:56 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/12] blkcg: kill the mind-bending blkg->dev
-Message-ID: <20120119163056.GH5198@google.com>
-References: <1326935490-11827-1-git-send-email-tj@kernel.org>
- <1326935490-11827-13-git-send-email-tj@kernel.org>
- <20120119154919.GA10908@redhat.com>
+	Thu, 19 Jan 2012 11:31:33 -0500
+Date: Thu, 19 Jan 2012 17:31:28 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCH 1/7] ftrace: Change filter/notrace set functions to
+ return exit code
+Message-ID: <20120119163124.GA18056@somewhere>
+References: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
+ <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+ <1326912275-26405-2-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120119154919.GA10908@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1326912275-26405-2-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, Jan 19, 2012 at 10:49:19AM -0500, Vivek Goyal wrote:
-> > Let stat and conf read functions get device name from
-> > blkg->q->backing_dev_info.dev and pass it down to printing functions
-> > and remove blkg->dev.
+On Wed, Jan 18, 2012 at 07:44:29PM +0100, Jiri Olsa wrote:
+> Currently the ftrace_set_filter and ftrace_set_notrace functions
+> do not return any return code. So there's no way for ftrace_ops
+> user to tell wether the filter was correctly applied.
 > 
-> I think one of the reasons for not using blkg->q->backing_dev_info.dev was
-> that there were still drivers where multiple gendisks were sharing the
-> request queue.
+> The set_ftrace_filter interface returns error in case the filter
+> did not match:
+> 
+>   # echo krava > set_ftrace_filter
+>   bash: echo: write error: Invalid argument
+> 
+> Changing both ftrace_set_filter and ftrace_set_notrace functions
+> to return zero if the filter was applied correctly or -E* values
+> in case of error.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 
-Hmmm... is that relevant?  The configurations / stats are per
-cgroup-request_queue pair.  How does multiple genhd's sharing a queue
-make any difference?  Also, the fill_dev_details functions were using
-the same q->backing_dev_info to fill it in, so it's not like it was
-using anything different.
-
-Thanks.
-
--- 
-tejun
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
