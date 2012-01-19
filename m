@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab2ASMwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 07:52:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53060 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab2ASMwk (ORCPT
+	id S1756693Ab2ASM5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 07:57:36 -0500
+Received: from mail.lippert-at.com ([62.80.22.186]:19353 "EHLO
+	domex.lippertembedded.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752787Ab2ASM5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 07:52:40 -0500
-Date: Thu, 19 Jan 2012 21:04:06 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Huang Shijie <b32955@freescale.com>
-Cc: vinod.koul@intel.com, artem.bityutskiy@intel.com, shijie8@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        w.sang@pengutronix.de, LW@KARO-electronics.de,
-        alsa-devel@alsa-project.org, b29396@freescale.com
-Subject: Re: [PATCH 01/10] MXS-DMA : move the mxs-dma.h to a more common place
-Message-ID: <20120119130404.GI2247@S2101-09.ap.freescale.net>
-References: <1326953767-24155-1-git-send-email-b32955@freescale.com>
- <1326953767-24155-2-git-send-email-b32955@freescale.com>
+	Thu, 19 Jan 2012 07:57:32 -0500
+Message-ID: <4F18133B.9020801@LiPPERTEmbedded.de>
+Date: Thu, 19 Jan 2012 13:57:31 +0100
+From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326953767-24155-2-git-send-email-b32955@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andres Salomon <dilinger@queued.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-geode@lists.infradead.org
+Subject: Re: [PATCH] cs5535-clockevt: don't ignore MFGPT on SMP-capable kernels
+References: <4EE620A5.7080402@LiPPERTEmbedded.de>	<20111212123131.502be350@queued.net>	<4EE77416.8090907@LiPPERTEmbedded.de>	<4EE8ECF3.6000900@LiPPERTEmbedded.de>	<20111214104724.292b02d4@queued.net>	<4EF1FE5C.6040101@LiPPERTEmbedded.de> <20120111021022.16ba5c93@debxo>
+In-Reply-To: <20120111021022.16ba5c93@debxo>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Jan 2012 12:57:29.0728 (UTC) FILETIME=[E6D29800:01CCD6A9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 02:15:58PM +0800, Huang Shijie wrote:
-> Move the header to a more common place.
-> The DMA engine is not only used in mx23/mx28, but also used
-> in mx50/mx6q.
-> It will also be used in the future chips.
-> 
-> Rename it to mxs-dma.h
-> 
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
-> ---
->  arch/arm/mach-mxs/include/mach/dma.h |   28 ----------------------------
->  include/linux/mxs-dma.h              |   28 ++++++++++++++++++++++++++++
->  2 files changed, 28 insertions(+), 28 deletions(-)
->  delete mode 100644 arch/arm/mach-mxs/include/mach/dma.h
->  create mode 100644 include/linux/mxs-dma.h
-> 
-I'm wondering if it would be better to create folder include/linux/fsl
-for mxs-dma.h accommodation, so that any headers that need to shared
-between mxs and imx later can find a place.  Considering that Freescale
-has many IPs shared between MPCxxx (PowerPC) and i.MX (ARM) families,
-it could also be a good place for any headers that need to be shared
-between these two product lines from Freescale.
+Hi Andres,
 
--- 
-Regards,
-Shawn
+and a happy new year to you. Sorry for the delay.
+
+Andres Salomon wrote:
+> Jens Rottmann <JRottmann@LiPPERTEmbedded.de> wrote:
+>> cs5535-clockevt: don't ignore MFGPT on SMP-capable kernels
+>>
+>> On SMP-capable kernels (e.g. generic distro kernel) the
+>> cs5535-clockevt driver loads but is not actually used.
+>>
+>> Setting cpumask to cpu_all_mask works for UP-only kernels, but if
+>> compiled for SMP - though still running on the same UP hardware -
+>> kernel/time/tick-common.c:tick_check_new_device() reads this as
+>> "non-cpu-local" and silently ignores the device.
+>>
+>> If we leave cpumask unset clockevents_register_device() will
+>> initialize it and the cs5535-clockevt driver will be used no matter
+>> how the kernel was compiled. Should anyone ever manage to stick a
+>> CS553x in an SMP system (is this even possible?) then a warning will
+>> be printed.  This is fine as the cs5535-clockevt driver was never
+>> written/tested for SMP.
+>>
+>> If bisecting led you here this patch may have exposed a pre-existing
+>> MFGPT problem.  Configure for UP-only and re-check.
+>>
+>> Signed-off-by: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+>> ---
+>>
+>> --- linux-3.2-rc6/drivers/clocksource/cs5535-clockevt.c
+>> +++ use_mfgpt_on_smp_kernels/drivers/clocksource/cs5535-clockevt.c
+>> @@ -100,7 +100,6 @@ static struct clock_event_device cs5535_
+>>  	.set_mode = mfgpt_set_mode,
+>>  	.set_next_event = mfgpt_next_event,
+>>  	.rating = 250,
+>> -	.cpumask = cpu_all_mask,
+>>  	.shift = 32
+>>  };
+>>
+>> _
+>
+> Hm, have you tried setting cpumask to cpumask_of(0), like a bunch of
+> the other clock_event_device drivers do?
+
+Yes, I've seen that, and it was my initial approach. cpumask_of(0)
+isn't regarded constant, so moved it from the struct init to
+cs5535_mfgpt_init() ... but then I saw
+
+clockevents.c:clockevents_register_device():
+	if (!dev->cpumask) {
+		WARN_ON(num_possible_cpus() > 1);
+		dev->cpumask = cpumask_of(smp_processor_id());
+	}
+
+Looks to me like meant exactly for this purpose. This will set cpumask to
+cpumask_of(0), i.e. does exactly what you're suggesting.
+
+Both do work fine, but I understand cpumask=cpumask_of(0) to mean "this timer
+is hardware-tied to a specific CPU", whereas cpumask unset means more like
+"wow, we never expected anybody putting this hardware in an SMP system".
+
+And you've said it yourself:
+
+> I've only ever tested it on UP kernels. [...] I hope all of those cs5535
+> drivers that hadn't had their locking primitives tested aren't racy!
+
+So I see the WARN_ON as a bonus.
+
+Cheers
+Jens
