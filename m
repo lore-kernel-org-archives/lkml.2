@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab2ASH5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 02:57:30 -0500
-Received: from solca.med.ec ([200.105.240.90]:33337 "EHLO mail.solca.med.ec"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab2ASH51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 02:57:27 -0500
-Message-ID: <57612.41.71.147.14.1326960250.squirrel@mail.solca.med.ec>
-Date: Thu, 19 Jan 2012 03:04:10 -0500 (ECT)
-Subject: Webmaster Powiadomienie Code ASPH8B02AXV!!!
-From: =?utf-8?B?V2VibWFzdGVyIEFrdHVhbGl6YWNqYSBXeWR6aWHFgg==?= 
-	<info@webmaster.pl>
-Reply-To: customercarewebdept40@w.cn
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18654.005
-X-TM-AS-Result: No-1.740-4.5-31-10
-X-imss-scan-details: No-1.740-4.5-31-10
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-MatchedRID: yKmWqH0vkXXmR+RxuU2vfUwAZYE2FMixl1A3a/0FvI6rjPhihYxZdfrB
-	GrMv0SzD6dW+yomUlT6KH43UcmmRBON9jpjs+B+g5Fmj3fM8LUjEQdG7H66TyJ8TMnmE+d0ZHHO
-	SJPGt0ritv94TppHY7eaFLg0hHLPDK0CQdZBmLHZBTvXxKPC2L5jMFXIBvqNE+1n7zOdIgGBNwF
-	MG+nMirAaJkNftWLsEfT9hKTsfzmicHsbG8+ADbhBXQqHGWWxw3HHrZbXaQGTDyDYcE1wXmQ==
+	id S1754054Ab2ASH6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 02:58:23 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:59347 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753177Ab2ASH6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 02:58:21 -0500
+Message-ID: <1326959897.6404.17.camel@joe2Laptop>
+Subject: Re: Change request: "scsi: killing requests for dead queue"
+From: Joe Perches <joe@perches.com>
+To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 18 Jan 2012 23:58:17 -0800
+In-Reply-To: <4F17D4C2020000A100008B19@gwsmtp1.uni-regensburg.de>
+References: <4F17D4C2020000A100008B19@gwsmtp1.uni-regensburg.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-01-19 at 08:30 +0100, Ulrich Windl wrote:
+> Hi!
+> 
+> I have a change request: I saw three message that I couldn't bring into context with any other event (SLES11 SP1 (2.6.32.49-0.3-default)):
+> 
+> Jan 18 15:33:04 h03 kernel: [2866825.805434] scsi: killing requests for dead queue
+> Jan 18 15:33:04 h03 kernel: [2866825.812129] scsi: killing requests for dead queue
+> Jan 18 15:33:04 h03 kernel: [2866825.815553] scsi: killing requests for dead queue
+> 
+> Unfortunately the kernel message doesn't give some kind of queue identifier, so that's hard to correlate with any other events.
+> 
+> Can this message be improved to include some variable output?
 
+It was improved by:
 
+commit 745718132c3c7cac98a622b610e239dcd5217f71
+Author: Hannes Reinecke <hare@suse.de>
+Date:   Wed Nov 9 08:39:24 2011 +0100
 
-Drodzy Widzowie konto e-mail,
+    [SCSI] Silencing 'killing requests for dead queue'
+    
+    When we tear down a device we try to flush all outstanding
+    commands in scsi_free_queue(). However the check in
+    scsi_request_fn() is imperfect as it only signals that
+    we _might start_ aborting commands, not that we've actually
+    aborted some.
+    So move the printk inside the scsi_kill_request function,
+    this will also give us a hint about which commands are aborted.
+    
+    Signed-off-by: Hannes Reinecke <hare@suse.de>
+    Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
-
-Ten komunikat jest od poczty centrum wiadomości do wszystkich na nasze
-konto poczty owners.As pierwszym kwartale 2012 r. Obecnie jest
-przeprowadzenie usługi aktualizacji dla naszej bazy i e-mail centrum
-konta. Jesteśmy usunięcie wszystkich niewykorzystanych konto poczty
-internetowej, aby utworzyć więcej miejsca dla nowych kont.
-
-Aby zapobiec koncie od usuwania i Aby kontynuować korzystanie z naszych
-usług, które są wymagane do aktualizacji i potwierdzenia konta webmail.
-
-
-Aby zakończyć potwierdzenia konta za pierwszy kwartał 2012 r. Jesteś
-odpowiedzieć na tę wiadomość natychmiast i wprowadź dane swojego
-konta w wymienionych poniżej.
-
-
-Potwierdź swój adres e IDENTITY PONIŻEJ
-* Nazwa użytkownika:
-* Hasło:
-* Potwierdź Hasło:
-Dezaktywacja konta *: __ (określić tak, aby
-wyłączyć. Nie, aby zachować aktywnych)
-Powód Wyłączenie:________(jeśli tak)
-
-
-Ważne * Proszę podać wszystkie te informacje kompletnie i prawidłowo w
-przeciwnym razie ze względów bezpieczeństwa być może będziemy
-musieli zamknąć temporarily.We konto poczty dziękuję za szybkie zajęcie
-się tą matter.Please zrozumieć, że jest to środek bezpieczeństwa
-przeznaczonych do ochrony użytkowników i konta poczty internetowej.
-Przepraszamy za wszelkie niedogodności.
 
