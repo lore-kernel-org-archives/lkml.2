@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab2ASTlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 14:41:37 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55385 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932675Ab2ASTlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 14:41:35 -0500
-Date: Thu, 19 Jan 2012 20:41:08 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Michael D Labriola <mlabriol@gdeb.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
-        michael.d.labriola@gmail.com, Matthew Garrett <mjg59@srcf.ucam.org>,
-        support@versalogic.com, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86, reboot: skip DMI checks if reboot set by user
-Message-ID: <20120119194108.GB28362@elte.hu>
-References: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>
- <20120117195841.48fe8236@pyramind.ukuu.org.uk>
- <OFD4BB6876.6D903346-ON8525798A.00550E62-8525798A.005562A3@gdeb.com>
- <20120119154504.710e202e@pyramind.ukuu.org.uk>
- <OF8642E997.5ED041E1-ON8525798A.0056983A-8525798A.0056E05B@LocalDomain>
- <OF2B909250.6078896E-ON8525798A.0058FF49-8525798A.0061AEA1@gdeb.com>
- <4F18584F.7060603@zytor.com>
- <OFE1B368BB.B6249713-ON8525798A.00692513-8525798A.0069B44E@gdeb.com>
+	id S932832Ab2ASTnY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 14:43:24 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:59119 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932807Ab2ASTnW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 14:43:22 -0500
+Date: Thu, 19 Jan 2012 11:42:42 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Simon Glass <sjg@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-serial@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] serial: Fix wakeup init logic to speed up startup
+Message-ID: <20120119194242.GE2373@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1327001336-28703-1-git-send-email-sjg@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <OFE1B368BB.B6249713-ON8525798A.00692513-8525798A.0069B44E@gdeb.com>
+In-Reply-To: <1327001336-28703-1-git-send-email-sjg@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12011919-5518-0000-0000-000001A91D63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Michael D Labriola <mlabriol@gdeb.com> wrote:
-
-> > Yes, and such a patch would be appreciated.
-> > 
-> > The reason it is as it is dates back to before the 32-64 bit 
-> > unification, as far as I know.
-> > 
-> > (BIOS reboot is currently not supported on 64 bits, mainly.)
+On Thu, Jan 19, 2012 at 11:28:56AM -0800, Simon Glass wrote:
+> The synchronize_rcu() call resulting from making every serial driver
+> wake-up capable (commit b3b708fa) slows boot down on my Tegra2x system
+> (with CONFIG_PREEMPT disabled).
 > 
-> Well, that does complicate it a bit.  I'll gin something up 
-> and see what you think.  I guess it will involve having an
-> #ifdef CONFIG_X86_32 block inside a single dmi_table structure
-> for the BIOS quirks.
+> But this is avoidable since it is the device_set_wakeup_enable() and then
+> subsequence disable which causes the delay. We might as well just make
+> the device wakeup capable but not actually enable it for wakeup until
+> needed.
+> 
+> Effectively the current code does this:
+> 
+> 	device_set_wakeup_capable(dev, 1);
+> 	device_set_wakeup_enable(dev, 1);
+> 	device_set_wakeup_enable(dev, 0);
+> 
+> We can just drop the last two lines.
+> 
+> Before this change my boot log says:
+> [    0.227062] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> [    0.702928] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
+> 
+> after:
+> [    0.227264] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> [    0.227983] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
+> 
+> for saving of 450ms.
 
-Btw., i'd suggest to keep the two changes in separate patches, 
-so that if any causes problems we can bisect to it separately. 
-The more patches you can reasonably split it up into, the 
-better.
+You have multiple CPUs running at this point, correct?  Before that
+second CPU starts up, synchronize_rcu() is a no-op.
 
-Thanks,
+The patch looks good to me, but then again, I do not consider myself
+qualified to have an opinion on the TTY layer.  ;-)
 
-	Ingo
+							Thanx, Paul
+
+> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Simon Glass <sjg@chromium.org>
+> ---
+>  drivers/tty/serial/serial_core.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index c7bf31a..1305618 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -2348,11 +2348,11 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+>  	 */
+>  	tty_dev = tty_register_device(drv->tty_driver, uport->line, uport->dev);
+>  	if (likely(!IS_ERR(tty_dev))) {
+> -		device_init_wakeup(tty_dev, 1);
+> -		device_set_wakeup_enable(tty_dev, 0);
+> -	} else
+> +		device_set_wakeup_capable(tty_dev, 1);
+> +	} else {
+>  		printk(KERN_ERR "Cannot register tty device on line %d\n",
+>  		       uport->line);
+> +	}
+> 
+>  	/*
+>  	 * Ensure UPF_DEAD is not set.
+> -- 
+> 1.7.7.3
+> 
+
