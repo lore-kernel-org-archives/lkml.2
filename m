@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab2ASQM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:12:59 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52923 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab2ASQM5 convert rfc822-to-8bit (ORCPT
+	id S932508Ab2ASQNw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:13:52 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47381 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171Ab2ASQNt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:12:57 -0500
+	Thu, 19 Jan 2012 11:13:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
-References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-	<20120108221342.GA7058@ime.usp.br>
-	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
-	<20120109112207.7f993845@jbarnes-desktop>
-	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
-	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
-	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
-	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
-	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
-	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
-	<20120113115946.GA10615@ime.usp.br>
-	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
-	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
-	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
-	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
-	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
-	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
-	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
-Date: Thu, 19 Jan 2012 08:12:57 -0800
-X-Google-Sender-Auth: rF0wrtWLDxAkDWqk8pFRH-g5shg
-Message-ID: <CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+In-Reply-To: <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk>
+References: <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+ <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+ <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+ <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+ <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+ <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <CAObL_7FsNQaPQg-3=AO9RuMNZZsRgDSJYPhPevDKERws9vQJWg@mail.gmail.com> <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 19 Jan 2012 08:13:27 -0800
+X-Google-Sender-Auth: dwzFG6iFOJL-uuzVWtVzu2pvF9U
+Message-ID: <CAObL_7HwZDPeYe_T36zUMw+FA8x6DJX8Jzh59iuWXQLdktpR+Q@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: Jamie Lokier <jamie@shareable.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/19 Rogério Brito <rbrito@ime.usp.br>:
->> yes, please esp need patch.
->>
->> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=e3a7a7d4ea1b6a2be82ef454096aff7856c14de5
+On Thu, Jan 19, 2012 at 8:01 AM, Jamie Lokier <jamie@shareable.org> wrote:
+> Andrew Lutomirski wrote:
+>> It's reasonable, obvious, and even more wrong than it appears.  On
+>> Xen, there's an extra 64-bit GDT entry, and it gets used by default.
+>> (I got bitten by this in some iteration of the vsyscall emulation
+>> patches -- see user_64bit_mode for the correct and
+>> unusable-from-user-mode way to do this.)
 >
-> With CONFIG_BOOT_PRINTK_DELAY enabled and with "boot_delay=500" on the
-> command line, I checked out the for-pci2 branch of your tree and this
-> is what I get:
+> Here it is:
 >
->    http://youtu.be/bWEme7iFD7g
+>        static inline bool user_64bit_mode(struct pt_regs *regs)
+>        {
+>        #ifndef CONFIG_PARAVIRT
+>                /*
+>                 * On non-paravirt systems, this is the only long mode CPL 3
+>                 * selector.  We do not allow long mode selectors in the LDT.
+>                 */
+>                return regs->cs == __USER_CS;
+>        #else
+>                /* Headers are too twisted for this to go in paravirt.h. */
+>                return regs->cs == __USER_CS || regs->cs == pv_info.extra_user_64bit_cs;
+>        #endif
+>        }
 >
-> If you want me to, say, recompile Linus's vanilla tree with only a few
-> selected patches, please let me know. I will now try to test some
-> other combinations of the options passed to the kernel.
+> Perhaps userspace can do that.
+> Would it be right for a ptracer to say:
+>
+>   CS == 0x23 -> 32-bit
+>   (CS & 4)   -> 32-bit (LDT, "we do not allow long mode selectors in the LDT")
+>   else       -> 64-bit (__USER_CS or some other GDT entry which must be pv_info's)
+>
+> I.e. assume that no other *GDT* CS values are available to userspace?
+> There are other 32-bit GDT entries, but are they not all for data or kernel use only?
 
-resource allocating for transparent bridge resizing works well and as expected.
+I suspect not.  asm/xen/interface_64.h has:
 
-looks like quirk for usb hand off cause problem.
+#define FLAT_RING3_CS32 0xe023  /* GDT index 260 */
+#define FLAT_RING3_CS64 0xe033  /* GDT index 261 */
+#define FLAT_RING3_DS32 0xe02b  /* GDT index 262 */
+#define FLAT_RING3_DS64 0x0000  /* NULL selector */
+#define FLAT_RING3_SS32 0xe02b  /* GDT index 262 */
+#define FLAT_RING3_SS64 0xe02b  /* GDT index 262 */
 
-can you try another branch in my tree?
+which sounds like there's an extra 32-bit selector as well.  I haven't
+checked, though.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-usb_smi_disable_early
-
-it will do usb hand off very early.
-
-you can do:
-
-mkdir linux-2.6 || exit -1
-cd linux-2.6
-
-git init-db
-# Add Linus's tree as a remote
-git remote add linus
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-
-git remote add yinghai
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-
-git remote update
-
-later will only do:
-
-git remote update
-
-git checkout -b rb_2012_01_19a linus/master
-git merge yinghai/usb_smi_disable_early
-
-
-Thanks
-
-Yinghai
+--Andy
