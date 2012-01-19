@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab2ASUBZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 15:01:25 -0500
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:25586 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927Ab2ASUBV (ORCPT
+	id S932988Ab2ASUCk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 15:02:40 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:34693 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932945Ab2ASUBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 15:01:21 -0500
-Subject: [PATCH 08/10] hpsa: eliminate 8 external target limitation
+	Thu, 19 Jan 2012 15:01:10 -0500
+Subject: [PATCH 06/10] hpsa: make target and lun match what SCSI REPORT LUNs
+	returns
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         mikem@beardog.cce.hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
         scott.teel@hp.com, akpm@linux-foundation.org, stable@kernel.org
-Date: Thu, 19 Jan 2012 14:01:19 -0600
-Message-ID: <20120119200119.17835.89463.stgit@beardog.cce.hp.com>
+Date: Thu, 19 Jan 2012 14:01:09 -0600
+Message-ID: <20120119200109.17835.48500.stgit@beardog.cce.hp.com>
 In-Reply-To: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
 References: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -25,89 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Scott Teel <scott.teel@hp.com>
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Driver limits SAS external target IDs to range 1-8.
-Need to increase limit and clean up overlapping concepts of targets and paths
-in the code.
+Some distros have a "rescan-scsi-bus.sh" script which depends on
+SCSI REPORT LUNs not reporting something different than what the
+driver tells the kernel, even if the driver uses scan_start and
+scan_finished methods of the SCSI host template to override the
+usual SCSI midlayer discovery code.  Previously, 1 was added to
+the LUN to make room to insert the RAID controller device at
+LUN 0.  Now, the RAID controller is moved to bus 3, and 1 is no
+longer added to the LUN.  However, SCSI REPORT LUNS on Smart Array
+doesn't report physical devices like tape drives or auto-loaders
+as it turns out, so those particular device types still won't match.
+Generally the logical drives are reported first however, so at
+least those should match.
 
-There are several defined constants that control this:
-HPSA_MAX_TARGETS_PER_CTLR     16
-MAX_MSA2XXX_ENCLOSURES        32
-HPSA_MAX_PATHS                8
-
-We can condense this to one constant:
-MAX_EXT_TARGETS               32
-
-SAS switches allow for 8 connections, and there is capacity for 4 switches per
-enclosure in largest blade enclosure type.
-
-Signed-off-by: Scott Teel <scott.teel@hp.com>
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa.c     |   16 ++++++++--------
- drivers/scsi/hpsa_cmd.h |    5 ++---
- 2 files changed, 10 insertions(+), 11 deletions(-)
+ drivers/scsi/hpsa.c |   25 +++++--------------------
+ 1 files changed, 5 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index ea9b685..39ac161 100644
+index b30033b..c52bc76 100644
 --- a/drivers/scsi/hpsa.c
 +++ b/drivers/scsi/hpsa.c
-@@ -1692,9 +1692,9 @@ static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
- 	if (is_scsi_rev_5(h))
- 		return 0; /* p1210m doesn't need to do this. */
- 
--	if (*nmsa2xxx_enclosures >= MAX_MSA2XXX_ENCLOSURES) {
--		dev_warn(&h->pdev->dev, "Maximum number of MSA2XXX "
--			"enclosures exceeded.  Check your hardware "
-+	if (*nmsa2xxx_enclosures >= MAX_EXT_TARGETS) {
-+		dev_warn(&h->pdev->dev, "Maximum number of external "
-+			"target devices exceeded.  Check your hardware "
- 			"configuration.");
- 		return 0;
+@@ -1645,30 +1645,15 @@ static void figure_bus_target_lun(struct ctlr_info *h,
+ 			*target = (lunid >> 16) & 0x3fff;
+ 			*lun = lunid & 0x00ff;
+ 		} else {
+-			if (likely(is_scsi_rev_5(h))) {
+-				/* All current smart arrays (circa 2011) */
+-				*bus = 0;
+-				*target = 0;
+-				*lun = (lunid & 0x3fff) + 1;
+-			} else {
+-				/* Traditional old smart array way. */
+-				*bus = 0;
+-				*target = lunid & 0x3fff;
+-				*lun = 0;
+-			}
++			*bus = 0;
++			*target = 0;
++			*lun = (lunid & 0x3fff);
+ 		}
+ 	} else {
+-		/* physical device */
+ 		if (is_hba_lunid(lunaddrbytes))
+-			if (unlikely(is_scsi_rev_5(h))) {
+-				*bus = 0; /* put p1210m ctlr at 0,0,0 */
+-				*target = 0;
+-				*lun = 0;
+-				return;
+-			} else
+-				*bus = 3; /* traditional smartarray */
++			*bus = 3; /* controller */
+ 		else
+-			*bus = 2; /* physical disk */
++			*bus = 2; /* physical device */
+ 		*target = -1;
+ 		*lun = -1; /* we will fill these in later. */
  	}
-@@ -1800,7 +1800,7 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
- 	int reportlunsize = sizeof(*physdev_list) + HPSA_MAX_PHYS_LUN * 8;
- 	int i, nmsa2xxx_enclosures, ndevs_to_allocate;
- 	int raid_ctlr_position;
--	DECLARE_BITMAP(lunzerobits, HPSA_MAX_TARGETS_PER_CTLR);
-+	DECLARE_BITMAP(lunzerobits, MAX_EXT_TARGETS);
- 
- 	currentsd = kzalloc(sizeof(*currentsd) * HPSA_MAX_DEVICES, GFP_KERNEL);
- 	physdev_list = kzalloc(reportlunsize, GFP_KERNEL);
-@@ -1817,11 +1817,11 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
- 			logdev_list, &nlogicals))
- 		goto out;
- 
--	/* We might see up to 32 MSA2xxx enclosures, actually 8 of them
--	 * but each of them 4 times through different paths.  The plus 1
--	 * is for the RAID controller.
-+	/* We might see up to the maximum number of logical and physical disks
-+	 * plus external target devices, and a device for the local RAID
-+	 * controller.
- 	 */
--	ndevs_to_allocate = nphysicals + nlogicals + MAX_MSA2XXX_ENCLOSURES + 1;
-+	ndevs_to_allocate = nphysicals + nlogicals + MAX_EXT_TARGETS + 1;
- 
- 	/* Allocate the per device structures */
- 	for (i = 0; i < ndevs_to_allocate; i++) {
-diff --git a/drivers/scsi/hpsa_cmd.h b/drivers/scsi/hpsa_cmd.h
-index 516d6e5..8049815 100644
---- a/drivers/scsi/hpsa_cmd.h
-+++ b/drivers/scsi/hpsa_cmd.h
-@@ -122,12 +122,11 @@ union u64bit {
- };
- 
- /* FIXME this is a per controller value (barf!) */
--#define HPSA_MAX_TARGETS_PER_CTLR 16
- #define HPSA_MAX_LUN 1024
- #define HPSA_MAX_PHYS_LUN 1024
--#define MAX_MSA2XXX_ENCLOSURES 32
-+#define MAX_EXT_TARGETS 32
- #define HPSA_MAX_DEVICES (HPSA_MAX_PHYS_LUN + HPSA_MAX_LUN + \
--	MAX_MSA2XXX_ENCLOSURES + 1) /* + 1 is for the controller itself */
-+	MAX_EXT_TARGETS + 1) /* + 1 is for the controller itself */
- 
- /* SCSI-3 Commands */
- #pragma pack(1)
 
