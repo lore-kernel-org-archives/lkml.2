@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab2ASRE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 12:04:59 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:6660 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab2ASRE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 12:04:58 -0500
-Message-ID: <4F184D28.3030207@parallels.com>
-Date: Thu, 19 Jan 2012 21:04:40 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1756980Ab2ASRIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 12:08:15 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38030 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756727Ab2ASRII (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 12:08:08 -0500
+Date: Thu, 19 Jan 2012 21:07:51 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry
+ v6
+Message-ID: <20120119170751.GH31379@moon>
+References: <4F15EA53.8030405@gmail.com>
+ <20120118135809.GA10105@redhat.com>
+ <20120118142156.GR1968@moon>
+ <20120118143631.GA11776@redhat.com>
+ <20120118182344.GD2889@moon>
+ <20120118190725.GE2889@moon>
+ <20120119141051.GA9652@redhat.com>
+ <20120119155529.GA14412@redhat.com>
+ <20120119162718.GA32568@moon>
+ <20120119164413.GA16522@redhat.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 3/5] SUNRPC: create GSS auth cache per network namespace
-References: <20120119144517.9957.59143.stgit@localhost6.localdomain6> <20120119144922.9957.39352.stgit@localhost6.localdomain6> <20120119163149.GD527@fieldses.org>
-In-Reply-To: <20120119163149.GD527@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120119164413.GA16522@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.01.2012 20:31, J. Bruce Fields пишет:
-> On Thu, Jan 19, 2012 at 06:49:23PM +0400, Stanislav Kinsbursky wrote:
->> @@ -1000,6 +996,7 @@ static int svcauth_gss_handle_init(struct svc_rqst *rqstp,
->>   	struct xdr_netobj tmpobj;
->>   	struct rsi *rsip, rsikey;
->>   	int ret;
->> +	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
->
-> OK, so you're getting the network namespace out of the rqstp, and, then
-> passing it down, makes sense.  And:
->
->> @@ -1079,6 +1076,7 @@ svcauth_gss_accept(struct svc_rqst *rqstp, __be32 *authp)
->>   	__be32		*rpcstart;
->>   	__be32		*reject_stat = resv->iov_base + resv->iov_len;
->>   	int		ret;
->> +	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
->
-> ... same for the gss cache.  Looks good.
->
-> How do you plan to test this?
->
+On Thu, Jan 19, 2012 at 05:44:13PM +0100, Oleg Nesterov wrote:
+> On 01/19, Cyrill Gorcunov wrote:
+> >
+> > On Thu, Jan 19, 2012 at 04:55:29PM +0100, Oleg Nesterov wrote:
+> > >
+> > > Thinking more... I am not sure, but do we really need
+> > > proc_pid_children_iter at all??
+> > >
+> > > It is very possibly I missed something, but we can get both
+> > > parent_pid and pid_ns from inode, right? so can't we just remember
+> > > inode in seq->private?
+> >
+> > Good point. Letme check if we will need to call for ihold then...
+> > (/me scratchig the head)
+> 
+> Why? file/inode can't go away, at least until this fd is closed.
+> 
+> And just in case, get_pid(proc_pid(inode)) is not needed, even in v6/v7.
+> I didn't realize this.
+> 
 
-Do you mean something special or in general?
-Currently I validate all my chages in container by using simple test environment.
-I would be appreciate for any hints to tests, than can help.
+Grr, indeed.
 
+> Cyrill, I won't argue if you prefer to make this in a separate patch
+> (of course, assuming you are agree) on top of v7, to me it looks
+> "good enough".
+> 
 
--- 
-Best regards,
-Stanislav Kinsbursky
+I think better to make completely updated version then, than pushing
+changes on top. it'll be better to put anything in one patch I think.
+
+Thanks!
+
+	Cyrill
