@@ -1,48 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab2ASGnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 01:43:31 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:57118 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750803Ab2ASGna convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 01:43:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <1326845297-6233-1-git-send-email-rmorell@nvidia.com>
-References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
-	<1326845297-6233-1-git-send-email-rmorell@nvidia.com>
-Date: Thu, 19 Jan 2012 08:43:30 +0200
-X-Google-Sender-Auth: JON04HTxg6TopSUL1NIa8lqxDJI
-Message-ID: <CAOJsxLETu8=a9TowOnprJg2gZkea6j3rf_63W-BZXj71xM=UjQ@mail.gmail.com>
-Subject: Re: Expanding the use of DMA buffers in 3.3
-From: Pekka Enberg <penberg@kernel.org>
-To: Robert Morell <rmorell@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, sumit.semwal@linaro.org, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752310Ab2ASGp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 01:45:57 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54987 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab2ASGpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 01:45:55 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 19 Jan 2012 15:44:36 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, hannes <hannes@cmpxchg.org>,
+        mhocko@suse.cz, bsingharora@gmail.com, Dave Jones <davej@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [BUG] kernel BUG at mm/memcontrol.c:1074!
+Message-Id: <20120119154436.aed0d6bb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120119145250.acf3ccc8.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1326949826.5016.5.camel@lappy>
+	<20120119145250.acf3ccc8.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 2:08 AM, Robert Morell <rmorell@nvidia.com> wrote:
-> The DMA buffer infrastructure (dma-buf) currently exposes its interface
-> with EXPORT_SYMBOL_GPL.  The documentation for EXPORT_SYMBOL_GPL says:
->    "It implies that the function is considered an internal
->    implementation issue, and not really an interface."
-> This interface is clearly not just an "implementation issue" but an
-> interface to be used across drivers/subsystems, so I think it makes
-> sense for it to use EXPORT_SYMBOL instead.
->
-> Work on dma-buf was originally started with the goal of unifying several
-> competing "memory management" systems developed with different ARM SoCs
-> in mind.  It would be unfortunate if restricting its use to only
-> GPL-licensed modules caused dma-buf adoption to be limited.
->
-> For convenience, I'll send the trivial patch to implement this change.
-> I'd like to see this in the first release with dma-buf in 3.3.
+On Thu, 19 Jan 2012 14:52:50 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-How about you open up your driver code instead? You'd get access to
-all EXPORT_SYMBOL_GPL symbols instantly!
+> On Thu, 19 Jan 2012 07:10:26 +0200
+> Sasha Levin <levinsasha928@gmail.com> wrote:
+> 
+> > The problem is, that it looks like this has triggered a BUG() in the memory cgroup code:
+> > 
+> > [  526.737227] ------------[ cut here ]------------
+> > [  526.738032] 
+> > [  526.738032] invalid opcode: 0000 [#1] PREEMPT SMP 
+> > [  526.738032] CPU 0 
+> > [  526.738032] Pid: 1091, comm: kswapd0 Not tainted 3.2.0-next-20120119-sasha #128  
+> > [  526.738032] RIP: 0010:[<ffffffff811c4b4a>]  [<ffffffff811c4b4a>] mem_cgroup_lru_del_list+0xca/0xd0
+> > [  526.738032] RSP: 0018:ffff8800127139a0  EFLAGS: 00010046
+> > [  526.738032] RAX: 0000000000000001 RBX: ffffea0000358300 RCX: 0000000000000000
+> > [  526.738032] RDX: ffff880012c0b800 RSI: 0000000000000000 RDI: 0000000000000000
+> > [  526.738032] RBP: ffff8800127139b0 R08: ffff880012713ad0 R09: 0000000000000001
+> > [  526.738032] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000002
+> > [  526.738032] R13: ffffea0000358300 R14: ffffea0000358320 R15: 0000000000000001
+> > [  526.738032] FS:  0000000000000000(0000) GS:ffff880013a00000(0000) knlGS:0000000000000000
+> > [  526.738032] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [  526.738032] CR2: 00007fea7fa42e66 CR3: 000000000c42a000 CR4: 00000000000406f0
+> > [  526.738032] DR0: ffffffff810aaee0 DR1: 0000000000000000 DR2: 0000000000000000
+> > [  526.738032] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000600
+> > [  526.738032] Process kswapd0 (pid: 1091, threadinfo ffff880012712000, task ffff880012f7d840)
+> > [  526.738032] Stack:
+> > [  526.738032]  ffff880012c0b968 ffff880012c0b968 ffff8800127139c0 ffffffff811c4f0a
+> > [  526.738032]  ffff880012713a70 ffffffff81178c63 ffff8800127139e0 ffffea00000cbba0
+> > [  526.738032]  ffff880012713a40 ffff880012713b08 0000000000000001 ffffffffffffffff
+> > [  526.738032] Call Trace:
+> > [  526.738032]  [<ffffffff811c4f0a>] mem_cgroup_lru_del+0x3a/0x40
+> > [  526.738032]  [<ffffffff81178c63>] isolate_lru_pages+0xe3/0x330
+> > [  526.738032]  [<ffffffff8117a11e>] ? shrink_inactive_list+0xce/0x480
+> > [  526.738032]  [<ffffffff8117a153>] shrink_inactive_list+0x103/0x480
+> > [  526.738032]  [<ffffffff811c2a46>] ? mem_cgroup_iter+0x176/0x310
+> > [  526.738032]  [<ffffffff810e2c55>] ? sched_clock_local+0x25/0x90
+> > [  526.738032]  [<ffffffff8117ac04>] shrink_mem_cgroup_zone+0x3f4/0x580
+> > [  526.738032]  [<ffffffff81107cfe>] ? put_lock_stats.clone.18+0xe/0x40
+> > [  526.738032]  [<ffffffff8117adfe>] shrink_zone+0x6e/0xa0
+> > [  526.738032]  [<ffffffff8117be65>] balance_pgdat+0x545/0x750
+> > [  526.738032]  [<ffffffff810de1ed>] ? sub_preempt_count+0x9d/0xd0
+> > [  526.738032]  [<ffffffff8117c233>] kswapd+0x1c3/0x320
+> > [  526.738032]  [<ffffffff810cee30>] ? abort_exclusive_wait+0xb0/0xb0
+> > [  526.738032]  [<ffffffff8117c070>] ? balance_pgdat+0x750/0x750
+> > [  526.738032]  [<ffffffff810ce06e>] kthread+0xbe/0xd0
+> > [  526.738032]  [<ffffffff82585df4>] kernel_thread_helper+0x4/0x10
+> > [  526.738032]  [<ffffffff810d8c88>] ? finish_task_switch+0x78/0x100
+> > [  526.738032]  [<ffffffff825840f8>] ? retint_restore_args+0x13/0x13
+> > [  526.738032]  [<ffffffff810cdfb0>] ? kthread_flush_work_fn+0x10/0x10
+> > [  526.738032]  [<ffffffff82585df0>] ? gs_change+0x13/0x13
+> > [  526.738032] Code: 8b 1c 24 4c 8b 64 24 08 c9 c3 0f 1f 80 00 00 00 00 8b 4b 68 eb ba 0f 1f 00 0f b6 4b 68 bb 01 00 00 00 d3 e3 48 63 cb eb c2 0f 0b <0f> 0b 0f 1f 40 00 55 48 89 e5 48 83 ec 60 48 89 5d d8 4c 89 65 
+> > [  526.738032] RIP  [<ffffffff811c4b4a>] mem_cgroup_lru_del_list+0xca/0xd0
+> > [  526.738032]  RSP <ffff8800127139a0>
+> > [  526.738032] ---[ end trace 866f4f6c624b8d58 ]---
+> 
+> my memo here.
+> 
+> 1. This is caused by pc->mem_cgroup was NULL at mem_cgroup_lru_del().
+> 
+> 2. IIUC, PageLRU(page) should be true to cause this BUG. Then,
+>    there is a page whose pc->mem_cgroup == NULL but PageLRU(page)==true.
+>    But, memcg's lru_add() routine accesses pc->mem_cgroup...so it should
+>    cause NULL pointer access if the page was added to LRU with pc->mem_cgroup is NULL.
+> 
+>    One possibility is that the page was PageLRU set but not added to memcg's LRU
+>    ... added to zone's LRU directly..
+>    Or PageLRU(page) was true but not added to any lru list without pc->mem_cgroup updates.
+> 
+> 3. IIUC, There is no routine to set pc->mem_cgroup as NULL once page is used.
+>    But I need to check it....
+> 
+I'm very sorry ...I misunderstood from the beginning..
+The BUG_ON() was
+ VM_BUG_ON(MEM_CGROUP_ZSTAT(mz, lru) < (1 << compound_order(page)));
 
-                        Pekka
+I didn't notice this one. sorry.
+
+Then, as Hugh pointed out, that patch seems doubtful.
+As Hugh said, the patch 6699ba077ebcdeb7bde7e2644a39b9e5bf6a7e8a will be
+dropped and the issue will disappear (I hope.)
+
+Thanks,
+-Kame
+
+
+
+
