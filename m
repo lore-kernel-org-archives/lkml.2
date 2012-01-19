@@ -1,46 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078Ab2ASUye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 15:54:34 -0500
-Received: from ns.pmeerw.net ([87.118.82.44]:41682 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932718Ab2ASUyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 15:54:33 -0500
-Date: Thu, 19 Jan 2012 21:54:29 +0100 (CET)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: A little off-topic: Linux Assigned Names and Numbers Authority
- (lanana.org) got lost
-In-Reply-To: <4F187F78.9010407@weberhofer.at>
-Message-ID: <alpine.DEB.2.01.1201192153080.9437@pmeerw.net>
-References: <4F187F78.9010407@weberhofer.at>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S933082Ab2ASVAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 16:00:49 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:32946 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932818Ab2ASVAr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 16:00:47 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Chen Gong <gong.chen@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Thu, 19 Jan 2012 15:58:56 -0500
+Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
+ smp_send_stop()
+Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
+ below smp_send_stop()
+Thread-Index: AQHMy9CqWb3Eal+luUidUg+JrwynPJX+IWHAgAAOOECAAJk+gIAGFpuAgACYuICAASNngIAAuA6AgACm9AD//5HLQIADWlqQgAlb+CU=
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DA7B65F2A@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com>
+ <20120105210123.GI5650@redhat.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C5827BBD8@USINDEVS01.corp.hds.com>
+ <4F0BAB33.2090201@linux.intel.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
+ <4F0D3A0B.4090709@linux.intel.com> <20120111172544.GS5650@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28FD61F@ORSMSX104.amr.corp.intel.com>,<32727E9A83EE9A42A1F0906295A3A77B2C78F49973@USINDEVS01.corp.hds.com>
+In-Reply-To: <32727E9A83EE9A42A1F0906295A3A77B2C78F49973@USINDEVS01.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1201190226
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Tony,
 
-> I discovered that the "Linux Assigned Names and Numbers Authority" on
-> http://lanana.org can no longer been found in internet. I have searched around
-> and asked David Sifry (who actually owns the domain) about it, but he does not
-> know.
+Do you have any comments?
 
-works fine for me...
+________________________________________
 
-The Linux Assigned Names And Numbers Authority
-<   L A N A N A   >
-Part of the Linux Foundation
-Maintained by Stew Benedict
-lsb@lanana.org / device@lanana.org
+Tony,
 
-last update: 11 Aug 2011 - Change contact email for Netezza
+I understand you are seriously concerned about reliability of pstore.
+And I'm in the same position.
 
-regards, p.
+But I still suggest to move kmsg_dump() below smp_send_stop().
 
--- 
+>The 20% of me that isn't buying this
+>still has worries that smp_send_stop() might fail in one of several ways:
+>1) Fails to actually stop one or more other cpus (this is similar to our
+>current situation where other cpus may interfere with us saving kmsg in
+>pstore).
 
-Peter Meerwald
-+43-664-2444418 (mobile)
+I don't understand this case. Have you ever experienced some specific cases
+failing to stop cpus?
+
+As for x86, this case will never happen if not cpus are broken.
+
+>2) Causes another fault, thus recursively entering the panic path.
+>3) Hangs - causing us to miss saving to pstore.
+
+These concerns are not just smp_send_stop().
+
+In panic(), there are some function calls above kmsg_dump().
+ Ex. dump_stack(), printk(), crash_kexec()....
+If they panic/hang, same issues will happen.
+
+So, 2) and 3) are not reasonable reasons for rejecting to move kmsg_dump() below smp_send_stop().
+
+>
+>I don't know what can be done to resolve this - it is hard to make a
+>100% convincing argument about the execution of any code in the panic
+>path.
+
+One of the ways we have confidence is doing more testing.
+As for kdump, LKDTM is used for checking regressions of kdump.
+
+If pstore works with LKDTM, we can prove that pstore has minimal reliabliy.
+(I don't know if we need additional testing at this time.)
+
+Seiji
+
