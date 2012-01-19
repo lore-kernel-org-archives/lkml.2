@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab2ASPTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 10:19:20 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62302 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab2ASPTS (ORCPT
+	id S932260Ab2ASPUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:20:13 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:19986 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248Ab2ASPUK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 10:19:18 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=ehjrB24yHB0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=S1HcKYMXndRnAJsqQP8A:9 a=4R0nt4WdLxu5R0gdOF0A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326986356.17534.131.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/2] jump labels/x86: Use etiher 5 byte or 2 byte jumps
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>
-Date: Thu, 19 Jan 2012 10:19:16 -0500
-In-Reply-To: <1326985100.17534.127.camel@gandalf.stny.rr.com>
-References: <20120118195340.767928915@goodmis.org>
-	 <20120118195926.797694014@goodmis.org> <20120119144141.GA547@Krystal>
-	 <4F182CDE.2080603@zytor.com>
-	 <1326985100.17534.127.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jan 2012 10:20:10 -0500
+X-IronPort-AV: E=Sophos;i="4.71,536,1320652800"; 
+   d="scan'208";a="618388855"
+Message-ID: <1326986392.6114.1.camel@lade.trondhjem.org>
+Subject: Re: [PATCH 0/5] SUNRPC: make caches network namespace aware
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Dr James Bruce Fields <bfields@redhat.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Thu, 19 Jan 2012 10:19:52 -0500
+In-Reply-To: <20120119144517.9957.59143.stgit@localhost6.localdomain6>
+References: <20120119144517.9957.59143.stgit@localhost6.localdomain6>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Mime-Version: 1.0
+X-OriginalArrivalTime: 19 Jan 2012 15:19:53.0663 (UTC) FILETIME=[CB679CF0:01CCD6BD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-19 at 09:58 -0500, Steven Rostedt wrote:
-> On Thu, 2012-01-19 at 06:46 -0800, H. Peter Anvin wrote:
-
-> > 
-> > >> +
-> > >> +	/* Use probe_kernel_read()? */
-> > >> +	op = *(unsigned char *)ip;
-> > >> +	nop = ideal_nops[NOP_ATOMIC5][0];
-> > >>  
-> > >>  	if (type == JUMP_LABEL_ENABLE) {
-> > >> -		code.jump = 0xe9;
-> > >> -		code.offset = entry->target -
-> > >> -				(entry->code + JUMP_LABEL_NOP_SIZE);
-> > >> -	} else
-> > >> -		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
-> > >> +		if (op == 0xe9 || op == 0xeb)
-> > >> +			/* Already enabled. Warn? */
-> > > 
-> > > This could be caused by failure to run the link-time script, or running
-> > > the transform twice. A warning would indeed be welcome, as this should
-> > > never happen.
-> > > 
-> > 
-> > Warning?  No.  ERROR.  Something very bad could be happening here.  We
-> > have covered this before.
+On Thu, 2012-01-19 at 18:48 +0400, Stanislav Kinsbursky wrote: 
+> One more step towards to "NFS in container".
+> With this patch set caches are allocated per network namespace.
 > 
-> Heh, not this exactly. We covered run time errors, this is build time
-> errors.
-
-Oops, this is patch 2 not 1. It is run time error.
-
+> The following series consists of:
 > 
-> But I agree, it should error. The mcount code errors on problems, this
-> should too.
+> ---
+> 
+> Stanislav Kinsbursky (5):
+>       SUNRPC: cache creation and destruction routines introduced
+>       SUNRPC: create unix gid cache per network namespace
+>       SUNRPC: create GSS auth cache per network namespace
+>       SUNRPC: ip map cache per network namespace cleanup
+>       SUNRPC: generic cache register routines removed
 
-I'll have to look at this in more detail, to make sure jump labels are
-consistent in their updates. It may legitimately enable them twice. If
-that's the case, what should be done is to make sure the entire
-instruction is what we expect it to be, otherwise BUG().
+The patches look good, and I've applied them for now in my 'devel'
+branch so we can test them, but I'd like to get an Ack/Nack from Bruce
+before committing to merging them.
 
--- Steve
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
