@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab2ASH0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 02:26:25 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39494 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab2ASH0Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 02:26:24 -0500
+	id S1753107Ab2ASH2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 02:28:45 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:52612 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752782Ab2ASH2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 02:28:42 -0500
+Message-ID: <4F17C6B7.5020606@cn.fujitsu.com>
+Date: Thu, 19 Jan 2012 15:31:03 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <4F16B9D7.2030104@redhat.com>
-References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
-	<1326845297-6233-2-git-send-email-rmorell@nvidia.com>
-	<CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
-	<201201181214.12055.arnd@arndb.de>
-	<4F16B9D7.2030104@redhat.com>
-Date: Thu, 19 Jan 2012 07:26:23 +0000
-Message-ID: <CAPM=9tyeqke9-SKarg8OJEyRCEtZmeGtq0_Z1+30DMjsSqqn1g@mail.gmail.com>
-Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
-From: Dave Airlie <airlied@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, "Semwal, Sumit" <sumit.semwal@ti.com>,
-        Robert Morell <rmorell@nvidia.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, sumit.semwal@linaro.org,
-        airlied@linux.ie, dri-devel@lists.freedesktop.org
+To: Hugh Dickins <hughd@google.com>
+CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: restore ss->id_lock to spinlock, using RCU for
+ next
+References: <alpine.LSU.2.00.1201182155480.7862@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1201182155480.7862@eggly.anvils>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-19 15:27:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-19 15:27:22,
+	Serialize complete at 2012-01-19 15:27:22
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 12:23 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> Em 18-01-2012 10:14, Arnd Bergmann escreveu:
->> On Wednesday 18 January 2012, Semwal, Sumit wrote:
->>> On Wed, Jan 18, 2012 at 5:38 AM, Robert Morell <rmorell@nvidia.com> wrote:
->>>> EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
->>>> issue, and not really an interface".  The dma-buf infrastructure is
->>>> explicitly intended as an interface between modules/drivers, so it
->>>> should use EXPORT_SYMBOL instead.
->>>
->>> + Konrad, Arnd, Mauro: there were strong objections on using
->>> EXPORT_SYMBOL in place of EXPORT_SYMBOL_GPL by all 3 of them; I
->>> suggest we first arrive at a consensus before merging this patch.
->>
->> We discussed this before. The reason for using EXPORT_SYMBOL_GPL here is
->> that the interface is low-level and that it's meant to be used by
->> subsystems that export user-level interface based on that and come
->> with their own device driver interface, such as V4L or DRM.
->>
->> While there is an eternal debate over whether there should or should
->> not be out of tree device drivers, I think there is very little to gain
->> by allowing dma_buf to be used by out of tree *subsystems*.
->> Further, a device driver that tries to use the interface but sits outside
->> of the regular subsystems is a bad technical choice and we should not
->> encourage those either.
->>
->> NAK
->
-> I fully agree with Arnd.
->
-> A bug on a driver using such low-level interface could cause side effects
-> at the wrong places. In order to handle such bugs, the developers and the
-> maintainers of both subsystems need to see the source code of the entire
-> pipeline, with is not possible if is there any non-GPL'd driver.
+Hugh Dickins wrote:
+> Commit c1e2ee2dc436 "memcg: replace ss->id_lock with a rwlock" has
+> now been seen to cause the unfair behavior we should have expected
+> from converting a spinlock to an rwlock: softlockup in cgroup_mkdir(),
+> whose get_new_cssid() is waiting for the wlock, while there are 19
+> tasks using the rlock in css_get_next() to get on with their memcg
+> workload (in an artificial test, admittedly).  Yet lib/idr.c was
+> made suitable for RCU way back.
+> 
+> 1. Revert that commit, restoring ss->id_lock to a spinlock.
+> 
+> 2. Make one small adjustment to idr_get_next(): take the height from
+> the top layer (stable under RCU) instead of from the root (unprotected
+> by RCU), as idr_find() does.
+> 
+> 3. Remove lock and unlock around css_get_next()'s call to idr_get_next():
+> memcg iterators (only users of css_get_next) already did rcu_read_lock(),
+> and comment demands that, but add a WARN_ON_ONCE to make sure of it.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-Just as an aside you shouldn't be debugging tainted kernels anyways.
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
 
-The thing is if we don't provide the interface that is known working
-for this, then we end up requiring the nvidia binary to jump through
-hoops which is more likely to make thing unstable.
-
-At that point I'd start to seriously consider whether drm needs
-dma-buf since one of the things I will get pressure to share buffers
-with is for optimus. The pressure isn't from nvidia, but from users
-and customers.
-
-I'd like to at least remove debuggabilty from the argument, that is
-why we have tainting, if you ignore taint + lsmod output then
-export_symbol won't matter.
-
-Dave.
-
->
-> NAK
->
-> Mauro.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> ---
+> 
+>  include/linux/cgroup.h |    2 +-
+>  kernel/cgroup.c        |   19 +++++++++----------
+>  lib/idr.c              |    4 ++--
+>  3 files changed, 12 insertions(+), 13 deletions(-)
