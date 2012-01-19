@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932688Ab2ASSHE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 13:07:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37656 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932195Ab2ASSHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 13:07:02 -0500
-Message-ID: <4F185BBC.1010607@redhat.com>
-Date: Thu, 19 Jan 2012 18:06:52 +0000
-From: "Bryn M. Reeves" <bmr@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S932693Ab2ASSIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 13:08:11 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34546 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab2ASSIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 13:08:07 -0500
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Dmitry D. Khlebnikov" <galaxy@openwall.com>
+Subject: Re: kernel 3.2 crashes too early on HP dc7700 and HP t5000 series
+Date: Thu, 19 Jan 2012 19:08:01 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <20120110114905.GC13535@openwall.com>
+In-Reply-To: <20120110114905.GC13535@openwall.com>
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-CC: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [dm-devel] dmsetup fails on latest kernel
-References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com> <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com> <CALLzPKYuKufGoUkXb9kPSn6buzVY0awzCL2F9onr1=NxysP3_w@mail.gmail.com>
-In-Reply-To: <CALLzPKYuKufGoUkXb9kPSn6buzVY0awzCL2F9onr1=NxysP3_w@mail.gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201201191908.01122.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 01/19/2012 04:10 PM, Kasatkin, Dmitry wrote:
-> It seems "semget" is missing from:
-> arch/x86/syscalls/syscall_32.tbl But it presents in:
-> arch/x86/syscalls/syscall_64.tbl
+On wtorek, 10 stycznia 2012 o 12:49:05 Dmitry D. Khlebnikov wrote:
+> Hello,
 > 
-> Is it a bug then?
+> I've tried to test the recently released 3.2 version on a couple of my
+> PCs (one is HP dc7700, an SFF PC running on Intel E6300, another is HP
+> t5710 thin client running Transmeta's Efficeon).  In both cases the
+> kernel crashed during the first seconds the control was given to it by
+> the bootloader.
+> 
+> I decided to investigate, so I've compiled a version using 'make
+> allnoconfig' - and it has crashed with the same symptoms: once the
+> kernel gets the execution control a screen is filled up with random colour
+> rubbish and after 15 seconds or so my LCD turns off into the power
+> saving state.  The machine looks to be locked up since it doesn't react
+> on the keyboard.
+> 
+> Well, I thought that an early printk's may help me to determine what's
+> going on so I recompiled the kernel with them + a couple of other
+> debugging options (like x86 bootup debugging code), but after I rebooted
+> into the newly compiled kernel I got the very same lock-up.
+> 
+> Both these PCs are running fine with 3.1.5 and I'm now downloading
+> 3.1.8 (just to confirm that 3.1 series are working on this hardware).
+> 
+> This message is just to notify the community that there is some issue
+> with 3.2 on old HP hardware.  I'll try to figure out what's wrong and if
+> I find anything I'll post a follow-up.
+> 
+> I'd appreciate any hints on how to debug this kind of crashes.  Right
+> now, I'm thinking re: adding some dirty debugging code into the kernel
+> initialisation just to figure out where it crashes.
+> 
+> Please include me into CC if you are going to reply to this message
+> since I'm not subscribed to LKML.
 
-Maybe; I noticed that too but it's also missing in the old x86
-unistd_32.h.
-
-I thought Linux only provided the ipc(2) call - glibc sources seem to
-confirm that (sysdeps/unix/sysv/linux/semget.c).
-
-sys_sem* and friends are present in include/asm-generic/unistd.h so
-maybe these values just need to be propagated to syscall_32.tbl?
-
-Actually there's a bunch of SysV IPC calls defined in syscall_64.tbl
-that are not present in syscall_32.tbl:
-
-$ egrep 'shm|sem|msg[a-z]' arch/x86/syscalls/syscall_32.tbl
-$ egrep 'shm|sem|msg[a-z]' arch/x86/syscalls/syscall_64.tbl
-29	64	shmget			sys_shmget
-30	64	shmat			sys_shmat
-31	64	shmctl			sys_shmctl
-64	64	semget			sys_semget
-65	64	semop			sys_semop
-66	64	semctl			sys_semctl
-67	64	shmdt			sys_shmdt
-68	64	msgget			sys_msgget
-69	64	msgsnd			sys_msgsnd
-70	64	msgrcv			sys_msgrcv
-71	64	msgctl			sys_msgctl
-220	64	semtimedop		sys_semtimedop
-
-But sys_ipc is there:
-
-$ grep sys_ipc arch/x86/syscalls/syscall_32.tbl
-117	i386	ipc			sys_ipc				sys32_ipc
-
-Regards,
-Bryn.
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk8YW7wACgkQ6YSQoMYUY97S0gCfTZOFMENOiVrm5jIprhcYkmDJ
-Pu4AnRUkUVwyZkgUG9DAcAfdmwR7kX2N
-=Bnwq
------END PGP SIGNATURE-----
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=42611
+for your bug report, please add your address to the CC list in there, thanks!
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
