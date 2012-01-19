@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab2ASOno (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 09:43:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	id S1754652Ab2ASOpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 09:45:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36483 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437Ab2ASOnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 09:43:43 -0500
-Message-ID: <4F182BF3.7050809@redhat.com>
-Date: Thu, 19 Jan 2012 09:42:59 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1751437Ab2ASOpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 09:45:06 -0500
+Message-ID: <4F182C55.7040305@zytor.com>
+Date: Thu, 19 Jan 2012 06:44:37 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, leonid.moiseichuk@nokia.com,
-        penberg@kernel.org, mel@csn.ul.ie, rientjes@google.com,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ronen Hod <rhod@redhat.com>
-Subject: Re: [RFC 2/3] vmscan hook
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org> <1326788038-29141-3-git-send-email-minchan@kernel.org> <20120117173932.1c058ba4.kamezawa.hiroyu@jp.fujitsu.com> <20120117091356.GA29736@barrios-desktop.redhat.com> <20120117190512.047d3a03.kamezawa.hiroyu@jp.fujitsu.com> <20120117230801.GA903@barrios-desktop.redhat.com> <20120118091824.0bde46f7.kamezawa.hiroyu@jp.fujitsu.com> <4F16D46D.5080000@redhat.com> <20120119112528.eda78467.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120119112528.eda78467.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jan Beulich <JBeulich@suse.com>
+CC: mingo@elte.hu, "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        tglx@linutronix.de, luca@luca-barbieri.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ix86: atomic64 assembly improvements
+References: <4F16E41B020000780006D7A5@nat28.tlf.novell.com> <4F16F505.8040809@zytor.com> <4F170679020000780006D85B@nat28.tlf.novell.com> <4F1705A8.301@zytor.com> <4F17EDE9020000780006D97A@nat28.tlf.novell.com>
+In-Reply-To: <4F17EDE9020000780006D97A@nat28.tlf.novell.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2012 09:25 PM, KAMEZAWA Hiroyuki wrote:
-> On Wed, 18 Jan 2012 09:17:17 -0500
-> Rik van Riel<riel@redhat.com>  wrote:
->
->> On 01/17/2012 07:18 PM, KAMEZAWA Hiroyuki wrote:
->>> On Wed, 18 Jan 2012 08:08:01 +0900
->>> Minchan Kim<minchan@kernel.org>   wrote:
->>>
->>>>>>> 2. can't we measure page-in/page-out distance by recording something ?
->>>>>>
->>>>>> I can't understand your point. What's relation does it with swapout prevent?
->>>>>>
->>>>>
->>>>> If distance between pageout ->   pagein is short, it means thrashing.
->>>>> For example, recoding the timestamp when the page(mapping, index) was
->>>>> paged-out, and check it at page-in.
->>>>
->>>> Our goal is prevent swapout. When we found thrashing, it's too late.
->>>
->>> If you want to prevent swap-out, don't swapon any. That's all.
->>> Then, you can check the number of FILE_CACHE and have threshold.
->>
->> I think you are getting hung up on a word here.
->>
->> As I understand it, the goal is to push out the point where
->> we start doing heavier swap IO, allowing us to overcommit
->> memory more heavily before things start really slowing down.
->>
->
-> Yes.
->
-> Hmm, considering that the issue is slow down,
->
-> time values as
->
-> - 'cpu time used for memory reclaim'
-> - 'latency of page allocation'
-> - 'application execution speed' ?
->
-> may be a better score to see rather than just seeing lru's stat.
+On 01/19/2012 01:18 AM, Jan Beulich wrote:
+> 
+> But the code is supposed to be correct even when caches are disabled
+> (in which case LOCK# will continue to be used even on modern CPUs),
+> and this case clearly isn't covered by the current implementation. It
+> may be a good idea to adjust the patch description accordingly, but I
+> see no reason to change the patch itself.
+> 
 
-I believe those all qualify as "too late".
+It doesn't have anything to do with caches on or off.
 
-We want to prevent things from becoming bad, for as long
-as we (easily) can.
+	-hpa
 
 -- 
-All rights reversed
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
