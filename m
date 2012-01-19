@@ -1,140 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929Ab2ASULz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 15:11:55 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:32541 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932745Ab2ASULx (ORCPT
+	id S932920Ab2ASUNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 15:13:07 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34867 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932745Ab2ASUND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 15:11:53 -0500
-X-Greylist: delayed 659 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jan 2012 15:11:53 EST
-Subject: [PATCH 03/10] hpsa: combine hpsa_scsi_detect and hpsa_register_scsi
-To: james.bottomley@hansenpartnership.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mikem@beardog.cce.hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
-        scott.teel@hp.com, akpm@linux-foundation.org, stable@kernel.org
-Date: Thu, 19 Jan 2012 14:00:53 -0600
-Message-ID: <20120119200053.17835.45127.stgit@beardog.cce.hp.com>
-In-Reply-To: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
-References: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Thu, 19 Jan 2012 15:13:03 -0500
+Date: Thu, 19 Jan 2012 12:12:34 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Simon Glass <sjg@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-serial@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] serial: Fix wakeup init logic to speed up startup
+Message-ID: <20120119201234.GG2373@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1327001336-28703-1-git-send-email-sjg@chromium.org>
+ <20120119194242.GE2373@linux.vnet.ibm.com>
+ <CAPnjgZ0kB8L6fFrcjq_0MSoh7KkL-051JHYptNQMaZNi89MavQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPnjgZ0kB8L6fFrcjq_0MSoh7KkL-051JHYptNQMaZNi89MavQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12011920-1780-0000-0000-000002785F55
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00106367; UDB=6.00026768; UTC=2012-01-19
+ 20:13:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Thu, Jan 19, 2012 at 11:51:47AM -0800, Simon Glass wrote:
+> Hi Paul,
+> 
+> On Thu, Jan 19, 2012 at 11:42 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Thu, Jan 19, 2012 at 11:28:56AM -0800, Simon Glass wrote:
+> >> The synchronize_rcu() call resulting from making every serial driver
+> >> wake-up capable (commit b3b708fa) slows boot down on my Tegra2x system
+> >> (with CONFIG_PREEMPT disabled).
+> >>
+> >> But this is avoidable since it is the device_set_wakeup_enable() and then
+> >> subsequence disable which causes the delay. We might as well just make
+> >> the device wakeup capable but not actually enable it for wakeup until
+> >> needed.
+> >>
+> >> Effectively the current code does this:
+> >>
+> >>       device_set_wakeup_capable(dev, 1);
+> >>       device_set_wakeup_enable(dev, 1);
+> >>       device_set_wakeup_enable(dev, 0);
+> >>
+> >> We can just drop the last two lines.
+> >>
+> >> Before this change my boot log says:
+> >> [    0.227062] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> >> [    0.702928] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
+> >>
+> >> after:
+> >> [    0.227264] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> >> [    0.227983] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
+> >>
+> >> for saving of 450ms.
+> >
+> > You have multiple CPUs running at this point, correct?  Before that
+> > second CPU starts up, synchronize_rcu() is a no-op.
+> 
+> Yes that's right, although I didn't get different behavior with 'nosmp'.
 
-hpsa_register_scsi just calls hpsa_scsi_detect.  Move
-the guts of hpsa_scsi_detect into hpsa_register_scsi and
-get rid of hpsa_scsi_detect.
+If you are running CONFIG_PREEMPT=y, that is expected behavior, though
+that grace period is a bit on the long side.  What is the value of HZ?
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/scsi/hpsa.c |   81 ++++++++++++++++++++++-----------------------------
- 1 files changed, 35 insertions(+), 46 deletions(-)
+On the other hand, if you are running CONFIG_PREEMPT=n on recent kernels,
+synchronize_rcu() will be a no-op any time that you are running with
+only a single CPU.
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index d70d59c..d191e3f 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1255,46 +1255,6 @@ static void complete_scsi_command(struct CommandList *cp)
- 	cmd_free(h, cp);
- }
- 
--static int hpsa_scsi_detect(struct ctlr_info *h)
--{
--	struct Scsi_Host *sh;
--	int error;
--
--	sh = scsi_host_alloc(&hpsa_driver_template, sizeof(h));
--	if (sh == NULL)
--		goto fail;
--
--	sh->io_port = 0;
--	sh->n_io_port = 0;
--	sh->this_id = -1;
--	sh->max_channel = 3;
--	sh->max_cmd_len = MAX_COMMAND_SIZE;
--	sh->max_lun = HPSA_MAX_LUN;
--	sh->max_id = HPSA_MAX_LUN;
--	sh->can_queue = h->nr_cmds;
--	sh->cmd_per_lun = h->nr_cmds;
--	sh->sg_tablesize = h->maxsgentries;
--	h->scsi_host = sh;
--	sh->hostdata[0] = (unsigned long) h;
--	sh->irq = h->intr[h->intr_mode];
--	sh->unique_id = sh->irq;
--	error = scsi_add_host(sh, &h->pdev->dev);
--	if (error)
--		goto fail_host_put;
--	scsi_scan_host(sh);
--	return 0;
--
-- fail_host_put:
--	dev_err(&h->pdev->dev, "hpsa_scsi_detect: scsi_add_host"
--		" failed for controller %d\n", h->ctlr);
--	scsi_host_put(sh);
--	return error;
-- fail:
--	dev_err(&h->pdev->dev, "hpsa_scsi_detect: scsi_host_alloc"
--		" failed for controller %d\n", h->ctlr);
--	return -ENOMEM;
--}
--
- static void hpsa_pci_unmap(struct pci_dev *pdev,
- 	struct CommandList *c, int sg_used, int data_direction)
- {
-@@ -2226,13 +2186,42 @@ static void hpsa_unregister_scsi(struct ctlr_info *h)
- 
- static int hpsa_register_scsi(struct ctlr_info *h)
- {
--	int rc;
-+	struct Scsi_Host *sh;
-+	int error;
- 
--	rc = hpsa_scsi_detect(h);
--	if (rc != 0)
--		dev_err(&h->pdev->dev, "hpsa_register_scsi: failed"
--			" hpsa_scsi_detect(), rc is %d\n", rc);
--	return rc;
-+	sh = scsi_host_alloc(&hpsa_driver_template, sizeof(h));
-+	if (sh == NULL)
-+		goto fail;
-+
-+	sh->io_port = 0;
-+	sh->n_io_port = 0;
-+	sh->this_id = -1;
-+	sh->max_channel = 3;
-+	sh->max_cmd_len = MAX_COMMAND_SIZE;
-+	sh->max_lun = HPSA_MAX_LUN;
-+	sh->max_id = HPSA_MAX_LUN;
-+	sh->can_queue = h->nr_cmds;
-+	sh->cmd_per_lun = h->nr_cmds;
-+	sh->sg_tablesize = h->maxsgentries;
-+	h->scsi_host = sh;
-+	sh->hostdata[0] = (unsigned long) h;
-+	sh->irq = h->intr[h->intr_mode];
-+	sh->unique_id = sh->irq;
-+	error = scsi_add_host(sh, &h->pdev->dev);
-+	if (error)
-+		goto fail_host_put;
-+	scsi_scan_host(sh);
-+	return 0;
-+
-+ fail_host_put:
-+	dev_err(&h->pdev->dev, "%s: scsi_add_host"
-+		" failed for controller %d\n", __func__, h->ctlr);
-+	scsi_host_put(sh);
-+	return error;
-+ fail:
-+	dev_err(&h->pdev->dev, "%s: scsi_host_alloc"
-+		" failed for controller %d\n", __func__, h->ctlr);
-+	return -ENOMEM;
- }
- 
- static int wait_for_device_to_become_ready(struct ctlr_info *h,
+The reason for this difference is that with CONFIG_PREEMPT=y, there might
+be a preempted RCU reader, and RCU must check for this condition, waiting
+for any such reader to complete.  In contrast, when CONFIG_PREEMPT=n on a
+single-CPU system, the fact that you are executing in synchronize_rcu()
+guarantees that there are no running RCU readers, so synchronize_rcu()
+need do nothing in that case.
+
+							Thanx, Paul
+
+> > The patch looks good to me, but then again, I do not consider myself
+> > qualified to have an opinion on the TTY layer.  ;-)
+> 
+> Thanks, me neither :-)
+> 
+> Regards,
+> Simon
+> 
+> >
+> >                                                        Thanx, Paul
+> >
+> >> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >> Signed-off-by: Simon Glass <sjg@chromium.org>
+> >> ---
+> >>  drivers/tty/serial/serial_core.c |    6 +++---
+> >>  1 files changed, 3 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> >> index c7bf31a..1305618 100644
+> >> --- a/drivers/tty/serial/serial_core.c
+> >> +++ b/drivers/tty/serial/serial_core.c
+> >> @@ -2348,11 +2348,11 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+> >>        */
+> >>       tty_dev = tty_register_device(drv->tty_driver, uport->line, uport->dev);
+> >>       if (likely(!IS_ERR(tty_dev))) {
+> >> -             device_init_wakeup(tty_dev, 1);
+> >> -             device_set_wakeup_enable(tty_dev, 0);
+> >> -     } else
+> >> +             device_set_wakeup_capable(tty_dev, 1);
+> >> +     } else {
+> >>               printk(KERN_ERR "Cannot register tty device on line %d\n",
+> >>                      uport->line);
+> >> +     }
+> >>
+> >>       /*
+> >>        * Ensure UPF_DEAD is not set.
+> >> --
+> >> 1.7.7.3
+> >>
+> >
+> 
 
