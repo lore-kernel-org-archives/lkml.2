@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab2ASQt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 11:49:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47895 "EHLO mx2.suse.de"
+	id S932248Ab2ASQun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 11:50:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5704 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755323Ab2ASQtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 11:49:24 -0500
-Date: Thu, 19 Jan 2012 16:49:19 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Sasha Levin <levinsasha928@gmail.com>, hannes <hannes@cmpxchg.org>,
-        mhocko@suse.cz, bsingharora@gmail.com, Dave Jones <davej@redhat.com>,
+	id S1753496Ab2ASQum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 11:50:42 -0500
+Date: Thu, 19 Jan 2012 17:44:13 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [BUG] kernel BUG at mm/memcontrol.c:1074!
-Message-ID: <20120119164919.GE3143@suse.de>
-References: <1326949826.5016.5.camel@lappy>
- <20120119122354.66eb9820.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1201181932040.2287@eggly.anvils>
- <20120119130353.0ca97435.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+	entry v6
+Message-ID: <20120119164413.GA16522@redhat.com>
+References: <20120116153231.GF2998@moon> <4F15EA53.8030405@gmail.com> <20120118135809.GA10105@redhat.com> <20120118142156.GR1968@moon> <20120118143631.GA11776@redhat.com> <20120118182344.GD2889@moon> <20120118190725.GE2889@moon> <20120119141051.GA9652@redhat.com> <20120119155529.GA14412@redhat.com> <20120119162718.GA32568@moon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120119162718.GA32568@moon>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 09:16:09PM -0800, Hugh Dickins wrote:
-> > 
-> > Another question is who pushes pages to LRU before setting pc->mem_cgroup..
-> > Anyway, I think we need to fix memcg to be LRU_IMMEDIATE aware.
-> 
-> I don't think so: Mel agreed that the patch could not go forward as is,
-> without an additional pageflag, and asked Andrew to drop it from mmotm
-> in mail on 29th December (I didn't notice an mm-commits message to say
-> akpm did drop it, and marc is blacked out in protest for today, so I
-> cannot check: but certainly akpm left it out of his push to Linus).
-> 
-> Oh, and Mel noticed another bug in it on the 30th, that the PageLRU
-> check in the function you quote above is wrong: see PATCH 11/11 thread.
-> 
+On 01/19, Cyrill Gorcunov wrote:
+>
+> On Thu, Jan 19, 2012 at 04:55:29PM +0100, Oleg Nesterov wrote:
+> >
+> > Thinking more... I am not sure, but do we really need
+> > proc_pid_children_iter at all??
+> >
+> > It is very possibly I missed something, but we can get both
+> > parent_pid and pid_ns from inode, right? so can't we just remember
+> > inode in seq->private?
+>
+> Good point. Letme check if we will need to call for ihold then...
+> (/me scratchig the head)
 
-Yes, that patch is broken. According to the mm-commits list, it was
-"withdrawn" on December 30th. I do not know why it is still in
-linux-next but AFAIK, it is not expected to end up in mainline. I do not
-have a fixed version of the patch at the moment.
+Why? file/inode can't go away, at least until this fd is closed.
 
--- 
-Mel Gorman
-SUSE Labs
+And just in case, get_pid(proc_pid(inode)) is not needed, even in v6/v7.
+I didn't realize this.
+
+Cyrill, I won't argue if you prefer to make this in a separate patch
+(of course, assuming you are agree) on top of v7, to me it looks
+"good enough".
+
+Oleg.
+
