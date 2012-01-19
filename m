@@ -1,133 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab2ASUNH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 15:13:07 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34867 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932745Ab2ASUND (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 15:13:03 -0500
-Date: Thu, 19 Jan 2012 12:12:34 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Simon Glass <sjg@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-serial@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] serial: Fix wakeup init logic to speed up startup
-Message-ID: <20120119201234.GG2373@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1327001336-28703-1-git-send-email-sjg@chromium.org>
- <20120119194242.GE2373@linux.vnet.ibm.com>
- <CAPnjgZ0kB8L6fFrcjq_0MSoh7KkL-051JHYptNQMaZNi89MavQ@mail.gmail.com>
+	id S932934Ab2ASUOG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 15:14:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37916 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932690Ab2ASUOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 15:14:02 -0500
+Message-ID: <4F187980.2000306@zytor.com>
+Date: Thu, 19 Jan 2012 12:13:52 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPnjgZ0kB8L6fFrcjq_0MSoh7KkL-051JHYptNQMaZNi89MavQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12011920-1780-0000-0000-000002785F55
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00106367; UDB=6.00026768; UTC=2012-01-19
- 20:13:01
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: dmsetup fails on latest kernel
+References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com> <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
+In-Reply-To: <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 11:51:47AM -0800, Simon Glass wrote:
-> Hi Paul,
-> 
-> On Thu, Jan 19, 2012 at 11:42 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Jan 19, 2012 at 11:28:56AM -0800, Simon Glass wrote:
-> >> The synchronize_rcu() call resulting from making every serial driver
-> >> wake-up capable (commit b3b708fa) slows boot down on my Tegra2x system
-> >> (with CONFIG_PREEMPT disabled).
-> >>
-> >> But this is avoidable since it is the device_set_wakeup_enable() and then
-> >> subsequence disable which causes the delay. We might as well just make
-> >> the device wakeup capable but not actually enable it for wakeup until
-> >> needed.
-> >>
-> >> Effectively the current code does this:
-> >>
-> >>       device_set_wakeup_capable(dev, 1);
-> >>       device_set_wakeup_enable(dev, 1);
-> >>       device_set_wakeup_enable(dev, 0);
-> >>
-> >> We can just drop the last two lines.
-> >>
-> >> Before this change my boot log says:
-> >> [    0.227062] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-> >> [    0.702928] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
-> >>
-> >> after:
-> >> [    0.227264] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-> >> [    0.227983] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
-> >>
-> >> for saving of 450ms.
-> >
-> > You have multiple CPUs running at this point, correct?  Before that
-> > second CPU starts up, synchronize_rcu() is a no-op.
-> 
-> Yes that's right, although I didn't get different behavior with 'nosmp'.
+Could you please send me:
 
-If you are running CONFIG_PREEMPT=y, that is expected behavior, though
-that grace period is a bit on the long side.  What is the value of HZ?
+a) your full strace;
+b) arch/x86/kernel/syscall_32.o from your build?
 
-On the other hand, if you are running CONFIG_PREEMPT=n on recent kernels,
-synchronize_rcu() will be a no-op any time that you are running with
-only a single CPU.
+	-hpa
 
-The reason for this difference is that with CONFIG_PREEMPT=y, there might
-be a preempted RCU reader, and RCU must check for this condition, waiting
-for any such reader to complete.  In contrast, when CONFIG_PREEMPT=n on a
-single-CPU system, the fact that you are executing in synchronize_rcu()
-guarantees that there are no running RCU readers, so synchronize_rcu()
-need do nothing in that case.
+On 01/19/2012 07:56 AM, Kasatkin, Dmitry wrote:
+> On Thu, Jan 19, 2012 at 3:02 PM, Kasatkin, Dmitry
+> <dmitry.kasatkin@intel.com> wrote:
+>> Hi,
+>>
+>> (subject added)
+>>
+>> I rebased on the stop of latest mainline tree and now dmsetup fails...
+>> It says: "Failed to create notification semaphore: Function not implemented".
+>> I run strace and saw that dmsetup uses "semget" which returns -ENOSYS...
+>>
+>> It works on
+>> 122804ecb59493fbb4d31b3ba9ac59faaf45276f
+>>
+>> but does not work on
+>> ccb19d263fd1c9e34948e2158c53eacbff369344
+>>
+>> Any ideas?
+>>
+>> - Dmitry
+> 
+> Hi,
+> 
+> I have bisected the problem...
+> 
+> It is introduced by this commit:
+> 
+> 303395ac3bf3e2cb488435537d416bc840438fcb is the first bad commit
+> commit 303395ac3bf3e2cb488435537d416bc840438fcb
+> Author: H. Peter Anvin <hpa@linux.intel.com>
+> Date:   Fri Nov 11 16:07:41 2011 -0800
+> 
+>     x86: Generate system call tables and unistd_*.h from tables
+> 
+> 
+> It came from:  Merge branch 'x86-syscall-for-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> Was on 17.01.2012...
+> 
+> I have 32 bit VM and I have SYSVIPC enabled in the configuration...
+> 
+> - Dmitry
 
-							Thanx, Paul
 
-> > The patch looks good to me, but then again, I do not consider myself
-> > qualified to have an opinion on the TTY layer.  ;-)
-> 
-> Thanks, me neither :-)
-> 
-> Regards,
-> Simon
-> 
-> >
-> >                                                        Thanx, Paul
-> >
-> >> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >> Signed-off-by: Simon Glass <sjg@chromium.org>
-> >> ---
-> >>  drivers/tty/serial/serial_core.c |    6 +++---
-> >>  1 files changed, 3 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> >> index c7bf31a..1305618 100644
-> >> --- a/drivers/tty/serial/serial_core.c
-> >> +++ b/drivers/tty/serial/serial_core.c
-> >> @@ -2348,11 +2348,11 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
-> >>        */
-> >>       tty_dev = tty_register_device(drv->tty_driver, uport->line, uport->dev);
-> >>       if (likely(!IS_ERR(tty_dev))) {
-> >> -             device_init_wakeup(tty_dev, 1);
-> >> -             device_set_wakeup_enable(tty_dev, 0);
-> >> -     } else
-> >> +             device_set_wakeup_capable(tty_dev, 1);
-> >> +     } else {
-> >>               printk(KERN_ERR "Cannot register tty device on line %d\n",
-> >>                      uport->line);
-> >> +     }
-> >>
-> >>       /*
-> >>        * Ensure UPF_DEAD is not set.
-> >> --
-> >> 1.7.7.3
-> >>
-> >
-> 
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
