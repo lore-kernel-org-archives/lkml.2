@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab2ASUBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 15:01:20 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:30640 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927Ab2ASUBQ (ORCPT
+	id S933009Ab2ASUB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 15:01:29 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:34785 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932997Ab2ASUB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 15:01:16 -0500
-Subject: [PATCH 07/10] hpsa: refactor hpsa_figure_bus_target_lun
+	Thu, 19 Jan 2012 15:01:26 -0500
+Subject: [PATCH 09/10] hpsa: improve naming on external target device functions
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         mikem@beardog.cce.hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
         scott.teel@hp.com, akpm@linux-foundation.org, stable@kernel.org
-Date: Thu, 19 Jan 2012 14:01:14 -0600
-Message-ID: <20120119200114.17835.91593.stgit@beardog.cce.hp.com>
+Date: Thu, 19 Jan 2012 14:01:25 -0600
+Message-ID: <20120119200125.17835.4760.stgit@beardog.cce.hp.com>
 In-Reply-To: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
 References: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -25,150 +25,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+From: Scott Teel <scott.teel@hp.com>
 
-It should call hpsa_set_bus_target_lun rather
-than individually setting bus, target and lun.
+Reduce confusion and inaccuracy caused by dated naming of vars and functions
+referring to external target devices.
 
+CURRENT NAMING:                PROPOSED NAMING:
+
+"MSA2xxx devices"              "external target devices"
+msa2xxx_model                  ext_target_model
+is_msa2xxx                     is_ext_target
+add_msa2xxx_enclosure          add_ext_target_dev
+nmsa2xxx_enclosures            n_ext_target_devs
+
+Signed-off-by: Scott Teel <scott.teel@hp.com>
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa.c |   68 +++++++++++++++++++++++----------------------------
- 1 files changed, 30 insertions(+), 38 deletions(-)
+ drivers/scsi/hpsa.c |   43 ++++++++++++++++++++++---------------------
+ 1 files changed, 22 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index c52bc76..ea9b685 100644
+index 39ac161..bf75e4c 100644
 --- a/drivers/scsi/hpsa.c
 +++ b/drivers/scsi/hpsa.c
-@@ -1628,35 +1628,30 @@ static int is_msa2xxx(struct ctlr_info *h, struct hpsa_scsi_dev_t *device)
-  * in hpsa_find_target_lun, called by hpsa_scsi_add_entry.)
-  */
- static void figure_bus_target_lun(struct ctlr_info *h,
--	u8 *lunaddrbytes, int *bus, int *target, int *lun,
--	struct hpsa_scsi_dev_t *device)
--{
--	u32 lunid;
--
--	if (is_logical_dev_addr_mode(lunaddrbytes)) {
--		/* logical device */
--		lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
--		if (is_msa2xxx(h, device)) {
--			/* msa2xxx way, put logicals on bus 1
--			 * and match target/lun numbers box
--			 * reports.
--			 */
--			*bus = 1;
--			*target = (lunid >> 16) & 0x3fff;
--			*lun = lunid & 0x00ff;
--		} else {
--			*bus = 0;
--			*target = 0;
--			*lun = (lunid & 0x3fff);
--		}
--	} else {
-+	u8 *lunaddrbytes, struct hpsa_scsi_dev_t *device)
-+{
-+	u32 lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
-+
-+	if (!is_logical_dev_addr_mode(lunaddrbytes)) {
-+		/* physical device, target and lun filled in later */
- 		if (is_hba_lunid(lunaddrbytes))
--			*bus = 3; /* controller */
-+			hpsa_set_bus_target_lun(device, 3, 0, lunid & 0x3fff);
- 		else
--			*bus = 2; /* physical device */
--		*target = -1;
--		*lun = -1; /* we will fill these in later. */
-+			/* defer target, lun assignment for physical devices */
-+			hpsa_set_bus_target_lun(device, 2, -1, -1);
-+		return;
-+	}
-+	/* It's a logical device */
-+	if (is_msa2xxx(h, device)) {
-+		/* msa2xxx way, put logicals on bus 1
-+		 * and match target/lun numbers box
-+		 * reports, other smart array, bus 0, target 0, match lunid
-+		 */
-+		hpsa_set_bus_target_lun(device,
-+			1, (lunid >> 16) & 0x3fff, lunid & 0x00ff);
-+		return;
- 	}
-+	hpsa_set_bus_target_lun(device, 0, 0, lunid & 0x3fff);
- }
- 
- /*
-@@ -1673,12 +1668,11 @@ static void figure_bus_target_lun(struct ctlr_info *h,
- static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
- 	struct hpsa_scsi_dev_t *tmpdevice,
- 	struct hpsa_scsi_dev_t *this_device, u8 *lunaddrbytes,
--	int bus, int target, int lun, unsigned long lunzerobits[],
--	int *nmsa2xxx_enclosures)
-+	unsigned long lunzerobits[], int *nmsa2xxx_enclosures)
- {
- 	unsigned char scsi3addr[8];
- 
--	if (test_bit(target, lunzerobits))
-+	if (test_bit(tmpdevice->target, lunzerobits))
- 		return 0; /* There is already a lun 0 on this target. */
- 
- 	if (!is_logical_dev_addr_mode(lunaddrbytes))
-@@ -1687,11 +1681,11 @@ static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
- 	if (!is_msa2xxx(h, tmpdevice))
- 		return 0; /* It's only the MSA2xxx that have this problem. */
- 
--	if (lun == 0) /* if lun is 0, then obviously we have a lun 0. */
-+	if (tmpdevice->lun == 0) /* if lun is 0, then we have a lun 0. */
- 		return 0;
- 
- 	memset(scsi3addr, 0, 8);
--	scsi3addr[3] = target;
-+	scsi3addr[3] = tmpdevice->target;
- 	if (is_hba_lunid(scsi3addr))
- 		return 0; /* Don't add the RAID controller here. */
- 
-@@ -1708,8 +1702,9 @@ static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
- 	if (hpsa_update_device_info(h, scsi3addr, this_device, NULL))
- 		return 0;
- 	(*nmsa2xxx_enclosures)++;
--	hpsa_set_bus_target_lun(this_device, bus, target, 0);
--	set_bit(target, lunzerobits);
-+	hpsa_set_bus_target_lun(this_device,
-+				tmpdevice->bus, tmpdevice->target, 0);
-+	set_bit(tmpdevice->target, lunzerobits);
+@@ -214,7 +214,8 @@ static int check_for_unit_attention(struct ctlr_info *h,
+ 		dev_warn(&h->pdev->dev, HPSA "%d: report LUN data "
+ 			"changed, action required\n", h->ctlr);
+ 	/*
+-	 * Note: this REPORT_LUNS_CHANGED condition only occurs on the MSA2012.
++	 * Note: this REPORT_LUNS_CHANGED condition only occurs on the external
++	 * target (array) devices.
+ 	 */
+ 		break;
+ 	case POWER_OR_RESET:
+@@ -1600,7 +1601,7 @@ bail_out:
  	return 1;
  }
  
-@@ -1804,7 +1799,6 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+-static unsigned char *msa2xxx_model[] = {
++static unsigned char *ext_target_model[] = {
+ 	"MSA2012",
+ 	"MSA2024",
+ 	"MSA2312",
+@@ -1609,19 +1610,19 @@ static unsigned char *msa2xxx_model[] = {
+ 	NULL,
+ };
+ 
+-static int is_msa2xxx(struct ctlr_info *h, struct hpsa_scsi_dev_t *device)
++static int is_ext_target(struct ctlr_info *h, struct hpsa_scsi_dev_t *device)
+ {
+ 	int i;
+ 
+-	for (i = 0; msa2xxx_model[i]; i++)
+-		if (strncmp(device->model, msa2xxx_model[i],
+-			strlen(msa2xxx_model[i])) == 0)
++	for (i = 0; ext_target_model[i]; i++)
++		if (strncmp(device->model, ext_target_model[i],
++			strlen(ext_target_model[i])) == 0)
+ 			return 1;
+ 	return 0;
+ }
+ 
+ /* Helper function to assign bus, target, lun mapping of devices.
+- * Puts non-msa2xxx logical volumes on bus 0, msa2xxx logical
++ * Puts non-external target logical volumes on bus 0, external target logical
+  * volumes on bus 1, physical devices on bus 2. and the hba on bus 3.
+  * Logical drive target and lun are assigned at this time, but
+  * physical device lun and target assignment are deferred (assigned
+@@ -1642,8 +1643,8 @@ static void figure_bus_target_lun(struct ctlr_info *h,
+ 		return;
+ 	}
+ 	/* It's a logical device */
+-	if (is_msa2xxx(h, device)) {
+-		/* msa2xxx way, put logicals on bus 1
++	if (is_ext_target(h, device)) {
++		/* external target way, put logicals on bus 1
+ 		 * and match target/lun numbers box
+ 		 * reports, other smart array, bus 0, target 0, match lunid
+ 		 */
+@@ -1656,7 +1657,7 @@ static void figure_bus_target_lun(struct ctlr_info *h,
+ 
+ /*
+  * If there is no lun 0 on a target, linux won't find any devices.
+- * For the MSA2xxx boxes, we have to manually detect the enclosure
++ * For the external targets (arrays), we have to manually detect the enclosure
+  * which is at lun zero, as CCISS_REPORT_PHYSICAL_LUNS doesn't report
+  * it for some reason.  *tmpdevice is the target we're adding,
+  * this_device is a pointer into the current element of currentsd[]
+@@ -1665,10 +1666,10 @@ static void figure_bus_target_lun(struct ctlr_info *h,
+  * lun 0 assigned.
+  * Returns 1 if an enclosure was added, 0 if not.
+  */
+-static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
++static int add_ext_target_dev(struct ctlr_info *h,
+ 	struct hpsa_scsi_dev_t *tmpdevice,
+ 	struct hpsa_scsi_dev_t *this_device, u8 *lunaddrbytes,
+-	unsigned long lunzerobits[], int *nmsa2xxx_enclosures)
++	unsigned long lunzerobits[], int *n_ext_target_devs)
+ {
+ 	unsigned char scsi3addr[8];
+ 
+@@ -1678,8 +1679,8 @@ static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
+ 	if (!is_logical_dev_addr_mode(lunaddrbytes))
+ 		return 0; /* It's the logical targets that may lack lun 0. */
+ 
+-	if (!is_msa2xxx(h, tmpdevice))
+-		return 0; /* It's only the MSA2xxx that have this problem. */
++	if (!is_ext_target(h, tmpdevice))
++		return 0; /* Only external target devices have this problem. */
+ 
+ 	if (tmpdevice->lun == 0) /* if lun is 0, then we have a lun 0. */
+ 		return 0;
+@@ -1692,7 +1693,7 @@ static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
+ 	if (is_scsi_rev_5(h))
+ 		return 0; /* p1210m doesn't need to do this. */
+ 
+-	if (*nmsa2xxx_enclosures >= MAX_EXT_TARGETS) {
++	if (*n_ext_target_devs >= MAX_EXT_TARGETS) {
+ 		dev_warn(&h->pdev->dev, "Maximum number of external "
+ 			"target devices exceeded.  Check your hardware "
+ 			"configuration.");
+@@ -1701,7 +1702,7 @@ static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
+ 
+ 	if (hpsa_update_device_info(h, scsi3addr, this_device, NULL))
+ 		return 0;
+-	(*nmsa2xxx_enclosures)++;
++	(*n_ext_target_devs)++;
+ 	hpsa_set_bus_target_lun(this_device,
+ 				tmpdevice->bus, tmpdevice->target, 0);
+ 	set_bit(tmpdevice->target, lunzerobits);
+@@ -1798,7 +1799,7 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+ 	struct hpsa_scsi_dev_t **currentsd, *this_device, *tmpdevice;
  	int ncurrent = 0;
  	int reportlunsize = sizeof(*physdev_list) + HPSA_MAX_PHYS_LUN * 8;
- 	int i, nmsa2xxx_enclosures, ndevs_to_allocate;
--	int bus, target, lun;
+-	int i, nmsa2xxx_enclosures, ndevs_to_allocate;
++	int i, n_ext_target_devs, ndevs_to_allocate;
  	int raid_ctlr_position;
- 	DECLARE_BITMAP(lunzerobits, HPSA_MAX_TARGETS_PER_CTLR);
+ 	DECLARE_BITMAP(lunzerobits, MAX_EXT_TARGETS);
  
-@@ -1869,8 +1863,7 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
- 		if (hpsa_update_device_info(h, lunaddrbytes, tmpdevice,
- 							&is_OBDR))
- 			continue; /* skip it if we can't talk to it. */
--		figure_bus_target_lun(h, lunaddrbytes, &bus, &target, &lun,
--			tmpdevice);
-+		figure_bus_target_lun(h, lunaddrbytes, tmpdevice);
+@@ -1847,7 +1848,7 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+ 		raid_ctlr_position = nphysicals + nlogicals;
+ 
+ 	/* adjust our table of devices */
+-	nmsa2xxx_enclosures = 0;
++	n_ext_target_devs = 0;
+ 	for (i = 0; i < nphysicals + nlogicals + 1; i++) {
+ 		u8 *lunaddrbytes, is_OBDR = 0;
+ 
+@@ -1867,15 +1868,15 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
  		this_device = currentsd[ncurrent];
  
  		/*
-@@ -1881,14 +1874,13 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+-		 * For the msa2xxx boxes, we have to insert a LUN 0 which
++		 * For external target devices, we have to insert a LUN 0 which
+ 		 * doesn't show up in CCISS_REPORT_PHYSICAL data, but there
+ 		 * is nonetheless an enclosure device there.  We have to
+ 		 * present that otherwise linux won't find anything if
  		 * there is no lun 0.
  		 */
- 		if (add_msa2xxx_enclosure_device(h, tmpdevice, this_device,
--				lunaddrbytes, bus, target, lun, lunzerobits,
-+				lunaddrbytes, lunzerobits,
- 				&nmsa2xxx_enclosures)) {
+-		if (add_msa2xxx_enclosure_device(h, tmpdevice, this_device,
++		if (add_ext_target_dev(h, tmpdevice, this_device,
+ 				lunaddrbytes, lunzerobits,
+-				&nmsa2xxx_enclosures)) {
++				&n_ext_target_devs)) {
  			ncurrent++;
  			this_device = currentsd[ncurrent];
  		}
- 
- 		*this_device = *tmpdevice;
--		hpsa_set_bus_target_lun(this_device, bus, target, lun);
- 
- 		switch (this_device->devtype) {
- 		case TYPE_ROM:
 
