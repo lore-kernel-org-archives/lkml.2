@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab2ASTSj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 14:18:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37717 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932485Ab2ASTSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 14:18:36 -0500
-Message-ID: <4F186C62.6000606@zytor.com>
-Date: Thu, 19 Jan 2012 11:17:54 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S932763Ab2ASTWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 14:22:17 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:55658 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932485Ab2ASTWN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 14:22:13 -0500
 MIME-Version: 1.0
-To: Michael D Labriola <mlabriol@gdeb.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org,
-        michael.d.labriola@gmail.com, Ingo Molnar <mingo@elte.hu>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, support@versalogic.com,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-Subject: Re: [PATCH] x86, reboot: skip DMI checks if reboot set by user
-References: <OF70B406E9.8D4A6789-ON85257988.0052C104-85257988.0053DE1E@gdeb.com>	<20120117195841.48fe8236@pyramind.ukuu.org.uk> <OFD4BB6876.6D903346-ON8525798A.00550E62-8525798A.005562A3@gdeb.com> <20120119154504.710e202e@pyramind.ukuu.org.uk> <OF8642E997.5ED041E1-ON8525798A.0056983A-8525798A.0056E05B@LocalDomain> <OF2B909250.6078896E-ON8525798A.0058FF49-8525798A.0061AEA1@gdeb.com> <4F18584F.7060603@zytor.com> <OFE1B368BB.B6249713-ON8525798A.00692513-8525798A.0069B44E@gdeb.com>
-In-Reply-To: <OFE1B368BB.B6249713-ON8525798A.00692513-8525798A.0069B44E@gdeb.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk>
+References: <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+ <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+ <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+ <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+ <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+ <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <CAObL_7FsNQaPQg-3=AO9RuMNZZsRgDSJYPhPevDKERws9vQJWg@mail.gmail.com> <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 19 Jan 2012 11:21:50 -0800
+X-Google-Sender-Auth: lq8OCBjZvH4k6-YndPbUoOuF0-Q
+Message-ID: <CA+55aFyZ-=4J1hVSAJiBiZKgpvuh-t54KPjLijRmU=cBtdi3-w@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Andrew Lutomirski <luto@mit.edu>, Indan Zupancic <indan@nul.nu>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 11:14 AM, Michael D Labriola wrote:
->>
->> Yes, and such a patch would be appreciated.
->>
->> The reason it is as it is dates back to before the 32-64 bit 
->> unification, as far as I know.
->>
->> (BIOS reboot is currently not supported on 64 bits, mainly.)
-> 
-> Well, that does complicate it a bit.  I'll gin something up and see what
-> you think.  I guess it will involve having an #ifdef CONFIG_X86_32 block
-> inside a single dmi_table structure for the BIOS quirks.
-> 
-> Actually, set_kbd_reboot is inside the current X86_32 only block, along
-> with the one DMI callback that uses it.  Is this correct?
-> 
+On Thu, Jan 19, 2012 at 8:01 AM, Jamie Lokier <jamie@shareable.org> wrote:
+> Andrew Lutomirski wrote:
+>> It's reasonable, obvious, and even more wrong than it appears.  On
+>> Xen, there's an extra 64-bit GDT entry, and it gets used by default.
+>> (I got bitten by this in some iteration of the vsyscall emulation
+>> patches -- see user_64bit_mode for the correct and
+>> unusable-from-user-mode way to do this.)
+>
+> Here it is:
+>
+>        static inline bool user_64bit_mode(struct pt_regs *regs)
 
-Probably not, although I suspect most of the users of that are 32-bit
-only systems.
+This is pointless, even if it worked, which it clearly doesn't on Xen
+(or other random situations).
 
-	-hpa
+Why would you care?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+The issue is *not* whether somebody is running in 32-bit mode or 64-bit mode.
 
+The problem is the system call itself, and that can be 32-bit or
+64-bit independently of the execution mode. So knowing the user-mode
+mode is simply not relevant.
+
+In the kernel, we know this with the TS_COMPAT flag - exactly because
+it's impossible to tell from any actual CPU state. So *that* is the
+flag you need to figure out, and currently the kernel doesn't export
+it any way (but my suggested patch would export it in the high bits of
+rflags).
+
+So looking at CS isn't *ever* going to help.
+
+                 Linus
