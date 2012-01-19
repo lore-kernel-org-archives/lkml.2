@@ -1,1082 +1,2507 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab2ASWnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 17:43:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38481 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756597Ab2ASWnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 17:43:09 -0500
-Date: Thu, 19 Jan 2012 14:42:38 -0800
-Message-Id: <201201192242.q0JMgcL7003653@tazenda.hos.anvin.org>
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL CORRECTED] x86 fixes for v3.3-rc1
-Cc: <stable@kernel.org>, Andy Lutomirski <luto@mit.edu>,
-        Anton Vorontsov <cbouatmailru@gmail.com>, Cliff Wickman <cpw@sgi.com>,
-        Dan Carpenter <error27@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ulrich Drepper <drepper@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
+	id S932225Ab2ASWo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 17:44:57 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:58243 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754774Ab2ASWoy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 17:44:54 -0500
+Message-ID: <4F18AA99.8010803@xenotime.net>
+Date: Thu, 19 Jan 2012 15:43:21 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Netdev <netdev@vger.kernel.org>, Christian Benvenuti <benve@cisco.com>,
+        Roopa Prabhu <roprabhu@cisco.com>, David Wang <dwang2@cisco.com>
+Subject: Re: linux-next: Tree for Jan 19 (cisco/enic)
+References: <20120119125932.a4c67005cf6a0938558e8b36@canb.auug.org.au>
+In-Reply-To: <20120119125932.a4c67005cf6a0938558e8b36@canb.auug.org.au>
+Content-Type: multipart/mixed;
+ boundary="------------010801080302090202000805"
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This is a multi-part message in MIME format.
+--------------010801080302090202000805
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-The following changes since commit 90a4c0f51e8e44111a926be6f4c87af3938a79c3:
+On 01/18/2012 05:59 PM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20120118:
 
-  uml: fix compile for x86-64 (2012-01-18 19:26:11 -0800)
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+on x86_64:
 
-The head of this tree is 4f2f81a5621de47d42476d0b929be2e0d565df84.
+/next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c: In function 'enic_probe':
+/next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c:2387:16: error: 'struct enic' has no member named 'num_vfs'
+/next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c:2387:32: error: 'struct enic' has no member named 'num_vfs'
 
-Anton Vorontsov (1):
-      x86: Get rid of dubious one-bit signed bitfield
 
-Cliff Wickman (6):
-      x86/UV2: Fix new UV2 hardware by using native UV2 broadcast mode
-      x86/UV2: Fix BAU destination timeout initialization
-      x86/UV2: Work around BAU bug
-      x86/UV2: Remove stale no-resources test for UV2 BAU
-      x86/UV2: Ack BAU interrupt earlier
-      x86/UV2: Add accounting for BAU strong nacks
+Full randconfig file is attached.
 
-H. Peter Anvin (2):
-      Merge remote-tracking branch 'linus/master' into x86/urgent
-      x86, syscall: Need __ARCH_WANT_SYS_IPC for 32 bits
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
 
-Linus Torvalds (1):
-      x86, tsc: Fix SMI induced variation in quick_pit_calibrate()
+--------------010801080302090202000805
+Content-Type: text/plain;
+ name="config-r4025"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="config-r4025"
 
-Randy Dunlap (1):
-      x86/kconfig: Move the ZONE_DMA entry under a menu
+#
+# Automatically generated file; DO NOT EDIT.
+# Linux/x86_64 3.2.0 Kernel Configuration
+#
+CONFIG_64BIT=y
+# CONFIG_X86_32 is not set
+CONFIG_X86_64=y
+CONFIG_X86=y
+CONFIG_INSTRUCTION_DECODER=y
+CONFIG_OUTPUT_FORMAT="elf64-x86-64"
+CONFIG_ARCH_DEFCONFIG="arch/x86/configs/x86_64_defconfig"
+CONFIG_GENERIC_CMOS_UPDATE=y
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_ARCH_CLOCKSOURCE_DATA=y
+CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_MMU=y
+CONFIG_ZONE_DMA=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_NEED_SG_DMA_LENGTH=y
+# CONFIG_GENERIC_ISA_DMA is not set
+CONFIG_GENERIC_HWEIGHT=y
+# CONFIG_ARCH_MAY_HAVE_PC_FDC is not set
+# CONFIG_RWSEM_GENERIC_SPINLOCK is not set
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_GENERIC_TIME_VSYSCALL=y
+CONFIG_ARCH_HAS_CPU_RELAX=y
+CONFIG_ARCH_HAS_DEFAULT_IDLE=y
+CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+CONFIG_ZONE_DMA32=y
+CONFIG_AUDIT_ARCH=y
+CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_HAVE_INTEL_TXT=y
+CONFIG_X86_64_SMP=y
+CONFIG_X86_HT=y
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11"
+# CONFIG_KTIME_SCALAR is not set
+CONFIG_ARCH_CPU_PROBE_RELEASE=y
+CONFIG_ARCH_SUPPORTS_UPROBES=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_HAVE_IRQ_WORK=y
+CONFIG_IRQ_WORK=y
 
-Ulrich Drepper (1):
-      x86, opcode: ANDN and Group 17 in x86-opcode-map.txt
+#
+# General setup
+#
+CONFIG_EXPERIMENTAL=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+CONFIG_LOCALVERSION=""
+# CONFIG_LOCALVERSION_AUTO is not set
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_BZIP2=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_XZ=y
+CONFIG_HAVE_KERNEL_LZO=y
+# CONFIG_KERNEL_GZIP is not set
+CONFIG_KERNEL_BZIP2=y
+# CONFIG_KERNEL_LZMA is not set
+# CONFIG_KERNEL_XZ is not set
+# CONFIG_KERNEL_LZO is not set
+CONFIG_DEFAULT_HOSTNAME="(none)"
+CONFIG_SWAP=y
+# CONFIG_SYSVIPC is not set
+CONFIG_POSIX_MQUEUE=y
+CONFIG_POSIX_MQUEUE_SYSCTL=y
+CONFIG_BSD_PROCESS_ACCT=y
+# CONFIG_BSD_PROCESS_ACCT_V3 is not set
+CONFIG_FHANDLE=y
+# CONFIG_TASKSTATS is not set
+CONFIG_AUDIT=y
+CONFIG_AUDITSYSCALL=y
+CONFIG_AUDIT_WATCH=y
+CONFIG_AUDIT_TREE=y
+# CONFIG_AUDIT_LOGINUID_IMMUTABLE is not set
+CONFIG_HAVE_GENERIC_HARDIRQS=y
 
- arch/x86/Kconfig                 |   20 +-
- arch/x86/include/asm/unistd.h    |    1 +
- arch/x86/include/asm/uv/uv_bau.h |  107 ++++++++++-
- arch/x86/kernel/tsc.c            |   14 +-
- arch/x86/lib/x86-opcode-map.txt  |    4 +-
- arch/x86/platform/uv/tlb_uv.c    |  388 +++++++++++++++++++++++++++++++-------
- 6 files changed, 434 insertions(+), 100 deletions(-)
+#
+# IRQ subsystem
+#
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_HAVE_SPARSE_IRQ=y
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_GENERIC_PENDING_IRQ=y
+CONFIG_IRQ_FORCED_THREADING=y
+CONFIG_SPARSE_IRQ=y
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6c14ecd..864cc6e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -125,16 +125,6 @@ config HAVE_LATENCYTOP_SUPPORT
- config MMU
- 	def_bool y
- 
--config ZONE_DMA
--	bool "DMA memory allocation support" if EXPERT
--	default y
--	help
--	  DMA memory allocation support allows devices with less than 32-bit
--	  addressing to allocate within the first 16MB of address space.
--	  Disable if no such devices will be used.
--
--	  If unsure, say Y.
--
- config SBUS
- 	bool
- 
-@@ -255,6 +245,16 @@ source "kernel/Kconfig.freezer"
- 
- menu "Processor type and features"
- 
-+config ZONE_DMA
-+	bool "DMA memory allocation support" if EXPERT
-+	default y
-+	help
-+	  DMA memory allocation support allows devices with less than 32-bit
-+	  addressing to allocate within the first 16MB of address space.
-+	  Disable if no such devices will be used.
-+
-+	  If unsure, say Y.
-+
- source "kernel/time/Kconfig"
- 
- config SMP
-diff --git a/arch/x86/include/asm/unistd.h b/arch/x86/include/asm/unistd.h
-index b4a3db7..21f77b8 100644
---- a/arch/x86/include/asm/unistd.h
-+++ b/arch/x86/include/asm/unistd.h
-@@ -7,6 +7,7 @@
- #  include <asm/unistd_32.h>
- #  define __ARCH_WANT_IPC_PARSE_VERSION
- #  define __ARCH_WANT_STAT64
-+#  define __ARCH_WANT_SYS_IPC
- #  define __ARCH_WANT_SYS_OLD_MMAP
- #  define __ARCH_WANT_SYS_OLD_SELECT
- 
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index 8e862aa..becf47b 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -65,7 +65,7 @@
-  * UV2: Bit 19 selects between
-  *  (0): 10 microsecond timebase and
-  *  (1): 80 microseconds
-- *  we're using 655us, similar to UV1: 65 units of 10us
-+ *  we're using 560us, similar to UV1: 65 units of 10us
-  */
- #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
- #define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
-@@ -167,6 +167,7 @@
- #define FLUSH_RETRY_TIMEOUT		2
- #define FLUSH_GIVEUP			3
- #define FLUSH_COMPLETE			4
-+#define FLUSH_RETRY_BUSYBUG		5
- 
- /*
-  * tuning the action when the numalink network is extremely delayed
-@@ -235,10 +236,10 @@ struct bau_msg_payload {
- 
- 
- /*
-- * Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
-+ * UV1 Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
-  * see table 4.2.3.0.1 in broacast_assist spec.
-  */
--struct bau_msg_header {
-+struct uv1_bau_msg_header {
- 	unsigned int	dest_subnodeid:6;	/* must be 0x10, for the LB */
- 	/* bits 5:0 */
- 	unsigned int	base_dest_nasid:15;	/* nasid of the first bit */
-@@ -318,19 +319,87 @@ struct bau_msg_header {
- };
- 
- /*
-+ * UV2 Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
-+ * see figure 9-2 of harp_sys.pdf
-+ */
-+struct uv2_bau_msg_header {
-+	unsigned int	base_dest_nasid:15;	/* nasid of the first bit */
-+	/* bits 14:0 */				/* in uvhub map */
-+	unsigned int	dest_subnodeid:5;	/* must be 0x10, for the LB */
-+	/* bits 19:15 */
-+	unsigned int	rsvd_1:1;		/* must be zero */
-+	/* bit 20 */
-+	/* Address bits 59:21 */
-+	/* bits 25:2 of address (44:21) are payload */
-+	/* these next 24 bits become bytes 12-14 of msg */
-+	/* bits 28:21 land in byte 12 */
-+	unsigned int	replied_to:1;		/* sent as 0 by the source to
-+						   byte 12 */
-+	/* bit 21 */
-+	unsigned int	msg_type:3;		/* software type of the
-+						   message */
-+	/* bits 24:22 */
-+	unsigned int	canceled:1;		/* message canceled, resource
-+						   is to be freed*/
-+	/* bit 25 */
-+	unsigned int	payload_1:3;		/* not currently used */
-+	/* bits 28:26 */
-+
-+	/* bits 36:29 land in byte 13 */
-+	unsigned int	payload_2a:3;		/* not currently used */
-+	unsigned int	payload_2b:5;		/* not currently used */
-+	/* bits 36:29 */
-+
-+	/* bits 44:37 land in byte 14 */
-+	unsigned int	payload_3:8;		/* not currently used */
-+	/* bits 44:37 */
-+
-+	unsigned int	rsvd_2:7;		/* reserved */
-+	/* bits 51:45 */
-+	unsigned int	swack_flag:1;		/* software acknowledge flag */
-+	/* bit 52 */
-+	unsigned int	rsvd_3a:3;		/* must be zero */
-+	unsigned int	rsvd_3b:8;		/* must be zero */
-+	unsigned int	rsvd_3c:8;		/* must be zero */
-+	unsigned int	rsvd_3d:3;		/* must be zero */
-+	/* bits 74:53 */
-+	unsigned int	fairness:3;		/* usually zero */
-+	/* bits 77:75 */
-+
-+	unsigned int	sequence:16;		/* message sequence number */
-+	/* bits 93:78  Suppl_A  */
-+	unsigned int	chaining:1;		/* next descriptor is part of
-+						   this activation*/
-+	/* bit 94 */
-+	unsigned int	multilevel:1;		/* multi-level multicast
-+						   format */
-+	/* bit 95 */
-+	unsigned int	rsvd_4:24;		/* ordered / source node /
-+						   source subnode / aging
-+						   must be zero */
-+	/* bits 119:96 */
-+	unsigned int	command:8;		/* message type */
-+	/* bits 127:120 */
-+};
-+
-+/*
-  * The activation descriptor:
-  * The format of the message to send, plus all accompanying control
-  * Should be 64 bytes
-  */
- struct bau_desc {
--	struct pnmask			distribution;
-+	struct pnmask				distribution;
- 	/*
- 	 * message template, consisting of header and payload:
- 	 */
--	struct bau_msg_header		header;
--	struct bau_msg_payload		payload;
-+	union bau_msg_header {
-+		struct uv1_bau_msg_header	uv1_hdr;
-+		struct uv2_bau_msg_header	uv2_hdr;
-+	} header;
-+
-+	struct bau_msg_payload			payload;
- };
--/*
-+/* UV1:
-  *   -payload--    ---------header------
-  *   bytes 0-11    bits 41-56  bits 58-81
-  *       A           B  (2)      C (3)
-@@ -340,6 +409,16 @@ struct bau_desc {
-  *   bytes 0-11  bytes 12-14  bytes 16-17  (byte 15 filled in by hw as vector)
-  *   ------------payload queue-----------
-  */
-+/* UV2:
-+ *   -payload--    ---------header------
-+ *   bytes 0-11    bits 70-78  bits 21-44
-+ *       A           B  (2)      C (3)
-+ *
-+ *            A/B/C are moved to:
-+ *       A            C          B
-+ *   bytes 0-11  bytes 12-14  bytes 16-17  (byte 15 filled in by hw as vector)
-+ *   ------------payload queue-----------
-+ */
- 
- /*
-  * The payload queue on the destination side is an array of these.
-@@ -385,7 +464,6 @@ struct bau_pq_entry {
- struct msg_desc {
- 	struct bau_pq_entry	*msg;
- 	int			msg_slot;
--	int			swack_slot;
- 	struct bau_pq_entry	*queue_first;
- 	struct bau_pq_entry	*queue_last;
- };
-@@ -405,6 +483,7 @@ struct ptc_stats {
- 						   requests */
- 	unsigned long	s_stimeout;		/* source side timeouts */
- 	unsigned long	s_dtimeout;		/* destination side timeouts */
-+	unsigned long	s_strongnacks;		/* number of strong nack's */
- 	unsigned long	s_time;			/* time spent in sending side */
- 	unsigned long	s_retriesok;		/* successful retries */
- 	unsigned long	s_ntargcpu;		/* total number of cpu's
-@@ -439,6 +518,9 @@ struct ptc_stats {
- 	unsigned long	s_retry_messages;	/* retry broadcasts */
- 	unsigned long	s_bau_reenabled;	/* for bau enable/disable */
- 	unsigned long	s_bau_disabled;		/* for bau enable/disable */
-+	unsigned long	s_uv2_wars;		/* uv2 workaround, perm. busy */
-+	unsigned long	s_uv2_wars_hw;		/* uv2 workaround, hiwater */
-+	unsigned long	s_uv2_war_waits;	/* uv2 workaround, long waits */
- 	/* destination statistics */
- 	unsigned long	d_alltlb;		/* times all tlb's on this
- 						   cpu were flushed */
-@@ -511,9 +593,12 @@ struct bau_control {
- 	short			osnode;
- 	short			uvhub_cpu;
- 	short			uvhub;
-+	short			uvhub_version;
- 	short			cpus_in_socket;
- 	short			cpus_in_uvhub;
- 	short			partition_base_pnode;
-+	short			using_desc; /* an index, like uvhub_cpu */
-+	unsigned int		inuse_map;
- 	unsigned short		message_number;
- 	unsigned short		uvhub_quiesce;
- 	short			socket_acknowledge_count[DEST_Q_SIZE];
-@@ -531,6 +616,7 @@ struct bau_control {
- 	int			cong_response_us;
- 	int			cong_reps;
- 	int			cong_period;
-+	unsigned long		clocks_per_100_usec;
- 	cycles_t		period_time;
- 	long			period_requests;
- 	struct hub_and_pnode	*thp;
-@@ -591,6 +677,11 @@ static inline void write_mmr_sw_ack(unsigned long mr)
- 	uv_write_local_mmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS, mr);
- }
- 
-+static inline void write_gmmr_sw_ack(int pnode, unsigned long mr)
-+{
-+	write_gmmr(pnode, UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS, mr);
-+}
-+
- static inline unsigned long read_mmr_sw_ack(void)
- {
- 	return read_lmmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index c0dd5b6..a62c201 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -290,14 +290,15 @@ static inline int pit_verify_msb(unsigned char val)
- static inline int pit_expect_msb(unsigned char val, u64 *tscp, unsigned long *deltap)
- {
- 	int count;
--	u64 tsc = 0;
-+	u64 tsc = 0, prev_tsc = 0;
- 
- 	for (count = 0; count < 50000; count++) {
- 		if (!pit_verify_msb(val))
- 			break;
-+		prev_tsc = tsc;
- 		tsc = get_cycles();
- 	}
--	*deltap = get_cycles() - tsc;
-+	*deltap = get_cycles() - prev_tsc;
- 	*tscp = tsc;
- 
- 	/*
-@@ -311,9 +312,9 @@ static inline int pit_expect_msb(unsigned char val, u64 *tscp, unsigned long *de
-  * How many MSB values do we want to see? We aim for
-  * a maximum error rate of 500ppm (in practice the
-  * real error is much smaller), but refuse to spend
-- * more than 25ms on it.
-+ * more than 50ms on it.
-  */
--#define MAX_QUICK_PIT_MS 25
-+#define MAX_QUICK_PIT_MS 50
- #define MAX_QUICK_PIT_ITERATIONS (MAX_QUICK_PIT_MS * PIT_TICK_RATE / 1000 / 256)
- 
- static unsigned long quick_pit_calibrate(void)
-@@ -383,15 +384,12 @@ success:
- 	 *
- 	 * As a result, we can depend on there not being
- 	 * any odd delays anywhere, and the TSC reads are
--	 * reliable (within the error). We also adjust the
--	 * delta to the middle of the error bars, just
--	 * because it looks nicer.
-+	 * reliable (within the error).
- 	 *
- 	 * kHz = ticks / time-in-seconds / 1000;
- 	 * kHz = (t2 - t1) / (I * 256 / PIT_TICK_RATE) / 1000
- 	 * kHz = ((t2 - t1) * PIT_TICK_RATE) / (I * 256 * 1000)
- 	 */
--	delta += (long)(d2 - d1)/2;
- 	delta *= PIT_TICK_RATE;
- 	do_div(delta, i*256*1000);
- 	printk("Fast TSC calibration using PIT\n");
-diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
-index 5b83c51..4c8010d 100644
---- a/arch/x86/lib/x86-opcode-map.txt
-+++ b/arch/x86/lib/x86-opcode-map.txt
-@@ -729,8 +729,8 @@ de: VAESDEC Vdq,Hdq,Wdq (66),(v1)
- df: VAESDECLAST Vdq,Hdq,Wdq (66),(v1)
- f0: MOVBE Gy,My | MOVBE Gw,Mw (66) | CRC32 Gd,Eb (F2)
- f1: MOVBE My,Gy | MOVBE Mw,Gw (66) | CRC32 Gd,Ey (F2)
--f3: ANDN Gy,By,Ey (v)
--f4: Grp17 (1A)
-+f2: ANDN Gy,By,Ey (v)
-+f3: Grp17 (1A)
- f5: BZHI Gy,Ey,By (v) | PEXT Gy,By,Ey (F3),(v) | PDEP Gy,By,Ey (F2),(v)
- f6: MULX By,Gy,rDX,Ey (F2),(v)
- f7: BEXTR Gy,Ey,By (v) | SHLX Gy,Ey,By (66),(v) | SARX Gy,Ey,By (F3),(v) | SHRX Gy,Ey,By (F2),(v)
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 5b55219..9be4cff 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -157,13 +157,14 @@ static int __init uvhub_to_first_apicid(int uvhub)
-  * clear of the Timeout bit (as well) will free the resource. No reply will
-  * be sent (the hardware will only do one reply per message).
-  */
--static void reply_to_message(struct msg_desc *mdp, struct bau_control *bcp)
-+static void reply_to_message(struct msg_desc *mdp, struct bau_control *bcp,
-+						int do_acknowledge)
- {
- 	unsigned long dw;
- 	struct bau_pq_entry *msg;
- 
- 	msg = mdp->msg;
--	if (!msg->canceled) {
-+	if (!msg->canceled && do_acknowledge) {
- 		dw = (msg->swack_vec << UV_SW_ACK_NPENDING) | msg->swack_vec;
- 		write_mmr_sw_ack(dw);
- 	}
-@@ -212,8 +213,8 @@ static void bau_process_retry_msg(struct msg_desc *mdp,
- 			if (mmr & (msg_res << UV_SW_ACK_NPENDING)) {
- 				unsigned long mr;
- 				/*
--				 * is the resource timed out?
--				 * make everyone ignore the cancelled message.
-+				 * Is the resource timed out?
-+				 * Make everyone ignore the cancelled message.
- 				 */
- 				msg2->canceled = 1;
- 				stat->d_canceled++;
-@@ -231,8 +232,8 @@ static void bau_process_retry_msg(struct msg_desc *mdp,
-  * Do all the things a cpu should do for a TLB shootdown message.
-  * Other cpu's may come here at the same time for this message.
-  */
--static void bau_process_message(struct msg_desc *mdp,
--					struct bau_control *bcp)
-+static void bau_process_message(struct msg_desc *mdp, struct bau_control *bcp,
-+						int do_acknowledge)
- {
- 	short socket_ack_count = 0;
- 	short *sp;
-@@ -284,8 +285,9 @@ static void bau_process_message(struct msg_desc *mdp,
- 		if (msg_ack_count == bcp->cpus_in_uvhub) {
- 			/*
- 			 * All cpus in uvhub saw it; reply
-+			 * (unless we are in the UV2 workaround)
- 			 */
--			reply_to_message(mdp, bcp);
-+			reply_to_message(mdp, bcp, do_acknowledge);
- 		}
- 	}
- 
-@@ -491,27 +493,138 @@ static int uv1_wait_completion(struct bau_desc *bau_desc,
- /*
-  * UV2 has an extra bit of status in the ACTIVATION_STATUS_2 register.
-  */
--static unsigned long uv2_read_status(unsigned long offset, int rshft, int cpu)
-+static unsigned long uv2_read_status(unsigned long offset, int rshft, int desc)
- {
- 	unsigned long descriptor_status;
- 	unsigned long descriptor_status2;
- 
- 	descriptor_status = ((read_lmmr(offset) >> rshft) & UV_ACT_STATUS_MASK);
--	descriptor_status2 = (read_mmr_uv2_status() >> cpu) & 0x1UL;
-+	descriptor_status2 = (read_mmr_uv2_status() >> desc) & 0x1UL;
- 	descriptor_status = (descriptor_status << 1) | descriptor_status2;
- 	return descriptor_status;
- }
- 
-+/*
-+ * Return whether the status of the descriptor that is normally used for this
-+ * cpu (the one indexed by its hub-relative cpu number) is busy.
-+ * The status of the original 32 descriptors is always reflected in the 64
-+ * bits of UVH_LB_BAU_SB_ACTIVATION_STATUS_0.
-+ * The bit provided by the activation_status_2 register is irrelevant to
-+ * the status if it is only being tested for busy or not busy.
-+ */
-+int normal_busy(struct bau_control *bcp)
-+{
-+	int cpu = bcp->uvhub_cpu;
-+	int mmr_offset;
-+	int right_shift;
-+
-+	mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_0;
-+	right_shift = cpu * UV_ACT_STATUS_SIZE;
-+	return (((((read_lmmr(mmr_offset) >> right_shift) &
-+				UV_ACT_STATUS_MASK)) << 1) == UV2H_DESC_BUSY);
-+}
-+
-+/*
-+ * Entered when a bau descriptor has gone into a permanent busy wait because
-+ * of a hardware bug.
-+ * Workaround the bug.
-+ */
-+int handle_uv2_busy(struct bau_control *bcp)
-+{
-+	int busy_one = bcp->using_desc;
-+	int normal = bcp->uvhub_cpu;
-+	int selected = -1;
-+	int i;
-+	unsigned long descriptor_status;
-+	unsigned long status;
-+	int mmr_offset;
-+	struct bau_desc *bau_desc_old;
-+	struct bau_desc *bau_desc_new;
-+	struct bau_control *hmaster = bcp->uvhub_master;
-+	struct ptc_stats *stat = bcp->statp;
-+	cycles_t ttm;
-+
-+	stat->s_uv2_wars++;
-+	spin_lock(&hmaster->uvhub_lock);
-+	/* try for the original first */
-+	if (busy_one != normal) {
-+		if (!normal_busy(bcp))
-+			selected = normal;
-+	}
-+	if (selected < 0) {
-+		/* can't use the normal, select an alternate */
-+		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_1;
-+		descriptor_status = read_lmmr(mmr_offset);
-+
-+		/* scan available descriptors 32-63 */
-+		for (i = 0; i < UV_CPUS_PER_AS; i++) {
-+			if ((hmaster->inuse_map & (1 << i)) == 0) {
-+				status = ((descriptor_status >>
-+						(i * UV_ACT_STATUS_SIZE)) &
-+						UV_ACT_STATUS_MASK) << 1;
-+				if (status != UV2H_DESC_BUSY) {
-+					selected = i + UV_CPUS_PER_AS;
-+					break;
-+				}
-+			}
-+		}
-+	}
-+
-+	if (busy_one != normal)
-+		/* mark the busy alternate as not in-use */
-+		hmaster->inuse_map &= ~(1 << (busy_one - UV_CPUS_PER_AS));
-+
-+	if (selected >= 0) {
-+		/* switch to the selected descriptor */
-+		if (selected != normal) {
-+			/* set the selected alternate as in-use */
-+			hmaster->inuse_map |=
-+					(1 << (selected - UV_CPUS_PER_AS));
-+			if (selected > stat->s_uv2_wars_hw)
-+				stat->s_uv2_wars_hw = selected;
-+		}
-+		bau_desc_old = bcp->descriptor_base;
-+		bau_desc_old += (ITEMS_PER_DESC * busy_one);
-+		bcp->using_desc = selected;
-+		bau_desc_new = bcp->descriptor_base;
-+		bau_desc_new += (ITEMS_PER_DESC * selected);
-+		*bau_desc_new = *bau_desc_old;
-+	} else {
-+		/*
-+		 * All are busy. Wait for the normal one for this cpu to
-+		 * free up.
-+		 */
-+		stat->s_uv2_war_waits++;
-+		spin_unlock(&hmaster->uvhub_lock);
-+		ttm = get_cycles();
-+		do {
-+			cpu_relax();
-+		} while (normal_busy(bcp));
-+		spin_lock(&hmaster->uvhub_lock);
-+		/* switch to the original descriptor */
-+		bcp->using_desc = normal;
-+		bau_desc_old = bcp->descriptor_base;
-+		bau_desc_old += (ITEMS_PER_DESC * bcp->using_desc);
-+		bcp->using_desc = (ITEMS_PER_DESC * normal);
-+		bau_desc_new = bcp->descriptor_base;
-+		bau_desc_new += (ITEMS_PER_DESC * normal);
-+		*bau_desc_new = *bau_desc_old; /* copy the entire descriptor */
-+	}
-+	spin_unlock(&hmaster->uvhub_lock);
-+	return FLUSH_RETRY_BUSYBUG;
-+}
-+
- static int uv2_wait_completion(struct bau_desc *bau_desc,
- 				unsigned long mmr_offset, int right_shift,
- 				struct bau_control *bcp, long try)
- {
- 	unsigned long descriptor_stat;
- 	cycles_t ttm;
--	int cpu = bcp->uvhub_cpu;
-+	int desc = bcp->using_desc;
-+	long busy_reps = 0;
- 	struct ptc_stats *stat = bcp->statp;
- 
--	descriptor_stat = uv2_read_status(mmr_offset, right_shift, cpu);
-+	descriptor_stat = uv2_read_status(mmr_offset, right_shift, desc);
- 
- 	/* spin on the status MMR, waiting for it to go idle */
- 	while (descriptor_stat != UV2H_DESC_IDLE) {
-@@ -522,32 +635,35 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
- 		 * our message and its state will stay IDLE.
- 		 */
- 		if ((descriptor_stat == UV2H_DESC_SOURCE_TIMEOUT) ||
--		    (descriptor_stat == UV2H_DESC_DEST_STRONG_NACK) ||
- 		    (descriptor_stat == UV2H_DESC_DEST_PUT_ERR)) {
- 			stat->s_stimeout++;
- 			return FLUSH_GIVEUP;
-+		} else if (descriptor_stat == UV2H_DESC_DEST_STRONG_NACK) {
-+			stat->s_strongnacks++;
-+			bcp->conseccompletes = 0;
-+			return FLUSH_GIVEUP;
- 		} else if (descriptor_stat == UV2H_DESC_DEST_TIMEOUT) {
- 			stat->s_dtimeout++;
--			ttm = get_cycles();
--			/*
--			 * Our retries may be blocked by all destination
--			 * swack resources being consumed, and a timeout
--			 * pending.  In that case hardware returns the
--			 * ERROR that looks like a destination timeout.
--			 */
--			if (cycles_2_us(ttm - bcp->send_message) < timeout_us) {
--				bcp->conseccompletes = 0;
--				return FLUSH_RETRY_PLUGGED;
--			}
- 			bcp->conseccompletes = 0;
- 			return FLUSH_RETRY_TIMEOUT;
- 		} else {
-+			busy_reps++;
-+			if (busy_reps > 1000000) {
-+				/* not to hammer on the clock */
-+				busy_reps = 0;
-+				ttm = get_cycles();
-+				if ((ttm - bcp->send_message) >
-+					(bcp->clocks_per_100_usec)) {
-+					return handle_uv2_busy(bcp);
-+				}
-+			}
- 			/*
- 			 * descriptor_stat is still BUSY
- 			 */
- 			cpu_relax();
- 		}
--		descriptor_stat = uv2_read_status(mmr_offset, right_shift, cpu);
-+		descriptor_stat = uv2_read_status(mmr_offset, right_shift,
-+									desc);
- 	}
- 	bcp->conseccompletes++;
- 	return FLUSH_COMPLETE;
-@@ -563,17 +679,17 @@ static int wait_completion(struct bau_desc *bau_desc,
- {
- 	int right_shift;
- 	unsigned long mmr_offset;
--	int cpu = bcp->uvhub_cpu;
-+	int desc = bcp->using_desc;
- 
--	if (cpu < UV_CPUS_PER_AS) {
-+	if (desc < UV_CPUS_PER_AS) {
- 		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_0;
--		right_shift = cpu * UV_ACT_STATUS_SIZE;
-+		right_shift = desc * UV_ACT_STATUS_SIZE;
- 	} else {
- 		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_1;
--		right_shift = ((cpu - UV_CPUS_PER_AS) * UV_ACT_STATUS_SIZE);
-+		right_shift = ((desc - UV_CPUS_PER_AS) * UV_ACT_STATUS_SIZE);
- 	}
- 
--	if (is_uv1_hub())
-+	if (bcp->uvhub_version == 1)
- 		return uv1_wait_completion(bau_desc, mmr_offset, right_shift,
- 								bcp, try);
- 	else
-@@ -752,19 +868,22 @@ static void handle_cmplt(int completion_status, struct bau_desc *bau_desc,
-  * Returns 1 if it gives up entirely and the original cpu mask is to be
-  * returned to the kernel.
-  */
--int uv_flush_send_and_wait(struct bau_desc *bau_desc,
--			struct cpumask *flush_mask, struct bau_control *bcp)
-+int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
- {
- 	int seq_number = 0;
- 	int completion_stat = 0;
-+	int uv1 = 0;
- 	long try = 0;
- 	unsigned long index;
- 	cycles_t time1;
- 	cycles_t time2;
- 	struct ptc_stats *stat = bcp->statp;
- 	struct bau_control *hmaster = bcp->uvhub_master;
-+	struct uv1_bau_msg_header *uv1_hdr = NULL;
-+	struct uv2_bau_msg_header *uv2_hdr = NULL;
-+	struct bau_desc *bau_desc;
- 
--	if (is_uv1_hub())
-+	if (bcp->uvhub_version == 1)
- 		uv1_throttle(hmaster, stat);
- 
- 	while (hmaster->uvhub_quiesce)
-@@ -772,22 +891,39 @@ int uv_flush_send_and_wait(struct bau_desc *bau_desc,
- 
- 	time1 = get_cycles();
- 	do {
--		if (try == 0) {
--			bau_desc->header.msg_type = MSG_REGULAR;
-+		bau_desc = bcp->descriptor_base;
-+		bau_desc += (ITEMS_PER_DESC * bcp->using_desc);
-+		if (bcp->uvhub_version == 1) {
-+			uv1 = 1;
-+			uv1_hdr = &bau_desc->header.uv1_hdr;
-+		} else
-+			uv2_hdr = &bau_desc->header.uv2_hdr;
-+		if ((try == 0) || (completion_stat == FLUSH_RETRY_BUSYBUG)) {
-+			if (uv1)
-+				uv1_hdr->msg_type = MSG_REGULAR;
-+			else
-+				uv2_hdr->msg_type = MSG_REGULAR;
- 			seq_number = bcp->message_number++;
- 		} else {
--			bau_desc->header.msg_type = MSG_RETRY;
-+			if (uv1)
-+				uv1_hdr->msg_type = MSG_RETRY;
-+			else
-+				uv2_hdr->msg_type = MSG_RETRY;
- 			stat->s_retry_messages++;
- 		}
- 
--		bau_desc->header.sequence = seq_number;
--		index = (1UL << AS_PUSH_SHIFT) | bcp->uvhub_cpu;
-+		if (uv1)
-+			uv1_hdr->sequence = seq_number;
-+		else
-+			uv2_hdr->sequence = seq_number;
-+		index = (1UL << AS_PUSH_SHIFT) | bcp->using_desc;
- 		bcp->send_message = get_cycles();
- 
- 		write_mmr_activation(index);
- 
- 		try++;
- 		completion_stat = wait_completion(bau_desc, bcp, try);
-+		/* UV2: wait_completion() may change the bcp->using_desc */
- 
- 		handle_cmplt(completion_stat, bau_desc, bcp, hmaster, stat);
- 
-@@ -798,6 +934,7 @@ int uv_flush_send_and_wait(struct bau_desc *bau_desc,
- 		}
- 		cpu_relax();
- 	} while ((completion_stat == FLUSH_RETRY_PLUGGED) ||
-+		 (completion_stat == FLUSH_RETRY_BUSYBUG) ||
- 		 (completion_stat == FLUSH_RETRY_TIMEOUT));
- 
- 	time2 = get_cycles();
-@@ -812,6 +949,7 @@ int uv_flush_send_and_wait(struct bau_desc *bau_desc,
- 	record_send_stats(time1, time2, bcp, stat, completion_stat, try);
- 
- 	if (completion_stat == FLUSH_GIVEUP)
-+		/* FLUSH_GIVEUP will fall back to using IPI's for tlb flush */
- 		return 1;
- 	return 0;
- }
-@@ -967,7 +1105,7 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 		stat->s_ntargself++;
- 
- 	bau_desc = bcp->descriptor_base;
--	bau_desc += ITEMS_PER_DESC * bcp->uvhub_cpu;
-+	bau_desc += (ITEMS_PER_DESC * bcp->using_desc);
- 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
- 	if (set_distrib_bits(flush_mask, bcp, bau_desc, &locals, &remotes))
- 		return NULL;
-@@ -980,13 +1118,86 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
- 	 * or 1 if it gave up and the original cpumask should be returned.
- 	 */
--	if (!uv_flush_send_and_wait(bau_desc, flush_mask, bcp))
-+	if (!uv_flush_send_and_wait(flush_mask, bcp))
- 		return NULL;
- 	else
- 		return cpumask;
- }
- 
- /*
-+ * Search the message queue for any 'other' message with the same software
-+ * acknowledge resource bit vector.
-+ */
-+struct bau_pq_entry *find_another_by_swack(struct bau_pq_entry *msg,
-+			struct bau_control *bcp, unsigned char swack_vec)
-+{
-+	struct bau_pq_entry *msg_next = msg + 1;
-+
-+	if (msg_next > bcp->queue_last)
-+		msg_next = bcp->queue_first;
-+	while ((msg_next->swack_vec != 0) && (msg_next != msg)) {
-+		if (msg_next->swack_vec == swack_vec)
-+			return msg_next;
-+		msg_next++;
-+		if (msg_next > bcp->queue_last)
-+			msg_next = bcp->queue_first;
-+	}
-+	return NULL;
-+}
-+
-+/*
-+ * UV2 needs to work around a bug in which an arriving message has not
-+ * set a bit in the UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE register.
-+ * Such a message must be ignored.
-+ */
-+void process_uv2_message(struct msg_desc *mdp, struct bau_control *bcp)
-+{
-+	unsigned long mmr_image;
-+	unsigned char swack_vec;
-+	struct bau_pq_entry *msg = mdp->msg;
-+	struct bau_pq_entry *other_msg;
-+
-+	mmr_image = read_mmr_sw_ack();
-+	swack_vec = msg->swack_vec;
-+
-+	if ((swack_vec & mmr_image) == 0) {
-+		/*
-+		 * This message was assigned a swack resource, but no
-+		 * reserved acknowlegment is pending.
-+		 * The bug has prevented this message from setting the MMR.
-+		 * And no other message has used the same sw_ack resource.
-+		 * Do the requested shootdown but do not reply to the msg.
-+		 * (the 0 means make no acknowledge)
-+		 */
-+		bau_process_message(mdp, bcp, 0);
-+		return;
-+	}
-+
-+	/*
-+	 * Some message has set the MMR 'pending' bit; it might have been
-+	 * another message.  Look for that message.
-+	 */
-+	other_msg = find_another_by_swack(msg, bcp, msg->swack_vec);
-+	if (other_msg) {
-+		/* There is another.  Do not ack the current one. */
-+		bau_process_message(mdp, bcp, 0);
-+		/*
-+		 * Let the natural processing of that message acknowledge
-+		 * it. Don't get the processing of sw_ack's out of order.
-+		 */
-+		return;
-+	}
-+
-+	/*
-+	 * There is no other message using this sw_ack, so it is safe to
-+	 * acknowledge it.
-+	 */
-+	bau_process_message(mdp, bcp, 1);
-+
-+	return;
-+}
-+
-+/*
-  * The BAU message interrupt comes here. (registered by set_intr_gate)
-  * See entry_64.S
-  *
-@@ -1009,6 +1220,7 @@ void uv_bau_message_interrupt(struct pt_regs *regs)
- 	struct ptc_stats *stat;
- 	struct msg_desc msgdesc;
- 
-+	ack_APIC_irq();
- 	time_start = get_cycles();
- 
- 	bcp = &per_cpu(bau_control, smp_processor_id());
-@@ -1022,9 +1234,11 @@ void uv_bau_message_interrupt(struct pt_regs *regs)
- 		count++;
- 
- 		msgdesc.msg_slot = msg - msgdesc.queue_first;
--		msgdesc.swack_slot = ffs(msg->swack_vec) - 1;
- 		msgdesc.msg = msg;
--		bau_process_message(&msgdesc, bcp);
-+		if (bcp->uvhub_version == 2)
-+			process_uv2_message(&msgdesc, bcp);
-+		else
-+			bau_process_message(&msgdesc, bcp, 1);
- 
- 		msg++;
- 		if (msg > msgdesc.queue_last)
-@@ -1036,8 +1250,6 @@ void uv_bau_message_interrupt(struct pt_regs *regs)
- 		stat->d_nomsg++;
- 	else if (count > 1)
- 		stat->d_multmsg++;
--
--	ack_APIC_irq();
- }
- 
- /*
-@@ -1083,7 +1295,7 @@ static void __init enable_timeouts(void)
- 		 */
- 		mmr_image |= (1L << SOFTACK_MSHIFT);
- 		if (is_uv2_hub()) {
--			mmr_image |= (1L << UV2_LEG_SHFT);
-+			mmr_image &= ~(1L << UV2_LEG_SHFT);
- 			mmr_image |= (1L << UV2_EXT_SHFT);
- 		}
- 		write_mmr_misc_control(pnode, mmr_image);
-@@ -1136,13 +1348,13 @@ static int ptc_seq_show(struct seq_file *file, void *data)
- 		seq_printf(file,
- 			"remotehub numuvhubs numuvhubs16 numuvhubs8 ");
- 		seq_printf(file,
--			"numuvhubs4 numuvhubs2 numuvhubs1 dto retries rok ");
-+		    "numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries rok ");
- 		seq_printf(file,
- 			"resetp resett giveup sto bz throt swack recv rtime ");
- 		seq_printf(file,
- 			"all one mult none retry canc nocan reset rcan ");
- 		seq_printf(file,
--			"disable enable\n");
-+			"disable enable wars warshw warwaits\n");
- 	}
- 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
- 		stat = &per_cpu(ptcstats, cpu);
-@@ -1154,10 +1366,10 @@ static int ptc_seq_show(struct seq_file *file, void *data)
- 			   stat->s_ntargremotes, stat->s_ntargcpu,
- 			   stat->s_ntarglocaluvhub, stat->s_ntargremoteuvhub,
- 			   stat->s_ntarguvhub, stat->s_ntarguvhub16);
--		seq_printf(file, "%ld %ld %ld %ld %ld ",
-+		seq_printf(file, "%ld %ld %ld %ld %ld %ld ",
- 			   stat->s_ntarguvhub8, stat->s_ntarguvhub4,
- 			   stat->s_ntarguvhub2, stat->s_ntarguvhub1,
--			   stat->s_dtimeout);
-+			   stat->s_dtimeout, stat->s_strongnacks);
- 		seq_printf(file, "%ld %ld %ld %ld %ld %ld %ld %ld ",
- 			   stat->s_retry_messages, stat->s_retriesok,
- 			   stat->s_resets_plug, stat->s_resets_timeout,
-@@ -1173,8 +1385,10 @@ static int ptc_seq_show(struct seq_file *file, void *data)
- 			   stat->d_nomsg, stat->d_retries, stat->d_canceled,
- 			   stat->d_nocanceled, stat->d_resets,
- 			   stat->d_rcanceled);
--		seq_printf(file, "%ld %ld\n",
--			stat->s_bau_disabled, stat->s_bau_reenabled);
-+		seq_printf(file, "%ld %ld %ld %ld %ld\n",
-+			stat->s_bau_disabled, stat->s_bau_reenabled,
-+			stat->s_uv2_wars, stat->s_uv2_wars_hw,
-+			stat->s_uv2_war_waits);
- 	}
- 	return 0;
- }
-@@ -1432,12 +1646,15 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
- {
- 	int i;
- 	int cpu;
-+	int uv1 = 0;
- 	unsigned long gpa;
- 	unsigned long m;
- 	unsigned long n;
- 	size_t dsize;
- 	struct bau_desc *bau_desc;
- 	struct bau_desc *bd2;
-+	struct uv1_bau_msg_header *uv1_hdr;
-+	struct uv2_bau_msg_header *uv2_hdr;
- 	struct bau_control *bcp;
- 
- 	/*
-@@ -1451,6 +1668,8 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
- 	gpa = uv_gpa(bau_desc);
- 	n = uv_gpa_to_gnode(gpa);
- 	m = uv_gpa_to_offset(gpa);
-+	if (is_uv1_hub())
-+		uv1 = 1;
- 
- 	/* the 14-bit pnode */
- 	write_mmr_descriptor_base(pnode, (n << UV_DESC_PSHIFT | m));
-@@ -1461,21 +1680,33 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
- 	 */
- 	for (i = 0, bd2 = bau_desc; i < (ADP_SZ * ITEMS_PER_DESC); i++, bd2++) {
- 		memset(bd2, 0, sizeof(struct bau_desc));
--		bd2->header.swack_flag =	1;
--		/*
--		 * The base_dest_nasid set in the message header is the nasid
--		 * of the first uvhub in the partition. The bit map will
--		 * indicate destination pnode numbers relative to that base.
--		 * They may not be consecutive if nasid striding is being used.
--		 */
--		bd2->header.base_dest_nasid =	UV_PNODE_TO_NASID(base_pnode);
--		bd2->header.dest_subnodeid =	UV_LB_SUBNODEID;
--		bd2->header.command =		UV_NET_ENDPOINT_INTD;
--		bd2->header.int_both =		1;
--		/*
--		 * all others need to be set to zero:
--		 *   fairness chaining multilevel count replied_to
--		 */
-+		if (uv1) {
-+			uv1_hdr = &bd2->header.uv1_hdr;
-+			uv1_hdr->swack_flag =	1;
-+			/*
-+			 * The base_dest_nasid set in the message header
-+			 * is the nasid of the first uvhub in the partition.
-+			 * The bit map will indicate destination pnode numbers
-+			 * relative to that base. They may not be consecutive
-+			 * if nasid striding is being used.
-+			 */
-+			uv1_hdr->base_dest_nasid =
-+						UV_PNODE_TO_NASID(base_pnode);
-+			uv1_hdr->dest_subnodeid =	UV_LB_SUBNODEID;
-+			uv1_hdr->command =		UV_NET_ENDPOINT_INTD;
-+			uv1_hdr->int_both =		1;
-+			/*
-+			 * all others need to be set to zero:
-+			 *   fairness chaining multilevel count replied_to
-+			 */
-+		} else {
-+			uv2_hdr = &bd2->header.uv2_hdr;
-+			uv2_hdr->swack_flag =	1;
-+			uv2_hdr->base_dest_nasid =
-+						UV_PNODE_TO_NASID(base_pnode);
-+			uv2_hdr->dest_subnodeid =	UV_LB_SUBNODEID;
-+			uv2_hdr->command =		UV_NET_ENDPOINT_INTD;
-+		}
- 	}
- 	for_each_present_cpu(cpu) {
- 		if (pnode != uv_blade_to_pnode(uv_cpu_to_blade_id(cpu)))
-@@ -1531,6 +1762,7 @@ static void pq_init(int node, int pnode)
- 	write_mmr_payload_first(pnode, pn_first);
- 	write_mmr_payload_tail(pnode, first);
- 	write_mmr_payload_last(pnode, last);
-+	write_gmmr_sw_ack(pnode, 0xffffUL);
- 
- 	/* in effect, all msg_type's are set to MSG_NOOP */
- 	memset(pqp, 0, sizeof(struct bau_pq_entry) * DEST_Q_SIZE);
-@@ -1584,14 +1816,14 @@ static int calculate_destination_timeout(void)
- 		ts_ns = base * mult1 * mult2;
- 		ret = ts_ns / 1000;
- 	} else {
--		/* 4 bits  0/1 for 10/80us, 3 bits of multiplier */
--		mmr_image = uv_read_local_mmr(UVH_AGING_PRESCALE_SEL);
-+		/* 4 bits  0/1 for 10/80us base, 3 bits of multiplier */
-+		mmr_image = uv_read_local_mmr(UVH_LB_BAU_MISC_CONTROL);
- 		mmr_image = (mmr_image & UV_SA_MASK) >> UV_SA_SHFT;
- 		if (mmr_image & (1L << UV2_ACK_UNITS_SHFT))
--			mult1 = 80;
-+			base = 80;
- 		else
--			mult1 = 10;
--		base = mmr_image & UV2_ACK_MASK;
-+			base = 10;
-+		mult1 = mmr_image & UV2_ACK_MASK;
- 		ret = mult1 * base;
- 	}
- 	return ret;
-@@ -1618,6 +1850,7 @@ static void __init init_per_cpu_tunables(void)
- 		bcp->cong_response_us		= congested_respns_us;
- 		bcp->cong_reps			= congested_reps;
- 		bcp->cong_period		= congested_period;
-+		bcp->clocks_per_100_usec =	usec_2_cycles(100);
- 	}
- }
- 
-@@ -1728,8 +1961,17 @@ static int scan_sock(struct socket_desc *sdp, struct uvhub_desc *bdp,
- 		bcp->cpus_in_socket = sdp->num_cpus;
- 		bcp->socket_master = *smasterp;
- 		bcp->uvhub = bdp->uvhub;
-+		if (is_uv1_hub())
-+			bcp->uvhub_version = 1;
-+		else if (is_uv2_hub())
-+			bcp->uvhub_version = 2;
-+		else {
-+			printk(KERN_EMERG "uvhub version not 1 or 2\n");
-+			return 1;
-+		}
- 		bcp->uvhub_master = *hmasterp;
- 		bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->blade_processor_id;
-+		bcp->using_desc = bcp->uvhub_cpu;
- 		if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
- 			printk(KERN_EMERG "%d cpus per uvhub invalid\n",
- 				bcp->uvhub_cpu);
-@@ -1845,6 +2087,8 @@ static int __init uv_bau_init(void)
- 			uv_base_pnode = uv_blade_to_pnode(uvhub);
- 	}
- 
-+	enable_timeouts();
-+
- 	if (init_per_cpu(nuvhubs, uv_base_pnode)) {
- 		nobau = 1;
- 		return 0;
-@@ -1855,7 +2099,6 @@ static int __init uv_bau_init(void)
- 		if (uv_blade_nr_possible_cpus(uvhub))
- 			init_uvhub(uvhub, vector, uv_base_pnode);
- 
--	enable_timeouts();
- 	alloc_intr_gate(vector, uv_bau_message_intr1);
- 
- 	for_each_possible_blade(uvhub) {
-@@ -1867,7 +2110,8 @@ static int __init uv_bau_init(void)
- 			val = 1L << 63;
- 			write_gmmr_activation(pnode, val);
- 			mmr = 1; /* should be 1 to broadcast to both sockets */
--			write_mmr_data_broadcast(pnode, mmr);
-+			if (!is_uv1_hub())
-+				write_mmr_data_broadcast(pnode, mmr);
- 		}
- 	}
- 
+#
+# RCU Subsystem
+#
+CONFIG_TREE_RCU=y
+# CONFIG_PREEMPT_RCU is not set
+# CONFIG_RCU_TRACE is not set
+CONFIG_RCU_FANOUT=64
+# CONFIG_RCU_FANOUT_EXACT is not set
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_IKCONFIG=m
+CONFIG_IKCONFIG_PROC=y
+CONFIG_LOG_BUF_SHIFT=17
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_DEBUG=y
+# CONFIG_CGROUP_FREEZER is not set
+CONFIG_CGROUP_DEVICE=y
+CONFIG_CPUSETS=y
+CONFIG_PROC_PID_CPUSET=y
+CONFIG_CGROUP_CPUACCT=y
+CONFIG_RESOURCE_COUNTERS=y
+# CONFIG_CGROUP_MEM_RES_CTLR is not set
+# CONFIG_CGROUP_PERF is not set
+CONFIG_CGROUP_SCHED=y
+CONFIG_FAIR_GROUP_SCHED=y
+CONFIG_CFS_BANDWIDTH=y
+# CONFIG_RT_GROUP_SCHED is not set
+# CONFIG_BLK_CGROUP is not set
+CONFIG_CHECKPOINT_RESTORE=y
+# CONFIG_NAMESPACES is not set
+CONFIG_SCHED_AUTOGROUP=y
+# CONFIG_RELAY is not set
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE=""
+# CONFIG_RD_GZIP is not set
+CONFIG_RD_BZIP2=y
+# CONFIG_RD_LZMA is not set
+# CONFIG_RD_XZ is not set
+# CONFIG_RD_LZO is not set
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_EXPERT=y
+# CONFIG_UID16 is not set
+CONFIG_SYSCTL_SYSCALL=y
+CONFIG_KALLSYMS=y
+# CONFIG_KALLSYMS_ALL is not set
+CONFIG_HOTPLUG=y
+CONFIG_PRINTK=y
+# CONFIG_BUG is not set
+CONFIG_ELF_CORE=y
+# CONFIG_PCSPKR_PLATFORM is not set
+CONFIG_HAVE_PCSPKR_PLATFORM=y
+# CONFIG_BASE_FULL is not set
+# CONFIG_FUTEX is not set
+CONFIG_EPOLL=y
+# CONFIG_SIGNALFD is not set
+# CONFIG_TIMERFD is not set
+CONFIG_EVENTFD=y
+# CONFIG_SHMEM is not set
+# CONFIG_AIO is not set
+CONFIG_EMBEDDED=y
+CONFIG_HAVE_PERF_EVENTS=y
+CONFIG_PERF_USE_VMALLOC=y
+
+#
+# Kernel Performance Events And Counters
+#
+CONFIG_PERF_EVENTS=y
+CONFIG_PERF_COUNTERS=y
+CONFIG_DEBUG_PERF_USE_VMALLOC=y
+# CONFIG_VM_EVENT_COUNTERS is not set
+CONFIG_PCI_QUIRKS=y
+# CONFIG_COMPAT_BRK is not set
+# CONFIG_SLAB is not set
+# CONFIG_SLUB is not set
+CONFIG_SLOB=y
+# CONFIG_PROFILING is not set
+CONFIG_TRACEPOINTS=y
+CONFIG_HAVE_OPROFILE=y
+CONFIG_OPROFILE_NMI_TIMER=y
+CONFIG_KPROBES=y
+# CONFIG_JUMP_LABEL is not set
+CONFIG_OPTPROBES=y
+# CONFIG_UPROBES is not set
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+CONFIG_KRETPROBES=y
+CONFIG_HAVE_IOREMAP_PROT=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_OPTPROBES=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_USE_GENERIC_SMP_HELPERS=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+CONFIG_HAVE_HW_BREAKPOINT=y
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
+CONFIG_HAVE_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_PERF_EVENTS_NMI=y
+CONFIG_HAVE_ARCH_JUMP_LABEL=y
+CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
+CONFIG_HAVE_CMPXCHG_LOCAL=y
+CONFIG_HAVE_CMPXCHG_DOUBLE=y
+CONFIG_ARCH_WANT_OLD_COMPAT_IPC=y
+
+#
+# GCOV-based kernel profiling
+#
+# CONFIG_GCOV_KERNEL is not set
+# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=1
+CONFIG_MODULES=y
+# CONFIG_MODULE_FORCE_LOAD is not set
+# CONFIG_MODULE_UNLOAD is not set
+CONFIG_MODVERSIONS=y
+CONFIG_MODULE_SRCVERSION_ALL=y
+CONFIG_STOP_MACHINE=y
+CONFIG_BLOCK=y
+CONFIG_BLK_DEV_BSG=y
+CONFIG_BLK_DEV_BSGLIB=y
+CONFIG_BLK_DEV_INTEGRITY=y
+
+#
+# Partition Types
+#
+# CONFIG_PARTITION_ADVANCED is not set
+CONFIG_MSDOS_PARTITION=y
+CONFIG_BLOCK_COMPAT=y
+
+#
+# IO Schedulers
+#
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_DEADLINE is not set
+CONFIG_IOSCHED_CFQ=m
+CONFIG_DEFAULT_NOOP=y
+CONFIG_DEFAULT_IOSCHED="noop"
+CONFIG_PADATA=y
+# CONFIG_INLINE_SPIN_TRYLOCK is not set
+# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK is not set
+# CONFIG_INLINE_SPIN_LOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_SPIN_UNLOCK is not set
+# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
+# CONFIG_INLINE_SPIN_UNLOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_READ_TRYLOCK is not set
+# CONFIG_INLINE_READ_LOCK is not set
+# CONFIG_INLINE_READ_LOCK_BH is not set
+# CONFIG_INLINE_READ_LOCK_IRQ is not set
+# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_READ_UNLOCK is not set
+# CONFIG_INLINE_READ_UNLOCK_BH is not set
+# CONFIG_INLINE_READ_UNLOCK_IRQ is not set
+# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_WRITE_TRYLOCK is not set
+# CONFIG_INLINE_WRITE_LOCK is not set
+# CONFIG_INLINE_WRITE_LOCK_BH is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_WRITE_UNLOCK is not set
+# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
+# CONFIG_INLINE_WRITE_UNLOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
+# CONFIG_MUTEX_SPIN_ON_OWNER is not set
+CONFIG_FREEZER=y
+
+#
+# Processor type and features
+#
+CONFIG_TICK_ONESHOT=y
+# CONFIG_NO_HZ is not set
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+CONFIG_SMP=y
+# CONFIG_X86_MPPARSE is not set
+CONFIG_X86_EXTENDED_PLATFORM=y
+# CONFIG_X86_VSMP is not set
+CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_SCHED_OMIT_FRAME_POINTER=y
+# CONFIG_KVMTOOL_TEST_ENABLE is not set
+# CONFIG_PARAVIRT_GUEST is not set
+CONFIG_NO_BOOTMEM=y
+# CONFIG_MEMTEST is not set
+# CONFIG_MK8 is not set
+# CONFIG_MPSC is not set
+# CONFIG_MCORE2 is not set
+# CONFIG_MATOM is not set
+CONFIG_GENERIC_CPU=y
+CONFIG_X86_INTERNODE_CACHE_SHIFT=7
+CONFIG_X86_CMPXCHG=y
+CONFIG_X86_L1_CACHE_SHIFT=6
+CONFIG_X86_XADD=y
+CONFIG_X86_WP_WORKS_OK=y
+CONFIG_X86_TSC=y
+CONFIG_X86_CMPXCHG64=y
+CONFIG_X86_CMOV=y
+CONFIG_X86_MINIMUM_CPU_FAMILY=64
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_PROCESSOR_SELECT=y
+CONFIG_CPU_SUP_INTEL=y
+# CONFIG_CPU_SUP_AMD is not set
+CONFIG_CPU_SUP_CENTAUR=y
+CONFIG_HPET_TIMER=y
+CONFIG_HPET_EMULATE_RTC=y
+# CONFIG_DMI is not set
+# CONFIG_CALGARY_IOMMU is not set
+CONFIG_SWIOTLB=y
+CONFIG_IOMMU_HELPER=y
+# CONFIG_MAXSMP is not set
+CONFIG_NR_CPUS=8
+# CONFIG_SCHED_SMT is not set
+CONFIG_SCHED_MC=y
+CONFIG_IRQ_TIME_ACCOUNTING=y
+CONFIG_PREEMPT_NONE=y
+# CONFIG_PREEMPT_VOLUNTARY is not set
+# CONFIG_PREEMPT is not set
+CONFIG_PREEMPT_COUNT=y
+CONFIG_X86_LOCAL_APIC=y
+CONFIG_X86_IO_APIC=y
+# CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS is not set
+CONFIG_X86_MCE=y
+# CONFIG_X86_MCE_INTEL is not set
+# CONFIG_X86_MCE_AMD is not set
+CONFIG_X86_MCE_INJECT=m
+# CONFIG_I8K is not set
+CONFIG_MICROCODE=m
+# CONFIG_MICROCODE_INTEL is not set
+CONFIG_MICROCODE_AMD=y
+CONFIG_MICROCODE_OLD_INTERFACE=y
+CONFIG_X86_MSR=m
+CONFIG_X86_CPUID=m
+CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+CONFIG_ARCH_DMA_ADDR_T_64BIT=y
+# CONFIG_DIRECT_GBPAGES is not set
+CONFIG_NUMA=y
+CONFIG_AMD_NUMA=y
+# CONFIG_X86_64_ACPI_NUMA is not set
+# CONFIG_NUMA_EMU is not set
+CONFIG_NODES_SHIFT=6
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_DEFAULT=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ARCH_PROC_KCORE_TEXT=y
+CONFIG_ILLEGAL_POINTER_VALUE=0xdead000000000000
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_SPARSEMEM_MANUAL=y
+CONFIG_SPARSEMEM=y
+CONFIG_NEED_MULTIPLE_NODES=y
+CONFIG_HAVE_MEMORY_PRESENT=y
+CONFIG_SPARSEMEM_EXTREME=y
+CONFIG_SPARSEMEM_VMEMMAP_ENABLE=y
+CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER=y
+CONFIG_SPARSEMEM_VMEMMAP=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_HAVE_MEMBLOCK_NODE_MAP=y
+CONFIG_ARCH_DISCARD_MEMBLOCK=y
+# CONFIG_MEMORY_HOTPLUG is not set
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=999999
+CONFIG_COMPACTION=y
+CONFIG_MIGRATION=y
+CONFIG_PHYS_ADDR_T_64BIT=y
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_BOUNCE=y
+CONFIG_VIRT_TO_BUS=y
+CONFIG_KSM=y
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
+# CONFIG_MEMORY_FAILURE is not set
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
+# CONFIG_TRANSPARENT_HUGEPAGE_MADVISE is not set
+# CONFIG_CLEANCACHE is not set
+CONFIG_X86_CHECK_BIOS_CORRUPTION=y
+CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
+CONFIG_X86_RESERVE_LOW=64
+CONFIG_MTRR=y
+CONFIG_MTRR_SANITIZER=y
+CONFIG_MTRR_SANITIZER_ENABLE_DEFAULT=0
+CONFIG_MTRR_SANITIZER_SPARE_REG_NR_DEFAULT=1
+CONFIG_X86_PAT=y
+CONFIG_ARCH_USES_PG_UNCACHED=y
+# CONFIG_ARCH_RANDOM is not set
+# CONFIG_EFI is not set
+CONFIG_SECCOMP=y
+# CONFIG_CC_STACKPROTECTOR is not set
+CONFIG_HZ_100=y
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
+# CONFIG_HZ_1000 is not set
+CONFIG_HZ=100
+CONFIG_SCHED_HRTICK=y
+# CONFIG_KEXEC is not set
+# CONFIG_CRASH_DUMP is not set
+CONFIG_PHYSICAL_START=0x1000000
+CONFIG_RELOCATABLE=y
+CONFIG_PHYSICAL_ALIGN=0x1000000
+CONFIG_HOTPLUG_CPU=y
+CONFIG_COMPAT_VDSO=y
+# CONFIG_CMDLINE_BOOL is not set
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+CONFIG_USE_PERCPU_NUMA_NODE_ID=y
+
+#
+# Power management and ACPI options
+#
+CONFIG_ARCH_HIBERNATION_HEADER=y
+# CONFIG_SUSPEND is not set
+CONFIG_HIBERNATE_CALLBACKS=y
+CONFIG_HIBERNATION=y
+CONFIG_PM_STD_PARTITION=""
+CONFIG_PM_SLEEP=y
+CONFIG_PM_SLEEP_SMP=y
+# CONFIG_PM_RUNTIME is not set
+CONFIG_PM=y
+CONFIG_PM_DEBUG=y
+CONFIG_PM_ADVANCED_DEBUG=y
+CONFIG_CAN_PM_TRACE=y
+CONFIG_PM_TRACE=y
+CONFIG_PM_TRACE_RTC=y
+CONFIG_ACPI=y
+CONFIG_ACPI_SLEEP=y
+CONFIG_ACPI_PROCFS=y
+CONFIG_ACPI_PROCFS_POWER=y
+# CONFIG_ACPI_EC_DEBUGFS is not set
+# CONFIG_ACPI_PROC_EVENT is not set
+CONFIG_ACPI_AC=m
+# CONFIG_ACPI_BATTERY is not set
+# CONFIG_ACPI_FAN is not set
+# CONFIG_ACPI_DOCK is not set
+# CONFIG_ACPI_PROCESSOR is not set
+# CONFIG_ACPI_IPMI is not set
+# CONFIG_ACPI_NUMA is not set
+# CONFIG_ACPI_CUSTOM_DSDT is not set
+CONFIG_ACPI_BLACKLIST_YEAR=0
+# CONFIG_ACPI_DEBUG is not set
+CONFIG_X86_PM_TIMER=y
+CONFIG_ACPI_CONTAINER=m
+# CONFIG_ACPI_SBS is not set
+CONFIG_ACPI_HED=m
+CONFIG_ACPI_CUSTOM_METHOD=m
+# CONFIG_ACPI_APEI is not set
+CONFIG_SFI=y
+
+#
+# CPU Frequency scaling
+#
+# CONFIG_CPU_FREQ is not set
+CONFIG_CPU_IDLE=y
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_INTEL_IDLE=y
+
+#
+# Memory power savings
+#
+CONFIG_I7300_IDLE_IOAT_CHANNEL=y
+CONFIG_I7300_IDLE=m
+
+#
+# Bus options (PCI etc.)
+#
+CONFIG_PCI=y
+CONFIG_PCI_DIRECT=y
+# CONFIG_PCI_MMCONFIG is not set
+CONFIG_PCI_DOMAINS=y
+# CONFIG_PCI_CNB20LE_QUIRK is not set
+# CONFIG_PCIEPORTBUS is not set
+CONFIG_ARCH_SUPPORTS_MSI=y
+CONFIG_PCI_MSI=y
+# CONFIG_PCI_DEBUG is not set
+CONFIG_PCI_STUB=m
+CONFIG_HT_IRQ=y
+CONFIG_PCI_ATS=y
+# CONFIG_PCI_IOV is not set
+CONFIG_PCI_PRI=y
+CONFIG_PCI_PASID=y
+# CONFIG_PCI_IOAPIC is not set
+CONFIG_PCI_LABEL=y
+# CONFIG_ISA_DMA_API is not set
+# CONFIG_PCCARD is not set
+# CONFIG_RAPIDIO is not set
+
+#
+# Executable file formats / Emulations
+#
+# CONFIG_BINFMT_ELF is not set
+CONFIG_COMPAT_BINFMT_ELF=y
+CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE=y
+# CONFIG_HAVE_AOUT is not set
+# CONFIG_BINFMT_MISC is not set
+CONFIG_IA32_EMULATION=y
+# CONFIG_IA32_AOUT is not set
+CONFIG_COMPAT=y
+CONFIG_COMPAT_FOR_U64_ALIGNMENT=y
+CONFIG_KEYS_COMPAT=y
+CONFIG_HAVE_TEXT_POKE_SMP=y
+CONFIG_NET=y
+
+#
+# Networking options
+#
+CONFIG_PACKET=m
+# CONFIG_UNIX is not set
+CONFIG_XFRM=y
+CONFIG_XFRM_USER=m
+# CONFIG_XFRM_SUB_POLICY is not set
+# CONFIG_XFRM_MIGRATE is not set
+CONFIG_XFRM_STATISTICS=y
+CONFIG_XFRM_IPCOMP=m
+# CONFIG_NET_KEY is not set
+CONFIG_INET=y
+# CONFIG_IP_MULTICAST is not set
+# CONFIG_IP_ADVANCED_ROUTER is not set
+CONFIG_IP_ROUTE_CLASSID=y
+# CONFIG_IP_PNP is not set
+CONFIG_NET_IPIP=m
+CONFIG_NET_IPGRE_DEMUX=m
+# CONFIG_NET_IPGRE is not set
+CONFIG_ARPD=y
+# CONFIG_SYN_COOKIES is not set
+CONFIG_INET_AH=m
+CONFIG_INET_ESP=m
+CONFIG_INET_IPCOMP=m
+CONFIG_INET_XFRM_TUNNEL=m
+CONFIG_INET_TUNNEL=m
+CONFIG_INET_XFRM_MODE_TRANSPORT=m
+CONFIG_INET_XFRM_MODE_TUNNEL=m
+# CONFIG_INET_XFRM_MODE_BEET is not set
+CONFIG_INET_LRO=m
+# CONFIG_INET_DIAG is not set
+CONFIG_TCP_CONG_ADVANCED=y
+# CONFIG_TCP_CONG_BIC is not set
+CONFIG_TCP_CONG_CUBIC=m
+# CONFIG_TCP_CONG_WESTWOOD is not set
+# CONFIG_TCP_CONG_HTCP is not set
+CONFIG_TCP_CONG_HSTCP=m
+# CONFIG_TCP_CONG_HYBLA is not set
+CONFIG_TCP_CONG_VEGAS=m
+CONFIG_TCP_CONG_SCALABLE=m
+CONFIG_TCP_CONG_LP=m
+CONFIG_TCP_CONG_VENO=m
+CONFIG_TCP_CONG_YEAH=m
+# CONFIG_TCP_CONG_ILLINOIS is not set
+CONFIG_DEFAULT_RENO=y
+CONFIG_DEFAULT_TCP_CONG="reno"
+# CONFIG_TCP_MD5SIG is not set
+# CONFIG_IPV6 is not set
+# CONFIG_NETWORK_SECMARK is not set
+# CONFIG_NETWORK_PHY_TIMESTAMPING is not set
+# CONFIG_NETFILTER is not set
+# CONFIG_IP_DCCP is not set
+# CONFIG_IP_SCTP is not set
+# CONFIG_RDS is not set
+# CONFIG_TIPC is not set
+# CONFIG_ATM is not set
+CONFIG_L2TP=m
+CONFIG_L2TP_DEBUGFS=m
+# CONFIG_L2TP_V3 is not set
+CONFIG_STP=m
+CONFIG_GARP=m
+CONFIG_BRIDGE=m
+CONFIG_BRIDGE_IGMP_SNOOPING=y
+# CONFIG_NET_DSA is not set
+CONFIG_VLAN_8021Q=m
+CONFIG_VLAN_8021Q_GVRP=y
+# CONFIG_DECNET is not set
+CONFIG_LLC=m
+CONFIG_LLC2=m
+CONFIG_IPX=m
+# CONFIG_IPX_INTERN is not set
+CONFIG_ATALK=m
+CONFIG_DEV_APPLETALK=m
+CONFIG_IPDDP=m
+# CONFIG_IPDDP_ENCAP is not set
+# CONFIG_IPDDP_DECAP is not set
+# CONFIG_X25 is not set
+CONFIG_LAPB=m
+# CONFIG_ECONET is not set
+# CONFIG_WAN_ROUTER is not set
+CONFIG_PHONET=m
+# CONFIG_IEEE802154 is not set
+CONFIG_NET_SCHED=y
+
+#
+# Queueing/Scheduling
+#
+# CONFIG_NET_SCH_CBQ is not set
+# CONFIG_NET_SCH_HTB is not set
+CONFIG_NET_SCH_HFSC=m
+# CONFIG_NET_SCH_PRIO is not set
+# CONFIG_NET_SCH_MULTIQ is not set
+CONFIG_NET_SCH_RED=m
+CONFIG_NET_SCH_SFB=m
+# CONFIG_NET_SCH_SFQ is not set
+# CONFIG_NET_SCH_TEQL is not set
+CONFIG_NET_SCH_TBF=m
+CONFIG_NET_SCH_GRED=m
+CONFIG_NET_SCH_DSMARK=m
+CONFIG_NET_SCH_NETEM=m
+# CONFIG_NET_SCH_DRR is not set
+CONFIG_NET_SCH_MQPRIO=m
+# CONFIG_NET_SCH_CHOKE is not set
+# CONFIG_NET_SCH_QFQ is not set
+
+#
+# Classification
+#
+CONFIG_NET_CLS=y
+# CONFIG_NET_CLS_BASIC is not set
+CONFIG_NET_CLS_TCINDEX=m
+CONFIG_NET_CLS_ROUTE4=m
+# CONFIG_NET_CLS_FW is not set
+# CONFIG_NET_CLS_U32 is not set
+CONFIG_NET_CLS_RSVP=m
+CONFIG_NET_CLS_RSVP6=m
+CONFIG_NET_CLS_FLOW=m
+# CONFIG_NET_CLS_CGROUP is not set
+CONFIG_NET_EMATCH=y
+CONFIG_NET_EMATCH_STACK=32
+# CONFIG_NET_EMATCH_CMP is not set
+# CONFIG_NET_EMATCH_NBYTE is not set
+CONFIG_NET_EMATCH_U32=m
+# CONFIG_NET_EMATCH_META is not set
+CONFIG_NET_EMATCH_TEXT=m
+# CONFIG_NET_CLS_ACT is not set
+CONFIG_NET_SCH_FIFO=y
+CONFIG_DCB=y
+CONFIG_DNS_RESOLVER=m
+CONFIG_BATMAN_ADV=m
+CONFIG_BATMAN_ADV_DEBUG=y
+CONFIG_OPENVSWITCH=m
+CONFIG_NETPRIO_CGROUP=m
+CONFIG_HAVE_BPF_JIT=y
+# CONFIG_BPF_JIT is not set
+
+#
+# Network testing
+#
+# CONFIG_NET_PKTGEN is not set
+# CONFIG_NET_TCPPROBE is not set
+CONFIG_NET_DROP_MONITOR=y
+CONFIG_HAMRADIO=y
+
+#
+# Packet Radio protocols
+#
+# CONFIG_AX25 is not set
+CONFIG_CAN=m
+# CONFIG_CAN_RAW is not set
+# CONFIG_CAN_BCM is not set
+CONFIG_CAN_GW=m
+
+#
+# CAN Device Drivers
+#
+# CONFIG_CAN_VCAN is not set
+# CONFIG_CAN_SLCAN is not set
+# CONFIG_CAN_DEV is not set
+CONFIG_CAN_DEBUG_DEVICES=y
+CONFIG_IRDA=m
+
+#
+# IrDA protocols
+#
+CONFIG_IRLAN=m
+CONFIG_IRNET=m
+# CONFIG_IRCOMM is not set
+# CONFIG_IRDA_ULTRA is not set
+
+#
+# IrDA options
+#
+CONFIG_IRDA_CACHE_LAST_LSAP=y
+# CONFIG_IRDA_FAST_RR is not set
+# CONFIG_IRDA_DEBUG is not set
+
+#
+# Infrared-port device drivers
+#
+
+#
+# SIR device drivers
+#
+# CONFIG_IRTTY_SIR is not set
+
+#
+# Dongle support
+#
+
+#
+# FIR device drivers
+#
+CONFIG_VLSI_FIR=m
+# CONFIG_BT is not set
+CONFIG_AF_RXRPC=m
+CONFIG_AF_RXRPC_DEBUG=y
+CONFIG_RXKAD=m
+CONFIG_WIRELESS=y
+# CONFIG_CFG80211 is not set
+# CONFIG_LIB80211 is not set
+
+#
+# CFG80211 needs to be enabled for MAC80211
+#
+CONFIG_WIMAX=m
+CONFIG_WIMAX_DEBUG_LEVEL=8
+# CONFIG_RFKILL is not set
+# CONFIG_NET_9P is not set
+CONFIG_CAIF=m
+# CONFIG_CAIF_DEBUG is not set
+# CONFIG_CAIF_NETDEV is not set
+CONFIG_CAIF_USB=m
+CONFIG_CEPH_LIB=m
+# CONFIG_CEPH_LIB_PRETTYDEBUG is not set
+# CONFIG_CEPH_LIB_USE_DNS_RESOLVER is not set
+# CONFIG_NFC is not set
+
+#
+# Device Drivers
+#
+
+#
+# Generic Driver Options
+#
+CONFIG_UEVENT_HELPER_PATH=""
+CONFIG_DEVTMPFS=y
+# CONFIG_DEVTMPFS_MOUNT is not set
+CONFIG_STANDALONE=y
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_FW_LOADER=m
+# CONFIG_FIRMWARE_IN_KERNEL is not set
+CONFIG_EXTRA_FIRMWARE=""
+# CONFIG_DEBUG_DRIVER is not set
+CONFIG_DEBUG_DEVRES=y
+# CONFIG_SYS_HYPERVISOR is not set
+# CONFIG_GENERIC_CPU_DEVICES is not set
+CONFIG_REGMAP=y
+CONFIG_REGMAP_I2C=m
+# CONFIG_DMA_SHARED_BUFFER is not set
+CONFIG_CONNECTOR=m
+CONFIG_MTD=m
+# CONFIG_MTD_TESTS is not set
+CONFIG_MTD_REDBOOT_PARTS=m
+CONFIG_MTD_REDBOOT_DIRECTORY_BLOCK=-1
+# CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED is not set
+# CONFIG_MTD_REDBOOT_PARTS_READONLY is not set
+CONFIG_MTD_AR7_PARTS=m
+
+#
+# User Modules And Translation Layers
+#
+# CONFIG_MTD_CHAR is not set
+CONFIG_MTD_BLKDEVS=m
+CONFIG_MTD_BLOCK=m
+# CONFIG_MTD_BLOCK_RO is not set
+CONFIG_FTL=m
+# CONFIG_NFTL is not set
+# CONFIG_INFTL is not set
+CONFIG_RFD_FTL=m
+# CONFIG_SSFDC is not set
+# CONFIG_SM_FTL is not set
+# CONFIG_MTD_OOPS is not set
+CONFIG_MTD_SWAP=m
+
+#
+# RAM/ROM/Flash chip drivers
+#
+# CONFIG_MTD_CFI is not set
+CONFIG_MTD_JEDECPROBE=m
+CONFIG_MTD_GEN_PROBE=m
+# CONFIG_MTD_CFI_ADV_OPTIONS is not set
+CONFIG_MTD_MAP_BANK_WIDTH_1=y
+CONFIG_MTD_MAP_BANK_WIDTH_2=y
+CONFIG_MTD_MAP_BANK_WIDTH_4=y
+# CONFIG_MTD_MAP_BANK_WIDTH_8 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_16 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_32 is not set
+CONFIG_MTD_CFI_I1=y
+CONFIG_MTD_CFI_I2=y
+# CONFIG_MTD_CFI_I4 is not set
+# CONFIG_MTD_CFI_I8 is not set
+CONFIG_MTD_CFI_INTELEXT=m
+CONFIG_MTD_CFI_AMDSTD=m
+CONFIG_MTD_CFI_STAA=m
+CONFIG_MTD_CFI_UTIL=m
+CONFIG_MTD_RAM=m
+# CONFIG_MTD_ROM is not set
+# CONFIG_MTD_ABSENT is not set
+
+#
+# Mapping drivers for chip access
+#
+CONFIG_MTD_COMPLEX_MAPPINGS=y
+# CONFIG_MTD_PHYSMAP is not set
+CONFIG_MTD_TS5500=m
+CONFIG_MTD_SBC_GXX=m
+CONFIG_MTD_AMD76XROM=m
+# CONFIG_MTD_ICHXROM is not set
+CONFIG_MTD_ESB2ROM=m
+CONFIG_MTD_CK804XROM=m
+CONFIG_MTD_SCB2_FLASH=m
+# CONFIG_MTD_NETtel is not set
+CONFIG_MTD_L440GX=m
+# CONFIG_MTD_PCI is not set
+CONFIG_MTD_INTEL_VR_NOR=m
+CONFIG_MTD_PLATRAM=m
+CONFIG_MTD_LATCH_ADDR=m
+
+#
+# Self-contained MTD device drivers
+#
+CONFIG_MTD_PMC551=m
+# CONFIG_MTD_PMC551_BUGFIX is not set
+# CONFIG_MTD_PMC551_DEBUG is not set
+# CONFIG_MTD_SLRAM is not set
+# CONFIG_MTD_PHRAM is not set
+CONFIG_MTD_MTDRAM=m
+CONFIG_MTDRAM_TOTAL_SIZE=4096
+CONFIG_MTDRAM_ERASE_SIZE=128
+CONFIG_MTD_BLOCK2MTD=m
+
+#
+# Disk-On-Chip Device Drivers
+#
+CONFIG_MTD_DOC2000=m
+# CONFIG_MTD_DOC2001 is not set
+# CONFIG_MTD_DOC2001PLUS is not set
+CONFIG_MTD_DOCG3=m
+CONFIG_BCH_CONST_M=14
+CONFIG_BCH_CONST_T=4
+CONFIG_MTD_DOCPROBE=m
+CONFIG_MTD_DOCECC=m
+# CONFIG_MTD_DOCPROBE_ADVANCED is not set
+CONFIG_MTD_DOCPROBE_ADDRESS=0x0
+CONFIG_MTD_NAND_ECC=m
+# CONFIG_MTD_NAND_ECC_SMC is not set
+CONFIG_MTD_NAND=m
+CONFIG_MTD_NAND_VERIFY_WRITE=y
+CONFIG_MTD_NAND_BCH=m
+CONFIG_MTD_NAND_ECC_BCH=y
+# CONFIG_MTD_SM_COMMON is not set
+# CONFIG_MTD_NAND_MUSEUM_IDS is not set
+# CONFIG_MTD_NAND_DENALI is not set
+CONFIG_MTD_NAND_IDS=m
+# CONFIG_MTD_NAND_RICOH is not set
+# CONFIG_MTD_NAND_DISKONCHIP is not set
+CONFIG_MTD_NAND_CAFE=m
+# CONFIG_MTD_NAND_NANDSIM is not set
+CONFIG_MTD_NAND_PLATFORM=m
+# CONFIG_MTD_ONENAND is not set
+
+#
+# LPDDR flash memory drivers
+#
+# CONFIG_MTD_LPDDR is not set
+CONFIG_MTD_UBI=m
+CONFIG_MTD_UBI_WL_THRESHOLD=4096
+CONFIG_MTD_UBI_BEB_RESERVE=1
+# CONFIG_MTD_UBI_GLUEBI is not set
+# CONFIG_PARPORT is not set
+CONFIG_PNP=y
+# CONFIG_PNP_DEBUG_MESSAGES is not set
+
+#
+# Protocols
+#
+CONFIG_PNPACPI=y
+CONFIG_BLK_DEV=y
+CONFIG_BLK_CPQ_DA=m
+CONFIG_BLK_CPQ_CISS_DA=m
+CONFIG_CISS_SCSI_TAPE=y
+CONFIG_BLK_DEV_DAC960=m
+CONFIG_BLK_DEV_UMEM=m
+# CONFIG_BLK_DEV_COW_COMMON is not set
+# CONFIG_BLK_DEV_LOOP is not set
+# CONFIG_BLK_DEV_DRBD is not set
+CONFIG_BLK_DEV_NBD=m
+# CONFIG_BLK_DEV_NVME is not set
+# CONFIG_BLK_DEV_SX8 is not set
+CONFIG_BLK_DEV_RAM=m
+CONFIG_BLK_DEV_RAM_COUNT=16
+CONFIG_BLK_DEV_RAM_SIZE=4096
+# CONFIG_BLK_DEV_XIP is not set
+CONFIG_CDROM_PKTCDVD=m
+CONFIG_CDROM_PKTCDVD_BUFFERS=8
+CONFIG_CDROM_PKTCDVD_WCACHE=y
+# CONFIG_ATA_OVER_ETH is not set
+CONFIG_VIRTIO_BLK=m
+CONFIG_BLK_DEV_HD=y
+# CONFIG_BLK_DEV_RBD is not set
+CONFIG_MISC_DEVICES=y
+# CONFIG_PHANTOM is not set
+# CONFIG_INTEL_MID_PTI is not set
+CONFIG_SGI_IOC4=m
+CONFIG_TIFM_CORE=m
+# CONFIG_TIFM_7XX1 is not set
+# CONFIG_ICS932S401 is not set
+# CONFIG_ENCLOSURE_SERVICES is not set
+# CONFIG_HP_ILO is not set
+CONFIG_APDS9802ALS=m
+CONFIG_ISL29020=m
+# CONFIG_SENSORS_BH1770 is not set
+CONFIG_SENSORS_APDS990X=m
+CONFIG_HMC6352=m
+# CONFIG_DS1682 is not set
+CONFIG_VMWARE_BALLOON=m
+# CONFIG_PCH_PHUB is not set
+# CONFIG_USB_SWITCH_FSA9480 is not set
+# CONFIG_C2PORT is not set
+
+#
+# EEPROM support
+#
+CONFIG_EEPROM_MAX6875=m
+# CONFIG_EEPROM_93CX6 is not set
+CONFIG_CB710_CORE=m
+# CONFIG_CB710_DEBUG is not set
+CONFIG_CB710_DEBUG_ASSUMPTIONS=y
+CONFIG_IWMC3200TOP=m
+# CONFIG_IWMC3200TOP_DEBUG is not set
+# CONFIG_IWMC3200TOP_DEBUGFS is not set
+
+#
+# Texas Instruments shared transport line discipline
+#
+
+#
+# Altera FPGA firmware download module
+#
+CONFIG_ALTERA_STAPL=m
+CONFIG_HAVE_IDE=y
+# CONFIG_IDE is not set
+
+#
+# SCSI device support
+#
+CONFIG_SCSI_MOD=m
+# CONFIG_RAID_ATTRS is not set
+CONFIG_SCSI=m
+CONFIG_SCSI_DMA=y
+# CONFIG_SCSI_TGT is not set
+CONFIG_SCSI_NETLINK=y
+# CONFIG_SCSI_PROC_FS is not set
+
+#
+# SCSI support type (disk, tape, CD-ROM)
+#
+# CONFIG_BLK_DEV_SD is not set
+CONFIG_CHR_DEV_ST=m
+# CONFIG_CHR_DEV_OSST is not set
+CONFIG_BLK_DEV_SR=m
+CONFIG_BLK_DEV_SR_VENDOR=y
+CONFIG_CHR_DEV_SG=m
+# CONFIG_CHR_DEV_SCH is not set
+# CONFIG_SCSI_MULTI_LUN is not set
+# CONFIG_SCSI_CONSTANTS is not set
+# CONFIG_SCSI_LOGGING is not set
+CONFIG_SCSI_SCAN_ASYNC=y
+CONFIG_SCSI_WAIT_SCAN=m
+
+#
+# SCSI Transports
+#
+CONFIG_SCSI_SPI_ATTRS=m
+CONFIG_SCSI_FC_ATTRS=m
+CONFIG_SCSI_ISCSI_ATTRS=m
+CONFIG_SCSI_SAS_ATTRS=m
+CONFIG_SCSI_SAS_LIBSAS=m
+# CONFIG_SCSI_SAS_ATA is not set
+# CONFIG_SCSI_SAS_HOST_SMP is not set
+CONFIG_SCSI_SRP_ATTRS=m
+CONFIG_SCSI_LOWLEVEL=y
+# CONFIG_ISCSI_TCP is not set
+CONFIG_ISCSI_BOOT_SYSFS=m
+# CONFIG_SCSI_CXGB3_ISCSI is not set
+# CONFIG_SCSI_CXGB4_ISCSI is not set
+# CONFIG_SCSI_BNX2_ISCSI is not set
+# CONFIG_SCSI_BNX2X_FCOE is not set
+CONFIG_BE2ISCSI=m
+# CONFIG_BLK_DEV_3W_XXXX_RAID is not set
+# CONFIG_SCSI_HPSA is not set
+# CONFIG_SCSI_3W_9XXX is not set
+CONFIG_SCSI_3W_SAS=m
+# CONFIG_SCSI_ACARD is not set
+# CONFIG_SCSI_AACRAID is not set
+# CONFIG_SCSI_AIC7XXX is not set
+CONFIG_SCSI_AIC7XXX_OLD=m
+CONFIG_SCSI_AIC79XX=m
+CONFIG_AIC79XX_CMDS_PER_DEVICE=32
+CONFIG_AIC79XX_RESET_DELAY_MS=5000
+# CONFIG_AIC79XX_DEBUG_ENABLE is not set
+CONFIG_AIC79XX_DEBUG_MASK=0
+# CONFIG_AIC79XX_REG_PRETTY_PRINT is not set
+CONFIG_SCSI_AIC94XX=m
+# CONFIG_AIC94XX_DEBUG is not set
+CONFIG_SCSI_MVSAS=m
+# CONFIG_SCSI_MVSAS_DEBUG is not set
+# CONFIG_SCSI_MVSAS_TASKLET is not set
+CONFIG_SCSI_MVUMI=m
+# CONFIG_SCSI_DPT_I2O is not set
+CONFIG_SCSI_ADVANSYS=m
+# CONFIG_SCSI_ARCMSR is not set
+# CONFIG_MEGARAID_NEWGEN is not set
+# CONFIG_MEGARAID_LEGACY is not set
+# CONFIG_MEGARAID_SAS is not set
+# CONFIG_SCSI_MPT2SAS is not set
+CONFIG_SCSI_HPTIOP=m
+CONFIG_VMWARE_PVSCSI=m
+CONFIG_LIBFC=m
+CONFIG_LIBFCOE=m
+# CONFIG_FCOE is not set
+# CONFIG_FCOE_FNIC is not set
+CONFIG_SCSI_DMX3191D=m
+# CONFIG_SCSI_FUTURE_DOMAIN is not set
+# CONFIG_SCSI_ISCI is not set
+# CONFIG_SCSI_IPS is not set
+# CONFIG_SCSI_INITIO is not set
+CONFIG_SCSI_INIA100=m
+# CONFIG_SCSI_STEX is not set
+CONFIG_SCSI_SYM53C8XX_2=m
+CONFIG_SCSI_SYM53C8XX_DMA_ADDRESSING_MODE=1
+CONFIG_SCSI_SYM53C8XX_DEFAULT_TAGS=16
+CONFIG_SCSI_SYM53C8XX_MAX_TAGS=64
+CONFIG_SCSI_SYM53C8XX_MMIO=y
+# CONFIG_SCSI_IPR is not set
+CONFIG_SCSI_QLOGIC_1280=m
+# CONFIG_SCSI_QLA_FC is not set
+# CONFIG_SCSI_QLA_ISCSI is not set
+# CONFIG_SCSI_LPFC is not set
+# CONFIG_SCSI_DC395x is not set
+CONFIG_SCSI_DC390T=m
+CONFIG_SCSI_DEBUG=m
+# CONFIG_SCSI_PMCRAID is not set
+CONFIG_SCSI_PM8001=m
+# CONFIG_SCSI_SRP is not set
+CONFIG_SCSI_BFA_FC=m
+# CONFIG_SCSI_DH is not set
+# CONFIG_SCSI_OSD_INITIATOR is not set
+CONFIG_ATA=m
+# CONFIG_ATA_NONSTANDARD is not set
+CONFIG_ATA_VERBOSE_ERROR=y
+# CONFIG_ATA_ACPI is not set
+CONFIG_SATA_PMP=y
+
+#
+# Controllers with non-SFF native interface
+#
+CONFIG_SATA_AHCI=m
+# CONFIG_SATA_AHCI_PLATFORM is not set
+# CONFIG_SATA_INIC162X is not set
+# CONFIG_SATA_ACARD_AHCI is not set
+CONFIG_SATA_SIL24=m
+# CONFIG_ATA_SFF is not set
+# CONFIG_MD is not set
+# CONFIG_TARGET_CORE is not set
+CONFIG_FUSION=y
+CONFIG_FUSION_SPI=m
+CONFIG_FUSION_FC=m
+CONFIG_FUSION_SAS=m
+CONFIG_FUSION_MAX_SGE=128
+# CONFIG_FUSION_CTL is not set
+CONFIG_FUSION_LOGGING=y
+
+#
+# IEEE 1394 (FireWire) support
+#
+CONFIG_FIREWIRE=m
+# CONFIG_FIREWIRE_OHCI is not set
+# CONFIG_FIREWIRE_SBP2 is not set
+# CONFIG_FIREWIRE_NET is not set
+# CONFIG_FIREWIRE_NOSY is not set
+CONFIG_I2O=m
+# CONFIG_I2O_LCT_NOTIFY_ON_CHANGES is not set
+# CONFIG_I2O_EXT_ADAPTEC is not set
+CONFIG_I2O_CONFIG=m
+CONFIG_I2O_CONFIG_OLD_IOCTL=y
+CONFIG_I2O_BUS=m
+CONFIG_I2O_BLOCK=m
+# CONFIG_I2O_SCSI is not set
+# CONFIG_I2O_PROC is not set
+CONFIG_MACINTOSH_DRIVERS=y
+CONFIG_NETDEVICES=y
+CONFIG_NET_CORE=y
+CONFIG_BONDING=m
+CONFIG_DUMMY=m
+CONFIG_EQUALIZER=m
+# CONFIG_NET_FC is not set
+CONFIG_MII=m
+# CONFIG_NET_TEAM is not set
+# CONFIG_MACVLAN is not set
+CONFIG_NETCONSOLE=m
+CONFIG_NETPOLL=y
+# CONFIG_NETPOLL_TRAP is not set
+CONFIG_NET_POLL_CONTROLLER=y
+CONFIG_TUN=m
+# CONFIG_VETH is not set
+# CONFIG_VIRTIO_NET is not set
+# CONFIG_ARCNET is not set
+
+#
+# CAIF transport drivers
+#
+CONFIG_CAIF_TTY=m
+CONFIG_CAIF_SPI_SLAVE=m
+CONFIG_CAIF_SPI_SYNC=y
+# CONFIG_CAIF_HSI is not set
+CONFIG_ETHERNET=y
+CONFIG_MDIO=m
+CONFIG_NET_VENDOR_3COM=y
+# CONFIG_VORTEX is not set
+CONFIG_TYPHOON=m
+CONFIG_NET_VENDOR_ADAPTEC=y
+CONFIG_ADAPTEC_STARFIRE=m
+# CONFIG_NET_VENDOR_ALTEON is not set
+# CONFIG_NET_VENDOR_AMD is not set
+CONFIG_NET_VENDOR_ATHEROS=y
+CONFIG_ATL2=m
+CONFIG_ATL1=m
+CONFIG_ATL1E=m
+# CONFIG_ATL1C is not set
+CONFIG_NET_VENDOR_BROADCOM=y
+# CONFIG_B44 is not set
+CONFIG_BNX2=m
+CONFIG_CNIC=m
+# CONFIG_TIGON3 is not set
+CONFIG_BNX2X=m
+CONFIG_NET_VENDOR_BROCADE=y
+# CONFIG_BNA is not set
+CONFIG_NET_CALXEDA_XGMAC=m
+CONFIG_NET_VENDOR_CHELSIO=y
+CONFIG_CHELSIO_T1=m
+CONFIG_CHELSIO_T1_1G=y
+CONFIG_CHELSIO_T3=m
+# CONFIG_CHELSIO_T4 is not set
+# CONFIG_CHELSIO_T4VF is not set
+CONFIG_NET_VENDOR_CISCO=y
+CONFIG_ENIC=m
+CONFIG_DNET=m
+CONFIG_NET_VENDOR_DEC=y
+# CONFIG_NET_TULIP is not set
+# CONFIG_NET_VENDOR_DLINK is not set
+CONFIG_NET_VENDOR_EMULEX=y
+CONFIG_BE2NET=m
+CONFIG_NET_VENDOR_EXAR=y
+# CONFIG_S2IO is not set
+CONFIG_VXGE=m
+# CONFIG_VXGE_DEBUG_TRACE_ALL is not set
+CONFIG_NET_VENDOR_HP=y
+CONFIG_HP100=m
+# CONFIG_NET_VENDOR_INTEL is not set
+CONFIG_IP1000=m
+# CONFIG_JME is not set
+CONFIG_NET_VENDOR_MARVELL=y
+# CONFIG_SKGE is not set
+CONFIG_SKY2=m
+CONFIG_SKY2_DEBUG=y
+CONFIG_NET_VENDOR_MELLANOX=y
+CONFIG_MLX4_EN=m
+CONFIG_MLX4_CORE=m
+CONFIG_MLX4_DEBUG=y
+CONFIG_NET_VENDOR_MICREL=y
+CONFIG_KS8851_MLL=m
+# CONFIG_KSZ884X_PCI is not set
+# CONFIG_NET_VENDOR_MYRI is not set
+CONFIG_FEALNX=m
+CONFIG_NET_VENDOR_NATSEMI=y
+CONFIG_NATSEMI=m
+# CONFIG_NS83820 is not set
+# CONFIG_NET_VENDOR_8390 is not set
+CONFIG_NET_VENDOR_NVIDIA=y
+CONFIG_FORCEDETH=m
+CONFIG_NET_VENDOR_OKI=y
+# CONFIG_PCH_GBE is not set
+# CONFIG_ETHOC is not set
+CONFIG_NET_PACKET_ENGINE=y
+CONFIG_HAMACHI=m
+# CONFIG_YELLOWFIN is not set
+# CONFIG_NET_VENDOR_QLOGIC is not set
+# CONFIG_NET_VENDOR_REALTEK is not set
+CONFIG_NET_VENDOR_RDC=y
+CONFIG_R6040=m
+# CONFIG_NET_VENDOR_SEEQ is not set
+CONFIG_NET_VENDOR_SILAN=y
+CONFIG_SC92031=m
+CONFIG_NET_VENDOR_SIS=y
+# CONFIG_SIS900 is not set
+CONFIG_SIS190=m
+CONFIG_SFC=m
+CONFIG_SFC_MTD=y
+CONFIG_NET_VENDOR_SMSC=y
+# CONFIG_EPIC100 is not set
+CONFIG_SMSC9420=m
+# CONFIG_NET_VENDOR_STMICRO is not set
+# CONFIG_NET_VENDOR_SUN is not set
+# CONFIG_NET_VENDOR_TEHUTI is not set
+CONFIG_NET_VENDOR_TI=y
+CONFIG_TLAN=m
+# CONFIG_NET_VENDOR_VIA is not set
+CONFIG_FDDI=m
+# CONFIG_DEFXX is not set
+CONFIG_SKFP=m
+CONFIG_HIPPI=y
+CONFIG_ROADRUNNER=m
+CONFIG_ROADRUNNER_LARGE_RINGS=y
+CONFIG_NET_SB1000=m
+CONFIG_PHYLIB=m
+
+#
+# MII PHY device drivers
+#
+CONFIG_MARVELL_PHY=m
+CONFIG_DAVICOM_PHY=m
+# CONFIG_QSEMI_PHY is not set
+# CONFIG_LXT_PHY is not set
+CONFIG_CICADA_PHY=m
+# CONFIG_VITESSE_PHY is not set
+CONFIG_SMSC_PHY=m
+CONFIG_BROADCOM_PHY=m
+# CONFIG_ICPLUS_PHY is not set
+# CONFIG_REALTEK_PHY is not set
+CONFIG_NATIONAL_PHY=m
+CONFIG_STE10XP=m
+# CONFIG_LSI_ET1011C_PHY is not set
+CONFIG_MICREL_PHY=m
+CONFIG_MDIO_BITBANG=m
+CONFIG_PPP=m
+CONFIG_PPP_BSDCOMP=m
+CONFIG_PPP_DEFLATE=m
+CONFIG_PPP_FILTER=y
+CONFIG_PPP_MPPE=m
+# CONFIG_PPP_MULTILINK is not set
+# CONFIG_PPPOE is not set
+CONFIG_PPTP=m
+# CONFIG_PPPOL2TP is not set
+# CONFIG_PPP_ASYNC is not set
+# CONFIG_PPP_SYNC_TTY is not set
+# CONFIG_SLIP is not set
+CONFIG_SLHC=m
+# CONFIG_TR is not set
+# CONFIG_WLAN is not set
+
+#
+# WiMAX Wireless Broadband devices
+#
+
+#
+# Enable USB support to see WiMAX USB drivers
+#
+# CONFIG_WIMAX_I2400M_SDIO is not set
+CONFIG_WAN=y
+# CONFIG_LANMEDIA is not set
+CONFIG_HDLC=m
+CONFIG_HDLC_RAW=m
+CONFIG_HDLC_RAW_ETH=m
+CONFIG_HDLC_CISCO=m
+CONFIG_HDLC_FR=m
+CONFIG_HDLC_PPP=m
+CONFIG_HDLC_X25=m
+CONFIG_PCI200SYN=m
+# CONFIG_WANXL is not set
+CONFIG_PC300TOO=m
+CONFIG_FARSYNC=m
+CONFIG_DSCC4=m
+CONFIG_DSCC4_PCISYNC=y
+# CONFIG_DSCC4_PCI_RST is not set
+CONFIG_DLCI=m
+CONFIG_DLCI_MAX=8
+CONFIG_SBNI=m
+# CONFIG_SBNI_MULTILINE is not set
+CONFIG_VMXNET3=m
+# CONFIG_ISDN is not set
+CONFIG_PHONE=m
+# CONFIG_PHONE_IXJ is not set
+
+#
+# Input device support
+#
+# CONFIG_INPUT is not set
+
+#
+# Hardware I/O ports
+#
+CONFIG_SERIO=m
+CONFIG_SERIO_I8042=m
+CONFIG_SERIO_SERPORT=m
+# CONFIG_SERIO_CT82C710 is not set
+# CONFIG_SERIO_PCIPS2 is not set
+# CONFIG_SERIO_LIBPS2 is not set
+CONFIG_SERIO_RAW=m
+# CONFIG_SERIO_ALTERA_PS2 is not set
+# CONFIG_SERIO_PS2MULT is not set
+CONFIG_GAMEPORT=m
+# CONFIG_GAMEPORT_NS558 is not set
+CONFIG_GAMEPORT_L4=m
+# CONFIG_GAMEPORT_EMU10K1 is not set
+CONFIG_GAMEPORT_FM801=m
+
+#
+# Character devices
+#
+# CONFIG_VT is not set
+CONFIG_UNIX98_PTYS=y
+CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
+CONFIG_LEGACY_PTYS=y
+CONFIG_LEGACY_PTY_COUNT=256
+# CONFIG_SERIAL_NONSTANDARD is not set
+CONFIG_NOZOMI=m
+CONFIG_N_GSM=m
+CONFIG_TRACE_ROUTER=m
+CONFIG_TRACE_SINK=m
+CONFIG_DEVKMEM=y
+
+#
+# Serial drivers
+#
+CONFIG_SERIAL_8250=m
+CONFIG_FIX_EARLYCON_MEM=y
+# CONFIG_SERIAL_8250_PCI is not set
+# CONFIG_SERIAL_8250_PNP is not set
+CONFIG_SERIAL_8250_NR_UARTS=4
+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+CONFIG_SERIAL_8250_EXTENDED=y
+# CONFIG_SERIAL_8250_MANY_PORTS is not set
+CONFIG_SERIAL_8250_SHARE_IRQ=y
+# CONFIG_SERIAL_8250_DETECT_IRQ is not set
+CONFIG_SERIAL_8250_RSA=y
+
+#
+# Non-8250 serial port support
+#
+CONFIG_SERIAL_MFD_HSU=m
+CONFIG_SERIAL_CORE=m
+# CONFIG_SERIAL_JSM is not set
+CONFIG_SERIAL_TIMBERDALE=m
+CONFIG_SERIAL_ALTERA_JTAGUART=m
+# CONFIG_SERIAL_ALTERA_UART is not set
+# CONFIG_SERIAL_PCH_UART is not set
+CONFIG_SERIAL_XILINX_PS_UART=m
+# CONFIG_TTY_PRINTK is not set
+CONFIG_HVC_DRIVER=y
+CONFIG_VIRTIO_CONSOLE=m
+CONFIG_IPMI_HANDLER=m
+# CONFIG_IPMI_PANIC_EVENT is not set
+# CONFIG_IPMI_DEVICE_INTERFACE is not set
+CONFIG_IPMI_SI=m
+CONFIG_IPMI_WATCHDOG=m
+# CONFIG_IPMI_POWEROFF is not set
+# CONFIG_HW_RANDOM is not set
+# CONFIG_NVRAM is not set
+CONFIG_RTC=m
+CONFIG_GEN_RTC=m
+CONFIG_GEN_RTC_X=y
+# CONFIG_R3964 is not set
+CONFIG_APPLICOM=m
+# CONFIG_MWAVE is not set
+# CONFIG_RAW_DRIVER is not set
+# CONFIG_HPET is not set
+# CONFIG_HANGCHECK_TIMER is not set
+CONFIG_TCG_TPM=m
+# CONFIG_TCG_TIS is not set
+CONFIG_TCG_NSC=m
+# CONFIG_TCG_ATMEL is not set
+CONFIG_TCG_INFINEON=m
+# CONFIG_TELCLOCK is not set
+CONFIG_DEVPORT=y
+# CONFIG_RAMOOPS is not set
+CONFIG_I2C=m
+CONFIG_I2C_BOARDINFO=y
+# CONFIG_I2C_COMPAT is not set
+CONFIG_I2C_CHARDEV=m
+CONFIG_I2C_MUX=m
+
+#
+# Multiplexer I2C Chip support
+#
+# CONFIG_I2C_MUX_PCA9541 is not set
+CONFIG_I2C_MUX_PCA954x=m
+CONFIG_I2C_HELPER_AUTO=y
+CONFIG_I2C_SMBUS=m
+CONFIG_I2C_ALGOBIT=m
+
+#
+# I2C Hardware Bus support
+#
+
+#
+# PC SMBus host controller drivers
+#
+CONFIG_I2C_ALI1535=m
+CONFIG_I2C_ALI1563=m
+CONFIG_I2C_ALI15X3=m
+# CONFIG_I2C_AMD756 is not set
+# CONFIG_I2C_AMD8111 is not set
+CONFIG_I2C_I801=m
+CONFIG_I2C_ISCH=m
+CONFIG_I2C_PIIX4=m
+CONFIG_I2C_NFORCE2=m
+# CONFIG_I2C_NFORCE2_S4985 is not set
+CONFIG_I2C_SIS5595=m
+CONFIG_I2C_SIS630=m
+CONFIG_I2C_SIS96X=m
+CONFIG_I2C_VIA=m
+CONFIG_I2C_VIAPRO=m
+
+#
+# ACPI drivers
+#
+CONFIG_I2C_SCMI=m
+
+#
+# I2C system bus drivers (mostly embedded / system-on-chip)
+#
+CONFIG_I2C_DESIGNWARE_PCI=m
+# CONFIG_I2C_INTEL_MID is not set
+CONFIG_I2C_OCORES=m
+# CONFIG_I2C_PCA_PLATFORM is not set
+# CONFIG_I2C_PXA_PCI is not set
+CONFIG_I2C_SIMTEC=m
+# CONFIG_I2C_XILINX is not set
+# CONFIG_I2C_EG20T is not set
+
+#
+# External I2C/SMBus adapter drivers
+#
+CONFIG_I2C_PARPORT_LIGHT=m
+CONFIG_I2C_TAOS_EVM=m
+
+#
+# Other I2C/SMBus bus drivers
+#
+CONFIG_I2C_STUB=m
+# CONFIG_I2C_DEBUG_CORE is not set
+# CONFIG_I2C_DEBUG_ALGO is not set
+# CONFIG_I2C_DEBUG_BUS is not set
+# CONFIG_SPI is not set
+# CONFIG_HSI is not set
+
+#
+# PPS support
+#
+# CONFIG_PPS is not set
+
+#
+# PPS generators support
+#
+
+#
+# PTP clock support
+#
+
+#
+# Enable Device Drivers -> PPS to see the PTP clock options.
+#
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+# CONFIG_GPIOLIB is not set
+CONFIG_W1=m
+CONFIG_W1_CON=y
+
+#
+# 1-wire Bus Masters
+#
+CONFIG_W1_MASTER_MATROX=m
+# CONFIG_W1_MASTER_DS2482 is not set
+CONFIG_W1_MASTER_DS1WM=m
+
+#
+# 1-wire Slaves
+#
+# CONFIG_W1_SLAVE_THERM is not set
+CONFIG_W1_SLAVE_SMEM=m
+CONFIG_W1_SLAVE_DS2408=m
+# CONFIG_W1_SLAVE_DS2423 is not set
+# CONFIG_W1_SLAVE_DS2431 is not set
+CONFIG_W1_SLAVE_DS2433=m
+CONFIG_W1_SLAVE_DS2433_CRC=y
+# CONFIG_W1_SLAVE_DS2760 is not set
+CONFIG_W1_SLAVE_DS2780=m
+CONFIG_W1_SLAVE_BQ27000=m
+CONFIG_POWER_SUPPLY=m
+# CONFIG_POWER_SUPPLY_DEBUG is not set
+# CONFIG_PDA_POWER is not set
+CONFIG_TEST_POWER=m
+CONFIG_BATTERY_DS2780=m
+# CONFIG_BATTERY_DS2782 is not set
+# CONFIG_BATTERY_SBS is not set
+CONFIG_BATTERY_BQ27x00=m
+CONFIG_BATTERY_BQ27X00_I2C=y
+CONFIG_BATTERY_BQ27X00_PLATFORM=y
+# CONFIG_BATTERY_MAX17040 is not set
+CONFIG_BATTERY_MAX17042=m
+CONFIG_CHARGER_PCF50633=m
+# CONFIG_CHARGER_MAX8903 is not set
+# CONFIG_CHARGER_LP8727 is not set
+CONFIG_HWMON=m
+CONFIG_HWMON_VID=m
+# CONFIG_HWMON_DEBUG_CHIP is not set
+
+#
+# Native drivers
+#
+CONFIG_SENSORS_AD7414=m
+CONFIG_SENSORS_AD7418=m
+CONFIG_SENSORS_ADM1021=m
+CONFIG_SENSORS_ADM1025=m
+# CONFIG_SENSORS_ADM1026 is not set
+# CONFIG_SENSORS_ADM1029 is not set
+# CONFIG_SENSORS_ADM1031 is not set
+CONFIG_SENSORS_ADM9240=m
+# CONFIG_SENSORS_ADT7411 is not set
+# CONFIG_SENSORS_ADT7462 is not set
+CONFIG_SENSORS_ADT7470=m
+# CONFIG_SENSORS_ADT7475 is not set
+CONFIG_SENSORS_ASC7621=m
+CONFIG_SENSORS_K8TEMP=m
+# CONFIG_SENSORS_K10TEMP is not set
+# CONFIG_SENSORS_FAM15H_POWER is not set
+# CONFIG_SENSORS_ASB100 is not set
+CONFIG_SENSORS_ATXP1=m
+CONFIG_SENSORS_DS620=m
+# CONFIG_SENSORS_DS1621 is not set
+# CONFIG_SENSORS_I5K_AMB is not set
+CONFIG_SENSORS_F71805F=m
+CONFIG_SENSORS_F71882FG=m
+CONFIG_SENSORS_F75375S=m
+# CONFIG_SENSORS_FSCHMD is not set
+CONFIG_SENSORS_G760A=m
+# CONFIG_SENSORS_GL518SM is not set
+CONFIG_SENSORS_GL520SM=m
+# CONFIG_SENSORS_CORETEMP is not set
+# CONFIG_SENSORS_IBMAEM is not set
+CONFIG_SENSORS_IBMPEX=m
+# CONFIG_SENSORS_IT87 is not set
+CONFIG_SENSORS_JC42=m
+# CONFIG_SENSORS_LINEAGE is not set
+# CONFIG_SENSORS_LM63 is not set
+# CONFIG_SENSORS_LM73 is not set
+CONFIG_SENSORS_LM75=m
+# CONFIG_SENSORS_LM77 is not set
+CONFIG_SENSORS_LM78=m
+# CONFIG_SENSORS_LM80 is not set
+# CONFIG_SENSORS_LM83 is not set
+# CONFIG_SENSORS_LM85 is not set
+CONFIG_SENSORS_LM87=m
+# CONFIG_SENSORS_LM90 is not set
+CONFIG_SENSORS_LM92=m
+# CONFIG_SENSORS_LM93 is not set
+CONFIG_SENSORS_LTC4151=m
+# CONFIG_SENSORS_LTC4215 is not set
+# CONFIG_SENSORS_LTC4245 is not set
+CONFIG_SENSORS_LTC4261=m
+CONFIG_SENSORS_LM95241=m
+CONFIG_SENSORS_LM95245=m
+# CONFIG_SENSORS_MAX16065 is not set
+# CONFIG_SENSORS_MAX1619 is not set
+CONFIG_SENSORS_MAX1668=m
+# CONFIG_SENSORS_MAX6639 is not set
+CONFIG_SENSORS_MAX6642=m
+CONFIG_SENSORS_MAX6650=m
+# CONFIG_SENSORS_NTC_THERMISTOR is not set
+CONFIG_SENSORS_PC87360=m
+CONFIG_SENSORS_PC87427=m
+# CONFIG_SENSORS_PCF8591 is not set
+CONFIG_PMBUS=m
+# CONFIG_SENSORS_PMBUS is not set
+CONFIG_SENSORS_ADM1275=m
+# CONFIG_SENSORS_LM25066 is not set
+# CONFIG_SENSORS_LTC2978 is not set
+CONFIG_SENSORS_MAX16064=m
+# CONFIG_SENSORS_MAX34440 is not set
+CONFIG_SENSORS_MAX8688=m
+# CONFIG_SENSORS_UCD9000 is not set
+# CONFIG_SENSORS_UCD9200 is not set
+# CONFIG_SENSORS_ZL6100 is not set
+CONFIG_SENSORS_SHT21=m
+CONFIG_SENSORS_SIS5595=m
+CONFIG_SENSORS_SMM665=m
+CONFIG_SENSORS_DME1737=m
+# CONFIG_SENSORS_EMC1403 is not set
+CONFIG_SENSORS_EMC2103=m
+# CONFIG_SENSORS_EMC6W201 is not set
+CONFIG_SENSORS_SMSC47M1=m
+CONFIG_SENSORS_SMSC47M192=m
+# CONFIG_SENSORS_SMSC47B397 is not set
+CONFIG_SENSORS_SCH56XX_COMMON=m
+# CONFIG_SENSORS_SCH5627 is not set
+CONFIG_SENSORS_SCH5636=m
+# CONFIG_SENSORS_ADS1015 is not set
+# CONFIG_SENSORS_ADS7828 is not set
+CONFIG_SENSORS_AMC6821=m
+CONFIG_SENSORS_THMC50=m
+# CONFIG_SENSORS_TMP102 is not set
+CONFIG_SENSORS_TMP401=m
+CONFIG_SENSORS_TMP421=m
+CONFIG_SENSORS_VIA_CPUTEMP=m
+CONFIG_SENSORS_VIA686A=m
+CONFIG_SENSORS_VT1211=m
+CONFIG_SENSORS_VT8231=m
+# CONFIG_SENSORS_W83781D is not set
+# CONFIG_SENSORS_W83791D is not set
+# CONFIG_SENSORS_W83792D is not set
+CONFIG_SENSORS_W83793=m
+CONFIG_SENSORS_W83795=m
+CONFIG_SENSORS_W83795_FANCTRL=y
+# CONFIG_SENSORS_W83L785TS is not set
+CONFIG_SENSORS_W83L786NG=m
+CONFIG_SENSORS_W83627HF=m
+CONFIG_SENSORS_W83627EHF=m
+
+#
+# ACPI drivers
+#
+CONFIG_SENSORS_ACPI_POWER=m
+CONFIG_SENSORS_ATK0110=m
+# CONFIG_THERMAL is not set
+# CONFIG_WATCHDOG is not set
+CONFIG_SSB_POSSIBLE=y
+
+#
+# Sonics Silicon Backplane
+#
+CONFIG_SSB=m
+CONFIG_SSB_SPROM=y
+CONFIG_SSB_PCIHOST_POSSIBLE=y
+CONFIG_SSB_PCIHOST=y
+# CONFIG_SSB_B43_PCI_BRIDGE is not set
+CONFIG_SSB_SDIOHOST_POSSIBLE=y
+CONFIG_SSB_SDIOHOST=y
+CONFIG_SSB_SILENT=y
+CONFIG_SSB_DRIVER_PCICORE_POSSIBLE=y
+# CONFIG_SSB_DRIVER_PCICORE is not set
+CONFIG_BCMA_POSSIBLE=y
+
+#
+# Broadcom specific AMBA
+#
+# CONFIG_BCMA is not set
+
+#
+# Multifunction device drivers
+#
+CONFIG_MFD_CORE=y
+# CONFIG_MFD_SM501 is not set
+# CONFIG_HTC_PASIC3 is not set
+# CONFIG_TPS6105X is not set
+# CONFIG_TPS6507X is not set
+# CONFIG_MFD_TMIO is not set
+# CONFIG_MFD_WM8400 is not set
+CONFIG_MFD_PCF50633=m
+CONFIG_PCF50633_ADC=m
+CONFIG_PCF50633_GPIO=m
+CONFIG_ABX500_CORE=y
+CONFIG_AB8500_CORE=y
+CONFIG_AB8500_DEBUG=y
+# CONFIG_MFD_CS5535 is not set
+CONFIG_LPC_SCH=m
+# CONFIG_MFD_RDC321X is not set
+# CONFIG_MFD_JANZ_CMODIO is not set
+CONFIG_MFD_VX855=m
+# CONFIG_MFD_WL1273_CORE is not set
+# CONFIG_REGULATOR is not set
+# CONFIG_MEDIA_SUPPORT is not set
+
+#
+# Graphics support
+#
+CONFIG_AGP=m
+# CONFIG_AGP_INTEL is not set
+# CONFIG_AGP_SIS is not set
+CONFIG_AGP_VIA=m
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=16
+CONFIG_VGA_SWITCHEROO=y
+# CONFIG_DRM is not set
+# CONFIG_STUB_POULSBO is not set
+# CONFIG_VGASTATE is not set
+# CONFIG_VIDEO_OUTPUT_CONTROL is not set
+# CONFIG_FB is not set
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+# CONFIG_LCD_CLASS_DEVICE is not set
+# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
+# CONFIG_SOUND is not set
+# CONFIG_USB_SUPPORT is not set
+# CONFIG_UWB is not set
+CONFIG_MMC=m
+# CONFIG_MMC_DEBUG is not set
+# CONFIG_MMC_UNSAFE_RESUME is not set
+CONFIG_MMC_CLKGATE=y
+
+#
+# MMC/SD/SDIO Card Drivers
+#
+CONFIG_MMC_BLOCK=m
+CONFIG_MMC_BLOCK_MINORS=8
+# CONFIG_MMC_BLOCK_BOUNCE is not set
+# CONFIG_SDIO_UART is not set
+# CONFIG_MMC_TEST is not set
+
+#
+# MMC/SD/SDIO Host Controller Drivers
+#
+CONFIG_MMC_SDHCI=m
+CONFIG_MMC_SDHCI_PCI=m
+CONFIG_MMC_RICOH_MMC=y
+# CONFIG_MMC_SDHCI_PLTFM is not set
+CONFIG_MMC_TIFM_SD=m
+CONFIG_MMC_CB710=m
+# CONFIG_MMC_VIA_SDMMC is not set
+# CONFIG_MEMSTICK is not set
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+
+#
+# LED drivers
+#
+# CONFIG_LEDS_LM3530 is not set
+# CONFIG_LEDS_LP3944 is not set
+CONFIG_LEDS_LP5521=m
+CONFIG_LEDS_LP5523=m
+CONFIG_LEDS_PCA955X=m
+CONFIG_LEDS_BD2802=m
+# CONFIG_LEDS_TCA6507 is not set
+CONFIG_LEDS_TRIGGERS=y
+
+#
+# LED Triggers
+#
+# CONFIG_LEDS_TRIGGER_TIMER is not set
+# CONFIG_LEDS_TRIGGER_HEARTBEAT is not set
+# CONFIG_LEDS_TRIGGER_BACKLIGHT is not set
+# CONFIG_LEDS_TRIGGER_DEFAULT_ON is not set
+
+#
+# iptables trigger is under Netfilter config (LED target)
+#
+# CONFIG_ACCESSIBILITY is not set
+CONFIG_INFINIBAND=m
+# CONFIG_INFINIBAND_USER_MAD is not set
+CONFIG_INFINIBAND_USER_ACCESS=m
+CONFIG_INFINIBAND_USER_MEM=y
+CONFIG_INFINIBAND_ADDR_TRANS=y
+# CONFIG_INFINIBAND_MTHCA is not set
+# CONFIG_INFINIBAND_IPATH is not set
+CONFIG_INFINIBAND_QIB=m
+CONFIG_INFINIBAND_AMSO1100=m
+CONFIG_INFINIBAND_AMSO1100_DEBUG=y
+CONFIG_INFINIBAND_CXGB3=m
+CONFIG_INFINIBAND_CXGB3_DEBUG=y
+CONFIG_MLX4_INFINIBAND=m
+# CONFIG_INFINIBAND_NES is not set
+# CONFIG_INFINIBAND_IPOIB is not set
+CONFIG_INFINIBAND_SRP=m
+CONFIG_INFINIBAND_ISER=m
+CONFIG_EDAC=y
+
+#
+# Reporting subsystems
+#
+# CONFIG_EDAC_DEBUG is not set
+CONFIG_EDAC_MM_EDAC=m
+CONFIG_EDAC_E752X=m
+CONFIG_EDAC_I82975X=m
+# CONFIG_EDAC_I3000 is not set
+# CONFIG_EDAC_I3200 is not set
+CONFIG_EDAC_X38=m
+# CONFIG_EDAC_I5400 is not set
+CONFIG_EDAC_I5000=m
+# CONFIG_EDAC_I5100 is not set
+# CONFIG_EDAC_I7300 is not set
+# CONFIG_RTC_CLASS is not set
+# CONFIG_DMADEVICES is not set
+# CONFIG_AUXDISPLAY is not set
+CONFIG_UIO=m
+CONFIG_UIO_CIF=m
+CONFIG_UIO_PDRV=m
+# CONFIG_UIO_PDRV_GENIRQ is not set
+# CONFIG_UIO_AEC is not set
+# CONFIG_UIO_SERCOS3 is not set
+CONFIG_UIO_PCI_GENERIC=m
+CONFIG_UIO_NETX=m
+CONFIG_VIRTIO=m
+CONFIG_VIRTIO_RING=m
+
+#
+# Virtio drivers
+#
+CONFIG_VIRTIO_PCI=m
+CONFIG_VIRTIO_BALLOON=m
+CONFIG_VIRTIO_MMIO=m
+
+#
+# Microsoft Hyper-V guest support
+#
+# CONFIG_HYPERV is not set
+CONFIG_STAGING=y
+# CONFIG_ET131X is not set
+CONFIG_SLICOSS=m
+# CONFIG_ECHO is not set
+# CONFIG_COMEDI is not set
+# CONFIG_RTS_PSTOR is not set
+CONFIG_POHMELFS=m
+# CONFIG_POHMELFS_DEBUG is not set
+CONFIG_VME_BUS=m
+
+#
+# VME Bridge Drivers
+#
+CONFIG_VME_CA91CX42=m
+# CONFIG_VME_TSI148 is not set
+
+#
+# VME Device Drivers
+#
+CONFIG_VME_USER=m
+
+#
+# VME Board Drivers
+#
+CONFIG_VMIVME_7805=m
+# CONFIG_DX_SEP is not set
+# CONFIG_IIO is not set
+# CONFIG_XVMALLOC is not set
+CONFIG_CRYSTALHD=m
+CONFIG_CXT1E1=m
+# CONFIG_SBE_PMCC4_NCOMM is not set
+# CONFIG_SBE_2T3E3 is not set
+CONFIG_FT1000=m
+
+#
+# Speakup console speech
+#
+CONFIG_STAGING_MEDIA=y
+
+#
+# Android
+#
+CONFIG_ANDROID=y
+CONFIG_ANDROID_BINDER_IPC=y
+# CONFIG_ANDROID_LOGGER is not set
+CONFIG_ANDROID_RAM_CONSOLE=y
+# CONFIG_ANDROID_RAM_CONSOLE_ENABLE_VERBOSE is not set
+# CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION is not set
+# CONFIG_ANDROID_RAM_CONSOLE_EARLY_INIT is not set
+CONFIG_ANDROID_TIMED_OUTPUT=y
+# CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
+# CONFIG_ANDROID_SWITCH is not set
+# CONFIG_X86_PLATFORM_DEVICES is not set
+
+#
+# Hardware Spinlock drivers
+#
+CONFIG_CLKEVT_I8253=y
+CONFIG_CLKBLD_I8253=y
+CONFIG_IOMMU_API=y
+CONFIG_IOMMU_SUPPORT=y
+CONFIG_AMD_IOMMU=y
+# CONFIG_AMD_IOMMU_STATS is not set
+CONFIG_DMAR_TABLE=y
+CONFIG_INTEL_IOMMU=y
+CONFIG_INTEL_IOMMU_DEFAULT_ON=y
+CONFIG_INTEL_IOMMU_FLOPPY_WA=y
+# CONFIG_IRQ_REMAP is not set
+
+#
+# Remoteproc drivers (EXPERIMENTAL)
+#
+
+#
+# Rpmsg drivers (EXPERIMENTAL)
+#
+# CONFIG_VIRT_DRIVERS is not set
+CONFIG_PM_DEVFREQ=y
+
+#
+# DEVFREQ Governors
+#
+# CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND is not set
+# CONFIG_DEVFREQ_GOV_PERFORMANCE is not set
+CONFIG_DEVFREQ_GOV_POWERSAVE=y
+# CONFIG_DEVFREQ_GOV_USERSPACE is not set
+
+#
+# DEVFREQ Drivers
+#
+# CONFIG_XSHM is not set
+
+#
+# Firmware Drivers
+#
+CONFIG_EDD=m
+CONFIG_EDD_OFF=y
+# CONFIG_FIRMWARE_MEMMAP is not set
+# CONFIG_DELL_RBU is not set
+CONFIG_DCDBAS=m
+CONFIG_ISCSI_IBFT_FIND=y
+CONFIG_ISCSI_IBFT=m
+CONFIG_GOOGLE_FIRMWARE=y
+
+#
+# Google Firmware Drivers
+#
+
+#
+# File systems
+#
+CONFIG_EXT2_FS=m
+CONFIG_EXT2_FS_XATTR=y
+CONFIG_EXT2_FS_POSIX_ACL=y
+CONFIG_EXT2_FS_SECURITY=y
+# CONFIG_EXT2_FS_XIP is not set
+CONFIG_EXT3_FS=m
+# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+# CONFIG_EXT3_FS_XATTR is not set
+CONFIG_EXT4_FS=m
+CONFIG_EXT4_FS_XATTR=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+CONFIG_EXT4_DEBUG=y
+CONFIG_JBD=m
+# CONFIG_JBD_DEBUG is not set
+CONFIG_JBD2=m
+# CONFIG_JBD2_DEBUG is not set
+CONFIG_FS_MBCACHE=m
+CONFIG_REISERFS_FS=m
+# CONFIG_REISERFS_CHECK is not set
+# CONFIG_REISERFS_PROC_INFO is not set
+CONFIG_REISERFS_FS_XATTR=y
+CONFIG_REISERFS_FS_POSIX_ACL=y
+# CONFIG_REISERFS_FS_SECURITY is not set
+CONFIG_JFS_FS=m
+# CONFIG_JFS_POSIX_ACL is not set
+# CONFIG_JFS_SECURITY is not set
+CONFIG_JFS_DEBUG=y
+CONFIG_JFS_STATISTICS=y
+CONFIG_XFS_FS=m
+# CONFIG_XFS_QUOTA is not set
+CONFIG_XFS_POSIX_ACL=y
+# CONFIG_XFS_RT is not set
+# CONFIG_XFS_DEBUG is not set
+# CONFIG_GFS2_FS is not set
+# CONFIG_BTRFS_FS is not set
+CONFIG_NILFS2_FS=m
+CONFIG_FS_POSIX_ACL=y
+CONFIG_EXPORTFS=y
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+# CONFIG_DNOTIFY is not set
+# CONFIG_INOTIFY_USER is not set
+CONFIG_FANOTIFY=y
+# CONFIG_QUOTA is not set
+# CONFIG_QUOTACTL is not set
+# CONFIG_AUTOFS4_FS is not set
+CONFIG_FUSE_FS=m
+# CONFIG_CUSE is not set
+
+#
+# Caches
+#
+CONFIG_FSCACHE=m
+CONFIG_FSCACHE_STATS=y
+CONFIG_FSCACHE_HISTOGRAM=y
+CONFIG_FSCACHE_DEBUG=y
+# CONFIG_FSCACHE_OBJECT_LIST is not set
+# CONFIG_CACHEFILES is not set
+
+#
+# CD-ROM/DVD Filesystems
+#
+# CONFIG_ISO9660_FS is not set
+# CONFIG_UDF_FS is not set
+
+#
+# DOS/FAT/NT Filesystems
+#
+CONFIG_FAT_FS=m
+CONFIG_MSDOS_FS=m
+# CONFIG_VFAT_FS is not set
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+# CONFIG_NTFS_FS is not set
+
+#
+# Pseudo filesystems
+#
+CONFIG_PROC_FS=y
+CONFIG_PROC_KCORE=y
+CONFIG_PROC_SYSCTL=y
+# CONFIG_PROC_PAGE_MONITOR is not set
+# CONFIG_SYSFS is not set
+CONFIG_HUGETLBFS=y
+CONFIG_HUGETLB_PAGE=y
+# CONFIG_CONFIGFS_FS is not set
+CONFIG_MISC_FILESYSTEMS=y
+# CONFIG_ADFS_FS is not set
+CONFIG_AFFS_FS=m
+# CONFIG_ECRYPT_FS is not set
+# CONFIG_HFS_FS is not set
+# CONFIG_HFSPLUS_FS is not set
+CONFIG_BEFS_FS=m
+# CONFIG_BEFS_DEBUG is not set
+# CONFIG_BFS_FS is not set
+# CONFIG_EFS_FS is not set
+CONFIG_JFFS2_FS=m
+CONFIG_JFFS2_FS_DEBUG=0
+CONFIG_JFFS2_FS_WRITEBUFFER=y
+CONFIG_JFFS2_FS_WBUF_VERIFY=y
+CONFIG_JFFS2_SUMMARY=y
+# CONFIG_JFFS2_FS_XATTR is not set
+# CONFIG_JFFS2_COMPRESSION_OPTIONS is not set
+CONFIG_JFFS2_ZLIB=y
+# CONFIG_JFFS2_LZO is not set
+CONFIG_JFFS2_RTIME=y
+# CONFIG_JFFS2_RUBIN is not set
+# CONFIG_UBIFS_FS is not set
+CONFIG_LOGFS=m
+# CONFIG_CRAMFS is not set
+# CONFIG_SQUASHFS is not set
+# CONFIG_VXFS_FS is not set
+CONFIG_MINIX_FS=m
+# CONFIG_OMFS_FS is not set
+# CONFIG_HPFS_FS is not set
+CONFIG_QNX4FS_FS=m
+CONFIG_ROMFS_FS=m
+# CONFIG_ROMFS_BACKED_BY_BLOCK is not set
+# CONFIG_ROMFS_BACKED_BY_MTD is not set
+CONFIG_ROMFS_BACKED_BY_BOTH=y
+CONFIG_ROMFS_ON_BLOCK=y
+CONFIG_ROMFS_ON_MTD=y
+CONFIG_PSTORE=y
+# CONFIG_SYSV_FS is not set
+CONFIG_UFS_FS=m
+CONFIG_UFS_FS_WRITE=y
+CONFIG_UFS_DEBUG=y
+CONFIG_NETWORK_FILESYSTEMS=y
+# CONFIG_NFS_FS is not set
+# CONFIG_NFSD is not set
+# CONFIG_CEPH_FS is not set
+CONFIG_CIFS=m
+CONFIG_CIFS_STATS=y
+# CONFIG_CIFS_STATS2 is not set
+CONFIG_CIFS_WEAK_PW_HASH=y
+# CONFIG_CIFS_UPCALL is not set
+CONFIG_CIFS_XATTR=y
+CONFIG_CIFS_POSIX=y
+# CONFIG_CIFS_DEBUG2 is not set
+# CONFIG_CIFS_DFS_UPCALL is not set
+CONFIG_CIFS_FSCACHE=y
+CONFIG_CIFS_ACL=y
+CONFIG_NCP_FS=m
+# CONFIG_NCPFS_PACKET_SIGNING is not set
+# CONFIG_NCPFS_IOCTL_LOCKING is not set
+# CONFIG_NCPFS_STRONG is not set
+# CONFIG_NCPFS_NFS_NS is not set
+# CONFIG_NCPFS_OS2_NS is not set
+CONFIG_NCPFS_SMALLDOS=y
+CONFIG_NCPFS_NLS=y
+CONFIG_NCPFS_EXTRAS=y
+CONFIG_CODA_FS=m
+CONFIG_AFS_FS=m
+# CONFIG_AFS_DEBUG is not set
+CONFIG_AFS_FSCACHE=y
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="iso8859-1"
+# CONFIG_NLS_CODEPAGE_437 is not set
+# CONFIG_NLS_CODEPAGE_737 is not set
+# CONFIG_NLS_CODEPAGE_775 is not set
+# CONFIG_NLS_CODEPAGE_850 is not set
+# CONFIG_NLS_CODEPAGE_852 is not set
+CONFIG_NLS_CODEPAGE_855=m
+CONFIG_NLS_CODEPAGE_857=m
+CONFIG_NLS_CODEPAGE_860=m
+CONFIG_NLS_CODEPAGE_861=m
+# CONFIG_NLS_CODEPAGE_862 is not set
+# CONFIG_NLS_CODEPAGE_863 is not set
+CONFIG_NLS_CODEPAGE_864=m
+CONFIG_NLS_CODEPAGE_865=m
+CONFIG_NLS_CODEPAGE_866=m
+# CONFIG_NLS_CODEPAGE_869 is not set
+# CONFIG_NLS_CODEPAGE_936 is not set
+CONFIG_NLS_CODEPAGE_950=m
+# CONFIG_NLS_CODEPAGE_932 is not set
+CONFIG_NLS_CODEPAGE_949=m
+CONFIG_NLS_CODEPAGE_874=m
+CONFIG_NLS_ISO8859_8=m
+# CONFIG_NLS_CODEPAGE_1250 is not set
+# CONFIG_NLS_CODEPAGE_1251 is not set
+CONFIG_NLS_ASCII=m
+# CONFIG_NLS_ISO8859_1 is not set
+# CONFIG_NLS_ISO8859_2 is not set
+# CONFIG_NLS_ISO8859_3 is not set
+# CONFIG_NLS_ISO8859_4 is not set
+CONFIG_NLS_ISO8859_5=m
+# CONFIG_NLS_ISO8859_6 is not set
+CONFIG_NLS_ISO8859_7=m
+CONFIG_NLS_ISO8859_9=m
+# CONFIG_NLS_ISO8859_13 is not set
+# CONFIG_NLS_ISO8859_14 is not set
+CONFIG_NLS_ISO8859_15=m
+CONFIG_NLS_KOI8_R=m
+CONFIG_NLS_KOI8_U=m
+# CONFIG_NLS_UTF8 is not set
+
+#
+# Kernel hacking
+#
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+# CONFIG_PRINTK_TIME is not set
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+# CONFIG_ENABLE_WARN_DEPRECATED is not set
+# CONFIG_ENABLE_MUST_CHECK is not set
+CONFIG_FRAME_WARN=2048
+# CONFIG_MAGIC_SYSRQ is not set
+CONFIG_STRIP_ASM_SYMS=y
+CONFIG_UNUSED_SYMBOLS=y
+CONFIG_DEBUG_FS=y
+CONFIG_HEADERS_CHECK=y
+CONFIG_DEBUG_SECTION_MISMATCH=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_DEBUG_SHIRQ=y
+# CONFIG_LOCKUP_DETECTOR is not set
+# CONFIG_HARDLOCKUP_DETECTOR is not set
+# CONFIG_DETECT_HUNG_TASK is not set
+# CONFIG_SCHED_DEBUG is not set
+CONFIG_SCHEDSTATS=y
+CONFIG_TIMER_STATS=y
+CONFIG_DEBUG_OBJECTS=y
+CONFIG_DEBUG_OBJECTS_SELFTEST=y
+# CONFIG_DEBUG_OBJECTS_FREE is not set
+CONFIG_DEBUG_OBJECTS_TIMERS=y
+CONFIG_DEBUG_OBJECTS_WORK=y
+CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+# CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER is not set
+CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
+CONFIG_DEBUG_KMEMLEAK=y
+CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
+# CONFIG_DEBUG_KMEMLEAK_TEST is not set
+# CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF is not set
+CONFIG_DEBUG_RT_MUTEXES=y
+CONFIG_DEBUG_PI_LIST=y
+# CONFIG_RT_MUTEX_TESTER is not set
+CONFIG_DEBUG_SPINLOCK=y
+CONFIG_DEBUG_MUTEXES=y
+# CONFIG_DEBUG_LOCK_ALLOC is not set
+# CONFIG_PROVE_LOCKING is not set
+# CONFIG_SPARSE_RCU_POINTER is not set
+# CONFIG_LOCK_STAT is not set
+CONFIG_TRACE_IRQFLAGS=y
+CONFIG_DEBUG_ATOMIC_SLEEP=y
+# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+CONFIG_STACKTRACE=y
+CONFIG_DEBUG_STACK_USAGE=y
+# CONFIG_DEBUG_KOBJECT is not set
+# CONFIG_DEBUG_INFO is not set
+# CONFIG_DEBUG_VM is not set
+# CONFIG_DEBUG_VIRTUAL is not set
+# CONFIG_DEBUG_WRITECOUNT is not set
+CONFIG_DEBUG_MEMORY_INIT=y
+# CONFIG_DEBUG_LIST is not set
+CONFIG_TEST_LIST_SORT=y
+# CONFIG_DEBUG_SG is not set
+# CONFIG_DEBUG_NOTIFIERS is not set
+# CONFIG_DEBUG_CREDENTIALS is not set
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_FRAME_POINTER=y
+# CONFIG_BOOT_PRINTK_DELAY is not set
+# CONFIG_RCU_TORTURE_TEST is not set
+CONFIG_RCU_CPU_STALL_TIMEOUT=60
+# CONFIG_KPROBES_SANITY_TEST is not set
+CONFIG_BACKTRACE_SELF_TEST=m
+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+CONFIG_DEBUG_FORCE_WEAK_PER_CPU=y
+# CONFIG_DEBUG_PER_CPU_MAPS is not set
+CONFIG_LKDTM=m
+# CONFIG_CPU_NOTIFIER_ERROR_INJECT is not set
+CONFIG_FAULT_INJECTION=y
+CONFIG_FAIL_PAGE_ALLOC=y
+CONFIG_FAIL_MAKE_REQUEST=y
+CONFIG_FAIL_IO_TIMEOUT=y
+CONFIG_FAIL_MMC_REQUEST=y
+# CONFIG_LATENCYTOP is not set
+# CONFIG_SYSCTL_SYSCALL_CHECK is not set
+CONFIG_DEBUG_PAGEALLOC=y
+CONFIG_WANT_PAGE_DEBUG_FLAGS=y
+CONFIG_PAGE_GUARD=y
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FTRACE_NMI_ENTER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_HAVE_C_RECORDMCOUNT=y
+CONFIG_TRACER_MAX_TRACE=y
+CONFIG_RING_BUFFER=y
+CONFIG_FTRACE_NMI_ENTER=y
+CONFIG_EVENT_TRACING=y
+# CONFIG_EVENT_POWER_TRACING_DEPRECATED is not set
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_RING_BUFFER_ALLOW_SWAP=y
+CONFIG_TRACING=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_FUNCTION_GRAPH_TRACER=y
+CONFIG_IRQSOFF_TRACER=y
+CONFIG_SCHED_TRACER=y
+CONFIG_FTRACE_SYSCALLS=y
+CONFIG_BRANCH_PROFILE_NONE=y
+# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
+# CONFIG_PROFILE_ALL_BRANCHES is not set
+CONFIG_STACK_TRACER=y
+# CONFIG_KPROBE_EVENT is not set
+# CONFIG_UPROBE_EVENT is not set
+# CONFIG_PROBE_EVENTS is not set
+CONFIG_DYNAMIC_FTRACE=y
+CONFIG_FUNCTION_PROFILER=y
+CONFIG_FTRACE_MCOUNT_RECORD=y
+# CONFIG_FTRACE_STARTUP_TEST is not set
+CONFIG_MMIOTRACE=y
+# CONFIG_MMIOTRACE_TEST is not set
+CONFIG_RING_BUFFER_BENCHMARK=m
+CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
+CONFIG_BUILD_DOCSRC=y
+CONFIG_DYNAMIC_DEBUG=y
+# CONFIG_DMA_API_DEBUG is not set
+# CONFIG_ATOMIC64_SELFTEST is not set
+# CONFIG_SAMPLES is not set
+CONFIG_HAVE_ARCH_KGDB=y
+# CONFIG_KGDB is not set
+CONFIG_HAVE_ARCH_KMEMCHECK=y
+CONFIG_TEST_KSTRTOX=m
+CONFIG_STRICT_DEVMEM=y
+CONFIG_X86_VERBOSE_BOOTUP=y
+# CONFIG_EARLY_PRINTK is not set
+# CONFIG_DEBUG_STACKOVERFLOW is not set
+CONFIG_X86_PTDUMP=y
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_RODATA_TEST=y
+# CONFIG_DEBUG_SET_MODULE_RONX is not set
+CONFIG_DEBUG_NX_TEST=m
+CONFIG_IOMMU_STRESS=y
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+CONFIG_X86_DECODER_SELFTEST=y
+CONFIG_IO_DELAY_TYPE_0X80=0
+CONFIG_IO_DELAY_TYPE_0XED=1
+CONFIG_IO_DELAY_TYPE_UDELAY=2
+CONFIG_IO_DELAY_TYPE_NONE=3
+# CONFIG_IO_DELAY_0X80 is not set
+# CONFIG_IO_DELAY_0XED is not set
+CONFIG_IO_DELAY_UDELAY=y
+# CONFIG_IO_DELAY_NONE is not set
+CONFIG_DEFAULT_IO_DELAY_TYPE=2
+CONFIG_DEBUG_BOOT_PARAMS=y
+CONFIG_CPA_DEBUG=y
+# CONFIG_OPTIMIZE_INLINING is not set
+# CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
+# CONFIG_DEBUG_NMI_SELFTEST is not set
+
+#
+# Security options
+#
+CONFIG_KEYS=y
+CONFIG_TRUSTED_KEYS=m
+# CONFIG_ENCRYPTED_KEYS is not set
+CONFIG_KEYS_DEBUG_PROC_KEYS=y
+CONFIG_SECURITY_DMESG_RESTRICT=y
+CONFIG_SECURITYFS=y
+CONFIG_INTEL_TXT=y
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_DEFAULT_SECURITY=""
+CONFIG_CRYPTO=y
+
+#
+# Crypto core or helper
+#
+CONFIG_CRYPTO_ALGAPI=m
+CONFIG_CRYPTO_ALGAPI2=m
+CONFIG_CRYPTO_AEAD=m
+CONFIG_CRYPTO_AEAD2=m
+CONFIG_CRYPTO_BLKCIPHER=m
+CONFIG_CRYPTO_BLKCIPHER2=m
+CONFIG_CRYPTO_HASH=m
+CONFIG_CRYPTO_HASH2=m
+CONFIG_CRYPTO_RNG=m
+CONFIG_CRYPTO_RNG2=m
+CONFIG_CRYPTO_PCOMP2=m
+CONFIG_CRYPTO_MANAGER=m
+CONFIG_CRYPTO_MANAGER2=m
+CONFIG_CRYPTO_USER=m
+CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
+CONFIG_CRYPTO_GF128MUL=m
+# CONFIG_CRYPTO_NULL is not set
+CONFIG_CRYPTO_PCRYPT=m
+CONFIG_CRYPTO_WORKQUEUE=m
+CONFIG_CRYPTO_CRYPTD=m
+CONFIG_CRYPTO_AUTHENC=m
+# CONFIG_CRYPTO_TEST is not set
+
+#
+# Authenticated Encryption with Associated Data
+#
+CONFIG_CRYPTO_CCM=m
+CONFIG_CRYPTO_GCM=m
+CONFIG_CRYPTO_SEQIV=m
+
+#
+# Block modes
+#
+CONFIG_CRYPTO_CBC=m
+CONFIG_CRYPTO_CTR=m
+# CONFIG_CRYPTO_CTS is not set
+CONFIG_CRYPTO_ECB=m
+# CONFIG_CRYPTO_LRW is not set
+CONFIG_CRYPTO_PCBC=m
+CONFIG_CRYPTO_XTS=m
+
+#
+# Hash modes
+#
+CONFIG_CRYPTO_HMAC=m
+# CONFIG_CRYPTO_XCBC is not set
+CONFIG_CRYPTO_VMAC=m
+
+#
+# Digest
+#
+CONFIG_CRYPTO_CRC32C=m
+# CONFIG_CRYPTO_CRC32C_INTEL is not set
+CONFIG_CRYPTO_GHASH=m
+CONFIG_CRYPTO_MD4=m
+CONFIG_CRYPTO_MD5=m
+CONFIG_CRYPTO_MICHAEL_MIC=m
+CONFIG_CRYPTO_RMD128=m
+CONFIG_CRYPTO_RMD160=m
+CONFIG_CRYPTO_RMD256=m
+CONFIG_CRYPTO_RMD320=m
+CONFIG_CRYPTO_SHA1=m
+# CONFIG_CRYPTO_SHA1_SSSE3 is not set
+CONFIG_CRYPTO_SHA256=m
+# CONFIG_CRYPTO_SHA512 is not set
+# CONFIG_CRYPTO_TGR192 is not set
+CONFIG_CRYPTO_WP512=m
+# CONFIG_CRYPTO_GHASH_CLMUL_NI_INTEL is not set
+
+#
+# Ciphers
+#
+CONFIG_CRYPTO_AES=m
+CONFIG_CRYPTO_AES_X86_64=m
+CONFIG_CRYPTO_AES_NI_INTEL=m
+# CONFIG_CRYPTO_ANUBIS is not set
+CONFIG_CRYPTO_ARC4=m
+CONFIG_CRYPTO_BLOWFISH=m
+CONFIG_CRYPTO_BLOWFISH_COMMON=m
+# CONFIG_CRYPTO_BLOWFISH_X86_64 is not set
+CONFIG_CRYPTO_CAMELLIA=m
+# CONFIG_CRYPTO_CAST5 is not set
+CONFIG_CRYPTO_CAST6=m
+CONFIG_CRYPTO_DES=m
+CONFIG_CRYPTO_FCRYPT=m
+CONFIG_CRYPTO_KHAZAD=m
+# CONFIG_CRYPTO_SALSA20 is not set
+CONFIG_CRYPTO_SALSA20_X86_64=m
+# CONFIG_CRYPTO_SEED is not set
+# CONFIG_CRYPTO_SERPENT is not set
+# CONFIG_CRYPTO_SERPENT_SSE2_X86_64 is not set
+CONFIG_CRYPTO_TEA=m
+CONFIG_CRYPTO_TWOFISH=m
+CONFIG_CRYPTO_TWOFISH_COMMON=m
+# CONFIG_CRYPTO_TWOFISH_X86_64 is not set
+# CONFIG_CRYPTO_TWOFISH_X86_64_3WAY is not set
+
+#
+# Compression
+#
+CONFIG_CRYPTO_DEFLATE=m
+# CONFIG_CRYPTO_ZLIB is not set
+# CONFIG_CRYPTO_LZO is not set
+
+#
+# Random Number Generation
+#
+CONFIG_CRYPTO_ANSI_CPRNG=m
+CONFIG_CRYPTO_USER_API=m
+# CONFIG_CRYPTO_USER_API_HASH is not set
+CONFIG_CRYPTO_USER_API_SKCIPHER=m
+# CONFIG_CRYPTO_HW is not set
+CONFIG_HAVE_KVM=y
+CONFIG_VIRTUALIZATION=y
+# CONFIG_KVM is not set
+CONFIG_VHOST_NET=m
+CONFIG_BINARY_PRINTF=y
+
+#
+# Library routines
+#
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_FIND_FIRST_BIT=y
+CONFIG_GENERIC_PCI_IOMAP=y
+CONFIG_GENERIC_IOMAP=y
+CONFIG_CRC_CCITT=m
+CONFIG_CRC16=m
+CONFIG_CRC_T10DIF=m
+CONFIG_CRC_ITU_T=m
+CONFIG_CRC32=y
+CONFIG_CRC7=m
+CONFIG_LIBCRC32C=m
+CONFIG_CRC8=m
+CONFIG_ZLIB_INFLATE=m
+CONFIG_ZLIB_DEFLATE=m
+CONFIG_LZO_COMPRESS=y
+CONFIG_LZO_DECOMPRESS=y
+CONFIG_XZ_DEC=m
+# CONFIG_XZ_DEC_X86 is not set
+# CONFIG_XZ_DEC_POWERPC is not set
+# CONFIG_XZ_DEC_IA64 is not set
+# CONFIG_XZ_DEC_ARM is not set
+# CONFIG_XZ_DEC_ARMTHUMB is not set
+CONFIG_XZ_DEC_SPARC=y
+CONFIG_XZ_DEC_BCJ=y
+CONFIG_XZ_DEC_TEST=m
+CONFIG_DECOMPRESS_BZIP2=y
+CONFIG_GENERIC_ALLOCATOR=y
+CONFIG_REED_SOLOMON=m
+CONFIG_REED_SOLOMON_DEC16=y
+CONFIG_BCH=m
+CONFIG_BCH_CONST_PARAMS=y
+CONFIG_TEXTSEARCH=y
+CONFIG_TEXTSEARCH_KMP=m
+CONFIG_TEXTSEARCH_BM=m
+CONFIG_TEXTSEARCH_FSM=m
+CONFIG_BTREE=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT=y
+CONFIG_HAS_DMA=y
+CONFIG_NLATTR=y
+CONFIG_AVERAGE=y
+CONFIG_CORDIC=m
+
+--------------010801080302090202000805--
