@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab2ASKbj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 05:31:39 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:45742 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab2ASKb3 (ORCPT
+	id S1752995Ab2ASKbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 05:31:21 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56765 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab2ASKbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 05:31:29 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+NeB+LGufEzLRW9VO+aUhx
-Date: Thu, 19 Jan 2012 02:31:13 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Shawn Guo <shawn.guo@linaro.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Dong Aisheng <dongas86@gmail.com>
-Subject: Re: Pinmux bindings proposal
-Message-ID: <20120119103112.GD22818@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
- <20120116182808.GG4223@ponder.secretlab.ca>
- <20120118141329.GA22818@atomide.com>
- <CAAQ0ZWTtYz3Lg7=Xz29m07j_k8yA95hn6cyk92SAJ4iGJRT_gw@mail.gmail.com>
- <20120118153256.GB22818@atomide.com>
- <20120118202057.GH4223@ponder.secretlab.ca>
+	Thu, 19 Jan 2012 05:31:17 -0500
+Message-ID: <4F17F0F2.6060807@linutronix.de>
+Date: Thu, 19 Jan 2012 11:31:14 +0100
+From: Richard Weinberger <rw@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120118202057.GH4223@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Engelhardt <jengelh@medozas.de>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org
+Subject: Re: Netfilter: New target: RLOG
+References: <1326926610-17830-1-git-send-email-rw@linutronix.de>  <20120119091248.GA32391@1984> <4F17E0A4.9040004@linutronix.de> <1326965176.2249.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LNX.2.01.1201191045530.27900@frira.zrqbmnf.qr>
+In-Reply-To: <alpine.LNX.2.01.1201191045530.27900@frira.zrqbmnf.qr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely <grant.likely@secretlab.ca> [120118 11:48]:
-> On Wed, Jan 18, 2012 at 07:32:56AM -0800, Tony Lindgren wrote:
-> > 
-> > But then the .dts file becomes an unreadable matrix unless we have
-> > a preprocessor..
-> 
-> One node per pin does get excessive in a hurry.  I prefer the one node
-> per pin controller.  Tools can be written to make writing the
-> definition easier.
- 
-OK that's fine with me. It would be nice to have the .dts readable
-too, so I'd prefer a preprocessor over a .dts generation tool to
-keep the .dts files readable. Bugs in .dts file can be a big pain
-to debug it seems.
+On 19.01.2012 10:46, Jan Engelhardt wrote:
+> On Thursday 2012-01-19 10:26, Eric Dumazet wrote:
+>
+>> Le jeudi 19 janvier 2012 à 10:21 +0100, Richard Weinberger a écrit :
+>>
+>>> Yeah, I could add --ring, --ring-size and --add-timestamp to LOG.
+>>> What about a rlog_common.o which can be used by ipt_LOG and ip6t_LOG?
+>>>
+>>
+>> or merge ipt_LOG and ip6t_LOG into xt_LOG ?
+>
+> yes please :)
 
-Regards,
+Will do.
 
-Tony
+Thanks,
+//richard
