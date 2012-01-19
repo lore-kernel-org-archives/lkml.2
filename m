@@ -1,184 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab2ASBVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 20:21:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50868 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab2ASBVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 20:21:21 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=hWLV2ybA3-MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=3HDBlxybAAAA:8 a=mfsAAkI7Veszhf-8CM0A:9 a=oFz5ZeeIvxrJ2XDWv20A:7 a=PUjeQqilurYA:10 a=m2JXGx9I94EA:10 a=wsGCWCuoV-xCaadu:21 a=0JdBYekHvc0n7tz-:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326936079.17534.97.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 3/5] nf_log: Export dump_packet() and dump_mac_header()
- functions
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Richard Weinberger <rw@linutronix.de>
-Cc: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Date: Wed, 18 Jan 2012 20:21:19 -0500
-In-Reply-To: <1326926610-17830-4-git-send-email-rw@linutronix.de>
-References: <1326926610-17830-1-git-send-email-rw@linutronix.de>
-	 <1326926610-17830-4-git-send-email-rw@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756501Ab2ASBXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 20:23:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33215 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752401Ab2ASBXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 20:23:18 -0500
+Date: Wed, 18 Jan 2012 17:21:30 -0800
+From: Greg KH <gregkh@suse.de>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Denis Turischev <denis@compulab.co.il>, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH] pch_phub: add message to notify installing pch_phub
+Message-ID: <20120119012130.GA6050@suse.de>
+References: <1326935267-4077-1-git-send-email-tomoya.rohm@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326935267-4077-1-git-send-email-tomoya.rohm@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-18 at 23:43 +0100, Richard Weinberger wrote:
-> From: Richard Weinberger <richard@nod.at>
+On Thu, Jan 19, 2012 at 10:07:47AM +0900, Tomoya MORINAGA wrote:
+> Currently, a user who wants to install pch_phub, the user can't know whether
+> the driver is installed or not from log of kernel ring buffer.
+> Of course, though seeing sysfs files, the user can know the installing,
+> kernel message is useful better than seeing sysfs files.
 > 
+> So, this patch adds logs.
 
-Let me guess. You left out the change logs in protest to SOPA and PIPA?
+No, I'm going to reject this, we have been _removing_ these types of
+garbage messages from drivers, please don't add new ones, it is
+pointless.
 
--- Steve
-
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  include/net/netfilter/nf_log.h |   19 +++++++++++++++++++
->  net/ipv4/netfilter/ipt_LOG.c   |   12 +++++++-----
->  net/ipv6/netfilter/ip6t_LOG.c  |   12 +++++++-----
->  3 files changed, 33 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/net/netfilter/nf_log.h b/include/net/netfilter/nf_log.h
-> index e991bd0..c0f2b27 100644
-> --- a/include/net/netfilter/nf_log.h
-> +++ b/include/net/netfilter/nf_log.h
-> @@ -61,5 +61,24 @@ void nf_log_packet(u_int8_t pf,
->  		   const struct net_device *out,
->  		   const struct nf_loginfo *li,
->  		   const char *fmt, ...);
-> +struct sbuff;
-> +void ipt_dump_packet(struct sbuff *m,
-> +	const struct nf_loginfo *info,
-> +	const struct sk_buff *skb,
-> +	unsigned int iphoff);
-> +
-> +void ipt_dump_mac_header(struct sbuff *m,
-> +	const struct nf_loginfo *info,
-> +	const struct sk_buff *skb);
-> +
-> +void ip6t_dump_packet(struct sbuff *m,
-> +	const struct nf_loginfo *info,
-> +	const struct sk_buff *skb,
-> +	unsigned int iphoff,
-> +	int recurse);
-> +
-> +void ip6t_dump_mac_header(struct sbuff *m,
-> +	const struct nf_loginfo *info,
-> +	const struct sk_buff *skb);
->  
->  #endif /* _NF_LOG_H */
-> diff --git a/net/ipv4/netfilter/ipt_LOG.c b/net/ipv4/netfilter/ipt_LOG.c
-> index d76d6c9..8ec9d2b 100644
-> --- a/net/ipv4/netfilter/ipt_LOG.c
-> +++ b/net/ipv4/netfilter/ipt_LOG.c
-> @@ -31,7 +31,7 @@ MODULE_AUTHOR("Netfilter Core Team <coreteam@netfilter.org>");
->  MODULE_DESCRIPTION("Xtables: IPv4 packet logging to syslog");
->  
->  /* One level of recursion won't kill us */
-> -static void dump_packet(struct sbuff *m,
-> +void ipt_dump_packet(struct sbuff *m,
->  			const struct nf_loginfo *info,
->  			const struct sk_buff *skb,
->  			unsigned int iphoff)
-> @@ -270,7 +270,7 @@ static void dump_packet(struct sbuff *m,
->  			/* Max length: 3+maxlen */
->  			if (!iphoff) { /* Only recurse once. */
->  				sb_add(m, "[");
-> -				dump_packet(m, info, skb,
-> +				ipt_dump_packet(m, info, skb,
->  					    iphoff + ih->ihl*4+sizeof(_icmph));
->  				sb_add(m, "] ");
->  			}
-> @@ -362,8 +362,9 @@ static void dump_packet(struct sbuff *m,
->  	/* maxlen =  IP + ICMP +  IP + max(TCP,UDP,ICMP,unknown) */
->  	/* maxlen = 230+   91  + 230 + 252 = 803 */
->  }
-> +EXPORT_SYMBOL_GPL(ipt_dump_packet);
->  
-> -static void dump_mac_header(struct sbuff *m,
-> +void ipt_dump_mac_header(struct sbuff *m,
->  			    const struct nf_loginfo *info,
->  			    const struct sk_buff *skb)
->  {
-> @@ -399,6 +400,7 @@ fallback:
->  	}
->  	sb_add(m, " ");
->  }
-> +EXPORT_SYMBOL_GPL(ipt_dump_mac_header);
->  
->  static struct nf_loginfo default_loginfo = {
->  	.type	= NF_LOG_TYPE_LOG,
-> @@ -443,9 +445,9 @@ ipt_log_packet(u_int8_t pf,
->  #endif
->  
->  	if (in != NULL)
-> -		dump_mac_header(m, loginfo, skb);
-> +		ipt_dump_mac_header(m, loginfo, skb);
->  
-> -	dump_packet(m, loginfo, skb, 0);
-> +	ipt_dump_packet(m, loginfo, skb, 0);
->  
->  	sb_close(m);
->  }
-> diff --git a/net/ipv6/netfilter/ip6t_LOG.c b/net/ipv6/netfilter/ip6t_LOG.c
-> index e6af8d7..c6abacb 100644
-> --- a/net/ipv6/netfilter/ip6t_LOG.c
-> +++ b/net/ipv6/netfilter/ip6t_LOG.c
-> @@ -34,7 +34,7 @@ struct in_device;
->  #include <linux/netfilter_ipv6/ip6t_LOG.h>
->  
->  /* One level of recursion won't kill us */
-> -static void dump_packet(struct sbuff *m,
-> +void ip6t_dump_packet(struct sbuff *m,
->  			const struct nf_loginfo *info,
->  			const struct sk_buff *skb, unsigned int ip6hoff,
->  			int recurse)
-> @@ -341,7 +341,7 @@ static void dump_packet(struct sbuff *m,
->  			/* Max length: 3+maxlen */
->  			if (recurse) {
->  				sb_add(m, "[");
-> -				dump_packet(m, info, skb,
-> +				ip6t_dump_packet(m, info, skb,
->  					    ptr + sizeof(_icmp6h), 0);
->  				sb_add(m, "] ");
->  			}
-> @@ -371,8 +371,9 @@ static void dump_packet(struct sbuff *m,
->  	if (!recurse && skb->mark)
->  		sb_add(m, "MARK=0x%x ", skb->mark);
->  }
-> +EXPORT_SYMBOL(ip6t_dump_packet);
->  
-> -static void dump_mac_header(struct sbuff *m,
-> +void ip6t_dump_mac_header(struct sbuff *m,
->  			    const struct nf_loginfo *info,
->  			    const struct sk_buff *skb)
->  {
-> @@ -422,6 +423,7 @@ fallback:
->  	} else
->  		sb_add(m, " ");
->  }
-> +EXPORT_SYMBOL(ip6t_dump_mac_header);
->  
->  static struct nf_loginfo default_loginfo = {
->  	.type	= NF_LOG_TYPE_LOG,
-> @@ -453,9 +455,9 @@ ip6t_log_packet(u_int8_t pf,
->  	       out ? out->name : "");
->  
->  	if (in != NULL)
-> -		dump_mac_header(m, loginfo, skb);
-> +		ip6t_dump_mac_header(m, loginfo, skb);
->  
-> -	dump_packet(m, loginfo, skb, skb_network_offset(skb), 1);
-> +	ip6t_dump_packet(m, loginfo, skb, skb_network_offset(skb), 1);
->  
->  	sb_close(m);
->  }
-
-
+greg k-h
