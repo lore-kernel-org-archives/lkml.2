@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab2ASDna (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 22:43:30 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:43990 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab2ASDn2 (ORCPT
+	id S1757336Ab2ASDsl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 22:48:41 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50504 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757299Ab2ASDsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 22:43:28 -0500
+	Wed, 18 Jan 2012 22:48:39 -0500
+Date: Wed, 18 Jan 2012 19:48:42 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Laxman Dewangan <ldewangan.com@nvidia.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH V1] ARM: tegra: Pause DMA when reading transfer count
+Message-ID: <20120119034842.GA7145@quad.lixom.net>
+References: <1326175511-28642-1-git-send-email-ldewangan@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE3A77E@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20120118214051.GC20576@boyd>
-References: <12011815300568720b5d1587bb777fed0d5b016f0854@nudt.edu.cn>
- <4F16E4BC.5080100@gmail.com> <20120118214051.GC20576@boyd>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 18 Jan 2012 19:43:06 -0800
-X-Google-Sender-Auth: GTsCpxLLxn6iDbwP2RpuBfG5p9s
-Message-ID: <CA+55aFwYufaD_vqwEvfPrfj6wVh9c80BNi3+qziV=qStVxN=3w@mail.gmail.com>
-Subject: Re: [PATCH] eCryptfs: infinite loop bug
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, Li Wang <liwang@nudt.edu.cn>,
-        ecryptfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dustin Kirkland <kirkland@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF177EE3A77E@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 1:40 PM, Tyler Hicks <tyhicks@canonical.com> wrote:
->
-> mm/filemap.c uses unsigned long for variables used to identify an offset
-> into a single page. That's what I'm tempted to use for offset_in_page,
-> rather than loff_t.
+On Wed, Jan 11, 2012 at 12:48:26PM -0800, Stephen Warren wrote:
+> Laxman Dewangan wrote at Monday, January 09, 2012 11:05 PM:
+> > In order to read an accurate channel transfer count
+> > from the APB DMA engine, the DMA controller must be
+> > paused first.
+> > 
+> > Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> 
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> 
+> (Audio playback on Harmony booted using device tree works fine in my
+> brief testing)
 
-Indeed. The offset within a page will fit fine even in an "unsigned
-int", and "loff_t" is crazy overkill - and usually generates horrible
-code on 32-bit architectures.
+Thanks, applied.
 
-                      Linus
+
+-Olof
