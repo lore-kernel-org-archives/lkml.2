@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab2ASSVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 13:21:50 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14385 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932532Ab2ASSVs convert rfc822-to-8bit (ORCPT
+	id S932737Ab2ASScv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 13:32:51 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55950 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932525Ab2ASSct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 13:21:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 19 Jan 2012 10:21:45 -0800
-From: Rakesh Iyer <riyer@nvidia.com>
-To: Shubhrajyoti <shubhrajyoti@ti.com>
-CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 19 Jan 2012 10:21:43 -0800
-Subject: RE: [PATCH v1] Input: tegra-kbc - enable key interrupt for wakeup
-Thread-Topic: [PATCH v1] Input: tegra-kbc - enable key interrupt for wakeup
-Thread-Index: AczWbduJ2tEr7EpWSeaTpEhCsAWrwgAZ5KTQ
-Message-ID: <1FC56210173BB445BD77F608D6FB8D034F401D296F@HQMAIL03.nvidia.com>
-References: <1326925981-14723-1-git-send-email-riyer@nvidia.com>
- <4F17AE75.6000605@ti.com>
-In-Reply-To: <4F17AE75.6000605@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Jan 2012 13:32:49 -0500
 MIME-Version: 1.0
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB0F3@HQMAIL01.nvidia.com>
+References: <1325882311-7504-1-git-send-email-swarren@nvidia.com>
+	<CACRpkdY+qpm1na_fdSEiSeBPQNFYf4JTapVE5o6m07OQiaoPCw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1780DAB0F3@HQMAIL01.nvidia.com>
+Date: Thu, 19 Jan 2012 19:32:49 +0100
+Message-ID: <CACRpkdYen==qdQMidskw5V6Q1=r-4hOv0K4OW4qkxwnBv+L-QA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: Fix pinconf_pins_show iteration
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chanho Park <chanho61.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  	if (device_may_wakeup(&pdev->dev)) {
->  		disable_irq_wake(kbc->irq);
->  		tegra_kbc_setup_wakekeys(kbc, false);
-> +		/* We will use fifo interrupts for key detection. */
-> +		tegra_kbc_set_keypress_interrupt(kbc, false);
-Why do yo disable on resume why not have it enabled always?
+On Thu, Jan 19, 2012 at 6:52 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Tuesday, January 10, 2012 2:17 AM:
+>> On Fri, Jan 6, 2012 at 9:38 PM, Stephen Warren <swarren@nvidia.com> wrote:
+>>
+>> > Commit 706e852 "pinctrl: correct a offset while enumerating pins"
+>> > modified the variable used by pinconf_pin_show()'s for loop, but didn't
+>> > update the for loop test expression.
+>> >
+>> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>>
+>> OK applied to my fixes branch, will send this along with any other
+>> fixes once Torvalds has pulled the pinctrl tree for this merge window.
+>
+> Linus,
+>
+> This still hasn't shown up in next-20120119. Is that expected?
 
->  
->  		/* Restore the resident time of continuous polling mode. */
->  		writel(kbc->cp_to_wkup_dly, kbc->mmio + KBC_TO_CNT_0);
+Yes I was waiting for the merge window to close, but I guess that's
+a bit over-cautios. I'll push it out tomorrow...
 
-For the relevant discussion, Tegra KBC provides the following interrupts - 
-a) The keypress interrupt which is generated as soon as a key is pressed, 
-      before matrix scanning begins.
-b) FIFO interrupt which is generated when actual keys are decoded from the matrix, 
-     and put into the FIFO. 
-
-During normal operation the keypress interrupt is not useful as we have to wait for the 
-keys to make it into the FIFO before reporting it to the higher layers.
-
-Since we have turned off scanning(in the following commit) we cannot use the FIFO interrupt 
-during the resume, so we rely on the keypress interrupt and generate the wakeup key.
-
-Commit that turned off scanning
-
-    Input: tegra-kbc - fix wakeup from suspend
-
-    For wakeup to be reliable, kbc needs to be in interrupt mode before suspend.
-    Created common routine to control the FIFO interrupt.
-    Added synchronization to ensure orderly suspend.
-
-
-Regards
-Rakesh
+Thanks,
+Linus Walleij
