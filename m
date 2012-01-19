@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab2ASSJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 13:09:59 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53758 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195Ab2ASSJ4 (ORCPT
+	id S932701Ab2ASSKv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 13:10:51 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:45039 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932577Ab2ASSKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 13:09:56 -0500
-Date: Thu, 19 Jan 2012 22:09:51 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [PATCH] fs, proc: Introduce /proc/<pid>/task/<tid>/children
- entry v7
-Message-ID: <20120119180951.GI31379@moon>
-References: <20120119155112.GF31379@moon>
- <20120119174742.GD32568@moon>
- <20120119175700.GA19627@redhat.com>
+	Thu, 19 Jan 2012 13:10:47 -0500
+Message-ID: <4F185C9A.9060408@linux.vnet.ibm.com>
+Date: Thu, 19 Jan 2012 23:40:34 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120119175700.GA19627@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pavel Machek <pavel@ucw.cz>
+CC: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
+ to unlock_system_sleep()
+References: <201201180015.56510.rjw@sisk.pl> <4F16C24A.4050007@linux.vnet.ibm.com> <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com> <4F16F94C.4020000@linux.vnet.ibm.com> <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com> <4F16FF0D.1030606@linux.vnet.ibm.com> <20120118173037.GE30664@google.com> <20120118173348.GF30664@google.com> <20120119103707.GA13308@elf.ucw.cz> <4F17F6AF.10604@linux.vnet.ibm.com> <20120119174038.GA25397@atrey.karlin.mff.cuni.cz>
+In-Reply-To: <20120119174038.GA25397@atrey.karlin.mff.cuni.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011918-8256-0000-0000-000000F3B08F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 06:57:00PM +0100, Oleg Nesterov wrote:
-> On 01/19, Cyrill Gorcunov wrote:
-> >
-> > On Thu, Jan 19, 2012 at 07:51:12PM +0400, Cyrill Gorcunov wrote:
-> > > If it's needed I can wrap all this with CONFIG_CHECKPOINT_RESTORE, should I?
-> > >
-> > > ---
-> >
-> > Oleg, if only I'm not missing something obvious you meant handling like below?
-> 
-> Yes, but...
-> 
-> > +struct proc_pid_children_iter {
-> > +	struct pid_namespace *pid_ns;
-> > +	struct pid *parent_pid;
-> > +};
-> 
-> you forgot to remove this definition.
-> 
+On 01/19/2012 11:10 PM, Pavel Machek wrote:
 
-No, I rather forgot to quilt refresh :)
-
-> > +static int children_seq_show(struct seq_file *seq, void *v)
-> > +{
-> > +	struct inode *inode = seq->private;
-> > +	unsigned long pid;
-> > +
-> > +	pid = (unsigned long)pid_nr_ns(v, inode->i_sb->s_fs_info);
-> > +	return seq_printf(seq, " %lu", pid);
-> > +}
+> Hi!
 > 
-> just noticed... why unsigned long and %lu? afaics pid_t/%d should work
-> without any typecasts.
+>>>> To give an example,
+>>>>
+>>>> 	/*
+>>>> 	 * XXX: Open code SKIP clearing for now to avoid invoking
+>>>> 	 * try_to_freeze().  This isn't correct but this function is
+>>>> 	 * called from deep inside hibernation path and calling
+>>>> 	 * try_to_freeze() leads to hang during hibernation.  This
+>>>> 	 * will be properly fixed soon.  See commit message for
+>>>> 	 * more details.
+>>>> 	 */
+>>>
+>>> Which paths are affected?
+>>>
+>>> With uswsusp, we have userland in control of hibernation process; I'd
+>>> say almost anything can be called...
+>>
+>>
+>> Hi Pavel,
+>> I am afraid you are looking at a stale comment. We finalized on a
+>> different comment altogether.
 > 
+> I know. But the underlying problem (uswsusp code is userland, and can
+> do anything) is still there, right? I guess limitations for
+> applications using uswsusp interface should be documented somewhere.
 
-I'm not sure how important it is, but Andrew mentioned in one of email
-that we might be moving from pid_t from int to long one day (which of
-course will require extreme huge work on checking code where int->long
-transition might cause problems). So I thought why should I wait then?
+Sorry, but I think you missed the conclusion of the discussion in this
+thread: The comment mentioned above is completely wrong! Rewriting
+unlock_system_sleep() by open coding the SKIP clearing and omitting the
+try_to_freeze() part is not a hack - instead, it is a clean and sane
+design. Hence, with the latest version of my patch applied, it would
+no longer be "hey, please watch out for this, this and this for now;
+we know things are messy but we will fix it up later".
+Instead it is like "Don't worry, we have fixed up the buggy
+unlock_system_sleep() function. Go ahead and do what you want!"
 
-[ Andrew, am I correct? ]
+On a more serious note, here is a (hopefully) convincing explanation
+as to why the patch makes perfect sense:
 
-But since I'll be refreshig patch anyway, I drop this.
+http://thread.gmane.org/gmane.linux.kernel/1240493/focus=1240892
+and
+http://thread.gmane.org/gmane.linux.kernel/1240493/focus=1240940
 
-	Cyrill
+Moreover, we have already advised people to use the lock_system_sleep()
+and unlock_system_sleep() APIs instead of directly using mutex_lock and
+mutex_unlock on pm_mutex, in Documentation/power/freezing-of-tasks.txt
+
+But unfortunately, unlock_system_sleep() was actually not quite correct
+and hence this patch fixes it. So things should be fine now...
+
+But, in case you were hinting at some totally different problem, please
+let me know..
+
+Regards,
+Srivatsa S. Bhat
+
