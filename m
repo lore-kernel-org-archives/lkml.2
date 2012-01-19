@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab2ASVng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 16:43:36 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49501 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888Ab2ASVnf (ORCPT
+	id S1754289Ab2ASVrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 16:47:11 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35177 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab2ASVrH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 16:43:35 -0500
-Date: Thu, 19 Jan 2012 22:43:32 +0100
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: acme@redhat.com, peterz@infradead.org, mingo@eltu.hu, dsahern@gmail.com
-Subject: [PATCH] perf: fix strlen() bug in
- perf_event__synthesize_event_type()
-Message-ID: <20120119214332.GA5698@quad>
+	Thu, 19 Jan 2012 16:47:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 19 Jan 2012 14:46:45 -0700
+X-Google-Sender-Auth: RHmiShbgaFBeF7uuJRREjgp13Lk
+Message-ID: <CACxGe6uSO-S1Mxk8ocfH_xeNvZKb9ad=dvakVoAg5_Avtxko=w@mail.gmail.com>
+Subject: [git pull] minor GPIO bug fixes
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The event_type record has a max length for the event name.
-It's called MAX_EVENT_NAME.
-    
-The name may be truncated to fit the max length. But the
-header.size still reflects the original name length. If
-that length is > MAX_EVENT_NAME, then the header.size
-field is bogus. Fix this by using the length of the name
-after the potential truncation.
-    
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+Hi Linus.  Nothing exciting here.  Please pull.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 3e7e0b0..ecd7f4d 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2105,7 +2105,7 @@ int perf_event__synthesize_event_type(struct perf_tool *tool,
- 	strncpy(ev.event_type.event_type.name, name, MAX_EVENT_NAME - 1);
- 
- 	ev.event_type.header.type = PERF_RECORD_HEADER_EVENT_TYPE;
--	size = strlen(name);
-+	size = strlen(ev.event_type.event_type.name);
- 	size = ALIGN(size, sizeof(u64));
- 	ev.event_type.header.size = sizeof(ev.event_type) -
- 		(sizeof(ev.event_type.event_type.name) - size);
+Thanks,
+g.
+
+The following changes since commit 90a4c0f51e8e44111a926be6f4c87af3938a79c3:
+
+  uml: fix compile for x86-64 (2012-01-18 19:26:11 -0800)
+
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 gpio-for-linus
+
+Grant Likely (1):
+      gpio/it8761e: Restrict it8761e gpio driver to x86.
+
+Laxman Dewangan (1):
+      gpio: tps65910: Use correct offset for gpio initialization
+
+Márton Németh (4):
+      gpio-pch: cleanup NULL pointer checking
+      gpio-pch: cleanup __iomem annotation usage
+      gpio-ml-ioh: cleanup NULL pointer checking
+      gpio-ml-ioh: cleanup __iomem annotation usage
+
+ drivers/gpio/Kconfig         |    1 +
+ drivers/gpio/gpio-ml-ioh.c   |    8 ++++----
+ drivers/gpio/gpio-pch.c      |    4 ++--
+ drivers/gpio/gpio-tps65910.c |    2 +-
+ 4 files changed, 8 insertions(+), 7 deletions(-)
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
