@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab2ASKzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 05:55:55 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49855 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab2ASKzx (ORCPT
+	id S1754701Ab2ASK4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 05:56:49 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43527 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab2ASK4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 05:55:53 -0500
-Message-ID: <4F17F6AF.10604@linux.vnet.ibm.com>
-Date: Thu, 19 Jan 2012 16:25:43 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Thu, 19 Jan 2012 05:56:47 -0500
+From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: bq27x00_battery status report issue
+Date: Thu, 19 Jan 2012 11:56:43 +0100
+Message-ID: <10055259.ygSgKeUM8f@pali>
+User-Agent: KMail/4.8 rc2 (Linux/3.2.0-9-generic; KDE/4.7.97; x86_64; ; )
+In-Reply-To: <CANOLnONB5m5iNbWy1=7WWN7T76S1vACbWtJu+KGyhqw2-cA3sw@mail.gmail.com>
+References: <CANOLnONB5m5iNbWy1=7WWN7T76S1vACbWtJu+KGyhqw2-cA3sw@mail.gmail.com>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, horms@verge.net.au,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [Update][PATCH] PM / Hibernate: Fix s2disk regression related
- to unlock_system_sleep()
-References: <201201172345.15010.rjw@sisk.pl> <201201180015.56510.rjw@sisk.pl> <4F16C24A.4050007@linux.vnet.ibm.com> <CAOS58YMBWrD2cMyPJG0Xf16i1vnkB8xerdeqWJ=fk7HVNpoPAw@mail.gmail.com> <4F16F94C.4020000@linux.vnet.ibm.com> <CAOS58YPW3hB3ibaYPLBqhu=2jZTAjjF7DZaXO=hK5tookAX7YA@mail.gmail.com> <4F16FF0D.1030606@linux.vnet.ibm.com> <20120118173037.GE30664@google.com> <20120118173348.GF30664@google.com> <20120119103707.GA13308@elf.ucw.cz>
-In-Reply-To: <20120119103707.GA13308@elf.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011910-9574-0000-0000-0000010472AB
+Content-Type: multipart/signed; boundary="nextPart1371874.K37iOL1yTG"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: quoted-printable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 04:07 PM, Pavel Machek wrote:
 
-> Hi!
-> 
->>>> I agree, but I was trying to keep the comment from growing too long ;)
->>>
->>> It doesn't have to be long.  It just has to give some meaning to the
->>> decision.  AFAICS, it is correct to call try_to_freeze() on
->>> unlock_system_sleep() regardless of 20sec window.  There's no
->>> guarantee the unlocking task is gonna hit try_to_freeze() elsewhere
->>> and not calling it actually makes the interface buggy.
->>
->> To give an example,
->>
->> 	/*
->> 	 * XXX: Open code SKIP clearing for now to avoid invoking
->> 	 * try_to_freeze().  This isn't correct but this function is
->> 	 * called from deep inside hibernation path and calling
->> 	 * try_to_freeze() leads to hang during hibernation.  This
->> 	 * will be properly fixed soon.  See commit message for
->> 	 * more details.
->> 	 */
-> 
-> Which paths are affected?
-> 
-> With uswsusp, we have userland in control of hibernation process; I'd
-> say almost anything can be called...
+--nextPart1371874.K37iOL1yTG
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="iso-8859-1"
 
+On Saturday 14 January 2012 23:10:05 Grazvydas Ignotas wrote:
+> Hi,
+>=20
+> After 270968c0984ae "bq27x00_battery: Fix reporting status value for
+> bq27500 battery" status doesn't seem to be reported correctly when th=
+e
+> battery is close to fully charged state. It reports "Not charging"
+> while in fact there is >130mA current flowing to the battery accordin=
+g
+> to current_now.
+>=20
+> This status report seems to be based on CHG bit in status register,
+> but looking at the datasheet the description says "(Fast) charging
+> allowed", which I guess means that the chip recommends charging and
+> not that charging is actually going on? If you check the bit while
+> battery is discharging and it's not full, the bit is also set.
 
-Hi Pavel,
-I am afraid you are looking at a stale comment. We finalized on a
-different comment altogether.
+Now I do not have device with bq27500 chip for testing. I read datashee=
+t again=20
+and I think that your interpretation may be correct. Can you write patc=
+h for=20
+this problem and test it?
 
-Here is the latest patch:
-http://thread.gmane.org/gmane.linux.kernel/1240493/focus=1240976
+--=20
+Pali Roh=E1r
+pali.rohar@gmail.com
+--nextPart1371874.K37iOL1yTG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
-Rafael made some suggestions on this one here
-http://thread.gmane.org/gmane.linux.kernel/1240493/focus=1241028
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-I will address that and send out a patch soon.
+iEYEABECAAYFAk8X9usACgkQi/DJPQPkQ1Jf0ACdEWtWh6K7y9LaiUbLZgm957iB
+kTgAnAnMDNoxid6//UDqoUv5r+Ue5HMH
+=laL/
+-----END PGP SIGNATURE-----
 
-Do let me know if you have any comments, thanks!
-
-Regards,
-Srivatsa S. Bhat
+--nextPart1371874.K37iOL1yTG--
 
