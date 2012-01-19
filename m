@@ -1,131 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461Ab2ASNrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 08:47:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab2ASNrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 08:47:46 -0500
-Date: Thu, 19 Jan 2012 15:49:57 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, jan.kiszka@siemens.com,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: deliver msix interrupts from irq handler
-Message-ID: <20120119134957.GC4009@redhat.com>
-References: <20120118181023.GA4140@redhat.com>
- <20120119072123.GE9571@redhat.com>
+	id S932136Ab2ASNsn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 08:48:43 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:50438 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751614Ab2ASNsm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 08:48:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120119072123.GE9571@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+Date: Thu, 19 Jan 2012 11:48:39 -0200
+X-Google-Sender-Auth: kulLftj32d0W7p8PYGbc8WsCghE
+Message-ID: <CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 09:21:23AM +0200, Gleb Natapov wrote:
-> > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> > index ba892df..68cd127 100644
-> > --- a/virt/kvm/irq_comm.c
-> > +++ b/virt/kvm/irq_comm.c
-> > @@ -201,6 +201,58 @@ int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level,
-> >  	return ret;
-> >  }
-> >  
-> > +static inline struct kvm_kernel_irq_routing_entry *
-> > +kvm_get_entry(struct kvm *kvm, struct kvm_irq_routing_table *irq_rq, u32 irq)
-> > +{
-> > +	struct kvm_kernel_irq_routing_entry *e;
-> > +	if (likely(irq < irq_rt->nr_rt_entries))
-> > +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link)
-> > +			if (e->type == KVM_IRQ_ROUTING_MSI)
-> > +				return e;
-> > +			else
-> > +				return ERR_PTR(-EWOULDBLOCK);
-> > +	return ERR_PTR(-EINVAL);
-> > +}
-> Unused?
+Hi, Yinghai.
 
-Yes, leftovers from an attempt to reuse kvm_set_irq as you suggested
-below. It didn't work out - we get much more code this way,
-so this needs to be removed.
+On Thu, Jan 19, 2012 at 03:06, Yinghai Lu <yinghai@kernel.org> wrote:
+> 2012/1/18 Rogério Brito <rbrito@ime.usp.br>:
+>> Regarding these options, Yinghai, the options which I enabled once I
+>> typed "make oldconfig" were:
+>>
+>> CONFIG_PCI_PRI
+>> CONFIG_PCI_PASID
+>
+> should be not related.
 
-> > +
-> > +/*
-> > + * Deliver an IRQ in an atomic context if we can, or return a failure,
-> > + * user can retry in a process context.
-> > + * Return value:
-> > + *  -EWOULDBLOCK	Can't deliver in atomic context
-> > + *  < 0			Interrupt was ignored (masked or not delivered for other reasons)
-> > + *  = 0			Interrupt was coalesced (previous irq is still pending)
-> > + *  > 0			Number of CPUs interrupt was delivered to
-> > + */
-> > +int kvm_set_irq_inatomic(struct kvm *kvm, int irq_source_id, u32 irq, int level,
-> > +			 int host_irq)
-> > +{
-> > +	struct kvm_kernel_irq_routing_entry *e;
-> > +	int ret = -EINVAL;
-> > +	struct kvm_irq_routing_table *irq_rt;
-> > +	struct hlist_node *n;
-> > +
-> > +	trace_kvm_set_irq(irq, level, irq_source_id);
-> > +
-> > +	/*
-> > +	 * We know MSI are safe in interrupt context. They are also
-> > +	 * easy as there's a single routing entry for these GSIs.
-> > +	 * So only handle MSI in an atomic context, for now.
-> > +	 */
-> > +	rcu_read_lock_bh();
-> _bh?
-> 
-> /**
->  * rcu_read_lock_bh() - mark the beginning of an RCU-bh critical section
->  *
->  * This is equivalent of rcu_read_lock(), but to be used when updates
->  * are being done using call_rcu_bh() or synchronize_rcu_bh().
->  ....
-> 
-> Since updates to irq routing table are not done using _bh variant I
-> doubt rcu_read_lock_bh() is justified here.
+Thanks. It would be good if, once all these problems were fixed, if
+the help of those options were fleshed out a little bit for lusers
+(e.g., me). Heck, I can even try to contribute some patches to
+document some options, once I understand them.
 
-Right. Thanks for ppointing this out, I was confused.
+>> I did just that and uploaded a video from Linus's git tree with the
+>> options above to:
+>>
+>>    http://youtu.be/_dYhkWHfep0
+>>
+>> It took a long time to boot (about 7 minutes), but all details are
+>> there, I hope.  I can repeat the same steps for your for-pci2 branch,
+>> if you want me to.
+>
+> yes, please esp need patch.
+>
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=e3a7a7d4ea1b6a2be82ef454096aff7856c14de5
 
-> > +	irq_rt = rcu_dereference(kvm->irq_routing);
-> > +	if (irq < irq_rt->nr_rt_entries)
-> > +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link) {
-> > +			if (ei->type == KVM_IRQ_ROUTING_MSI)
-> > +				ret = kvm_set_msi(e, kvm, irq_source_id, level,
-> > +						  host_irq);
-> > +			else
-> > +				ret = -EWOULDBLOCK;
-> > +			break;
-> > +		}
-> > +	rcu_read_unlock_bh();
-> > +	return ret;
-> > +}
-> > +
-> Share implementation with kvm_set_irq().
+With CONFIG_BOOT_PRINTK_DELAY enabled and with "boot_delay=500" on the
+command line, I checked out the for-pci2 branch of your tree and this
+is what I get:
 
-I considered this. There are several reasons not to do it:
-- Amount of common code is very small
-- As it's separate, it's more obvious that it can't block (kvm_set_irq can block)
-  We can even tag kvm_set_irq with might_sleep.
-- This is way simpler and faster as we can do operations directly,
-  instead of copying the irq out, and as it's datapath
-  an optimization is I think justified.
+    http://youtu.be/bWEme7iFD7g
 
-> >  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin)
-> >  {
-> >  	struct kvm_irq_ack_notifier *kian;
-> > -- 
-> > 1.7.8.2.325.g247f9
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> --
-> 			Gleb.
+If you want me to, say, recompile Linus's vanilla tree with only a few
+selected patches, please let me know. I will now try to test some
+other combinations of the options passed to the kernel.
+
+
+Regards,
+
+-- 
+Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
+http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
+DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
