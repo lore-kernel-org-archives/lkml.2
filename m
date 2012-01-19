@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab2ASRAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 12:00:42 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:5199 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934Ab2ASRAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 12:00:41 -0500
-Message-ID: <4F184C27.8080101@parallels.com>
-Date: Thu, 19 Jan 2012 21:00:23 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1756881Ab2ASRAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 12:00:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37587 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab2ASRAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 12:00:44 -0500
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 2/5] SUNRPC: create unix gid cache per network namespace
-References: <20120119144517.9957.59143.stgit@localhost6.localdomain6> <20120119144914.9957.73951.stgit@localhost6.localdomain6> <20120119162431.GC527@fieldses.org>
-In-Reply-To: <20120119162431.GC527@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <104f6d8b3c4a2d65dce9eb32364d32eba637c48d.1326876464.git.viresh.kumar@st.com>
+References: <cover.1326876464.git.viresh.kumar@st.com>
+	<104f6d8b3c4a2d65dce9eb32364d32eba637c48d.1326876464.git.viresh.kumar@st.com>
+Date: Thu, 19 Jan 2012 18:00:43 +0100
+Message-ID: <CACRpkdYjLyYx-pDLA+FqT+=Vdop4jF4+ex6D6o9udNbN57+=Zg@mail.gmail.com>
+Subject: Re: [PATCH V2 03/12] dmaengine: Pass dma_slave_config .device_fc =
+ NULL for all existing users
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, cjb@laptop.org,
+        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        egtvedt@samfundet.no, hskinnemoen@gmail.com, kernel@pengutronix.de,
+        perex@perex.cz, linux-arm-kernel@lists.infradead.org,
+        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
+        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
+        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
+        viresh.linux@gmail.com, bhavna.yadav@st.com, vincenzo.frascino@st.com,
+        mirko.gardi@st.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.01.2012 20:24, J. Bruce Fields пишет:
-> On Thu, Jan 19, 2012 at 06:49:14PM +0400, Stanislav Kinsbursky wrote:
->> This patch makes unix_gid_cache cache detail allocated and registered per
->> network namespace context.
->> Thus with this patch unix_gid_cache contents for network namespace "X" are
->> controlled from proc file system mount for the same network namespace "X".
+On Wed, Jan 18, 2012 at 10:11 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
+
+> .device_fc is added in struct dma_slave_config recently. All user drivers, which
+> want DMA to be the flow controller must pass this field as false. As earlier
+> driver don't look to use this feature, mark it false for now.
 >
-> I'm confused--this seems half-done.  I see that you're creating the gid
-> caches dynamically, but there's still this static definition:
->
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 
-This static definition is used as a template now.
-Have a look at the first path of the series: cache creation routine duplicates 
-incomming cache_detail and initializes net and hash_table fields in freshly 
-created copy.
-This copy is the new per-net cache_detail instance.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
->>   struct cache_detail unix_gid_cache = {
->>   	.owner		= THIS_MODULE,
->>   	.hash_size	= GID_HASHMAX,
->> -	.hash_table	= gid_table,
->>   	.name		= "auth.unix.gid",
->>   	.cache_put	= unix_gid_put,
->>   	.cache_upcall	= unix_gid_upcall,
->
-> And it looks like unix_gid_lookup is still using this static
-> unix_gid_cache.  Maybe I'm missing something....
->
-
-Yep, thanks for the catch.
-My fault, I've missed this usage.
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
+Thanks Viresh,
+Linus Walleij
