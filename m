@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab2ASXnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 18:43:33 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42660 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab2ASXna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 18:43:30 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Simon Glass <sjg@chromium.org>
-Subject: Re: [PATCH] serial: Fix wakeup init logic to speed up startup
-Date: Fri, 20 Jan 2012 00:46:59 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-References: <1327001336-28703-1-git-send-email-sjg@chromium.org>
-In-Reply-To: <1327001336-28703-1-git-send-email-sjg@chromium.org>
+	id S1753558Ab2ASXq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 18:46:59 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57353 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab2ASXq6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 18:46:58 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201200046.59766.rjw@sisk.pl>
+In-Reply-To: <1326991820-31393-1-git-send-email-rabin@rab.in>
+References: <20120116025331.GA16516@localhost>
+	<1326991820-31393-1-git-send-email-rabin@rab.in>
+Date: Fri, 20 Jan 2012 08:46:56 +0900
+Message-ID: <CAKYAXd8poi6Rs7wyvZHre6qx-_i7eq0SBQAJNKNTYTLC5RQKjA@mail.gmail.com>
+Subject: Re: [PATCHv2] backing-dev: fix wakeup timer races with bdi_unregister()
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: fengguang.wu@intel.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        chanho0207@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 19, 2012, Simon Glass wrote:
-> The synchronize_rcu() call resulting from making every serial driver
-> wake-up capable (commit b3b708fa) slows boot down on my Tegra2x system
-> (with CONFIG_PREEMPT disabled).
-> 
-> But this is avoidable since it is the device_set_wakeup_enable() and then
-> subsequence disable which causes the delay. We might as well just make
-> the device wakeup capable but not actually enable it for wakeup until
-> needed.
-> 
-> Effectively the current code does this:
-> 
-> 	device_set_wakeup_capable(dev, 1);
-> 	device_set_wakeup_enable(dev, 1);
-> 	device_set_wakeup_enable(dev, 0);
-> 
-> We can just drop the last two lines.
-> 
-> Before this change my boot log says:
-> [    0.227062] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-> [    0.702928] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
-> 
-> after:
-> [    0.227264] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-> [    0.227983] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
-> 
-> for saving of 450ms.
-> 
-> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Simon Glass <sjg@chromium.org>
-
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-Thanks!
-
-> ---
->  drivers/tty/serial/serial_core.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> index c7bf31a..1305618 100644
-> --- a/drivers/tty/serial/serial_core.c
-> +++ b/drivers/tty/serial/serial_core.c
-> @@ -2348,11 +2348,11 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
->  	 */
->  	tty_dev = tty_register_device(drv->tty_driver, uport->line, uport->dev);
->  	if (likely(!IS_ERR(tty_dev))) {
-> -		device_init_wakeup(tty_dev, 1);
-> -		device_set_wakeup_enable(tty_dev, 0);
-> -	} else
-> +		device_set_wakeup_capable(tty_dev, 1);
-> +	} else {
->  		printk(KERN_ERR "Cannot register tty device on line %d\n",
->  		       uport->line);
-> +	}
->  
->  	/*
->  	 * Ensure UPF_DEAD is not set.
-> 
-
+>                bdi_debug_unregister(bdi);
+> -               device_unregister(bdi->dev);
+> +
+> +               spin_lock_bh(&bdi->wb_lock);
+>                bdi->dev = NULL;
+> +               spin_unlock_bh(&bdi->wb_lock);
+Hi.
+Would you explain me why you add spinlock in here ?
+Thanks.
+> +
+> +               device_unregister(dev);
+>        }
+>  }
+>  EXPORT_SYMBOL(bdi_unregister);
+> --
+> 1.7.7.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
