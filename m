@@ -1,212 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab2ASXhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 18:37:53 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:53473 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab2ASXhu (ORCPT
+	id S1753356Ab2ASXji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 18:39:38 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:60766 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab2ASXje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 18:37:50 -0500
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Simon Glass <sjg@chromium.org>
-Subject: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot time
-Date: Thu, 19 Jan 2012 15:37:42 -0800
-Message-Id: <1327016262-17957-1-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 19 Jan 2012 18:39:34 -0500
+Date: Thu, 19 Jan 2012 15:39:27 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        Shaohua Li <shaohua.li@intel.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Subject: Re: rcu_sched_state detected stalls on Alpha with generic config
+Message-ID: <20120119233927.GH2373@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4EDF0CEB.80904@orcon.net.nz>
+ <20111208011650.GH2367@linux.vnet.ibm.com>
+ <458655D9-91A7-4E1B-8E3A-5C86D87887F7@orcon.net.nz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <458655D9-91A7-4E1B-8E3A-5C86D87887F7@orcon.net.nz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12011923-3352-0000-0000-0000020BC5DF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the boot to progress while USB is being probed - which
-otherwise takes about 70ms per controller on my Tegra2 system.
+On Fri, Jan 20, 2012 at 12:15:18PM +1300, Michael Cree wrote:
+> On 8/12/2011, at 2:16 PM, Paul E. McKenney wrote:
+> >On Wed, Dec 07, 2011 at 07:51:23PM +1300, Michael Cree wrote:
+> >>I am seeing "rcu_sched_state detected stall on CPU" messages on Alpha
+> >>architecture with a generic SMP config.  Interactive tasks are
+> >>seen to
+> >>lock up, with "INFO: task X blocked for more than 120 seconds" in the
+> >>kernel logs, and eventual kernel oops and panic, on latest
+> >>3.2-rc4 and
+> >>traceable back to 3.0.  Bisection between 2.6.39 and 3.0 leads
+> >>to commit:
+> >>
+> >>09223371deac67d08ca0b70bd18787920284c967
+> >>rcu: Use softirq to address performance regression
+> >>
+> >>as the first bad commit.
+> >>
+> >>Tested on an Alpha ES45 (Titan) with three 1.25 GHz CPUs and 4 GByte
+> >>memory.  Testing procedure is to build git software and run its test
+> >>suite with -j4 in the make command argument.
+> >>
+> >>The CPU stall messages and eventually system lockup is only seen
+> >>with a
+> >>generic Alpha config, never with a Titan machine specific config.
+> >>
+> >>An example of kernel logs is (this one probably produced when I
+> >>tried to
+> >>shutdown the system when it is falling over):
+> >>
+> >>[45360.930876] INFO: rcu_sched_state detected stall on CPU 1
+> >>(t=798848
+> >>jiffies)
+> >>[45360.931853] INFO: rcu_sched_state detected stalls on
+> >>CPUs/tasks: { 1}
+> >>(detected by 0, t=798850 jiffies)
+> >>[45489.080225] INFO: task umount:17371 blocked for more than 120
+> >>seconds.
+> >>[45489.158350] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> >>disables this message.
+> >>[45489.252100] umount          D fffffc00013461ac     0 17371  17368
+> >>0x00000000
+> >>[45489.336084] fffffc00fdd53db8 fffffc00fdd97bb8 fffffc000108ca1c
+> >>fffffc00dcc9e800
+> >>[45489.422998]        fffffc00dcc9e810 fffffc00013b3a5d
+> >>fffffc000106289c
+> >>fffffc00ff0dfda8
+> >>[45489.519678]        0000000000000000 fffffc000108c81c
+> >>fffffc0001cd73f0
+> >>0000000000000001
+> >>[45489.615381]        fffffc00010627f0 0000000000000000
+> >>fffffc00dcc9e920
+> >>fffffc00ff0bf780
+> >>[45489.712060]        fffffc00010111b8 fffffc00ff0dfda8
+> >>fffffc00ff0dfde8
+> >>fffffc0001cdaa58
+> >>[45489.808740]        0000000000000000 0000000000000000
+> >>fffffc0000000000
+> >>fffffc0000000000
+> >>[45489.907373] Trace:
+> >>[45489.930810] [<fffffc000108ca1c>] watchdog+0x200/0x27c
+> >>[45489.991357] [<fffffc000106289c>] kthread+0xac/0xc4
+> >>[45490.048974] [<fffffc000108c81c>] watchdog+0x0/0x27c
+> >>[45490.107568] [<fffffc00010627f0>] kthread+0x0/0xc4
+> >>[45490.164209] [<fffffc00010111b8>] kernel_thread+0x28/0x90
+> >>[45490.227685]
+> >>
+> >>Let me know if any other information is needed to narrow down
+> >>the problem.
+> >
+> >Are there any specific differences between the Titan config and the
+> >generic Alpha config that might help me work out what is going on?
+> >Odd -- it looks like the watchdog is complaining at the time of
+> >the hang.
+> >Is it possible to use sysrq to get the state of the other tasks?
+> 
+> Been rather busy or on holiday in the meantime, but just got back to
+> looking at this problem.
+> 
+> It looks like it is a faulty compiler, not a problem in the kernel
+> source.
+> 
+> The problems described above are seen when compiling with gcc-4.4
+> and we now realise that gcc-4.4 has an optimisation problem on Alpha
+> and is the cause of reported problems/crashes in software other than
+> the kernel.  These problems are fixed when compiling with gcc-4.5.
+> 
+> I have now compiled a "bad" kernel with gcc-4.5 and I no longer can
+> trigger the failure --- the kernel worked for a couple of hours (and
+> a bad one compiled with gcc-4.4 has never lasted that long without
+> crashing!).
 
-It was mentioned some years ago in an email from Linus Torvalds:
+Thank you for letting me know -- always glad to blame the compiler.  ;-)
 
-https://lkml.org/lkml/2008/10/10/411
-
->  - they call usb_add_hcd, and usb_add_hcd is a horrible and slow
-> piece of crap that doesn't just add the host controller, but does all
-> the probing too.
->
-> In other words, what should be fixed is not the initcall sequence,
-> and certainly not make PCI device probing (or other random buses) be
-> partly asynchronous, but simply make that USB host controller startup
-> function be asynchronous.
-
-It might be better to delay the work until much later unless USB is needed
-for the root disk, but that might have to be a command line option.
-
-Signed-off-by: Simon Glass <sjg@chromium.org>
----
- drivers/usb/core/hcd.c  |   75 +++++++++++++++++++++++++++++++++++++++-------
- drivers/usb/core/usb.c  |    5 +++
- include/linux/usb/hcd.h |    9 +++++
- 3 files changed, 77 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index eb19cba..a201062 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -111,6 +111,9 @@ static DEFINE_SPINLOCK(hcd_urb_unlink_lock);
- /* wait queue for synchronous unlinks */
- DECLARE_WAIT_QUEUE_HEAD(usb_kill_urb_queue);
- 
-+/* work queue to handle reset and probing */
-+static struct workqueue_struct *hcd_workq;
-+
- static inline int is_root_hub(struct usb_device *udev)
- {
- 	return (udev->parent == NULL);
-@@ -2362,17 +2365,7 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
- 	return 0;
- }
- 
--/**
-- * usb_add_hcd - finish generic HCD structure initialization and register
-- * @hcd: the usb_hcd structure to initialize
-- * @irqnum: Interrupt line to allocate
-- * @irqflags: Interrupt type flags
-- *
-- * Finish the remaining parts of generic HCD initialization: allocate the
-- * buffers of consistent memory, register the bus, request the IRQ line,
-- * and call the driver's reset() and start() routines.
-- */
--int usb_add_hcd(struct usb_hcd *hcd,
-+int usb_add_hcd_work(struct usb_hcd *hcd,
- 		unsigned int irqnum, unsigned long irqflags)
- {
- 	int retval;
-@@ -2517,7 +2510,50 @@ err_allocate_root_hub:
- err_register_bus:
- 	hcd_buffer_destroy(hcd);
- 	return retval;
--} 
-+}
-+
-+/* This is the work function for usb_add_hcd() */
-+void probe_hcd(struct work_struct *item)
-+{
-+	struct usb_hcd *hcd = container_of(item, struct usb_hcd,
-+					   init_work.work);
-+	int err;
-+
-+	err = usb_add_hcd_work(hcd, hcd->init_irqnum, hcd->init_irqflags);
-+	if (err)
-+		printk(KERN_ERR "probe_hcd failed with error %d\n", err);
-+}
-+
-+/**
-+ * usb_add_hcd - finish generic HCD structure initialization and register
-+ * @hcd: the usb_hcd structure to initialize
-+ * @irqnum: Interrupt line to allocate
-+ * @irqflags: Interrupt type flags
-+ *
-+ * Finish the remaining parts of generic HCD initialization: allocate the
-+ * buffers of consistent memory, register the bus, request the IRQ line,
-+ * and call the driver's reset() and start() routines.
-+ */
-+int usb_add_hcd(struct usb_hcd *hcd,
-+		unsigned int irqnum, unsigned long irqflags)
-+{
-+	/*
-+	 * Perhaps we should have a pointer to an allocated structure since
-+	 * these fields are not used after init.
-+	 */
-+	INIT_DELAYED_WORK(&hcd->init_work, probe_hcd);
-+	hcd->init_irqnum = irqnum;
-+	hcd->init_irqflags = irqflags;
-+
-+	/*
-+	 * I'm sure we can't delay this by a second. Should we start it
-+	 * immediately? Are we allowed to delay a little? Sometimes USB will
-+	 * provide the root disk, so perhaps not.
-+	 */
-+	if (!queue_delayed_work(hcd_workq, &hcd->init_work, HZ))
-+		return -ENOMEM;
-+	return 0;
-+}
- EXPORT_SYMBOL_GPL(usb_add_hcd);
- 
- /**
-@@ -2591,6 +2627,21 @@ usb_hcd_platform_shutdown(struct platform_device* dev)
- }
- EXPORT_SYMBOL_GPL(usb_hcd_platform_shutdown);
- 
-+int usb_hcd_init(void)
-+{
-+	hcd_workq = alloc_workqueue("usb_hcd",
-+				WQ_NON_REENTRANT | WQ_MEM_RECLAIM, 1);
-+	if (!hcd_workq)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+void usb_hcd_cleanup(void)
-+{
-+	destroy_workqueue(hcd_workq);
-+}
-+
- /*-------------------------------------------------------------------------*/
- 
- #if defined(CONFIG_USB_MON) || defined(CONFIG_USB_MON_MODULE)
-diff --git a/drivers/usb/core/usb.c b/drivers/usb/core/usb.c
-index 8ca9f99..5e5b944 100644
---- a/drivers/usb/core/usb.c
-+++ b/drivers/usb/core/usb.c
-@@ -1036,10 +1036,14 @@ static int __init usb_init(void)
- 	retval = usb_hub_init();
- 	if (retval)
- 		goto hub_init_failed;
-+	retval = usb_hcd_init();
-+	if (retval)
-+		goto hcd_init_failed;
- 	retval = usb_register_device_driver(&usb_generic_driver, THIS_MODULE);
- 	if (!retval)
- 		goto out;
- 
-+hcd_init_failed:
- 	usb_hub_cleanup();
- hub_init_failed:
- 	usbfs_cleanup();
-@@ -1069,6 +1073,7 @@ static void __exit usb_exit(void)
- 		return;
- 
- 	usb_deregister_device_driver(&usb_generic_driver);
-+	usb_hcd_cleanup();
- 	usb_major_cleanup();
- 	usbfs_cleanup();
- 	usb_deregister(&usbfs_driver);
-diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-index b2f62f3..49e445b 100644
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -87,6 +87,9 @@ struct usb_hcd {
- #ifdef CONFIG_USB_SUSPEND
- 	struct work_struct	wakeup_work;	/* for remote wakeup */
- #endif
-+	struct delayed_work	init_work;	/* for initial init */
-+	unsigned int		init_irqnum;	/* requested irqnum */
-+	unsigned long		init_irqflags;	/* requested irq flags */
- 
- 	/*
- 	 * hardware info/state
-@@ -668,6 +671,12 @@ extern struct rw_semaphore ehci_cf_port_reset_rwsem;
- #define USB_EHCI_LOADED		2
- extern unsigned long usb_hcds_loaded;
- 
-+/* Initalise the HCD ready for use, Must be called before usb_add_hcd() */
-+int usb_hcd_init(void);
-+
-+/* Clean up HCD */
-+void usb_hcd_cleanup(void);
-+
- #endif /* __KERNEL__ */
- 
- #endif /* __USB_CORE_HCD_H */
--- 
-1.7.7.3
+							Thanx, Paul
 
