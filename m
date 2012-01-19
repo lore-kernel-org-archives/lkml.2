@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab2ASCIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 21:08:07 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:58472 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756904Ab2ASCH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 21:07:57 -0500
-Date: Wed, 18 Jan 2012 20:07:54 -0600
-From: Russ Anderson <rja@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Russ Anderson <rja@sgi.com>
-Subject: [PATCH] x86/uv: Fix uv_gpa_to_soc_phys_ram shift
-Message-ID: <20120119020753.GA7228@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1756988Ab2ASCJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 21:09:00 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:46443 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752784Ab2ASCI6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 21:08:58 -0500
+Message-ID: <4F1788EC.4040901@xenotime.net>
+Date: Wed, 18 Jan 2012 19:07:24 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: linux-next: Tree for Jan 19 (uml)
+References: <20120119125932.a4c67005cf6a0938558e8b36@canb.auug.org.au>
+In-Reply-To: <20120119125932.a4c67005cf6a0938558e8b36@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uv_gpa_to_soc_phys_ram() was inadvertently ignoring the
-shift values.  This fix takes the shift into account.
+On 01/18/2012 05:59 PM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20120118:
+> 
+> Linus' tree gained a build failure for which I applied a patch.
 
-Signed-off-by: Russ Anderson <rja@sgi.com>
 
----
- arch/x86/include/asm/uv/uv_hub.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Building uml on x86_64 gives:
 
-Index: linux/arch/x86/include/asm/uv/uv_hub.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2012-01-18 19:49:53.134409748 -0600
-+++ linux/arch/x86/include/asm/uv/uv_hub.h	2012-01-18 19:49:56.978409600 -0600
-@@ -318,13 +318,13 @@ uv_gpa_in_mmr_space(unsigned long gpa)
- /* UV global physical address --> socket phys RAM */
- static inline unsigned long uv_gpa_to_soc_phys_ram(unsigned long gpa)
- {
--	unsigned long paddr = gpa & uv_hub_info->gpa_mask;
-+	unsigned long paddr;
- 	unsigned long remap_base = uv_hub_info->lowmem_remap_base;
- 	unsigned long remap_top =  uv_hub_info->lowmem_remap_top;
- 
- 	gpa = ((gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
- 		((gpa >> uv_hub_info->n_lshift) << uv_hub_info->m_val);
--	gpa = gpa & uv_hub_info->gpa_mask;
-+	paddr = gpa & uv_hub_info->gpa_mask;
- 	if (paddr >= remap_base && paddr < remap_base + remap_top)
- 		paddr -= remap_base;
- 	return paddr;
+  CC      arch/um/kernel/asm-offsets.s
+In file included from /next/linux-next-20120119/arch/um/include/shared/registers.h:9:0,
+                 from /next/linux-next-20120119/arch/um/include/asm/processor-generic.h:14,
+                 from /next/linux-next-20120119/arch/x86/um/asm/processor.h:20,
+                 from /next/linux-next-20120119/arch/um/include/asm/uaccess.h:16,
+                 from /next/linux-next-20120119/arch/um/include/asm/thread_info.h:13,
+                 from /next/linux-next-20120119/include/linux/thread_info.h:53,
+                 from /next/linux-next-20120119/include/linux/preempt.h:9,
+                 from /next/linux-next-20120119/include/linux/spinlock.h:50,
+                 from /next/linux-next-20120119/include/linux/seqlock.h:29,
+                 from /next/linux-next-20120119/include/linux/time.h:8,
+                 from /next/linux-next-20120119/include/linux/timex.h:56,
+                 from /next/linux-next-20120119/include/linux/sched.h:57,
+                 from /next/linux-next-20120119/arch/x86/um/shared/sysdep/kernel-offsets.h:2,
+                 from /next/linux-next-20120119/arch/um/kernel/asm-offsets.c:1:
+/next/linux-next-20120119/arch/x86/um/shared/sysdep/ptrace.h:7:20: error: redefinition of 'regs_return_value'
+/next/linux-next-20120119/arch/x86/um/shared/sysdep/ptrace.h:7:20: note: previous definition of 'regs_return_value' was here
+
+
+
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
