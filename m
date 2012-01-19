@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab2ASK0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 05:26:47 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:23870 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211Ab2ASK0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 05:26:45 -0500
-Message-ID: <4F17EFE1.3060804@bfs.de>
-Date: Thu, 19 Jan 2012 11:26:41 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1756385Ab2ASKbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 05:31:39 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:45742 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab2ASKb3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 05:31:29 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+NeB+LGufEzLRW9VO+aUhx
+Date: Thu, 19 Jan 2012 02:31:13 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Shawn Guo <shawn.guo@linaro.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Dong Aisheng <dongas86@gmail.com>
+Subject: Re: Pinmux bindings proposal
+Message-ID: <20120119103112.GD22818@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <20120116182808.GG4223@ponder.secretlab.ca>
+ <20120118141329.GA22818@atomide.com>
+ <CAAQ0ZWTtYz3Lg7=Xz29m07j_k8yA95hn6cyk92SAJ4iGJRT_gw@mail.gmail.com>
+ <20120118153256.GB22818@atomide.com>
+ <20120118202057.GH4223@ponder.secretlab.ca>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch 2/2] [media] ds3000: off by one in ds3000_read_snr()
-References: <20120117073021.GB11358@elgon.mountain> <4F16FC26.80306@bfs.de> <20120119093327.GI3356@mwanda>
-In-Reply-To: <20120119093327.GI3356@mwanda>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120118202057.GH4223@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 19.01.2012 10:33, schrieb Dan Carpenter:
-> On Wed, Jan 18, 2012 at 06:06:46PM +0100, walter harms wrote:
->>
->>
->> Am 17.01.2012 08:30, schrieb Dan Carpenter:
->>> This is a static checker patch and I don't have the hardware to test
->>> this, so please review it carefully.  The dvbs2_snr_tab[] array has 80
->>> elements so when we cap it at 80, that's off by one.  I would have
->>> assumed that the test was wrong but in the lines right before we have
->>> the same test but use "snr_reading - 1" as the array offset.  I've done
->>> the same thing here.
->>>
->>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->>>
->>> diff --git a/drivers/media/dvb/frontends/ds3000.c b/drivers/media/dvb/frontends/ds3000.c
->>> index af65d01..3f5ae0a 100644
->>> --- a/drivers/media/dvb/frontends/ds3000.c
->>> +++ b/drivers/media/dvb/frontends/ds3000.c
->>> @@ -681,7 +681,7 @@ static int ds3000_read_snr(struct dvb_frontend *fe, u16 *snr)
->>>  			snr_reading = dvbs2_noise_reading / tmp;
->>>  			if (snr_reading > 80)
->>>  				snr_reading = 80;
->>> -			*snr = -(dvbs2_snr_tab[snr_reading] / 1000);
->>> +			*snr = -(dvbs2_snr_tab[snr_reading - 1] / 1000);
->>>  		}
->>>  		dprintk("%s: raw / cooked = 0x%02x / 0x%04x\n", __func__,
->>>  				snr_reading, *snr);
->>
->> hi dan,
->>
->> perhaps it is more useful to do it in the check above ?
+* Grant Likely <grant.likely@secretlab.ca> [120118 11:48]:
+> On Wed, Jan 18, 2012 at 07:32:56AM -0800, Tony Lindgren wrote:
+> > 
+> > But then the .dts file becomes an unreadable matrix unless we have
+> > a preprocessor..
 > 
-> It looks like the check is correct but we need to shift all the
-> values by one.  Again, I don't have this hardware, I'm just going by
-> the context.
-> 
-I do not have the hardware either so this is pure theoretical.
+> One node per pin does get excessive in a hurry.  I prefer the one node
+> per pin controller.  Tools can be written to make writing the
+> definition easier.
+ 
+OK that's fine with me. It would be nice to have the .dts readable
+too, so I'd prefer a preprocessor over a .dts generation tool to
+keep the .dts files readable. Bugs in .dts file can be a big pain
+to debug it seems.
 
-Access to the data field depends on the value of dvbs2_noise_reading/tmp
-even when the data are reasonable like 50/100 snr_reading would become 0
-and the index suddenly is -1.
+Regards,
 
-just my 2 cents.
-
-re,
- wh
-
-
->> thinking about that why not replace the number (80) with ARRAY_SIZE() ?
-> 
-> That would be a cleanup, yes but it could go in a separate patch.
-> 
-> regards,
-> dan carpenter
-> 
+Tony
