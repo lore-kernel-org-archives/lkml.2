@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab2ASTvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 14:51:50 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:52771 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932670Ab2ASTvs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 14:51:48 -0500
+	id S932882Ab2AST6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 14:58:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18810 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932487Ab2AST6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 14:58:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108812067"
+Message-ID: <4F1875CC.4010006@linux.intel.com>
+Date: Thu, 19 Jan 2012 11:58:04 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20120119194242.GE2373@linux.vnet.ibm.com>
-References: <1327001336-28703-1-git-send-email-sjg@chromium.org>
-	<20120119194242.GE2373@linux.vnet.ibm.com>
-Date: Thu, 19 Jan 2012 11:51:47 -0800
-X-Google-Sender-Auth: 55mmxl8uvCAVC1AqaWCl6uA4wEU
-Message-ID: <CAPnjgZ0kB8L6fFrcjq_0MSoh7KkL-051JHYptNQMaZNi89MavQ@mail.gmail.com>
-Subject: Re: [PATCH] serial: Fix wakeup init logic to speed up startup
-From: Simon Glass <sjg@chromium.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-serial@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: dmsetup fails on latest kernel
+References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com> <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com> <CA+55aFwwkjFsVuSZWgasN4e_d9suRV4Afr94NMvNt4R7Ej0gbw@mail.gmail.com>
+In-Reply-To: <CA+55aFwwkjFsVuSZWgasN4e_d9suRV4Afr94NMvNt4R7Ej0gbw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-
-On Thu, Jan 19, 2012 at 11:42 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Jan 19, 2012 at 11:28:56AM -0800, Simon Glass wrote:
->> The synchronize_rcu() call resulting from making every serial driver
->> wake-up capable (commit b3b708fa) slows boot down on my Tegra2x system
->> (with CONFIG_PREEMPT disabled).
+On 01/19/2012 11:05 AM, Linus Torvalds wrote:
 >>
->> But this is avoidable since it is the device_set_wakeup_enable() and then
->> subsequence disable which causes the delay. We might as well just make
->> the device wakeup capable but not actually enable it for wakeup until
->> needed.
+>> Hi,
 >>
->> Effectively the current code does this:
+>> I have bisected the problem...
 >>
->>       device_set_wakeup_capable(dev, 1);
->>       device_set_wakeup_enable(dev, 1);
->>       device_set_wakeup_enable(dev, 0);
+>> It is introduced by this commit:
 >>
->> We can just drop the last two lines.
+>> 303395ac3bf3e2cb488435537d416bc840438fcb is the first bad commit
+>> commit 303395ac3bf3e2cb488435537d416bc840438fcb
+>> Author: H. Peter Anvin<hpa@linux.intel.com>
+>> Date:   Fri Nov 11 16:07:41 2011 -0800
 >>
->> Before this change my boot log says:
->> [    0.227062] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
->> [    0.702928] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
->>
->> after:
->> [    0.227264] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
->> [    0.227983] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
->>
->> for saving of 450ms.
+>>     x86: Generate system call tables and unistd_*.h from tables
 >
-> You have multiple CPUs running at this point, correct?  Before that
-> second CPU starts up, synchronize_rcu() is a no-op.
-
-Yes that's right, although I didn't get different behavior with 'nosmp'.
-
+> Interesting. I just munged the old pre-merge
 >
-> The patch looks good to me, but then again, I do not consider myself
-> qualified to have an opinion on the TTY layer.  ;-)
-
-Thanks, me neither :-)
-
-Regards,
-Simon
-
+>    arch/x86/kernel/syscall_table_32.S
 >
->                                                        Thanx, Paul
+> and the new
 >
->> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
->> Signed-off-by: Simon Glass <sjg@chromium.org>
->> ---
->>  drivers/tty/serial/serial_core.c |    6 +++---
->>  1 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
->> index c7bf31a..1305618 100644
->> --- a/drivers/tty/serial/serial_core.c
->> +++ b/drivers/tty/serial/serial_core.c
->> @@ -2348,11 +2348,11 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
->>        */
->>       tty_dev = tty_register_device(drv->tty_driver, uport->line, uport->dev);
->>       if (likely(!IS_ERR(tty_dev))) {
->> -             device_init_wakeup(tty_dev, 1);
->> -             device_set_wakeup_enable(tty_dev, 0);
->> -     } else
->> +             device_set_wakeup_capable(tty_dev, 1);
->> +     } else {
->>               printk(KERN_ERR "Cannot register tty device on line %d\n",
->>                      uport->line);
->> +     }
->>
->>       /*
->>        * Ensure UPF_DEAD is not set.
->> --
->> 1.7.7.3
->>
+>    arch/x86/syscalls/syscall_32.tbl
 >
+> with some trivial shell scripting, and they are definitely identical.
+>
+> So the tables look like they match 1:1.
+>
+> The compat tables match too, except the new list contains the entry
+> for bdflush (134), but that's a legacy thing that doesn't matter.
+>
+> I wonder what else could be going on. Wrong number of system calls
+> check? Peter, any ideas?
+>
+
+Not off the top of my head.  I will try to reproduce this and see what 
+the problem is.  Dmitry, what version of binutils and gcc are you using? 
+  It could be that there is a toolchain problem.
+
+	-hpa
+
+
