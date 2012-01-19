@@ -1,40 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab2ASKkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 05:40:36 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53238 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752083Ab2ASKkc (ORCPT
+	id S1753453Ab2ASKtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 05:49:09 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60681 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab2ASKtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 05:40:32 -0500
-Date: Thu, 19 Jan 2012 10:40:30 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>, "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V1 2/2] regulator: tps65910: Initialize n_voltages for
- rails.
-Message-ID: <20120119104029.GA3178@opensource.wolfsonmicro.com>
-References: <1326899836-14470-1-git-send-email-ldewangan@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1780DAAE10@HQMAIL01.nvidia.com>
- <20120118175613.GT8732@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DC3DCC1C3@BGMAIL01.nvidia.com>
+	Thu, 19 Jan 2012 05:49:06 -0500
+From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH] bq27x00_battery: fix flag register read
+Date: Thu, 19 Jan 2012 02:49:03 -0800 (PST)
+Message-ID: <12065816.FDViioMQvj@pali>
+User-Agent: KMail/4.8 rc2 (Linux/3.2.0-9-generic; KDE/4.7.97; x86_64; ; )
+In-Reply-To: <1326574249-31334-1-git-send-email-notasas@gmail.com>
+References: <1326574249-31334-1-git-send-email-notasas@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <96C9D994977DD0439FB6D3FE3B13DD907DC3DCC1C3@BGMAIL01.nvidia.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart1928388.fJKsZshR1Y"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: quoted-printable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 08:54:19AM +0530, Laxman Dewangan wrote:
 
-> Do you want to rename the variable in this patch or in separate patch?
-> In place of table_len, I will say n_voltages as this is most common name
-> in regulator world.
+--nextPart1928388.fJKsZshR1Y
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="iso-8859-1"
 
-Probably two is clearer, though if it's not set already for any of the
-regulators just one should be fine.
+On Saturday 14 January 2012 22:50:49 Grazvydas Ignotas wrote:
+> When reading flags, bq27x00_read() argument is inverted and causes
+> reads 2 of bytes for bq27200 and 1 byte for bq27500, while their regi=
+ster
+> sizes are 1 and 2 bytes respectively. This causes bq27500 upper flag
+> bits always to be returned as 0, causing full charge state to never b=
+e
+> reported correctly, so fix it.
+>=20
+> Cc: Pali Roh=E1r <pali.rohar@gmail.com>
+> Cc: Lars-Peter Clausen <lars@metafoo.de>
+> Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
+> ---
+>  drivers/power/bq27x00_battery.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/power/bq27x00_battery.c
+> b/drivers/power/bq27x00_battery.c index 98bf567..86decb4 100644
+> --- a/drivers/power/bq27x00_battery.c
+> +++ b/drivers/power/bq27x00_battery.c
+> @@ -312,7 +312,7 @@ static void bq27x00_update(struct bq27x00_device_=
+info
+> *di) struct bq27x00_reg_cache cache =3D {0, };
+>  =09bool is_bq27500 =3D di->chip =3D=3D BQ27500;
+>=20
+> -=09cache.flags =3D bq27x00_read(di, BQ27x00_REG_FLAGS, is_bq27500);
+> +=09cache.flags =3D bq27x00_read(di, BQ27x00_REG_FLAGS, !is_bq27500);=
+
+>  =09if (cache.flags >=3D 0) {
+>  =09=09if (!is_bq27500 && (cache.flags & BQ27000_FLAG_CI)) {
+>  =09=09=09dev_info(di->dev, "battery is not calibrated! ignoring capa=
+city
+> values\n");
+
+Yes, you are right, this patch fixing flags register reading.
+Anton Vorontsov, can you send this patch to linux 3.3?
+
+--=20
+Pali Roh=E1r
+pali.rohar@gmail.com
+--nextPart1928388.fJKsZshR1Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk8X9RwACgkQi/DJPQPkQ1LGzgCfe84mKEyxkLuNoBWUEmeM4Zzj
+eFsAn0GzOtHtm4dlGra6stMaMageselw
+=tAov
+-----END PGP SIGNATURE-----
+
+--nextPart1928388.fJKsZshR1Y--
+
