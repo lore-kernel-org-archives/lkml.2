@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab2ASPF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 10:05:26 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38352 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab2ASPFW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 10:05:22 -0500
+	id S932131Ab2ASPGU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:06:20 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:10469 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753091Ab2ASPGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 10:06:15 -0500
+Subject: [PATCH] NFS: decode destination address in proper network namespace
+ context
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Thu, 19 Jan 2012 19:05:57 +0400
+Message-ID: <20120119150553.16860.77882.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
-References: <1326949826.5016.5.camel@lappy> <20120119122354.66eb9820.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1201181932040.2287@eggly.anvils> <20120119130353.0ca97435.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1201182100010.2830@eggly.anvils>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Thu, 19 Jan 2012 10:05:01 -0500
-Message-ID: <CA+1xoqe5zNrx5H66HwkoywHf9FD6QTr2fcAPJSUbEx2KHf1VOg@mail.gmail.com>
-Subject: Re: [BUG] kernel BUG at mm/memcontrol.c:1074!
-To: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        hannes <hannes@cmpxchg.org>, mhocko@suse.cz, bsingharora@gmail.com,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 12:16 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Thu, 19 Jan 2012, KAMEZAWA Hiroyuki wrote:
->> On Wed, 18 Jan 2012 19:41:44 -0800 (PST)
->> Hugh Dickins <hughd@google.com> wrote:
->> >
->> > I notice that, unlike Linus's git, this linux-next still has
->> > mm-isolate-pages-for-immediate-reclaim-on-their-own-lru.patch in.
->> >
->> > I think that was well capable of oopsing in mem_cgroup_lru_del_list(),
->> > since it didn't always know which lru a page belongs to.
->> >
->> > I'm going to be optimistic and assume that was the cause.
->> >
->> Hmm, because the log hits !memcg at lru "del", the page should be added
->> to LRU somewhere and the lru must be determined by pc->mem_cgroup.
->>
->> Once set, pc->mem_cgroup is not cleared, just overwritten. AFAIK, there is
->> only one chance to set pc->mem_cgroup as NULL... initalization.
->> I wonder why it hits lru_del() rather than lru_add()...
->> ................
->>
->> Ahhhh, ok, it seems you are right. the patch has following kinds of codes
->> ==
->> +static void pagevec_putback_immediate_fn(struct page *page, void *arg)
->> +{
->> +       struct zone *zone = page_zone(page);
->> +
->> +       if (PageLRU(page)) {
->> +               enum lru_list lru = page_lru(page);
->> +               list_move(&page->lru, &zone->lru[lru].list);
->> +       }
->> +}
->> ==
->> ..this will bypass mem_cgroup_lru_add(), and we can see bug in lru_del()
->> rather than lru_add()..
->
-> I've not thought it through in detail (and your questioning reminds me
-> that the worst I saw from that patch was updating of the wrong counts,
-> leading to underflow, then livelock from the mismatch between empty list
-> and enormous count: I never saw an oops from it, and may be mistaken).
->
->>
->> Another question is who pushes pages to LRU before setting pc->mem_cgroup..
->> Anyway, I think we need to fix memcg to be LRU_IMMEDIATE aware.
->
-> I don't think so: Mel agreed that the patch could not go forward as is,
-> without an additional pageflag, and asked Andrew to drop it from mmotm
-> in mail on 29th December (I didn't notice an mm-commits message to say
-> akpm did drop it, and marc is blacked out in protest for today, so I
-> cannot check: but certainly akpm left it out of his push to Linus).
->
-> Oh, and Mel noticed another bug in it on the 30th, that the PageLRU
-> check in the function you quote above is wrong: see PATCH 11/11 thread.
+This patch replaces "init_net" with NFS client's owner net in rpc_pton() call
+in decode_ds_addr().
 
-So reverting this patch seems to indeed solve the issue (though
-reverting wasn't clean - some minor conflicts in mm/swap.c).
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+
+---
+ fs/nfs/nfs4filelayoutdev.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/fs/nfs/nfs4filelayoutdev.c b/fs/nfs/nfs4filelayoutdev.c
+index 0d8b952..6eb59b0 100644
+--- a/fs/nfs/nfs4filelayoutdev.c
++++ b/fs/nfs/nfs4filelayoutdev.c
+@@ -378,7 +378,7 @@ out:
+  * Currently only supports ipv4, ipv6 and one multi-path address.
+  */
+ static struct nfs4_pnfs_ds_addr *
+-decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
++decode_ds_addr(struct net *net, struct xdr_stream *streamp, gfp_t gfp_flags)
+ {
+ 	struct nfs4_pnfs_ds_addr *da = NULL;
+ 	char *buf, *portstr;
+@@ -457,7 +457,7 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
+ 
+ 	INIT_LIST_HEAD(&da->da_node);
+ 
+-	if (!rpc_pton(&init_net, buf, portstr-buf, (struct sockaddr *)&da->da_addr,
++	if (!rpc_pton(net, buf, portstr-buf, (struct sockaddr *)&da->da_addr,
+ 		      sizeof(da->da_addr))) {
+ 		dprintk("%s: error parsing address %s\n", __func__, buf);
+ 		goto out_free_da;
+@@ -625,7 +625,8 @@ decode_device(struct inode *ino, struct pnfs_device *pdev, gfp_t gfp_flags)
+ 
+ 		mp_count = be32_to_cpup(p); /* multipath count */
+ 		for (j = 0; j < mp_count; j++) {
+-			da = decode_ds_addr(&stream, gfp_flags);
++			da = decode_ds_addr(NFS_SERVER(ino)->nfs_client->net,
++					    &stream, gfp_flags);
+ 			if (da)
+ 				list_add_tail(&da->da_node, &dsaddrs);
+ 		}
+
