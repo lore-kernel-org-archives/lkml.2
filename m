@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab2ASKNJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 05:13:09 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5965 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab2ASKND (ORCPT
+	id S932146Ab2ASKNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 05:13:20 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13212 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757439Ab2ASKNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 05:13:03 -0500
+	Thu, 19 Jan 2012 05:13:07 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 19 Jan 2012 02:12:40 -0800
+	by hqnvupgp05.nvidia.com on Thu, 19 Jan 2012 02:12:44 -0800
 From: Venu Byravarasu <vbyravarasu@nvidia.com>
 To: a.zummo@towertech.it, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org
 Cc: swarren@nvidia.com, Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH 1/3] rtc: twl: Enable RTC irrespective of its prior state
-Date: Thu, 19 Jan 2012 15:42:27 +0530
-Message-Id: <1326967949-8248-2-git-send-email-vbyravarasu@nvidia.com>
+Subject: [PATCH 3/3] rtc: twl: Return correct RTC event from ISR
+Date: Thu, 19 Jan 2012 15:42:29 +0530
+Message-Id: <1326967949-8248-4-git-send-email-vbyravarasu@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1326967949-8248-1-git-send-email-vbyravarasu@nvidia.com>
 References: <1326967949-8248-1-git-send-email-vbyravarasu@nvidia.com>
@@ -25,43 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Venu Byravarasu <vbyravarasu@nvidia.com>
 
-As part of probe, before enabling RTC, RTC_CTRL register is read
-to check if it is already running. If RTC is used by kernel alone,
-then this read is not required. Even if RTC was enabled already by
-boot loader, setting STOP_RTC bit again should not harm.
-Hence removed unwanted read operation.
+Following changes are made as part of this change:
+1. As TWL RTC supports periodic interrupt, the correct event
+should be RTC_PF instead of RTC_UF.
+2. No need to initialize variable "events" to 0 & then OR it
+with the event values. Hence fixing it.
 
 Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
- drivers/rtc/rtc-twl.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+ drivers/rtc/rtc-twl.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
-index 20687d5..61ae1b7 100644
+index 1c85443..a0236a0 100644
 --- a/drivers/rtc/rtc-twl.c
 +++ b/drivers/rtc/rtc-twl.c
-@@ -449,19 +449,11 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
- 			REG_INT_MSK_STS_A);
- 	}
+@@ -357,7 +357,7 @@ out:
  
--	/* Check RTC module status, Enable if it is off */
--	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_CTRL_REG);
-+	dev_info(&pdev->dev, "Enabling TWL-RTC\n");
-+	ret = twl_rtc_write_u8(BIT_RTC_CTRL_REG_STOP_RTC_M, REG_RTC_CTRL_REG);
- 	if (ret < 0)
- 		goto out1;
+ static irqreturn_t twl_rtc_interrupt(int irq, void *rtc)
+ {
+-	unsigned long events = 0;
++	unsigned long events;
+ 	int ret = IRQ_NONE;
+ 	int res;
+ 	u8 rd_reg;
+@@ -372,9 +372,9 @@ static irqreturn_t twl_rtc_interrupt(int irq, void *rtc)
+ 	 * by reading RTS_INTERRUPTS_REGISTER[IT_TIMER,IT_ALARM]
+ 	 */
+ 	if (rd_reg & BIT_RTC_STATUS_REG_ALARM_M)
+-		events |= RTC_IRQF | RTC_AF;
++		events = RTC_IRQF | RTC_AF;
+ 	else
+-		events |= RTC_IRQF | RTC_UF;
++		events = RTC_IRQF | RTC_PF;
  
--	if (!(rd_reg & BIT_RTC_CTRL_REG_STOP_RTC_M)) {
--		dev_info(&pdev->dev, "Enabling TWL-RTC.\n");
--		rd_reg = BIT_RTC_CTRL_REG_STOP_RTC_M;
--		ret = twl_rtc_write_u8(rd_reg, REG_RTC_CTRL_REG);
--		if (ret < 0)
--			goto out1;
--	}
--
- 	/* init cached IRQ enable bits */
- 	ret = twl_rtc_read_u8(&rtc_irq_bits, REG_RTC_INTERRUPTS_REG);
- 	if (ret < 0)
+ 	res = twl_rtc_write_u8(BIT_RTC_STATUS_REG_ALARM_M,
+ 				   REG_RTC_STATUS_REG);
 -- 
 1.7.1.1
 
