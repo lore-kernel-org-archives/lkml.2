@@ -1,149 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab2ASGFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 01:05:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56129 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab2ASGFf (ORCPT
+	id S1751701Ab2ASGOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 01:14:42 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:20657
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750829Ab2ASGOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 01:05:35 -0500
-Date: Wed, 18 Jan 2012 22:05:12 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tejun Heo <tj@kernel.org>
-cc: Li Zefan <lizf@cn.fujitsu.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] memcg: restore ss->id_lock to spinlock, using RCU for next
-Message-ID: <alpine.LSU.2.00.1201182155480.7862@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 19 Jan 2012 01:14:40 -0500
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzzz2dhc1bhc31hc1ah2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Huang Shijie <b32955@freescale.com>
+To: <vinod.koul@intel.com>
+CC: <shawn.guo@linaro.org>, <artem.bityutskiy@intel.com>, <shijie8@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <w.sang@pengutronix.de>,
+        <LW@KARO-electronics.de>, <alsa-devel@alsa-project.org>,
+        <b29396@freescale.com>, Huang Shijie <b32955@freescale.com>
+Subject: [PATCH 00/10] patch set about the MXS-DMA
+Date: Thu, 19 Jan 2012 14:15:57 +0800
+Message-ID: <1326953767-24155-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c1e2ee2dc436 "memcg: replace ss->id_lock with a rwlock" has
-now been seen to cause the unfair behavior we should have expected
-from converting a spinlock to an rwlock: softlockup in cgroup_mkdir(),
-whose get_new_cssid() is waiting for the wlock, while there are 19
-tasks using the rlock in css_get_next() to get on with their memcg
-workload (in an artificial test, admittedly).  Yet lib/idr.c was
-made suitable for RCU way back.
+This patch set does two things about the MXS-DMA:
+[1] patch 1 ~ patch 5: move the mxs dma header to a more common place.
+	Beside the mx23/mx28, the APBH-DMA is also used by MX50 and MX6Q.
+	So move the mxs dma header file to a more common place, and rename
+	it to mxs-dma.h
 
-1. Revert that commit, restoring ss->id_lock to a spinlock.
+[2] patch 6 ~ patch 10: rewrite the last parameter of mxs_dma_prep_slave_sg().
+	In the new GPMI version, some hardware behavior changes.
+	The WAIT4END bit should be set in the middle one of the ECC READ page DMA chain.
+	The DMA chain should be set like this:
 
-2. Make one small adjustment to idr_get_next(): take the height from
-the top layer (stable under RCU) instead of from the root (unprotected
-by RCU), as idr_find() does.
+          +-----+               +-----+                      +-----+
+          | cmd | ------------> | cmd | ------------------>  | cmd |
+          +-----+               +-----+                      +-----+
+                                   ^                            ^
+                                   |                            |
+                                   |                            |
+                              set WAIT4END here too        set WAIT4END here
 
-3. Remove lock and unlock around css_get_next()'s call to idr_get_next():
-memcg iterators (only users of css_get_next) already did rcu_read_lock(),
-and comment demands that, but add a WARN_ON_ONCE to make sure of it.
+         Please read the comment in patch "MXS-DMA : add more flags for MXS-DMA".
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+Huang Shijie (10):
+  MXS-DMA : move the mxs-dma.h to a more common place
+  MXS-DMA : change the header
+  MXS-MMC : change the DMA header file
+  MTD/GPMI : change the DMA header file
+  ASoc : change the DMA header file
+  MXS-DMA : add more flags for MXS-DMA
+  MXS-DMA : change the last parameter of mxs_dma_prep_slave_sg()
+  MXS-MMC : use the new DMA flags
+  MTD/GPMI : add a new field `gpmi_version`
+  MTD/GPMI : change the code for new DMA interface
 
- include/linux/cgroup.h |    2 +-
- kernel/cgroup.c        |   19 +++++++++----------
- lib/idr.c              |    4 ++--
- 3 files changed, 12 insertions(+), 13 deletions(-)
+ arch/arm/mach-mxs/include/mach/dma.h   |   28 ----------------
+ drivers/dma/mxs-dma.c                  |   12 ++++---
+ drivers/mmc/host/mxs-mmc.c             |   12 +++---
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c  |   23 ++++++++++---
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.h |    6 +++-
+ drivers/mtd/nand/gpmi-nand/gpmi-regs.h |    2 +
+ include/linux/mxs-dma.h                |   54 ++++++++++++++++++++++++++++++++
+ sound/soc/mxs/mxs-pcm.c                |    2 +-
+ sound/soc/mxs/mxs-pcm.h                |    2 +-
+ sound/soc/mxs/mxs-saif.c               |    2 +-
+ 10 files changed, 94 insertions(+), 49 deletions(-)
+ delete mode 100644 arch/arm/mach-mxs/include/mach/dma.h
+ create mode 100644 include/linux/mxs-dma.h
 
---- 3.2.0+/include/linux/cgroup.h	2012-01-14 13:01:57.532007832 -0800
-+++ linux/include/linux/cgroup.h	2012-01-18 21:21:45.695966602 -0800
-@@ -535,7 +535,7 @@ struct cgroup_subsys {
- 	struct list_head sibling;
- 	/* used when use_id == true */
- 	struct idr idr;
--	rwlock_t id_lock;
-+	spinlock_t id_lock;
- 
- 	/* should be defined only by modular subsystems */
- 	struct module *module;
---- 3.2.0+/kernel/cgroup.c	2012-01-14 13:01:57.824007839 -0800
-+++ linux/kernel/cgroup.c	2012-01-18 21:29:05.199958492 -0800
-@@ -4939,9 +4939,9 @@ void free_css_id(struct cgroup_subsys *s
- 
- 	rcu_assign_pointer(id->css, NULL);
- 	rcu_assign_pointer(css->id, NULL);
--	write_lock(&ss->id_lock);
-+	spin_lock(&ss->id_lock);
- 	idr_remove(&ss->idr, id->id);
--	write_unlock(&ss->id_lock);
-+	spin_unlock(&ss->id_lock);
- 	kfree_rcu(id, rcu_head);
- }
- EXPORT_SYMBOL_GPL(free_css_id);
-@@ -4967,10 +4967,10 @@ static struct css_id *get_new_cssid(stru
- 		error = -ENOMEM;
- 		goto err_out;
- 	}
--	write_lock(&ss->id_lock);
-+	spin_lock(&ss->id_lock);
- 	/* Don't use 0. allocates an ID of 1-65535 */
- 	error = idr_get_new_above(&ss->idr, newid, 1, &myid);
--	write_unlock(&ss->id_lock);
-+	spin_unlock(&ss->id_lock);
- 
- 	/* Returns error when there are no free spaces for new ID.*/
- 	if (error) {
-@@ -4985,9 +4985,9 @@ static struct css_id *get_new_cssid(stru
- 	return newid;
- remove_idr:
- 	error = -ENOSPC;
--	write_lock(&ss->id_lock);
-+	spin_lock(&ss->id_lock);
- 	idr_remove(&ss->idr, myid);
--	write_unlock(&ss->id_lock);
-+	spin_unlock(&ss->id_lock);
- err_out:
- 	kfree(newid);
- 	return ERR_PTR(error);
-@@ -4999,7 +4999,7 @@ static int __init_or_module cgroup_init_
- {
- 	struct css_id *newid;
- 
--	rwlock_init(&ss->id_lock);
-+	spin_lock_init(&ss->id_lock);
- 	idr_init(&ss->idr);
- 
- 	newid = get_new_cssid(ss, 0);
-@@ -5087,6 +5087,8 @@ css_get_next(struct cgroup_subsys *ss, i
- 		return NULL;
- 
- 	BUG_ON(!ss->use_id);
-+	WARN_ON_ONCE(!rcu_read_lock_held());
-+
- 	/* fill start point for scan */
- 	tmpid = id;
- 	while (1) {
-@@ -5094,10 +5096,7 @@ css_get_next(struct cgroup_subsys *ss, i
- 		 * scan next entry from bitmap(tree), tmpid is updated after
- 		 * idr_get_next().
- 		 */
--		read_lock(&ss->id_lock);
- 		tmp = idr_get_next(&ss->idr, &tmpid);
--		read_unlock(&ss->id_lock);
--
- 		if (!tmp)
- 			break;
- 		if (tmp->depth >= depth && tmp->stack[depth] == rootid) {
---- 3.2.0+/lib/idr.c	2012-01-04 15:55:44.000000000 -0800
-+++ linux/lib/idr.c	2012-01-18 21:25:36.947963342 -0800
-@@ -605,11 +605,11 @@ void *idr_get_next(struct idr *idp, int
- 	int n, max;
- 
- 	/* find first ent */
--	n = idp->layers * IDR_BITS;
--	max = 1 << n;
- 	p = rcu_dereference_raw(idp->top);
- 	if (!p)
- 		return NULL;
-+	n = (p->layer + 1) * IDR_BITS;
-+	max = 1 << n;
- 
- 	while (id < max) {
- 		while (n > 0 && p) {
+
