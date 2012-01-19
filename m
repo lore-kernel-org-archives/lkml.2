@@ -1,88 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab2ASMcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 07:32:51 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:32913 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075Ab2ASMcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 07:32:47 -0500
-Date: Thu, 19 Jan 2012 13:32:23 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, "Luck, Tony" <tony.luck@intel.com>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Sergei Trofimovich <slyich@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Borislav Petkov <bp@amd64.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "prasad@linux.vnet.ibm.com" <prasad@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "gouders@et.bocholt.fh-gelsenkirchen.de" 
-	<gouders@et.bocholt.fh-gelsenkirchen.de>,
-        Marcos Souza <marcos.mage@gmail.com>,
-        "justinmattock@gmail.com" <justinmattock@gmail.com>,
-        Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: Re: [PATCH] mce: fix warning messages about static struct mce_device
-Message-ID: <20120119123223.GD3936@elte.hu>
-References: <3908561D78D1C84285E8C5FCA982C28F01CF24@ORSMSX104.amr.corp.intel.com>
- <Pine.LNX.4.44L0.1201181257540.1343-100000@iolanthe.rowland.org>
- <CAPXgP10Du4nJ_hdfwqV0Fr6XEVkTMO6jZ_TS_T-J-grDG7nKJw@mail.gmail.com>
+	id S1756625Ab2ASMkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 07:40:12 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49112 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab2ASMkJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 07:40:09 -0500
+Subject: [PATCH trivial] mm: make get_mm_counter static-inline
+To: Andrew Morton <akpm@linux-foundation.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 19 Jan 2012 16:40:05 +0400
+Message-ID: <20120119124005.21946.18651.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP10Du4nJ_hdfwqV0Fr6XEVkTMO6jZ_TS_T-J-grDG7nKJw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch makes get_mm_counter() always static inline,
+it is simple enough for that. And remove unused set_mm_counter()
 
-* Kay Sievers <kay.sievers@vrfy.org> wrote:
+bloat-o-meter:
 
-> > There's nothing special about the driver model code in this 
-> > respect. The same restriction applies wherever object 
-> > lifetimes are controlled by reference counting.
-> 
-> Right. But it might not be obvious what 's the background 
-> here:
-> 
-> An allocated device object(memory) usually represents an 
-> actual device(hardware). The object can have N users. Every of 
-> the users is required to take a reference to the object, which 
-> pins the object's memory as long as any of the N users might 
-> need to access it.
-> 
-> In a hotplug world, we deal with device-removal.  On 
-> disconnect, we usually just orphan the object, we remove it 
-> from visibility, disconnect the device <-> object relation.
-> 
-> All of the N users with a reference can still access the 
-> memory, they just do not talk to a real device anymore. The 
-> invalidated/orphaned state is communicated otherwise by locks 
-> and flags in the device object. Only after all of the N users 
-> left the object alone, the memory of the orphan if free'd.
+add/remove: 0/1 grow/shrink: 4/12 up/down: 99/-341 (-242)
+function                                     old     new   delta
+try_to_unmap_one                             886     952     +66
+sys_remap_file_pages                        1214    1230     +16
+dup_mm                                      1684    1700     +16
+do_exit                                     2277    2278      +1
+zap_page_range                               208     205      -3
+unmap_region                                 304     296      -8
+static.oom_kill_process                      554     546      -8
+try_to_unmap_file                           1716    1700     -16
+getrusage                                    925     909     -16
+flush_old_exec                              1704    1688     -16
+static.dump_header                           416     390     -26
+acct_update_integrals                        218     187     -31
+do_task_stat                                2986    2954     -32
+get_mm_counter                                34       -     -34
+xacct_add_tsk                                371     334     -37
+task_statm                                   172     118     -54
+task_mem                                     383     323     -60
 
-But this is not what happened here - it's a special piece of 
-fundamental hardware that doesnt hot-plug separately from the 
-CPU and that has just a single "user".
+try_to_unmap_one() grows because update_hiwater_rss() now completely inline.
 
-So i'm curious, why wasn't the memset() enough? It should have 
-resolved the bug AFAICS.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ include/linux/mm.h |   21 +++++++++++----------
+ mm/memory.c        |   18 ------------------
+ 2 files changed, 11 insertions(+), 28 deletions(-)
 
-Thanks,
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 17b27cd..378bcce 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1058,19 +1058,20 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ /*
+  * per-process(per-mm_struct) statistics.
+  */
+-static inline void set_mm_counter(struct mm_struct *mm, int member, long value)
+-{
+-	atomic_long_set(&mm->rss_stat.count[member], value);
+-}
+-
+-#if defined(SPLIT_RSS_COUNTING)
+-unsigned long get_mm_counter(struct mm_struct *mm, int member);
+-#else
+ static inline unsigned long get_mm_counter(struct mm_struct *mm, int member)
+ {
+-	return atomic_long_read(&mm->rss_stat.count[member]);
+-}
++	long val = atomic_long_read(&mm->rss_stat.count[member]);
++
++#ifdef SPLIT_RSS_COUNTING
++	/*
++	 * counter is updated in asynchronous manner and may go to minus.
++	 * But it's never be expected number for users.
++	 */
++	if (val < 0)
++		val = 0;
+ #endif
++	return (unsigned long)val;
++}
+ 
+ static inline void add_mm_counter(struct mm_struct *mm, int member, long value)
+ {
+diff --git a/mm/memory.c b/mm/memory.c
+index fa2f04e..f31fb6e 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -160,24 +160,6 @@ static void check_sync_rss_stat(struct task_struct *task)
+ 		__sync_task_rss_stat(task, task->mm);
+ }
+ 
+-unsigned long get_mm_counter(struct mm_struct *mm, int member)
+-{
+-	long val = 0;
+-
+-	/*
+-	 * Don't use task->mm here...for avoiding to use task_get_mm()..
+-	 * The caller must guarantee task->mm is not invalid.
+-	 */
+-	val = atomic_long_read(&mm->rss_stat.count[member]);
+-	/*
+-	 * counter is updated in asynchronous manner and may go to minus.
+-	 * But it's never be expected number for users.
+-	 */
+-	if (val < 0)
+-		return 0;
+-	return (unsigned long)val;
+-}
+-
+ void sync_mm_rss(struct task_struct *task, struct mm_struct *mm)
+ {
+ 	__sync_task_rss_stat(task, mm);
 
-	Ingo
