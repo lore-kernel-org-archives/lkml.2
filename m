@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab2ASAOx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 19:14:53 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:38897 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab2ASAOv (ORCPT
+	id S1755803Ab2ASAWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 19:22:17 -0500
+Received: from mail.windriver.com ([147.11.1.11]:44776 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633Ab2ASAWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 19:14:51 -0500
-Message-ID: <54555afe915a79f7e77ee0f44ee6cb67.squirrel@webmail.greenhost.nl>
-In-Reply-To: <CAMnK33WAUA7bNFKA8BmLHq9+sdMV9xeOvZ8T1iZSH1GFKNe3ZQ@mail.gmail.com>
-References: <20120116183730.GB21112@redhat.com>
-    <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
-    <20120117164523.GA17070@redhat.com>
-    <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
-    <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
-    <20120117170512.GB17070@redhat.com>
-    <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
-    <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
-    <20120118015013.GR11715@one.firstfloor.org>
-    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
-    <20120118022217.GS11715@one.firstfloor.org>
-    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
-    <CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com>
-    <fbc1f44dffce6079fa7ec827c1b1e40e.squirrel@webmail.greenhost.nl>
-    <CAMnK33WAUA7bNFKA8BmLHq9+sdMV9xeOvZ8T1iZSH1GFKNe3ZQ@mail.gmail.com>
-Date: Thu, 19 Jan 2012 01:14:24 +0100
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Chris Evans" <scarybeasts@gmail.com>
-Cc: "Andi Kleen" <andi@firstfloor.org>, "Jamie Lokier" <jamie@shareable.org>,
-        "Andrew Lutomirski" <luto@mit.edu>, "Oleg Nesterov" <oleg@redhat.com>,
-        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        "Roland McGrath" <mcgrathr@chromium.org>
-User-Agent: SquirrelMail/1.4.22
+	Wed, 18 Jan 2012 19:22:16 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH] dmatest: fix merge error resulting in incorrect count handling
+Date: Wed, 18 Jan 2012 19:21:55 -0500
+Message-Id: <1326932515-7293-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.7.2
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 1.4
-X-Scan-Signature: 0cb660a7d4ce909c6359c48b0bded22a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, January 18, 2012 22:13, Chris Evans wrote:
-> On Wed, Jan 18, 2012 at 4:12 AM, Indan Zupancic <indan@nul.nu> wrote:
->> On Wed, January 18, 2012 06:43, Chris Evans wrote:
->>> 2) Tracee traps
->>> 2b) Tracee could take a SIGKILL here
->>> 3) Tracer looks at registers; bad syscall
->>> 3b) Or tracee could take a SIGKILL here
->>> 4) The only way to stop the bad syscall from executing is to rewrite
->>> orig_eax (PTRACE_CONT + SIGKILL only kills the process after the
->>> syscall has finished)
->>
->> Yes, we rewrite it to -1.
->>
->>> 5) Disaster: the tracee took a SIGKILL so any attempt to address it by
->>> pid (such as PTRACE_SETREGS) fails.
->>
->> I assume that if a task can execute system calls and we get ptrace events
->> for that, that we can do other ptrace operations too. Are you saying that
->> the kernel has this ptrace gap between SIGKILL and task exit where ptrace
->> doesn't work but the task continues executing system calls? That would be
->> a huge bug, but it seems very unlikely too, as the task is stopped and
->> shouldn't be able to disappear till it is continued by the tracer.
->>
->> I mean, really? That would be stupid.
+We currently see this warning:
 
-Okay, I tested this scenario and you're right, we're screwed.
+  drivers/dma/dmatest.c: In function ‘dmatest_add_channel’:
+  drivers/dma/dmatest.c:602:28: warning: the omitted middle operand
+   in ?: will always be ‘true’, suggest explicit middle operand [-Wparentheses]
 
-What the hell guys? What about other PID checks in the kernel, are they still
-safe if the process looks dead but is still active? Or is it a ptrace-only
-problem?
+It happens because commit f1aef8b6e6abf32a3a269542f95a19e2cb319f6c
 
->> If true we have to work around it by disallowing SIGKILL and just sending
->> them ourselves within the jail. Meh.
+  "dmaengine: dmatest: correct thread_count while using multiple thread per channel"
 
-I guess this helps a bit. It doesn't prevent external signals, but prisoners
-don't have control over that.
+fixed the only two instances of this issue in the code, but then the
+commit 58691d64c44ae41ddf098ecb31e9a994026e3cff "dmatest: add pq support"
+was based on the old (unfixed) code, and so it reintroduced an instance
+of this error.  Using git describe, the baseline delta is apparent:
 
-Is this SIGKILL specific or is it true for all task ending signals?
+	dmatest: correct thread_count	v2.6.30-8-gf1aef8b
+	dmatest: add pq support		v2.6.29-rc8-80-g58691d6
 
->> How will you avoid file path races with BPF?
->
-> There is typically no need for file-path based access control in an FTP server.
-> Take for example anonymous FTP, which will typically be inside a
-> chroot() to /var/ftp. Inside that filesystem tree -- if you can open()
-> it, you can have it.
+Inspection of f1aef8b and/or the surrounding code leads one to the
+obvious fix.
 
-Ah, you count on having root access. We don't.
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Dan Williams <dan.j.williams@intel.com>
+CC: Vinod Koul <vinod.koul@intel.com>
 
-Do you know any more crazy security destroying holes?
+---
 
-Thanks,
+[After creating this patch, I noticed it came up before in the
+ lkml archives, but a fix never got applied.  At least now the
+ real root cause is documented in this commit log.]
 
-Indan
-
+diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+index 2b8661b..24225f0 100644
+--- a/drivers/dma/dmatest.c
++++ b/drivers/dma/dmatest.c
+@@ -599,7 +599,7 @@ static int dmatest_add_channel(struct dma_chan *chan)
+ 	}
+ 	if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)) {
+ 		cnt = dmatest_add_threads(dtc, DMA_PQ);
+-		thread_count += cnt > 0 ?: 0;
++		thread_count += cnt > 0 ? cnt : 0;
+ 	}
+ 
+ 	pr_info("dmatest: Started %u threads using %s\n",
+-- 
+1.7.7.2
 
