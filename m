@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab2ASO7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 09:59:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36585 "EHLO mail.zytor.com"
+	id S932082Ab2ASPCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 10:02:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58925 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab2ASO7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 09:59:43 -0500
-Message-ID: <4F182FCB.2090300@zytor.com>
-Date: Thu, 19 Jan 2012 06:59:23 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753091Ab2ASPCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 10:02:22 -0500
+Date: Thu, 19 Jan 2012 17:02:17 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, jan.kiszka@siemens.com,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: deliver msix interrupts from irq handler
+Message-ID: <20120119150217.GA20920@redhat.com>
+References: <20120118181023.GA4140@redhat.com>
+ <20120119072123.GE9571@redhat.com>
+ <20120119134957.GC4009@redhat.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: mingo@elte.hu, "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        tglx@linutronix.de, luca@luca-barbieri.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ix86: atomic64 assembly improvements
-References: <4F16E41B020000780006D7A5@nat28.tlf.novell.com> <4F16F505.8040809@zytor.com> <4F170679020000780006D85B@nat28.tlf.novell.com> <4F1705A8.301@zytor.com> <4F17EDE9020000780006D97A@nat28.tlf.novell.com> <4F182C55.7040305@zytor.com> <4F183BCA020000780006DB68@nat28.tlf.novell.com>
-In-Reply-To: <4F183BCA020000780006DB68@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120119134957.GC4009@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 06:50 AM, Jan Beulich wrote:
->>
->> It doesn't have anything to do with caches on or off.
->
-> How does it not? If any part of the bus topology is only 32 bits wide,
-> a 64-bit read or write simply can't be executed atomically without
-> asserting LOCK#.
->
+On Thu, Jan 19, 2012 at 03:49:57PM +0200, Michael S. Tsirkin wrote:
+> > > +	irq_rt = rcu_dereference(kvm->irq_routing);
+> > > +	if (irq < irq_rt->nr_rt_entries)
+> > > +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link) {
+> > > +			if (ei->type == KVM_IRQ_ROUTING_MSI)
+> > > +				ret = kvm_set_msi(e, kvm, irq_source_id, level,
+> > > +						  host_irq);
+> > > +			else
+> > > +				ret = -EWOULDBLOCK;
+> > > +			break;
+> > > +		}
+> > > +	rcu_read_unlock_bh();
+> > > +	return ret;
+> > > +}
+> > > +
+> > Share implementation with kvm_set_irq().
+> 
+> I considered this. There are several reasons not to do it:
+> - Amount of common code is very small
+Why? Just pass msi_only flag to kvm_set_irq() and skip an entry if flag is
+set and entry type is not msi.
 
-Furthermore, if you're going down that rathole then we can't even trust 
-MOV (nor, for that matter, can you trust LOCK in a lot of 
-circumstances.)  In short, you need to be extremely careful about what 
-you do to uncached memory *at all* (and you need to know exactly what is 
-behind this bus) but pessimizing these kinds of construct for that 
-reason is wrong in the extreme.
+> - As it's separate, it's more obvious that it can't block (kvm_set_irq can block)
+>   We can even tag kvm_set_irq with might_sleep.
+They can still be two separate function calling common one.
 
-	-hpa
+> - This is way simpler and faster as we can do operations directly,
+>   instead of copying the irq out, and as it's datapath
+>   an optimization is I think justified.
+I really do not think the copy of one small data structure will be
+measurable. If it is (has to be proven) we can optimize that two
+in the common code.
 
+--
+			Gleb.
