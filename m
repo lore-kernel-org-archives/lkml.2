@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab2ASGiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 01:38:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42286 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab2ASGiS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 01:38:18 -0500
-Message-ID: <4F17BA58.2090403@gmail.com>
-Date: Thu, 19 Jan 2012 14:38:16 +0800
-From: Sha <handai.szj@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S1752102Ab2ASGnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 01:43:31 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:57118 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750803Ab2ASGna convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 01:43:30 -0500
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
-References: <1326207772-16762-3-git-send-email-hannes@cmpxchg.org> <CALWz4izwNBN_qcSsqg-qYw-Esc9vBL3=4cv3Wsg1jf6001_fWQ@mail.gmail.com> <20120112085904.GG24386@cmpxchg.org> <CALWz4iz3sQX+pCr19rE3_SwV+pRFhDJ7Lq-uJuYBq6u3mRU3AQ@mail.gmail.com> <20120113224424.GC1653@cmpxchg.org> <4F158418.2090509@gmail.com> <20120117145348.GA3144@cmpxchg.org> <CAFj3OHWY2Biw54gaGeH5fkxzgOhxn7NAibeYT_Jmga-_ypNSRg@mail.gmail.com> <20120118092509.GI24386@cmpxchg.org> <4F16AC27.1080906@gmail.com> <20120118152708.GG31112@tiehlicka.suse.cz>
-In-Reply-To: <20120118152708.GG31112@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1326845297-6233-1-git-send-email-rmorell@nvidia.com>
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
+	<1326845297-6233-1-git-send-email-rmorell@nvidia.com>
+Date: Thu, 19 Jan 2012 08:43:30 +0200
+X-Google-Sender-Auth: JON04HTxg6TopSUL1NIa8lqxDJI
+Message-ID: <CAOJsxLETu8=a9TowOnprJg2gZkea6j3rf_63W-BZXj71xM=UjQ@mail.gmail.com>
+Subject: Re: Expanding the use of DMA buffers in 3.3
+From: Pekka Enberg <penberg@kernel.org>
+To: Robert Morell <rmorell@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, sumit.semwal@linaro.org, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2012 11:27 PM, Michal Hocko wrote:
-> On Wed 18-01-12 19:25:27, Sha wrote:
-> [...]
->> Er... I'm even more confused: mem_cgroup_soft_limit_reclaim indeed
->> choses the biggest soft-limit excessor first, but in the succeeding reclaim
->> mem_cgroup_hierarchical_reclaim just selects a child cgroup  by css_id
-> mem_cgroup_soft_limit_reclaim picks up the hierarchy root (most
-> excessing one) and mem_cgroup_hierarchical_reclaim reclaims from that
-> subtree). It doesn't care who exceeds the soft limit under that
-> hierarchy it just tries to push the root under its limit as much as it
-> can. This is what Johannes tried to explain in the other email in the
-> thred.
-yeah, I finally twig what  he meant... I'm not quite familiar with this 
-part.
-Thanks a lot for the explanation. :-)
-
-Sha
->> which has nothing to do with soft limit (see mem_cgroup_select_victim).
->> IMHO, it's not a genuine hierarchical reclaim.
-> It is hierarchical because it iterates over hierarchy it is not and
-> never was recursively soft-hierarchical...
+On Wed, Jan 18, 2012 at 2:08 AM, Robert Morell <rmorell@nvidia.com> wrote:
+> The DMA buffer infrastructure (dma-buf) currently exposes its interface
+> with EXPORT_SYMBOL_GPL.  The documentation for EXPORT_SYMBOL_GPL says:
+>    "It implies that the function is considered an internal
+>    implementation issue, and not really an interface."
+> This interface is clearly not just an "implementation issue" but an
+> interface to be used across drivers/subsystems, so I think it makes
+> sense for it to use EXPORT_SYMBOL instead.
 >
+> Work on dma-buf was originally started with the goal of unifying several
+> competing "memory management" systems developed with different ARM SoCs
+> in mind.  It would be unfortunate if restricting its use to only
+> GPL-licensed modules caused dma-buf adoption to be limited.
+>
+> For convenience, I'll send the trivial patch to implement this change.
+> I'd like to see this in the first release with dma-buf in 3.3.
 
+How about you open up your driver code instead? You'd get access to
+all EXPORT_SYMBOL_GPL symbols instantly!
+
+                        Pekka
