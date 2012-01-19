@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab2ASBoD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 20:44:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37549 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab2ASBoA (ORCPT
+	id S1756799Ab2ASBpc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 20:45:32 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:41389 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab2ASBpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 20:44:00 -0500
-Date: Wed, 18 Jan 2012 17:43:56 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [patch]block: fix NULL icq_cache reference
-Message-ID: <20120119014356.GF21533@google.com>
-References: <20120117214834.GD26207@google.com>
- <20120117220715.GB23527@redhat.com>
- <CANejiEUfAxR-DFH+eRQUbmc1jKHSkcBP1RxuRQ-9JKLU=1Ds0w@mail.gmail.com>
- <20120118010323.GA32160@htj.dyndns.org>
- <CANejiEUopG3MgUsvGMbkdHKrgBT_c+bir1bApt8p86kQn42huQ@mail.gmail.com>
- <20120118011112.GB32160@htj.dyndns.org>
- <1326850253.22361.619.camel@sli10-conroe>
- <1326866602.22361.624.camel@sli10-conroe>
- <20120118160713.GA30664@google.com>
- <1326937294.22361.649.camel@sli10-conroe>
+	Wed, 18 Jan 2012 20:45:30 -0500
+Message-ID: <c5552936e981cf649eb15d23bc79314c.squirrel@webmail.greenhost.nl>
+In-Reply-To: <CA+55aFzrHaJUKgUCx1uaeuqcyzZuUwQLiGj9dP5D3m-xt6v2SA@mail.gmail.com>
+References: <20120116183730.GB21112@redhat.com>
+    <20120117170512.GB17070@redhat.com>
+    <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+    <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+    <20120118015013.GR11715@one.firstfloor.org>
+    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+    <20120118022217.GS11715@one.firstfloor.org>
+    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+    <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+    <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+    <4F1731C1.4050007@zytor.com>
+    <CA+55aFwnvOxT_K7HFOkjCbfDtYkAVkvF+a7r-0=T6gga_x9t-g@mail.gmail.com>
+    <4F1733DF.7040905@zytor.com>
+    <CA+55aFzrHaJUKgUCx1uaeuqcyzZuUwQLiGj9dP5D3m-xt6v2SA@mail.gmail.com>
+Date: Thu, 19 Jan 2012 02:45:01 +0100
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Andi Kleen" <andi@firstfloor.org>,
+        "Jamie Lokier" <jamie@shareable.org>,
+        "Andrew Lutomirski" <luto@mit.edu>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        "Roland McGrath" <mcgrathr@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326937294.22361.649.camel@sli10-conroe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 1.4
+X-Scan-Signature: 4052b6d1c9976086d5ab5ce040fcf5b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, Jan 19, 2012 at 09:41:34AM +0800, Shaohua Li wrote:
-> > Hmmm... but I'm having a difficult time following the description.
-> > Maybe we can simplify a bit?  e.g. sth like the following?
-> > 
-> >   Once a queue is quiesced, it's not supposed to have any elvpriv data
-> >   or icq's, and elevator switching depends on that.  Request alloc
-> >   path followed the rule for elvpriv data but forgot apply it to
-> >   icq's leading to the following crash during elevator switch.
-> > 
-> >   <oops log>
-> > 
-> >   Fix it by not allocating icq's if ELVPRIV is not set for the
-> >   request.
+On Wed, January 18, 2012 22:26, Linus Torvalds wrote:
+> On Wed, Jan 18, 2012 at 1:04 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> Fair enough.  Sigh.  I still think an actual pseudo-register would be
+>> better.
 >
-> I'm trying to explain why there is a crash, but fine to use your
-> description.
+> .. and that breaks existing binaries too, because the indexing is
+> based on offsets into "struct pt_regs", and while we *could* change
+> that - leave pt_regs untouched but add a new virtual register - it
+> would be problematic.
+>
+> We could add a whole new ptrace() access command (eg
+> PTRACE_GETSYSTEMREGSET), of course. But that's a lot of effort for
+> very little gain.
+>
+> So on the whole, putting it in eflags seemed like the *much* simpler approach.
 
-Yeah, giving details is great.  It just seemed that high level
-description seemed lost among the details.  It would have been great
-if the description started with high level description and then went
-into details.
+For security reasons it should be impossible for userspace to set those bits
+themselves, otherwise the tracer can be easily fooled on an old kernel. That
+seems to be the case for the higher bits of eflags, so eflags would work. And
+the current code checks cs, also checking eflags would be very easy to add.
 
-> Once a queue is quiesced, it's not supposed to have any elvpriv data or
-> icq's, and elevator switching depends on that.  Request alloc path
-> followed the rule for elvpriv data but forgot apply it to icq's
-> leading to the following crash during elevator switch. Fix it by not
-> allocating icq's if ELVPRIV is not set for the request.
-> 
-> Reported-by: Vivek Goyal <vgoyal@redhat.com>
-> Tested-by: Vivek Goyal <vgoyal@redhat.com>
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Greetings,
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Indan
 
-Thanks a lot.
 
--- 
-tejun
