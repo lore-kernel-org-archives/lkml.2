@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab2ASMAD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 07:00:03 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:44910 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751296Ab2ASL77 (ORCPT
+	id S1756113Ab2ASMDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 07:03:55 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:40853 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab2ASMDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 06:59:59 -0500
+	Thu, 19 Jan 2012 07:03:50 -0500
+Message-ID: <4F18066D.9050102@linux.vnet.ibm.com>
+Date: Thu, 19 Jan 2012 17:32:53 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <84FF21A720B0874AA94B46D76DB9826904559D9B@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <1326788038-29141-1-git-send-email-minchan@kernel.org>
-	<1326788038-29141-2-git-send-email-minchan@kernel.org>
-	<CAOJsxLHGYmVNk7D9NyhRuqQDwquDuA7LtUtp-1huSn5F-GvtAg@mail.gmail.com>
-	<4F15A34F.40808@redhat.com>
-	<alpine.LFD.2.02.1201172044310.15303@tux.localdomain>
-	<84FF21A720B0874AA94B46D76DB98269045596AE@008-AM1MPN1-003.mgdnok.nokia.com>
-	<CAOJsxLGiG_Bsp8eMtqCjFToxYAPCE4HC9XCebpZ+-G8E3gg5bw@mail.gmail.com>
-	<84FF21A720B0874AA94B46D76DB98269045596EA@008-AM1MPN1-003.mgdnok.nokia.com>
-	<CAOJsxLG4hMrAdsyOg6QUe71SPqEBq3eZXvRvaKFZQo8HS1vphQ@mail.gmail.com>
-	<84FF21A720B0874AA94B46D76DB982690455978C@008-AM1MPN1-003.mgdnok.nokia.com>
-	<4F175706.8000808@redhat.com>
-	<alpine.LFD.2.02.1201190922390.3033@tux.localdomain>
-	<4F17DCED.4020908@redhat.com>
-	<CAOJsxLG3x_R5xq85hh5RvPoD+nhgYbHJfbLW=YMxCZockAXJqw@mail.gmail.com>
-	<4F17E058.8020008@redhat.com>
-	<84FF21A720B0874AA94B46D76DB9826904559D46@008-AM1MPN1-003.mgdnok.nokia.com>
-	<CAOJsxLHd5dCvBwV5gsraFZXh86wq7tg7uLLnevN8Pp_jGiOBbw@mail.gmail.com>
-	<84FF21A720B0874AA94B46D76DB9826904559D9B@008-AM1MPN1-003.mgdnok.nokia.com>
-Date: Thu, 19 Jan 2012 13:59:58 +0200
-X-Google-Sender-Auth: OE4cbxhDDbIkGtWw3Z0uGs17qHc
-Message-ID: <CAOJsxLFL85uqMTrbSnte4mDtEVLgupd2kRM1XEwaUD4tUCN4Xw@mail.gmail.com>
-Subject: Re: [RFC 1/3] /dev/low_mem_notify
-From: Pekka Enberg <penberg@kernel.org>
-To: leonid.moiseichuk@nokia.com
-Cc: rhod@redhat.com, riel@redhat.com, minchan@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mel@csn.ul.ie, rientjes@google.com, kosaki.motohiro@gmail.com,
-        hannes@cmpxchg.org, mtosatti@redhat.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+References: <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com> <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com> <4F10BDF7.8030306@linux.vnet.ibm.com> <CA+55aFyD=9MZCyo-Tq0J7g2p9Qvp=S+GADpUfoQ0dcde_bvzSg@mail.gmail.com> <4F10EB5B.5060804@linux.vnet.ibm.com> <1326766892.16150.21.camel@sbsiddha-desk.sc.intel.com> <4F1544EA.5060907@linux.vnet.ibm.com> <1326856624.5291.20.camel@sbsiddha-mobl2> <4F16C60B.4030903@linux.vnet.ibm.com> <20120118133236.GA3878@swordfish.minsk.epam.com> <1326924509.13915.29.camel@sbsiddha-mobl2>
+In-Reply-To: <1326924509.13915.29.camel@sbsiddha-mobl2>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011902-3568-0000-0000-000001141DF6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 1:54 PM,  <leonid.moiseichuk@nokia.com> wrote:
->> The current ABI already supports that. You can specify which attributes
->> you're interested in and they will be delivered as part of th event.
->
-> But you have in vmnotify.h suspicious free_pages_threshold field.
+On 01/19/2012 03:38 AM, Suresh Siddha wrote:
 
-Aah, I was actually talking about the events userspace _reads_.
+> On Wed, 2012-01-18 at 16:32 +0300, Sergey Senozhatsky wrote:
+>> Just a small note, since you're talking about removing CPU from nohz.idle_cpus_mask, 
+>> that I'm able to reproduce this problem not only when offlining CPU, but during
+>> onlininig as well (kernel 3.3):
+> 
+> yes, if the nohz state is not cleared properly during offline, then the
+> issue can happen any time including cpu online etc.
+> 
+> Srivatsa, I thought CPU_PRI_SCHED_INACTIVE as INT_MAX for some reason
+> and was expecting sched_ilb_notifier() will be called after setting that
+> cpu as inactive. I am now using CPU_DYING which will be called from the
+> cpu going down.
+> 
 
-The free_pages_threshold field is only used if
-VMEVENT_TYPE_FREE_THRESHOLD bit is set. It should be cleaned up a bit
-but it in theory it supports watching other attributes as well. I've
-postponed the cleanup until I've figured out whether we can use perf
-which would make the whole syscall go away.
+> Here is the v2 version of the fix. Can you folks please give it another
 
-                        Pekka
+> try?
+> 
+
+
+Suresh, your patch works perfectly! Thanks a lot!
+Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+And the reasoning behind the patch matches the test results:
+we don't allow select_nohz_load_balancer() to undo the cleanup that we
+did in sched_ilb_notifier(), by ensuring that sched_ilb_notifier() runs
+*after* sched_cpu_inactive().
+
+So, you can have my "Reviewed-by" too, if you like!
+
+By the way, it would be great if you could kindly describe the above
+mentioned subtle aspect in the patch description as well..
+
+Regards,
+Srivatsa S. Bhat
+
