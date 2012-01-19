@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab2ASKbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 05:31:21 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56765 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab2ASKbR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 05:31:17 -0500
-Message-ID: <4F17F0F2.6060807@linutronix.de>
-Date: Thu, 19 Jan 2012 11:31:14 +0100
-From: Richard Weinberger <rw@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
-MIME-Version: 1.0
-To: Jan Engelhardt <jengelh@medozas.de>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org
-Subject: Re: Netfilter: New target: RLOG
-References: <1326926610-17830-1-git-send-email-rw@linutronix.de>  <20120119091248.GA32391@1984> <4F17E0A4.9040004@linutronix.de> <1326965176.2249.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LNX.2.01.1201191045530.27900@frira.zrqbmnf.qr>
-In-Reply-To: <alpine.LNX.2.01.1201191045530.27900@frira.zrqbmnf.qr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1756772Ab2ASKbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 05:31:51 -0500
+Received: from mort.rzone.de ([81.169.144.234]:51828 "EHLO mort.rzone.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755327Ab2ASKbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 05:31:39 -0500
+X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jan 2012 05:31:39 EST
+From: Jan Schmidt <list.btrfs@jan-o-sch.net>
+To: sfr@canb.auug.org.au, chris.mason@oracle.com, linux-btrfs@vger.kernel.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, sensille@gmx.net,
+        torvalds@linux-foundation.org
+Subject: [PATCH] Btrfs: fix uninit warning in backref.c
+Date: Thu, 19 Jan 2012 11:24:35 +0100
+Message-Id: <1326968675-12294-1-git-send-email-list.btrfs@jan-o-sch.net>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <20120119100935.82c5ec6db156f3799835163f@canb.auug.org.au>
+References: <20120119100935.82c5ec6db156f3799835163f@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.01.2012 10:46, Jan Engelhardt wrote:
-> On Thursday 2012-01-19 10:26, Eric Dumazet wrote:
->
->> Le jeudi 19 janvier 2012 à 10:21 +0100, Richard Weinberger a écrit :
->>
->>> Yeah, I could add --ring, --ring-size and --add-timestamp to LOG.
->>> What about a rlog_common.o which can be used by ipt_LOG and ip6t_LOG?
->>>
->>
->> or merge ipt_LOG and ip6t_LOG into xt_LOG ?
->
-> yes please :)
+Added initialization with the declaration of ret. It isn't set later on the
+switch-default branch (which should never be taken).
 
-Will do.
+Signed-off-by: Jan Schmidt <list.btrfs@jan-o-sch.net>
+---
+ fs/btrfs/backref.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-//richard
+diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
+index b9a8432..633c701 100644
+--- a/fs/btrfs/backref.c
++++ b/fs/btrfs/backref.c
+@@ -297,7 +297,7 @@ static int __add_delayed_refs(struct btrfs_delayed_ref_head *head, u64 seq,
+ 	struct btrfs_delayed_extent_op *extent_op = head->extent_op;
+ 	struct rb_node *n = &head->node.rb_node;
+ 	int sgn;
+-	int ret;
++	int ret = 0;
+ 
+ 	if (extent_op && extent_op->update_key)
+ 		btrfs_disk_key_to_cpu(info_key, &extent_op->key);
+@@ -392,7 +392,7 @@ static int __add_inline_refs(struct btrfs_fs_info *fs_info,
+ 			     struct btrfs_key *info_key, int *info_level,
+ 			     struct list_head *prefs)
+ {
+-	int ret;
++	int ret = 0;
+ 	int slot;
+ 	struct extent_buffer *leaf;
+ 	struct btrfs_key key;
+-- 
+1.7.3.4
+
