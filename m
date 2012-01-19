@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab2ASBUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jan 2012 20:20:21 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57568 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756355Ab2ASBUQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jan 2012 20:20:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <c378bf0311a5a647e7172d1aa8500379.squirrel@webmail.greenhost.nl>
-References: <20120112172315.GA26295@redhat.com> <CABqD9hZg4sKiVMS-g5ed7-HKOaiUb06y05TL=QkfBkm9kVmquA@mail.gmail.com>
- <20120113173153.GA24273@redhat.com> <CABqD9hYYJMNtupTiD48sE5wz6RKaFi9J3DpVRyV4X2FpnT3Mnw@mail.gmail.com>
- <CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
- <20120116183730.GB21112@redhat.com> <CABqD9hY3DtOqBWDofMQhHNKeUbz4ebfOENKVJkqE+AjRqZFkZA@mail.gmail.com>
- <20120117164523.GA17070@redhat.com> <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
- <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
- <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <CAObL_7HVGNdFhYfUDvJJWMK-2fVoG8KJj2_fuPvc7aBLBhBO4g@mail.gmail.com> <c378bf0311a5a647e7172d1aa8500379.squirrel@webmail.greenhost.nl>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 18 Jan 2012 17:19:53 -0800
-X-Google-Sender-Auth: oZgtLH98DUfTwaA_htXfLRp-DXc
-Message-ID: <CAObL_7HOWzGUBQ4ZOCMZ+CR-1wCQLUMXB0bN5QO_0o5U-kGc2g@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-To: Indan Zupancic <indan@nul.nu>
-Cc: Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756648Ab2ASBU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jan 2012 20:20:29 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36592 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756397Ab2ASBUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jan 2012 20:20:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="98072266"
+Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, jmoyer@redhat.com, zhu.yanhai@gmail.com
+In-Reply-To: <20120118130425.GA30204@redhat.com>
+References: <20120108221615.GA4198@dastard>
+	 <1326071375.22361.543.camel@sli10-conroe>
+	 <20120115224532.GD3174@redhat.com>
+	 <1326688590.22361.578.camel@sli10-conroe>
+	 <20120116071132.GE3174@redhat.com>
+	 <1326700541.22361.607.camel@sli10-conroe>
+	 <20120116082927.GF3174@redhat.com>
+	 <1326762388.22361.613.camel@sli10-conroe>
+	 <20120117090220.GB15511@redhat.com>
+	 <1326849637.22361.616.camel@sli10-conroe>
+	 <20120118130425.GA30204@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Jan 2012 09:21:06 +0800
+Message-ID: <1326936066.22361.646.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 5:06 PM, Indan Zupancic <indan@nul.nu> wrote:
-> On Wed, January 18, 2012 02:01, Andrew Lutomirski wrote:
->> On Tue, Jan 17, 2012 at 4:56 PM, Indan Zupancic <indan@nul.nu> wrote:
->> I don't know what your ptrace jailer does.  But a task can switch
->> itself between 32-bit and 64-bit execution at will, and there's
->> nothing the kernel can do about it.  (That isn't quite true -- in
->> theory the kernel could fiddle with the GDT, but that would be
->> expensive and wouldn't work on Xen.)
->
-> That's why we don't cache the CS value but check it for every system call.
-> But you said elsewhere that checking CS isn't always correct either.
-> I grepped arch/x86 for "user_64bit_mode", but couldn't find anything,
-> but maybe my kernel sources are too old, I haven't updated this system
-> for almost a year. The current code only handles 0x23 and 0x33 and kills
-> the jail if it encounters anything else.
+On Wed, 2012-01-18 at 08:04 -0500, Vivek Goyal wrote:
+> On Wed, Jan 18, 2012 at 09:20:37AM +0800, Shaohua Li wrote:
+> 
+> [..]
+> > > I think trying to make to make CFQ work (Or trying to come up with CFQ
+> > > like IOPS scheduler) on these fast devices might not lead us anywhere.
+> > If only performance matters, I'd rather use noop for ssd. There is
+> > requirement to have cgroup support (maybe ioprio) to give different
+> > tasks different bandwidth.
+> 
+> Sure but the issue is that we need to idle in an effort to prioritize
+> a task and idling kills performance. So you can implement something but
+> I have doubts that on a fast hardware it is going to be very useful.
+I didn't do idle in fiops. If workload iodepth is low, this will cause
+fairness problem and I just leave it be. There is no way to make low
+iodepth workload fair without performance sacrifice. CFQ for SSD has the
+same problem too.
 
-I think you're hosed on Xen, then.  Xen regularly runs with a
-different Xen-specific cs value.
+> Another issue is that with flash based storage, it can drive really deep
+> queue depths. If that's the case, then just ioscheduler can't solve the
+> prioritazaion issues (until and unless ioscheduler does not drive deep
+> queue depths and kills performance). We need some kind of cooperation
+> from device (like device understanding the notion of iopriority), so
+> that device can prioritize the requests and one need not to idle. That
+> way, we might be able to get service differentiation while getting
+> reasonable throughput.
+SSD is still like normal disk in terms of queue depth. Don't know the
+iodepth of pcie flash card. If the queue depth of such card is very big
+(I suppose there is a limitation, because after a critical point
+increasing queue depth doesn't increase device performance), we
+definitely need reconsider this.
 
---Andy
+it would be great device let ioscheduler know more info. In my mind, I
+hope device can dynamatically adjust its queue depth. For example, in my
+ssd, if request size is 4k, I get max throughput with queue depth 32. If
+request size is 128k, just 2 queue depth is enough to get peek
+throughput. If device can stop fetching request after 2 128k requests
+pending, this will solve some fairness issues for low iodepth workload.
+Unfortunately device capacity for different request size highly depends
+on vendor. The fiops request size scale tries to solve the issue, but I
+still didn't find a good scale model for this yet.
+
+I suppose device can not do good prioritization if workload iodepth is
+low. If there are just few requests pending, nobody (device or
+ioscheduler) can do correct judgment in such case because there isn't
+enough info.
+
+Thanks,
+Shaohua
+
