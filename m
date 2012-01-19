@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab2ASOEC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 09:04:02 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47781 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab2ASOD7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 09:03:59 -0500
+	id S1756785Ab2ASOEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 09:04:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8722 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567Ab2ASOEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 09:04:48 -0500
+Date: Thu, 19 Jan 2012 09:04:42 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/12] blkcg: use q and plid instead of opaque void * for
+ blkio_group association
+Message-ID: <20120119140442.GA9582@redhat.com>
+References: <1326935490-11827-1-git-send-email-tj@kernel.org>
+ <1326935490-11827-7-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20120119084836.GA29477@boyd>
-References: <12011815300568720b5d1587bb777fed0d5b016f0854@nudt.edu.cn>
-	<4F16E4BC.5080100@gmail.com>
-	<526922120.05125@eyou.net>
-	<12011909443668a7a65ff897afc93db177848236f08f@nudt.edu.cn>
-	<20120119084836.GA29477@boyd>
-Date: Thu, 19 Jan 2012 08:03:57 -0600
-X-Google-Sender-Auth: 8ra1fI4i6jbs_X0bkdFotrOENok
-Message-ID: <CANT6BaOqXwut5iA2ADO_2avW2kCSV0WL_6=3Vv1zdFNXrnXjPA@mail.gmail.com>
-Subject: Re: [PATCH] eCryptfs: infinite loop bug
-From: Dustin Kirkland <dustin.kirkland@gazzang.com>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: Li Wang <liwang@nudt.edu.cn>, ecryptfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326935490-11827-7-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 2:48 AM, Tyler Hicks <tyhicks@canonical.com> wrote:
-> On 2012-01-19 09:44:36, Li Wang wrote:
->>
->>
->> Hi,
->>   Thanks Cong Wang for the kind reminding regarding the patch format.
->
-> The commit message still needs some work. But there's no need to drag
-> out the process for a fix like this, so I'll rewrite the commit message
-> and reply to this email with the cleaned up version. Let me know if you
-> have any problems with that. You'll still be credited as the author.
->
-> For future kernel patches, please see "15) The canonical patch format"
-> of Documentation/SubmittingPatches and "5.4: PATCH FORMATTING AND
-> CHANGELOGS" of Documentation/development-process/5.Posting for more
-> information on how the commit message should be written.
->
-> Also, your email came across in base64 encoding. I'm not sure of the
-> reason for that or how to fix it.
->
->>   We did notice that the total_remaining_zeroes need be revised as well,
->> and the start_offset_in_page, num_bytes need not be revised (always smaller
->
-> Yes, size_t will work fine, as Linus confirmed.
->
->> than PAGE_CACHE_SIZE, even the huge page size is supported,
->> the 4G page size is not present in the current world?)
->> but we forget to include the revision for total_remaining_zeroes, so here comes the patch.
->
-> I really appreciate the patch - thanks!
+On Wed, Jan 18, 2012 at 05:11:24PM -0800, Tejun Heo wrote:
+> blkgio_group is association between a block cgroup and a queue for a
+> given policy.  Using opaque void * for association makes things
+> confusing and hinders factoring of common code.  Use request_queue *
+> and, if necessary, policy id instead.
+> 
+> This will help block cgroup API cleanup.
 
-Tyler,
+Using void* allowed one to pass any type of data pointer as key by the
+client.
 
-Is this the problem behind our long standing
-tor-download-on-ecryptfs-hangs-cpu bug?
- * https://bugs.launchpad.net/ecryptfs/+bug/431975
+I think passing cfq_data or throtl_data as key is better than passing
+request queue as key.
 
--- 
-:-Dustin
+- During elevator exit, it looks like there will be a small window where
+  groups from both old elevator and new elevator will be present in blkcg
+  list. Given the fact that there can be only one active elevator at a
+  time, during cgroup removal call there is no way to reach a group's
+  cfqd. One can only retrieve request queue reliably and can't rely
+  on q->elevator->elevator_data.
 
-Dustin Kirkland
-Chief Architect
-Gazzang, Inc.
-www.gazzang.com
+  So passing cfq_data as key provides more flexibility and allows
+  co-existence of two elevators more naturally without information loss.
+
+[..]
+> -static void cfq_unlink_blkio_group(void *key, struct blkio_group *blkg)
+> +static void cfq_unlink_blkio_group(struct request_queue *q,
+> +				   struct blkio_group *blkg)
+>  {
+> -	unsigned long  flags;
+> -	struct cfq_data *cfqd = key;
+> +	struct cfq_data *cfqd = q->elevator->elevator_data;
+> +	unsigned long flags;
+>  
+> -	spin_lock_irqsave(cfqd->queue->queue_lock, flags);
+> +	spin_lock_irqsave(q->queue_lock, flags);
+>  	cfq_destroy_cfqg(cfqd, cfqg_of_blkg(blkg));
+> -	spin_unlock_irqrestore(cfqd->queue->queue_lock, flags);
+> +	spin_unlock_irqrestore(q->queue_lock, flags);
+
+I think this code will create problem where both old elevator group and
+new elevator group is on blkcg list and upon cgroup removal one can not
+rely that q->elevator->elevator_data will give us old elevator's cfqd.
+
+Having said that, in practice we might never hit it as elevator init time
+we only initialize and connect root group in blkcg list and one can not
+delete root cgroup so above function is never called for root group.
+
+But I think it is confusing so it is probably better to register cfq_data
+or throtl_data as key instead of request queue.
+ 
+Thanks
+Vivek
