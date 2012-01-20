@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2ATPE1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 10:04:27 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33516 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab2ATPEZ convert rfc822-to-8bit (ORCPT
+	id S1753749Ab2ATPEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 10:04:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61984 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753532Ab2ATPEr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 10:04:25 -0500
+	Fri, 20 Jan 2012 10:04:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120120120801.GA22145@debian>
-References: <20120116025331.GA16516@localhost>
-	<1326991820-31393-1-git-send-email-rabin@rab.in>
-	<CAKYAXd8poi6Rs7wyvZHre6qx-_i7eq0SBQAJNKNTYTLC5RQKjA@mail.gmail.com>
-	<CAH+eYFBHTXVxdepno4xE-AxyYKqtNQHUvCY55z9_otN+25Y8Hg@mail.gmail.com>
-	<CAKYAXd9M4wDi2tJDNjaDhHL9YapvXE71tGx_sh91DDpJNH+yKQ@mail.gmail.com>
-	<20120120100309.GA20640@debian>
-	<CAKYAXd8UuC0pAX7G7aG2q_3U_bPG8Bs_GpjxbfiX=9=Q+RW1Rg@mail.gmail.com>
-	<20120120120801.GA22145@debian>
-Date: Sat, 21 Jan 2012 00:04:23 +0900
-Message-ID: <CAKYAXd-OzSsNgTakm_6Dq4p5C4KViBH6ctdXDO7tfkn=XrE8xA@mail.gmail.com>
-Subject: Re: [PATCHv2] backing-dev: fix wakeup timer races with bdi_unregister()
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: fengguang.wu@intel.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        chanho0207@gmail.com
+In-Reply-To: <20120120.232002.849876084731555262.yamato@redhat.com>
+References: <20120120140444.GC13157@x2.net.home> <20120120.232002.849876084731555262.yamato@redhat.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 20 Jan 2012 15:56:43 +0100
+Message-ID: <CAPXgP10uUpSQzX0RzYY24uDBkNkRXM7NbR0H6P=dZ=+LxdX3Fw@mail.gmail.com>
+Subject: Re: /etc/fstab.d yes or not
+To: Masatake YAMATO <yamato@redhat.com>
+Cc: kzak@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 20, 2012 at 15:20, Masatake YAMATO <yamato@redhat.com> wrote:
+>>
+>>  I'd like to add support for /etc/fstab.d to libmount. The library is
+>>  currently used by mount, umount and mount.nfs. The goal is to use it
+>>  on more places.
+>>
+>>  The /etc/fstab.d directory has been requested by people who maintains
+>>  large number of mountpoints etc.
+>>
+>>  The directory is not replacement for /etc/fstab, it's additional place
+>>  where you can describe your filesystems.
+>>
+>>  The disadvantage is that the stuff in the directory will be invisible
+>>  for some tools (udisks, systemd, ...), so I have very vocal
+>>  disagreement from some people who don't want to see /etc/fstab.d at all.
 >
-> After this patch, this is what wakeup_timer_fn looks like:
->
-> static void wakeup_timer_fn(unsigned long data)
-> {
->        struct backing_dev_info *bdi = (struct backing_dev_info *)data;
->
->        spin_lock_bh(&bdi->wb_lock);
->        if (bdi->wb.task) {
->                trace_writeback_wake_thread(bdi);
->                wake_up_process(bdi->wb.task);
->        } else if (bdi->dev) {
->                /*
->                 * When bdi tasks are inactive for long time, they are killed.
->                 * In this case we have to wake-up the forker thread which
->                 * should create and run the bdi thread.
->                 */
->                trace_writeback_wake_forker_thread(bdi);
->                wake_up_process(default_backing_dev_info.wb.task);
->        }
->        spin_unlock_bh(&bdi->wb_lock);
-> }
->
-> So how will trace_writeback_wake_forker_thread() be called if bdi->dev is NULL?
->
-> This patch added the if (bdi->dev) check, perhaps you overlooked that?
+> I'm working on systemd to support /etc/fstab.d.
 
-Hi Rabin.
-I clearly understand. Thanks for your explanation.
+And we don't want to support that in systemd.
 
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+It's an old glibc API, and /etc/fstab is ABI, not a service config
+file, which now can read more than one file. It's a very different
+problem. It an ABI change, not a config extension.
+
+Tools rightfully expect that they find all system mounts in that file,
+and not in some new split-up directory. In some cases, fstab is used
+to 'check if the device is not a system volume', and that will just
+break now,
+
+The gain of features from fstab.d/ vs. the amount of breakage it
+causes is not worth the trouble.
+
+And yes, there are systemd units, but we don't recommend anybody
+working with a general purpose system to mount system volumes with
+them. They are primarily used for virtual filessytems, which do not
+belong in fstab. In special purpose setups, like embedded, which do
+not care about POSIX-like APIs, the systemd units can replace fstab,
+but it's an entirely different story than breaking fstab expectations.
+
+Kay
