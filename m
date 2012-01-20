@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab2ATTFt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 14:05:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38510 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754643Ab2ATTFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 14:05:48 -0500
-Date: Fri, 20 Jan 2012 20:05:45 +0100
-From: Jan Kara <jack@suse.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PULL REQUEST] Ext3 & ext2 fix, quota improvement
-Message-ID: <20120120190545.GA18688@quack.suse.cz>
-References: <20120120163910.GA16973@quack.suse.cz>
- <20120120164400.GA19032@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120120164400.GA19032@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755230Ab2ATTRN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 14:17:13 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:32966 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab2ATTRK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 14:17:10 -0500
+Date: Fri, 20 Jan 2012 14:14:46 -0500 (EST)
+Message-Id: <20120120.141446.136970067758991080.davem@davemloft.net>
+To: glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 1/3] net: fix socket memcg build with !CONFIG_NET
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1327071436-20763-2-git-send-email-glommer@parallels.com>
+References: <1327071436-20763-1-git-send-email-glommer@parallels.com>
+	<1327071436-20763-2-git-send-email-glommer@parallels.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 20 Jan 2012 11:17:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-01-12 11:44:00, Christoph Hellwig wrote:
-> On Fri, Jan 20, 2012 at 05:39:10PM +0100, Jan Kara wrote:
-> >       quota: Pass information that quota is stored in system file to userspace
+From: Glauber Costa <glommer@parallels.com>
+Date: Fri, 20 Jan 2012 18:57:14 +0400
+
+> There is still a build bug with the sock memcg code, that triggers
+> with !CONFIG_NET, that survived my series of randconfig builds.
 > 
-> Was that patch posted somewhere?  How does it apply to e.g. xfs, gfs2
-> and ocfs2 that have always stored quota data internally?
-  It was posted back in November (but I forgot it in a topic branch thus
-I'm merging it only now), looking at the post I sent it to linux-ext4 only
-which was probably a bit unlucky.
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
 
-Regarding other filesystems - ocfs2 and gfs2 set DQUOT_QUOTA_SYS_FILE flag
-so this will now be passed properly to userspace to inform userspace
-programs (but quota-tools anyway use the flag only for ext4, for other
-filesystems they know quota is handled internally just by looking at
-filesystem type). XFS doesn't set the flag. It does not matter in practice
-as XFS doesn't use VFS quota code which cares about the flag
-(dquot_quota_sync, dquot_disable) and userspace tools know XFS handles
-quota internally. But maybe we could make XFS set it just for consistency?
+Why are you undoing the static branch optimization?  That was a one of
+the things that made me agree to even putting this code in.
 
-								Honza
+Find a way to fix this without removing the static branch.
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
