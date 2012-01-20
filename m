@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab2ATWpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 17:45:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43151 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755708Ab2ATWpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 17:45:11 -0500
-Message-ID: <4F19EDAF.2000109@zytor.com>
-Date: Fri, 20 Jan 2012 14:41:51 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Roland McGrath <mcgrathr@google.com>
-CC: Denys Vlasenko <vda.linux@googlemail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-References: <20120116183730.GB21112@redhat.com> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com> <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com> <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com> <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com> <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com> <4F1737C9.3070905@zytor.com> <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com> <4F173F48.2070604@zytor.com> <CA+55aFw3kv_JRsSCQEf6fQd0gX939MuoevDxFtcXkPY+bmyjtA@mail.gmail.com> <4F176605.5020101@zytor.com> <CAK1hOcManWsEvjS2xxtfGTKx=JLPvO2sBkWU-xQP+medV=rbAA@mail.gmail.com> <CAB=4xhqFYdU3s_NQkgdzVVG1r3vGDb=qPewPRFTrJ1B_eiEVDA@mail.gmail.com>
-In-Reply-To: <CAB=4xhqFYdU3s_NQkgdzVVG1r3vGDb=qPewPRFTrJ1B_eiEVDA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756474Ab2ATWzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 17:55:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54092 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754715Ab2ATWzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 17:55:46 -0500
+Date: Fri, 20 Jan 2012 14:55:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Tuner <pjt@google.com>
+Subject: Re: [PATCH] proc:  speedup /proc/stat handling
+Message-Id: <20120120145545.bcf5c76f.akpm@linux-foundation.org>
+In-Reply-To: <1327075164.12389.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1327075164.12389.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2012 02:40 PM, Roland McGrath wrote:
-> If you change the size of a regset, then the new full size will be the size
-> of the core file notes.  Existing userland tools will not be expecting
-> this, they expect a known exact size.  If you need to add new stuff, it
-> really is easier all around to add a new regset flavor.  When adding a new
-> one, you can make it variable-sized from the start so as to be extensible
-> in the future.  We did this for NT_X86_XSTATE, for example.
+On Fri, 20 Jan 2012 16:59:24 +0100
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> On a typical 16 cpus machine, "cat /proc/stat" gives more than 4096
+> bytes, and is slow :
+> 
+> # strace -T -o /tmp/STRACE cat /proc/stat | wc -c
+> 5826
+> # grep "cpu " /tmp/STRACE
+> read(0, "cpu  1949310 19 2144714 12117253"..., 32768) = 5826 <0.001504>
+> 
+> 
+> Thats partly because show_stat() must be called twice since initial
+> buffer size is too small (4096 bytes for less than 32 possible cpus)
+> 
+> Fix this by :
+> 
+> 1) Taking into account nr_irqs in the initial buffer sizing.
+> 
+> 2) Using ksize() to allow better filling of initial buffer.
+> 
+> 3) Reduce the bloat on "intr ..." line :
+>    Dont output trailing " 0" values at the end of irq range.
+
+This one is worrisome.  Mainly because the number of fields in the
+`intr' line can now increase over time (yes?).  So if a monitoring program
+were to read this line and use the result to size an internal buffer
+then after a while it might start to drop information or to get buffer
+overruns.
+
+> An alternative to 1) would be to remember the largest m->count reached
+> in show_stat()
+> 
 >
+> ...
+>
+> @@ -157,14 +171,17 @@ static int show_stat(struct seq_file *p, void *v)
+>  
+>  static int stat_open(struct inode *inode, struct file *file)
+>  {
+> -	unsigned size = 4096 * (1 + num_possible_cpus() / 32);
+> +	unsigned size = 1024 + 128 * num_possible_cpus();
+>  	char *buf;
+>  	struct seq_file *m;
+>  	int res;
+>  
+> +	/* minimum size to display a 0 count per interrupt : 2 bytes */
+> +	size += 2 * nr_irqs;
+> +
+>  	/* don't ask for more than the kmalloc() max size */
+> -	if (size > KMALLOC_MAX_SIZE)
+> -		size = KMALLOC_MAX_SIZE;
+> +	size = min_t(unsigned, size, KMALLOC_MAX_SIZE);
 
-Yes, that definitely seems cleaner.
+The change looks reasonable, however the use of KMALLOC_MAX_SIZE in the
+existing code is worrisome.  If `size' ever gets that large then
+there's a decent chance that the kmalloc() will simply fail and a
+better chance that it would cause tons of VM scanning activity,
+including disk writeout.
 
-	-hpa
+But I've never seen anyone report problems in this area, so shrug.
 
