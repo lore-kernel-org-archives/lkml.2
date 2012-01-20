@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab2ATNfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 08:35:53 -0500
-Received: from mga09.intel.com ([134.134.136.24]:7080 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752526Ab2ATNfu convert rfc822-to-8bit (ORCPT
+	id S1752316Ab2ATNiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 08:38:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51431 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab2ATNiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 08:35:50 -0500
+	Fri, 20 Jan 2012 08:38:14 -0500
+From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: bq27x00_battery status report issue
+Date: Fri, 20 Jan 2012 14:38:08 +0100
+Message-ID: <3483637.Dq3EujObBh@pali>
+User-Agent: KMail/4.8 rc2 (Linux/3.2.0-9-generic; KDE/4.7.97; x86_64; ; )
+In-Reply-To: <CANOLnOOAwyM=Egzr_S8pUa=6iM=q8TU8jRJW_5nVrgqtqLHGxw@mail.gmail.com>
+References: <CANOLnONB5m5iNbWy1=7WWN7T76S1vACbWtJu+KGyhqw2-cA3sw@mail.gmail.com> <10055259.ygSgKeUM8f@pali> <CANOLnOOAwyM=Egzr_S8pUa=6iM=q8TU8jRJW_5nVrgqtqLHGxw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4F188817.3090104@zytor.com>
-References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com>
-	<CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
-	<4F188817.3090104@zytor.com>
-Date: Fri, 20 Jan 2012 15:35:49 +0200
-Message-ID: <CALLzPKapudkuBxsF49jMAOtVpeu=hpa9SgY=WewtU6GYEm6M_Q@mail.gmail.com>
-Subject: Re: dmsetup fails on latest kernel
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="nextPart4961382.vFNTIT0ppH"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: quoted-printable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 11:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> Here is a patch which should fix this problem.  I will run a few more
-> tests and then push it with the rest of the urgent queue to Linus.
->
->        -hpa
 
-Hi,
+--nextPart4961382.vFNTIT0ppH
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="iso-8859-1"
 
-Yes. It solves the problem..
-Do you still want straces?
+On Friday 20 January 2012 13:02:46 Grazvydas Ignotas wrote:
+> On Thu, Jan 19, 2012 at 12:56 PM, Pali Roh=E1r <pali.rohar@gmail.com>=
+ wrote:
+> > Now I do not have device with bq27500 chip for testing. I read data=
+sheet
+> > again and I think that your interpretation may be correct. Can you =
+write
+> > patch for this problem and test it?
+>=20
+> What about just reverting 270968c0984ae instead? I think my patch
+> would look almost exactly like that..
 
-- Dmitry
+Ok, then revert this commit.
 
->
->
-> --
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
->
+--=20
+Pali Roh=E1r
+pali.rohar@gmail.com
+--nextPart4961382.vFNTIT0ppH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk8ZbkAACgkQi/DJPQPkQ1IT6ACeKw1JMeZJOHIVeXj8QTfe1WJZ
+OSMAoMUi/Vmu3rodyu3+vXPGJcivYwoo
+=eBHq
+-----END PGP SIGNATURE-----
+
+--nextPart4961382.vFNTIT0ppH--
+
