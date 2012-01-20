@@ -1,95 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab2ATAVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 19:21:50 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:55620 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab2ATAVq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 19:21:46 -0500
-Message-ID: <930b350b8504fa9e1272f93bf21dde49.squirrel@webmail.greenhost.nl>
-In-Reply-To: <20120119160429.GO7180@jl-vm1.vm.bytemark.co.uk>
-References: <20120117170512.GB17070@redhat.com>
-    <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
-    <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
-    <20120118015013.GR11715@one.firstfloor.org>
-    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
-    <CA+55aFyVTh4SQjjcf3x9BSzULttNVcmG9FyaKzhok=2_804xWA@mail.gmail.com>
-    <20120118023114.GA9643@alboin.amr.corp.intel.com>
-    <CA+55aFyEde=PLkgsx+FECRrX-dSsOSQkeY_by5=+hnkQhj5hFw@mail.gmail.com>
-    <mj+md-20120118.134958.22774.nikam@ucw.cz>
-    <20120118182411.GT11715@one.firstfloor.org>
-    <20120119160429.GO7180@jl-vm1.vm.bytemark.co.uk>
-Date: Fri, 20 Jan 2012 01:21:14 +0100
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Jamie Lokier" <jamie@shareable.org>
-Cc: "Andi Kleen" <andi@firstfloor.org>, "Martin Mares" <mj@ucw.cz>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andi Kleen" <ak@linux.intel.com>, "Andrew Lutomirski" <luto@mit.edu>,
-        "Oleg Nesterov" <oleg@redhat.com>, "Will Drewry" <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        "Roland McGrath" <mcgrathr@chromium.org>
-User-Agent: SquirrelMail/1.4.22
+	id S1757456Ab2ATAXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 19:23:45 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:56639 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756222Ab2ATAXm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 19:23:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 1.4
-X-Scan-Signature: e462de357cb394d64966911c06262bc8
+In-Reply-To: <1327002594.6404.27.camel@joe2Laptop>
+References: <1327001868-29941-1-git-send-email-sjg@chromium.org>
+	<1327002594.6404.27.camel@joe2Laptop>
+Date: Thu, 19 Jan 2012 16:23:41 -0800
+X-Google-Sender-Auth: c5ganH15Qacr6h7sExa8g8AY4JU
+Message-ID: <CAPnjgZ2MhDrUAbafRTuH=gEddTj7EiChe2tBdMvnL2avsbuNUA@mail.gmail.com>
+Subject: Re: [PATCH] serial: trivial checkpatch fixes in drivers/tty/serial/8250.c
+From: Simon Glass <sjg@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <trivial@kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, January 19, 2012 17:04, Jamie Lokier wrote:
-> Andi Kleen wrote:
->> > Not everybody. There are programs which try hard to distinguish between
->> > int80 and syscall. One such example is a sandbox for programming contests
->> > I wrote several years ago. It analyses the instruction before EIP and as
->> > it does not allow threads nor executing writeable memory, it should be
->> > correct.
->>
->> There are other ways to break it, like using the syscall itself to change
->> input arguments or using ptrace from another process and other ways.
->>
->> Generally there are so many races with ptrace that if you want to do
->> things like that it's better to use a LSM. That's what they are for.
+Hi Joe,
+
+On Thu, Jan 19, 2012 at 11:49 AM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2012-01-19 at 11:37 -0800, Simon Glass wrote:
+>> This makes the file checkpatch clean, fixing these warnings:
 >
-> I could see the LSM approach working *if* there was an LSM module to
-> make it available to unpriviledged userspace.  I.e. a replacement for
-> ptrace() for this purpose.
+> Some comments...
+
+Thanks for the comments - all addressed I think. Will send a V2.
+
+Regards,
+Simon
+
 >
-> It would be nice to be able to trace and check syscall strings properly.
-
-With current ptrace you can do exactly that. It's just very slow, because
-you have to copy the data word by word via PTRACE_PEEKDATA. But if Linux
-would support something like BSD's PT_IO ptrace request, then it could be
-limited to one extra ptrace command. (PTRACE_STRNCPY would be handy.)
-
-After the check we memcpy the data to a shared read-only mapping, but
-that's very quick. We could read the data directly into the RO area,
-but as we're mostly dealing with path strings it seemed more efficient
-to allocate the needed memory instead of the max every time.
-
-No matter how you make it available to userspace via some LSM, you will
-end up with the same context switch overhead ptrace suffers, so I don't
-see how a LSM module would give either more options or make it much faster
-compared to ptrace.
-
-Greetings,
-
-Indan
-
-
+>> This warning remains, since I am not sure how to fix it:
+>> error: drivers/tty/serial/8250.c,2929: Macros with complex values should
+>>       be enclosed in parenthesis
+>
+> you can ignore this warning.
+>
+>> diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
+> []
+>> @@ -669,7 +669,8 @@ static void disable_rsa(struct uart_8250_port *up)
+>>               result = !(mode & UART_RSA_MSR_FIFO);
+>>
+>>               if (!result) {
+>> -
+>>                       serial_outp(up, UART_RSA_MSR, mode & ~UART_RSA_MSR_FIFO);
+>> +                     serial_outp(up, UART_RSA_MSR, mode
+>> +                                     & ~UART_RSA_MSR_FIFO);
+>
+> If it's really necessary to use 80 columns,
+> I'd prefer this sort of change be:
+>                        serial_outp(up, UART_RSA_MSR,
+>                                    mode & ~UART_RSA_MSR_FIFO);
+>
+> []
+>> @@ -2006,7 +2010,8 @@ static int serial8250_startup(struct uart_port *port)
+>>        */
+>>       if (!(up->port.flags & UPF_BUGGY_UART) &&
+>>           (serial_inp(up, UART_LSR) == 0xff)) {
+>> -             printk_ratelimited(KERN_INFO "ttyS%d: LSR safety check engaged!\n",
+>> +             printk_ratelimited(KERN_INFO
+>
+>                pr_info_ratelimited()
+>
+>
+>> @@ -2019,10 +2024,13 @@ static int serial8250_startup(struct uart_port *port)
+>>
+>>               serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
+>>
+>> -             fctr = serial_inp(up, UART_FCTR) & ~(UART_FCTR_RX|UART_FCTR_TX);
+>> -             serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD | UART_FCTR_RX);
+>> +             fctr = serial_inp(up, UART_FCTR) &
+>> +                               ~(UART_FCTR_RX | UART_FCTR_TX);
+>> +             serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD |
+>> +                         UART_FCTR_RX);
+>
+> I think it's better to have all the or's
+> on the same line where possible.
+>
+>                serial_outp(up, UART_FCTR,
+>                            fctr | UART_FCTR_TRGD | UART_FCTR_RX);
+>
+>
+>> @@ -3130,7 +3139,8 @@ static struct platform_device *serial8250_isa_devs;
+>>   */
+>>  static DEFINE_MUTEX(serial_mutex);
+>>
+>> -static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *port)
+>> +static struct uart_8250_port *serial8250_find_match_or_unused(
+>> +                                             struct uart_port *port)
+>
+> It might be better to use
+>
+> static struct uart_8250_port *
+> serial8250_find_match_or_unused(struct uart_port *port)
+> {
+>> @ -3345,10 +3352,12 @@ MODULE_PARM_DESC(share_irqs, "Share IRQs with other non-8250/16x50 devices"
+>>       " (unsafe)");
+>>
+>>  module_param(nr_uarts, uint, 0644);
+>> -MODULE_PARM_DESC(nr_uarts, "Maximum number of UARTs supported. (1-" __MODULE_STRING(CONFIG_SERIAL_8250_NR_UARTS) ")");
+>> +MODULE_PARM_DESC(nr_uarts, "Maximum number of UARTs supported. (1-" \
+>> +              __MODULE_STRING(CONFIG_SERIAL_8250_NR_UARTS) ")");
+>
+> Broken.
+>
+> Don't use line continuations with whitespace on the next line.
+> Better not use line continations at all except in #defines
+>
+>
+>>  module_param(skip_txen_test, uint, 0644);
+>> -MODULE_PARM_DESC(skip_txen_test, "Skip checking for the TXEN bug at init time");
+>> +MODULE_PARM_DESC(skip_txen_test, \
+>> +             "Skip checking for the TXEN bug at init time");
+>
+> Useless line continuation.
+>
+>
