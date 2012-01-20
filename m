@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab2ATXpe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 18:45:34 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50671 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab2ATXpd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 18:45:33 -0500
+	id S1755802Ab2ATXqI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 18:46:08 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:43936 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753663Ab2ATXqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 18:46:04 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
+Date: Sat, 21 Jan 2012 00:49:35 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
+Cc: Simon Glass <sjg@chromium.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-serial@vger.kernel.org
+References: <1326826563-32215-1-git-send-email-sjg@chromium.org> <201201200103.34296.rjw@sisk.pl> <20120120061214.GA2551@linux.vnet.ibm.com>
+In-Reply-To: <20120120061214.GA2551@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CABeCy1YcP1u65CU8n8ug4g7haUq8Vyi55ABZr3hNHFxu429x+w@mail.gmail.com>
-References: <4F171B6B.2040303@gmail.com> <1327003271-11730-1-git-send-email-venki@google.com>
- <4F18805F.8060901@linux.vnet.ibm.com> <CABeCy1YcP1u65CU8n8ug4g7haUq8Vyi55ABZr3hNHFxu429x+w@mail.gmail.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Fri, 20 Jan 2012 18:45:10 -0500
-Message-ID: <CAHGf_=o4PcPh3bJU8gFzGXtKeXCkdmrvfOZ2nUDc_epf1tnNyA@mail.gmail.com>
-Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
-To: Venki Pallipadi <venki@google.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Travis <travis@sgi.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201210049.35254.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> +int nr_online_cpus __read_mostly;
->>> +EXPORT_SYMBOL(nr_online_cpus);
->>> +
->>>  void set_cpu_possible(unsigned int cpu, bool possible)
->>>  {
->>>       if (possible)
->>
->>
->> Did you forget to add:
->>
->>        nr_possible_cpus = cpumask_weight(cpu_possible_mask);
->>
->> inside set_cpu_possible() ?
->
-> No. That was intentional as I have that coupled with nr_cpu_ids and
-> set once after all the bits are set in setup_nr_cpu_ids() instead of
-> doing for each bit set.
+On Friday, January 20, 2012, Paul E. McKenney wrote:
+> On Fri, Jan 20, 2012 at 01:03:34AM +0100, Rafael J. Wysocki wrote:
+> > On Thursday, January 19, 2012, Paul E. McKenney wrote:
+> > > On Thu, Jan 19, 2012 at 01:02:58AM +0100, Rafael J. Wysocki wrote:
+> > > > On Wednesday, January 18, 2012, Paul E. McKenney wrote:
+> > > > > On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
+> > [...] 
+> > > > Yes, you can, but then I'd say it's not necessary for user space to
+> > > > be able to carry that out in a tight loop.  So, it seems, alternatively,
+> > > > we could make that loop a bit less tight, e.g. by adding an arbitrary
+> > > > sleep to the user space interface for the "disable" case.
+> > > 
+> > > Good point, that would work just as well and be simpler.
+> > 
+> > Thanks for the confirmation! :-)
+> > 
+> > By the way, I wonder, would it help to add synchronize_rcu() to
+> > wakeup_source_add() too?  Then, even if device_wakeup_enable() and
+> > device_wakeup_disable() are executed in a tight loop for the same
+> > device, the list_add/list_del operations will always happen in
+> > different RCU cycles (or at least it seems so).
+> 
+> I cannot immediately see how adding a synchronize_rcu() to
+> wakeup_source_add() would help anything.  You only need to wait for a
+> grace period on removal, not (normally) on addition.  The single grace
+> period during removal will catch up all other asynchronous RCU grace
+> period requests on that CPU.
+> 
+> Or am I missing your point?
 
-But, Srivatsa's way seems more safer, no? Is there any advantage to make couple
-with nr_cpu_ids?
+Well, I was thinking about the failure scenario you mentioned where
+executing enable/disable in a tight loop might exhaust system memory
+(if I understood it correctly).
+
+Thanks,
+Rafael
