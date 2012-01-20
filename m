@@ -1,296 +1,730 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab2AUAXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 19:23:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55398 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab2AUAXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 19:23:37 -0500
-Date: Fri, 20 Jan 2012 16:23:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Kim, Milo" <Milo.Kim@nsc.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH] backlight: add new lp855x backlight driver
-Message-Id: <20120120162336.7210b5e3.akpm@linux-foundation.org>
-In-Reply-To: <B567DBAB974C0544994013492B949F8E3812A8DECA@EXMAIL03.scwf.nsc.com>
-References: <B567DBAB974C0544994013492B949F8E3812710288@EXMAIL03.scwf.nsc.com>
-	<B567DBAB974C0544994013492B949F8E381271028A@EXMAIL03.scwf.nsc.com>
-	<B567DBAB974C0544994013492B949F8E3812A8DECA@EXMAIL03.scwf.nsc.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756172Ab2AUAff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 19:35:35 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47842 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753644Ab2AUAf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 19:35:26 -0500
+From: Richard Weinberger <richard@nod.at>
+To: netfilter-devel@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, jengelh@medozas.de,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] iptables: Merge libip6t_LOG and libipt_LOG into libxt_LOG
+Date: Sat, 21 Jan 2012 00:47:28 +0100
+Message-Id: <1327103248-18918-3-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1327103248-18918-1-git-send-email-richard@nod.at>
+References: <1327103248-18918-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jan 2012 23:00:24 -0800
-"Kim, Milo" <Milo.Kim@ti.com> wrote:
+libip6t_LOG and libipt_LOG share a lot of common code, merge them
+to recude duplicate code.
 
-> This patch supports TI LP8550/LP8551/LP8852/LP8553/LP8556 backlight driver.
-> 
-> The brightness can be controlled by the I2C or PWM input.
-> The lp855x driver provides both modes.
-> For the PWM control, pwm-specific functions can be defined in the platform data.
-> And some information can be read via the debugfs.
-> 
-> For the details, please refer to 'Documentation/backlight/lp855x-driver.txt'.
-> 
->
-> ...
->
-> +static ssize_t lp855x_help_register(struct file *file, char __user *userbuf,
-> +                                   size_t count, loff_t *ppos)
-> +{
-> +       char buf[320];
-> +       unsigned int len;
-> +       const char *help = "\n How to read/write LP855x registers\n\n \
-> +       (example) To read 0x00 register,\n \
-> +       echo 0x00 r > /sys/kernel/debug/lp855x/registers\n \
-> +       To write 0xff into 0x1 address,\n \
-> +       echo 0x00 0xff w > /sys/kernel/debug/lp855x/registers \n \
-> +       To dump values from 0x00 to 0x06 address,\n \
-> +       echo 0x00 0x06 d > /sys/kernel/debug/lp855x/registers\n";
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ extensions/libip6t_LOG.c   |  184 -------------------------------------------
+ extensions/libip6t_LOG.man |   31 -------
+ extensions/libipt_LOG.c    |  186 --------------------------------------------
+ extensions/libipt_LOG.man  |   31 -------
+ extensions/libxt_LOG.c     |  186 ++++++++++++++++++++++++++++++++++++++++++++
+ extensions/libxt_LOG.man   |   31 +++++++
+ 6 files changed, 217 insertions(+), 432 deletions(-)
+ delete mode 100644 extensions/libip6t_LOG.c
+ delete mode 100644 extensions/libip6t_LOG.man
+ delete mode 100644 extensions/libipt_LOG.c
+ delete mode 100644 extensions/libipt_LOG.man
+ create mode 100644 extensions/libxt_LOG.c
+ create mode 100644 extensions/libxt_LOG.man
 
-lol.  Oh well, it's only debugfs.
-
-> +       len = snprintf(buf, sizeof(buf), "%s\n", help);
-
-`len' should have type size_t.
-
-> +       if (len > sizeof(buf))
-> +               len = sizeof(buf);
-
-Here you could use max().  But a better approach is to form the output
-using scnprintf().
-
-> +       return simple_read_from_buffer(userbuf, count, ppos, buf, len);
-> +}
-> +
-> +static char *lp855x_parse_register_cmd(const char *cmd, u8 *byte)
-> +{
-> +       char tmp[10];
-> +       char *blank;
-> +       unsigned long arg;
-> +
-> +       blank = strchr(cmd, ' ');
-> +       memset(tmp, 0x0, sizeof(tmp));
-> +       memcpy(tmp, cmd, blank - cmd);
-> +
-> +       if (strict_strtol(tmp, 16, &arg) < 0)
-> +               return NULL;
-
-Gee, what's all this code doing?  Please add a nice comment explaining
-what the input format is, and what this function is trying to do with
-it.
-
-I worry about what it does when strchr() returns NULL!
-
-> +       *byte = arg;
-> +       return blank;
-> +}
-> +
-> +static ssize_t lp855x_ctrl_register(struct file *file,
-> +                                   const char __user *userbuf, size_t count,
-> +                                   loff_t *ppos)
-> +{
-> +       char mode, buf[20];
-> +       char *pos, *pos2;
-> +       u8 i, arg1, arg2, val;
-> +       struct lp855x *lp = file->private_data;
-> +
-> +       if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
-> +               return -EFAULT;
-
-Looks risky.  If count>sizeof(buf), this will quietly truncate the
-user's input.  It would be much better to reject the input in this
-case.
-
-> +       mode = buf[count - 2];
-> +       switch (mode) {
-> +       case 'r':
-> +               if (!lp855x_parse_register_cmd(buf, &arg1))
-> +                       return -EINVAL;
-> +
-> +               lp855x_read_byte(lp, arg1, &val);
-> +               dev_info(lp->dev, "Read [0x%.2x] = 0x%.2x\n", arg1, val);
-> +               break;
-> +       case 'w':
-> +               pos = lp855x_parse_register_cmd(buf, &arg1);
-> +               if (!pos)
-> +                       return -EINVAL;
-> +               pos2 = lp855x_parse_register_cmd(pos + 1, &arg2);
-> +               if (!pos2)
-> +                       return -EINVAL;
-> +
-> +               lp855x_write_byte(lp, arg1, arg2);
-> +               dev_info(lp->dev, "Written [0x%.2x] = 0x%.2x\n", arg1, arg2);
-> +               break;
-> +       case 'd':
-> +               pos = lp855x_parse_register_cmd(buf, &arg1);
-> +               if (!pos)
-> +                       return -EINVAL;
-> +               pos2 = lp855x_parse_register_cmd(pos + 1, &arg2);
-> +               if (!pos2)
-> +                       return -EINVAL;
-> +
-> +               for (i = arg1; i <= arg2; i++) {
-> +                       lp855x_read_byte(lp, i, &val);
-> +                       dev_info(lp->dev, "Read [0x%.2x] = 0x%.2x\n", i, val);
-> +               }
-> +               break;
-> +       default:
-> +               break;
-> +       }
-> +
-> +       return count;
-> +}
-> +
-> +static ssize_t lp855x_get_chipid(struct file *file, char __user *userbuf,
-> +                                size_t count, loff_t *ppos)
-> +{
-> +       struct lp855x *lp = file->private_data;
-> +       char buf[10];
-> +       unsigned int len;
-> +
-> +       len = snprintf(buf, sizeof(buf), "%s\n", lp->chipid);
-> +
-> +       if (len > sizeof(buf))
-> +               len = sizeof(buf);
-
-See above.
-
-> +       return simple_read_from_buffer(userbuf, count, ppos, buf, len);
-> +}
-> +
-> +static ssize_t lp855x_get_bl_mode(struct file *file, char __user *userbuf,
-> +                                 size_t count, loff_t *ppos)
-> +{
-> +       char buf[20];
-> +       unsigned int len;
-> +       char *strmode = NULL;
-> +       struct lp855x *lp = file->private_data;
-> +       enum lp855x_brightness_ctrl_mode mode = lp->pdata->mode;
-> +
-> +       if (mode == PWM_BASED)
-> +               strmode = "pwm based";
-> +       else if (mode == REGISTER_BASED)
-> +               strmode = "register based";
-> +
-> +       len = snprintf(buf, sizeof(buf), "%s\n", strmode);
-> +
-> +       if (len > sizeof(buf))
-> +               len = sizeof(buf);
-
-More...
-
-> +       return simple_read_from_buffer(userbuf, count, ppos, buf, len);
-> +}
-> +
-> +#define LP855X_DBG_ENTRY(name, pread, pwrite) \
-> +static const struct file_operations dbg_##name##_fops = { \
-> +       .open = lp855x_dbg_open, \
-> +       .read = pread, \
-> +       .write = pwrite, \
-> +       .owner = THIS_MODULE, \
-> +       .llseek = default_llseek, \
-> +}
-> +
-> +LP855X_DBG_ENTRY(registers, lp855x_help_register, lp855x_ctrl_register);
-> +LP855X_DBG_ENTRY(chip, lp855x_get_chipid, NULL);
-> +LP855X_DBG_ENTRY(blmode, lp855x_get_bl_mode, NULL);
-> +
-> +static void lp855x_create_debugfs(struct lp855x *lp)
-> +{
-> +       struct debug_dentry *dd = &lp->dd;
-> +
-> +       dd->dir = debugfs_create_dir("lp855x", NULL);
-> +
-> +       dd->reg = debugfs_create_file("registers", S_IWUSR | S_IRUGO,
-> +                                     dd->dir, lp, &dbg_registers_fops);
-> +
-> +       dd->chip = debugfs_create_file("chip_id", S_IRUGO,
-> +                                      dd->dir, lp, &dbg_chip_fops);
-> +
-> +       dd->blmode = debugfs_create_file("bl_ctl_mode", S_IRUGO,
-> +                                        dd->dir, lp, &dbg_blmode_fops);
-
-Error checking?
-
-> +}
-> +
->
-> ...
->
-> +static void lp855x_init_device(struct lp855x *lp)
-> +{
-> +       u8 val, addr;
-> +       int i, ret;
-> +       struct lp855x_platform_data *pd = lp->pdata;
-> +
-> +       val = pd->initial_brightness;
-> +       ret = lp855x_write_byte(lp, BRIGHTNESS_CTRL, val);
-> +
-> +       val = pd->device_control;
-> +       ret |= lp855x_write_byte(lp, DEVICE_CTRL, val);
-> +
-> +       if (pd->load_new_rom_data && pd->size_program) {
-> +               for (i = 0; i < pd->size_program; i++) {
-> +                       addr = pd->rom_data[i].addr;
-> +                       val = pd->rom_data[i].val;
-> +                       if (!lp855x_is_valid_rom_area(lp, addr))
-> +                               continue;
-> +
-> +                       ret |= lp855x_write_byte(lp, addr, val);
-> +               }
-> +       }
-> +
-> +       if (ret)
-> +               dev_err(lp->dev, "i2c write err\n");
-> +}
-
-This isn't very good.  lp855x_write_byte() can return various -Efoo
-values: -EINVAL, -ENOMEM, etc.  But this function can end up
-bitwise-ORing those errnos together, thus producing a completely new
-(and wrong) errno.
-
-That's not a big problem in this case, because that errno is simply
-dropped on the floor.  However it would be more useful if the errno
-were reported to the operator in that dev_err() call.
-
->
-> ...
->
-> +static int lp855x_backlight_register(struct lp855x *lp)
-> +{
-> +       struct backlight_device *bl;
-> +       struct backlight_properties props;
-> +       const char *name = lp->pdata->name;
-> +
-> +       if (!name)
-> +               return -ENODEV;
-> +
-> +       props.brightness = lp->pdata->initial_brightness;
-> +       props.max_brightness =
-> +               (lp->pdata->max_brightness < lp->pdata->initial_brightness) ?
-> +               255 : lp->pdata->max_brightness;
-> +
-> +       bl = backlight_device_register(name, lp->dev, lp,
-> +                                      &lp855x_bl_ops, &props);
-> +       if (IS_ERR(bl))
-> +               return -EIO;
-
-If `lb' contains an errno, we should return that errno to the caller
-rather than unconditionally overwriting it with -EIO?
-
-> +       lp->bl = bl;
-> +
-> +       return 0;
-> +}
-> +
->
-> ...
->
+diff --git a/extensions/libip6t_LOG.c b/extensions/libip6t_LOG.c
+deleted file mode 100644
+index 2b1ae28..0000000
+--- a/extensions/libip6t_LOG.c
++++ /dev/null
+@@ -1,184 +0,0 @@
+-#include <stdio.h>
+-#include <string.h>
+-#include <syslog.h>
+-#include <xtables.h>
+-#include <linux/netfilter_ipv6/ip6t_LOG.h>
+-
+-#ifndef IP6T_LOG_UID	/* Old kernel */
+-#define IP6T_LOG_UID	0x08
+-#undef  IP6T_LOG_MASK
+-#define IP6T_LOG_MASK	0x0f
+-#endif
+-
+-#define LOG_DEFAULT_LEVEL LOG_WARNING
+-
+-enum {
+-	O_LOG_LEVEL = 0,
+-	O_LOG_PREFIX,
+-	O_LOG_TCPSEQ,
+-	O_LOG_TCPOPTS,
+-	O_LOG_IPOPTS,
+-	O_LOG_UID,
+-	O_LOG_MAC,
+-};
+-
+-static void LOG_help(void)
+-{
+-	printf(
+-"LOG target options:\n"
+-" --log-level level		Level of logging (numeric or see syslog.conf)\n"
+-" --log-prefix prefix		Prefix log messages with this prefix.\n"
+-" --log-tcp-sequence		Log TCP sequence numbers.\n"
+-" --log-tcp-options		Log TCP options.\n"
+-" --log-ip-options		Log IP options.\n"
+-" --log-uid			Log UID owning the local socket.\n"
+-" --log-macdecode		Decode MAC addresses and protocol.\n");
+-}
+-
+-#define s struct ip6t_log_info
+-static const struct xt_option_entry LOG_opts[] = {
+-	{.name = "log-level", .id = O_LOG_LEVEL, .type = XTTYPE_SYSLOGLEVEL,
+-	 .flags = XTOPT_PUT, XTOPT_POINTER(s, level)},
+-	{.name = "log-prefix", .id = O_LOG_PREFIX, .type = XTTYPE_STRING,
+-	 .flags = XTOPT_PUT, XTOPT_POINTER(s, prefix), .min = 1},
+-	{.name = "log-tcp-sequence", .id = O_LOG_TCPSEQ, .type = XTTYPE_NONE},
+-	{.name = "log-tcp-options", .id = O_LOG_TCPOPTS, .type = XTTYPE_NONE},
+-	{.name = "log-ip-options", .id = O_LOG_IPOPTS, .type = XTTYPE_NONE},
+-	{.name = "log-uid", .id = O_LOG_UID, .type = XTTYPE_NONE},
+-	{.name = "log-macdecode", .id = O_LOG_MAC, .type = XTTYPE_NONE},
+-	XTOPT_TABLEEND,
+-};
+-#undef s
+-
+-static void LOG_init(struct xt_entry_target *t)
+-{
+-	struct ip6t_log_info *loginfo = (struct ip6t_log_info *)t->data;
+-
+-	loginfo->level = LOG_DEFAULT_LEVEL;
+-
+-}
+-
+-struct ip6t_log_names {
+-	const char *name;
+-	unsigned int level;
+-};
+-
+-static const struct ip6t_log_names ip6t_log_names[]
+-= { { .name = "alert",   .level = LOG_ALERT },
+-    { .name = "crit",    .level = LOG_CRIT },
+-    { .name = "debug",   .level = LOG_DEBUG },
+-    { .name = "emerg",   .level = LOG_EMERG },
+-    { .name = "error",   .level = LOG_ERR },		/* DEPRECATED */
+-    { .name = "info",    .level = LOG_INFO },
+-    { .name = "notice",  .level = LOG_NOTICE },
+-    { .name = "panic",   .level = LOG_EMERG },		/* DEPRECATED */
+-    { .name = "warning", .level = LOG_WARNING }
+-};
+-
+-static void LOG_parse(struct xt_option_call *cb)
+-{
+-	struct ip6t_log_info *info = cb->data;
+-
+-	xtables_option_parse(cb);
+-	switch (cb->entry->id) {
+-	case O_LOG_PREFIX:
+-		if (strchr(cb->arg, '\n') != NULL)
+-			xtables_error(PARAMETER_PROBLEM,
+-				   "Newlines not allowed in --log-prefix");
+-		break;
+-	case O_LOG_TCPSEQ:
+-		info->logflags |= IP6T_LOG_TCPSEQ;
+-		break;
+-	case O_LOG_TCPOPTS:
+-		info->logflags |= IP6T_LOG_TCPOPT;
+-		break;
+-	case O_LOG_IPOPTS:
+-		info->logflags |= IP6T_LOG_IPOPT;
+-		break;
+-	case O_LOG_UID:
+-		info->logflags |= IP6T_LOG_UID;
+-		break;
+-	case O_LOG_MAC:
+-		info->logflags |= IP6T_LOG_MACDECODE;
+-		break;
+-	}
+-}
+-
+-static void LOG_print(const void *ip, const struct xt_entry_target *target,
+-                      int numeric)
+-{
+-	const struct ip6t_log_info *loginfo
+-		= (const struct ip6t_log_info *)target->data;
+-	unsigned int i = 0;
+-
+-	printf(" LOG");
+-	if (numeric)
+-		printf(" flags %u level %u",
+-		       loginfo->logflags, loginfo->level);
+-	else {
+-		for (i = 0; i < ARRAY_SIZE(ip6t_log_names); ++i)
+-			if (loginfo->level == ip6t_log_names[i].level) {
+-				printf(" level %s", ip6t_log_names[i].name);
+-				break;
+-			}
+-		if (i == ARRAY_SIZE(ip6t_log_names))
+-			printf(" UNKNOWN level %u", loginfo->level);
+-		if (loginfo->logflags & IP6T_LOG_TCPSEQ)
+-			printf(" tcp-sequence");
+-		if (loginfo->logflags & IP6T_LOG_TCPOPT)
+-			printf(" tcp-options");
+-		if (loginfo->logflags & IP6T_LOG_IPOPT)
+-			printf(" ip-options");
+-		if (loginfo->logflags & IP6T_LOG_UID)
+-			printf(" uid");
+-		if (loginfo->logflags & IP6T_LOG_MACDECODE)
+-			printf(" macdecode");
+-		if (loginfo->logflags & ~(IP6T_LOG_MASK))
+-			printf(" unknown-flags");
+-	}
+-
+-	if (strcmp(loginfo->prefix, "") != 0)
+-		printf(" prefix \"%s\"", loginfo->prefix);
+-}
+-
+-static void LOG_save(const void *ip, const struct xt_entry_target *target)
+-{
+-	const struct ip6t_log_info *loginfo
+-		= (const struct ip6t_log_info *)target->data;
+-
+-	if (strcmp(loginfo->prefix, "") != 0)
+-		printf(" --log-prefix \"%s\"", loginfo->prefix);
+-
+-	if (loginfo->level != LOG_DEFAULT_LEVEL)
+-		printf(" --log-level %d", loginfo->level);
+-
+-	if (loginfo->logflags & IP6T_LOG_TCPSEQ)
+-		printf(" --log-tcp-sequence");
+-	if (loginfo->logflags & IP6T_LOG_TCPOPT)
+-		printf(" --log-tcp-options");
+-	if (loginfo->logflags & IP6T_LOG_IPOPT)
+-		printf(" --log-ip-options");
+-	if (loginfo->logflags & IP6T_LOG_UID)
+-		printf(" --log-uid");
+-	if (loginfo->logflags & IP6T_LOG_MACDECODE)
+-		printf(" --log-macdecode");
+-}
+-
+-static struct xtables_target log_tg6_reg = {
+-	.name          = "LOG",
+-	.version       = XTABLES_VERSION,
+-	.family        = NFPROTO_IPV6,
+-	.size          = XT_ALIGN(sizeof(struct ip6t_log_info)),
+-	.userspacesize = XT_ALIGN(sizeof(struct ip6t_log_info)),
+-	.help          = LOG_help,
+-	.init          = LOG_init,
+-	.print         = LOG_print,
+-	.save          = LOG_save,
+-	.x6_parse      = LOG_parse,
+-	.x6_options    = LOG_opts,
+-};
+-
+-void _init(void)
+-{
+-	xtables_register_target(&log_tg6_reg);
+-}
+diff --git a/extensions/libip6t_LOG.man b/extensions/libip6t_LOG.man
+deleted file mode 100644
+index b7803fe..0000000
+--- a/extensions/libip6t_LOG.man
++++ /dev/null
+@@ -1,31 +0,0 @@
+-Turn on kernel logging of matching packets.  When this option is set
+-for a rule, the Linux kernel will print some information on all
+-matching packets (like most IPv6 IPv6-header fields) via the kernel log
+-(where it can be read with
+-.I dmesg
+-or 
+-.IR syslogd (8)).
+-This is a "non-terminating target", i.e. rule traversal continues at
+-the next rule.  So if you want to LOG the packets you refuse, use two
+-separate rules with the same matching criteria, first using target LOG
+-then DROP (or REJECT).
+-.TP
+-\fB\-\-log\-level\fP \fIlevel\fP
+-Level of logging (numeric or see \fIsyslog.conf\fP(5)).
+-.TP
+-\fB\-\-log\-prefix\fP \fIprefix\fP
+-Prefix log messages with the specified prefix; up to 29 letters long,
+-and useful for distinguishing messages in the logs.
+-.TP
+-\fB\-\-log\-tcp\-sequence\fP
+-Log TCP sequence numbers. This is a security risk if the log is
+-readable by users.
+-.TP
+-\fB\-\-log\-tcp\-options\fP
+-Log options from the TCP packet header.
+-.TP
+-\fB\-\-log\-ip\-options\fP
+-Log options from the IPv6 packet header.
+-.TP
+-\fB\-\-log\-uid\fP
+-Log the userid of the process which generated the packet.
+diff --git a/extensions/libipt_LOG.c b/extensions/libipt_LOG.c
+deleted file mode 100644
+index 77f16d1..0000000
+--- a/extensions/libipt_LOG.c
++++ /dev/null
+@@ -1,186 +0,0 @@
+-#include <stdio.h>
+-#include <string.h>
+-#include <syslog.h>
+-#include <xtables.h>
+-#include <linux/netfilter_ipv4/ipt_LOG.h>
+-
+-#define LOG_DEFAULT_LEVEL LOG_WARNING
+-
+-#ifndef IPT_LOG_UID /* Old kernel */
+-#define IPT_LOG_UID	0x08	/* Log UID owning local socket */
+-#undef  IPT_LOG_MASK
+-#define IPT_LOG_MASK	0x0f
+-#endif
+-
+-enum {
+-	O_LOG_LEVEL = 0,
+-	O_LOG_PREFIX,
+-	O_LOG_TCPSEQ,
+-	O_LOG_TCPOPTS,
+-	O_LOG_IPOPTS,
+-	O_LOG_UID,
+-	O_LOG_MAC,
+-};
+-
+-static void LOG_help(void)
+-{
+-	printf(
+-"LOG target options:\n"
+-" --log-level level		Level of logging (numeric or see syslog.conf)\n"
+-" --log-prefix prefix		Prefix log messages with this prefix.\n\n"
+-" --log-tcp-sequence		Log TCP sequence numbers.\n\n"
+-" --log-tcp-options		Log TCP options.\n\n"
+-" --log-ip-options		Log IP options.\n\n"
+-" --log-uid			Log UID owning the local socket.\n\n"
+-" --log-macdecode		Decode MAC addresses and protocol.\n\n");
+-}
+-
+-#define s struct ipt_log_info
+-static const struct xt_option_entry LOG_opts[] = {
+-	{.name = "log-level", .id = O_LOG_LEVEL, .type = XTTYPE_SYSLOGLEVEL,
+-	 .flags = XTOPT_PUT, XTOPT_POINTER(s, level)},
+-	{.name = "log-prefix", .id = O_LOG_PREFIX, .type = XTTYPE_STRING,
+-	 .flags = XTOPT_PUT, XTOPT_POINTER(s, prefix), .min = 1},
+-	{.name = "log-tcp-sequence", .id = O_LOG_TCPSEQ, .type = XTTYPE_NONE},
+-	{.name = "log-tcp-options", .id = O_LOG_TCPOPTS, .type = XTTYPE_NONE},
+-	{.name = "log-ip-options", .id = O_LOG_IPOPTS, .type = XTTYPE_NONE},
+-	{.name = "log-uid", .id = O_LOG_UID, .type = XTTYPE_NONE},
+-	{.name = "log-macdecode", .id = O_LOG_MAC, .type = XTTYPE_NONE},
+-	XTOPT_TABLEEND,
+-};
+-#undef s
+-
+-static void LOG_init(struct xt_entry_target *t)
+-{
+-	struct ipt_log_info *loginfo = (struct ipt_log_info *)t->data;
+-
+-	loginfo->level = LOG_DEFAULT_LEVEL;
+-
+-}
+-
+-struct ipt_log_names {
+-	const char *name;
+-	unsigned int level;
+-};
+-
+-static const struct ipt_log_names ipt_log_names[]
+-= { { .name = "alert",   .level = LOG_ALERT },
+-    { .name = "crit",    .level = LOG_CRIT },
+-    { .name = "debug",   .level = LOG_DEBUG },
+-    { .name = "emerg",   .level = LOG_EMERG },
+-    { .name = "error",   .level = LOG_ERR },		/* DEPRECATED */
+-    { .name = "info",    .level = LOG_INFO },
+-    { .name = "notice",  .level = LOG_NOTICE },
+-    { .name = "panic",   .level = LOG_EMERG },		/* DEPRECATED */
+-    { .name = "warning", .level = LOG_WARNING }
+-};
+-
+-static void LOG_parse(struct xt_option_call *cb)
+-{
+-	struct ipt_log_info *info = cb->data;
+-
+-	xtables_option_parse(cb);
+-	switch (cb->entry->id) {
+-	case O_LOG_PREFIX:
+-		if (strchr(cb->arg, '\n') != NULL)
+-			xtables_error(PARAMETER_PROBLEM,
+-				   "Newlines not allowed in --log-prefix");
+-		break;
+-	case O_LOG_TCPSEQ:
+-		info->logflags |= IPT_LOG_TCPSEQ;
+-		break;
+-	case O_LOG_TCPOPTS:
+-		info->logflags |= IPT_LOG_TCPOPT;
+-		break;
+-	case O_LOG_IPOPTS:
+-		info->logflags |= IPT_LOG_IPOPT;
+-		break;
+-	case O_LOG_UID:
+-		info->logflags |= IPT_LOG_UID;
+-		break;
+-	case O_LOG_MAC:
+-		info->logflags |= IPT_LOG_MACDECODE;
+-		break;
+-	}
+-}
+-
+-static void LOG_print(const void *ip, const struct xt_entry_target *target,
+-                      int numeric)
+-{
+-	const struct ipt_log_info *loginfo
+-		= (const struct ipt_log_info *)target->data;
+-	unsigned int i = 0;
+-
+-	printf(" LOG");
+-	if (numeric)
+-		printf(" flags %u level %u",
+-		       loginfo->logflags, loginfo->level);
+-	else {
+-		for (i = 0; i < ARRAY_SIZE(ipt_log_names); ++i)
+-			if (loginfo->level == ipt_log_names[i].level) {
+-				printf(" level %s", ipt_log_names[i].name);
+-				break;
+-			}
+-		if (i == ARRAY_SIZE(ipt_log_names))
+-			printf(" UNKNOWN level %u", loginfo->level);
+-		if (loginfo->logflags & IPT_LOG_TCPSEQ)
+-			printf(" tcp-sequence");
+-		if (loginfo->logflags & IPT_LOG_TCPOPT)
+-			printf(" tcp-options");
+-		if (loginfo->logflags & IPT_LOG_IPOPT)
+-			printf(" ip-options");
+-		if (loginfo->logflags & IPT_LOG_UID)
+-			printf(" uid");
+-		if (loginfo->logflags & IPT_LOG_MACDECODE)
+-			printf(" macdecode");
+-		if (loginfo->logflags & ~(IPT_LOG_MASK))
+-			printf(" unknown-flags");
+-	}
+-
+-	if (strcmp(loginfo->prefix, "") != 0)
+-		printf(" prefix \"%s\"", loginfo->prefix);
+-}
+-
+-static void LOG_save(const void *ip, const struct xt_entry_target *target)
+-{
+-	const struct ipt_log_info *loginfo
+-		= (const struct ipt_log_info *)target->data;
+-
+-	if (strcmp(loginfo->prefix, "") != 0) {
+-		printf(" --log-prefix");
+-		xtables_save_string(loginfo->prefix);
+-	}
+-
+-	if (loginfo->level != LOG_DEFAULT_LEVEL)
+-		printf(" --log-level %d", loginfo->level);
+-
+-	if (loginfo->logflags & IPT_LOG_TCPSEQ)
+-		printf(" --log-tcp-sequence");
+-	if (loginfo->logflags & IPT_LOG_TCPOPT)
+-		printf(" --log-tcp-options");
+-	if (loginfo->logflags & IPT_LOG_IPOPT)
+-		printf(" --log-ip-options");
+-	if (loginfo->logflags & IPT_LOG_UID)
+-		printf(" --log-uid");
+-	if (loginfo->logflags & IPT_LOG_MACDECODE)
+-		printf(" --log-macdecode");
+-}
+-
+-static struct xtables_target log_tg_reg = {
+-	.name          = "LOG",
+-	.version       = XTABLES_VERSION,
+-	.family        = NFPROTO_IPV4,
+-	.size          = XT_ALIGN(sizeof(struct ipt_log_info)),
+-	.userspacesize = XT_ALIGN(sizeof(struct ipt_log_info)),
+-	.help          = LOG_help,
+-	.init          = LOG_init,
+-	.print         = LOG_print,
+-	.save          = LOG_save,
+-	.x6_parse      = LOG_parse,
+-	.x6_options    = LOG_opts,
+-};
+-
+-void _init(void)
+-{
+-	xtables_register_target(&log_tg_reg);
+-}
+diff --git a/extensions/libipt_LOG.man b/extensions/libipt_LOG.man
+deleted file mode 100644
+index 47c35e0..0000000
+--- a/extensions/libipt_LOG.man
++++ /dev/null
+@@ -1,31 +0,0 @@
+-Turn on kernel logging of matching packets.  When this option is set
+-for a rule, the Linux kernel will print some information on all
+-matching packets (like most IP header fields) via the kernel log
+-(where it can be read with
+-.I dmesg
+-or 
+-.IR syslogd (8)).
+-This is a "non-terminating target", i.e. rule traversal continues at
+-the next rule.  So if you want to LOG the packets you refuse, use two
+-separate rules with the same matching criteria, first using target LOG
+-then DROP (or REJECT).
+-.TP
+-\fB\-\-log\-level\fP \fIlevel\fP
+-Level of logging (numeric or see \fIsyslog.conf\fP(5)).
+-.TP
+-\fB\-\-log\-prefix\fP \fIprefix\fP
+-Prefix log messages with the specified prefix; up to 29 letters long,
+-and useful for distinguishing messages in the logs.
+-.TP
+-\fB\-\-log\-tcp\-sequence\fP
+-Log TCP sequence numbers. This is a security risk if the log is
+-readable by users.
+-.TP
+-\fB\-\-log\-tcp\-options\fP
+-Log options from the TCP packet header.
+-.TP
+-\fB\-\-log\-ip\-options\fP
+-Log options from the IP packet header.
+-.TP
+-\fB\-\-log\-uid\fP
+-Log the userid of the process which generated the packet.
+diff --git a/extensions/libxt_LOG.c b/extensions/libxt_LOG.c
+new file mode 100644
+index 0000000..1622ee7
+--- /dev/null
++++ b/extensions/libxt_LOG.c
+@@ -0,0 +1,186 @@
++#include <stdio.h>
++#include <string.h>
++#include <syslog.h>
++#include <xtables.h>
++#include <linux/netfilter/xt_LOG.h>
++
++#define LOG_DEFAULT_LEVEL LOG_WARNING
++
++#ifndef XT_LOG_UID /* Old kernel */
++#define XT_LOG_UID	0x08	/* Log UID owning local socket */
++#undef  XT_LOG_MASK
++#define XT_LOG_MASK	0x0f
++#endif
++
++enum {
++	O_LOG_LEVEL = 0,
++	O_LOG_PREFIX,
++	O_LOG_TCPSEQ,
++	O_LOG_TCPOPTS,
++	O_LOG_IPOPTS,
++	O_LOG_UID,
++	O_LOG_MAC,
++};
++
++static void LOG_help(void)
++{
++	printf(
++"LOG target options:\n"
++" --log-level level		Level of logging (numeric or see syslog.conf)\n"
++" --log-prefix prefix		Prefix log messages with this prefix.\n\n"
++" --log-tcp-sequence		Log TCP sequence numbers.\n\n"
++" --log-tcp-options		Log TCP options.\n\n"
++" --log-ip-options		Log IP options.\n\n"
++" --log-uid			Log UID owning the local socket.\n\n"
++" --log-macdecode		Decode MAC addresses and protocol.\n\n");
++}
++
++#define s struct xt_log_info
++static const struct xt_option_entry LOG_opts[] = {
++	{.name = "log-level", .id = O_LOG_LEVEL, .type = XTTYPE_SYSLOGLEVEL,
++	 .flags = XTOPT_PUT, XTOPT_POINTER(s, level)},
++	{.name = "log-prefix", .id = O_LOG_PREFIX, .type = XTTYPE_STRING,
++	 .flags = XTOPT_PUT, XTOPT_POINTER(s, prefix), .min = 1},
++	{.name = "log-tcp-sequence", .id = O_LOG_TCPSEQ, .type = XTTYPE_NONE},
++	{.name = "log-tcp-options", .id = O_LOG_TCPOPTS, .type = XTTYPE_NONE},
++	{.name = "log-ip-options", .id = O_LOG_IPOPTS, .type = XTTYPE_NONE},
++	{.name = "log-uid", .id = O_LOG_UID, .type = XTTYPE_NONE},
++	{.name = "log-macdecode", .id = O_LOG_MAC, .type = XTTYPE_NONE},
++	XTOPT_TABLEEND,
++};
++#undef s
++
++static void LOG_init(struct xt_entry_target *t)
++{
++	struct xt_log_info *loginfo = (struct xt_log_info *)t->data;
++
++	loginfo->level = LOG_DEFAULT_LEVEL;
++
++}
++
++struct ipt_log_names {
++	const char *name;
++	unsigned int level;
++};
++
++static const struct ipt_log_names ipt_log_names[]
++= { { .name = "alert",   .level = LOG_ALERT },
++    { .name = "crit",    .level = LOG_CRIT },
++    { .name = "debug",   .level = LOG_DEBUG },
++    { .name = "emerg",   .level = LOG_EMERG },
++    { .name = "error",   .level = LOG_ERR },		/* DEPRECATED */
++    { .name = "info",    .level = LOG_INFO },
++    { .name = "notice",  .level = LOG_NOTICE },
++    { .name = "panic",   .level = LOG_EMERG },		/* DEPRECATED */
++    { .name = "warning", .level = LOG_WARNING }
++};
++
++static void LOG_parse(struct xt_option_call *cb)
++{
++	struct xt_log_info *info = cb->data;
++
++	xtables_option_parse(cb);
++	switch (cb->entry->id) {
++	case O_LOG_PREFIX:
++		if (strchr(cb->arg, '\n') != NULL)
++			xtables_error(PARAMETER_PROBLEM,
++				   "Newlines not allowed in --log-prefix");
++		break;
++	case O_LOG_TCPSEQ:
++		info->logflags |= XT_LOG_TCPSEQ;
++		break;
++	case O_LOG_TCPOPTS:
++		info->logflags |= XT_LOG_TCPOPT;
++		break;
++	case O_LOG_IPOPTS:
++		info->logflags |= XT_LOG_IPOPT;
++		break;
++	case O_LOG_UID:
++		info->logflags |= XT_LOG_UID;
++		break;
++	case O_LOG_MAC:
++		info->logflags |= XT_LOG_MACDECODE;
++		break;
++	}
++}
++
++static void LOG_print(const void *ip, const struct xt_entry_target *target,
++                      int numeric)
++{
++	const struct xt_log_info *loginfo
++		= (const struct xt_log_info *)target->data;
++	unsigned int i = 0;
++
++	printf(" LOG");
++	if (numeric)
++		printf(" flags %u level %u",
++		       loginfo->logflags, loginfo->level);
++	else {
++		for (i = 0; i < ARRAY_SIZE(ipt_log_names); ++i)
++			if (loginfo->level == ipt_log_names[i].level) {
++				printf(" level %s", ipt_log_names[i].name);
++				break;
++			}
++		if (i == ARRAY_SIZE(ipt_log_names))
++			printf(" UNKNOWN level %u", loginfo->level);
++		if (loginfo->logflags & XT_LOG_TCPSEQ)
++			printf(" tcp-sequence");
++		if (loginfo->logflags & XT_LOG_TCPOPT)
++			printf(" tcp-options");
++		if (loginfo->logflags & XT_LOG_IPOPT)
++			printf(" ip-options");
++		if (loginfo->logflags & XT_LOG_UID)
++			printf(" uid");
++		if (loginfo->logflags & XT_LOG_MACDECODE)
++			printf(" macdecode");
++		if (loginfo->logflags & ~(XT_LOG_MASK))
++			printf(" unknown-flags");
++	}
++
++	if (strcmp(loginfo->prefix, "") != 0)
++		printf(" prefix \"%s\"", loginfo->prefix);
++}
++
++static void LOG_save(const void *ip, const struct xt_entry_target *target)
++{
++	const struct xt_log_info *loginfo
++		= (const struct xt_log_info *)target->data;
++
++	if (strcmp(loginfo->prefix, "") != 0) {
++		printf(" --log-prefix");
++		xtables_save_string(loginfo->prefix);
++	}
++
++	if (loginfo->level != LOG_DEFAULT_LEVEL)
++		printf(" --log-level %d", loginfo->level);
++
++	if (loginfo->logflags & XT_LOG_TCPSEQ)
++		printf(" --log-tcp-sequence");
++	if (loginfo->logflags & XT_LOG_TCPOPT)
++		printf(" --log-tcp-options");
++	if (loginfo->logflags & XT_LOG_IPOPT)
++		printf(" --log-ip-options");
++	if (loginfo->logflags & XT_LOG_UID)
++		printf(" --log-uid");
++	if (loginfo->logflags & XT_LOG_MACDECODE)
++		printf(" --log-macdecode");
++}
++
++static struct xtables_target log_tg_reg = {
++	.name          = "LOG",
++	.version       = XTABLES_VERSION,
++	.family        = NFPROTO_IPV4,
++	.size          = XT_ALIGN(sizeof(struct xt_log_info)),
++	.userspacesize = XT_ALIGN(sizeof(struct xt_log_info)),
++	.help          = LOG_help,
++	.init          = LOG_init,
++	.print         = LOG_print,
++	.save          = LOG_save,
++	.x6_parse      = LOG_parse,
++	.x6_options    = LOG_opts,
++};
++
++void _init(void)
++{
++	xtables_register_target(&log_tg_reg);
++}
+diff --git a/extensions/libxt_LOG.man b/extensions/libxt_LOG.man
+new file mode 100644
+index 0000000..47c35e0
+--- /dev/null
++++ b/extensions/libxt_LOG.man
+@@ -0,0 +1,31 @@
++Turn on kernel logging of matching packets.  When this option is set
++for a rule, the Linux kernel will print some information on all
++matching packets (like most IP header fields) via the kernel log
++(where it can be read with
++.I dmesg
++or 
++.IR syslogd (8)).
++This is a "non-terminating target", i.e. rule traversal continues at
++the next rule.  So if you want to LOG the packets you refuse, use two
++separate rules with the same matching criteria, first using target LOG
++then DROP (or REJECT).
++.TP
++\fB\-\-log\-level\fP \fIlevel\fP
++Level of logging (numeric or see \fIsyslog.conf\fP(5)).
++.TP
++\fB\-\-log\-prefix\fP \fIprefix\fP
++Prefix log messages with the specified prefix; up to 29 letters long,
++and useful for distinguishing messages in the logs.
++.TP
++\fB\-\-log\-tcp\-sequence\fP
++Log TCP sequence numbers. This is a security risk if the log is
++readable by users.
++.TP
++\fB\-\-log\-tcp\-options\fP
++Log options from the TCP packet header.
++.TP
++\fB\-\-log\-ip\-options\fP
++Log options from the IP packet header.
++.TP
++\fB\-\-log\-uid\fP
++Log the userid of the process which generated the packet.
+-- 
+1.7.7
 
