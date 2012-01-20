@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab2ATRwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 12:52:31 -0500
-Received: from mga03.intel.com ([143.182.124.21]:10114 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753889Ab2ATRw3 convert rfc822-to-8bit (ORCPT
+	id S1755380Ab2ATRyI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 12:54:08 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:17038 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab2ATRyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 12:52:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="58461661"
-From: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@infradead.org" <linux-nvme@infradead.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>
-Subject: RE: [PATCH] NVMe: Fix compilation on architecturs without
- readq/writeq
-Thread-Topic: [PATCH] NVMe: Fix compilation on architecturs without
- readq/writeq
-Thread-Index: AQHM1w8BDLinPJtR+E+BIPu+GhBs2ZYU+6yAgABM65A=
-Date: Fri, 20 Jan 2012 17:43:51 +0000
-Message-ID: <100D68C7BA14664A8938383216E40DE0012321@FMSMSX106.amr.corp.intel.com>
-References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
- <CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
-In-Reply-To: <CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
-Accept-Language: en-CA, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Jan 2012 12:54:02 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18dkDqAtRRB+vdIcoUNUCuD
+Date: Fri, 20 Jan 2012 18:53:51 +0100
+From: Tony Lindgren <tony@atomide.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: Pinmux bindings proposal
+Message-ID: <20120120175351.GL7807@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <CAJuYYwQoh4_SnA9wmy4x+cG0w0hGukxTkODWtcSw_2QHYuDsrg@mail.gmail.com>
+ <20120119165607.GG22818@atomide.com>
+ <CAJuYYwQB1pDu-JS5o3XPA1D8WbVcwbdtD43M4y7PeJNWeNXxQQ@mail.gmail.com>
+ <20120119182019.GI22818@atomide.com>
+ <CAJuYYwQouBDP6dL0B8QOaF0_JsbR7fysySZ5ebcF4op9aTQqbQ@mail.gmail.com>
+ <20120120100528.GJ22818@atomide.com>
+ <CAJuYYwQ79o5JuOQfs8rSdasVg+ei4KX7tGLuDA-yysseZya9TA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJuYYwQ79o5JuOQfs8rSdasVg+ei4KX7tGLuDA-yysseZya9TA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yep, I knew I could check for readq with an ifdef, but I'd rather just use the 32-bit versions everywhere and have consistent behaviour between bittedness.  If this were a performance path, I'd absolutely do what you suggest.
+* Thomas Abraham <thomas.abraham@linaro.org> [120120 16:45]:
+> On 20 January 2012 15:35, Tony Lindgren <tony@atomide.com> wrote:
+> > * Thomas Abraham <thomas.abraham@linaro.org> [120119 10:05]:
+> >> On 19 January 2012 23:50, Tony Lindgren <tony@atomide.com> wrote:
+> >>
+> >> I would like to understand the need for populating the
+> >> pinmux/pingroups tables from dt. The question here is when we have
+> >> something like
+> >>
+> >> pins = <&pinctrl0 0x0030 0x15 0x15 0x7>;
+> >>
+> >> which specifies the values that need to be written to the hardware
+> >> registers, would populating pinmux/pingroup tables from dt required.
+> >> The SoC specific pinctrl driver can provide a way (with the help of
+> >> pinctrl core) to translate these values and write to corresponding
+> >> hardware registers. Is there any particular reason for populating the
+> >> pinmux/pingroups tables from dt?
+> >
+> > Hmm I see. Yes it's still needed as we only want to parse the DT once
+> > because it's slower unless it was one time only configuration during
+> > init.
+> 
+> Ok. The time spent on searching for the pin-config property can be
+> reduced by having the device driver (say, i2c) keep a pointer to all
+> the pinconfig properties in its node. The next time a driver needs to
+> reconfigure the pins, the search time can be reduced. The time to
+> parse the property values though would still be applicable. But I
+> would still not opt to build pinmux/pinconfig/pindesc tables from dt.
 
-One minor point is that '|' is not a sequence point, so it's not defined whether you'll read the top or bottom half of the register first.  And some hardware people are crazy enough to care.
+Hmm that's something to consider to save memory as the node will stay
+there. This would allow making all the pinctrl framework data __initdata
+in some cases. You'd probably want to copy the data into the driver in
+some pinctrl framework struct so you could still use pinctrl framework
+functions with this data and not have to parse the node again.
 
-For this particular hardware, it's defined to work if you read the low order bits first, so I went with the nvme_readq() function to emphasise that this solution works for the nvme driver.
+For building the tables from dt, what I have currently is building
+the tables without any specific knowledge about the pinmux functions.
+I'm thinking that any further knowledge for debugging etc can be done
+later on using user space tools to avoid storing the data in kernel.
 
------Original Message-----
-From: linus971@gmail.com [mailto:linus971@gmail.com] On Behalf Of Linus Torvalds
-Sent: Thursday, January 19, 2012 5:22 PM
-To: Wilcox, Matthew R; Roland Dreier; Andrew Morton; Hitoshi Mitake; James Bottomley; Ingo Molnar
-Cc: linux-kernel@vger.kernel.org; linux-nvme@infradead.org; hpa@linux.intel.com
-Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
+Regards,
 
-On Thu, Jan 19, 2012 at 5:01 PM, Matthew Wilcox
-<matthew.r.wilcox@intel.com> wrote:
-> The only places that uses readq/writeq are in the initialisation
-> path.  Since they're not performance critical, always use readl/writel.
-
-The arch rules are that i fthe architecture has readq/writeq, they
-will be #define'd (they may be inline functions, but there will be a
-
-  #define readq readq
-
-to make it visible to the preprocessor as well).
-
-So if you don't need the atomicity guarantees of a "real" readq, you
-can do this instead:
-
-  #ifndef readq
-  static inline u64 readq(void __iomem *addr)
-  {
-        return readl(addr) | (((u64) readl(addr + 4)) << 32LL);
-  }
-  #endif
-
-and then use readq() as if it existed.
-
-And I do think we should expose this in some generic manner. Because
-we currently don't, we already have that pattern copied in quite a few
-drivers.
-
-Maybe <asm-generic/io-nonatomic.h> or something? Making it clear that
-its not atomic, but avoiding the silly duplication we do now..
-
-This whole mess was introduced in commit dbee8a0affd5 ("x86: remove
-32-bit versions of readq()/writeq()"), and it already talked about the
-problems but didn't help with the drivers that simply don't care.
-
-All the people in those threads were doing their self-satisfied
-"writeq is broken", without much acknowledging that 99% of users
-simply don't seem to care.
-
-"Occupy Writeq - We are the 99%"
-
-                Linus
+Tony
