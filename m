@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab2ATR7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 12:59:47 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57095 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab2ATR7q (ORCPT
+	id S1755610Ab2ATSAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 13:00:01 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:36854 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537Ab2ATSAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 12:59:46 -0500
-Message-Id: <20120120175930.702036458@linux.vnet.ibm.com>
+	Fri, 20 Jan 2012 13:00:00 -0500
+Message-Id: <20120120175931.685896848@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 20 Jan 2012 12:58:49 -0500
+Date: Fri, 20 Jan 2012 12:58:50 -0500
 From: Stefan Berger <stefanb@linux.vnet.ibm.com>
 To: stefanb@linux.vnet.ibm.com, tpmdd-devel@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Cc: srajiv@linux.vnet.ibm.com
-Subject: [PATCH 1/2] Only probe iTPMs
+Cc: srajiv@linux.vnet.ibm.com, Stefan Berger <stefan@linux.vnet.ibm.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 2/2] tpm_tis: Clean up after module_param cleanup
 References: <20120120175848.310554335@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=tpm_intel_only.diff
+Content-Disposition: inline; filename=tpm_tis_itpm_bool_fix.diff
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012017-7408-0000-0000-0000020B5787
+x-cbid: 12012017-3352-0000-0000-00000210EE1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Detect iTPMs through the vendor ID on the hardware interface and only
-probe the device if the manufacturer is found to be Intel. This
-obsoletes a previously added delay necessary for some TPMs but not iTPMs. 
+Commit 90ab5ee94171b3e28de6bb42ee30b527014e0be7 changed the
+itpm module parameter from int to bool. Some other changes
+need to be done to clean up after this change.
 
-Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Signed-off-by: Stefan Berger <stefan@linux.vnet.ibm.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 
 ---
- drivers/char/tpm/tpm.h     |    2 ++
- drivers/char/tpm/tpm_tis.c |    8 +++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ drivers/char/tpm/tpm_tis.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Index: linux-2.6/drivers/char/tpm/tpm.h
-===================================================================
---- linux-2.6.orig/drivers/char/tpm/tpm.h
-+++ linux-2.6/drivers/char/tpm/tpm.h
-@@ -99,6 +99,8 @@ struct tpm_vendor_specific {
- 	wait_queue_head_t int_queue;
- };
- 
-+#define TPM_VID_INTEL    0x8086
-+
- struct tpm_chip {
- 	struct device *dev;	/* Device stuff */
- 
 Index: linux-2.6/drivers/char/tpm/tpm_tis.c
 ===================================================================
 --- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
 +++ linux-2.6/drivers/char/tpm/tpm_tis.c
-@@ -368,6 +368,11 @@ static int probe_itpm(struct tpm_chip *c
+@@ -367,7 +367,7 @@ static int probe_itpm(struct tpm_chip *c
+ 		0x00, 0x00, 0x00, 0xf1
  	};
  	size_t len = sizeof(cmd_getticks);
- 	int rem_itpm = itpm;
-+	u16 vendor = ioread16(chip->vendor.iobase + TPM_DID_VID(0));
-+
-+	/* probe only iTPMS */
-+	if (vendor != TPM_VID_INTEL)
-+		return 0;
+-	int rem_itpm = itpm;
++	bool rem_itpm = itpm;
+ 	u16 vendor = ioread16(chip->vendor.iobase + TPM_DID_VID(0));
  
- 	itpm = 0;
+ 	/* probe only iTPMS */
+@@ -510,7 +510,7 @@ static int tpm_tis_init(struct device *d
+ 			resource_size_t len, unsigned int irq)
+ {
+ 	u32 vendor, intfcaps, intmask;
+-	int rc, i, irq_s, irq_e;
++	int rc, i, irq_s, irq_e, probe;
+ 	struct tpm_chip *chip;
  
-@@ -390,9 +395,6 @@ static int probe_itpm(struct tpm_chip *c
- out:
- 	itpm = rem_itpm;
- 	tpm_tis_ready(chip);
--	/* some TPMs need a break here otherwise they will not work
--	 * correctly on the immediately subsequent command */
--	msleep(chip->vendor.timeout_b);
- 	release_locality(chip, chip->vendor.locality, 0);
+ 	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
+@@ -540,11 +540,12 @@ static int tpm_tis_init(struct device *d
+ 		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
  
- 	return rc;
+ 	if (!itpm) {
+-		itpm = probe_itpm(chip);
+-		if (itpm < 0) {
++		probe = probe_itpm(chip);
++		if (probe < 0) {
+ 			rc = -ENODEV;
+ 			goto out_err;
+ 		}
++		itpm = (probe == 0) ? 0 : 1;
+ 	}
+ 
+ 	if (itpm)
 
