@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab2ATVZp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 16:25:45 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:40273 "EHLO mgw2.diku.dk"
+	id S1755976Ab2ATVZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 16:25:43 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:40270 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754339Ab2ATVZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 16:25:40 -0500
+	id S1754299Ab2ATVZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 16:25:39 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] drivers/video/au*fb.c: use devm_ functions
-Date: Fri, 20 Jan 2012 22:25:30 +0100
-Message-Id: <1327094732-9050-3-git-send-email-Julia.Lawall@lip6.fr>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] drivers/video/backlight/wm831x_bl.c: use devm_ functions
+Date: Fri, 20 Jan 2012 22:25:29 +0100
+Message-Id: <1327094732-9050-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1327094732-9050-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1327094732-9050-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -30,137 +34,47 @@ function.
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-In the case of au1100fb.c, should the failed label return something other
-than 0?
-In the case of au1200fb.c, should the error-handling code under the new
-call to dma_alloc_noncoherent jump to failed, like the other error handling
-code?  I was not sure that there was actually anything for failed to do at
-this point in the function.
+ drivers/video/backlight/wm831x_bl.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
- drivers/video/au1100fb.c |   30 +++++++++++-------------------
- drivers/video/au1200fb.c |    9 +--------
- 2 files changed, 12 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/video/au1100fb.c b/drivers/video/au1100fb.c
-index de9da67..8f7b7d7 100644
---- a/drivers/video/au1100fb.c
-+++ b/drivers/video/au1100fb.c
-@@ -477,7 +477,8 @@ static int __devinit au1100fb_drv_probe(struct platform_device *dev)
- 	u32 sys_clksrc;
+diff --git a/drivers/video/backlight/wm831x_bl.c b/drivers/video/backlight/wm831x_bl.c
+index 4e915f5..5d365de 100644
+--- a/drivers/video/backlight/wm831x_bl.c
++++ b/drivers/video/backlight/wm831x_bl.c
+@@ -186,7 +186,7 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		return ret;
  
- 	/* Allocate new device private */
--	fbdev = kzalloc(sizeof(struct au1100fb_device), GFP_KERNEL);
-+	fbdev = devm_kzalloc(&dev->dev, sizeof(struct au1100fb_device),
-+			     GFP_KERNEL);
- 	if (!fbdev) {
- 		print_err("fail to allocate device private record");
+-	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+ 	if (data == NULL)
  		return -ENOMEM;
-@@ -498,8 +499,9 @@ static int __devinit au1100fb_drv_probe(struct platform_device *dev)
- 	au1100fb_fix.mmio_start = regs_res->start;
- 	au1100fb_fix.mmio_len = resource_size(regs_res);
  
--	if (!request_mem_region(au1100fb_fix.mmio_start, au1100fb_fix.mmio_len,
--				DRIVER_NAME)) {
-+	if (!devm_request_mem_region(au1100fb_fix.mmio_start,
-+				     au1100fb_fix.mmio_len,
-+				     DRIVER_NAME)) {
- 		print_err("fail to lock memory region at 0x%08lx",
- 				au1100fb_fix.mmio_start);
- 		return -EBUSY;
-@@ -514,8 +516,9 @@ static int __devinit au1100fb_drv_probe(struct platform_device *dev)
- 	fbdev->fb_len = fbdev->panel->xres * fbdev->panel->yres *
- 		  	(fbdev->panel->bpp >> 3) * AU1100FB_NBR_VIDEO_BUFFERS;
- 
--	fbdev->fb_mem = dma_alloc_coherent(&dev->dev, PAGE_ALIGN(fbdev->fb_len),
--					&fbdev->fb_phys, GFP_KERNEL);
-+	fbdev->fb_mem = dmam_alloc_coherent(&dev->dev, &dev->dev,
-+					    PAGE_ALIGN(fbdev->fb_len),
-+					    &fbdev->fb_phys, GFP_KERNEL);
- 	if (!fbdev->fb_mem) {
- 		print_err("fail to allocate frambuffer (size: %dK))",
- 			  fbdev->fb_len / 1024);
-@@ -557,14 +560,14 @@ static int __devinit au1100fb_drv_probe(struct platform_device *dev)
- 	fbdev->info.fbops = &au1100fb_ops;
- 	fbdev->info.fix = au1100fb_fix;
- 
--	if (!(fbdev->info.pseudo_palette = kzalloc(sizeof(u32) * 16, GFP_KERNEL))) {
-+	fbdev->info.pseudo_palette =
-+		devm_kzalloc(&dev->dev, sizeof(u32) * 16, GFP_KERNEL);
-+	if (!fbdev->info.pseudo_palette)
- 		return -ENOMEM;
--	}
- 
- 	if (fb_alloc_cmap(&fbdev->info.cmap, AU1100_LCD_NBR_PALETTE_ENTRIES, 0) < 0) {
- 		print_err("Fail to allocate colormap (%d entries)",
- 			   AU1100_LCD_NBR_PALETTE_ENTRIES);
--		kfree(fbdev->info.pseudo_palette);
- 		return -EFAULT;
+@@ -200,7 +200,6 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
+ 				       &wm831x_backlight_ops, &props);
+ 	if (IS_ERR(bl)) {
+ 		dev_err(&pdev->dev, "failed to register backlight\n");
+-		kfree(data);
+ 		return PTR_ERR(bl);
  	}
  
-@@ -582,9 +585,6 @@ static int __devinit au1100fb_drv_probe(struct platform_device *dev)
- 	return 0;
+@@ -211,7 +210,6 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
+ 	/* Disable the DCDC if it was started so we can bootstrap */
+ 	wm831x_set_bits(wm831x, WM831X_DCDC_ENABLE, WM831X_DC4_ENA, 0);
  
- failed:
--	if (fbdev->regs) {
--		release_mem_region(fbdev->regs_phys, fbdev->regs_len);
--	}
- 	if (fbdev->fb_mem) {
- 		dma_free_noncoherent(&dev->dev, fbdev->fb_len, fbdev->fb_mem,
- 				     fbdev->fb_phys);
-@@ -592,7 +592,6 @@ failed:
- 	if (fbdev->info.cmap.len != 0) {
- 		fb_dealloc_cmap(&fbdev->info.cmap);
- 	}
--	kfree(fbdev);
- 	platform_set_drvdata(dev, NULL);
+-
+ 	backlight_update_status(bl);
  
  	return 0;
-@@ -615,14 +614,7 @@ int au1100fb_drv_remove(struct platform_device *dev)
- 	/* Clean up all probe data */
- 	unregister_framebuffer(&fbdev->info);
+@@ -220,10 +218,8 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
+ static int wm831x_backlight_remove(struct platform_device *pdev)
+ {
+ 	struct backlight_device *bl = platform_get_drvdata(pdev);
+-	struct wm831x_backlight_data *data = bl_get_data(bl);
  
--	release_mem_region(fbdev->regs_phys, fbdev->regs_len);
--
--	dma_free_coherent(&dev->dev, PAGE_ALIGN(fbdev->fb_len), fbdev->fb_mem,
--			  fbdev->fb_phys);
--
- 	fb_dealloc_cmap(&fbdev->info.cmap);
--	kfree(fbdev->info.pseudo_palette);
--	kfree((void*)fbdev);
- 
+ 	backlight_device_unregister(bl);
+-	kfree(data);
  	return 0;
  }
-diff --git a/drivers/video/au1200fb.c b/drivers/video/au1200fb.c
-index 04e4479..3e9a773 100644
---- a/drivers/video/au1200fb.c
-+++ b/drivers/video/au1200fb.c
-@@ -1724,7 +1724,7 @@ static int __devinit au1200fb_drv_probe(struct platform_device *dev)
- 		/* Allocate the framebuffer to the maximum screen size */
- 		fbdev->fb_len = (win->w[plane].xres * win->w[plane].yres * bpp) / 8;
  
--		fbdev->fb_mem = dma_alloc_noncoherent(&dev->dev,
-+		fbdev->fb_mem = dmam_alloc_noncoherent(&dev->dev, &dev->dev,
- 				PAGE_ALIGN(fbdev->fb_len),
- 				&fbdev->fb_phys, GFP_KERNEL);
- 		if (!fbdev->fb_mem) {
-@@ -1788,9 +1788,6 @@ static int __devinit au1200fb_drv_probe(struct platform_device *dev)
- 
- failed:
- 	/* NOTE: This only does the current plane/window that failed; others are still active */
--	if (fbdev->fb_mem)
--		dma_free_noncoherent(&dev->dev, PAGE_ALIGN(fbdev->fb_len),
--				fbdev->fb_mem, fbdev->fb_phys);
- 	if (fbi) {
- 		if (fbi->cmap.len != 0)
- 			fb_dealloc_cmap(&fbi->cmap);
-@@ -1817,10 +1814,6 @@ static int __devexit au1200fb_drv_remove(struct platform_device *dev)
- 
- 		/* Clean up all probe data */
- 		unregister_framebuffer(fbi);
--		if (fbdev->fb_mem)
--			dma_free_noncoherent(&dev->dev,
--					PAGE_ALIGN(fbdev->fb_len),
--					fbdev->fb_mem, fbdev->fb_phys);
- 		if (fbi->cmap.len != 0)
- 			fb_dealloc_cmap(&fbi->cmap);
- 		kfree(fbi->pseudo_palette);
+
