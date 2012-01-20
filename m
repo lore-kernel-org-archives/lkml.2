@@ -1,226 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab2ATRmv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 12:42:51 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:56938 "EHLO
+	id S1755604Ab2ATRmx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 12:42:53 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:57037 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755544Ab2ATRms (ORCPT
+	with ESMTP id S1755491Ab2ATRmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 12:42:48 -0500
+	Fri, 20 Jan 2012 12:42:51 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
         Frank Rowand <frank.rowand@am.sony.com>
-Subject: [PATCH v3 4/6] ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on ASID-capable CPUs
-Date: Fri, 20 Jan 2012 17:42:30 +0000
-Message-Id: <1327081352-13178-5-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v3 6/6] ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on pre-ARMv6 CPUs
+Date: Fri, 20 Jan 2012 17:42:32 +0000
+Message-Id: <1327081352-13178-7-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.rc1.3.gb6310
 In-Reply-To: <1327081352-13178-1-git-send-email-catalin.marinas@arm.com>
 References: <1327081352-13178-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 20 Jan 2012 17:42:39.0006 (UTC) FILETIME=[E728FBE0:01CCD79A]
-X-MC-Unique: 112012017424504101
+X-OriginalArrivalTime: 20 Jan 2012 17:42:39.0802 (UTC) FILETIME=[E7A271A0:01CCD79A]
+X-MC-Unique: 112012017424801101
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q0KHhFdI006967
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q0KHhG7t006971
 
-Since the ASIDs must be unique to an mm across all the CPUs in a system,
-the __new_context() function needs to broadcast a context reset event to
-all the CPUs during ASID allocation if a roll-over occurred. Such IPIs
-cannot be issued with interrupts disabled and ARM had to define
-__ARCH_WANT_INTERRUPTS_ON_CTXSW.
-
-This patch changes the check_context() function to
-check_and_switch_context() called from switch_mm(). In case of
-ASID-capable CPUs (ARMv6 onwards), if a new ASID is needed and the
-interrupts are disabled, it defers the __new_context() and
-cpu_switch_mm() calls to the post-lock switch hook where the interrupts
-are enabled. Setting the reserved TTBR0 was also moved to
-check_and_switch_context() from cpu_v7_switch_mm().
+This patch removes the __ARCH_WANT_INTERRUPTS_ON_CTXSW definition for
+ARMv5 and earlier processors. On such processors, the context switch
+requires a full cache flush. To avoid high interrupt latencies, this
+patch defers the mm switching to the post-lock switch hook if the
+interrupts are disabled.
 
 Reviewed-by: Will Deacon <will.deacon@arm.com>
 Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
 Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/include/asm/mmu_context.h |   72 ++++++++++++++++++++++++++++--------
- arch/arm/include/asm/system.h      |    2 +
- arch/arm/include/asm/thread_info.h |    1 +
- arch/arm/mm/context.c              |    4 +-
- arch/arm/mm/proc-v7-2level.S       |    3 -
- 5 files changed, 61 insertions(+), 21 deletions(-)
+ arch/arm/include/asm/mmu_context.h |   31 ++++++++++++++++++++++++++-----
+ arch/arm/include/asm/system.h      |    9 ---------
+ 2 files changed, 26 insertions(+), 14 deletions(-)
 
 diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
-index 71605d9..35483a8 100644
+index 6c42d51..a8b5e37 100644
 --- a/arch/arm/include/asm/mmu_context.h
 +++ b/arch/arm/include/asm/mmu_context.h
-@@ -48,39 +48,80 @@ DECLARE_PER_CPU(struct mm_struct *, current_mm);
+@@ -104,19 +104,40 @@ static inline void finish_arch_post_lock_switch(void)
  
- void __init_new_context(struct task_struct *tsk, struct mm_struct *mm);
- void __new_context(struct mm_struct *mm);
-+void cpu_set_reserved_ttbr0(void);
+ #else	/* !CONFIG_CPU_HAS_ASID */
  
--static inline void check_context(struct mm_struct *mm)
-+static void switch_new_context(struct mm_struct *mm)
++#ifdef CONFIG_MMU
++
+ static inline void check_and_switch_context(struct mm_struct *mm,
+ 					    struct task_struct *tsk)
  {
--	/*
--	 * This code is executed with interrupts enabled. Therefore,
--	 * mm->context.id cannot be updated to the latest ASID version
--	 * on a different CPU (and condition below not triggered)
--	 * without first getting an IPI to reset the context. The
--	 * alternative is to take a read_lock on mm->context.id_lock
--	 * (after changing its type to rwlock_t).
--	 */
--	if (unlikely((mm->context.id ^ cpu_last_asid) >> ASID_BITS))
--		__new_context(mm);
-+	unsigned long flags;
- 
-+	__new_context(mm);
-+
-+	local_irq_save(flags);
-+	cpu_switch_mm(mm->pgd, mm);
-+	local_irq_restore(flags);
-+}
-+
-+static inline void check_and_switch_context(struct mm_struct *mm,
-+					    struct task_struct *tsk)
-+{
+-#ifdef CONFIG_MMU
  	if (unlikely(mm->context.kvm_seq != init_mm.context.kvm_seq))
  		__check_kvm_seq(mm);
+-	cpu_switch_mm(mm->pgd, mm);
+-#endif
 +
-+	/*
-+	 * Required during context switch to avoid speculative page table
-+	 * walking with the wrong TTBR.
-+	 */
-+	cpu_set_reserved_ttbr0();
-+
-+	if (!((mm->context.id ^ cpu_last_asid) >> ASID_BITS))
++	if (irqs_disabled())
 +		/*
-+		 * The ASID is from the current generation, just switch to the
-+		 * new pgd. This condition is only true for calls from
-+		 * context_switch() and interrupts are already disabled.
-+		 */
-+		cpu_switch_mm(mm->pgd, mm);
-+	else if (irqs_disabled())
-+		/*
-+		 * Defer the new ASID allocation until after the context
-+		 * switch critical region since __new_context() cannot be
-+		 * called with interrupts disabled (it sends IPIs).
++		 * cpu_switch_mm() needs to flush the VIVT caches. To avoid
++		 * high interrupt latencies, defer the call and continue
++		 * running with the old mm. Since we only support UP systems
++		 * on non-ASID CPUs, the old mm will remain valid until the
++		 * finish_arch_post_lock_switch() call.
 +		 */
 +		set_ti_thread_flag(task_thread_info(tsk), TIF_SWITCH_MM);
 +	else
-+		/*
-+		 * That is a direct call to switch_mm() or activate_mm() with
-+		 * interrupts enabled and a new context.
-+		 */
-+		switch_new_context(mm);
++		cpu_switch_mm(mm->pgd, mm);
  }
  
- #define init_new_context(tsk,mm)	(__init_new_context(tsk,mm),0)
- 
--#else
+-#define init_new_context(tsk,mm)	0
 +#define finish_arch_post_lock_switch \
 +	finish_arch_post_lock_switch
 +static inline void finish_arch_post_lock_switch(void)
 +{
-+	if (test_and_clear_thread_flag(TIF_SWITCH_MM))
-+		switch_new_context(current->mm);
++	if (test_and_clear_thread_flag(TIF_SWITCH_MM)) {
++		struct mm_struct *mm = current->mm;
++		cpu_switch_mm(mm->pgd, mm);
++	}
 +}
  
--static inline void check_context(struct mm_struct *mm)
-+#else	/* !CONFIG_CPU_HAS_ASID */
+-#define finish_arch_post_lock_switch()	do { } while (0)
++#endif	/* CONFIG_MMU */
 +
-+static inline void check_and_switch_context(struct mm_struct *mm,
-+					    struct task_struct *tsk)
- {
- #ifdef CONFIG_MMU
- 	if (unlikely(mm->context.kvm_seq != init_mm.context.kvm_seq))
- 		__check_kvm_seq(mm);
-+	cpu_switch_mm(mm->pgd, mm);
- #endif
- }
++#define init_new_context(tsk,mm)	0
  
- #define init_new_context(tsk,mm)	0
+ #endif	/* CONFIG_CPU_HAS_ASID */
  
--#endif
-+#define finish_arch_post_lock_switch()	do { } while (0)
-+
-+#endif	/* CONFIG_CPU_HAS_ASID */
- 
- #define destroy_context(mm)		do { } while(0)
- 
-@@ -122,8 +163,7 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 		struct mm_struct **crt_mm = &per_cpu(current_mm, cpu);
- 		*crt_mm = next;
- #endif
--		check_context(next);
--		cpu_switch_mm(next->pgd, next);
-+		check_and_switch_context(next, tsk);
- 		if (cache_is_vivt())
- 			cpumask_clear_cpu(cpu, mm_cpumask(prev));
- 	}
 diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
-index e4c96cc..e4b41dd 100644
+index e4b41dd..4f85ced 100644
 --- a/arch/arm/include/asm/system.h
 +++ b/arch/arm/include/asm/system.h
-@@ -230,7 +230,9 @@ static inline void set_copro_access(unsigned int val)
-  * so enable interrupts over the context switch to avoid high
-  * latency.
-  */
-+#ifndef CONFIG_CPU_HAS_ASID
- #define __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+#endif
+@@ -226,15 +226,6 @@ static inline void set_copro_access(unsigned int val)
+ }
  
  /*
+- * switch_mm() may do a full cache flush over the context switch,
+- * so enable interrupts over the context switch to avoid high
+- * latency.
+- */
+-#ifndef CONFIG_CPU_HAS_ASID
+-#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
+-#endif
+-
+-/*
   * switch_to(prev, next) should switch from task `prev' to `next'
-diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-index d4c24d4..9e13e33 100644
---- a/arch/arm/include/asm/thread_info.h
-+++ b/arch/arm/include/asm/thread_info.h
-@@ -146,6 +146,7 @@ extern void vfp_flush_hwstate(struct thread_info *);
- #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
- #define TIF_RESTORE_SIGMASK	20
- #define TIF_SECCOMP		21
-+#define TIF_SWITCH_MM		22	/* deferred switch_mm */
- 
- #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
- #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
-diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
-index efa413a..ab35a86 100644
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -23,7 +23,7 @@ DEFINE_PER_CPU(struct mm_struct *, current_mm);
- #endif
- 
- #ifdef CONFIG_ARM_LPAE
--static void cpu_set_reserved_ttbr0(void)
-+void cpu_set_reserved_ttbr0(void)
- {
- 	unsigned long ttbl = __pa(swapper_pg_dir);
- 	unsigned long ttbh = 0;
-@@ -39,7 +39,7 @@ static void cpu_set_reserved_ttbr0(void)
- 	isb();
- }
- #else
--static void cpu_set_reserved_ttbr0(void)
-+void cpu_set_reserved_ttbr0(void)
- {
- 	u32 ttb;
- 	/* Copy TTBR1 into TTBR0 */
-diff --git a/arch/arm/mm/proc-v7-2level.S b/arch/arm/mm/proc-v7-2level.S
-index 7227048..42ac069 100644
---- a/arch/arm/mm/proc-v7-2level.S
-+++ b/arch/arm/mm/proc-v7-2level.S
-@@ -46,9 +46,6 @@ ENTRY(cpu_v7_switch_mm)
- #ifdef CONFIG_ARM_ERRATA_430973
- 	mcr	p15, 0, r2, c7, c5, 6		@ flush BTAC/BTB
- #endif
--	mrc	p15, 0, r2, c2, c0, 1		@ load TTB 1
--	mcr	p15, 0, r2, c2, c0, 0		@ into TTB 0
--	isb
- #ifdef CONFIG_ARM_ERRATA_754322
- 	dsb
- #endif
+  * `prev' will never be the same as `next'.  schedule() itself
+  * contains the memory barrier to tell GCC not to cache `current'.
 
