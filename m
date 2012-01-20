@@ -1,95 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab2ATHr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 02:47:29 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:59854 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab2ATHr1 (ORCPT
+	id S1752218Ab2ATHyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 02:54:13 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57916 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab2ATHx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 02:47:27 -0500
-Date: Fri, 20 Jan 2012 10:48:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
-Subject: [patch] nfsd: remove some unneeded checks
-Message-ID: <20120120074818.GA12039@mwanda>
-References: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
- <20120116115258.GC3294@mwanda>
- <20120116155031.GC1750@fieldses.org>
- <20120118095601.GE3356@mwanda>
- <20120118224107.GC27205@fieldses.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
-In-Reply-To: <20120118224107.GC27205@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F191C04.0096,ss=1,re=0.000,fgs=0
+	Fri, 20 Jan 2012 02:53:59 -0500
+Message-ID: <1327046027.2411.0.camel@phoenix>
+Subject: [PATCH 2/2] hwmon: convert drivers/hwmon/* to use
+ module_spi_driver()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sonic Zhang <sonic.zhang@analog.com>, Marc Pignat <marc.pignat@hevs.ch>,
+        Paul Thomas <pthomas8589@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
+Date: Fri, 20 Jan 2012 15:53:47 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch converts the drivers in drivers/hwmon/* to use the
+module_spi_driver() macro which makes the code smaller and a bit simpler.
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Sonic Zhang <sonic.zhang@analog.com>
+Cc: Marc Pignat <marc.pignat@hevs.ch>
+Cc: Paul Thomas <pthomas8589@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Acked-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ drivers/hwmon/ad7314.c  |   12 +-----------
+ drivers/hwmon/adcxx.c   |   13 +------------
+ drivers/hwmon/ads7871.c |   13 +------------
+ drivers/hwmon/lm70.c    |   13 +------------
+ drivers/hwmon/max1111.c |   12 +-----------
+ 5 files changed, 5 insertions(+), 58 deletions(-)
 
-We check for zero length strings in the caller now, so these aren't
-needed.
+diff --git a/drivers/hwmon/ad7314.c b/drivers/hwmon/ad7314.c
+index 5d760f3..0e0cfcc 100644
+--- a/drivers/hwmon/ad7314.c
++++ b/drivers/hwmon/ad7314.c
+@@ -167,17 +167,7 @@ static struct spi_driver ad7314_driver = {
+ 	.id_table = ad7314_id,
+ };
+ 
+-static __init int ad7314_init(void)
+-{
+-	return spi_register_driver(&ad7314_driver);
+-}
+-module_init(ad7314_init);
+-
+-static __exit void ad7314_exit(void)
+-{
+-	spi_unregister_driver(&ad7314_driver);
+-}
+-module_exit(ad7314_exit);
++module_spi_driver(ad7314_driver);
+ 
+ MODULE_AUTHOR("Sonic Zhang <sonic.zhang@analog.com>");
+ MODULE_DESCRIPTION("Analog Devices AD7314, ADT7301 and ADT7302 digital"
+diff --git a/drivers/hwmon/adcxx.c b/drivers/hwmon/adcxx.c
+index ceb24a3..a3d3183 100644
+--- a/drivers/hwmon/adcxx.c
++++ b/drivers/hwmon/adcxx.c
+@@ -248,18 +248,7 @@ static struct spi_driver adcxx_driver = {
+ 	.remove	= __devexit_p(adcxx_remove),
+ };
+ 
+-static int __init init_adcxx(void)
+-{
+-	return spi_register_driver(&adcxx_driver);
+-}
+-
+-static void __exit exit_adcxx(void)
+-{
+-	spi_unregister_driver(&adcxx_driver);
+-}
+-
+-module_init(init_adcxx);
+-module_exit(exit_adcxx);
++module_spi_driver(adcxx_driver);
+ 
+ MODULE_AUTHOR("Marc Pignat");
+ MODULE_DESCRIPTION("National Semiconductor adcxx8sxxx Linux driver");
+diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
+index 04450f8..11a5f5f 100644
+--- a/drivers/hwmon/ads7871.c
++++ b/drivers/hwmon/ads7871.c
+@@ -234,18 +234,7 @@ static struct spi_driver ads7871_driver = {
+ 	.remove = __devexit_p(ads7871_remove),
+ };
+ 
+-static int __init ads7871_init(void)
+-{
+-	return spi_register_driver(&ads7871_driver);
+-}
+-
+-static void __exit ads7871_exit(void)
+-{
+-	spi_unregister_driver(&ads7871_driver);
+-}
+-
+-module_init(ads7871_init);
+-module_exit(ads7871_exit);
++module_spi_driver(ads7871_driver);
+ 
+ MODULE_AUTHOR("Paul Thomas <pthomas8589@gmail.com>");
+ MODULE_DESCRIPTION("TI ADS7871 A/D driver");
+diff --git a/drivers/hwmon/lm70.c b/drivers/hwmon/lm70.c
+index 0994cb0..9c12ef3 100644
+--- a/drivers/hwmon/lm70.c
++++ b/drivers/hwmon/lm70.c
+@@ -213,18 +213,7 @@ static struct spi_driver lm70_driver = {
+ 	.remove	= __devexit_p(lm70_remove),
+ };
+ 
+-static int __init init_lm70(void)
+-{
+-	return spi_register_driver(&lm70_driver);
+-}
+-
+-static void __exit cleanup_lm70(void)
+-{
+-	spi_unregister_driver(&lm70_driver);
+-}
+-
+-module_init(init_lm70);
+-module_exit(cleanup_lm70);
++module_spi_driver(lm70_driver);
+ 
+ MODULE_AUTHOR("Kaiwan N Billimoria");
+ MODULE_DESCRIPTION("NS LM70 / TI TMP121/TMP123 Linux driver");
+diff --git a/drivers/hwmon/max1111.c b/drivers/hwmon/max1111.c
+index 482ca90..e5206ae 100644
+--- a/drivers/hwmon/max1111.c
++++ b/drivers/hwmon/max1111.c
+@@ -227,17 +227,7 @@ static struct spi_driver max1111_driver = {
+ 	.remove		= __devexit_p(max1111_remove),
+ };
+ 
+-static int __init max1111_init(void)
+-{
+-	return spi_register_driver(&max1111_driver);
+-}
+-module_init(max1111_init);
+-
+-static void __exit max1111_exit(void)
+-{
+-	spi_unregister_driver(&max1111_driver);
+-}
+-module_exit(max1111_exit);
++module_spi_driver(max1111_driver);
+ 
+ MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>");
+ MODULE_DESCRIPTION("MAX1111 ADC Driver");
+-- 
+1.7.5.4
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index cf8a6bd..8e9689a 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -87,7 +87,7 @@ static int expkey_parse(struct cache_detail *cd, char *me=
-sg, int mlen)
- 	struct svc_expkey key;
- 	struct svc_expkey *ek =3D NULL;
-=20
--	if (mlen < 1 || mesg[mlen-1] !=3D '\n')
-+	if (mesg[mlen - 1] !=3D '\n')
- 		return -EINVAL;
- 	mesg[mlen-1] =3D 0;
-=20
-diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
-index 01153ea..6ab3573 100644
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@ -509,7 +509,7 @@ static int unix_gid_parse(struct cache_detail *cd,
- 	time_t expiry;
- 	struct unix_gid ug, *ugp;
-=20
--	if (mlen <=3D 0 || mesg[mlen-1] !=3D '\n')
-+	if (mesg[mlen - 1] !=3D '\n')
- 		return -EINVAL;
- 	mesg[mlen-1] =3D 0;
-=20
 
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPGRxBAAoJEOnZkXI/YHqRyf8P/i/NqAK8OY+Lbddyd44jVQeZ
-FcDAvv4zuiXW9nBYrirVUz5YZ+d/YHsGaK1PYdMdYb/zyy8+ziabdTccLjoEhwei
-5TsOq+sXxSexHkZAg0jO4KBaLjEfETVcDzCOkfcWJ5HxknrShXwu9bMK1Vcf8S0n
-PxRUK2YywibCb4osejsDZiG60H+f0kb2p33eC5QbaD+jmDCD9fzJrLZ4wkdV2lD0
-Gq3J6ZxKYLbjkO9sxgZBf8f34EuDi16KWmbDP3JJuvFXQp+1ylHAswwEeJ7j60HC
-mgXJCMiep3t3isEQWEJpa3/YH+/N7saRezLZomLgMYoeHnCL5hpjx7vgmDZhHlfY
-jX2bdLDAexkM207IG5E89sV75LBK4MBR+P16bCb7S05GYWD4uHSsHjc5Gv0GetVO
-9nj7nMxhiYw2vDPJwH+zvNLZWDfyavZFejPqk/chn0FQtXN7jollLkx6bhNhiDpu
-JOkLdxCjDuwCaDJSr86sYHIpBgyAvREFjKWyRdf8iIHEANtnFfXLRD7j28fBoqQQ
-fs4N3UP7MoL54WIU4TLnfJF/KR1ZRKZFAUS2SxZBOhgC4Fq9Jz0L0CxQN30fa7eW
-yeihJ7gGcotARw14si9aWT9PYFbNdrSx71U1wqGqUeWSPaWpPsjVKnjaTbSiE+S9
-O6SCazuAOgvDx0icdklY
-=FLA6
------END PGP SIGNATURE-----
-
---y0ulUmNC+osPPQO6--
