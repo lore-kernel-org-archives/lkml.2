@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab2ATXLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 18:11:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54150 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab2ATXLu (ORCPT
+	id S1755597Ab2ATX0v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 18:26:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34099 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab2ATX0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 18:11:50 -0500
-Date: Fri, 20 Jan 2012 15:11:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge Jeremy Fitzhardinge <jeremy@goop.org>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] xen-blkfront: use bitmap_set() and bitmap_clear()
-Message-Id: <20120120151149.04352aac.akpm@linux-foundation.org>
-In-Reply-To: <20120120160938.GC3959@phenom.dumpdata.com>
-References: <1327072528-8479-1-git-send-email-akinobu.mita@gmail.com>
-	<1327072528-8479-4-git-send-email-akinobu.mita@gmail.com>
-	<20120120152819.GA3959@phenom.dumpdata.com>
-	<CAC5umyi9vuOh9Bx_HoB8ieXcVjZsisKOG6mCEM2ZGL7zXCrVTQ@mail.gmail.com>
-	<20120120160938.GC3959@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Jan 2012 18:26:50 -0500
+Date: Fri, 20 Jan 2012 17:26:44 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Pasi =?utf-8?B?S8Okcmtrw6RpbmVu?= <pasik@iki.fi>
+Cc: Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Colin King <colin.king@canonical.com>
+Subject: Re: radeon issues on MacBook Pro 8,2
+Message-ID: <20120120232644.GB2292@ubuntu-macmini>
+Mail-Followup-To: Pasi =?utf-8?B?S8Okcmtrw6RpbmVu?= <pasik@iki.fi>,
+	Alex Deucher <alexdeucher@gmail.com>,
+	Dave Airlie <airlied@redhat.com>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Colin King <colin.king@canonical.com>
+References: <20120119171808.GB23144@ubuntu-macmini>
+ <CADnq5_MiLE0XSpbrd66003DVxdR9c4MgQav3BD+bWtrKvbf+7Q@mail.gmail.com>
+ <20120119205317.GC23144@ubuntu-macmini>
+ <20120120210929.GX12984@reaktio.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120120210929.GX12984@reaktio.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jan 2012 11:09:38 -0500
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-
+On Fri, Jan 20, 2012 at 11:09:29PM +0200, Pasi Kärkkäinen wrote:
+> On Thu, Jan 19, 2012 at 02:53:17PM -0600, Seth Forshee wrote:
+> > On Thu, Jan 19, 2012 at 02:48:52PM -0500, Alex Deucher wrote:
+> > > On Thu, Jan 19, 2012 at 12:18 PM, Seth Forshee
+> > > <seth.forshee@canonical.com> wrote:
+> > > > I'm seeing several issues related to the radeon driver on a MacBook Pro
+> > > > 8,2 with the following graphics card:
+> > > >
+> > > >  ATI Technologies Inc Whistler [AMD Radeon HD 6600M Series] [1002:6741]
+> > > >
+> > > > All problems were observed when using kernel version 3.2.1. None are
+> > > > seen when using fglrx.
+> > > >
+> > > >  1. Excessive power draw. When using the radeon driver ACPI reports a
+> > > >    power draw of about 30W on an idle desktop. Using fglrx brings this
+> > > >    number down to 15W.
+> > > 
+> > > The power saving features of the open source driver are not yet as
+> > > good as the closed source driver.  Please see the power management
+> > > section of this page (http://wiki.x.org/wiki/RadeonFeature) for more
+> > > info on the options currently available.
 > > 
-> > > Did you test this patch with a large amount of minors?
+> > The dynpm option makes a small difference, saving about 2W. I did notice
+> > an ocassional flash on the screen with this option, and the same flash
+> > each time I changed the power options.
 > > 
-> > Sorry I didn't do runtime test.
 > 
-> Please do.
+> Btw how do you measure the power draw? 
 
-The poor guy probably doesn't know how to test it and surely it would
-be quite a lot of work for him to do so.
+You can get the instantaneous rate from the data under
+/proc/acpi/battery, but I use a tool called powerstat [1], written by my
+colleague Colin King. The advantage of powerstat is that it samples the
+ACPI data over a period of time and reports the average and standard
+deviation. That way I have a better idea of how much power is really
+being drawn and the quality of the value reported.
 
-Overall, it would be much more efficient if the tester of this code is
-someone who is set up to easily apply the patch and test it.  ie: the
-code maintainer(s).
-
+[1] http://kernel.ubuntu.com/git?p=cking/powerstat.git
