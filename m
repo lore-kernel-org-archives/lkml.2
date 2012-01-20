@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab2ATQoX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:44:23 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:59620 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab2ATQoT (ORCPT
+	id S1755201Ab2ATQpu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:45:50 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:43112 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940Ab2ATQpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:44:19 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LY3VTQ-01-K1O-02
-X-M-MSG: 
-Date: Fri, 20 Jan 2012 17:44:12 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH resend] x86, microcode_amd: Add support for CPU family
- specific container files
-Message-ID: <20120120164412.GD24508@alberich.amd.com>
-References: <20120105200230.GA24451@alberich.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120105200230.GA24451@alberich.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Fri, 20 Jan 2012 11:45:47 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        kvm@vger.kernel.org, "Michael S . Tsirkin" <mst@redhat.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Mike Christie <michaelc@cs.wisc.edu>
+Subject: [PATCH v4 0/3] virtio-scsi driver
+Date: Fri, 20 Jan 2012 17:45:36 +0100
+Message-Id: <1327077939-7084-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the first implementation of the virtio-scsi driver, a virtual
+HBA that will be supported by KVM.  It implements a subset of the spec,
+in particular it does not implement asynchronous notifications for either
+LUN reset/removal/addition or CD-ROM media events, but it is already
+functional and usable.
 
-We've decided to provide CPU family specific container files (starting
-with CPU family 15h). E.g. for family 15h we have to load
-microcode_amd_fam15h.bin instead of microcode_amd.bin
+Other matching bits:
 
-Rationale is that starting with family 15h patch size is larger than
-2KB which was hard coded as maximum patch size in various microcode
-loaders (not just Linux).
+- spec at http://people.redhat.com/pbonzini/virtio-spec.pdf
 
-Container files which include patches larger than 2KB cause different
-kinds of trouble with such old patch loaders. Thus we have to ensure
-that the default container file provides only patches with size less
-than 2KB.
+- QEMU implementation at git://github.com/bonzini/qemu.git,
+  branch virtio-scsi
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/microcode_amd.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+Please review.  I would like this to be included in 3.3, since the
+possibility of regressions is obviously zero.
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index fe86493..d4e679a 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -313,11 +313,16 @@ out:
- 
- static enum ucode_state request_microcode_amd(int cpu, struct device *device)
- {
--	const char *fw_name = "amd-ucode/microcode_amd.bin";
-+	char fw_name[36] = "amd-ucode/microcode_amd.bin";
- 	const struct firmware *fw;
- 	enum ucode_state ret = UCODE_NFOUND;
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+
-+	if (c->x86 >= 0x15)
-+		snprintf(fw_name, sizeof(fw_name),
-+			 "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
- 
--	if (request_firmware(&fw, fw_name, device)) {
-+	if (request_firmware(&fw, (const char *) fw_name, device)) {
- 		pr_err("failed to load file %s\n", fw_name);
- 		goto out;
- 	}
--- 
-1.7.8.1
+Paolo Bonzini (3):
+  virtio-scsi: first version
+  virtio-scsi: add error handling
+  virtio-scsi: add power management support
 
+v3->v4: renamed VIRTIO_SCSI_S_UNDERRUN to VIRTIO_SCSI_S_OVERRUN;
+    fixed 32-bit compilation; added power management support;
+    adjusted calls to virtqueue_add_buf
 
+ drivers/scsi/Kconfig        |    8 +
+ drivers/scsi/Makefile       |    1 +
+ drivers/scsi/virtio_scsi.c  |  594 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/virtio_ids.h  |    1 +
+ include/linux/virtio_scsi.h |  114 +++++++++
+ 5 files changed, 718 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/scsi/virtio_scsi.c
+ create mode 100644 include/linux/virtio_scsi.h
 
