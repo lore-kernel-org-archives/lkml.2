@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab2ATHVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 02:21:32 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:45057 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab2ATHV2 (ORCPT
+	id S1752064Ab2ATH25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 02:28:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46140 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab2ATH2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 02:21:28 -0500
-Date: Fri, 20 Jan 2012 18:21:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+	Fri, 20 Jan 2012 02:28:54 -0500
+Date: Thu, 19 Jan 2012 23:34:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Arun R Bharadwaj <arun.r.bharadwaj@gmail.com>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20120120182117.01a6eb5d3cfb3f2bdfb32ae4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Christian Gmeiner <christian.gmeiner@gmail.com>,
+        "Lars-Peter Clausen" <lars@metafoo.de>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-Id: <20120119233418.65995f2b.akpm@linux-foundation.org>
+In-Reply-To: <20120120181131.8fc4b0b29893b614e7f1fd6e@canb.auug.org.au>
+References: <20120120181131.8fc4b0b29893b614e7f1fd6e@canb.auug.org.au>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__20_Jan_2012_18_21_17_+1100_RwYsliQiamGwI/J."
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__20_Jan_2012_18_21_17_+1100_RwYsliQiamGwI/J.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 20 Jan 2012 18:11:31 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Hi all,
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (s390 allmodconfig)
+> failed like this:
+> 
+> drivers/leds/leds-ot200.c: In function 'ot200_led_brightness_set':
+> drivers/leds/leds-ot200.c:114: error: implicit declaration of function 'outb'
+> 
+> Caused by commit 891b7aeff9fe ("leds: add led driver for Bachmann's ot200").
 
-After merging the final tree, today's linux-next build (powerpc
-allmodconfig) failed like this:
+Like this?
 
-arch/powerpc/platforms/pseries/processor_idle.c:35:6: error: redefinition o=
-f 'update_smt_snooze_delay'
-arch/powerpc/include/asm/system.h:230:20: note: previous definition of 'upd=
-ate_smt_snooze_delay' was here
-arch/powerpc/platforms/pseries/processor_idle.c:175:5: error: redefinition =
-of 'pseries_notify_cpuidle_add_cpu'
-arch/powerpc/include/asm/system.h:231:19: note: previous definition of 'pse=
-ries_notify_cpuidle_add_cpu' was here
+--- a/drivers/leds/Kconfig~leds-add-led-driver-for-bachmanns-ot200-fix
++++ a/drivers/leds/Kconfig
+@@ -405,7 +405,7 @@ config LEDS_MAX8997
+ 
+ config LEDS_OT200
+ 	tristate "LED support for the Bachmann OT200"
+-	depends on LEDS_CLASS
++	depends on LEDS_CLASS && HAS_IOMEM
+ 	help
+ 	  This option enables support for the LEDs on the Bachmann OT200.
+ 	  Say Y to enable LEDs on the Bachmann OT200.
 
-Caused by commit 707827f3387d ("powerpc/cpuidle: cpuidle driver for
-pSeries").  For this build, CONFIG_PSERIES_IDLE is "m".
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__20_Jan_2012_18_21_17_+1100_RwYsliQiamGwI/J.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPGRXtAAoJEECxmPOUX5FEApcQAITKaIX9PWvFMm23HFlwcD4p
-Hgkef5wdmfHvsjwDmi7tmYZeuMNtRwlnT1XpwXgf2Fe0AWS8Wxq3yGemNJasOT/n
-VA5G8/BvSW/Yb2RPC7NHvag+ynKgxOMHHe5LAyHVIZpACxNoGPXerXpV3lT5m1oo
-b1fUa/AoVYiSl0FJp8jhS8bXdTvBW5rYwmmpGl2/q2XRks+/W4Xm6HkphWUpK1bO
-DapQ30sQ85S7A9zRMMvas/EtKUX3UMwpySn1RKnMqZVrVYzaH0hkksbQOpGFU6uc
-d7lDXF7NuDxqp45GPjVYrOF05e3JuhkirD/K9BfL9ZUyGzeQwnNxfLK9smINAr2v
-XsP1uAsdh4YE7vN1lzwYt6XxM0r8SuFz+g8nPeKeVA51JjtvrysKa4HqMb0ZcFb/
-0OpG78f5L+Ph2zN/dWSb/bkTHlzGcx6HKgsql2NVQTCk1YkBN8XaoECnVcnZakHR
-erewd+shGM8ftY2FfshsjFwBlp6V9gYdgyMhlbII2E6xhZRueTEqMPL/ztwu7LMu
-k4DwTtj7W40C2+cf2QQh0yHUDVzm+kVS3NAOWOSJM+mKotkrYvXBxHPijAg6ow56
-4SgnYbRdtKQX7wQ6TLPYCW9LkaITPCvVTzX9Eho9d8CNLcRX5Amtz8Z6ATWXX0WI
-XFkJh5r6gXF8btG9dLTI
-=dIUY
------END PGP SIGNATURE-----
-
---Signature=_Fri__20_Jan_2012_18_21_17_+1100_RwYsliQiamGwI/J.--
