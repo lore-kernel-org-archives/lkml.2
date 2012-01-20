@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab2ATLJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 06:09:59 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12791 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab2ATLJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 06:09:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 20 Jan 2012 03:09:55 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: sameo@linux.intel.com, jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
-        broonie@opensource.wolfsonmicro.com, gg@slimlogic.co.uk,
-        linux-kernel@vger.kernel.org
-Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH V1] mfd: tps65910: Add wakeup support
-Date: Fri, 20 Jan 2012 16:39:30 +0530
-Message-Id: <1327057770-6688-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1752270Ab2ATLKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 06:10:13 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:49578 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752141Ab2ATLKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 06:10:09 -0500
+Message-ID: <4F194B5D.6080701@parallels.com>
+Date: Fri, 20 Jan 2012 15:09:17 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: linux-next: Tree for Jan 19 (mm/memcontrol.c)
+References: <20120119125932.a4c67005cf6a0938558e8b36@canb.auug.org.au> <4F189A97.5080007@xenotime.net> <20120120090037.e32a119f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120120090037.e32a119f.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding wakeup support for PMIC device 65910. This can be
-selected through the board specific platform data.
+On 01/20/2012 04:00 AM, KAMEZAWA Hiroyuki wrote:
+> On Thu, 19 Jan 2012 14:35:03 -0800
+> Randy Dunlap<rdunlap@xenotime.net>  wrote:
+>
+>> On 01/18/2012 05:59 PM, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20120118:
+>>
+>>
+>> on i386:
+>>
+>> mm/built-in.o:(__jump_table+0x8): undefined reference to `memcg_socket_limit_enabled'
+>> mm/built-in.o:(__jump_table+0x14): undefined reference to `memcg_socket_limit_enabled'
+>>
+>>
+>> Full randconfig file is attached.
+>>
+>
+> Thank you. Forwarding this to Costa.
+>
+> Thanks,
+> -Kame
+>
+Oh dear lord... So what happened here, is that I moved this code out of 
+CONFIG_INET to fix another problem, and forgot that it needed to be 
+wrapped under CONFIG_NET instead.
 
-The wakeup should enabled if PMIC need to be configure for
-waking up system through RTC or ONKEY.
+It is not an excuse, but I did compiled it over at least 6 random 
+configs, and thought it was okay. I guess so many things select 
+CONFIG_NET that it ends up being hard to generate a config without it.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-This patch will enable the wakeup functionality through
-device tps65910/tps65911.
+I think the fix for this needs to go through dave's tree, since it is 
+where the original fix went through.
 
- drivers/mfd/tps65910-irq.c   |    9 +++++++++
- drivers/mfd/tps65910.c       |    1 +
- include/linux/mfd/tps65910.h |    2 ++
- 3 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mfd/tps65910-irq.c b/drivers/mfd/tps65910-irq.c
-index a56be93..8b6f423 100644
---- a/drivers/mfd/tps65910-irq.c
-+++ b/drivers/mfd/tps65910-irq.c
-@@ -210,6 +210,15 @@ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
- 	if (ret != 0)
- 		dev_err(tps65910->dev, "Failed to request IRQ: %d\n", ret);
- 
-+	if (!ret && pdata->en_wakeup) {
-+		device_init_wakeup(tps65910->dev, 1);
-+		ret = enable_irq_wake(irq);
-+		if (ret < 0)
-+			dev_warn(tps65910->dev, "Can't enable IRQ as wake "
-+				"source: %d\n", ret);
-+		return 0;
-+	}
-+
- 	return ret;
- }
- 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 8517481..88e3dec 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -169,6 +169,7 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 
- 	init_data->irq = pmic_plat_data->irq;
- 	init_data->irq_base = pmic_plat_data->irq_base;
-+	init_data->en_wakeup = pmic_plat_data->en_wakeup;
- 
- 	tps65910_gpio_init(tps65910, pmic_plat_data->gpio_base);
- 
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index d0cb12e..ba8eb6a 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -777,6 +777,7 @@ struct tps65910_board {
- 	int gpio_base;
- 	int irq;
- 	int irq_base;
-+	int en_wakeup;
- 	int vmbch_threshold;
- 	int vmbch2_threshold;
- 	struct regulator_init_data *tps65910_pmic_init_data[TPS65910_NUM_REGS];
-@@ -813,6 +814,7 @@ struct tps65910 {
- struct tps65910_platform_data {
- 	int irq;
- 	int irq_base;
-+	int en_wakeup;
- };
- 
- int tps65910_set_bits(struct tps65910 *tps65910, u8 reg, u8 mask);
--- 
-1.7.1.1
-
+I will send a fix shortly.
