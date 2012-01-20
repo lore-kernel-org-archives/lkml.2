@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab2ATPPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 10:15:50 -0500
-Received: from senmx11-mx.siemens-enterprise.com ([62.134.46.9]:46154 "EHLO
-	senmx11-mx.siemens-enterprise.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753919Ab2ATPPq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 10:15:46 -0500
-X-Greylist: delayed 720 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jan 2012 10:15:45 EST
-From: "Voelker, Bernhard" <bernhard.voelker@siemens-enterprise.com>
-To: Karel Zak <kzak@redhat.com>, Attila Kinali <attila@kinali.ch>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "util-linux@vger.kernel.org" <util-linux@vger.kernel.org>
-Date: Fri, 20 Jan 2012 16:03:42 +0100
-Subject: RE: /etc/fstab.d yes or not
-Thread-Topic: /etc/fstab.d yes or not
-Thread-Index: AczXhBdr9Xnk1r+ITca+CGy/EuXyggAAHsTw
-Message-ID: <7856072A9D04C24B82DFE2B1112FE38A0D8BB2F438@MCHP058A.global-ad.net>
-References: <20120120140444.GC13157@x2.net.home>
- <20120120154309.3ae5f9e4a8f55c477dc423ab@kinali.ch>
- <20120120145907.GA20377@x2.net.home>
-In-Reply-To: <20120120145907.GA20377@x2.net.home>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753906Ab2ATPPh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 10:15:37 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49119 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab2ATPPe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 10:15:34 -0500
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        iss_storagedev@hp.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH] hpsa: use find_first_zero_bit
+Date: Sat, 21 Jan 2012 00:15:27 +0900
+Message-Id: <1327072528-8479-5-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1327072528-8479-1-git-send-email-akinobu.mita@gmail.com>
+References: <1327072528-8479-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Karel Zak wrote:
+Use find_first_zero_bit to find the first cleared bit in a memory region.
 
-> On Fri, Jan 20, 2012 at 03:43:09PM +0100, Attila Kinali wrote:
-> > Hence, i would like to ask you to consider not adding /etc/fstab.d
-> > unless there is a very good reason to do it. And "to make it simpler
-> > for people who have a lot of mountpoints" is IMHO not a good reason.
-> > How many mountpoints must one use that a single file becomes a problem?
-> 
->  Let's imagine that you have a network and you use the same configuration
->  on all machines, then "*.d/" directories are very useful for you -- for
->  example you can create a company.rpm with important configuration and
->  distribute it to all machines.
+This also includes the following minor changes.
+- Use bitmap_zero
+- Reduce unnecessary atomic bitops usage
 
-Isn't this what the automounter does for decades?
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: iss_storagedev@hp.com
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+---
+ drivers/scsi/hpsa.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
-Berny
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 7d14443..7f79ed8 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -577,21 +577,19 @@ static int hpsa_find_target_lun(struct ctlr_info *h,
+ 	int i, found = 0;
+ 	DECLARE_BITMAP(lun_taken, HPSA_MAX_DEVICES);
+ 
+-	memset(&lun_taken[0], 0, HPSA_MAX_DEVICES >> 3);
++	bitmap_zero(lun_taken, HPSA_MAX_DEVICES);
+ 
+ 	for (i = 0; i < h->ndevices; i++) {
+ 		if (h->dev[i]->bus == bus && h->dev[i]->target != -1)
+-			set_bit(h->dev[i]->target, lun_taken);
++			__set_bit(h->dev[i]->target, lun_taken);
+ 	}
+ 
+-	for (i = 0; i < HPSA_MAX_DEVICES; i++) {
+-		if (!test_bit(i, lun_taken)) {
+-			/* *bus = 1; */
+-			*target = i;
+-			*lun = 0;
+-			found = 1;
+-			break;
+-		}
++	i = find_first_zero_bit(lun_taken, HPSA_MAX_DEVICES);
++	if (i < HPSA_MAX_DEVICES) {
++		/* *bus = 1; */
++		*target = i;
++		*lun = 0;
++		found = 1;
+ 	}
+ 	return !found;
+ }
+-- 
+1.7.4.4
+
