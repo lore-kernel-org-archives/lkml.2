@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab2ATOqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 09:46:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41275 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab2ATOqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 09:46:11 -0500
-Message-ID: <4F197E1F.20206@zytor.com>
-Date: Fri, 20 Jan 2012 06:45:51 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-CC: device-mapper development <dm-devel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: dmsetup fails on latest kernel
-References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com> <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com> <4F188817.3090104@zytor.com> <CALLzPKapudkuBxsF49jMAOtVpeu=hpa9SgY=WewtU6GYEm6M_Q@mail.gmail.com>
-In-Reply-To: <CALLzPKapudkuBxsF49jMAOtVpeu=hpa9SgY=WewtU6GYEm6M_Q@mail.gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753525Ab2ATOqn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 09:46:43 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:48104
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753503Ab2ATOqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 09:46:22 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: standby24x7@gmail.com
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH] [trivial] watchdog: Fix typo "unexpectdly"
+Date: Fri, 20 Jan 2012 23:43:19 +0900
+Message-Id: <1327070599-2748-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2012 05:35 AM, Kasatkin, Dmitry wrote:
-> On Thu, Jan 19, 2012 at 11:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> Here is a patch which should fix this problem.  I will run a few more
->> tests and then push it with the rest of the urgent queue to Linus.
->>
->>        -hpa
-> 
-> Hi,
-> 
-> Yes. It solves the problem..
-> Do you still want straces?
-> 
+Correct typo "unexpectdly" to "unexpectedly" in pnx4008_wdt.c
+and stmp3xxx_wdt.c
 
-No need, thanks!
+Signed-off-by: Masanari Iida<standby24x7@gmail.com>
+to: linux-watchdog@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+cc: trivial@kernel.org
+---
+ drivers/watchdog/pnx4008_wdt.c  |    2 +-
+ drivers/watchdog/stmp3xxx_wdt.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-	-hpa
-
-
+diff --git a/drivers/watchdog/pnx4008_wdt.c b/drivers/watchdog/pnx4008_wdt.c
+index bd143c9..8e210aa 100644
+--- a/drivers/watchdog/pnx4008_wdt.c
++++ b/drivers/watchdog/pnx4008_wdt.c
+@@ -226,7 +226,7 @@ static long pnx4008_wdt_ioctl(struct file *file, unsigned int cmd,
+ static int pnx4008_wdt_release(struct inode *inode, struct file *file)
+ {
+ 	if (!test_bit(WDT_OK_TO_CLOSE, &wdt_status))
+-		printk(KERN_WARNING "WATCHDOG: Device closed unexpectdly\n");
++		printk(KERN_WARNING "WATCHDOG: Device closed unexpectedly\n");
+ 
+ 	wdt_disable();
+ 	clk_disable(wdt_clk);
+diff --git a/drivers/watchdog/stmp3xxx_wdt.c b/drivers/watchdog/stmp3xxx_wdt.c
+index 4c2a4e8..e37d811 100644
+--- a/drivers/watchdog/stmp3xxx_wdt.c
++++ b/drivers/watchdog/stmp3xxx_wdt.c
+@@ -174,7 +174,7 @@ static int stmp3xxx_wdt_release(struct inode *inode, struct file *file)
+ 	if (!nowayout) {
+ 		if (!test_bit(WDT_OK_TO_CLOSE, &wdt_status)) {
+ 			wdt_ping();
+-			pr_debug("%s: Device closed unexpectdly\n", __func__);
++			pr_debug("%s: Device closed unexpectedly\n", __func__);
+ 			ret = -EINVAL;
+ 		} else {
+ 			wdt_disable();
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.6.5
 
