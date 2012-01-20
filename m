@@ -1,140 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab2ATP7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 10:59:20 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50611 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732Ab2ATP7T (ORCPT
+	id S1754167Ab2ATP7c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 10:59:32 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63610 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753732Ab2ATP72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 10:59:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdYwx3O42aC8F+DMV1GL0ce62ZhChOQYdbd7-syunsgBOg@mail.gmail.com>
-References: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
-	<CAJuYYwT+pNdt6G07Gx7TqkpGBQEnmMGxsHSE2mew9qUjO-ES5Q@mail.gmail.com>
-	<CACRpkdZS9OVv8osoc5E1KOcqfFnvECnKJzM1kXZ9qNKQMZgB=w@mail.gmail.com>
-	<CAJuYYwTP8a4KYDrJ2o9Wmt4jo_DvLviy75T90JnV7Hw10Y+ZXw@mail.gmail.com>
-	<CACRpkdYwx3O42aC8F+DMV1GL0ce62ZhChOQYdbd7-syunsgBOg@mail.gmail.com>
-Date: Fri, 20 Jan 2012 21:29:18 +0530
-Message-ID: <CAJuYYwRar17+nmqOywd=Yyf=shFQnL4R_jz6Lhk8=RrcdCovLA@mail.gmail.com>
-Subject: Re: [PATCH v6] pinctrl: add a pin config interface
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Jan 2012 10:59:28 -0500
+Message-ID: <1327075164.12389.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: [PATCH] proc:  speedup /proc/stat handling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Tuner <pjt@google.com>
+Date: Fri, 20 Jan 2012 16:59:24 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On a typical 16 cpus machine, "cat /proc/stat" gives more than 4096
+bytes, and is slow :
 
-On 19 January 2012 23:58, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Jan 19, 2012 at 6:55 PM, Thomas Abraham
-> <thomas.abraham@linaro.org> wrote:
->> Hi Linus,
->> On 19 January 2012 22:28, Linus Walleij <linus.walleij@linaro.org> wrote:
->>> On Wed, Jan 18, 2012 at 8:16 AM, Thomas Abraham
->>> <thomas.abraham@linaro.org> wrote:
->>>
->>>> In case of runtime pinmuxing, the pin configuration would also be
->>>> required to be setup in some cases. pin_config_set() is suitable to be
->>>> called from the platform code. In case of runtime pinmuxing in driver
->>>> code, is there any way to set the pin config also at runtime in driver
->>>> code?
->>>
->>> Yes that is already possible today with the pin_config_set() and
->>> pin_config_group_set() calls already merged for 3.3.
->>>
->>> However there is no relation between the struct device and these
->>> config settings so I feel that this is a bit hack-ish, but it was
->>> atleast something we could agree upon.
->>
->> Using pin_config_set() from drivers did not seem correct. The concern
->> here is that all there parameters of pin_config_set() are specific to
->> a particular platform. Hence, using it in driver means that the driver
->> will no more be usable across multiple different platforms.
->
-> Yes. But drivers can define a callback function into their
-> platform data, which in turn has the knowledge of what to do
-> for different scenarios, and calls pin_config_set() on the
-> pin controller for that system.
->
-> But no, it's not elegant :-)
-
-Ok. platform_data is a possibility. So for non-dt driver probe, the
-driver would call the platform callback and for dt based driver probe,
-we still need to find a suitable way.
-
->
->> But that was not the case with pinmux_get() and pinmux_put().
->
-> True. pinmuxes are completely platform agnostic...
->
-> What would be elegant?
->
-> pinconf_get() + pinconf_put() doesn't seem right since
-> configs are not simple "on or off" states.
->
-> So we need something like the named config states, but
-> mapped down per device.
->
-> How about a driver does this:
->
-> ret = pinconf_activate(&dev, "foo");
->
-> Where "foo" is a state string like "active", "idle", "sleep",
-> "off" and could correspons to preset strings in pinconf.h
-> like those found in the other patch
-
-Yes, the ability to set the pinconfig from the driver would be very
-helpful for Samsung platforms.
+# strace -T -o /tmp/STRACE cat /proc/stat | wc -c
+5826
+# grep "cpu " /tmp/STRACE
+read(0, "cpu  1949310 19 2144714 12117253"..., 32768) = 5826 <0.001504>
 
 
-> "[PATCH] pinctrl: pin configuration states" I sent out
-> two days ago?
->
-> Then we can have both system-wide and per-device
-> mapped pin configuration states named by strings.
+Thats partly because show_stat() must be called twice since initial
+buffer size is too small (4096 bytes for less than 32 possible cpus)
 
-Ok. Support for both would be nice to have.
+Fix this by :
 
->
-> Note that pinconf_get()/pinconf_put() is completely
-> superfluous in this scheme. Since the configurations are
-> stateless settings (not e.g. allocating pins) this is all fine.
->
-> Passing the string with a named config indicates that
-> the driver knows exactly what it is doing anyway.
->
-> Shall I recook pin configuration states like this for
-> a try?
+1) Taking into account nr_irqs in the initial buffer sizing.
 
-Yes, that will be very helpful. Thanks.
+2) Using ksize() to allow better filling of initial buffer.
 
-It would be easier if pinconf_register_pin_states() need not be called
-for each pin state instance. There should be something similar to the
-existing pinmux configuration where is no need to explicitly register
-a pinmux.
+3) Reduce the bloat on "intr ..." line :
+   Dont output trailing " 0" values at the end of irq range.
 
-Regards,
-Thomas.
+An alternative to 1) would be to remember the largest m->count reached
+in show_stat()
 
->
->> Will
->> there be support added in pinctrl subsystem to allow drivers to
->> configure pin-config settings from drivers and be compatible for
->> multiple platforms?
->
-> Please provide feedback on my patch entitled:
-> "[PATCH 2/2 v5] pinctrl: introduce generic pin config"
->
-> If I get a few ACKs for something like that we have the
-> infrastructure for letting drivers config their pins.
->
-> Yours,
-> Linus Walleij
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Glauber Costa <glommer@parallels.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Tuner <pjt@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ fs/proc/stat.c |   33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
+
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 121f77c..78db0fa 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -49,6 +49,20 @@ static u64 get_iowait_time(int cpu)
+ 	return iowait;
+ }
+ 
++/*
++ * Most irqs at the end of the range are never used.
++ * Find the upper limit, to not output trailing " 0" values
++ */
++static int highest_irq_used(void)
++{
++	int nr;
++
++	for (nr = nr_irqs; nr; nr--)
++		if (kstat_irqs(nr - 1))
++			break;
++	return nr;
++}
++
+ static int show_stat(struct seq_file *p, void *v)
+ {
+ 	int i, j;
+@@ -129,10 +143,10 @@ static int show_stat(struct seq_file *p, void *v)
+ 			(unsigned long long)cputime64_to_clock_t(guest_nice));
+ 	}
+ 	seq_printf(p, "intr %llu", (unsigned long long)sum);
+-
+-	/* sum again ? it could be updated? */
+-	for_each_irq_nr(j)
+-		seq_printf(p, " %u", kstat_irqs(j));
++	/* Note that the "sum" value can already be obsolete. */
++	j = highest_irq_used();
++	for (i = 0; i < j; i++)
++		seq_printf(p, " %u", kstat_irqs(i));
+ 
+ 	seq_printf(p,
+ 		"\nctxt %llu\n"
+@@ -157,14 +171,17 @@ static int show_stat(struct seq_file *p, void *v)
+ 
+ static int stat_open(struct inode *inode, struct file *file)
+ {
+-	unsigned size = 4096 * (1 + num_possible_cpus() / 32);
++	unsigned size = 1024 + 128 * num_possible_cpus();
+ 	char *buf;
+ 	struct seq_file *m;
+ 	int res;
+ 
++	/* minimum size to display a 0 count per interrupt : 2 bytes */
++	size += 2 * nr_irqs;
++
+ 	/* don't ask for more than the kmalloc() max size */
+-	if (size > KMALLOC_MAX_SIZE)
+-		size = KMALLOC_MAX_SIZE;
++	size = min_t(unsigned, size, KMALLOC_MAX_SIZE);
++
+ 	buf = kmalloc(size, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+@@ -173,7 +190,7 @@ static int stat_open(struct inode *inode, struct file *file)
+ 	if (!res) {
+ 		m = file->private_data;
+ 		m->buf = buf;
+-		m->size = size;
++		m->size = ksize(buf);
+ 	} else
+ 		kfree(buf);
+ 	return res;
+
+
