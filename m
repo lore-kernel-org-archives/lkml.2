@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223Ab2ATD0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 22:26:42 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58771 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab2ATD0l (ORCPT
+	id S1751385Ab2ATD17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 22:27:59 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:30213
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751111Ab2ATD14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 22:26:41 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 20 Jan 2012 12:25:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Subject: [PATCH v3] memcg: remove unnecessary thp check at page stat
- accounting
-Message-Id: <20120120122512.decd06c0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120119161445.b3a8a9d2.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20120119161445.b3a8a9d2.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 19 Jan 2012 22:27:56 -0500
+X-SpamScore: -3
+X-BigFish: VS-3(zz1432Nzz1202h1082kzzz2dhc1bhc31hc1ah2a8h668h839h941h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F18DF95.80700@freescale.com>
+Date: Fri, 20 Jan 2012 11:29:25 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Shawn Guo <shawn.guo@linaro.org>, <vinod.koul@intel.com>,
+        <artem.bityutskiy@intel.com>, <shijie8@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <LW@KARO-electronics.de>,
+        <alsa-devel@alsa-project.org>, <b29396@freescale.com>
+Subject: Re: [PATCH 00/10] patch set about the MXS-DMA
+References: <1326953767-24155-1-git-send-email-b32955@freescale.com> <20120119091034.GH2247@S2101-09.ap.freescale.net> <20120119094513.GB2630@pengutronix.de>
+In-Reply-To: <20120119094513.GB2630@pengutronix.de>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated description.
-==
->From a6395205d9f517af7963ff61d66efbcf1c64b2a5 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 12 Jan 2012 16:08:33 +0900
-Subject: [PATCH v3] memcg: remove unnecessary check in mem_cgroup_update_page_stat()
 
-This patch is a fix for
-    memcg: make mem_cgroup_split_huge_fixup() more efficient
+>>> [2] patch 6 ~ patch 10: rewrite the last parameter of mxs_dma_prep_slave_sg().
+>> For the sake of bitsec, at least patches #7 and #8 need to be one patch.
+>> That said, if I apply the series and then check out the commit at patch
+>> #7, you need to all mxs-dma client drivers, mxs-mmc, gpmi do not break.
+> I'd say patch 6-10 should be squashed, simply. My personal preference is
+> to change #9 to simply read the register when needed and do not expand
+It's better to add a new field. i also want to add a new field
+`bch_version`, because different
+BCH version may support different ECC strength. For example, some
+version BCH can support to 24 bit,
+while the latest BCH may support to 40 bit. So the BCH version may
+limits the computing of ECC strength.
 
-Above patch removes move_lock_page_cgroup(). So, we do not have
-to check PageTransHuge in mem_cgroup_update_page_stat and fallback into
-the locked accounting because both move_account and thp split are done
-with compound_lock so they cannot race.
-The race between update vs. move is protected by mem_cgroup_stealed,
+Best Regards
+Huang Shijie
 
-PageTransHuge pages shouldn't appear in this code path currently because
-we are tracking only file pages at the moment but later we are planning
-to track also other pages (e.g. mlocked ones).
-
-Changelog:
- - updated description.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3dbff4d..ff24520 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1867,7 +1867,7 @@ void mem_cgroup_update_page_stat(struct page *page,
- 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
- 		goto out;
- 	/* pc->mem_cgroup is unstable ? */
--	if (unlikely(mem_cgroup_stealed(memcg)) || PageTransHuge(page)) {
-+	if (unlikely(mem_cgroup_stealed(memcg))) {
- 		/* take a lock against to access pc->mem_cgroup */
- 		move_lock_page_cgroup(pc, &flags);
- 		need_unlock = true;
--- 
-1.7.4.1
+> the struct, but this is a minor thing.
+>
+> Regards,
+>
+>    Wolfram
+>
 
 
