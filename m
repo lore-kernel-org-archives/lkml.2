@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab2ATFok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 00:44:40 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1986 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab2ATFoj convert rfc822-to-8bit (ORCPT
+	id S1751452Ab2ATFp1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 00:45:27 -0500
+Received: from mtv-iport-2.cisco.com ([173.36.130.13]:15003 "EHLO
+	mtv-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab2ATFpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 00:44:39 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 19 Jan 2012 21:44:18 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "laurent.pinchart@ideasonboard.com" 
-	<laurent.pinchart@ideasonboard.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "davidb@codeaurora.org" <davidb@codeaurora.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "b08248@gmail.com" <b08248@gmail.com>,
-        "scottwood@freescale.com" <scottwood@freescale.com>
-Date: Fri, 20 Jan 2012 06:44:09 +0100
-Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Thread-Topic: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Thread-Index: AczXNouqin9mBDvnRtuafQLsPqoWUQ==
-Message-ID: <20120120.074409.1835198567920956646.hdoyu@nvidia.com>
-References: <201201191646.13798.laurent.pinchart@ideasonboard.com><20120119160739.GB2205@amd.com><201201191727.10176.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201201191727.10176.laurent.pinchart@ideasonboard.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Fri, 20 Jan 2012 00:45:23 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EAMP+GE+rRDoJ/2dsb2JhbABDrXuBBYFyAQEBBBIBJwIBESsSAQgOCl8mAQEEAQcGBR0EAYdimjIBnkOMJgSIPIxckmw
+X-IronPort-AV: E=Sophos;i="4.71,540,1320624000"; 
+   d="scan'208";a="26309579"
+User-Agent: Microsoft-Entourage/12.20.0.090605
+Date: Thu, 19 Jan 2012 21:45:22 -0800
+Subject: Re: linux-next: Tree for Jan 19 (cisco/enic)
+From: Roopa Prabhu <roprabhu@cisco.com>
+To: Roopa Prabhu <roprabhu@cisco.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Netdev <netdev@vger.kernel.org>,
+        "Christian Benvenuti (benve)" <benve@cisco.com>
+Message-ID: <CB3E3F72.412F2%roprabhu@cisco.com>
+Thread-Topic: linux-next: Tree for Jan 19 (cisco/enic)
+Thread-Index: AczW/ALA7ahkcMLsTrC7MkSN6mZmXAAORDo0AABn3I8=
+In-Reply-To: <CB3E3CB9.412EA%roprabhu@cisco.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
+X-OriginalArrivalTime: 20 Jan 2012 05:45:23.0085 (UTC) FILETIME=[B3C093D0:01CCD736]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Date: Thu, 19 Jan 2012 17:27:09 +0100
-Message-ID: <201201191727.10176.laurent.pinchart@ideasonboard.com>
 
-> Hi Joerg,
-> 
-> On Thursday 19 January 2012 17:07:39 Joerg Roedel wrote:
-> > On Thu, Jan 19, 2012 at 04:46:13PM +0100, Laurent Pinchart wrote:
-> > > > +struct iommu_domain_geometry {
-> > > > +	u64 aperture_start;	/* First address that can be mapped    */
-> > > > +	u64 aperture_end;	/* Last address that can be mapped     */
-> > > 
-> > > Would it make sense to use a platform-dependent type that represents
-> > > physical addresses instead of u64 ?
-> > 
-> > Well, u64 is a catch-all datatype which should suit all drivers. Is this
-> > a problem at ARM?
-> 
-> No, it's not a problem for ARM, at least to my knowledge. It just struck me as 
-> weird, as we have specific data types for other kinds of addresses (such as 
-> dma_addr_t).
-> 
-> > We can also go the more complicated way of introducing an iova_addr_t or
-> > something. But if possible I would like to avoid that.
 
-"dma_addr_t" sounds nicer(and makes still sense) to me than a new "iova_addr_t".
+
+On 1/19/12 9:33 PM, "Roopa Prabhu" <roprabhu@cisco.com> wrote:
+
+> 
+> 
+> 
+> On 1/19/12 3:43 PM, "Randy Dunlap" <rdunlap@xenotime.net> wrote:
+> 
+>> On 01/18/2012 05:59 PM, Stephen Rothwell wrote:
+>>> Hi all,
+>>> 
+>>> Changes since 20120118:
+>> 
+>> 
+>> on x86_64:
+>> 
+>> /next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c: In
+>> function 'enic_probe':
+>> 
+/next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c:2387:16>>
+:
+>> error: 'struct enic' has no member named 'num_vfs'
+>> 
+/next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c:2387:32>>
+:
+>> error: 'struct enic' has no member named 'num_vfs'
+>> 
+>> 
+>> Full randconfig file is attached.
+>> 
+>> --
+>> ~Randy
+>> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>> 
+> Thanks for reporting stephen. Its because you don't have CONFIG_PCI_IOV
+> enabled. I will working on the patch. Will submit soon.
+> 
+Actually thanks randy. Patch coming soon..
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
