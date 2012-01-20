@@ -1,106 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab2ATIps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 03:45:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57773 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402Ab2ATIpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 03:45:47 -0500
-Date: Fri, 20 Jan 2012 09:45:45 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH v3] memcg: remove PCG_CACHE page_cgroup flag
-Message-ID: <20120120084545.GC9655@tiehlicka.suse.cz>
-References: <20120119181711.8d697a6b.kamezawa.hiroyu@jp.fujitsu.com>
- <20120120122658.1b14b512.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752587Ab2ATIql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 03:46:41 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33392 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207Ab2ATIqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 03:46:39 -0500
+Message-ID: <4F1929E9.7070707@linaro.org>
+Date: Fri, 20 Jan 2012 09:46:33 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120120122658.1b14b512.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Colin Cross <ccross@android.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 0/3] coupled cpuidle state support
+References: <1324426147-16735-1-git-send-email-ccross@android.com>
+In-Reply-To: <1324426147-16735-1-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-01-12 12:26:58, KAMEZAWA Hiroyuki wrote:
-> I think this version is much simplified.
-> 
-> ==
-> From 5700a4fe9c581e1ebaa021ba6119dc8d921b024f Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 19 Jan 2012 17:09:41 +0900
-> Subject: [PATCH v3] memcg: remove PCG_CACHE
-> 
-> We record 'the page is cache' by PCG_CACHE bit to page_cgroup.
-> Here, "CACHE" means anonymous user pages (and SwapCache). This
-> doesn't include shmem.
-> 
-> Consdering callers, at charge/uncharge, the caller should know
-> what  the page is and we don't need to record it by using 1bit
-> per page.
-> 
-> This patch removes PCG_CACHE bit and make callers of
-> mem_cgroup_charge_statistics() to specify what the page is.
-> 
-> Changelog since v2
->  - removed 'not_rss', added 'anon'
->  - changed a meaning of arguments to mem_cgroup_charge_statisitcs()
->  - removed a patch to mem_cgroup_uncharge_cache
->  - simplified comment.
-> 
-> Changelog since RFC.
->  - rebased onto memcg-devel
->  - rename 'file' to 'not_rss'
->  - some cleanup and added comment.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  include/linux/page_cgroup.h |    8 +------
->  mm/memcontrol.c             |   48 +++++++++++++++++++++++-------------------
->  2 files changed, 27 insertions(+), 29 deletions(-)
-> 
-[...]
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index ff24520..f000c82 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -672,15 +672,19 @@ static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
->  }
->  
->  static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
-> -					 bool file, int nr_pages)
-> +					 bool rss, int nr_pages)
+On 12/21/2011 01:09 AM, Colin Cross wrote:
+> On some ARM SMP SoCs (OMAP4460, Tegra 2, and probably more), the
+> cpus cannot be independently powered down, either due to
+> sequencing restrictions (on Tegra 2, cpu 0 must be the last to
+> power down), or due to HW bugs (on OMAP4460, a cpu powering up
+> will corrupt the gic state unless the other cpu runs a work
+> around).  Each cpu has a power state that it can enter without
+> coordinating with the other cpu (usually Wait For Interrupt, or
+> WFI), and one or more "coupled" power states that affect blocks
+> shared between the cpus (L2 cache, interrupt controller, and
+> sometimes the whole SoC).  Entering a coupled power state must
+> be tightly controlled on both cpus.
+>
+> The easiest solution to implementing coupled cpu power states is
+> to hotplug all but one cpu whenever possible, usually using a
+> cpufreq governor that looks at cpu load to determine when to
+> enable the secondary cpus.  This causes problems, as hotplug is an
+> expensive operation, so the number of hotplug transitions must be
+> minimized, leading to very slow response to loads, often on the
+> order of seconds.
+>
+> This patch series implements an alternative solution, where each
+> cpu will wait in the WFI state until all cpus are ready to enter
+> a coupled state, at which point the coupled state function will
+> be called on all cpus at approximately the same time.
+>
+> Once all cpus are ready to enter idle, they are woken by an smp
+> cross call.  At this point, there is a chance that one of the
+> cpus will find work to do, and choose not to enter suspend.  A
+> final pass is needed to guarantee that all cpus will call the
+> power state enter function at the same time.  During this pass,
+> each cpu will increment the ready counter, and continue once the
+> ready counter matches the number of online coupled cpus.  If any
+> cpu exits idle, the other cpus will decrement their counter and
+> retry.
+>
+> To use coupled cpuidle states, a cpuidle driver must:
+>
+>     Set struct cpuidle_device.coupled_cpus to the mask of all
+>     coupled cpus, usually the same as cpu_possible_mask if all cpus
+>     are part of the same cluster.  The coupled_cpus mask must be
+>     set in the struct cpuidle_device for each cpu.
+>
+>     Set struct cpuidle_device.safe_state to a state that is not a
+>     coupled state.  This is usually WFI.
+>
+>     Set CPUIDLE_FLAG_COUPLED in struct cpuidle_state.flags for each
+>     state that affects multiple cpus.
+>
+>     Provide a struct cpuidle_state.enter function for each state
+>     that affects multiple cpus.  This function is guaranteed to be
+>     called on all cpus at approximately the same time.  The driver
+>     should ensure that the cpus all abort together if any cpu tries
+>     to abort once the function is called.
+>
+> This series was functionally tested on v3.0, but has only been
+> compile-tested on v3.2 after the removal of per-cpu state fields.
 
-Can we make this anon as well?
->  {
->  	preempt_disable();
->  
-> -	if (file)
-> -		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_CACHE],
-> +	/*
-> +	 * Here, RSS means 'mapped anon' and anon's SwapCache. Shmem/tmpfs is
-> +	 * counted as CACHE even if it's on ANON LRU.
-> +	 */
-> +	if (rss)
-> +		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_RSS],
->  				nr_pages);
->  	else
-> -		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_RSS],
-> +		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_CACHE],
->  				nr_pages);
->  
->  	/* pagein of a big page is an event. So, ignore page size */
-[...]
+Hi Colin,
+
+this patchset could be interesting to resolve in a generic way the cpu 
+dependencies.
+What is the status of this patchset ?
+
+Did you have the opportunity to measure the power consumption with and 
+without this patchset ?
+
+Thanks
+-- Daniel
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+  <http://www.linaro.org/>  Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:<http://www.facebook.com/pages/Linaro>  Facebook |
+<http://twitter.com/#!/linaroorg>  Twitter |
+<http://www.linaro.org/linaro-blog/>  Blog
+
+
