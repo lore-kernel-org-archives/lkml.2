@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab2ATUiq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 15:38:46 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:59156 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756474Ab2ATUiI (ORCPT
+	id S1756685Ab2ATUkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 15:40:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61504 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755644Ab2ATUkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 15:38:08 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Hung task when calling clone() due to netfilter/slab
-References: <1326558605.19951.7.camel@lappy>
-	<1326561043.5287.24.camel@edumazet-laptop>
-	<1326632384.11711.3.camel@lappy>
-	<1326648305.5287.78.camel@edumazet-laptop>
-	<alpine.DEB.2.00.1201170910130.4800@router.home>
-	<1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1201170927020.4800@router.home>
-	<1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1201170942240.4800@router.home>
-	<alpine.DEB.2.00.1201171620590.14697@router.home>
-	<m1bopz2ws3.fsf@fess.ebiederm.org> <m14nvr2vbu.fsf@fess.ebiederm.org>
-	<alpine.DEB.2.00.1201191959540.14480@router.home>
-	<m1y5t3yuil.fsf@fess.ebiederm.org>
-	<alpine.DEB.2.00.1201200848040.25882@router.home>
-Date: Fri, 20 Jan 2012 12:40:32 -0800
-In-Reply-To: <alpine.DEB.2.00.1201200848040.25882@router.home> (Christoph
-	Lameter's message of "Fri, 20 Jan 2012 08:49:57 -0600 (CST)")
-Message-ID: <m1k44mt8e7.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 20 Jan 2012 15:40:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/AA/55tQyflRhQtNbRemnsCEAUDSDy5mA=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <4F1929E9.7070707@linaro.org>
+References: <1324426147-16735-1-git-send-email-ccross@android.com>
+	<4F1929E9.7070707@linaro.org>
+Date: Fri, 20 Jan 2012 12:40:03 -0800
+X-Google-Sender-Auth: qhiEMxryf3NB-YDP7MeP04Qrm3g
+Message-ID: <CAMbhsRTbVqV6p0py9NGZrpFPf2yvp-B0dr+o-m7qbdja_-Lfzw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] coupled cpuidle state support
+From: Colin Cross <ccross@android.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter <cl@linux.com> writes:
-
-> On Thu, 19 Jan 2012, Eric W. Biederman wrote:
+On Fri, Jan 20, 2012 at 12:46 AM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> Hi Colin,
 >
->> On the flip side removing from sysfs with locks held must be done
->> carefully, and as a default I would recommend not to hold locks over
->> removing things from sysfs.  As removal blocks waiting for all of the
->> callers into sysfs those sysfs attributes to complete.
->>
->> It looks like you are ok on the removal because none of the sysfs
->> attributes appear to take the slub_lock, just /proc/slabinfo.  But
->> it does look like playing with fire.
->
-> Ok then I guess my last patch is needed to make sysfs operations safe.
->
-> It may be good to audit the kernel for locks being held while calling
-> sysfs functions. Isnt there a lockdep check that ensures that no locks are
-> held?
+> this patchset could be interesting to resolve in a generic way the cpu
+> dependencies.
+> What is the status of this patchset ?
 
-I don't see a no locks are held check but call_usermodehelper in the
-blocking case could certainly use one.
+I can't do much with it right now, because I don't have any devices
+that can do SMP idle with a v3.2 kernel.  I've started working on an
+updated version that avoids the spinlock, but it might be a while
+before I can test and post it.  I'm mostly looking for feedback on the
+approach taken in this patch, and whether it will be useful for other
+SoCs besides Tegra and OMAP4.
 
-For the sysfs remove case lockdep should work.
+> Did you have the opportunity to measure the power consumption with and
+> without this patchset ?
 
-Eric
+Power consumption will be very dependent on the specific SoC in
+question.  The most important factors are the power savings of the
+independent cpuidle state (normally WFI) vs. the hotplug state
+(normally 1 cpu in OFF), and the workload being tested.
+
+On a very idle system, these patches result in the same total power as
+hotplugging one cpu and letting the other idle normally.  On a 25%
+busy system, you might see a slight increase in power, as the best
+independent cpuidle state might be WFI, vs 1 cpu in OFF mode in
+hotplug.  On OMAP4, that difference is small, on the order of 10 mW.
+Once you hit the threshold where a hotplug governor would have
+hotplugged in the second cpu (lets say 40%), the savings from these
+patches are enormous, as you can hit the lowest power state up to 60%
+of the time, where the hotplug solution would never be going below WFI
+on both cpus.  On OMAP4, that can be well over 100 mW.
