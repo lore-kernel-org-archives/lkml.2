@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab2ATGPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 01:15:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48734 "EHLO
+	id S1751897Ab2ATGbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 01:31:33 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62023 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab2ATGPd convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751721Ab2ATGbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 01:15:33 -0500
+	Fri, 20 Jan 2012 01:31:32 -0500
+Date: Fri, 20 Jan 2012 10:31:26 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [PATCH] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+ entry v7
+Message-ID: <20120120063126.GA1954@moon>
+References: <20120119155112.GF31379@moon>
+ <20120119174742.GD32568@moon>
+ <20120119175700.GA19627@redhat.com>
+ <20120119180951.GI31379@moon>
+ <m1ty3r1e0y.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-In-Reply-To: <CAH+eYFBHTXVxdepno4xE-AxyYKqtNQHUvCY55z9_otN+25Y8Hg@mail.gmail.com>
-References: <20120116025331.GA16516@localhost>
-	<1326991820-31393-1-git-send-email-rabin@rab.in>
-	<CAKYAXd8poi6Rs7wyvZHre6qx-_i7eq0SBQAJNKNTYTLC5RQKjA@mail.gmail.com>
-	<CAH+eYFBHTXVxdepno4xE-AxyYKqtNQHUvCY55z9_otN+25Y8Hg@mail.gmail.com>
-Date: Fri, 20 Jan 2012 15:15:32 +0900
-Message-ID: <CAKYAXd9M4wDi2tJDNjaDhHL9YapvXE71tGx_sh91DDpJNH+yKQ@mail.gmail.com>
-Subject: Re: [PATCHv2] backing-dev: fix wakeup timer races with bdi_unregister()
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: fengguang.wu@intel.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        chanho0207@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1ty3r1e0y.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/20 Rabin Vincent <rabin@rab.in>:
-> On Fri, Jan 20, 2012 at 05:16, Namjae Jeon <linkinjeon@gmail.com> wrote:
->>>                bdi_debug_unregister(bdi);
->>> -               device_unregister(bdi->dev);
->>> +
->>> +               spin_lock_bh(&bdi->wb_lock);
->>>                bdi->dev = NULL;
->>> +               spin_unlock_bh(&bdi->wb_lock);
->> Hi.
->> Would you explain me why you add spinlock in here ?
->
-> wakeup_timer_fn() does the following, where the
-> trace_writeback_wake_forker_thread() also accesses bdi->dev.
-> It does this under the wb_lock:
->
->        } else if (bdi->dev) {
->                /*
->                 * When bdi tasks are inactive for long time, they are killed.
->                 * In this case we have to wake-up the forker thread which
->                 * should create and run the bdi thread.
->                 */
->                trace_writeback_wake_forker_thread(bdi);
->
-> If we don't have the lock above, the bdi->dev could potentially be
-> cleared after the check but before the tracepoint is hit, leading to a
-> NULL pointer dereference.
-Is there no possibility trace_writeback_wake_forker_thread is called
-after spin_unlock of bdi->de= null ?
+On Thu, Jan 19, 2012 at 03:14:05PM -0800, Eric W. Biederman wrote:
+...
+> >
+> >> > +static int children_seq_show(struct seq_file *seq, void *v)
+> >> > +{
+> >> > +	struct inode *inode = seq->private;
+> >> > +	unsigned long pid;
+> >> > +
+> >> > +	pid = (unsigned long)pid_nr_ns(v, inode->i_sb->s_fs_info);
+> >> > +	return seq_printf(seq, " %lu", pid);
+> >> > +}
+> >> 
+> >> just noticed... why unsigned long and %lu? afaics pid_t/%d should work
+> >> without any typecasts.
+> >> 
+> >
+> > I'm not sure how important it is, but Andrew mentioned in one of email
+> > that we might be moving from pid_t from int to long one day (which of
+> > course will require extreme huge work on checking code where int->long
+> > transition might cause problems). So I thought why should I wait then?
+> >
+> > [ Andrew, am I correct? ]
+> 
+> It is going to take a lot to get to a > 32bit pid value.  I would not
+> worry about it today unless there is some 64bit arch somewhere that defines
+> pid_t as long.
+> 
+
+Yeah, it seems I overdone here ;) I've sent updated version with pid_t.
+
+	Cyrill
