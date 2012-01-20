@@ -1,93 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2ATA40 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 19:56:26 -0500
-Received: from host86-180-251-195.range86-180.btcentralplus.com ([86.180.251.195]:46899
-	"EHLO oak.selfip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab2ATA4Z (ORCPT
+	id S1753112Ab2ATBCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 20:02:08 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:24624 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab2ATBCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 19:56:25 -0500
-X-Greylist: delayed 672 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jan 2012 19:56:25 EST
-Message-ID: <4F18B911.2060601@oak.selfip.net>
-Date: Fri, 20 Jan 2012 00:45:05 +0000
-From: Dave Haywood <tla@oak.selfip.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0) Gecko/20120111 Thunderbird/10.0
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: PROBLEM: Postgres fails to start due to kernel issue?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jan 2012 20:02:02 -0500
+X-AuditID: cbfee61b-b7be3ae0000039aa-a1-4f18bd08534b
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        myungjoo.ham@gmail.com
+Subject: [PATCH v4 0/4] introduce External Connector Class (extcon)
+Date: Fri, 20 Jan 2012 10:01:53 +0900
+Message-id: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1326275202-27401-1-git-send-email-myungjoo.ham@samsung.com>
+References: <1326275202-27401-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+For external connectors, which may have different types of cables attached
+(USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+drivers that detect the state changes at the port and device drivers that
+do something according to the state changes.
 
-   I noticed after upgrading to 3.2.0-08812-gc2bc3a3 that Postgres-9.1 server fails to start with error:
+For example, when MAX8997-MUIC detects a Charger cable insertion, another
+device driver (such as MAX8903 charger, MAX8997 charger, Charger Manager,
+or board file) needs to set charger current limit accordingly and when
+MAX8997-MUIC detects a HDMI cable insertion, multimedia device drivers
+need to do some operations accordingly.
 
-FATAL:  could not create shared memory segment: Function not implemented
-DETAIL:  Failed system call was shmget(key=5432001, size=30523392, 03600).
+This patchset supports the usage of notifier for passing such information
+between device drivers.
 
-   After some googling, I thought it was a SYSV shared memory sizing issue but manually changing kernel.shmmax and kernel.shmall had no effect.
+Another issue is that at a single switch port, there might be multiple
+and heterogeneous cables attached at the same time. Besides the state
+(Attached or Detached) of each cable may alter independently. Such extcon
+devices that support simultaneous mult-cable attachment include, bot not
+limited to, docks, cradles, and 30-pin-like ports (like that of NURI board
+in linux/arch/arm/mach-exynos, which resembles Samsung Galaxy Tab series).
+For example, the 30-pin port of NURI board may be used to connect analog
+audio cables, analog video cable, and a USB or a charger. Because such
+cables coonnect part of the 30 pins to external devices/cables, the
+possible combinations of external devices/cables vary significantly and
+users may fabricate their own design; e.g., an 30-pin adaptor connecting
+USB, AC-DC adaptor, HDMI, analog audio, analog video, USB-host, SD-card,
+and so on.
 
-   The problem has been introduced between 3.2.0-08694-g53999bf and 3.2.0-08812-gc2bc3a3.
+In order to address such issues, Android kernel's "Switch" class seems to
+be a good basis and we have implemented "Multistate Switch Class" based on
+it. The "Switch" class code of Android kernel is GPL as well.
 
-   Let me know if you need any more information.  Bisecting is *very* slow on this machine!
+Summary of changes from v3 patchset
+- Bugfixes after testing at Exynos4412 boards.
 
-Broken version (latest):
+Summary of changes from v2 patchset
+- Support to express mutually exclusive set of cables
+- Revised device/class/sysfs-entries add/removal methods
+- Added sysfs entries
+- Revised documentation and comments
+- Some bugfixes
+- Compatible with Android (for extcon devices with "use_class_name_switch" set)
 
-$ sudo sh scripts/ver_linux
+Summary of changes from RFC
+- ABI documentation added
+- Notifees may get notified for a state change of a specific cable, not
+every cable of the corresponding extcon.
+- Added kerneldoc comments
+- Moved to /drivers/extcon/
+- Added helper functions
+- Some bugfixes
 
-Linux s1 3.2.0-09429-g90a4c0f #133 SMP Thu Jan 19 15:17:03 GMT 2012 i686 Pentium III (Coppermine) GenuineIntel GNU/Linux
 
-Gnu C                  4.6.2
-Gnu make               3.82
-binutils               2.21.1
-util-linux             2.19.1
-mount                  support
-module-init-tools      3.16
-e2fsprogs              1.41.14
-Linux C Library        2.14.1
-Dynamic linker (ldd)   2.14.1
-Procps                 3.2.8
-Net-tools              1.60_p20110409135728
-Kbd                    1.15.3wip
-Sh-utils               8.7
 
-$ sudo sysctl -a | grep shm
-kernel.shmmax = 33554432
-kernel.shmall = 2097152
-kernel.shmmni = 4096
-kernel.shm_rmid_forced = 0
-vm.hugetlb_shm_group = 0
+Donggeun Kim (1):
+  Extcon: support notification based on the state changes.
 
-Working version (last good backup):
+MyungJoo Ham (3):
+  Extcon (external connector): import Android's switch class and
+    modify.
+  Extcon: support multiple states at a device.
+  Extcon: support mutually exclusive relation between cables.
 
-$ sudo sh scripts/ver_linux
+ Documentation/ABI/testing/sysfs-class-extcon |   75 +++
+ drivers/Kconfig                              |    2 +
+ drivers/Makefile                             |    1 +
+ drivers/extcon/Kconfig                       |   22 +
+ drivers/extcon/Makefile                      |    6 +
+ drivers/extcon/extcon_class.c                |  652 ++++++++++++++++++++++++++
+ drivers/extcon/extcon_gpio.c                 |  173 +++++++
+ include/linux/extcon.h                       |  305 ++++++++++++
+ 8 files changed, 1236 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-extcon
+ create mode 100644 drivers/extcon/Kconfig
+ create mode 100644 drivers/extcon/Makefile
+ create mode 100644 drivers/extcon/extcon_class.c
+ create mode 100644 drivers/extcon/extcon_gpio.c
+ create mode 100644 include/linux/extcon.h
 
-Linux s1 3.2.0 #124 SMP Thu Jan 5 08:06:00 GMT 2012 i686 Pentium III (Coppermine) GenuineIntel GNU/Linux
-
-Gnu C                  4.6.2
-Gnu make               3.82
-binutils               2.21.1
-util-linux             2.19.1
-mount                  support
-module-init-tools      3.16
-e2fsprogs              1.41.14
-Linux C Library        2.14.1
-Dynamic linker (ldd)   2.14.1
-Procps                 3.2.8
-Net-tools              1.60_p20110409135728
-Kbd                    1.15.3wip
-Sh-utils               8.7
-
-$ sudo sysctl -a | grep shm
-kernel.shmmax = 33554432
-kernel.shmall = 2097152
-kernel.shmmni = 4096
-kernel.shm_rmid_forced = 0
-vm.hugetlb_shm_group = 0
-
-Dave.
-
+-- 
+1.7.4.1
 
