@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab2ATPVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 10:21:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53308 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab2ATPVR convert rfc822-to-8bit (ORCPT
+	id S1754143Ab2ATP1J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 10:27:09 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:62996 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441Ab2ATP1H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 10:21:17 -0500
+	Fri, 20 Jan 2012 10:27:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120120145907.GA20377@x2.net.home>
-References: <20120120140444.GC13157@x2.net.home> <20120120154309.3ae5f9e4a8f55c477dc423ab@kinali.ch>
- <20120120145907.GA20377@x2.net.home>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 20 Jan 2012 16:20:56 +0100
-Message-ID: <CAPXgP11f_SicmxSZ1Bb5JmM4krPyNL-rXNJ6rJ2BHrNvA8LzRQ@mail.gmail.com>
-Subject: Re: /etc/fstab.d yes or not
-To: Karel Zak <kzak@redhat.com>
-Cc: Attila Kinali <attila@kinali.ch>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1327072528-8479-4-git-send-email-akinobu.mita@gmail.com>
+References: <1327072528-8479-1-git-send-email-akinobu.mita@gmail.com>
+	<1327072528-8479-4-git-send-email-akinobu.mita@gmail.com>
+Date: Sat, 21 Jan 2012 00:27:06 +0900
+Message-ID: <CAC5umygu32iS=OaioHYaYtemt7uBOiW51ef7L5UhNPezf3JBsQ@mail.gmail.com>
+Subject: Re: [PATCH] xen-blkfront: use bitmap_set() and bitmap_clear()
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 15:59, Karel Zak <kzak@redhat.com> wrote:
-> On Fri, Jan 20, 2012 at 03:43:09PM +0100, Attila Kinali wrote:
->> Hence, i would like to ask you to consider not adding /etc/fstab.d
->> unless there is a very good reason to do it. And "to make it simpler
->> for people who have a lot of mountpoints" is IMHO not a good reason.
->> How many mountpoints must one use that a single file becomes a problem?
+I used Jeremy Fitzhardinge's old email address...
+
+2012/1/21 Akinobu Mita <akinobu.mita@gmail.com>:
+> Use bitmap_set and bitmap_clear rather than modifying individual bits
+> in a memory region.
 >
-> Â Let's imagine that you have a network and you use the same configuration
-> Â on all machines, then "*.d/" directories are very useful for you -- for
-> Â example you can create a company.rpm with important configuration and
-> Â distribute it to all machines.
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Yeah, and all tools which read /etc/fstab with the glibc interface, to
-find out the properties for the mount point, are just broken now. And
-for what gain. Put a script in you RPM that merges your snippets into
-the one fstab, and you get the same behaviour without any breakage.
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 
-Always remember, /etc/fstab is ABI, not a private config file, you
-need a _very_ good reason to break it.
-
-And you usually have not much problems convincing me that breakage is
-justified. I just totally fail to see the benefit vs. gain in this
-case.
-
-Kay
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: xen-devel@lists.xensource.com
+> Cc: virtualization@lists.linux-foundation.org
+> ---
+>  drivers/block/xen-blkfront.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 2f22874..619868d 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -43,6 +43,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/mutex.h>
+>  #include <linux/scatterlist.h>
+> +#include <linux/bitmap.h>
+>
+>  #include <xen/xen.h>
+>  #include <xen/xenbus.h>
+> @@ -177,8 +178,7 @@ static int xlbd_reserve_minors(unsigned int minor, unsigned int nr)
+>
+>        spin_lock(&minor_lock);
+>        if (find_next_bit(minors, end, minor) >= end) {
+> -               for (; minor < end; ++minor)
+> -                       __set_bit(minor, minors);
+> +               bitmap_set(minors, minor, nr);
+>                rc = 0;
+>        } else
+>                rc = -EBUSY;
+> @@ -193,8 +193,7 @@ static void xlbd_release_minors(unsigned int minor, unsigned int nr)
+>
+>        BUG_ON(end > nr_minors);
+>        spin_lock(&minor_lock);
+> -       for (; minor < end; ++minor)
+> -               __clear_bit(minor, minors);
+> +       bitmap_clear(minors,  minor, nr);
+>        spin_unlock(&minor_lock);
+>  }
+>
+> --
+> 1.7.4.4
+>
