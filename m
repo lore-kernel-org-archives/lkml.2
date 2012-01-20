@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab2ATNAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 08:00:18 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:34122 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751570Ab2ATNAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 08:00:16 -0500
-Message-ID: <1327064413.6176.14.camel@joe2Laptop>
-Subject: Re: checkpatch regression: error on #define pr_fmt(fmt)
- KBUILD_MODNAME ": " fmt
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Date: Fri, 20 Jan 2012 05:00:13 -0800
-In-Reply-To: <CAAq6er0eXaG7pShVAtbSycs0NiqUbmj99P-Re_N3vWRvym=+5g@mail.gmail.com>
-References: <1326316354.6774.12.camel@joe2Laptop>
-	 <CAAq6er0eXaG7pShVAtbSycs0NiqUbmj99P-Re_N3vWRvym=+5g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1753207Ab2ATNAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 08:00:47 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10239 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab2ATNAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 08:00:44 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 20 Jan 2012 05:00:41 -0800
+Message-ID: <4F196568.1080503@nvidia.com>
+Date: Fri, 20 Jan 2012 18:30:24 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V1] mfd: tps65910: Add wakeup support
+References: <1327057770-6688-1-git-send-email-ldewangan@nvidia.com> <20120120125152.GE18297@opensource.wolfsonmicro.com>
+In-Reply-To: <20120120125152.GE18297@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-20 at 11:53 +0000, Andy Whitcroft wrote:
-> On Wed, Jan 11, 2012 at 9:12 PM, Joe Perches <joe@perches.com> wrote:
-> > Current checkpatch gives:
-> > ERROR: Macros with complex values should be enclosed in parenthesis
-> > #18: FILE: net/ethernet/broadcom/bnx2x/bnx2x_cmn.c:18:
-> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-[]
-> Does the below version work better for you:
->     http://people.canonical.com/~apw/checkpatch/checkpatch-next.pl
-
-Diff is basically:
-
-+                       # Flatten any obvious string concatentation.
-+                       while ($dstat =~ s/("X*")\s*$Ident/$1/ ||
-+                              $dstat =~ s/$Ident\s*("X*")/$1/)
-+                       {
-+                       }
-
-Yes, that works and is appropriate.
-
-
+On Friday 20 January 2012 06:21 PM, Mark Brown wrote:
+>
+>> The wakeup should enabled if PMIC need to be configure for
+>> waking up system through RTC or ONKEY.
+> Why the platform data?  The power management infrastructure provides
+> control of this already.
+I did not get how the wakeup enabled in power management infrastructure?
+My understanding is that we need to call the two apis 
+device_wakeup_init() and
+enable_irq_wake() for enabling the wakeup functionality.
+Is there any other API which does the same and I need to call from the 
+core driver?
 
