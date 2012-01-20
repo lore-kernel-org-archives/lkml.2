@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab2ATXsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 18:48:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54489 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab2ATXsI (ORCPT
+	id S1756151Ab2ATXuA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 18:50:00 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:44927 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab2ATXt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 18:48:08 -0500
-Date: Fri, 20 Jan 2012 15:48:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] idr: make idr_get_next() good for rcu_read_lock()
-Message-Id: <20120120154807.c55c9ac7.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1201191247210.29542@eggly.anvils>
-References: <alpine.LSU.2.00.1201182155480.7862@eggly.anvils>
-	<1326958401.1113.22.camel@edumazet-laptop>
-	<CAOS58YO585NYMLtmJv3f9vVdadFqoWF+Y5vZ6Va=2qHELuePJA@mail.gmail.com>
-	<1326979818.2249.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.LSU.2.00.1201191235330.29542@eggly.anvils>
-	<alpine.LSU.2.00.1201191247210.29542@eggly.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Jan 2012 18:49:58 -0500
+Message-ID: <d8be1991e82ec686433c5c6e255c2bd9.squirrel@webmail.greenhost.nl>
+In-Reply-To: <4F19EDAF.2000109@zytor.com>
+References: <20120116183730.GB21112@redhat.com>
+    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+    <20120118022217.GS11715@one.firstfloor.org>
+    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+    <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+    <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+    <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com>
+    <4F1737C9.3070905@zytor.com>
+    <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com>
+    <4F173F48.2070604@zytor.com>
+    <CA+55aFw3kv_JRsSCQEf6fQd0gX939MuoevDxFtcXkPY+bmyjtA@mail.gmail.com>
+    <4F176605.5020101@zytor.com>
+    <CAK1hOcManWsEvjS2xxtfGTKx=JLPvO2sBkWU-xQP+medV=rbAA@mail.gmail.com>
+    <CAB=4xhqFYdU3s_NQkgdzVVG1r3vGDb=qPewPRFTrJ1B_eiEVDA@mail.gmail.com>
+    <4F19EDAF.2000109@zytor.com>
+Date: Sat, 21 Jan 2012 00:49:24 +0100
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Roland McGrath" <mcgrathr@google.com>,
+        "Denys Vlasenko" <vda.linux@googlemail.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "Jamie Lokier" <jamie@shareable.org>,
+        "Andrew Lutomirski" <luto@mit.edu>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 1.4
+X-Scan-Signature: a350ae07b5350cdad28cef237d2e7179
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jan 2012 12:48:48 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+On Fri, January 20, 2012 23:41, H. Peter Anvin wrote:
+> On 01/20/2012 02:40 PM, Roland McGrath wrote:
+>> If you change the size of a regset, then the new full size will be the size
+>> of the core file notes.  Existing userland tools will not be expecting
+>> this, they expect a known exact size.  If you need to add new stuff, it
+>> really is easier all around to add a new regset flavor.  When adding a new
+>> one, you can make it variable-sized from the start so as to be extensible
+>> in the future.  We did this for NT_X86_XSTATE, for example.
+>>
+>
+> Yes, that definitely seems cleaner.
 
-> Make one small adjustment to idr_get_next(): take the height from the
-> top layer (stable under RCU) instead of from the root (unprotected by
-> RCU), as idr_find() does: so that it can be used with RCU locking.
-> Copied comment on RCU locking from idr_find().
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  lib/idr.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> --- 3.2.0+.orig/lib/idr.c	2012-01-04 15:55:44.000000000 -0800
-> +++ 3.2.0+/lib/idr.c	2012-01-19 11:55:28.780206713 -0800
-> @@ -595,8 +595,10 @@ EXPORT_SYMBOL(idr_for_each);
->   * Returns pointer to registered object with id, which is next number to
->   * given id. After being looked up, *@nextidp will be updated for the next
->   * iteration.
-> + *
-> + * This function can be called under rcu_read_lock(), given that the leaf
-> + * pointers lifetimes are correctly managed.
+I would prefer Linus' way of just stuffing it into cs. Jamie also wanted
+a bit telling in what mode the userspace is running. That's 3 bits in total,
+with one bit telling whether the other bits are valid or not. Anything else?
+Maybe a bit telling whether it is syscall entry or exit?
 
-Awkward comment.  It translates to "..., because the leaf pointers
-lifetimes are correctly managed".
+As all this is very x86_64 specific and cs is already used to figure out
+the mode, it seems overkill to add a new regset just for this.
 
-Is that what we really meant?  Or did we mean "..., provided the leaf
-pointers lifetimes are correctly managed"?
+It's a lot easier for existing code to add an extra cs check than to use
+different register sets and different ptrace commands. Considering that
+PTRACE_GETREGSET is undocumented it's likely that existing code isn't
+using it much.
 
-Also, "pointers" should have been "pointer" or "pointer's"!
+Greetings,
+
+Indan
 
 
