@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab2ATPTZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 10:19:25 -0500
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:44603 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753444Ab2ATPTW (ORCPT
+	id S1754074Ab2ATPUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 10:20:12 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:48120
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753925Ab2ATPUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 10:19:22 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 0YOLTfAVM1ngFBmgDtZqJwqovDf5N7FeFVLbMbd7aYrhlpq
- Mn05YB1MfuAcWP5udyymQ9ONl8yOffIyJizE0CbX.4S1vGaq.MysD6tQ6rOH
- 30y.1etqGYYBU9F6Lr_4hmyo9yVjC_GzSJ7SC3AWGAHoUVr6gjgx__q3ul98
- nOHr8WmmmvhnrXr9kwdE5lnE55Nm.B1wppXATWEl6JU5EqYTn3U2.hu7f8ES
- gsy4lt7vmgZvPiCK3.v0Ls4XUK0kX8UnY6x1.IsmDBPlSRFA1ZrmpFkCwKAg
- jcvtJyIojngr7NCrKGrWJvYFku.9dA0XM20DMIdO8Vzbm8Dre8O20T.IPjBV
- fs7mzRgo1kuR61OQiPM01q4Lsl4fsus26wGojv5CmFYXQhUEqukPLX.HwpG8
- -
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 20 Jan 2012 09:19:20 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Akinobu Mita <akinobu.mita@gmail.com>
-cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] percpu: use bitmap_clear
-In-Reply-To: <1327072528-8479-1-git-send-email-akinobu.mita@gmail.com>
-Message-ID: <alpine.DEB.2.00.1201200918350.25941@router.home>
-References: <1327072528-8479-1-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 20 Jan 2012 10:20:09 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org, standby24x7@gmail.com
+Subject: [PATCH] [trivial] sctp : Fix typo in net/sctp/socket.c
+Date: Sat, 21 Jan 2012 00:19:46 +0900
+Message-Id: <1327072786-3134-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Jan 2012, Akinobu Mita wrote:
+Signed-off-by: Masanari Iida<standby24x7@gmail.com>
 
-> Use bitmap_clear rather than clearing individual bits in a memory region.
+Correct a typo "sctp_setsocktopt_bindx" to "sctp_setsockopt_bindx"
+in net/sctp/socket.c
+---
+ net/sctp/socket.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Acked-by: Christoph Lameter <cl@linux.com>
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 408ebd0..658483e 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -970,7 +970,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(struct sock* sk,
+ 	void *addr_buf;
+ 	struct sctp_af *af;
+ 
+-	SCTP_DEBUG_PRINTK("sctp_setsocktopt_bindx: sk %p addrs %p"
++	SCTP_DEBUG_PRINTK("sctp_setsockopt_bindx: sk %p addrs %p"
+ 			  " addrs_size %d opt %d\n", sk, addrs, addrs_size, op);
+ 
+ 	if (unlikely(addrs_size <= 0))
+-- 
+1.7.6.5
+
