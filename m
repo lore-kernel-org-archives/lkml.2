@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab2ATEPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 23:15:04 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:51534 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab2ATEPB (ORCPT
+	id S1751594Ab2ATEfa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 23:35:30 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:33034 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab2ATEf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 23:15:01 -0500
-Date: Fri, 20 Jan 2012 15:14:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org
-Subject: Re: Linux 3.3-1 out - merge window closed
-Message-Id: <20120120151452.2fe57bb87218f575e8909caf@canb.auug.org.au>
-In-Reply-To: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
-References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__20_Jan_2012_15_14_52_+1100_db_VWmM868UjUfQx"
+	Thu, 19 Jan 2012 23:35:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <002501ccd728$baca1010$305e3030$%jun@samsung.com>
+References: <002501ccd728$baca1010$305e3030$%jun@samsung.com>
+Date: Fri, 20 Jan 2012 13:35:27 +0900
+X-Google-Sender-Auth: MuiW2S6wvVYazMFTc0IJFRpyewo
+Message-ID: <CAH9JG2VNSUNYAqd9MUawf4a5Q6HfjE07KOOZ5dkYnzzuzc0KrA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] mmc: core: Support packed command feature of eMMC4.5
+From: Kyungmin Park <kmpark@infradead.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__20_Jan_2012_15_14_52_+1100_db_VWmM868UjUfQx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
+FYI: we get performance gain using packed command at write. however in
+case of small size read, there are some performance drop since
+protocol overhead.
+In normal case, read command uses read operation only, but in case of
+packed read. It sends the command to eMMC and read it.
+Anyway it's good feature for eMMC v4.5.
 
-On Thu, 19 Jan 2012 15:58:28 -0800 Linus Torvalds <torvalds@linux-foundatio=
-n.org> wrote:
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+On 1/20/12, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> This patch-set adds support of packed command feature
+> for eMMC4.5 devices.
 >
-> (Stats for those that like them: 20% arch updates (arm, power, mips,
-> x86), 60% drivers (networking - wireless in particular, staging,
-> media, dri, sound, misc - including getting rid of 'struct sysdev'),
-> and 20% random stuff: filesystems, networking, perf etc)
-
-More stats for the bored:
-
-(I don't count merge commits below and everything is relative to v3.2)
-
-Of the 8899 commits in v3.3-rc1, 6918 were in next-20120106 (the first
--next based on v3.2).  A further 792 commits have the same subject line as
-commits in next-20120116 and a further 16 have the same patch-id.
-
-This leaves 1174 commits (13%) in v3.3-rc1 that were not in next-20120106
-for some reason (not too bad really, I guess).  Some will clearly be bug
-fixes, of course.  Some will be quilt trees (probably rebased before
-being sent to Linus).  Some will be patches that depend on work by others.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__20_Jan_2012_15_14_52_+1100_db_VWmM868UjUfQx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPGOo8AAoJEECxmPOUX5FERT8P/1LPL4Qmwyh/Wf4R5waC8nSb
-VwylQInwwq1vchQsNQDDE5XKPnDudOUAXuu8VpkQcH+BfopY25IdDX958cG5lgGs
-6ArjrnQiLiVmBPWI3iX+8LtV+Kt8jscszTwUZ2VhWtg+2zCJt1/ytMCAJVVufa23
-OXMFIYjTiDZw234yYtaQwrG+ZaAhrlPUq3b0zVx0drxKYXdPeB/xfQjRc3+7+lIz
-g8LHWkCmWeN1LnArAFDfgVDiGzLr+eN2xaRxnxAeO7t1rwLecSONtc7dP5RMD/6m
-vtiR+qbNPIRUb4dFkfDxS88h9QciT2p88qAjTy7J0zxLGRswndjvJG6GLCklGsVW
-rFiZo/AcU1oiFpFYG5bZlRQBLadnlXhI133E+budzl6yREMy5FzwRADqoqLZm5uJ
-tTI78B8OnXNoYs/yyu7uW6Efbjz6jKpx0ZarYl5SVY8fmmIwCyM2bscUpZjXTet2
-DpYrbgGcv996q/8RdyJ4k/qLLQa8f91JyHtRu2Mc6KS2pp9mElEWvLCpMPtk+OAY
-sup7d8KFDs6WQDvGaX0wNGHL8MDMe+zaaeahPOvuT5ZCqRr2Fu4YxQ+kBsrg7Fke
-DZREhQHcsoDP+hDTZKMQQH3vXGjF6R97W68TsdsV0ChIJIoxqG6xW/m2Q50mhfD3
-oRCuUVazyHWGlMboDq3l
-=CXam
------END PGP SIGNATURE-----
-
---Signature=_Fri__20_Jan_2012_15_14_52_+1100_db_VWmM868UjUfQx--
+> Changes in v3:
+> 	- Add a variable member in mmc_host for minimum number of packed entries.
+> 	  This value can be overrided by host.
+> 	- Fix a handling of error sequence.
+>
+> Changes in v2:
+> 	- Fix the packed read sequence and error handling.
+> 	- Apply checking the exception status for all cases with
+> 	  the comments from Maya Erez and Sahitya Tummala.
+> 	- Fix preparing the packed list with the comment from Maya Erez and
+> Venkatraman.
+>
+>
+> Seungwon Jeon (2):
+>       mmc: core: Add packed command feature of eMMC4.5
+>       mmc: core: Support packed command for eMMC4.5 device
+>
+>  drivers/mmc/card/block.c   |  469
+> +++++++++++++++++++++++++++++++++++++++++---
+>  drivers/mmc/card/queue.c   |   48 +++++-
+>  drivers/mmc/card/queue.h   |   13 ++
+>  drivers/mmc/core/host.c    |    2 +
+>  drivers/mmc/core/mmc.c     |   24 +++
+>  drivers/mmc/core/mmc_ops.c |    1 +
+>  include/linux/mmc/card.h   |    3 +
+>  include/linux/mmc/core.h   |    3 +
+>  include/linux/mmc/host.h   |    4 +
+>  include/linux/mmc/mmc.h    |   15 ++
+>  10 files changed, 555 insertions(+), 27 deletions(-)
+>
+> Best regards,
+> Seungwon Jeon.
+> --
+> 1.7.2.3
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
