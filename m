@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199Ab2ATFYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 00:24:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46323 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab2ATFYv convert rfc822-to-8bit (ORCPT
+	id S1751391Ab2ATFj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 00:39:59 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53426 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab2ATFj4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 00:24:51 -0500
+	Fri, 20 Jan 2012 00:39:56 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAKYAXd8poi6Rs7wyvZHre6qx-_i7eq0SBQAJNKNTYTLC5RQKjA@mail.gmail.com>
-References: <20120116025331.GA16516@localhost> <1326991820-31393-1-git-send-email-rabin@rab.in>
- <CAKYAXd8poi6Rs7wyvZHre6qx-_i7eq0SBQAJNKNTYTLC5RQKjA@mail.gmail.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Fri, 20 Jan 2012 10:54:11 +0530
-X-Google-Sender-Auth: D8H1KkEKjTJSrPmi8_Pr7zNLtUM
-Message-ID: <CAH+eYFBHTXVxdepno4xE-AxyYKqtNQHUvCY55z9_otN+25Y8Hg@mail.gmail.com>
-Subject: Re: [PATCHv2] backing-dev: fix wakeup timer races with bdi_unregister()
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: fengguang.wu@intel.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        chanho0207@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAH9JG2VNSUNYAqd9MUawf4a5Q6HfjE07KOOZ5dkYnzzuzc0KrA@mail.gmail.com>
+References: <002501ccd728$baca1010$305e3030$%jun@samsung.com>
+	<CAH9JG2VNSUNYAqd9MUawf4a5Q6HfjE07KOOZ5dkYnzzuzc0KrA@mail.gmail.com>
+Date: Fri, 20 Jan 2012 14:39:54 +0900
+Message-ID: <CAKYAXd8XqmAdODx0sWviv1egviEAEVu_SOsy8GKBTcTzjAQ2oA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] mmc: core: Support packed command feature of eMMC4.5
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 05:16, Namjae Jeon <linkinjeon@gmail.com> wrote:
->>                bdi_debug_unregister(bdi);
->> -               device_unregister(bdi->dev);
->> +
->> +               spin_lock_bh(&bdi->wb_lock);
->>                bdi->dev = NULL;
->> +               spin_unlock_bh(&bdi->wb_lock);
-> Hi.
-> Would you explain me why you add spinlock in here ?
+Hi. Seungwon,
 
-wakeup_timer_fn() does the following, where the
-trace_writeback_wake_forker_thread() also accesses bdi->dev.
-It does this under the wb_lock:
+Would you show improved performance measurement
+result(read/write,seq,ran) when using packed cmd ?
 
-	} else if (bdi->dev) {
-		/*
-		 * When bdi tasks are inactive for long time, they are killed.
-		 * In this case we have to wake-up the forker thread which
-		 * should create and run the bdi thread.
-		 */
-		trace_writeback_wake_forker_thread(bdi);
+Thanks.
 
-If we don't have the lock above, the bdi->dev could potentially be
-cleared after the check but before the tracepoint is hit, leading to a
-NULL pointer dereference.
+
+2012/1/20 Kyungmin Park <kmpark@infradead.org>:
+> Hi,
+>
+> FYI: we get performance gain using packed command at write. however in
+> case of small size read, there are some performance drop since
+> protocol overhead.
+> In normal case, read command uses read operation only, but in case of
+> packed read. It sends the command to eMMC and read it.
+> Anyway it's good feature for eMMC v4.5.
+>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>
+> On 1/20/12, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+>> This patch-set adds support of packed command feature
+>> for eMMC4.5 devices.
+>>
+>> Changes in v3:
+>> Â  Â  Â  - Add a variable member in mmc_host for minimum number of packed entries.
+>> Â  Â  Â  Â  This value can be overrided by host.
+>> Â  Â  Â  - Fix a handling of error sequence.
+>>
+>> Changes in v2:
+>> Â  Â  Â  - Fix the packed read sequence and error handling.
+>> Â  Â  Â  - Apply checking the exception status for all cases with
+>> Â  Â  Â  Â  the comments from Maya Erez and Sahitya Tummala.
+>> Â  Â  Â  - Fix preparing the packed list with the comment from Maya Erez and
+>> Venkatraman.
+>>
+>>
+>> Seungwon Jeon (2):
+>> Â  Â  Â  mmc: core: Add packed command feature of eMMC4.5
+>> Â  Â  Â  mmc: core: Support packed command for eMMC4.5 device
+>>
+>> Â drivers/mmc/card/block.c Â  | Â 469
+>> +++++++++++++++++++++++++++++++++++++++++---
+>> Â drivers/mmc/card/queue.c Â  | Â  48 +++++-
+>> Â drivers/mmc/card/queue.h Â  | Â  13 ++
+>> Â drivers/mmc/core/host.c Â  Â | Â  Â 2 +
+>> Â drivers/mmc/core/mmc.c Â  Â  | Â  24 +++
+>> Â drivers/mmc/core/mmc_ops.c | Â  Â 1 +
+>> Â include/linux/mmc/card.h Â  | Â  Â 3 +
+>> Â include/linux/mmc/core.h Â  | Â  Â 3 +
+>> Â include/linux/mmc/host.h Â  | Â  Â 4 +
+>> Â include/linux/mmc/mmc.h Â  Â | Â  15 ++
+>> Â 10 files changed, 555 insertions(+), 27 deletions(-)
+>>
+>> Best regards,
+>> Seungwon Jeon.
+>> --
+>> 1.7.2.3
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at Â http://www.tux.org/lkml/
