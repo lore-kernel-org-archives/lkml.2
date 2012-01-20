@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab2ATVMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 16:12:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33719 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab2ATVMU (ORCPT
+	id S1755239Ab2ATVP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 16:15:58 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9073 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab2ATVP5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 16:12:20 -0500
-Date: Fri, 20 Jan 2012 15:12:14 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>, Alex Deucher <alexander.deucher@amd.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: radeon issues on MacBook Pro 8,2
-Message-ID: <20120120211214.GC8162@ubuntu-macmini>
-Mail-Followup-To: Alex Deucher <alexdeucher@gmail.com>,
-	Dave Airlie <airlied@redhat.com>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <20120119171808.GB23144@ubuntu-macmini>
- <CADnq5_MiLE0XSpbrd66003DVxdR9c4MgQav3BD+bWtrKvbf+7Q@mail.gmail.com>
- <20120119205317.GC23144@ubuntu-macmini>
- <20120120155318.GA8162@ubuntu-macmini>
- <CADnq5_NNpwsPoEP0_fzSJ9LQKfaHPJx90yObXKYHO39xLWM6sQ@mail.gmail.com>
+	Fri, 20 Jan 2012 16:15:57 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 20 Jan 2012 13:15:35 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Fri, 20 Jan 2012 13:15:34 -0800
+Subject: RE: Pinmux bindings proposal
+Thread-Topic: Pinmux bindings proposal
+Thread-Index: AczWy0G7NGRV07kRS1G6vb2NDYPnIgA7PdJg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB47A@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+ <CAJuYYwQoh4_SnA9wmy4x+cG0w0hGukxTkODWtcSw_2QHYuDsrg@mail.gmail.com>
+ <20120119165607.GG22818@atomide.com>
+In-Reply-To: <20120119165607.GG22818@atomide.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CADnq5_NNpwsPoEP0_fzSJ9LQKfaHPJx90yObXKYHO39xLWM6sQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 02:38:37PM -0500, Alex Deucher wrote:
-> On Fri, Jan 20, 2012 at 10:53 AM, Seth Forshee
-> <seth.forshee@canonical.com> wrote:
-> > On Thu, Jan 19, 2012 at 02:53:17PM -0600, Seth Forshee wrote:
-> >> > >  2. Occasional long delays when suspending. When this happens I see
-> >> > >    messages like following in dmesg:
-> >> > >
-> >> > >      [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs aborting
-> >> > >      [drm:atom_execute_table_locked] *ERROR* atombios stuck executing D44E (len 62, WS 0, PS 0) @ 0xD46A
-> >> > >
-> >> > >    Sometimes one of suspend or resume hangs completely, but I can't
-> >> > >    tell which and am not sure whether or not it's related. I'm also
-> >> > >    testing a Mac Mini with the exact same card which does not seem to
-> >> > >    suffer from this issue.
-> >> > >
-> >> > >    I ran a bisections that identified f8d0edd (drm/radeon/kms: improve
-> >> > >    DP detect logic) as introducing problems with suspend, and reverting
-> >> > >    this patch on top of 3.2.1 does seem to eliminate both issues.
-> >> > >
-> >> >
-> >> > That patch doesn't really affect the modesetting paths directly; it
-> >> > looks like a red herring to me.
-> >>
-> >> Perhaps. I just started a run of 200 s3 cycles with the patch reverted
-> >> to see if I can reproduce the issues. I can usually trigger the problem
-> >> with 15 or fewer s3 cycles.
+Tony Lindgren wrote at Thursday, January 19, 2012 9:56 AM:
+> * Thomas Abraham <thomas.abraham@linaro.org> [120119 04:37]:
+...
+> > * Specifying the pinmux/pinconfig settings in dts files:
 > >
-> > The machine completed 200 s3 cycles with the patch reverted without long
-> > delays, hangs, or any atombios error messages. Without reverting it
-> > doesn't get through many at all before experiencing the errors and long
-> > delays or hangs.
+> > Device nodes which require specific pinmux/pinconfig settings should
+> > include information about the required settings. For example, a i2c
+> > controller node in dts file is listed below.
 > >
-> > I added a printout of the connector status resulting from the logic that
-> > was changed by f8d0edd. With the logic prior to this commit it
-> > consistently returns the status as disconnected, which is correct as I
-> > have nothing connected. But with the improved logic the status is
-> > sometimes reported as connected, and these coincide with the atombios
-> > errors.
-> >
+> > i2c0: i2c@18000000 {
+> >         [... other properties ...]
+> >         pinctrl-active = <&pctrl0 5 0 2 3 0>,
+> >                              <&pctrl0 5 1 2 3 0>;
+> >         pinctrl-suspend = <&pctrl0 5 0 2 0 0>,
+> >                                 <&pctrl0 5 1 2 0 0>;
+> > };
 > 
-> Do any of the disconnected displayport connectors get misdetected as
-> connected during normal operation or does it only happen during
-> suspend/resume?
+> Maybe we should have just the active/suspend/off flags in the
+> same array? Otherwise we'll end up unnecessarily repeating the
+> the pin information. See the pins + #pin-args example I posted,
+> which is otherwise similar.
 
-So far I've only seen them during suspend/resume.
+Earlier discussions in this thread have discussed how to share common
+settings between the various named states, by allowing the device to
+refer to multiple properties or nodes for each named state; roughly:
+
+foo@c8000200 {
+   ...
+   pinctrl = <&pinmux_foo> <&pinmux_foo_extra>
+             <&pinmux_foo_suspend> <&pinmux_foo_extra_suspend>;
+   pinctrl-entries = <2 2>;
+   pinctrl-names = "active", "suspend";
+};
+
+I'll describe this more completely in my V2 bindings proposal.
+
+-- 
+nvpublic
+
