@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab2ATIsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 03:48:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58137 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751953Ab2ATIss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 03:48:48 -0500
-Date: Fri, 20 Jan 2012 08:48:40 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Milton Miller <miltonm@bga.com>, Gilad Ben-Yossef <gilad@benyossef.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, mszeredi@novell.com,
-        ebiederm@xmission.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        gong.chen@intel.com, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <bp@amd64.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, linux-edac@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
- IPI from page allocator context
-Message-ID: <20120120084840.GG3143@suse.de>
-References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
- <1326276668-19932-3-git-send-email-mgorman@suse.de>
- <1326381492.2442.188.camel@twins>
- <20120112153712.GL4118@suse.de>
- <1326383551.2442.203.camel@twins>
- <20120112171847.GN4118@suse.de>
- <no-drain-reply@mdm.bga.com>
- <20120119162057.GD3143@suse.de>
- <4F188F52.1060303@linux.vnet.ibm.com>
+	id S1752528Ab2ATJCg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 04:02:36 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64041 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab2ATJCc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 04:02:32 -0500
+Date: Fri, 20 Jan 2012 13:02:25 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: david@lang.hm, Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andrey Vagin <avagin@openvz.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
+Message-ID: <20120120090225.GD2786@moon>
+References: <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com>
+ <20120117144452.GG16213@moon>
+ <4F15C249.3000602@zytor.com>
+ <m1obu29fnf.fsf@fess.ebiederm.org>
+ <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm>
+ <20120118224956.GF15652@moon>
+ <m1zkdk4mj5.fsf@fess.ebiederm.org>
+ <20120119065541.GA31379@moon>
+ <m1ty3rukr1.fsf@fess.ebiederm.org>
+ <20120120084008.GD1954@moon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F188F52.1060303@linux.vnet.ibm.com>
+In-Reply-To: <20120120084008.GD1954@moon>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 03:16:58AM +0530, Srivatsa S. Bhat wrote:
-> [Reinstating the original Cc list]
-> 
-> On 01/19/2012 09:50 PM, Mel Gorman wrote:> 
-> 
-> > On a different x86-64 machines with an intel-specific MCE, I have
-> > also noted that the value of num_online_cpus() can change while
-> > stop_machine() is running.
-> 
-> 
-> That is expected and intentional right? Meaning, it is during the
-> stop_machine() thing itself that a CPU is actually taken offline.
-> And at the same time, it is removed from the cpu_online_mask.
-> 
+On Fri, Jan 20, 2012 at 12:40:08PM +0400, Cyrill Gorcunov wrote:
+...
+> +
+> +static __init int kcmp_cookie_init(void)
+> +{
+> +	int i, j;
+> +
+> +	for (i = 0; i < KCMP_TYPES; i++) {
+> +		for (j = 0; j < 2; j++) {
+> +			get_random_bytes(&cookies[i][j], sizeof(cookies[i][j]));
+> +
+> +			if (cookies[i][j])
+> +				continue;
+> +
+> +			/*
+> +			 * This is impossible case but just to be sure.
+> +			 */
+> +			cookies_valid = false;
+> +			WARN_ONCE(1, "Can't get random bytes for k-pointers\n");
+> +		}
+> +	}
+> +
+> +	cookies_valid = true;
 
-It's intentional sometimes and no others. The machine does halt
-sometimes and stays there.
+darn, this string of course should be on top,
+i'll update don't complain on this nit.
 
-> On Intel boxes, essentially, the following gets executed on the dying
-> CPU, as set up by the stop_machine stuff.
-> 
-> __cpu_disable()
->     native_cpu_disable()
->         cpu_disable_common()
->             remove_cpu_from_maps()
->                 set_cpu_online(cpu, false)
-> 			^^^^^^
-> So, set_cpu_online will remove this CPU from the cpu_online_mask.
-> And all this runs while still under the stop machine context.
-> And this is exactly what we want right?
-> 
+> +
+> +	return 0;
+> +}
 
-We don't want it to halt in stop_machine forever waiting on acknowledges
-that are never received until the NMI handler fires.
-
-> > This is sensitive to timing and part of
-> > the problem seems to be due to cmci_rediscover() running without the
-> > CPU hotplug mutex held. This is not related to the IPI mess and is
-> > unrelated to memory pressure but is just to note that CPU hotplug in
-> > general can be fragile in parts.
-> > 
-> 
-> 
-> For the cmci_rediscover() part, I feel a simple get/put_online_cpus()
-> around it should work.
-> 
-
-Yeah, that's the first thing I tried first too. Doesn't work though.
-
--- 
-Mel Gorman
-SUSE Labs
+	Cyrill
