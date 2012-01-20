@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab2ATO7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 09:59:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31708 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab2ATO7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 09:59:18 -0500
-Date: Fri, 20 Jan 2012 15:59:07 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Attila Kinali <attila@kinali.ch>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: Re: /etc/fstab.d yes or not
-Message-ID: <20120120145907.GA20377@x2.net.home>
-References: <20120120140444.GC13157@x2.net.home>
- <20120120154309.3ae5f9e4a8f55c477dc423ab@kinali.ch>
+	id S1753563Ab2ATPAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 10:00:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60363 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab2ATPAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 10:00:04 -0500
+Message-ID: <4F198170.9070605@gmail.com>
+Date: Fri, 20 Jan 2012 07:00:00 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120120154309.3ae5f9e4a8f55c477dc423ab@kinali.ch>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: git@vger.kernel.org
+Subject: crash with git and latest mainline: EIP: 0060:[<c106c2d2>] EFLAGS:
+ 00210006 CPU: 0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 03:43:09PM +0100, Attila Kinali wrote:
-> Hence, i would like to ask you to consider not adding /etc/fstab.d
-> unless there is a very good reason to do it. And "to make it simpler
-> for people who have a lot of mountpoints" is IMHO not a good reason.
-> How many mountpoints must one use that a single file becomes a problem?
+not sure if this means anything or not, but I was doing a apt-get 
+upgrade and a git pull at the same time and had a total system freeze.
+I was only able to capture an image of the crash. here are the images of it:
 
- Let's imagine that you have a network and you use the same configuration
- on all machines, then "*.d/" directories are very useful for you -- for
- example you can create a company.rpm with important configuration and
- distribute it to all machines.
+http://www.flickr.com/photos/44066293@N08/6730938347/in/photostream
+http://www.flickr.com/photos/44066293@N08/6730937479/in/photostream
+http://www.flickr.com/photos/44066293@N08/6730936509/in/photostream
 
-    Karel
+will keep an eye out or for this, tried to reproduce but with no luck 
+doing so.
 
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Justin P. Mattock
