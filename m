@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab2ATOjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 09:39:21 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:16937 "EHLO mx2.netapp.com"
+	id S1753485Ab2ATOqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 09:46:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41275 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab2ATOjU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 09:39:20 -0500
-X-IronPort-AV: E=Sophos;i="4.71,542,1320652800"; 
-   d="scan'208";a="618622688"
-Message-ID: <1327070356.23030.0.camel@lade.trondhjem.org>
-Subject: Re: [PATCH 0/2] SUNRPC: make /proc helpers network-namespace-aware
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: "bfields@fieldses.org" <bfields@fieldses.org>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Date: Fri, 20 Jan 2012 09:39:16 -0500
-In-Reply-To: <20120120143047.GB9877@fieldses.org>
-References: <20111206123748.15702.93290.stgit@localhost6.localdomain6>
-	 <4F19512F.1000903@parallels.com> <20120120143047.GB9877@fieldses.org>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 20 Jan 2012 14:39:18.0272 (UTC) FILETIME=[4A363000:01CCD781]
+	id S1751815Ab2ATOqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 09:46:11 -0500
+Message-ID: <4F197E1F.20206@zytor.com>
+Date: Fri, 20 Jan 2012 06:45:51 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: dmsetup fails on latest kernel
+References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com> <CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com> <4F188817.3090104@zytor.com> <CALLzPKapudkuBxsF49jMAOtVpeu=hpa9SgY=WewtU6GYEm6M_Q@mail.gmail.com>
+In-Reply-To: <CALLzPKapudkuBxsF49jMAOtVpeu=hpa9SgY=WewtU6GYEm6M_Q@mail.gmail.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-20 at 09:30 -0500, bfields@fieldses.org wrote: 
-> On Fri, Jan 20, 2012 at 03:34:07PM +0400, Stanislav Kinsbursky wrote:
-> > Excuse me, Trond, Bruce, but what about this patch set?
-> > It is not included in Trond's "devel" branch.
-> > Maybe they are in your repo, Bruce?
+On 01/20/2012 05:35 AM, Kasatkin, Dmitry wrote:
+> On Thu, Jan 19, 2012 at 11:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Here is a patch which should fix this problem.  I will run a few more
+>> tests and then push it with the rest of the urgent queue to Linus.
+>>
+>>        -hpa
 > 
-> Everything that I had from you is in -rc1 now.
+> Hi,
 > 
-> --b.
+> Yes. It solves the problem..
+> Do you still want straces?
+> 
 
-I can carry these patches if you like. They don't seem to conflict with
-anything already in my repository.
+No need, thanks!
+
+	-hpa
+
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
