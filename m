@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab2ATLNB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 06:13:01 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34578 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab2ATLM4 convert rfc822-to-8bit (ORCPT
+	id S1752470Ab2ATLSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 06:18:37 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63409 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab2ATLSd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 06:12:56 -0500
+	Fri, 20 Jan 2012 06:18:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120118185457.GH3356@mwanda>
-References: <1326856764-2531-1-git-send-email-pradheep.sh@gmail.com>
-	<20120118065620.GE3294@mwanda>
-	<CANz8tm1imZ3njy_uV0tkq0sXwyB5ZLLJsrp4G1zjcBDnJUrjiw@mail.gmail.com>
-	<20120118185457.GH3356@mwanda>
-Date: Fri, 20 Jan 2012 11:12:55 +0000
-X-Google-Sender-Auth: 4h8MVfpziOSDaH1GXNc6wXc-4ns
-Message-ID: <CAAq6er0OPkvTCLt1DvHSjyqM4pH7GMb-D78M09cJY+1ZV3miiQ@mail.gmail.com>
-Subject: Re: [PATCH 1/6] staging:android_pmem.h: Fixes the space and other
- formating issues pointed out by checkpatch.pl
-From: Andy Whitcroft <apw@canonical.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Pradheep Shrinivasan <pradheep.sh@gmail.com>, greg@kroah.com,
-        devel@linuxdriverproject.org, swetland@google.com,
-        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120120100309.GA20640@debian>
+References: <20120116025331.GA16516@localhost>
+	<1326991820-31393-1-git-send-email-rabin@rab.in>
+	<CAKYAXd8poi6Rs7wyvZHre6qx-_i7eq0SBQAJNKNTYTLC5RQKjA@mail.gmail.com>
+	<CAH+eYFBHTXVxdepno4xE-AxyYKqtNQHUvCY55z9_otN+25Y8Hg@mail.gmail.com>
+	<CAKYAXd9M4wDi2tJDNjaDhHL9YapvXE71tGx_sh91DDpJNH+yKQ@mail.gmail.com>
+	<20120120100309.GA20640@debian>
+Date: Fri, 20 Jan 2012 20:18:31 +0900
+Message-ID: <CAKYAXd8UuC0pAX7G7aG2q_3U_bPG8Bs_GpjxbfiX=9=Q+RW1Rg@mail.gmail.com>
+Subject: Re: [PATCHv2] backing-dev: fix wakeup timer races with bdi_unregister()
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: fengguang.wu@intel.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        chanho0207@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 6:54 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Wed, Jan 18, 2012 at 11:38:34PM +0530, Pradheep Shrinivasan wrote:
->>> > > -#define PMEM_IOCTL_MAGIC 'p'
->> > > +#define PMEM_IOCTL_MAGIC ('p')
+2012/1/20 Rabin Vincent <rabin@rab.in>:
+> On Fri, Jan 20, 2012 at 03:15:32PM +0900, Namjae Jeon wrote:
+>> 2012/1/20 Rabin Vincent <rabin@rab.in>:
+>> > On Fri, Jan 20, 2012 at 05:16, Namjae Jeon <linkinjeon@gmail.com> wrote:
+>> >>>                bdi_debug_unregister(bdi);
+>> >>> -               device_unregister(bdi->dev);
+>> >>> +
+>> >>> +               spin_lock_bh(&bdi->wb_lock);
+>> >>>                bdi->dev = NULL;
+>> >>> +               spin_unlock_bh(&bdi->wb_lock);
+>> >> Hi.
+>> >> Would you explain me why you add spinlock in here ?
 >> >
->> > You don't need parenthesis here. �Did checkpatch really complain
->> > about this?
->>
->> Yes the check patch does complain about the parenthesis.
->>
->> pradheep@ubuntu:~/linux-next/
->> linux-next/drivers/staging/android$ checkpatch android_pmem.h
->> android_pmem.h:10: ERROR: trailing whitespace
->> android_pmem.h:19: ERROR: Macros with complex values should be enclosed in
->> parenthesis
+>> > wakeup_timer_fn() does the following, where the
+>> > trace_writeback_wake_forker_thread() also accesses bdi->dev.
+>> > It does this under the wb_lock:
+>> >
+>> >        } else if (bdi->dev) {
+>> >                /*
+>> >                 * When bdi tasks are inactive for long time, they are killed.
+>> >                 * In this case we have to wake-up the forker thread which
+>> >                 * should create and run the bdi thread.
+>> >                 */
+>> >                trace_writeback_wake_forker_thread(bdi);
+>> >
+>> > If we don't have the lock above, the bdi->dev could potentially be
+>> > cleared after the check but before the tracepoint is hit, leading to a
+>> > NULL pointer dereference.
+>> Is there no possibility trace_writeback_wake_forker_thread is called
+>> after spin_unlock of bdi->de= null ?
 >
-> That seems like a bug in checkpatch.pl. �It's hard to imagine less
-> complex macro than: �#define PMEM_IOCTL_MAGIC 'p'
+> wakeup_timer_fn() holds the wb_lock across the check for bdi->dev !=
+> NULL and the call to trace_writeback_wake_forker_thread(), so no.
 
-I can think of no way in which an unprotected character is different
-to an unprotected integer constant.  So ...
-
-Does the version here work better for you:
-
-    http://people.canonical.com/~apw/checkpatch/checkpatch-next.pl
-
--apw
+The following case is not possible with racing of __mark_inode_dirty  ?
+--------------------------------------------------------------------------------------------------
+spin_lock
+bdi->dev = NULL;
+spin_unlock
+                              spin_lock
+                               ......
+                               ......
+                               trace_writeback_wake_forker_thread(bdi);
+                               spin_unlock
+-----------------------------------------------------------------------------
