@@ -1,1948 +1,561 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab2ATSWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 13:22:47 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8083 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920Ab2ATSWd (ORCPT
+	id S1754349Ab2ATS03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 13:26:29 -0500
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:58193 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab2ATS01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 13:22:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 20 Jan 2012 10:22:32 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Colin Cross <ccross@android.com>
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 3/4] ARM: tegra: Switch to new pinctrl driver
-Date: Fri, 20 Jan 2012 11:22:25 -0700
-Message-Id: <1327083746-31430-3-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1327083746-31430-1-git-send-email-swarren@nvidia.com>
-References: <1327083746-31430-1-git-send-email-swarren@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 20 Jan 2012 13:26:27 -0500
+X-SENDER-IP: [85.230.170.239]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvlEAGuwGU9V5qrvPGdsb2JhbABDiUukPRkBAQEBNzKBcgEBBAEnExwjBQsIA0YUDRgKGhOHfAK4WROLMGMElRiFZYUdh0s
+X-IronPort-AV: E=Sophos;i="4.71,544,1320620400"; 
+   d="scan'208";a="34351658"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 20 Jan 2012 19:26:50 +0100
+To: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ogay@logitech.com, jzanone@logitech.com, phorvath@logitech.com,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 1/1] HID: Add full MT support for Logitech Wireless
+ Touchpad
+Message-ID: <20120120182650.GA19242@polaris.bitmath.org>
+References: <1326800683-29439-1-git-send-email-nlopezcasad@logitech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326800683-29439-1-git-send-email-nlopezcasad@logitech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rename old pinmux and new pinctrl platform driver and DT match table
-  entries, so the new driver gets instantiated.
-* Re-write board-pinmux.c, so that it uses pinctrl APIs to configura the
-  pinmux.
-* Re-write board-*-pinmux.c so that the pinmux configuration tables are
-  in pinctrl format.
+Hi Nestor,
 
-Ventana's pin mux table needed some edits on top of the basic format
-conversion, since some mux options that were previously marked as
-reserved are now valid in the new pinctrl driver. Attempting to use the
-old reserved names will result in a failure. Specifically, groups lpw0,
-lpw2, lsc1, lsck, and lsda were changed from function rsvd4 to displaya,
-and group pta was changed from function rsvd2 to hdmi.
+Please find some initial comments below.
 
-All boards' pin mux tables needed some edits on top of the based format
-conversion, since function i2c was split into i2c1 (first general I2C
-controller) and i2cp (power I2C controller) to better align function
-definitions with HW blocks.
+> diff --git a/drivers/hid/hid-logitech-wtp.c b/drivers/hid/hid-logitech-wtp.c
+> new file mode 100644
+> index 0000000..d1bdef6
+> --- /dev/null
+> +++ b/drivers/hid/hid-logitech-wtp.c
+> @@ -0,0 +1,434 @@
+> +/*
+> + *  HID driver for Logitech Wireless Touchpad device
+> + *
+> + *  Copyright (c) 2011 Logitech (c)
+> + */
+> +
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> +
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+> + *
+> + * Should you need to contact me, the author, you can do so by e-mail send
+> + * your message to Benjamin Tissoires <benjamin.tissoires at gmail com>
+> + *
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/hid.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/input/mt.h>
+> +
+> +MODULE_AUTHOR("Benjamin Tissoires <benjamin.tissoires@gmail.com>");
+> +MODULE_AUTHOR("Nestor Lopez Casado <nlopezcasad@logitech.com>");
+> +MODULE_DESCRIPTION("Logitech Wireless Touchpad");
+> +MODULE_LICENSE("GPL");
+> +
+> +#include "hid-ids.h"
+> +#include "hid-logitech-hidpp.h"
+> +
+> +#define X_SIZE 3700
+> +#define Y_SIZE 2480
 
-Due to the split of mux tables into pure mux and pull/tristate tables,
-many entries in the separate Seaboard/Ventana tables could be merged
-into the common table, since the entries differed only in the portion
-in one of the tables, not both.
+Why are these defined, if they are also read from the device?
 
-Most pin groups allow configuration of mux, tri-state, and pull. However,
-some don't allow pull configuration, which is instead configured by new
-groups that only allow pull configuration. This is a reflection of the
-true HW capabilities, which weren't fully represented by the old pinmux
-driver. This required adding new pull table entries for those new groups,
-and setting many other entries' pull configuration to
-TEGRA_PINCONFIG_DONT_SET.
+> +#define CMD_TOUCHPAD_GET_RAW_INFO		0x01
+> +#define CMD_TOUCHPAD_GET_RAW_REPORT_STATE	0x11
+> +#define CMD_TOUCHPAD_SET_RAW_REPORT_STATE	0x21
+> +#define EVENT_TOUCHPAD_RAW_XY			0x30
+> +#define EVENT_TOUCHPAD_RAW_XY_			0x00
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- arch/arm/mach-tegra/board-harmony-pinmux.c   |  362 ++++++++++++++-------
- arch/arm/mach-tegra/board-paz00-pinmux.c     |  362 ++++++++++++++-------
- arch/arm/mach-tegra/board-pinmux.c           |   62 ++++-
- arch/arm/mach-tegra/board-pinmux.h           |   39 ++-
- arch/arm/mach-tegra/board-seaboard-pinmux.c  |  442 ++++++++++++++++---------
- arch/arm/mach-tegra/board-trimslice-pinmux.c |  366 ++++++++++++++--------
- arch/arm/mach-tegra/pinmux.c                 |    6 +-
- drivers/pinctrl/pinctrl-tegra.c              |    6 +-
- 8 files changed, 1095 insertions(+), 550 deletions(-)
+The last two seem unused.
 
-diff --git a/arch/arm/mach-tegra/board-harmony-pinmux.c b/arch/arm/mach-tegra/board-harmony-pinmux.c
-index 465808c..9788fd0 100644
---- a/arch/arm/mach-tegra/board-harmony-pinmux.c
-+++ b/arch/arm/mach-tegra/board-harmony-pinmux.c
-@@ -2,6 +2,7 @@
-  * arch/arm/mach-tegra/board-harmony-pinmux.c
-  *
-  * Copyright (C) 2010 Google, Inc.
-+ * Copyright (c) 2011, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * This software is licensed under the terms of the GNU General Public
-  * License version 2, as published by the Free Software Foundation, and
-@@ -15,133 +16,244 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/gpio.h>
--#include <linux/of.h>
--
--#include <mach/pinmux.h>
--#include <mach/pinmux-tegra20.h>
- 
- #include "gpio-names.h"
- #include "board-harmony.h"
- #include "board-pinmux.h"
- 
--static struct tegra_pingroup_config harmony_pinmux[] = {
--	{TEGRA_PINGROUP_ATA,   TEGRA_MUX_IDE,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATB,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATC,   TEGRA_MUX_NAND,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATD,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATE,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CDEV1, TEGRA_MUX_PLLA_OUT,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CDEV2, TEGRA_MUX_PLLP_OUT4,     TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CRTP,  TEGRA_MUX_CRT,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CSUS,  TEGRA_MUX_VI_SENSOR_CLK, TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP1,  TEGRA_MUX_DAP1,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DAP2,  TEGRA_MUX_DAP2,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP3,  TEGRA_MUX_DAP3,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP4,  TEGRA_MUX_DAP4,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DDC,   TEGRA_MUX_I2C2,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTA,   TEGRA_MUX_SDIO2,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTB,   TEGRA_MUX_RSVD1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTC,   TEGRA_MUX_RSVD1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTD,   TEGRA_MUX_SDIO2,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTE,   TEGRA_MUX_RSVD1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTF,   TEGRA_MUX_I2C3,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_GMA,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMB,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMC,   TEGRA_MUX_UARTD,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMD,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GME,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPU,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_GPU7,  TEGRA_MUX_RTCK,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPV,   TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_HDINT, TEGRA_MUX_HDMI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_I2CP,  TEGRA_MUX_I2C,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_IRRX,  TEGRA_MUX_UARTA,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_IRTX,  TEGRA_MUX_UARTA,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_KBCA,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCB,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCC,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCD,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCE,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCF,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LCSN,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LD0,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD1,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD10,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD11,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD12,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD13,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD14,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD15,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD16,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD17,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD2,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD3,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD4,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD5,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD6,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD7,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD8,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD9,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LDC,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LDI,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP2,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHS,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LM0,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LM1,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPP,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LPW0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LPW1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPW2,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSC0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSC1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSCK,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSDA,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSDI,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSPI,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LVP0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LVP1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LVS,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_OWC,   TEGRA_MUX_RSVD2,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_PMC,   TEGRA_MUX_PWR_ON,        TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PTA,   TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_RM,    TEGRA_MUX_I2C,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDB,   TEGRA_MUX_PWM,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SDC,   TEGRA_MUX_PWM,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDD,   TEGRA_MUX_PWM,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SDIO1, TEGRA_MUX_SDIO1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXA,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXC,  TEGRA_MUX_SPDIF,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXD,  TEGRA_MUX_SPDIF,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXK,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPDI,  TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPDO,  TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIA,  TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPIB,  TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPIC,  TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPID,  TEGRA_MUX_SPI1,          TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIE,  TEGRA_MUX_SPI1,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIF,  TEGRA_MUX_SPI1,          TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIG,  TEGRA_MUX_SPI2_ALT,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIH,  TEGRA_MUX_SPI2_ALT,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAA,   TEGRA_MUX_ULPI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAB,   TEGRA_MUX_ULPI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAC,   TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAD,   TEGRA_MUX_IRDA,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UCA,   TEGRA_MUX_UARTC,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UCB,   TEGRA_MUX_UARTC,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UDA,   TEGRA_MUX_ULPI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CK32,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DDRC,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCA,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCB,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCC,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCD,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCE,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_XM2C,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_XM2D,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+static struct pinmux_map harmony_map[] = {
-+	TEGRA_PINMUX_MAP("ata",   "ide"),
-+	TEGRA_PINMUX_MAP("atb",   "sdio4"),
-+	TEGRA_PINMUX_MAP("atc",   "nand"),
-+	TEGRA_PINMUX_MAP("atd",   "gmi"),
-+	TEGRA_PINMUX_MAP("ate",   "gmi"),
-+	TEGRA_PINMUX_MAP("cdev1", "plla_out"),
-+	TEGRA_PINMUX_MAP("cdev2", "pllp_out4"),
-+	TEGRA_PINMUX_MAP("crtp",  "crt"),
-+	TEGRA_PINMUX_MAP("csus",  "vi_sensor_clk"),
-+	TEGRA_PINMUX_MAP("dap1",  "dap1"),
-+	TEGRA_PINMUX_MAP("dap2",  "dap2"),
-+	TEGRA_PINMUX_MAP("dap3",  "dap3"),
-+	TEGRA_PINMUX_MAP("dap4",  "dap4"),
-+	TEGRA_PINMUX_MAP("ddc",   "i2c2"),
-+	TEGRA_PINMUX_MAP("dta",   "sdio2"),
-+	TEGRA_PINMUX_MAP("dtb",   "rsvd1"),
-+	TEGRA_PINMUX_MAP("dtc",   "rsvd1"),
-+	TEGRA_PINMUX_MAP("dtd",   "sdio2"),
-+	TEGRA_PINMUX_MAP("dte",   "rsvd1"),
-+	TEGRA_PINMUX_MAP("dtf",   "i2c3"),
-+	TEGRA_PINMUX_MAP("gma",   "sdio4"),
-+	TEGRA_PINMUX_MAP("gmb",   "gmi"),
-+	TEGRA_PINMUX_MAP("gmc",   "uartd"),
-+	TEGRA_PINMUX_MAP("gmd",   "gmi"),
-+	TEGRA_PINMUX_MAP("gme",   "sdio4"),
-+	TEGRA_PINMUX_MAP("gpu",   "gmi"),
-+	TEGRA_PINMUX_MAP("gpu7",  "rtck"),
-+	TEGRA_PINMUX_MAP("gpv",   "pcie"),
-+	TEGRA_PINMUX_MAP("hdint", "hdmi"),
-+	TEGRA_PINMUX_MAP("i2cp",  "i2cp"),
-+	TEGRA_PINMUX_MAP("irrx",  "uarta"),
-+	TEGRA_PINMUX_MAP("irtx",  "uarta"),
-+	TEGRA_PINMUX_MAP("kbca",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcb",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcc",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcd",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbce",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcf",  "kbc"),
-+	TEGRA_PINMUX_MAP("lcsn",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld0",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld1",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld2",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld3",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld4",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld5",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld6",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld7",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld8",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld9",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld10",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld11",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld12",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld13",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld14",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld15",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld16",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld17",  "displaya"),
-+	TEGRA_PINMUX_MAP("ldc",   "displaya"),
-+	TEGRA_PINMUX_MAP("ldi",   "displaya"),
-+	TEGRA_PINMUX_MAP("lhp0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhp1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhp2",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhs",   "displaya"),
-+	TEGRA_PINMUX_MAP("lm0",   "displaya"),
-+	TEGRA_PINMUX_MAP("lm1",   "displaya"),
-+	TEGRA_PINMUX_MAP("lpp",   "displaya"),
-+	TEGRA_PINMUX_MAP("lpw0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lpw1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lpw2",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsc0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsc1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsck",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsda",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsdi",  "displaya"),
-+	TEGRA_PINMUX_MAP("lspi",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvp0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvp1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvs",   "displaya"),
-+	TEGRA_PINMUX_MAP("owc",   "rsvd2"),
-+	TEGRA_PINMUX_MAP("pmc",   "pwr_on"),
-+	TEGRA_PINMUX_MAP("pta",   "hdmi"),
-+	TEGRA_PINMUX_MAP("rm",    "i2c1"),
-+	TEGRA_PINMUX_MAP("sdb",   "pwm"),
-+	TEGRA_PINMUX_MAP("sdc",   "pwm"),
-+	TEGRA_PINMUX_MAP("sdd",   "pwm"),
-+	TEGRA_PINMUX_MAP("sdio1", "sdio1"),
-+	TEGRA_PINMUX_MAP("slxa",  "pcie"),
-+	TEGRA_PINMUX_MAP("slxc",  "spdif"),
-+	TEGRA_PINMUX_MAP("slxd",  "spdif"),
-+	TEGRA_PINMUX_MAP("slxk",  "pcie"),
-+	TEGRA_PINMUX_MAP("spdi",  "rsvd2"),
-+	TEGRA_PINMUX_MAP("spdo",  "rsvd2"),
-+	TEGRA_PINMUX_MAP("spia",  "gmi"),
-+	TEGRA_PINMUX_MAP("spib",  "gmi"),
-+	TEGRA_PINMUX_MAP("spic",  "gmi"),
-+	TEGRA_PINMUX_MAP("spid",  "spi1"),
-+	TEGRA_PINMUX_MAP("spie",  "spi1"),
-+	TEGRA_PINMUX_MAP("spif",  "spi1"),
-+	TEGRA_PINMUX_MAP("spig",  "spi2_alt"),
-+	TEGRA_PINMUX_MAP("spih",  "spi2_alt"),
-+	TEGRA_PINMUX_MAP("uaa",   "ulpi"),
-+	TEGRA_PINMUX_MAP("uab",   "ulpi"),
-+	TEGRA_PINMUX_MAP("uac",   "rsvd2"),
-+	TEGRA_PINMUX_MAP("uad",   "irda"),
-+	TEGRA_PINMUX_MAP("uca",   "uartc"),
-+	TEGRA_PINMUX_MAP("ucb",   "uartc"),
-+	TEGRA_PINMUX_MAP("uda",   "ulpi"),
-+};
-+
-+struct tegra_board_pinmux_pg_conf harmony_pg[] = {
-+	{"ata",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"ate",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"cdev1",   TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"cdev2",   TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"crtp",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"csus",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap1",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"dap2",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap3",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap4",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"ddc",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"dta",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"dtb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"dtc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtd",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"dte",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtf",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"gma",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gme",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpu",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"gpu7",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpv",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"hdint",   TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"i2cp",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"irrx",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"irtx",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"kbca",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcb",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcc",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcd",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbce",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcf",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"lcsn",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"ld0",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld1",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld2",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld3",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld4",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld5",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld6",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld7",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld8",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld9",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld10",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld11",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld12",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld13",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld14",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld15",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld16",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld17",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ldc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"ldi",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp2",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhs",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lm0",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lm1",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpp",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lpw0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lpw1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpw2",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lsc0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lsc1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsck",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsda",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsdi",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lspi",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lvp0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lvp1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lvs",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"owc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"pmc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"pta",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"rm",      TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"sdb",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"sdc",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"sdd",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"sdio1",   TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxa",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxd",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxk",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spdi",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spdo",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spia",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spib",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spic",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"spid",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spie",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"spif",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spig",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spih",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uaa",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uab",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uac",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"uad",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uca",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"ucb",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uda",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"ck32",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ddrc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmca",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcb",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcd",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmce",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"xm2c",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"xm2d",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ls",      TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DONT_SET},
-+	{"lc",      TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DONT_SET},
-+	{"ld17_0",  TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld19_18", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld21_20", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld23_22", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
- };
- 
- static struct tegra_gpio_table gpio_table[] = {
-@@ -158,8 +270,10 @@ static struct tegra_gpio_table gpio_table[] = {
- };
- 
- static struct tegra_board_pinmux_conf conf = {
--	.pgs = harmony_pinmux,
--	.pg_count = ARRAY_SIZE(harmony_pinmux),
-+	.maps = harmony_map,
-+	.map_count = ARRAY_SIZE(harmony_map),
-+	.pgs = harmony_pg,
-+	.pg_count = ARRAY_SIZE(harmony_pg),
- 	.gpios = gpio_table,
- 	.gpio_count = ARRAY_SIZE(gpio_table),
- };
-diff --git a/arch/arm/mach-tegra/board-paz00-pinmux.c b/arch/arm/mach-tegra/board-paz00-pinmux.c
-index c775572..0a93f1b 100644
---- a/arch/arm/mach-tegra/board-paz00-pinmux.c
-+++ b/arch/arm/mach-tegra/board-paz00-pinmux.c
-@@ -2,6 +2,7 @@
-  * arch/arm/mach-tegra/board-paz00-pinmux.c
-  *
-  * Copyright (C) 2010 Marc Dietrich <marvin24@gmx.de>
-+ * Copyright (c) 2011, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * This software is licensed under the terms of the GNU General Public
-  * License version 2, as published by the Free Software Foundation, and
-@@ -15,133 +16,244 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/gpio.h>
--#include <linux/of.h>
--
--#include <mach/pinmux.h>
--#include <mach/pinmux-tegra20.h>
- 
- #include "gpio-names.h"
- #include "board-paz00.h"
- #include "board-pinmux.h"
- 
--static struct tegra_pingroup_config paz00_pinmux[] = {
--	{TEGRA_PINGROUP_ATA,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATB,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATC,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATD,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATE,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CDEV1, TEGRA_MUX_PLLA_OUT,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CDEV2, TEGRA_MUX_PLLP_OUT4,     TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CRTP,  TEGRA_MUX_CRT,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CSUS,  TEGRA_MUX_PLLC_OUT1,     TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP1,  TEGRA_MUX_DAP1,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DAP2,  TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DAP3,  TEGRA_MUX_DAP3,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP4,  TEGRA_MUX_DAP4,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DDC,   TEGRA_MUX_I2C2,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTA,   TEGRA_MUX_RSVD1,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTB,   TEGRA_MUX_RSVD1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTC,   TEGRA_MUX_RSVD1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTD,   TEGRA_MUX_RSVD1,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTE,   TEGRA_MUX_RSVD1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTF,   TEGRA_MUX_I2C3,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMA,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMB,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMC,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMD,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GME,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPU,   TEGRA_MUX_PWM,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPU7,  TEGRA_MUX_RTCK,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPV,   TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_HDINT, TEGRA_MUX_HDMI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_I2CP,  TEGRA_MUX_I2C,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_IRRX,  TEGRA_MUX_UARTA,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_IRTX,  TEGRA_MUX_UARTA,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCA,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCB,  TEGRA_MUX_SDIO2,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCC,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCD,  TEGRA_MUX_SDIO2,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCE,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCF,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LCSN,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LD0,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD1,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD10,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD11,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD12,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD13,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD14,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD15,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD16,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD17,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD2,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD3,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD4,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD5,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD6,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD7,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD8,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD9,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LDC,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LDI,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LHP1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LHP2,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LHS,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LM0,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LM1,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPP,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPW0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPW1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPW2,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSC0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSC1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSCK,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSDA,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSDI,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSPI,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LVP0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LVP1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LVS,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_OWC,   TEGRA_MUX_OWR,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_PMC,   TEGRA_MUX_PWR_ON,        TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PTA,   TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_RM,    TEGRA_MUX_I2C,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDB,   TEGRA_MUX_PWM,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SDC,   TEGRA_MUX_TWC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SDD,   TEGRA_MUX_PWM,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SDIO1, TEGRA_MUX_SDIO1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SLXA,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXC,  TEGRA_MUX_SPI4,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXD,  TEGRA_MUX_SPI4,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXK,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPDI,  TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPDO,  TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPIA,  TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIB,  TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIC,  TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPID,  TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIE,  TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIF,  TEGRA_MUX_RSVD4,         TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIG,  TEGRA_MUX_SPI2_ALT,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPIH,  TEGRA_MUX_SPI2_ALT,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAA,   TEGRA_MUX_ULPI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UAB,   TEGRA_MUX_ULPI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UAC,   TEGRA_MUX_RSVD4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UAD,   TEGRA_MUX_SPDIF,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UCA,   TEGRA_MUX_UARTC,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UCB,   TEGRA_MUX_UARTC,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UDA,   TEGRA_MUX_ULPI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CK32,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DDRC,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCA,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCB,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCC,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCD,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCE,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_XM2C,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_XM2D,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+static struct pinmux_map paz00_map[] = {
-+	TEGRA_PINMUX_MAP("ata",   "gmi"),
-+	TEGRA_PINMUX_MAP("atb",   "sdio4"),
-+	TEGRA_PINMUX_MAP("atc",   "gmi"),
-+	TEGRA_PINMUX_MAP("atd",   "gmi"),
-+	TEGRA_PINMUX_MAP("ate",   "gmi"),
-+	TEGRA_PINMUX_MAP("cdev1", "plla_out"),
-+	TEGRA_PINMUX_MAP("cdev2", "pllp_out4"),
-+	TEGRA_PINMUX_MAP("crtp",  "crt"),
-+	TEGRA_PINMUX_MAP("csus",  "pllc_out1"),
-+	TEGRA_PINMUX_MAP("dap1",  "dap1"),
-+	TEGRA_PINMUX_MAP("dap2",  "gmi"),
-+	TEGRA_PINMUX_MAP("dap3",  "dap3"),
-+	TEGRA_PINMUX_MAP("dap4",  "dap4"),
-+	TEGRA_PINMUX_MAP("ddc",   "i2c2"),
-+	TEGRA_PINMUX_MAP("dta",   "rsvd1"),
-+	TEGRA_PINMUX_MAP("dtb",   "rsvd1"),
-+	TEGRA_PINMUX_MAP("dtc",   "rsvd1"),
-+	TEGRA_PINMUX_MAP("dtd",   "rsvd1"),
-+	TEGRA_PINMUX_MAP("dte",   "rsvd1"),
-+	TEGRA_PINMUX_MAP("dtf",   "i2c3"),
-+	TEGRA_PINMUX_MAP("gma",   "sdio4"),
-+	TEGRA_PINMUX_MAP("gmb",   "gmi"),
-+	TEGRA_PINMUX_MAP("gmc",   "gmi"),
-+	TEGRA_PINMUX_MAP("gmd",   "gmi"),
-+	TEGRA_PINMUX_MAP("gme",   "sdio4"),
-+	TEGRA_PINMUX_MAP("gpu",   "pwm"),
-+	TEGRA_PINMUX_MAP("gpu7",  "rtck"),
-+	TEGRA_PINMUX_MAP("gpv",   "pcie"),
-+	TEGRA_PINMUX_MAP("hdint", "hdmi"),
-+	TEGRA_PINMUX_MAP("i2cp",  "i2cp"),
-+	TEGRA_PINMUX_MAP("irrx",  "uarta"),
-+	TEGRA_PINMUX_MAP("irtx",  "uarta"),
-+	TEGRA_PINMUX_MAP("kbca",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcb",  "sdio2"),
-+	TEGRA_PINMUX_MAP("kbcc",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcd",  "sdio2"),
-+	TEGRA_PINMUX_MAP("kbce",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcf",  "kbc"),
-+	TEGRA_PINMUX_MAP("lcsn",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld0",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld1",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld2",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld3",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld4",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld5",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld6",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld7",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld8",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld9",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld10",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld11",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld12",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld13",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld14",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld15",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld16",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld17",  "displaya"),
-+	TEGRA_PINMUX_MAP("ldc",   "displaya"),
-+	TEGRA_PINMUX_MAP("ldi",   "displaya"),
-+	TEGRA_PINMUX_MAP("lhp0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhp1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhp2",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhs",   "displaya"),
-+	TEGRA_PINMUX_MAP("lm0",   "displaya"),
-+	TEGRA_PINMUX_MAP("lm1",   "displaya"),
-+	TEGRA_PINMUX_MAP("lpp",   "displaya"),
-+	TEGRA_PINMUX_MAP("lpw0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lpw1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lpw2",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsc0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsc1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsck",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsda",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsdi",  "displaya"),
-+	TEGRA_PINMUX_MAP("lspi",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvp0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvp1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvs",   "displaya"),
-+	TEGRA_PINMUX_MAP("owc",   "owr"),
-+	TEGRA_PINMUX_MAP("pmc",   "pwr_on"),
-+	TEGRA_PINMUX_MAP("pta",   "hdmi"),
-+	TEGRA_PINMUX_MAP("rm",    "i2c1"),
-+	TEGRA_PINMUX_MAP("sdb",   "pwm"),
-+	TEGRA_PINMUX_MAP("sdc",   "twc"),
-+	TEGRA_PINMUX_MAP("sdd",   "pwm"),
-+	TEGRA_PINMUX_MAP("sdio1", "sdio1"),
-+	TEGRA_PINMUX_MAP("slxa",  "pcie"),
-+	TEGRA_PINMUX_MAP("slxc",  "spi4"),
-+	TEGRA_PINMUX_MAP("slxd",  "spi4"),
-+	TEGRA_PINMUX_MAP("slxk",  "pcie"),
-+	TEGRA_PINMUX_MAP("spdi",  "rsvd2"),
-+	TEGRA_PINMUX_MAP("spdo",  "rsvd2"),
-+	TEGRA_PINMUX_MAP("spia",  "gmi"),
-+	TEGRA_PINMUX_MAP("spib",  "gmi"),
-+	TEGRA_PINMUX_MAP("spic",  "gmi"),
-+	TEGRA_PINMUX_MAP("spid",  "gmi"),
-+	TEGRA_PINMUX_MAP("spie",  "gmi"),
-+	TEGRA_PINMUX_MAP("spif",  "rsvd4"),
-+	TEGRA_PINMUX_MAP("spig",  "spi2_alt"),
-+	TEGRA_PINMUX_MAP("spih",  "spi2_alt"),
-+	TEGRA_PINMUX_MAP("uaa",   "ulpi"),
-+	TEGRA_PINMUX_MAP("uab",   "ulpi"),
-+	TEGRA_PINMUX_MAP("uac",   "rsvd4"),
-+	TEGRA_PINMUX_MAP("uad",   "spdif"),
-+	TEGRA_PINMUX_MAP("uca",   "uartc"),
-+	TEGRA_PINMUX_MAP("ucb",   "uartc"),
-+	TEGRA_PINMUX_MAP("uda",   "ulpi"),
-+};
-+
-+static struct tegra_board_pinmux_pg_conf paz00_pg[] = {
-+	{"ata",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"ate",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"cdev1",   TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"cdev2",   TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DRIVEN},
-+	{"crtp",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"csus",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap1",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"dap2",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"dap3",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap4",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"ddc",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"dta",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"dtb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtd",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"dte",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtf",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gma",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gme",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpu",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpu7",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpv",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"hdint",   TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"i2cp",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"irrx",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"irtx",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbca",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcb",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcc",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcd",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbce",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcf",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"lcsn",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"ld0",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld1",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld2",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld3",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld4",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld5",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld6",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld7",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld8",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld9",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld10",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld11",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld12",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld13",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld14",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld15",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld16",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld17",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ldc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ldi",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lhp1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lhp2",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lhs",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lm0",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lm1",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpp",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpw0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpw1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpw2",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsc0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lsc1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsck",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsda",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsdi",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lspi",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lvp0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lvp1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lvs",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"owc",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"pmc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"pta",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"rm",      TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"sdb",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"sdc",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"sdd",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"sdio1",   TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"slxa",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxd",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxk",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spdi",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spdo",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spia",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spib",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spic",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"spid",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spie",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"spif",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spig",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"spih",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uaa",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"uab",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"uac",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"uad",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uca",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"ucb",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uda",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"ck32",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ddrc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmca",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcb",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcd",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmce",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"xm2c",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"xm2d",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ls",      TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DONT_SET},
-+	{"lc",      TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DONT_SET},
-+	{"ld17_0",  TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld19_18", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld21_20", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld23_22", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
- };
- 
- static struct tegra_gpio_table gpio_table[] = {
-@@ -155,8 +267,10 @@ static struct tegra_gpio_table gpio_table[] = {
- };
- 
- static struct tegra_board_pinmux_conf conf = {
--	.pgs = paz00_pinmux,
--	.pg_count = ARRAY_SIZE(paz00_pinmux),
-+	.maps = paz00_map,
-+	.map_count = ARRAY_SIZE(paz00_map),
-+	.pgs = paz00_pg,
-+	.pg_count = ARRAY_SIZE(paz00_pg),
- 	.gpios = gpio_table,
- 	.gpio_count = ARRAY_SIZE(gpio_table),
- };
-diff --git a/arch/arm/mach-tegra/board-pinmux.c b/arch/arm/mach-tegra/board-pinmux.c
-index adc3efe..4e18e14 100644
---- a/arch/arm/mach-tegra/board-pinmux.c
-+++ b/arch/arm/mach-tegra/board-pinmux.c
-@@ -16,10 +16,10 @@
- #include <linux/kernel.h>
- #include <linux/notifier.h>
- #include <linux/of.h>
-+#include <linux/pinctrl/pinconf.h>
- #include <linux/string.h>
- 
- #include <mach/gpio-tegra.h>
--#include <mach/pinmux.h>
- 
- #include "board-pinmux.h"
- #include "devices.h"
-@@ -38,19 +38,58 @@ static void tegra_board_pinmux_setup_gpios(void)
- 	}
- }
- 
-+static inline void tegra_board_pinmux_conf(const char *group, u16 param,
-+					   u16 arg)
-+{
-+	if (arg == TEGRA_PINCONFIG_DONT_SET)
-+		return;
-+	pin_config_group_set(PINMUX_DEV, group, TEGRA_PINCONF_PACK(param, arg));
-+}
-+
- static void tegra_board_pinmux_setup_pinmux(void)
- {
--	int i;
-+	int i, j;
-+	const char *group;
- 
- 	for (i = 0; i < ARRAY_SIZE(confs); i++) {
- 		if (!confs[i])
- 			continue;
- 
--		tegra_pinmux_config_table(confs[i]->pgs, confs[i]->pg_count);
--
--		if (confs[i]->drives)
--			tegra_drive_pinmux_config_table(confs[i]->drives,
--							confs[i]->drive_count);
-+		for (j = 0; j < confs[i]->pg_count; j++) {
-+			group = confs[i]->pgs[j].group;
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_PULL,
-+				confs[i]->pgs[j].pull);
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_TRISTATE,
-+				confs[i]->pgs[j].tristate);
-+		}
-+
-+		for (j = 0; j < confs[i]->drive_count; j++) {
-+			group = confs[i]->drives[j].group;
-+
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_HIGH_SPEED_MODE,
-+				confs[i]->drives[j].high_speed_mode);
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_SCHMITT,
-+				confs[i]->drives[j].schmitt);
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_LOW_POWER_MODE,
-+				confs[i]->drives[j].low_power_mode);
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_DRIVE_DOWN_STRENGTH,
-+				confs[i]->drives[j].drive_down_strength);
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_DRIVE_UP_STRENGTH,
-+				confs[i]->drives[j].drive_up_strength);
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_SLEW_RATE_FALLING,
-+				confs[i]->drives[j].slew_falling);
-+			tegra_board_pinmux_conf(group,
-+				TEGRA_PINCONF_PARAM_SLEW_RATE_RISING,
-+				confs[i]->drives[j].slew_rising);
-+		}
- 	}
- }
- 
-@@ -94,9 +133,18 @@ static struct platform_device *devices[] = {
- void tegra_board_pinmux_init(struct tegra_board_pinmux_conf *conf_a,
- 			     struct tegra_board_pinmux_conf *conf_b)
- {
-+	int i;
-+
- 	confs[0] = conf_a;
- 	confs[1] = conf_b;
- 
-+	for (i = 0; i < ARRAY_SIZE(confs); i++) {
-+		if (!confs[i])
-+			continue;
-+
-+		pinmux_register_mappings(confs[i]->maps, confs[i]->map_count);
-+	}
-+
- 	bus_register_notifier(&platform_bus_type, &nb);
- 
- 	if (!of_machine_is_compatible("nvidia,tegra20"))
-diff --git a/arch/arm/mach-tegra/board-pinmux.h b/arch/arm/mach-tegra/board-pinmux.h
-index 4aac735..22c9a6e 100644
---- a/arch/arm/mach-tegra/board-pinmux.h
-+++ b/arch/arm/mach-tegra/board-pinmux.h
-@@ -15,17 +15,48 @@
- #ifndef __MACH_TEGRA_BOARD_PINMUX_H
- #define __MACH_TEGRA_BOARD_PINMUX_H
- 
-+#include <linux/pinctrl/machine.h>
-+
-+#include <mach/pinconf-tegra.h>
-+
- #define GPIO_DEV "tegra-gpio"
- #define PINMUX_DEV "tegra-pinmux"
- 
--struct tegra_pingroup_config;
--struct tegra_gpio_table;
-+#define TEGRA_PINMUX_MAP(_group_, _function_) {	\
-+	.name = _group_,			\
-+	.ctrl_dev_name = PINMUX_DEV,		\
-+	.group = _group_,			\
-+	.function = _function_,			\
-+	.hog_on_boot = true,			\
-+}
-+
-+#define TEGRA_PINCONFIG_DONT_SET 0xffff
-+
-+struct tegra_board_pinmux_pg_conf {
-+	const char *group;
-+	u16 pull;
-+	u16 tristate;
-+};
-+
-+struct tegra_board_pinmux_drive_conf {
-+	const char *group;
-+	u16 high_speed_mode;
-+	u16 schmitt;
-+	u16 low_power_mode;
-+	u16 drive_down_strength;
-+	u16 drive_up_strength;
-+	u16 slew_falling;
-+	u16 slew_rising;
-+};
- 
- struct tegra_board_pinmux_conf {
--	struct tegra_pingroup_config *pgs;
-+	struct pinmux_map *maps;
-+	int map_count;
-+
-+	struct tegra_board_pinmux_pg_conf *pgs;
- 	int pg_count;
- 
--	struct tegra_drive_pingroup_config *drives;
-+	struct tegra_board_pinmux_drive_conf *drives;
- 	int drive_count;
- 
- 	struct tegra_gpio_table *gpios;
-diff --git a/arch/arm/mach-tegra/board-seaboard-pinmux.c b/arch/arm/mach-tegra/board-seaboard-pinmux.c
-index 55e7e43..eefc113 100644
---- a/arch/arm/mach-tegra/board-seaboard-pinmux.c
-+++ b/arch/arm/mach-tegra/board-seaboard-pinmux.c
-@@ -14,169 +14,287 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/gpio.h>
--#include <linux/of.h>
--
--#include <mach/pinmux.h>
--#include <mach/pinmux-tegra20.h>
- 
- #include "gpio-names.h"
--#include "board-pinmux.h"
- #include "board-seaboard.h"
-+#include "board-pinmux.h"
- 
--#define DEFAULT_DRIVE(_name)					\
--	{							\
--		.pingroup = TEGRA_DRIVE_PINGROUP_##_name,	\
--		.hsm = TEGRA_HSM_DISABLE,			\
--		.schmitt = TEGRA_SCHMITT_ENABLE,		\
--		.drive = TEGRA_DRIVE_DIV_1,			\
--		.pull_down = TEGRA_PULL_31,			\
--		.pull_up = TEGRA_PULL_31,			\
--		.slew_rising = TEGRA_SLEW_SLOWEST,		\
--		.slew_falling = TEGRA_SLEW_SLOWEST,		\
-+#define DEFAULT_DRIVE(name)			\
-+	{					\
-+		.group = name,			\
-+		.high_speed_mode = 0,		\
-+		.schmitt = 0,			\
-+		.low_power_mode = 3,		\
-+		.drive_down_strength = 31,	\
-+		.drive_up_strength = 31,	\
-+		.slew_falling = 3,		\
-+		.slew_rising = 3,		\
- 	}
- 
--static struct tegra_drive_pingroup_config seaboard_drive_pinmux[] = {
--	DEFAULT_DRIVE(SDIO1),
-+static struct tegra_board_pinmux_drive_conf seaboard_drive[] = {
-+	DEFAULT_DRIVE("drive_sdio1"),
-+};
-+
-+static struct pinmux_map common_map[] = {
-+	TEGRA_PINMUX_MAP("ata",   "ide"),
-+	TEGRA_PINMUX_MAP("atb",   "sdio4"),
-+	TEGRA_PINMUX_MAP("atc",   "nand"),
-+	TEGRA_PINMUX_MAP("atd",   "gmi"),
-+	TEGRA_PINMUX_MAP("ate",   "gmi"),
-+	TEGRA_PINMUX_MAP("cdev1", "plla_out"),
-+	TEGRA_PINMUX_MAP("cdev2", "pllp_out4"),
-+	TEGRA_PINMUX_MAP("crtp",  "crt"),
-+	TEGRA_PINMUX_MAP("csus",  "vi_sensor_clk"),
-+	TEGRA_PINMUX_MAP("dap1",  "dap1"),
-+	TEGRA_PINMUX_MAP("dap2",  "dap2"),
-+	TEGRA_PINMUX_MAP("dap3",  "dap3"),
-+	TEGRA_PINMUX_MAP("dap4",  "dap4"),
-+	TEGRA_PINMUX_MAP("ddc",   "rsvd2"),
-+	TEGRA_PINMUX_MAP("dta",   "vi"),
-+	TEGRA_PINMUX_MAP("dtb",   "vi"),
-+	TEGRA_PINMUX_MAP("dtc",   "vi"),
-+	TEGRA_PINMUX_MAP("dtd",   "vi"),
-+	TEGRA_PINMUX_MAP("dte",   "vi"),
-+	TEGRA_PINMUX_MAP("dtf",   "i2c3"),
-+	TEGRA_PINMUX_MAP("gma",   "sdio4"),
-+	TEGRA_PINMUX_MAP("gmb",   "gmi"),
-+	TEGRA_PINMUX_MAP("gmc",   "uartd"),
-+	TEGRA_PINMUX_MAP("gmd",   "sflash"),
-+	TEGRA_PINMUX_MAP("gme",   "sdio4"),
-+	TEGRA_PINMUX_MAP("gpu",   "pwm"),
-+	TEGRA_PINMUX_MAP("gpu7",  "rtck"),
-+	TEGRA_PINMUX_MAP("gpv",   "pcie"),
-+	TEGRA_PINMUX_MAP("hdint", "hdmi"),
-+	TEGRA_PINMUX_MAP("i2cp",  "i2cp"),
-+	TEGRA_PINMUX_MAP("irrx",  "uartb"),
-+	TEGRA_PINMUX_MAP("irtx",  "uartb"),
-+	TEGRA_PINMUX_MAP("kbca",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcb",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcc",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcd",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbce",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcf",  "kbc"),
-+	TEGRA_PINMUX_MAP("lcsn",  "rsvd4"),
-+	TEGRA_PINMUX_MAP("ld0",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld1",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld2",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld3",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld4",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld5",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld6",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld7",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld8",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld9",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld10",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld11",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld12",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld13",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld14",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld15",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld16",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld17",  "displaya"),
-+	TEGRA_PINMUX_MAP("ldc",   "rsvd4"),
-+	TEGRA_PINMUX_MAP("ldi",   "displaya"),
-+	TEGRA_PINMUX_MAP("lhp0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhp1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhp2",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhs",   "displaya"),
-+	TEGRA_PINMUX_MAP("lm0",   "rsvd4"),
-+	TEGRA_PINMUX_MAP("lm1",   "crt"),
-+	TEGRA_PINMUX_MAP("lpp",   "displaya"),
-+	TEGRA_PINMUX_MAP("lpw1",  "rsvd4"),
-+	TEGRA_PINMUX_MAP("lsc0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsdi",  "rsvd4"),
-+	TEGRA_PINMUX_MAP("lspi",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvp0",  "rsvd4"),
-+	TEGRA_PINMUX_MAP("lvp1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvs",   "displaya"),
-+	TEGRA_PINMUX_MAP("owc",   "rsvd2"),
-+	TEGRA_PINMUX_MAP("pmc",   "pwr_on"),
-+	TEGRA_PINMUX_MAP("pta",   "hdmi"),
-+	TEGRA_PINMUX_MAP("rm",    "i2c1"),
-+	TEGRA_PINMUX_MAP("sdb",   "sdio3"),
-+	TEGRA_PINMUX_MAP("sdc",   "sdio3"),
-+	TEGRA_PINMUX_MAP("sdd",   "sdio3"),
-+	TEGRA_PINMUX_MAP("sdio1", "sdio1"),
-+	TEGRA_PINMUX_MAP("slxa",  "pcie"),
-+	TEGRA_PINMUX_MAP("slxd",  "spdif"),
-+	TEGRA_PINMUX_MAP("spdi",  "rsvd2"),
-+	TEGRA_PINMUX_MAP("spdo",  "rsvd2"),
-+	TEGRA_PINMUX_MAP("spia",  "gmi"),
-+	TEGRA_PINMUX_MAP("spib",  "gmi"),
-+	TEGRA_PINMUX_MAP("spic",  "gmi"),
-+	TEGRA_PINMUX_MAP("spid",  "spi1"),
-+	TEGRA_PINMUX_MAP("spie",  "spi1"),
-+	TEGRA_PINMUX_MAP("spif",  "spi1"),
-+	TEGRA_PINMUX_MAP("spig",  "spi2_alt"),
-+	TEGRA_PINMUX_MAP("spih",  "spi2_alt"),
-+	TEGRA_PINMUX_MAP("uaa",   "ulpi"),
-+	TEGRA_PINMUX_MAP("uab",   "ulpi"),
-+	TEGRA_PINMUX_MAP("uac",   "rsvd2"),
-+	TEGRA_PINMUX_MAP("uad",   "irda"),
-+	TEGRA_PINMUX_MAP("uca",   "uartc"),
-+	TEGRA_PINMUX_MAP("ucb",   "uartc"),
-+	TEGRA_PINMUX_MAP("uda",   "ulpi"),
-+};
-+
-+static struct pinmux_map seaboard_map[] = {
-+	TEGRA_PINMUX_MAP("lpw0",  "hdmi"),
-+	TEGRA_PINMUX_MAP("lpw2",  "hdmi"),
-+	TEGRA_PINMUX_MAP("lsc1",  "hdmi"),
-+	TEGRA_PINMUX_MAP("lsck",  "hdmi"),
-+	TEGRA_PINMUX_MAP("lsda",  "hdmi"),
-+	TEGRA_PINMUX_MAP("slxc",  "spdif"),
-+	TEGRA_PINMUX_MAP("slxk",  "pcie"),
-+};
-+
-+static struct pinmux_map ventana_map[] = {
-+	TEGRA_PINMUX_MAP("lpw0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lpw2",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsc1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsck",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsda",  "displaya"),
-+	TEGRA_PINMUX_MAP("slxc",  "sdio3"),
-+	TEGRA_PINMUX_MAP("slxk",  "sdio3"),
- };
- 
--static struct tegra_pingroup_config common_pinmux[] = {
--	{TEGRA_PINGROUP_ATA,   TEGRA_MUX_IDE,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATB,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATC,   TEGRA_MUX_NAND,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATD,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATE,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CDEV1, TEGRA_MUX_PLLA_OUT,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CDEV2, TEGRA_MUX_PLLP_OUT4,     TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CRTP,  TEGRA_MUX_CRT,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CSUS,  TEGRA_MUX_VI_SENSOR_CLK, TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP1,  TEGRA_MUX_DAP1,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DAP2,  TEGRA_MUX_DAP2,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DAP3,  TEGRA_MUX_DAP3,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP4,  TEGRA_MUX_DAP4,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTA,   TEGRA_MUX_VI,            TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTB,   TEGRA_MUX_VI,            TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTC,   TEGRA_MUX_VI,            TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTD,   TEGRA_MUX_VI,            TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTE,   TEGRA_MUX_VI,            TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTF,   TEGRA_MUX_I2C3,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMA,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMB,   TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_GMC,   TEGRA_MUX_UARTD,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GME,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPU,   TEGRA_MUX_PWM,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPU7,  TEGRA_MUX_RTCK,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPV,   TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_HDINT, TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_I2CP,  TEGRA_MUX_I2C,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_IRRX,  TEGRA_MUX_UARTB,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_IRTX,  TEGRA_MUX_UARTB,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCA,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCB,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCC,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCD,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCE,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_KBCF,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LCSN,  TEGRA_MUX_RSVD4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LD0,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD1,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD10,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD11,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD12,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD13,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD14,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD15,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD16,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD17,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD2,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD3,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD4,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD5,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD6,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD7,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD8,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD9,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LDC,   TEGRA_MUX_RSVD4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LDI,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP2,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHS,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LM0,   TEGRA_MUX_RSVD4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LM1,   TEGRA_MUX_CRT,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPP,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LPW1,  TEGRA_MUX_RSVD4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSC0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSDI,  TEGRA_MUX_RSVD4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSPI,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LVP0,  TEGRA_MUX_RSVD4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LVP1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LVS,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_OWC,   TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_PMC,   TEGRA_MUX_PWR_ON,        TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_RM,    TEGRA_MUX_I2C,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDB,   TEGRA_MUX_SDIO3,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDC,   TEGRA_MUX_SDIO3,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDD,   TEGRA_MUX_SDIO3,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDIO1, TEGRA_MUX_SDIO1,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SLXA,  TEGRA_MUX_PCIE,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXD,  TEGRA_MUX_SPDIF,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPDI,  TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPDO,  TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPIB,  TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPID,  TEGRA_MUX_SPI1,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIE,  TEGRA_MUX_SPI1,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIF,  TEGRA_MUX_SPI1,          TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIH,  TEGRA_MUX_SPI2_ALT,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAA,   TEGRA_MUX_ULPI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UAB,   TEGRA_MUX_ULPI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UAC,   TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UAD,   TEGRA_MUX_IRDA,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UCA,   TEGRA_MUX_UARTC,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UCB,   TEGRA_MUX_UARTC,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UDA,   TEGRA_MUX_ULPI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CK32,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DDRC,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCA,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCB,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCC,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCD,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCE,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_XM2C,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_XM2D,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+static struct tegra_board_pinmux_pg_conf common_pg[] = {
-+	{"ata",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"ate",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"cdev1",   TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"cdev2",   TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"crtp",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"csus",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap1",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"dap2",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"dap3",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap4",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"dta",     TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DRIVEN},
-+	{"dtb",     TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DRIVEN},
-+	{"dtc",     TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DRIVEN},
-+	{"dtd",     TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DRIVEN},
-+	{"dte",     TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtf",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gma",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmb",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"gmc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gme",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpu",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpu7",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpv",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"hdint",   TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"i2cp",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"irrx",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"irtx",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"kbca",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcb",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcc",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcd",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbce",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"kbcf",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"lcsn",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"ld0",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld1",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld2",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld3",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld4",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld5",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld6",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld7",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld8",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld9",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld10",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld11",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld12",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld13",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld14",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld15",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld16",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld17",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ldc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"ldi",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp2",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhs",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lm0",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lm1",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpp",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lpw0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lpw1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpw2",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lsc0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lsck",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsda",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsdi",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lspi",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lvp0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lvp1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lvs",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"owc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"pmc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"rm",      TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"sdb",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"sdc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"sdd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"sdio1",   TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"slxa",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"slxd",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"slxk",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spdi",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spdo",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spib",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spid",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spie",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spif",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spih",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uaa",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"uab",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"uac",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"uad",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"uca",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"ucb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"uda",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"ck32",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ddrc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmca",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcb",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcd",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmce",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"xm2c",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"xm2d",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ls",      TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"lc",      TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld17_0",  TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld19_18", TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld21_20", TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld23_22", TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
- };
- 
--static struct tegra_pingroup_config seaboard_pinmux[] = {
--	{TEGRA_PINGROUP_DDC,   TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_GMD,   TEGRA_MUX_SFLASH,        TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LPW0,  TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LPW2,  TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSC1,  TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSCK,  TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSDA,  TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_PTA,   TEGRA_MUX_HDMI,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SLXC,  TEGRA_MUX_SPDIF,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXK,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPIA,  TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIC,  TEGRA_MUX_GMI,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPIG,  TEGRA_MUX_SPI2_ALT,      TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
-+static struct tegra_board_pinmux_pg_conf seaboard_pg[] = {
-+	{"ddc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"gmd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"lsc1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"pta",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"slxc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spia",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"spic",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"spig",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
- };
- 
--static struct tegra_pingroup_config ventana_pinmux[] = {
--	{TEGRA_PINGROUP_DDC,  TEGRA_MUX_RSVD2,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMD,  TEGRA_MUX_SFLASH,   TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPW0, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LPW2, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSC1, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSCK, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSDA, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_PTA,  TEGRA_MUX_RSVD2,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SLXC, TEGRA_MUX_SDIO3,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SLXK, TEGRA_MUX_SDIO3,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPIA, TEGRA_MUX_GMI,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIC, TEGRA_MUX_GMI,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIG, TEGRA_MUX_SPI2_ALT, TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+static struct tegra_board_pinmux_pg_conf ventana_pg[] = {
-+	{"ddc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"lsc1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"pta",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"slxc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spia",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spic",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spig",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
- };
- 
- static struct tegra_gpio_table common_gpio_table[] = {
-@@ -204,24 +322,30 @@ static struct tegra_gpio_table ventana_gpio_table[] = {
- };
- 
- static struct tegra_board_pinmux_conf common_conf = {
--	.pgs = common_pinmux,
--	.pg_count = ARRAY_SIZE(common_pinmux),
-+	.maps = common_map,
-+	.map_count = ARRAY_SIZE(common_map),
-+	.pgs = common_pg,
-+	.pg_count = ARRAY_SIZE(common_pg),
- 	.gpios = common_gpio_table,
- 	.gpio_count = ARRAY_SIZE(common_gpio_table),
- };
- 
- static struct tegra_board_pinmux_conf seaboard_conf = {
--	.pgs = seaboard_pinmux,
--	.pg_count = ARRAY_SIZE(seaboard_pinmux),
--	.drives = seaboard_drive_pinmux,
--	.drive_count = ARRAY_SIZE(seaboard_drive_pinmux),
-+	.maps = seaboard_map,
-+	.map_count = ARRAY_SIZE(seaboard_map),
-+	.pgs = seaboard_pg,
-+	.pg_count = ARRAY_SIZE(seaboard_pg),
-+	.drives = seaboard_drive,
-+	.drive_count = ARRAY_SIZE(seaboard_drive),
- 	.gpios = seaboard_gpio_table,
- 	.gpio_count = ARRAY_SIZE(seaboard_gpio_table),
- };
- 
- static struct tegra_board_pinmux_conf ventana_conf = {
--	.pgs = ventana_pinmux,
--	.pg_count = ARRAY_SIZE(ventana_pinmux),
-+	.maps = ventana_map,
-+	.map_count = ARRAY_SIZE(ventana_map),
-+	.pgs = ventana_pg,
-+	.pg_count = ARRAY_SIZE(ventana_pg),
- 	.gpios = ventana_gpio_table,
- 	.gpio_count = ARRAY_SIZE(ventana_gpio_table),
- };
-diff --git a/arch/arm/mach-tegra/board-trimslice-pinmux.c b/arch/arm/mach-tegra/board-trimslice-pinmux.c
-index a21a2be..7a73bbe 100644
---- a/arch/arm/mach-tegra/board-trimslice-pinmux.c
-+++ b/arch/arm/mach-tegra/board-trimslice-pinmux.c
-@@ -2,6 +2,7 @@
-  * arch/arm/mach-tegra/board-trimslice-pinmux.c
-  *
-  * Copyright (C) 2011 CompuLab, Ltd.
-+ * Copyright (c) 2011, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * This software is licensed under the terms of the GNU General Public
-  * License version 2, as published by the Free Software Foundation, and
-@@ -13,135 +14,246 @@
-  * GNU General Public License for more details.
-  *
-  */
--#include <linux/gpio.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/of.h>
- 
--#include <mach/pinmux.h>
--#include <mach/pinmux-tegra20.h>
-+#include <linux/kernel.h>
- 
- #include "gpio-names.h"
--#include "board-pinmux.h"
- #include "board-trimslice.h"
-+#include "board-pinmux.h"
-+
-+static struct pinmux_map trimslice_map[] = {
-+	TEGRA_PINMUX_MAP("ata",   "ide"),
-+	TEGRA_PINMUX_MAP("atb",   "sdio4"),
-+	TEGRA_PINMUX_MAP("atc",   "nand"),
-+	TEGRA_PINMUX_MAP("atd",   "gmi"),
-+	TEGRA_PINMUX_MAP("ate",   "gmi"),
-+	TEGRA_PINMUX_MAP("cdev1", "plla_out"),
-+	TEGRA_PINMUX_MAP("cdev2", "pllp_out4"),
-+	TEGRA_PINMUX_MAP("crtp",  "crt"),
-+	TEGRA_PINMUX_MAP("csus",  "vi_sensor_clk"),
-+	TEGRA_PINMUX_MAP("dap1",  "dap1"),
-+	TEGRA_PINMUX_MAP("dap2",  "dap2"),
-+	TEGRA_PINMUX_MAP("dap3",  "dap3"),
-+	TEGRA_PINMUX_MAP("dap4",  "dap4"),
-+	TEGRA_PINMUX_MAP("ddc",   "i2c2"),
-+	TEGRA_PINMUX_MAP("dta",   "vi"),
-+	TEGRA_PINMUX_MAP("dtb",   "vi"),
-+	TEGRA_PINMUX_MAP("dtc",   "vi"),
-+	TEGRA_PINMUX_MAP("dtd",   "vi"),
-+	TEGRA_PINMUX_MAP("dte",   "vi"),
-+	TEGRA_PINMUX_MAP("dtf",   "i2c3"),
-+	TEGRA_PINMUX_MAP("gma",   "sdio4"),
-+	TEGRA_PINMUX_MAP("gmb",   "nand"),
-+	TEGRA_PINMUX_MAP("gmc",   "sflash"),
-+	TEGRA_PINMUX_MAP("gmd",   "sflash"),
-+	TEGRA_PINMUX_MAP("gme",   "gmi"),
-+	TEGRA_PINMUX_MAP("gpu",   "uarta"),
-+	TEGRA_PINMUX_MAP("gpu7",  "rtck"),
-+	TEGRA_PINMUX_MAP("gpv",   "pcie"),
-+	TEGRA_PINMUX_MAP("hdint", "hdmi"),
-+	TEGRA_PINMUX_MAP("i2cp",  "i2cp"),
-+	TEGRA_PINMUX_MAP("irrx",  "uartb"),
-+	TEGRA_PINMUX_MAP("irtx",  "uartb"),
-+	TEGRA_PINMUX_MAP("kbca",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcb",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcc",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcd",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbce",  "kbc"),
-+	TEGRA_PINMUX_MAP("kbcf",  "kbc"),
-+	TEGRA_PINMUX_MAP("lcsn",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld0",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld1",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld2",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld3",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld4",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld5",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld6",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld7",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld8",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld9",   "displaya"),
-+	TEGRA_PINMUX_MAP("ld10",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld11",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld12",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld13",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld14",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld15",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld16",  "displaya"),
-+	TEGRA_PINMUX_MAP("ld17",  "displaya"),
-+	TEGRA_PINMUX_MAP("ldc",   "displaya"),
-+	TEGRA_PINMUX_MAP("ldi",   "displaya"),
-+	TEGRA_PINMUX_MAP("lhp0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhp1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhp2",  "displaya"),
-+	TEGRA_PINMUX_MAP("lhs",   "displaya"),
-+	TEGRA_PINMUX_MAP("lm0",   "displaya"),
-+	TEGRA_PINMUX_MAP("lm1",   "displaya"),
-+	TEGRA_PINMUX_MAP("lpp",   "displaya"),
-+	TEGRA_PINMUX_MAP("lpw0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lpw1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lpw2",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsc0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsc1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsck",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsda",  "displaya"),
-+	TEGRA_PINMUX_MAP("lsdi",  "displaya"),
-+	TEGRA_PINMUX_MAP("lspi",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvp0",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvp1",  "displaya"),
-+	TEGRA_PINMUX_MAP("lvs",   "displaya"),
-+	TEGRA_PINMUX_MAP("owc",   "rsvd2"),
-+	TEGRA_PINMUX_MAP("pmc",   "pwr_on"),
-+	TEGRA_PINMUX_MAP("pta",   "gmi"),
-+	TEGRA_PINMUX_MAP("rm",    "i2c1"),
-+	TEGRA_PINMUX_MAP("sdb",   "pwm"),
-+	TEGRA_PINMUX_MAP("sdc",   "pwm"),
-+	TEGRA_PINMUX_MAP("sdd",   "pwm"),
-+	TEGRA_PINMUX_MAP("sdio1", "sdio1"),
-+	TEGRA_PINMUX_MAP("slxa",  "pcie"),
-+	TEGRA_PINMUX_MAP("slxc",  "sdio3"),
-+	TEGRA_PINMUX_MAP("slxd",  "sdio3"),
-+	TEGRA_PINMUX_MAP("slxk",  "pcie"),
-+	TEGRA_PINMUX_MAP("spdi",  "spdif"),
-+	TEGRA_PINMUX_MAP("spdo",  "spdif"),
-+	TEGRA_PINMUX_MAP("spia",  "spi2"),
-+	TEGRA_PINMUX_MAP("spib",  "spi2"),
-+	TEGRA_PINMUX_MAP("spic",  "spi2"),
-+	TEGRA_PINMUX_MAP("spid",  "spi1"),
-+	TEGRA_PINMUX_MAP("spie",  "spi1"),
-+	TEGRA_PINMUX_MAP("spif",  "spi1"),
-+	TEGRA_PINMUX_MAP("spig",  "spi2_alt"),
-+	TEGRA_PINMUX_MAP("spih",  "spi2_alt"),
-+	TEGRA_PINMUX_MAP("uaa",   "ulpi"),
-+	TEGRA_PINMUX_MAP("uab",   "ulpi"),
-+	TEGRA_PINMUX_MAP("uac",   "rsvd2"),
-+	TEGRA_PINMUX_MAP("uad",   "irda"),
-+	TEGRA_PINMUX_MAP("uca",   "uartc"),
-+	TEGRA_PINMUX_MAP("ucb",   "uartc"),
-+	TEGRA_PINMUX_MAP("uda",   "ulpi"),
-+};
- 
--static struct tegra_pingroup_config trimslice_pinmux[] = {
--	{TEGRA_PINGROUP_ATA,   TEGRA_MUX_IDE,           TEGRA_PUPD_NORMAL,	TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_ATB,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,	TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_ATC,   TEGRA_MUX_NAND,          TEGRA_PUPD_NORMAL,	TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_ATD,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,	TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_ATE,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,	TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CDEV1, TEGRA_MUX_PLLA_OUT,      TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_CDEV2, TEGRA_MUX_PLLP_OUT4,     TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CRTP,  TEGRA_MUX_CRT,           TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CSUS,  TEGRA_MUX_VI_SENSOR_CLK, TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP1,  TEGRA_MUX_DAP1,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DAP2,  TEGRA_MUX_DAP2,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP3,  TEGRA_MUX_DAP3,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DAP4,  TEGRA_MUX_DAP4,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DDC,   TEGRA_MUX_I2C2,          TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DTA,   TEGRA_MUX_VI,            TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTB,   TEGRA_MUX_VI,            TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTC,   TEGRA_MUX_VI,            TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTD,   TEGRA_MUX_VI,            TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTE,   TEGRA_MUX_VI,            TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_DTF,   TEGRA_MUX_I2C3,          TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMA,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMB,   TEGRA_MUX_NAND,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_GMC,   TEGRA_MUX_SFLASH,        TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GMD,   TEGRA_MUX_SFLASH,        TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GME,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_GPU,   TEGRA_MUX_UARTA,         TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPU7,  TEGRA_MUX_RTCK,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_GPV,   TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_HDINT, TEGRA_MUX_HDMI,          TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_I2CP,  TEGRA_MUX_I2C,           TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_IRRX,  TEGRA_MUX_UARTB,         TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_IRTX,  TEGRA_MUX_UARTB,         TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_KBCA,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_KBCB,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_KBCC,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_KBCD,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_KBCE,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_KBCF,  TEGRA_MUX_KBC,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LCSN,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LD0,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD1,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD2,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD3,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD4,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD5,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD6,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD7,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD8,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD9,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD10,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD11,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD12,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD13,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD14,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD15,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD16,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LD17,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LDC,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LDI,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHP2,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LHS,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LM0,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LM1,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPP,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LPW0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LPW1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LPW2,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSC0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LSC1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSCK,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSDA,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSDI,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LSPI,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LVP0,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_LVP1,  TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_LVS,   TEGRA_MUX_DISPLAYA,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_OWC,   TEGRA_MUX_RSVD2,         TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_PMC,   TEGRA_MUX_PWR_ON,        TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_PTA,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_RM,    TEGRA_MUX_I2C,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDB,   TEGRA_MUX_PWM,           TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDC,   TEGRA_MUX_PWM,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDD,   TEGRA_MUX_PWM,           TEGRA_PUPD_PULL_UP,     TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SDIO1, TEGRA_MUX_SDIO1,         TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SLXA,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SLXC,  TEGRA_MUX_SDIO3,         TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXD,  TEGRA_MUX_SDIO3,         TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SLXK,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_SPDI,  TEGRA_MUX_SPDIF,         TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPDO,  TEGRA_MUX_SPDIF,         TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIA,  TEGRA_MUX_SPI2,          TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIB,  TEGRA_MUX_SPI2,          TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIC,  TEGRA_MUX_SPI2,          TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPID,  TEGRA_MUX_SPI1,          TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIE,  TEGRA_MUX_SPI1,          TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIF,  TEGRA_MUX_SPI1,          TEGRA_PUPD_PULL_DOWN,   TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIG,  TEGRA_MUX_SPI2_ALT,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_SPIH,  TEGRA_MUX_SPI2_ALT,      TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAA,   TEGRA_MUX_ULPI,          TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAB,   TEGRA_MUX_ULPI,          TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UAC,   TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_UAD,   TEGRA_MUX_IRDA,          TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UCA,   TEGRA_MUX_UARTC,         TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UCB,   TEGRA_MUX_UARTC,         TEGRA_PUPD_PULL_UP,     TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_UDA,   TEGRA_MUX_ULPI,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_TRISTATE},
--	{TEGRA_PINGROUP_CK32,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_DDRC,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCA,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCB,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCC,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCD,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_PMCE,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_XM2C,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
--	{TEGRA_PINGROUP_XM2D,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,      TEGRA_TRI_NORMAL},
-+static struct tegra_board_pinmux_pg_conf trimslice_pg[] = {
-+	{"ata",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"atb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"atc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"atd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"ate",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"cdev1",   TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"cdev2",   TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"crtp",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"csus",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap1",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"dap2",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap3",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dap4",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"ddc",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"dta",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dte",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"dtf",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"gma",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmb",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"gmc",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gmd",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gme",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"gpu",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpu7",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"gpv",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"hdint",   TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"i2cp",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"irrx",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"irtx",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"kbca",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"kbcb",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"kbcc",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"kbcd",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"kbce",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"kbcf",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"lcsn",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"ld0",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld1",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld2",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld3",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld4",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld5",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld6",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld7",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld8",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld9",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld10",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld11",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld12",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld13",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld14",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld15",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld16",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ld17",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"ldc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"ldi",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhp2",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lhs",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lm0",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lm1",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpp",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lpw0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lpw1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lpw2",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lsc0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lsc1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsck",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsda",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lsdi",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lspi",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lvp0",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"lvp1",    TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"lvs",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"owc",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"pmc",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_TRISTATE},
-+	{"pta",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"rm",      TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"sdb",     TEGRA_PINCONFIG_DONT_SET,  TEGRA_PINCONFIG_DRIVEN},
-+	{"sdc",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"sdd",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DRIVEN},
-+	{"sdio1",   TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"slxa",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"slxc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxd",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"slxk",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"spdi",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spdo",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"spia",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spib",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spic",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"spid",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spie",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"spif",    TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_TRISTATE},
-+	{"spig",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"spih",    TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uaa",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uab",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uac",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DRIVEN},
-+	{"uad",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uca",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"ucb",     TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_TRISTATE},
-+	{"uda",     TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_TRISTATE},
-+	{"ck32",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ddrc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmca",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcb",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcc",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmcd",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"pmce",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"xm2c",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"xm2d",    TEGRA_PINCONFIG_PULL_NONE, TEGRA_PINCONFIG_DONT_SET},
-+	{"ls",      TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DONT_SET},
-+	{"lc",      TEGRA_PINCONFIG_PULL_UP,   TEGRA_PINCONFIG_DONT_SET},
-+	{"ld17_0",  TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld19_18", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld21_20", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
-+	{"ld23_22", TEGRA_PINCONFIG_PULL_DOWN, TEGRA_PINCONFIG_DONT_SET},
- };
- 
- static struct tegra_gpio_table gpio_table[] = {
-@@ -153,8 +265,10 @@ static struct tegra_gpio_table gpio_table[] = {
- };
- 
- static struct tegra_board_pinmux_conf conf = {
--	.pgs = trimslice_pinmux,
--	.pg_count = ARRAY_SIZE(trimslice_pinmux),
-+	.maps = trimslice_map,
-+	.map_count = ARRAY_SIZE(trimslice_map),
-+	.pgs = trimslice_pg,
-+	.pg_count = ARRAY_SIZE(trimslice_pg),
- 	.gpios = gpio_table,
- 	.gpio_count = ARRAY_SIZE(gpio_table),
- };
-diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
-index ac35d2b..7867a12 100644
---- a/arch/arm/mach-tegra/pinmux.c
-+++ b/arch/arm/mach-tegra/pinmux.c
-@@ -711,10 +711,10 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
- 
- static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
- #ifdef CONFIG_ARCH_TEGRA_2x_SOC
--	{ .compatible = "nvidia,tegra20-pinmux", tegra20_pinmux_init },
-+	{ .compatible = "nvidia,tegra20-pinmux-disabled", tegra20_pinmux_init },
- #endif
- #ifdef CONFIG_ARCH_TEGRA_3x_SOC
--	{ .compatible = "nvidia,tegra30-pinmux", tegra30_pinmux_init },
-+	{ .compatible = "nvidia,tegra30-pinmux-disabled", tegra30_pinmux_init },
- #endif
- 	{ },
- };
-@@ -809,7 +809,7 @@ static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
- 
- static struct platform_driver tegra_pinmux_driver = {
- 	.driver		= {
--		.name	= "tegra-pinmux",
-+		.name	= "tegra-pinmux-disabled",
- 		.owner	= THIS_MODULE,
- 		.of_match_table = tegra_pinmux_of_match,
- 	},
-diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
-index 9b32968..7fc8e83 100644
---- a/drivers/pinctrl/pinctrl-tegra.c
-+++ b/drivers/pinctrl/pinctrl-tegra.c
-@@ -31,7 +31,7 @@
- 
- #include "pinctrl-tegra.h"
- 
--#define DRIVER_NAME "tegra-pinmux-disabled"
-+#define DRIVER_NAME "tegra-pinmux"
- 
- struct tegra_pmx {
- 	struct device *dev;
-@@ -422,13 +422,13 @@ static struct pinctrl_desc tegra_pinctrl_desc = {
- static struct of_device_id tegra_pinctrl_of_match[] __devinitdata = {
- #ifdef CONFIG_PINCTRL_TEGRA20
- 	{
--		.compatible = "nvidia,tegra20-pinmux-disabled",
-+		.compatible = "nvidia,tegra20-pinmux",
- 		.data = tegra20_pinctrl_init,
- 	},
- #endif
- #ifdef CONFIG_PINCTRL_TEGRA30
- 	{
--		.compatible = "nvidia,tegra30-pinmux-disabled",
-+		.compatible = "nvidia,tegra30-pinmux",
- 		.data = tegra30_pinctrl_init,
- 	},
- #endif
--- 
-1.7.0.4
+> +#define WTP_RAW_XY_FEAT_INDEX			0x0F
+> +
+> +struct hidpp_touchpad_raw_info {
+> +	u16 x_size;
+> +	u16 y_size;
+> +	u8 z_range;
+> +	u8 area_range;
+> +	u8 timestamp_unit;
+> +	u8 origin;
+> +	u8 pen_supported;
+> +};
+> +
+> +struct hidpp_touchpad_raw_xy_finger {
+> +	u8 contact_type;
+> +	u8 contact_status;
+> +	u16 x;
+> +	u16 y;
+> +	u8 z;
+> +	u8 area;
+> +	u8 finger_id;
+> +};
+> +
+> +struct hidpp_touchpad_raw_xy {
+> +	u16 timestamp;
+> +	struct hidpp_touchpad_raw_xy_finger fingers[2];
+> +	u8 spurious_flag;
+> +	u8 end_of_frame;
+> +	u8 finger_count;
+> +};
+> +
+> +struct wtp_mt_slot {
+> +	bool touch_state;	/* is the touch valid? */
+> +	bool seen_in_this_frame;/* has this slot been updated */
+> +};
+> +
+> +struct wtp_data {
+> +	struct input_dev *input;
+> +	__u16 x_size, y_size;
+> +	__u8 p_range, area_range;
+> +	__u8 finger_count;
+> +	__u8 mt_feature_index;
+> +	__u8 button_feature_index;
+> +	__u8 maxcontacts;
+> +	struct wtp_mt_slot slots[5];
+> +};
+> +
+> +struct touch_hidpp_report {
+> +	u8 x_m;
+> +	u8 x_l;
+> +	u8 y_m;
+> +	u8 y_l;
+> +	u8 z;
+> +	u8 area;
+> +	u8 id;
+> +};
+> +
+> +struct dual_touch_hidpp_report {
+> +	u8 report_id;
+> +	u8 device_index;
+> +	u8 feature_index;
+> +	u8 broadcast_event;
+> +	u16 timestamp;
+> +	struct touch_hidpp_report touches[2];
+> +};
 
+Seven structs seems a bit much, let's see how things unfold.
+
+> +
+> +static void wtp_touch_event(struct wtp_data *fd,
+> +	struct hidpp_touchpad_raw_xy_finger *touch_report)
+> +{
+> +	int slot = touch_report->finger_id - 1;
+> +
+> +	fd->slots[slot].seen_in_this_frame = true;
+> +	fd->slots[slot].touch_state = touch_report->contact_status;
+> +
+> +	input_mt_slot(fd->input, slot);
+> +	input_mt_report_slot_state(fd->input, MT_TOOL_FINGER,
+> +					touch_report->contact_status);
+> +	if (touch_report->contact_status) {
+> +		input_event(fd->input, EV_ABS, ABS_MT_POSITION_X,
+> +				touch_report->x);
+> +		input_event(fd->input, EV_ABS, ABS_MT_POSITION_Y,
+> +				touch_report->y);
+> +		input_event(fd->input, EV_ABS, ABS_MT_PRESSURE,
+> +				touch_report->area);
+> +	}
+> +}
+
+At first glance, it seems fd->slots[slot], and hence struct
+wtp_mt_slot, can be removed altogether. A local bitmask can keep track
+of the slots seen in this frame.
+
+> +
+> +static int wtp_touchpad_raw_xy_event(struct hidpp_device *hidpp_dev,
+> +				u8 *event_data)
+> +{
+> +	struct hidpp_touchpad_raw_xy *raw =
+> +		(struct hidpp_touchpad_raw_xy *)event_data;
+
+Why does this function not take (struct hidpp_touchpad_raw_xy *) instead of (u8 *)?
+
+> +	struct wtp_data *fd = (struct wtp_data *)hidpp_dev->driver_data;
+> +
+> +	int finger_count = raw->finger_count;
+> +	bool end_of_frame = raw->end_of_frame;
+> +
+> +	int i;
+
+The variables above were first introduced in a local struct on the
+stack in first ontroduced(), then sent via a pointer to a to this
+function, only to be put on the stack again. Sending as arguments
+instead might be simpler, and save us another struct.
+
+> +
+> +	if (!hidpp_dev->initialized)
+> +		return 0;
+> +
+> +	if (finger_count) {
+> +		wtp_touch_event(fd, &(raw->fingers[0]));
+> +		if ((end_of_frame && finger_count == 4) ||
+> +			(!end_of_frame && finger_count >= 2))
+> +			wtp_touch_event(fd, &(raw->fingers[1]));
+
+One or two calls to wtp_touch_event(), with data filled in using
+similar logic in the calling function. Perhaps two calls with
+arguments instead, saving us another struct.
+
+> +	}
+> +
+> +	if (end_of_frame || finger_count <= 2) {
+> +		for (i = 0; i < ARRAY_SIZE(fd->slots); i++) {
+> +			if (!fd->slots[i].seen_in_this_frame &&
+> +				fd->slots[i].touch_state) {
+> +				input_mt_slot(fd->input, i);
+> +				input_mt_report_slot_state(fd->input,
+> +					MT_TOOL_FINGER, 0);
+> +				fd->slots[i].touch_state = 0;
+> +			}
+> +
+> +			fd->slots[i].seen_in_this_frame = false;
+> +
+> +		}
+
+Logic to report the non-seen fingers as up can be simplified. Please
+see the cyttsp driver currently in review for an example.
+
+> +		input_mt_report_pointer_emulation(fd->input, true);
+> +		input_report_key(fd->input, BTN_TOOL_FINGER,
+> +				 finger_count == 1);
+> +		input_report_key(fd->input, BTN_TOOL_DOUBLETAP,
+> +				 finger_count == 2);
+> +		input_report_key(fd->input, BTN_TOOL_TRIPLETAP,
+> +				 finger_count == 3);
+> +		input_report_key(fd->input, BTN_TOOL_QUADTAP,
+> +				 finger_count == 4);
+
+The button reports here are already included in the call to input_mt_report_pointer_emulation().
+
+> +		input_sync(fd->input);
+
+A comment explaining that we send packets after every two touch updates would be good.
+
+> +	}
+> +	return 1;
+> +}
+> +
+> +
+> +static void hidpp_touchpad_touch_event(struct touch_hidpp_report *touch_report,
+
+A const here makes it easier to see input vs output.
+
+> +	struct hidpp_touchpad_raw_xy_finger *finger)
+> +{
+> +	u8 x_m = touch_report->x_m << 2;
+> +	u8 y_m = touch_report->y_m << 2;
+> +
+> +	finger->contact_type = touch_report->x_m >> 6;
+> +	finger->x = x_m << 6 | touch_report->x_l;
+> +
+> +	finger->contact_status = touch_report->y_m >> 6;
+> +	finger->y = y_m << 6 | touch_report->y_l;
+> +
+> +	finger->finger_id = touch_report->id >> 4;
+
+What is hidden in bits [3..0] of report->id?
+
+> +	finger->z = touch_report->z;
+> +	finger->area = touch_report->area;
+> +}
+> +
+> +static int hidpp_touchpad_raw_xy_event(struct hidpp_device *hidpp_device,
+> +		struct hidpp_report *hidpp_report)
+> +{
+> +	struct dual_touch_hidpp_report *dual_touch_report;
+> +	struct hidpp_touchpad_raw_xy raw_xy;
+> +
+> +	dual_touch_report = (struct dual_touch_hidpp_report *)hidpp_report;
+> +	raw_xy.end_of_frame = dual_touch_report->touches[0].id & 0x01;
+> +	raw_xy.spurious_flag = (dual_touch_report->touches[0].id >> 1) & 0x01;
+> +	raw_xy.finger_count = dual_touch_report->touches[1].id & 0x0f;
+
+It seems the dual_touch_report data could be named better. End of
+frame and finger_count are both extracted from the touch id, from
+different "fingers" at that.
+
+> +
+> +	if (raw_xy.finger_count) {
+> +		hidpp_touchpad_touch_event(&dual_touch_report->touches[0],
+> +				&raw_xy.fingers[0]);
+> +		if ((raw_xy.end_of_frame && raw_xy.finger_count == 4) ||
+> +			(!raw_xy.end_of_frame && raw_xy.finger_count >= 2))
+> +			hidpp_touchpad_touch_event(
+> +					&dual_touch_report->touches[1],
+> +					&raw_xy.fingers[1]);
+> +	}
+> +	return wtp_touchpad_raw_xy_event(hidpp_device, (u8 *)&raw_xy);
+
+This could probably be simplified to two calls to wtp_touch_event()
+directly.
+
+> +}
+> +
+> +static int hidpp_touchpad_get_raw_info(struct hidpp_device *hidpp_dev,
+> +	struct hidpp_touchpad_raw_info *raw_info)
+> +{
+> +	struct hidpp_report response;
+> +	int ret;
+> +	u8 *params = (u8 *)response.fap.params;
+> +
+> +	ret = hidpp_send_fap_command_sync(hidpp_dev, WTP_RAW_XY_FEAT_INDEX,
+> +			CMD_TOUCHPAD_GET_RAW_INFO, NULL, 0, &response);
+> +
+> +	if (ret)
+> +		return -ret;
+> +
+> +	*raw_info = *(struct hidpp_touchpad_raw_info *)params;
+> +
+> +	raw_info->x_size = params[0] << 8 | params[1];
+> +	raw_info->y_size = params[2] << 8 | params[3];
+
+So we get the coordinate sizes here.
+
+> +
+> +	return ret;
+> +}
+> +
+> +static int hidpp_touchpad_set_raw_report_state(struct hidpp_device *hidpp_dev,
+> +				bool send_raw_reports,
+> +				bool force_vs_area,
+> +				bool sensor_enhanced_settings)
+> +{
+> +	struct hidpp_report response;
+> +	int ret;
+> +	u8 params = send_raw_reports | force_vs_area << 1 |
+> +				sensor_enhanced_settings << 2;
+> +
+> +	ret = hidpp_send_fap_command_sync(hidpp_dev, WTP_RAW_XY_FEAT_INDEX,
+> +		CMD_TOUCHPAD_SET_RAW_REPORT_STATE, &params, 1, &response);
+> +
+> +	if (ret)
+> +		return -ret;
+> +
+> +	return ret;
+> +}
+> +
+> +static int wtp_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+> +		struct hid_field *field, struct hid_usage *usage,
+> +		unsigned long **bit, int *max)
+> +{
+> +	struct hidpp_device *hidpp_dev = hid_get_drvdata(hdev);
+> +	struct wtp_data *fd = (struct wtp_data *)hidpp_dev->driver_data;
+> +	struct input_dev *input = hi->input;
+> +
+> +	dbg_hid("%s:\n", __func__);
+> +
+> +	if ((usage->hid & HID_USAGE_PAGE) != HID_UP_BUTTON)
+> +		return -1;
+> +
+> +	fd->input = hi->input;
+> +
+> +	__set_bit(BTN_TOUCH, input->keybit);
+> +	__set_bit(BTN_TOOL_FINGER, input->keybit);
+> +	__set_bit(BTN_TOOL_DOUBLETAP, input->keybit);
+> +	__set_bit(BTN_TOOL_TRIPLETAP, input->keybit);
+> +	__set_bit(BTN_TOOL_QUADTAP, input->keybit);
+> +
+> +	__set_bit(EV_ABS, input->evbit);
+> +
+> +	input_mt_init_slots(input, fd->maxcontacts);
+> +
+> +	input_set_capability(input, EV_KEY, BTN_TOUCH);
+> +
+> +	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
+> +	input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 0, 0);
+> +	input_set_abs_params(input, ABS_MT_POSITION_X, 0, X_SIZE, 0, 0);
+> +	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, Y_SIZE, 0, 0);
+> +	input_set_abs_params(input, ABS_X, 0, X_SIZE, 0, 0);
+> +	input_set_abs_params(input, ABS_Y, 0, Y_SIZE, 0, 0);
+
+And we use static coordinate sizes here.
+
+> +
+> +	return 0;
+> +}
+> +
+> +static void wtp_connect_change(struct hidpp_device *hidpp_dev, bool connected)
+> +{
+> +	dbg_hid("%s: connected:%d\n", __func__, connected);
+> +	if ((connected) && (hidpp_dev->initialized))
+> +		hidpp_touchpad_set_raw_report_state(hidpp_dev, true, true, true);
+> +}
+> +
+> +static int wtp_device_init(struct hidpp_device *hidpp_dev)
+> +{
+> +	int ret;
+> +	struct hidpp_touchpad_raw_info raw_info = {};
+> +	struct wtp_data *fd = (struct wtp_data *)hidpp_dev->driver_data;
+> +
+> +	dbg_hid("%s\n", __func__);
+> +
+> +	ret = hidpp_touchpad_set_raw_report_state(hidpp_dev, true, true, true);
+> +
+> +	if (ret) {
+> +		hid_err(hidpp_dev->hid_dev, "unable to set to raw report mode. "
+> +			"The device may not be in range.\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = hidpp_touchpad_get_raw_info(hidpp_dev, &raw_info);
+> +
+> +	if (!ret) {
+> +		if ((X_SIZE != raw_info.x_size) || (Y_SIZE != raw_info.y_size))
+> +			hid_err(hidpp_dev->hid_dev,
+> +				"error getting size. Should have %dx%d, "
+> +				"but device reported %dx%d, ignoring\n",
+> +				X_SIZE, Y_SIZE,
+> +				raw_info.x_size, raw_info.y_size);
+> +
+> +		fd->x_size = raw_info.x_size;
+> +		fd->y_size = raw_info.y_size;
+
+And we bail out if the device coordinates are not the same as the ones
+compiled in here. Seems to me we should initialize the input device
+based on the device coordinates instead?
+
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int wtp_probe(struct hid_device *hdev, const struct hid_device_id *id)
+> +{
+> +	struct wtp_data *fd;
+> +	struct hidpp_device *hidpp_device;
+> +	int ret;
+> +
+> +	dbg_hid("%s\n", __func__);
+> +
+> +	hidpp_device = kzalloc(sizeof(struct hidpp_device), GFP_KERNEL);
+> +	if (!hidpp_device) {
+> +		hid_err(hdev, "cannot allocate hidpp_device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	fd = kzalloc(sizeof(struct wtp_data), GFP_KERNEL);
+> +	if (!fd) {
+> +		hid_err(hdev, "cannot allocate wtp Touch data\n");
+> +		kfree(hidpp_device);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	fd->mt_feature_index = 0x0f;
+> +	fd->button_feature_index = 0x02;
+> +	fd->maxcontacts = 5;
+> +
+> +	hidpp_device->driver_data = (void *)fd;
+> +	hid_set_drvdata(hdev, hidpp_device);
+> +
+> +	hidpp_device->device_init = wtp_device_init;
+> +	hidpp_device->connect_change = wtp_connect_change;
+> +	hidpp_device->raw_event = hidpp_touchpad_raw_xy_event;
+> +
+> +	ret = hid_parse(hdev);
+> +	if (ret)
+> +		goto parse_failed;
+> +
+> +	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+> +	if (ret)
+> +		goto failed;
+> +
+> +	ret = hidpp_init(hidpp_device, hdev);
+> +	if (ret)
+> +		goto failed;
+> +
+> +	return 0;
+> +
+> +failed:
+> +	hid_hw_stop(hdev);
+> +parse_failed:
+> +	kfree(hidpp_device->driver_data);
+> +	kfree(hidpp_device);
+> +	hid_set_drvdata(hdev, NULL);
+> +	return -ENODEV;
+> +}
+> +
+> +static void wtp_remove(struct hid_device *hdev)
+> +{
+> +	struct hidpp_device *hidpp_dev = hid_get_drvdata(hdev);
+> +	struct wtp_data *fd = hidpp_dev->driver_data;
+> +	dbg_hid("%s\n", __func__);
+> +	hid_hw_stop(hdev);
+> +	hidpp_remove(hidpp_dev);
+> +	kfree(fd);
+> +	kfree(hidpp_dev);
+> +	hid_set_drvdata(hdev, NULL);
+> +}
+> +
+> +static const struct hid_device_id wtp_devices[] = {
+> +	{HID_DEVICE(BUS_DJ, USB_VENDOR_ID_LOGITECH, UNIFYING_DEVICE_ID_WIRELESS_TOUCHPAD) },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(hid, wtp_devices);
+> +
+> +static struct hid_driver wtp_driver = {
+> +	.name = "wtp-touch",
+> +	.id_table = wtp_devices,
+> +	.probe = wtp_probe,
+> +	.remove = wtp_remove,
+> +	.input_mapping = wtp_input_mapping,
+> +	.raw_event = hidpp_raw_event,
+> +};
+> +
+> +static int __init wtp_init(void)
+> +{
+> +	return hid_register_driver(&wtp_driver);
+> +}
+> +
+> +static void __exit wtp_exit(void)
+> +{
+> +	hid_unregister_driver(&wtp_driver);
+> +}
+> +
+> +module_init(wtp_init);
+> +module_exit(wtp_exit);
+> diff --git a/include/linux/input.h b/include/linux/input.h
+> index 3862e32..7e930e6 100644
+> --- a/include/linux/input.h
+> +++ b/include/linux/input.h
+> @@ -897,6 +897,7 @@ struct input_keymap_entry {
+>  #define BUS_GSC			0x1A
+>  #define BUS_ATARI		0x1B
+>  #define BUS_SPI			0x1C
+> +#define BUS_DJ			0x1D
+>  
+>  /*
+>   * MT_TOOL types
+> -- 
+> 1.7.5.3
+
+Thanks,
+Henrik
