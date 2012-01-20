@@ -1,90 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab2ATRes (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 12:34:48 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:50522 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753990Ab2ATRee convert rfc822-to-8bit (ORCPT
+	id S1755377Ab2ATRgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 12:36:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33122 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab2ATRgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 12:34:34 -0500
-X-WSS-ID: 0LY3Y5E-0A-59A-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Linus Walleij" <linus.walleij@linaro.org>,
-        "shreshthakumar.sahu@stericsson.com" 
-	<shreshthakumar.sahu@stericsson.com>,
-        "Lars-Peter Clausen" <lars@metafoo.de>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
-Date: Fri, 20 Jan 2012 09:34:11 -0800
-Subject: [PATCH] leds-lm3530: set the value of max_brightness to 127
-Thread-Topic: [PATCH] leds-lm3530: set the value of max_brightness to
- 127
-Thread-Index: AczXmbjiJ8PWamgaTki0A2I4Pga7CA==
-Message-ID: <B567DBAB974C0544994013492B949F8E3812CD3655@EXMAIL03.scwf.nsc.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
+	Fri, 20 Jan 2012 12:36:11 -0500
+Date: Fri, 20 Jan 2012 09:36:04 -0800
+From: Tejun Heo <htejun@gmail.com>
+To: Bart Van Assche <bart.vanassche@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: AHCI_SHT(), ATA_BASE_SHT() and .can_queue
+Message-ID: <20120120173604.GD3336@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <CAO+b5-rwSy9_7LmbNBKQPmYU8M5z48WRCV3tRSjeUnswPkT+Kw@mail.gmail.com>
 MIME-Version: 1.0
-X-WSS-ID: 63077A1F1LS9825877-02-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAO+b5-rwSy9_7LmbNBKQPmYU8M5z48WRCV3tRSjeUnswPkT+Kw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only 7 bits are used for the brightness. (register address : A0h)
-So the max_brightness property of lm3530 should be set to 127.
+Hello,
 
-On initializing registers, maximum initial brightness is limited to 'max_brightness'.
+On Sat, Jan 14, 2012 at 05:04:21PM +0000, Bart Van Assche wrote:
+> I guess the fact that can_queue is specified twice and with different
+> values in AHCI_SHT() was unintentional ?
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/leds/leds-lm3530.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Yes, it is intentional.  The macros provide default values which
+specific drivers or downstream class of drivers may choose to
+override.
 
-diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
-index 4d7ce76..dce6c2a 100644
---- a/drivers/leds/leds-lm3530.c
-+++ b/drivers/leds/leds-lm3530.c
-@@ -80,6 +80,9 @@
- #define LM3530_DEF_ZT_3			(0x66)
- #define LM3530_DEF_ZT_4			(0x7F)
- 
-+/* 7 bits are used for the brightness : LM3530_BRT_CTRL_REG */
-+#define MAX_BRIGHTNESS			(127)
-+
- struct lm3530_mode_map {
- 	const char *mode;
- 	enum lm3530_mode mode_val;
-@@ -184,6 +187,9 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
- 	else
- 		brightness = drvdata->brightness = pltfm->brt_val;
- 
-+	if (brightness > drvdata->led_dev.max_brightness)
-+		brightness = drvdata->led_dev.max_brightness;
-+
- 	reg_val[0] = gen_config;	/* LM3530_GEN_CONFIG */
- 	reg_val[1] = als_config;	/* LM3530_ALS_CONFIG */
- 	reg_val[2] = brt_ramp;		/* LM3530_BRT_RAMP_RATE */
-@@ -340,6 +346,7 @@ static int __devinit lm3530_probe(struct i2c_client *client,
- 	drvdata->enable = false;
- 	drvdata->led_dev.name = LM3530_LED_DEV;
- 	drvdata->led_dev.brightness_set = lm3530_brightness_set;
-+	drvdata->led_dev.max_brightness = MAX_BRIGHTNESS;
- 
- 	i2c_set_clientdata(client, drvdata);
- 
+Thanks.
+
 -- 
-1.7.4.1
-
-
-Best Regards,
-Milo (Woogyom) Kim
-Texas Instruments Incorporated
-
+tejun
