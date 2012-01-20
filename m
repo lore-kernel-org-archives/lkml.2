@@ -1,66 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab2ATP5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 10:57:19 -0500
-Received: from nagini.codelibre.net ([80.68.93.164]:38165 "EHLO
-	nagini.codelibre.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab2ATP5Q (ORCPT
+	id S1754105Ab2ATP7U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 10:59:20 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50611 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753732Ab2ATP7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 10:57:16 -0500
-Date: Fri, 20 Jan 2012 15:49:12 +0000
-From: Roger Leigh <rleigh@codelibre.net>
-To: Karel Zak <kzak@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: Re: /etc/fstab.d yes or not
-Message-ID: <20120120154912.GK8797@codelibre.net>
-References: <20120120140444.GC13157@x2.net.home>
+	Fri, 20 Jan 2012 10:59:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120120140444.GC13157@x2.net.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACRpkdYwx3O42aC8F+DMV1GL0ce62ZhChOQYdbd7-syunsgBOg@mail.gmail.com>
+References: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
+	<CAJuYYwT+pNdt6G07Gx7TqkpGBQEnmMGxsHSE2mew9qUjO-ES5Q@mail.gmail.com>
+	<CACRpkdZS9OVv8osoc5E1KOcqfFnvECnKJzM1kXZ9qNKQMZgB=w@mail.gmail.com>
+	<CAJuYYwTP8a4KYDrJ2o9Wmt4jo_DvLviy75T90JnV7Hw10Y+ZXw@mail.gmail.com>
+	<CACRpkdYwx3O42aC8F+DMV1GL0ce62ZhChOQYdbd7-syunsgBOg@mail.gmail.com>
+Date: Fri, 20 Jan 2012 21:29:18 +0530
+Message-ID: <CAJuYYwRar17+nmqOywd=Yyf=shFQnL4R_jz6Lhk8=RrcdCovLA@mail.gmail.com>
+Subject: Re: [PATCH v6] pinctrl: add a pin config interface
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 03:04:44PM +0100, Karel Zak wrote:
->  I'd like to add support for /etc/fstab.d to libmount. The library is
->  currently used by mount, umount and mount.nfs. The goal is to use it
->  on more places.
-> 
->  The /etc/fstab.d directory has been requested by people who maintains
->  large number of mountpoints etc.
-> 
->  The directory is not replacement for /etc/fstab, it's additional place
->  where you can describe your filesystems.
+Hi Linus,
 
-As a general comment, I would like to use fstab.d for replacing
-the initscripts which mount kernel filesystems in Debian initscripts
-(sysvinit).  We currently hardcode the logic to mount each filesystem
-and additionally hardcode the defaults, and permit the defaults to
-be overridden by the user via /etc/default/* or via entries in
-/etc/fstab.  This could be done much more straightforwardly using
-entries such as /etc/fstab.d/kernfs and /etc/fstab.d/tmpfs etc.
+On 19 January 2012 23:58, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Jan 19, 2012 at 6:55 PM, Thomas Abraham
+> <thomas.abraham@linaro.org> wrote:
+>> Hi Linus,
+>> On 19 January 2012 22:28, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>> On Wed, Jan 18, 2012 at 8:16 AM, Thomas Abraham
+>>> <thomas.abraham@linaro.org> wrote:
+>>>
+>>>> In case of runtime pinmuxing, the pin configuration would also be
+>>>> required to be setup in some cases. pin_config_set() is suitable to be
+>>>> called from the platform code. In case of runtime pinmuxing in driver
+>>>> code, is there any way to set the pin config also at runtime in driver
+>>>> code?
+>>>
+>>> Yes that is already possible today with the pin_config_set() and
+>>> pin_config_group_set() calls already merged for 3.3.
+>>>
+>>> However there is no relation between the struct device and these
+>>> config settings so I feel that this is a bit hack-ish, but it was
+>>> atleast something we could agree upon.
+>>
+>> Using pin_config_set() from drivers did not seem correct. The concern
+>> here is that all there parameters of pin_config_set() are specific to
+>> a particular platform. Hence, using it in driver means that the driver
+>> will no more be usable across multiple different platforms.
+>
+> Yes. But drivers can define a callback function into their
+> platform data, which in turn has the knowledge of what to do
+> for different scenarios, and calls pin_config_set() on the
+> pin controller for that system.
+>
+> But no, it's not elegant :-)
 
->From the distributor's POV, this can then take advantage of the
-package manager's conffile handling, meaning it's much simpler
-for the user to customise.
+Ok. platform_data is a possibility. So for non-dt driver probe, the
+driver would call the platform callback and for dt based driver probe,
+we still need to find a suitable way.
 
->From the initscripts POV, were systemd to also use the same
-approach, we could then share the configuration between the different
-init systems.
+>
+>> But that was not the case with pinmux_get() and pinmux_put().
+>
+> True. pinmuxes are completely platform agnostic...
+>
+> What would be elegant?
+>
+> pinconf_get() + pinconf_put() doesn't seem right since
+> configs are not simple "on or off" states.
+>
+> So we need something like the named config states, but
+> mapped down per device.
+>
+> How about a driver does this:
+>
+> ret = pinconf_activate(&dev, "foo");
+>
+> Where "foo" is a state string like "active", "idle", "sleep",
+> "off" and could correspons to preset strings in pinconf.h
+> like those found in the other patch
 
-Note that I've not actually taken any of these steps yet; I'm
-about to test it with the upcoming util-linux release and the
-current prerelease, but it is something under consideration.
+Yes, the ability to set the pinconfig from the driver would be very
+helpful for Samsung platforms.
 
+
+> "[PATCH] pinctrl: pin configuration states" I sent out
+> two days ago?
+>
+> Then we can have both system-wide and per-device
+> mapped pin configuration states named by strings.
+
+Ok. Support for both would be nice to have.
+
+>
+> Note that pinconf_get()/pinconf_put() is completely
+> superfluous in this scheme. Since the configurations are
+> stateless settings (not e.g. allocating pins) this is all fine.
+>
+> Passing the string with a named config indicates that
+> the driver knows exactly what it is doing anyway.
+>
+> Shall I recook pin configuration states like this for
+> a try?
+
+Yes, that will be very helpful. Thanks.
+
+It would be easier if pinconf_register_pin_states() need not be called
+for each pin state instance. There should be something similar to the
+existing pinmux configuration where is no need to explicitly register
+a pinmux.
 
 Regards,
-Roger
+Thomas.
 
--- 
-  .''`.  Roger Leigh
- : :' :  Debian GNU/Linux             http://people.debian.org/~rleigh/
- `. `'   Printing on GNU/Linux?       http://gutenprint.sourceforge.net/
-   `-    GPG Public Key: 0x25BFB848   Please GPG sign your mail.
+>
+>> Will
+>> there be support added in pinctrl subsystem to allow drivers to
+>> configure pin-config settings from drivers and be compatible for
+>> multiple platforms?
+>
+> Please provide feedback on my patch entitled:
+> "[PATCH 2/2 v5] pinctrl: introduce generic pin config"
+>
+> If I get a few ACKs for something like that we have the
+> infrastructure for letting drivers config their pins.
+>
+> Yours,
+> Linus Walleij
