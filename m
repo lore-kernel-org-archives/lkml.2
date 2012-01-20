@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2ATRAg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 12:00:36 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:43674 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753612Ab2ATRAe (ORCPT
+	id S1754297Ab2ATRAo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 12:00:44 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11095 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab2ATRAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 12:00:34 -0500
+	Fri, 20 Jan 2012 12:00:40 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 20 Jan 2012 09:00:39 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        Barry Song <21cnbao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>
+Date: Fri, 20 Jan 2012 09:00:38 -0800
+Subject: RE: [PATCH 3/4] pinctrl: Add checks for empty names in
+ pinmux_search_function
+Thread-Topic: [PATCH 3/4] pinctrl: Add checks for empty names in
+ pinmux_search_function
+Thread-Index: AczXjwRrw1cT2w5KQmuZfVuyfinJRAABbBUA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB384@HQMAIL01.nvidia.com>
+References: <20120120161610.21955.25082.stgit@kaulin.local>
+ <20120120161730.21955.40332.stgit@kaulin.local>
+In-Reply-To: <20120120161730.21955.40332.stgit@kaulin.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-From: "Semwal, Sumit" <sumit.semwal@ti.com>
-Date: Fri, 20 Jan 2012 22:30:09 +0530
-Message-ID: <CAB2ybb8rH7pdV-M_NdoPvWKvH78GRugie+tbnbt39oCcCENv=w@mail.gmail.com>
-Subject: [GIT PULL]: dma-buf tree: maintainer update
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        linux-media@vger.kernel.org
-Cc: akpm@linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
-        Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Jesse Barker <jesse.barker@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0KH0wk7006825
 
-Hi Linus,
+Tony Lindgren wrote at Friday, January 20, 2012 9:18 AM:
+> Otherwise we can get the following when dealing with
+> buggy data in a pinmux driver:
+> 
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
 
-Post the merge of dma-buf tree that was (very kindly) sent by Dave
-Airlie, various people involved in this project feel it is natural and
-practical for me to be the maintainer of this code.
+> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+> index 06b8943..ffe633d 100644
+> --- a/drivers/pinctrl/pinmux.c
+> +++ b/drivers/pinctrl/pinmux.c
+> @@ -584,6 +584,13 @@ static int pinmux_search_function(struct pinctrl_dev *pctldev,
+>  							   selector);
+>  		int ret;
+> 
+> +		if (!fname) {
+> +			pr_warning("no name for function%i\n",
+> +				   selector);
+> +			selector++;
+> +			continue;
+> +		}
+> +
+>  		if (!strcmp(map->function, fname)) {
+>  			/* Found the function, check pin group */
+>  			ret = pinmux_check_pin_group(pctldev, selector,
 
-This is my first pull request to you, which only changes the
-MAINTAINERS file - could you please pull from it? [If you'd just
-prefer the patch, I could post that out as well.]
+Shouldn't this be BUG_ON(!fname)?
 
-Thanks and best regards,
-~Sumit.
+There are lots of other places that pmxops->get_function_name() is
+called. Wouldn't it be better to enhance e.g. pinmux_check_ops() to
+validate that all functions have a name during pinctrl registration?
 
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
+-- 
+nvpublic
 
-  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
-
-are available in the git repository at:
-  git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git for-linus-3.3
-
-Sumit Semwal (1):
-      MAINTAINERS: Add dma-buf sharing framework maintainer
-
- MAINTAINERS |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
