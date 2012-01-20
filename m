@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab2ATIVe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 03:21:34 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41192 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab2ATIVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 03:21:31 -0500
-Message-ID: <4F192406.9050209@linutronix.de>
-Date: Fri, 20 Jan 2012 09:21:26 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1752449Ab2ATIVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 03:21:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46287 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752368Ab2ATIVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 03:21:02 -0500
+Subject: [PATCH 2/2] virtio: correct the memory barrier in
+	virtqueue_kick_prepare()
+To: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com
+From: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org
+Date: Fri, 20 Jan 2012 16:17:08 +0800
+Message-ID: <20120120081708.50747.60241.stgit@amd-6168-8-1.englab.nay.redhat.com>
+In-Reply-To: <20120120081658.50747.10625.stgit@amd-6168-8-1.englab.nay.redhat.com>
+References: <20120120081658.50747.10625.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: StGit/3.1-rc9-1929-g8b3408
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Christian Gmeiner <christian.gmeiner@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: linux-next: build failure after merge of the final tree
-References: <20120120181131.8fc4b0b29893b614e7f1fd6e@canb.auug.org.au> <20120119233418.65995f2b.akpm@linux-foundation.org>
-In-Reply-To: <20120119233418.65995f2b.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2012 08:34 AM, Andrew Morton wrote:
-> Like this?
+Use virtio_mb() to make sure the available index to be exposed before
+checking the the avail event. Otherwise we may get stale value of
+avail event in guest and never kick the host after.
 
-Yes.
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/virtio/virtio_ring.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Sebastian
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 78428a8..07d9360 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -308,9 +308,9 @@ bool virtqueue_kick_prepare(struct virtqueue *_vq)
+ 	bool needs_kick;
+ 
+ 	START_USE(vq);
+-	/* Descriptors and available array need to be set before we expose the
+-	 * new available array entries. */
+-	virtio_wmb(vq);
++	/* We need expose available array entries before checking avail
++	 * event. */
++	virtio_mb(vq);
+ 
+ 	old = vq->vring.avail->idx - vq->num_added;
+ 	new = vq->vring.avail->idx;
+
