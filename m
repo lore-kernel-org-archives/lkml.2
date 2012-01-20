@@ -1,157 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab2ATQ1G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:27:06 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:42256 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab2ATQ1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:27:03 -0500
-Date: Fri, 20 Jan 2012 08:26:59 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Michael Breuer <mbreuer@majjas.com>
-Cc: Jarek Poplawski <jarkao2@gmail.com>, David Miller <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Regression: sky2 kernel between 3.1 and 3.2.1 (last known good
- 3.0.9)
-Message-ID: <20120120082659.1e06853e@nehalam.linuxnetplumber.net>
-In-Reply-To: <4F1452B1.4010200@majjas.com>
-References: <20100120094103.GA6225@ff.dom.local>
-	<4B58B217.8030001@majjas.com>
-	<20100121204133.GB3085@del.dom.local>
-	<4B59E7EB.3050605@majjas.com>
-	<4F1452B1.4010200@majjas.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754322Ab2ATQ2P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:28:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60890 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab2ATQ2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 11:28:14 -0500
+Date: Fri, 20 Jan 2012 16:28:01 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Perches <joe@perches.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Pradheep Shrinivasan <pradheep.sh@gmail.com>, greg@kroah.com,
+        devel@linuxdriverproject.org, swetland@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] staging:android_pmem.h: Fixes the space and other
+ formating issues pointed out by checkpatch.pl
+Message-ID: <20120120162801.GE2744@shadowen.org>
+References: <1326856764-2531-1-git-send-email-pradheep.sh@gmail.com>
+ <20120118065620.GE3294@mwanda>
+ <CANz8tm1imZ3njy_uV0tkq0sXwyB5ZLLJsrp4G1zjcBDnJUrjiw@mail.gmail.com>
+ <20120118185457.GH3356@mwanda>
+ <CAAq6er0OPkvTCLt1DvHSjyqM4pH7GMb-D78M09cJY+1ZV3miiQ@mail.gmail.com>
+ <20120120115408.GL3356@mwanda>
+ <1327066144.6176.27.camel@joe2Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327066144.6176.27.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jan 2012 11:39:13 -0500
-Michael Breuer <mbreuer@majjas.com> wrote:
-
-> Synopsis:
+On Fri, Jan 20, 2012 at 05:29:04AM -0800, Joe Perches wrote:
+> On Fri, 2012-01-20 at 14:54 +0300, Dan Carpenter wrote:
+> > It still complains about the following macros where parenthesis are
+> > not needed.
+> > 
+> > ERROR: Macros with complex values should be enclosed in parenthesis
+> > #156: FILE: staging/android/pmem.c:156:
+> > +#define PMEM_IS_FREE(id, index) !(pmem[id].bitmap[index].allocated)
+> > 
+> > Let's just make the check look for an operator with a low
+> > precedence.
+> > http://en.wikipedia.org/wiki/Order_of_operations#Programming_languages
+> > 
+> > Otherwise the submitters are going to change it to:
+> > 
+> > #define PMEM_IS_FREE(id, index) (!(pmem[id].bitmap[index].allocated))
+> > 
+> > That has two pairs of unneeded paranthesis and we run the risk of
+> > reprogramming the kernel in lisp, by mistake.
 > 
-> Receiving DMAR and other errors after approximately three days of 
-> uptime. The symptoms exactly match errors seen and then fixed around 
-> 2.6.32.4.
-> 
-> While the system remains unaffected for too long to do a bisect, I was 
-> able to confirm that the problem exists in the 3.1 stable branch (I 
-> jumped from 3.0 to 3.2 when 3.2. was released).
-> 
-> For now I reverted to the sky2.c from 3.0.9 and am running the rest of 
-> the kernel from 3.1.2, but won't be certain that this works until later 
-> in the week.
-> 
-> Note that 20 seconds prior to the log extract below were DHCP renewal 
-> attempts on eth1, the issue below was on eth0. Not sure it's relevant, 
-> however back in 2010 a preceding DHCP event did turn out to be relevant 
-> to the manifestation of the bug.
-> 
-> The 3.2.1-dirty I'm running is from git with a single local patch - for 
-> sidewinder force-feedback support (shouldn't be relevant to the sky2 issue).
-> 
-> Log extract:
-> 
-> Jan 16 05:49:46 mail kernel: [198230.628919] DRHD: handling fault status 
-> reg 2
-> Jan 16 05:49:46 mail kernel: [198230.628925] sky2 0000:06:00.0: error 
-> interrupt status=0x80000000
-> Jan 16 05:49:46 mail kernel: [198230.628929] DMAR:[DMA Read] Request 
-> device [06:00.0] fault addr fff78000
-> Jan 16 05:49:46 mail kernel: [198230.628931] DMAR:[fault reason 06] PTE 
-> Read access is not set
-> Jan 16 05:49:46 mail kernel: [198230.628939] sky2 0000:06:00.0: PCI 
-> hardware error (0x2010)
-> Jan 16 05:49:53 mail dhclient[1616]: DHCPREQUEST on eth1 to 
-> 10.240.184.29 port 67
-> Jan 16 05:50:01 mail kernel: [198246.288400] ------------[ cut here 
-> ]------------
-> Jan 16 05:50:01 mail kernel: [198246.288408] WARNING: at 
-> net/sched/sch_generic.c:255 dev_watchdog+0x247/0x250()
-> Jan 16 05:50:01 mail kernel: [198246.288411] Hardware name: System 
-> Product Name
-> Jan 16 05:50:01 mail kernel: [198246.288413] NETDEV WATCHDOG: eth0 
-> (sky2): transmit queue 0 timed out
-> Jan 16 05:50:01 mail kernel: [198246.288415] Modules linked in: tcp_lp 
-> cpufreq_stats ebtable_nat ebtables nf_conntrack_netbios_ns 
-> nf_conntrack_broadcast ip6table_mangle ip6table_filter ip6_tables 
-> iptable_mangle ipt_MASQUERADE iptable_nat nf_nat iptable_raw tun bridge 
-> stp llc lockd sit tunnel4 ipt_LOG nf_conntrack_ftp nf_conntrack_ipv6 
-> nf_defrag_ipv6 xt_CHECKSUM xt_multiport xt_DSCP w83627ehf xt_mark 
-> xt_dscp hwmon_vid binfmt_misc raid1 btrfs sunrpc zlib_deflate libcrc32c 
-> snd_hda_codec_analog snd_ens1371 gameport snd_hda_intel snd_rawmidi 
-> snd_ac97_codec snd_hda_codec snd_hwdep ac97_bus snd_seq snd_seq_device 
-> snd_pcm gspca_spca505 snd_timer gspca_main snd videodev media soundcore 
-> i2c_i801 iTCO_wdt microcode v4l2_compat_ioctl32 snd_page_alloc 
-> i7core_edac sky2 edac_core pcspkr iTCO_vendor_support virtio_net virtio 
-> virtio_ring kvm_intel kvm uinput ipv6 raid456 async_raid6_recov async_pq 
-> raid6_pq async_xor firewire_ohci firewire_core pata_acpi ata_generic xor 
-> async_memcpy async_tx crc_itu_t pata_marvell nouveau ttm d
-> Jan 16 05:50:01 mail kernel: rm_kms_helper drm i2c_algo_bit i2c_core 
-> mxm_wmi video [last unloaded: nf_conntrack_broadcast]
-> Jan 16 05:50:01 mail kernel: [198246.288487] Pid: 0, comm: swapper/0 
-> Tainted: G        W    3.2.1-dirty #1
-> Jan 16 05:50:01 mail kernel: [198246.288489] Call Trace:
-> Jan 16 05:50:01 mail kernel: [198246.288491] <IRQ>  [<ffffffff81050a4f>] 
-> warn_slowpath_common+0x7f/0xc0
-> Jan 16 05:50:01 mail kernel: [198246.288501]  [<ffffffff8101f0bd>] ? 
-> lapic_next_event+0x1d/0x30
-> Jan 16 05:50:01 mail kernel: [198246.288504]  [<ffffffff81050b46>] 
-> warn_slowpath_fmt+0x46/0x50
-> Jan 16 05:50:01 mail kernel: [198246.288509]  [<ffffffff81009319>] ? 
-> read_tsc+0x9/0x20
-> Jan 16 05:50:01 mail kernel: [198246.288513]  [<ffffffff814a81e7>] 
-> dev_watchdog+0x247/0x250
-> Jan 16 05:50:01 mail kernel: [198246.288518]  [<ffffffff8105fbbb>] 
-> run_timer_softirq+0x12b/0x3b0
-> Jan 16 05:50:01 mail kernel: [198246.288521]  [<ffffffff814a7fa0>] ? 
-> qdisc_reset+0x50/0x50
-> Jan 16 05:50:01 mail kernel: [198246.288525]  [<ffffffff81057d18>] 
-> __do_softirq+0xa8/0x210
-> Jan 16 05:50:01 mail kernel: [198246.288529]  [<ffffffff8157496c>] 
-> call_softirq+0x1c/0x30
-> Jan 16 05:50:01 mail kernel: [198246.288533]  [<ffffffff810041e5>] 
-> do_softirq+0x65/0xa0
-> Jan 16 05:50:01 mail kernel: [198246.288536]  [<ffffffff810580fe>] 
-> irq_exit+0x8e/0xb0
-> Jan 16 05:50:01 mail kernel: [198246.288539]  [<ffffffff815750a3>] 
-> do_IRQ+0x63/0xe0
-> Jan 16 05:50:01 mail kernel: [198246.288543]  [<ffffffff8156ad2e>] 
-> common_interrupt+0x6e/0x6e
-> Jan 16 05:50:01 mail kernel: [198246.288545] <EOI>  [<ffffffff81307b6d>] 
-> ? intel_idle+0xed/0x150
-> Jan 16 05:50:01 mail kernel: [198246.288551]  [<ffffffff81307b4f>] ? 
-> intel_idle+0xcf/0x150
-> Jan 16 05:50:01 mail kernel: [198246.288555]  [<ffffffff8144d331>] 
-> cpuidle_idle_call+0xc1/0x280
-> Jan 16 05:50:01 mail kernel: [198246.288559]  [<ffffffff8100122a>] 
-> cpu_idle+0xca/0x120
-> Jan 16 05:50:01 mail kernel: [198246.288563]  [<ffffffff8154741e>] 
-> rest_init+0x72/0x74
-> Jan 16 05:50:01 mail kernel: [198246.288568]  [<ffffffff81b6abdd>] 
-> start_kernel+0x3b5/0x3c0
-> Jan 16 05:50:01 mail kernel: [198246.288572]  [<ffffffff81b6a32b>] 
-> x86_64_start_reservations+0x132/0x136
-> Jan 16 05:50:01 mail kernel: [198246.288576]  [<ffffffff81b6a140>] ? 
-> early_idt_handlers+0x140/0x140
-> Jan 16 05:50:01 mail kernel: [198246.288580]  [<ffffffff81b6a431>] 
-> x86_64_start_kernel+0x102/0x111
-> Jan 16 05:50:01 mail kernel: [198246.288583] ---[ end trace 
-> bb26011d21a2b1d7 ]---
-> Jan 16 05:50:01 mail kernel: [198246.288586] sky2 0000:06:00.0: eth0: tx 
-> timeout
-> Jan 16 05:50:01 mail kernel: [198246.288593] sky2 0000:06:00.0: eth0: 
-> transmit ring 115 .. 10 report=115 done=115
-> 
-> 
-> 
+> I think the outer parens are necessary.
+> Imagine PMEM_IS_FREE(foo, bar).another_dereference
 
 
-Which exact chip version is this?
-  dmesg | grep sky2
-  lspci
+I don't believe that makes any sense does it, those are pointer
+operations, and passing 0/1 to those is going to make the . very
+unhappy.  But that is why I am only proposing to do the three which are
+non-sensicle on pointers.
+
+-apw
