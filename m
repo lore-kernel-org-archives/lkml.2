@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab2ATPUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 10:20:12 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:48120
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753925Ab2ATPUJ (ORCPT
+	id S1754117Ab2ATPVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 10:21:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53308 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab2ATPVR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 10:20:09 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] sctp : Fix typo in net/sctp/socket.c
-Date: Sat, 21 Jan 2012 00:19:46 +0900
-Message-Id: <1327072786-3134-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Fri, 20 Jan 2012 10:21:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120120145907.GA20377@x2.net.home>
+References: <20120120140444.GC13157@x2.net.home> <20120120154309.3ae5f9e4a8f55c477dc423ab@kinali.ch>
+ <20120120145907.GA20377@x2.net.home>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 20 Jan 2012 16:20:56 +0100
+Message-ID: <CAPXgP11f_SicmxSZ1Bb5JmM4krPyNL-rXNJ6rJ2BHrNvA8LzRQ@mail.gmail.com>
+Subject: Re: /etc/fstab.d yes or not
+To: Karel Zak <kzak@redhat.com>
+Cc: Attila Kinali <attila@kinali.ch>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Masanari Iida<standby24x7@gmail.com>
+On Fri, Jan 20, 2012 at 15:59, Karel Zak <kzak@redhat.com> wrote:
+> On Fri, Jan 20, 2012 at 03:43:09PM +0100, Attila Kinali wrote:
+>> Hence, i would like to ask you to consider not adding /etc/fstab.d
+>> unless there is a very good reason to do it. And "to make it simpler
+>> for people who have a lot of mountpoints" is IMHO not a good reason.
+>> How many mountpoints must one use that a single file becomes a problem?
+>
+>  Let's imagine that you have a network and you use the same configuration
+>  on all machines, then "*.d/" directories are very useful for you -- for
+>  example you can create a company.rpm with important configuration and
+>  distribute it to all machines.
 
-Correct a typo "sctp_setsocktopt_bindx" to "sctp_setsockopt_bindx"
-in net/sctp/socket.c
----
- net/sctp/socket.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yeah, and all tools which read /etc/fstab with the glibc interface, to
+find out the properties for the mount point, are just broken now. And
+for what gain. Put a script in you RPM that merges your snippets into
+the one fstab, and you get the same behaviour without any breakage.
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index 408ebd0..658483e 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -970,7 +970,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(struct sock* sk,
- 	void *addr_buf;
- 	struct sctp_af *af;
- 
--	SCTP_DEBUG_PRINTK("sctp_setsocktopt_bindx: sk %p addrs %p"
-+	SCTP_DEBUG_PRINTK("sctp_setsockopt_bindx: sk %p addrs %p"
- 			  " addrs_size %d opt %d\n", sk, addrs, addrs_size, op);
- 
- 	if (unlikely(addrs_size <= 0))
--- 
-1.7.6.5
+Always remember, /etc/fstab is ABI, not a private config file, you
+need a _very_ good reason to break it.
 
+And you usually have not much problems convincing me that breakage is
+justified. I just totally fail to see the benefit vs. gain in this
+case.
+
+Kay
