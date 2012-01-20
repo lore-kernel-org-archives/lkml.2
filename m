@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab2ATUgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 15:36:39 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:57386 "EHLO
+	id S1756218Ab2ATUgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 15:36:47 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:47213 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755376Ab2ATUgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 15:36:35 -0500
+	id S1756060Ab2ATUgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 15:36:45 -0500
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 1/5] MAINTAINERS: Update partitions block F: patterns
-Date: Fri, 20 Jan 2012 12:36:17 -0800
-Message-Id: <8b5d9fde4f85dc5c4037e6c4fea7bd9427864f5b.1327091633.git.joe@perches.com>
+Cc: Amit Kucheria <amit.kucheria@canonical.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 2/5] MAINTAINERS: Remove iMX5 section
+Date: Fri, 20 Jan 2012 12:36:18 -0800
+Message-Id: <5ba44157a422cee8a4bc3ebf1ec00b0d99c5ba10.1327091633.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1327091633.git.joe@perches.com>
 References: <cover.1327091633.git.joe@perches.com>
@@ -19,37 +20,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9be96f3fd101 ("move fs/partitions to block/")
-moved the files, update the patterns.
+commit 784a90c0a7d8f5 ("ARM i.MX: Merge i.MX5 support into mach-imx")
+merged the files, remove the iMX5 section.
 
-cc: Al Viro <viro@zeniv.linux.org.uk>
+cc: Amit Kucheria <amit.kucheria@canonical.com>
+cc: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- MAINTAINERS |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ MAINTAINERS |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 56818fe..a37165b 100644
+index a37165b..39d9e78 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -4122,7 +4122,7 @@ L:	linux-ntfs-dev@lists.sourceforge.net
- W:	http://www.linux-ntfs.org/content/view/19/37/
- S:	Maintained
- F:	Documentation/ldm.txt
--F:	fs/partitions/ldm.*
-+F:	block/partitions/ldm.*
+@@ -789,12 +789,6 @@ F:	arch/arm/mach-mx*/
+ F:	arch/arm/mach-imx/
+ F:	arch/arm/plat-mxc/
  
- LogFS
- M:	Joern Engel <joern@logfs.org>
-@@ -5647,7 +5647,7 @@ W:	http://www.ibm.com/developerworks/linux/linux390/
- S:	Supported
- F:	arch/s390/
- F:	drivers/s390/
--F:	fs/partitions/ibm.c
-+F:	block/partitions/ibm.c
- F:	Documentation/s390/
- F:	Documentation/DocBook/s390*
- 
+-ARM/FREESCALE IMX51
+-M:	Amit Kucheria <amit.kucheria@canonical.com>
+-L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+-S:	Maintained
+-F:	arch/arm/mach-mx5/
+-
+ ARM/FREESCALE IMX6
+ M:	Shawn Guo <shawn.guo@linaro.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 -- 
 1.7.8.111.gad25c.dirty
 
