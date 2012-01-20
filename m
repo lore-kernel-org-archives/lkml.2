@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757067Ab2ASX6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 18:58:52 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56721 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab2ASX6u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 18:58:50 -0500
+	id S1757151Ab2ATAAH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 19:00:07 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:42685 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753118Ab2ATAAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 19:00:04 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
+Date: Fri, 20 Jan 2012 01:03:34 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
+Cc: Simon Glass <sjg@chromium.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-serial@vger.kernel.org
+References: <1326826563-32215-1-git-send-email-sjg@chromium.org> <201201190102.58788.rjw@sisk.pl> <20120119013731.GK2431@linux.vnet.ibm.com>
+In-Reply-To: <20120119013731.GK2431@linux.vnet.ibm.com>
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 19 Jan 2012 15:58:28 -0800
-X-Google-Sender-Auth: k9SRfDGL_53ekOtxideW2KAgseg
-Message-ID: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
-Subject: Linux 3.3-1 out - merge window closed
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201200103.34296.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So the subject says it all. It's been two weeks(+a day), and 3.3-rc1 is now out.
+On Thursday, January 19, 2012, Paul E. McKenney wrote:
+> On Thu, Jan 19, 2012 at 01:02:58AM +0100, Rafael J. Wysocki wrote:
+> > On Wednesday, January 18, 2012, Paul E. McKenney wrote:
+> > > On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
+[...] 
+> > Yes, you can, but then I'd say it's not necessary for user space to
+> > be able to carry that out in a tight loop.  So, it seems, alternatively,
+> > we could make that loop a bit less tight, e.g. by adding an arbitrary
+> > sleep to the user space interface for the "disable" case.
+> 
+> Good point, that would work just as well and be simpler.
 
-There are a couple of trees I haven't merged on purpose, and there may
-be a few trees I overlooked by mistake. The "on purpose" ones were
-things that looked unfamiliar and I felt I didn't have the bandwidth
-to check. The "mistake" ones would just be things I missed due to
-being busy.
+Thanks for the confirmation! :-)
 
-And it really was a pretty busy merge window. I don't know *why* it
-felt so busy, though. In pure numbers, the merge window seems to have
-been pretty normal - the number of merges and regular commits are
-right where you'd expect them. Part of it was spending what felt like
-(and I think was) a couple of days chasing down two independent
-suspend/resume regressions on my laptop, part of it was a couple of
-just bad pull requests, and some of it was some of the independent
-discussions that were on-going. But none of that is unheard of, so
-what do I know..
+By the way, I wonder, would it help to add synchronize_rcu() to
+wakeup_source_add() too?  Then, even if device_wakeup_enable() and
+device_wakeup_disable() are executed in a tight loop for the same
+device, the list_add/list_del operations will always happen in
+different RCU cycles (or at least it seems so).
 
-Anyway, it's out now, and I'm taking off early for a weekend of beer,
-skiing and poker (not necessarily in that order: "don't drink and
-ski"). No email.
-
-So if you felt that your pull request was overlooked by mistake (or
-intentionally, but really not so scary that you think I should have a
-really easy time checking it), you have a couple of days to marshal
-your arguments for why I should pull it after all.
-
-And if you didn't send your pull request in time: "Phhhthrthtpt!". No
-arguments for that one.
-
-(Stats for those that like them: 20% arch updates (arm, power, mips,
-x86), 60% drivers (networking - wireless in particular, staging,
-media, dri, sound, misc - including getting rid of 'struct sysdev'),
-and 20% random stuff: filesystems, networking, perf etc)
-
-                              Linus
+Thanks,
+Rafael
