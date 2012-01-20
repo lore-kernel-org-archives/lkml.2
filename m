@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2ATS4v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 13:56:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7221 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753877Ab2ATS4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 13:56:50 -0500
-Date: Fri, 20 Jan 2012 13:56:46 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: bfields@redhat.com, sgruszka@redhat.com
-Subject: WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
-Message-ID: <20120120135646.2fc4fa61@tlielax.poochiereds.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754728Ab2ATTCn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 14:02:43 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43646 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab2ATTCj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 14:02:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAL1RGDVWDsNhHywkmzaGWxZ5ERYatXVh4fGFC_tmOkkLt3Dg+w@mail.gmail.com>
+References: <CALfB72BHLmN_vkpz9j7mi4yQWaYfJOojqopJ6d4911vuf3WRAA@mail.gmail.com>
+ <CAL1RGDVh7gNTrteiEaGg=4fxW=p3ydZPVf4d1hgtwNT9xUdOMw@mail.gmail.com>
+ <CALfB72BUDiZOZY8f4wvYej5Ozur2FZN3h3FNgc78Ur=tUsSCmA@mail.gmail.com>
+ <CAL1RGDX9P7tmGTkByEid17FrSFwdAW+4=mb9eUxc_uHvmFOeSg@mail.gmail.com>
+ <CALfB72CAwzRe3u2+yQ15+coY9kNgFTZ_Be-b-+aMe6QvbZy-HA@mail.gmail.com>
+ <CALfB72CLZMrS+gTR3=0QcGry4vA3wKmgbhjp9Lc06UZtVcxzZg@mail.gmail.com>
+ <CALfB72A+A9UDieFtYOMLB9c+XHO8nt8Lr-2pkikaqM=0fJ4OAQ@mail.gmail.com> <CAL1RGDVWDsNhHywkmzaGWxZ5ERYatXVh4fGFC_tmOkkLt3Dg+w@mail.gmail.com>
+From: Albert Strasheim <fullung@gmail.com>
+Date: Fri, 20 Jan 2012 21:02:17 +0200
+Message-ID: <CALfB72BqSEKwGdNUnenMjEujKjObhq12jFjmu6VukuA1AtYHrQ@mail.gmail.com>
+Subject: Re: kernel BUG at drivers/iommu/intel-iommu.c:1767 on F16 3.1.1-2.fc16.x86_64
+To: Roland Dreier <roland@purestorage.com>
+Cc: linux-rdma@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Help! I'm working on some patches that overhaul the client state
-tracking on stable storage for knfsd. With this patchset, when I start
-nfsd it does an upcall to userspace to get some info. That upcall is
-done via rpc_pipefs.
+Hello
 
-What I'm finding though is that if I stop and start nfsd multiple
-times, then I eventually get a warning like this on start:
+On Fri, Jan 20, 2012 at 10:23 AM, Roland Dreier <roland@purestorage.com> wrote:
+> On Thu, Jan 19, 2012 at 12:57 AM, Albert Strasheim <fullung@gmail.com> wrote:
+>> Just checking up on this issue. Is there any further testing or
+>> information we can provide to help make a fix happen?
+> I'm not likely to be much help on VT-d issues, but maybe it
+> would be useful to dump all the values in the BUG_ON if its
+> going to trigger, ie just before
 
-[ 5157.128514] WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
-[ 5157.128742] Hardware name: Bochs
-[ 5157.128742] ODEBUG: activate not available (active state 0) object type: timer_list hint: stub_timer+0x0/0x20
-[ 5157.128742] Modules linked in: nfsd(O) nfs_acl auth_rpcgss lockd sunrpc floppy virtio_net i2c_piix4 i2c_core virtio_balloon joydev pcspkr virtio_blk [last unloaded: nfsd]
-[ 5157.128742] Pid: 1312, comm: rpc.nfsd Tainted: G        W  O 3.3.0-rc1+ #1
-[ 5157.128742] Call Trace:
-[ 5157.128742]  [<ffffffff8106135f>] warn_slowpath_common+0x7f/0xc0
-[ 5157.128742]  [<ffffffff81061456>] warn_slowpath_fmt+0x46/0x50
-[ 5157.128742]  [<ffffffff8132ba2c>] debug_print_object+0x8c/0xb0
-[ 5157.128742]  [<ffffffff81070db0>] ? timer_debug_hint+0x10/0x10
-[ 5157.128742]  [<ffffffff8132c02b>] debug_object_activate+0xfb/0x190
-[ 5157.128742]  [<ffffffff81072728>] ? lock_timer_base.isra.24+0x38/0x70
-[ 5157.128742]  [<ffffffff81074676>] mod_timer+0xf6/0x450
-[ 5157.128742]  [<ffffffff810749e8>] add_timer+0x18/0x20
-[ 5157.128742]  [<ffffffff8108168e>] queue_delayed_work_on+0xbe/0x140
-[ 5157.128742]  [<ffffffff81084441>] queue_delayed_work+0x21/0x40
-[ 5157.128742]  [<ffffffffa006e568>] rpc_queue_upcall+0xe8/0x100 [sunrpc]
-[ 5157.128742]  [<ffffffffa012a121>] __cld_pipe_upcall+0x61/0xc0 [nfsd]
-[ 5157.128742]  [<ffffffffa012ad98>] nfsd4_cld_init+0x48/0x140 [nfsd]
-[ 5157.128742]  [<ffffffffa012b22a>] nfsd4_client_tracking_init+0x2a/0xc0 [nfsd]
-[ 5157.128742]  [<ffffffff8169797e>] ? mutex_unlock+0xe/0x10
-[ 5157.128742]  [<ffffffffa01266fa>] nfs4_state_start+0x1a/0x100 [nfsd]
-[ 5157.128742]  [<ffffffffa01028c5>] nfsd_svc+0x135/0x200 [nfsd]
-[ 5157.128742]  [<ffffffffa0103df0>] ? write_maxblksize+0x130/0x130 [nfsd]
-[ 5157.128742]  [<ffffffffa0103e6d>] write_threads+0x7d/0xd0 [nfsd]
-[ 5157.128742]  [<ffffffff811dd16a>] ? simple_transaction_get+0xca/0xe0
-[ 5157.128742]  [<ffffffffa0102ee7>] nfsctl_transaction_write+0x57/0x90 [nfsd]
-[ 5157.128742]  [<ffffffff811b4c9f>] vfs_write+0xaf/0x190
-[ 5157.128742]  [<ffffffff811b4fdd>] sys_write+0x4d/0x90
-[ 5157.128742]  [<ffffffff816a3469>] system_call_fastpath+0x16/0x1b
+Just retested with 3.2.1-1.fc16.x86_64 and the bug seems to be gone.
 
-...or this on stop:
+I confirmed that my test program triggers the bug on 3.1.1-1.fc16.x86_64.
 
-[ 5200.804410] WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
-[ 5200.808205] Hardware name: Bochs
-[ 5200.810121] ODEBUG: assert_init not available (active state 0) object type: timer_list hint: stub_timer+0x0/0x20
-[ 5200.812734] Modules linked in: nfsd(O) nfs_acl auth_rpcgss lockd sunrpc floppy virtio_net i2c_piix4 i2c_core virtio_balloon joydev pcspkr virtio_blk [last unloaded: nfsd]
-[ 5200.821596] Pid: 1394, comm: nfsd Tainted: G        W  O 3.3.0-rc1+ #1
-[ 5200.822409] Call Trace:
-[ 5200.822726]  [<ffffffff8106135f>] warn_slowpath_common+0x7f/0xc0
-[ 5200.823509]  [<ffffffff81061456>] warn_slowpath_fmt+0x46/0x50
-[ 5200.824243]  [<ffffffff8132ba2c>] debug_print_object+0x8c/0xb0
-[ 5200.824935]  [<ffffffff81070db0>] ? timer_debug_hint+0x10/0x10
-[ 5200.825665]  [<ffffffff8132c543>] debug_object_assert_init+0xe3/0x120
-[ 5200.826474]  [<ffffffff810737b4>] del_timer+0x24/0x1b0
-[ 5200.827129]  [<ffffffff81085314>] __cancel_work_timer+0x34/0x140
-[ 5200.827829]  [<ffffffff81085432>] cancel_delayed_work_sync+0x12/0x20
-[ 5200.832905]  [<ffffffffa006e430>] rpc_unlink+0x1e0/0x230 [sunrpc]
-[ 5200.833716]  [<ffffffffa012a195>] nfsd4_remove_cld_pipe+0x15/0x40 [nfsd]
-[ 5200.834558]  [<ffffffffa012b2e0>] nfsd4_client_tracking_exit+0x20/0x30 [nfsd]
-[ 5200.835434]  [<ffffffffa0126984>] nfs4_state_shutdown+0x1a4/0x1c0 [nfsd]
-[ 5200.836271]  [<ffffffffa010219a>] nfsd_last_thread+0x2a/0x60 [nfsd]
-[ 5200.837045]  [<ffffffffa005f66c>] svc_destroy+0x5c/0x140 [sunrpc]
-[ 5200.837778]  [<ffffffffa005f9f6>] svc_exit_thread+0xa6/0xb0 [sunrpc]
-[ 5200.838545]  [<ffffffffa0102123>] nfsd+0x123/0x170 [nfsd]
-[ 5200.839221]  [<ffffffffa0102000>] ? 0xffffffffa0101fff
-[ 5200.839820]  [<ffffffff8108a747>] kthread+0xb7/0xc0
-[ 5200.840431]  [<ffffffff816a48b4>] kernel_thread_helper+0x4/0x10
-[ 5200.850883]  [<ffffffff8169acf4>] ? retint_restore_args+0x13/0x13
-[ 5200.851654]  [<ffffffff8108a690>] ? kthread_worker_fn+0x1a0/0x1a0
-[ 5200.852418]  [<ffffffff816a48b0>] ? gs_change+0x13/0x13
+It seems a bunch of IOMMU fixes went in on 9 and 10 January, so it
+seems to have fixed this problem in 3.2.
 
-The problem is that even after staring at this code for a while, I'm
-still clueless as to what this is telling me. It doesn't happen every
-time either, so maybe there's a race of some sort involved.
+Thanks!
 
-It's possible that my patch is broken and doing something wrong, but
-I'm starting not to think so. I'm not really using timers directly --
-I'm using rpc_pipefs, which queues a delayed job to a workqueue, and
-that is manipulating the timer. The delayed_work (and hence the timer)
-are part of an rpc_inode.
+Regards
 
-Can anyone shed a little light on what this is complaining about?
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Albert
