@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab2ATQig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:38:36 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:7924
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753855Ab2ATQie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:38:34 -0500
-X-SpamScore: -4
-X-BigFish: VPS-4(zz4015Lzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LY3VK3-01-JMS-02
-X-M-MSG: 
-Date: Fri, 20 Jan 2012 17:38:23 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH resend] x86, amd: Add missing feature flag for fam15h models
- 10h-1fh processors
-Message-ID: <20120120163823.GC24508@alberich.amd.com>
-References: <20120105182859.GG14947@alberich.amd.com>
+	id S1754853Ab2ATQjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:39:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59813 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753700Ab2ATQjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 11:39:12 -0500
+Date: Fri, 20 Jan 2012 17:39:10 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PULL REQUEST] Ext3 & ext2 fix, quota improvement
+Message-ID: <20120120163910.GA16973@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120105182859.GG14947@alberich.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-That is the last one missing for those CPUs.
+  Hello Linus,
 
-Others were recently added with commits
+  could you please pull from
 
- fb215366b3c7320ac25dca766a0152df16534932
- (KVM: expose latest Intel cpu new features (BMI1/BMI2/FMA/AVX2) to guest)
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 
-and
+The most important is an ext3 fix of corruption after power failure. The
+other two patches are just minor things...
 
- commit 969df4b82904a30fef19a67398a0c854d223ea67
- (x86: Report cpb and eff_freq_ro flags correctly)
+Top of the tree is 46fe44c. The full shortlog is:
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
+Djalal Harouni (1):
+      ext2: protect inode changes in the SETVERSION and SETFLAGS ioctls
 
-Please apply.
+Jan Kara (2):
+      jbd: Issue cache flush after checkpointing
+      quota: Pass information that quota is stored in system file to userspace
 
+The diffstat is
 
-Thanks,
+ fs/ext2/ioctl.c       |   22 ++++++++++++++++------
+ fs/jbd/checkpoint.c   |   27 ++++++++++++++++++++++-----
+ fs/jbd/recovery.c     |    4 ++++
+ fs/quota/dquot.c      |    8 +++++---
+ include/linux/quota.h |    6 +++++-
+ 5 files changed, 52 insertions(+), 15 deletions(-)
 
-Andreas
-
-
- arch/x86/include/asm/cpufeature.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 17c5d4b..8d67d42 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -159,6 +159,7 @@
- #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
- #define X86_FEATURE_LWP		(6*32+15) /* Light Weight Profiling */
- #define X86_FEATURE_FMA4	(6*32+16) /* 4 operands MAC instructions */
-+#define X86_FEATURE_TCE		(6*32+17) /* translation cache extension */
- #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
- #define X86_FEATURE_TBM		(6*32+21) /* trailing bit manipulations */
- #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
+							Thanks
+								Honza
 -- 
-1.7.8.3
-
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
