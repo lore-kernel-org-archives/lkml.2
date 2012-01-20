@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab2ATIVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 03:21:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46287 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752368Ab2ATIVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 03:21:02 -0500
-Subject: [PATCH 2/2] virtio: correct the memory barrier in
-	virtqueue_kick_prepare()
-To: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com
-From: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org
-Date: Fri, 20 Jan 2012 16:17:08 +0800
-Message-ID: <20120120081708.50747.60241.stgit@amd-6168-8-1.englab.nay.redhat.com>
-In-Reply-To: <20120120081658.50747.10625.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120120081658.50747.10625.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/3.1-rc9-1929-g8b3408
+	id S1752328Ab2ATIYU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 03:24:20 -0500
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:41657 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751187Ab2ATIYQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 03:24:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALfB72A+A9UDieFtYOMLB9c+XHO8nt8Lr-2pkikaqM=0fJ4OAQ@mail.gmail.com>
+References: <CALfB72BHLmN_vkpz9j7mi4yQWaYfJOojqopJ6d4911vuf3WRAA@mail.gmail.com>
+ <CAL1RGDVh7gNTrteiEaGg=4fxW=p3ydZPVf4d1hgtwNT9xUdOMw@mail.gmail.com>
+ <CALfB72BUDiZOZY8f4wvYej5Ozur2FZN3h3FNgc78Ur=tUsSCmA@mail.gmail.com>
+ <CAL1RGDX9P7tmGTkByEid17FrSFwdAW+4=mb9eUxc_uHvmFOeSg@mail.gmail.com>
+ <CALfB72CAwzRe3u2+yQ15+coY9kNgFTZ_Be-b-+aMe6QvbZy-HA@mail.gmail.com>
+ <CALfB72CLZMrS+gTR3=0QcGry4vA3wKmgbhjp9Lc06UZtVcxzZg@mail.gmail.com> <CALfB72A+A9UDieFtYOMLB9c+XHO8nt8Lr-2pkikaqM=0fJ4OAQ@mail.gmail.com>
+From: Roland Dreier <roland@purestorage.com>
+Date: Fri, 20 Jan 2012 00:23:52 -0800
+Message-ID: <CAL1RGDVWDsNhHywkmzaGWxZ5ERYatXVh4fGFC_tmOkkLt3Dg+w@mail.gmail.com>
+Subject: Re: kernel BUG at drivers/iommu/intel-iommu.c:1767 on F16 3.1.1-2.fc16.x86_64
+To: Albert Strasheim <fullung@gmail.com>
+Cc: linux-rdma@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use virtio_mb() to make sure the available index to be exposed before
-checking the the avail event. Otherwise we may get stale value of
-avail event in guest and never kick the host after.
+On Thu, Jan 19, 2012 at 12:57 AM, Albert Strasheim <fullung@gmail.com> wrote:
+> Just checking up on this issue. Is there any further testing or
+> information we can provide to help make a fix happen?
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/virtio/virtio_ring.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+I'm not likely to be much help on VT-d issues, but maybe it
+would be useful to dump all the values in the BUG_ON if its
+going to trigger, ie just before
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 78428a8..07d9360 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -308,9 +308,9 @@ bool virtqueue_kick_prepare(struct virtqueue *_vq)
- 	bool needs_kick;
- 
- 	START_USE(vq);
--	/* Descriptors and available array need to be set before we expose the
--	 * new available array entries. */
--	virtio_wmb(vq);
-+	/* We need expose available array entries before checking avail
-+	 * event. */
-+	virtio_mb(vq);
- 
- 	old = vq->vring.avail->idx - vq->num_added;
- 	new = vq->vring.avail->idx;
+       BUG_ON(addr_width < BITS_PER_LONG && (iov_pfn + nr_pages - 1)
+>> addr_width);
 
+add
+
+       if (addr_width < BITS_PER_LONG && (iov_pfn + nr_pages - 1) >> addr_width)
+           pr_err("VT-d BUG! addr_width %d < %d (iov_pfn 0x%lx
+nr_pages %ld)\n", addr_width, BITS_PER_LONG, iov_pfn, nr_pages);
+
+and report what that prints.
+
+ - R.
