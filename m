@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab2ATQRl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:17:41 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:48821 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620Ab2ATQR3 (ORCPT
+	id S1754659Ab2ATQRi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:17:38 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23743 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab2ATQRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:17:29 -0500
+	Fri, 20 Jan 2012 11:17:33 -0500
 X-Mail-Handler: MailHop Outbound by DynDNS
 X-Originating-IP: 98.234.237.12
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/mKGUPvKxZDRxn3ePGOCuV
-Subject: [PATCH 1/4] pinctrl: Free debugfs entries when unloading a pinmux
- driver
+X-MHO-User: U2FsdGVkX1+rbbWJkylzRIUFMbaxCzhB
+Subject: [PATCH 2/4] pinctrl: Fix pinmux_hog_maps when ctrl_dev_name is not
+ set
 To: linux-kernel@vger.kernel.org
 From: Tony Lindgren <tony@atomide.com>
 Cc: Stephen Warren <swarren@nvidia.com>,
@@ -24,8 +24,8 @@ Cc: Stephen Warren <swarren@nvidia.com>,
         Rajendra Nayak <rajendra.nayak@linaro.org>,
         Dong Aisheng <dong.aisheng@linaro.org>,
         Shawn Guo <shawn.guo@freescale.com>
-Date: Fri, 20 Jan 2012 08:17:22 -0800
-Message-ID: <20120120161722.21955.90415.stgit@kaulin.local>
+Date: Fri, 20 Jan 2012 08:17:27 -0800
+Message-ID: <20120120161727.21955.7437.stgit@kaulin.local>
 In-Reply-To: <20120120161610.21955.25082.stgit@kaulin.local>
 References: <20120120161610.21955.25082.stgit@kaulin.local>
 User-Agent: StGit/0.16
@@ -36,75 +36,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free debugfs entries when unloading a pinmux driver
+The ctrl_dev_name is optional for struct pinmux_map assuming
+that ctrl_dev is set. Without this patch we can get:
+
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+...
+(pinmux_hog_maps+0xa4/0x20c)
+(pinctrl_register+0x2a4/0x378)
+...
 
 Signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/pinctrl/core.c |   14 +++++++++++++-
- drivers/pinctrl/core.h |    3 +++
- 2 files changed, 16 insertions(+), 1 deletions(-)
+ drivers/pinctrl/pinmux.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 569bdb3..d9d35fc 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -510,10 +510,12 @@ static struct dentry *debugfs_root;
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index a76a348..06b8943 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -992,9 +992,12 @@ int pinmux_hog_maps(struct pinctrl_dev *pctldev)
  
- static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
- {
--	static struct dentry *device_root;
-+	struct dentry *device_root;
+ 	for (i = 0; i < pinmux_maps_num; i++) {
+ 		struct pinmux_map const *map = &pinmux_maps[i];
++		int match_found = 0;
  
- 	device_root = debugfs_create_dir(dev_name(pctldev->dev),
- 					 debugfs_root);
-+	pctldev->device_root = device_root;
+-		if (((map->ctrl_dev == dev) ||
+-		     !strcmp(map->ctrl_dev_name, devname)) &&
++		if (map->ctrl_dev_name && !strcmp(map->ctrl_dev_name, devname))
++				match_found = 1;
 +
- 	if (IS_ERR(device_root) || !device_root) {
- 		pr_warn("failed to create debugfs directory for %s\n",
- 			dev_name(pctldev->dev));
-@@ -529,6 +531,11 @@ static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
- 	pinconf_init_device_debugfs(device_root, pctldev);
- }
- 
-+static void pinctrl_remove_device_debugfs(struct pinctrl_dev *pctldev)
-+{
-+	debugfs_remove_recursive(pctldev->device_root);
-+}
-+
- static void pinctrl_init_debugfs(void)
- {
- 	debugfs_root = debugfs_create_dir("pinctrl", NULL);
-@@ -553,6 +560,10 @@ static void pinctrl_init_debugfs(void)
- {
- }
- 
-+static void pinctrl_remove_device_debugfs(struct pinctrl_dev *pctldev)
-+{
-+}
-+
- #endif
- 
- /**
-@@ -641,6 +652,7 @@ void pinctrl_unregister(struct pinctrl_dev *pctldev)
- 	if (pctldev == NULL)
- 		return;
- 
-+	pinctrl_remove_device_debugfs(pctldev);
- 	pinmux_unhog_maps(pctldev);
- 	/* TODO: check that no pinmuxes are still active? */
- 	mutex_lock(&pinctrldev_list_mutex);
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index 177a331..cfa86da 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -41,6 +41,9 @@ struct pinctrl_dev {
- 	struct device *dev;
- 	struct module *owner;
- 	void *driver_data;
-+#ifdef CONFIG_DEBUG_FS
-+	struct dentry *device_root;
-+#endif
- #ifdef CONFIG_PINMUX
- 	struct mutex pinmux_hogs_lock;
- 	struct list_head pinmux_hogs;
++		if (((map->ctrl_dev == dev) || match_found) &&
+ 		    map->hog_on_boot) {
+ 			/* OK time to hog! */
+ 			ret = pinmux_hog_map(pctldev, map);
 
