@@ -1,69 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab2ATSPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 13:15:05 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:54934 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab2ATSPC convert rfc822-to-8bit (ORCPT
+	id S1754269Ab2ATSUF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 13:20:05 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65259 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab2ATSUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 13:15:02 -0500
-Date: Fri, 20 Jan 2012 13:12:41 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Robert Morell <rmorell@nvidia.com>
-Cc: "Semwal, Sumit" <sumit.semwal@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sumit.semwal@linaro.org" <sumit.semwal@linaro.org>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
-Message-ID: <20120120181241.GA8335@phenom.dumpdata.com>
-References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
- <1326845297-6233-1-git-send-email-rmorell@nvidia.com>
- <1326845297-6233-2-git-send-email-rmorell@nvidia.com>
- <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
- <20120120180457.GE29824@morell.nvidia.com>
+	Fri, 20 Jan 2012 13:20:02 -0500
+Date: Fri, 20 Jan 2012 22:19:54 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, david@lang.hm,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andrey Vagin <avagin@openvz.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
+Message-ID: <20120120181954.GQ1954@moon>
+References: <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm>
+ <20120118224956.GF15652@moon>
+ <m1zkdk4mj5.fsf@fess.ebiederm.org>
+ <20120119065541.GA31379@moon>
+ <m1ty3rukr1.fsf@fess.ebiederm.org>
+ <20120120084008.GD1954@moon>
+ <20120120090225.GD2786@moon>
+ <4F197F73.3010000@zytor.com>
+ <20120120162900.GP1954@moon>
+ <4F199CE7.3020900@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120120180457.GE29824@morell.nvidia.com>
+In-Reply-To: <4F199CE7.3020900@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F19AF1C.0087,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 10:04:57AM -0800, Robert Morell wrote:
-> On Wed, Jan 18, 2012 at 01:10:04AM -0800, Semwal, Sumit wrote:
-> > On Wed, Jan 18, 2012 at 5:38 AM, Robert Morell <rmorell@nvidia.com> wrote:
-> > > EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
-> > > issue, and not really an interface".  The dma-buf infrastructure is
-> > > explicitly intended as an interface between modules/drivers, so it
-> > > should use EXPORT_SYMBOL instead.
-> > 
-> > + Konrad, Arnd, Mauro: there were strong objections on using
-> > EXPORT_SYMBOL in place of EXPORT_SYMBOL_GPL by all 3 of them; I
+On Fri, Jan 20, 2012 at 08:57:11AM -0800, H. Peter Anvin wrote:
+> On 01/20/2012 08:29 AM, Cyrill Gorcunov wrote:
+> 
+> I would not worry about get_random_bytes() returning nothing... if
+> so, a lot of other places in the kernel would be broken.
+> 
 
-I am going to defer to what David Airlie recommends.
+Something like below?
 
-> > suggest we first arrive at a consensus before merging this patch.
-> 
-> This discussion seems to have stagnated; how do we move forward here?
-> 
-> Sumit, as the primary author and new maintainer (congrats!) of the
-> dma-buf infrastructure, it seems like it's really your call how to
-> proceed.  I'd still like to see this be something that we can use from
-> the nvidia and fglrx drivers for Xorg buffer sharing, as I and Dave have
-> argued in this thread.  It really seems to me that this change on a
-> technical level won't have any adverse effect on the scenarios where it
-> can be used today, but it will allow it to be used more widely, which
-> will prevent duplication and fragmentation in the future and be greatly
-> appreciated by users of hardware such as Optimus.
-> 
-> Let me know if you have any questions.
-> 
-> Thanks,
-> Robert
+	Cyrill
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [RFC] syscalls, x86: Add __NR_kcmp syscall v4
+
+While doing the checkpoint-restore in the userspace one need to determine
+whether various kernel objects (like mm_struct-s of file_struct-s) are shared
+between tasks and restore this state.
+
+The 2nd step can be solved by using appropriate CLONE_ flags and the unshare
+syscall, while there's currently no ways for solving the 1st one.
+
+One of the ways for checking whether two tasks share e.g. mm_struct is to
+provide some mm_struct ID of a task to its proc file, but showing such
+info considered to be not that good for security reasons.
+
+Thus after some debates we end up in conclusion that using that named
+'comparision' syscall might be the best candidate. So here is it --
+__NR_kcmp.
+
+It takes up to 5 agruments - the pids of the two tasks (which
+characteristics should be compared), the comparision type and
+(in case of comparision of files) two file descriptors.
+
+At moment only x86 is supported.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Andrey Vagin <avagin@openvz.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Glauber Costa <glommer@parallels.com>
+CC: Andi Kleen <andi@firstfloor.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Matt Helsley <matthltc@us.ibm.com>
+CC: Pekka Enberg <penberg@kernel.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Vasiliy Kulikov <segoon@openwall.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Valdis.Kletnieks@vt.edu
+---
+ arch/x86/include/asm/kcmp.h      |   17 ++++
+ arch/x86/include/asm/syscalls.h  |    4 
+ arch/x86/kernel/Makefile         |    1 
+ arch/x86/kernel/kcmp.c           |  163 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/syscalls/syscall_32.tbl |    1 
+ arch/x86/syscalls/syscall_64.tbl |    1 
+ 6 files changed, 187 insertions(+)
+
+Index: linux-2.6.git/arch/x86/include/asm/kcmp.h
+===================================================================
+--- /dev/null
++++ linux-2.6.git/arch/x86/include/asm/kcmp.h
+@@ -0,0 +1,17 @@
++#ifndef _LINUX_KCMP_H
++#define _LINUX_KCMP_H
++
++/* Comparision type */
++enum {
++	KCMP_FILE,
++	KCMP_VM,
++	KCMP_FILES,
++	KCMP_FS,
++	KCMP_SIGHAND,
++	KCMP_IO,
++	KCMP_SYSVSEM,
++
++	KCMP_TYPES,
++};
++
++#endif /* _LINUX_KCMP_H */
+Index: linux-2.6.git/arch/x86/include/asm/syscalls.h
+===================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/syscalls.h
++++ linux-2.6.git/arch/x86/include/asm/syscalls.h
+@@ -42,6 +42,10 @@ long sys_sigaltstack(const stack_t __use
+ asmlinkage int sys_set_thread_area(struct user_desc __user *);
+ asmlinkage int sys_get_thread_area(struct user_desc __user *);
+ 
++/* kenrel/kcmp.c */
++asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
++			 unsigned long idx1, unsigned long idx2);
++
+ /* X86_32 only */
+ #ifdef CONFIG_X86_32
+ 
+Index: linux-2.6.git/arch/x86/kernel/Makefile
+===================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/Makefile
++++ linux-2.6.git/arch/x86/kernel/Makefile
+@@ -34,6 +34,7 @@ obj-y			+= alternative.o i8253.o pci-nom
+ obj-y			+= tsc.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
++obj-y			+= kcmp.o
+ 
+ obj-y				+= trampoline.o trampoline_$(BITS).o
+ obj-y				+= process.o
+Index: linux-2.6.git/arch/x86/kernel/kcmp.c
+===================================================================
+--- /dev/null
++++ linux-2.6.git/arch/x86/kernel/kcmp.c
+@@ -0,0 +1,163 @@
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <linux/fdtable.h>
++#include <linux/string.h>
++#include <linux/random.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/cache.h>
++#include <linux/bug.h>
++#include <linux/err.h>
++
++#include <asm/unistd.h>
++#include <asm/kcmp.h>
++
++static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
++
++static long kptr_obfuscate(long v, int type)
++{
++	return (v + cookies[type][0]) ^ cookies[type][1];
++}
++
++/*
++ * 0 - equal
++ * 1 - less than
++ * 2 - greater than
++ * 3 - not equal but ordering unavailable
++ */
++static int kcmp_ptr(long v1, long v2, int type)
++{
++	long ret;
++
++	ret = kptr_obfuscate(v1, type) - kptr_obfuscate(v2, type);
++
++	return (ret < 0) | ((ret > 0) << 1);
++}
++
++#define KCMP_TASK_PTR(task1, task2, member, type)	\
++	kcmp_ptr((long)(task1)->member,			\
++		 (long)(task2)->member,			\
++		 type)
++
++#define KCMP_PTR(ptr1, ptr2, type)			\
++	kcmp_ptr((long)ptr1, (long)ptr2, type)
++
++/* A caller must be sure the task is presented in memory */
++static struct file *
++get_file_raw_ptr(struct task_struct *task, unsigned int idx)
++{
++	struct fdtable *fdt;
++	struct file *file;
++
++	spin_lock(&task->files->file_lock);
++	fdt = files_fdtable(task->files);
++	if (idx < fdt->max_fds)
++		file = fdt->fd[idx];
++	else
++		file = NULL;
++	spin_unlock(&task->files->file_lock);
++
++	return file;
++}
++
++SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
++		unsigned long, idx1, unsigned long, idx2)
++{
++	struct task_struct *task1;
++	struct task_struct *task2;
++	int ret = 0;
++
++	rcu_read_lock();
++
++	task1 = find_task_by_vpid(pid1);
++	if (!task1) {
++		rcu_read_unlock();
++		return -ESRCH;
++	}
++
++	task2 = find_task_by_vpid(pid2);
++	if (!task2) {
++		put_task_struct(task1);
++		rcu_read_unlock();
++		return -ESRCH;
++	}
++
++	get_task_struct(task1);
++	get_task_struct(task2);
++
++	rcu_read_unlock();
++
++	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
++	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
++		ret = -EACCES;
++		goto err;
++	}
++
++	/*
++	 * Note for all cases but the KCMP_FILE we
++	 * don't take any locks in a sake of speed.
++	 */
++
++	switch (type) {
++	case KCMP_FILE: {
++		struct file *filp1, *filp2;
++
++		filp1 = get_file_raw_ptr(task1, idx1);
++		filp2 = get_file_raw_ptr(task2, idx2);
++
++		if (filp1 && filp2)
++			ret = KCMP_PTR(filp1, filp2, KCMP_FILE);
++		else
++			ret = -ENOENT;
++		break;
++	}
++	case KCMP_VM:
++		ret = KCMP_TASK_PTR(task1, task2, mm, KCMP_VM);
++		break;
++	case KCMP_FILES:
++		ret = KCMP_TASK_PTR(task1, task2, files, KCMP_FILES);
++		break;
++	case KCMP_FS:
++		ret = KCMP_TASK_PTR(task1, task2, fs, KCMP_FS);
++		break;
++	case KCMP_SIGHAND:
++		ret = KCMP_TASK_PTR(task1, task2, sighand, KCMP_SIGHAND);
++		break;
++	case KCMP_IO:
++		ret = KCMP_TASK_PTR(task1, task2, io_context, KCMP_IO);
++		break;
++	case KCMP_SYSVSEM:
++#ifdef CONFIG_SYSVIPC
++		ret = KCMP_TASK_PTR(task1, task2, sysvsem.undo_list, KCMP_SYSVSEM);
++#else
++		ret = -ENOENT;
++		goto err;
++#endif
++		break;
++	default:
++		ret = -EINVAL;
++		goto err;
++	}
++
++err:
++	put_task_struct(task1);
++	put_task_struct(task2);
++
++	return ret;
++}
++
++static __init int kcmp_cookie_init(void)
++{
++	int i, j;
++
++	for (i = 0; i < KCMP_TYPES; i++) {
++		for (j = 0; j < 2; j++) {
++			get_random_bytes(&cookies[i][j],
++					 sizeof(cookies[i][j]));
++			cookies[i][0] |= (~(~0UL >>  1) | 1);
++		}
++	}
++
++	return 0;
++}
++late_initcall(kcmp_cookie_init);
+Index: linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
+===================================================================
+--- linux-2.6.git.orig/arch/x86/syscalls/syscall_32.tbl
++++ linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
+@@ -355,3 +355,4 @@
+ 346	i386	setns			sys_setns
+ 347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
+ 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
++349	i386	kcmp			sys_kcmp
+Index: linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
+===================================================================
+--- linux-2.6.git.orig/arch/x86/syscalls/syscall_64.tbl
++++ linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
+@@ -318,3 +318,4 @@
+ 309	64	getcpu			sys_getcpu
+ 310	64	process_vm_readv	sys_process_vm_readv
+ 311	64	process_vm_writev	sys_process_vm_writev
++312	64	kcmp			sys_kcmp
