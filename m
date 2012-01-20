@@ -1,71 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab2ATQSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:18:50 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23831 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594Ab2ATQRf (ORCPT
+	id S1754817Ab2ATQSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:18:11 -0500
+Received: from mta4.srv.hcvlny.cv.net ([167.206.4.199]:59134 "EHLO
+	mta4.srv.hcvlny.cv.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab2ATQRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:17:35 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+FBdXy5s9ZataMbHuXc9YC
-Subject: [PATCH 3/4] pinctrl: Add checks for empty names in
- pinmux_search_function
-To: linux-kernel@vger.kernel.org
-From: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
-Date: Fri, 20 Jan 2012 08:17:30 -0800
-Message-ID: <20120120161730.21955.40332.stgit@kaulin.local>
-In-Reply-To: <20120120161610.21955.25082.stgit@kaulin.local>
-References: <20120120161610.21955.25082.stgit@kaulin.local>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Jan 2012 11:17:42 -0500
+Date: Fri, 20 Jan 2012 11:17:51 -0500
+From: Michael Breuer <mbreuer@majjas.com>
+Subject: Re: Regression: sky2 kernel between 3.1 and 3.2.1 (last known good
+ 3.0.9)
+In-reply-to: <20120120081059.1deb4468@s6510.linuxnetplumber.net>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jarek Poplawski <jarkao2@gmail.com>, David Miller <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Message-id: <4F1993AF.1020303@majjas.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+References: <20100120094103.GA6225@ff.dom.local> <4B58B217.8030001@majjas.com>
+ <20100121204133.GB3085@del.dom.local> <4B59E7EB.3050605@majjas.com>
+ <4F1452B1.4010200@majjas.com> <4F197926.6080309@majjas.com>
+ <20120120081059.1deb4468@s6510.linuxnetplumber.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0) Gecko/20120118
+ Thunderbird/10.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we can get the following when dealing with
-buggy data in a pinmux driver:
+On 1/20/2012 11:10 AM, Stephen Hemminger wrote:
+> On Fri, 20 Jan 2012 09:24:38 -0500
+> Michael Breuer<mbreuer@majjas.com>  wrote:
+>
+>> On 1/16/2012 11:39 AM, Michael Breuer wrote:
+>>> Synopsis:
+>>>
+>>> Receiving DMAR and other errors after approximately three days of
+>>> uptime. The symptoms exactly match errors seen and then fixed around
+>>> 2.6.32.4.
+>>>
+>>> While the system remains unaffected for too long to do a bisect, I was
+>>> able to confirm that the problem exists in the 3.1 stable branch (I
+>>> jumped from 3.0 to 3.2 when 3.2. was released).
+>>>
+>>> For now I reverted to the sky2.c from 3.0.9 and am running the rest of
+>>> the kernel from 3.1.2, but won't be certain that this works until
+>>> later in the week.
+>>>
+>>> Note that 20 seconds prior to the log extract below were DHCP renewal
+>>> attempts on eth1, the issue below was on eth0. Not sure it's relevant,
+>>> however back in 2010 a preceding DHCP event did turn out to be
+>>> relevant to the manifestation of the bug.
+>>>
+>>> The 3.2.1-dirty I'm running is from git with a single local patch -
+>>> for sidewinder force-feedback support (shouldn't be relevant to the
+>>> sky2 issue).
+>>>
+>>> Log extract:
+>>>
+>>> Jan 16 05:49:46 mail kernel: [198230.628919] DRHD: handling fault
+>>> status reg 2
+>>> Jan 16 05:49:46 mail kernel: [198230.628925] sky2 0000:06:00.0: error
+>>> interrupt status=0x80000000
+>>> Jan 16 05:49:46 mail kernel: [198230.628929] DMAR:[DMA Read] Request
+>>> device [06:00.0] fault addr fff78000
+>>> Jan 16 05:49:46 mail kernel: [198230.628931] DMAR:[fault reason 06]
+>>> PTE Read access is not set
+>>> Jan 16 05:49:46 mail kernel: [198230.628939] sky2 0000:06:00.0: PCI
+>>> hardware error (0x2010)
+>>> Jan 16 05:49:53 mail dhclient[1616]: DHCPREQUEST on eth1 to
+>>> 10.240.184.29 port 67
+>>> Jan 16 05:50:01 mail kernel: [198246.288400] ------------[ cut here
+>>> ]------------
+>>> Jan 16 05:50:01 mail kernel: [198246.288408] WARNING: at
+>>> net/sched/sch_generic.c:255 dev_watchdog+0x247/0x250()
+>>> Jan 16 05:50:01 mail kernel: [198246.288411] Hardware name: System
+>>> Product Name
+>>> Jan 16 05:50:01 mail kernel: [198246.288413] NETDEV WATCHDOG: eth0
+>>> (sky2): transmit queue 0 timed out
+>>> Jan 16 05:50:01 mail kernel: [198246.288415] Modules linked in: tcp_lp
+>>> cpufreq_stats ebtable_nat ebtables nf_conntrack_netbios_ns
+>>> nf_conntrack_broadcast ip6table_mangle ip6table_filter ip6_tables
+>>> iptable_mangle ipt_MASQUERADE iptable_nat nf_nat iptable_raw tun
+>>> bridge stp llc lockd sit tunnel4 ipt_LOG nf_conntrack_ftp
+>>> nf_conntrack_ipv6 nf_defrag_ipv6 xt_CHECKSUM xt_multiport xt_DSCP
+>>> w83627ehf xt_mark xt_dscp hwmon_vid binfmt_misc raid1 btrfs sunrpc
+>>> zlib_deflate libcrc32c snd_hda_codec_analog snd_ens1371 gameport
+>>> snd_hda_intel snd_rawmidi snd_ac97_codec snd_hda_codec snd_hwdep
+>>> ac97_bus snd_seq snd_seq_device snd_pcm gspca_spca505 snd_timer
+>>> gspca_main snd videodev media soundcore i2c_i801 iTCO_wdt microcode
+>>> v4l2_compat_ioctl32 snd_page_alloc i7core_edac sky2 edac_core pcspkr
+>>> iTCO_vendor_support virtio_net virtio virtio_ring kvm_intel kvm uinput
+>>> ipv6 raid456 async_raid6_recov async_pq raid6_pq async_xor
+>>> firewire_ohci firewire_core pata_acpi ata_generic xor async_memcpy
+>>> async_tx crc_itu_t pata_marvell nouveau ttm d
+>>> Jan 16 05:50:01 mail kernel: rm_kms_helper drm i2c_algo_bit i2c_core
+>>> mxm_wmi video [last unloaded: nf_conntrack_broadcast]
+>>> Jan 16 05:50:01 mail kernel: [198246.288487] Pid: 0, comm: swapper/0
+>>> Tainted: G        W    3.2.1-dirty #1
+>>> Jan 16 05:50:01 mail kernel: [198246.288489] Call Trace:
+>>> Jan 16 05:50:01 mail kernel: [198246.288491]<IRQ>
+>>> [<ffffffff81050a4f>] warn_slowpath_common+0x7f/0xc0
+>>> Jan 16 05:50:01 mail kernel: [198246.288501]  [<ffffffff8101f0bd>] ?
+>>> lapic_next_event+0x1d/0x30
+>>> Jan 16 05:50:01 mail kernel: [198246.288504]  [<ffffffff81050b46>]
+>>> warn_slowpath_fmt+0x46/0x50
+>>> Jan 16 05:50:01 mail kernel: [198246.288509]  [<ffffffff81009319>] ?
+>>> read_tsc+0x9/0x20
+>>> Jan 16 05:50:01 mail kernel: [198246.288513]  [<ffffffff814a81e7>]
+>>> dev_watchdog+0x247/0x250
+>>> Jan 16 05:50:01 mail kernel: [198246.288518]  [<ffffffff8105fbbb>]
+>>> run_timer_softirq+0x12b/0x3b0
+>>> Jan 16 05:50:01 mail kernel: [198246.288521]  [<ffffffff814a7fa0>] ?
+>>> qdisc_reset+0x50/0x50
+>>> Jan 16 05:50:01 mail kernel: [198246.288525]  [<ffffffff81057d18>]
+>>> __do_softirq+0xa8/0x210
+>>> Jan 16 05:50:01 mail kernel: [198246.288529]  [<ffffffff8157496c>]
+>>> call_softirq+0x1c/0x30
+>>> Jan 16 05:50:01 mail kernel: [198246.288533]  [<ffffffff810041e5>]
+>>> do_softirq+0x65/0xa0
+>>> Jan 16 05:50:01 mail kernel: [198246.288536]  [<ffffffff810580fe>]
+>>> irq_exit+0x8e/0xb0
+>>> Jan 16 05:50:01 mail kernel: [198246.288539]  [<ffffffff815750a3>]
+>>> do_IRQ+0x63/0xe0
+>>> Jan 16 05:50:01 mail kernel: [198246.288543]  [<ffffffff8156ad2e>]
+>>> common_interrupt+0x6e/0x6e
+>>> Jan 16 05:50:01 mail kernel: [198246.288545]<EOI>
+>>> [<ffffffff81307b6d>] ? intel_idle+0xed/0x150
+>>> Jan 16 05:50:01 mail kernel: [198246.288551]  [<ffffffff81307b4f>] ?
+>>> intel_idle+0xcf/0x150
+>>> Jan 16 05:50:01 mail kernel: [198246.288555]  [<ffffffff8144d331>]
+>>> cpuidle_idle_call+0xc1/0x280
+>>> Jan 16 05:50:01 mail kernel: [198246.288559]  [<ffffffff8100122a>]
+>>> cpu_idle+0xca/0x120
+>>> Jan 16 05:50:01 mail kernel: [198246.288563]  [<ffffffff8154741e>]
+>>> rest_init+0x72/0x74
+>>> Jan 16 05:50:01 mail kernel: [198246.288568]  [<ffffffff81b6abdd>]
+>>> start_kernel+0x3b5/0x3c0
+>>> Jan 16 05:50:01 mail kernel: [198246.288572]  [<ffffffff81b6a32b>]
+>>> x86_64_start_reservations+0x132/0x136
+>>> Jan 16 05:50:01 mail kernel: [198246.288576]  [<ffffffff81b6a140>] ?
+>>> early_idt_handlers+0x140/0x140
+>>> Jan 16 05:50:01 mail kernel: [198246.288580]  [<ffffffff81b6a431>]
+>>> x86_64_start_kernel+0x102/0x111
+>>> Jan 16 05:50:01 mail kernel: [198246.288583] ---[ end trace
+>>> bb26011d21a2b1d7 ]---
+>>> Jan 16 05:50:01 mail kernel: [198246.288586] sky2 0000:06:00.0: eth0:
+>>> tx timeout
+>>> Jan 16 05:50:01 mail kernel: [198246.288593] sky2 0000:06:00.0: eth0:
+>>> transmit ring 115 .. 10 report=115 done=115
+>>>
+>>>
+>>>
+>> FYI - I've been up for four days now without issues running on 3.2.1 +
+>> sky2.c from 3.0.9. Looks like the issue is in fact in one of the
+>> modifications made in sky2.c between those two releases.
+> Since only you seem to be able to reproduce it, most likely the
+> bisect burden will be on you.  If you know it is only one file,
+> then bisecting that file is fairly quick.
+>
+As of now, I have no reliable way to reproduce... so this is likely to 
+take about 3-4 days per bisect run... more if it doesn't fail.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-...
-PC is at strcmp+0xc/0x34
-LR is at pinmux_get+0x350/0x8f4
-...
+If there are suggestions as to diagnostic code to put in; or specific 
+bias towards one version or another that may reduce the time significantly.
 
-Signed-off-by: Tony Lindgren <tony@atomide.com>
----
- drivers/pinctrl/pinmux.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 06b8943..ffe633d 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -584,6 +584,13 @@ static int pinmux_search_function(struct pinctrl_dev *pctldev,
- 							   selector);
- 		int ret;
- 
-+		if (!fname) {
-+			pr_warning("no name for function%i\n",
-+				   selector);
-+			selector++;
-+			continue;
-+		}
-+
- 		if (!strcmp(map->function, fname)) {
- 			/* Found the function, check pin group */
- 			ret = pinmux_check_pin_group(pctldev, selector,
+I've also got some windows where I have to leave a stable version up.
 
