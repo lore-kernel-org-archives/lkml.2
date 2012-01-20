@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab2ATMOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 07:14:47 -0500
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:40500
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750950Ab2ATMOo (ORCPT
+	id S1752293Ab2ATMSs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 07:18:48 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63554 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab2ATMSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 07:14:44 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q0KCEcVG013653
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Problem] kernel hangs at boot (bisected 892d208bcf)
-In-Reply-To: <20120120110111.GB30612@arm.com> (Catalin Marinas's message of
-	"Fri, 20 Jan 2012 11:01:11 +0000")
-References: <gi39bcyff8.fsf@mx10.gouders.net> <20120119110121.GC9268@arm.com>
-	<gi1uqvsx8n.fsf@karga.hank.lab> <20120119140058.GA19036@arm.com>
-	<gik44nrc52.fsf@karga.hank.lab> <20120119153732.GB20558@arm.com>
-	<gi1uqvwpt2.fsf@mx10.gouders.net> <gimx9jv50u.fsf@mx10.gouders.net>
-	<giipk7v2hv.fsf@mx10.gouders.net> <20120120110111.GB30612@arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Fri, 20 Jan 2012 13:14:38 +0100
-Message-ID: <gi7h0mpo41.fsf@karga.hank.lab>
+	Fri, 20 Jan 2012 07:18:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Fri, 20 Jan 2012 13:14:38 +0100 (CET)
+In-Reply-To: <20120120115408.GL3356@mwanda>
+References: <1326856764-2531-1-git-send-email-pradheep.sh@gmail.com>
+	<20120118065620.GE3294@mwanda>
+	<CANz8tm1imZ3njy_uV0tkq0sXwyB5ZLLJsrp4G1zjcBDnJUrjiw@mail.gmail.com>
+	<20120118185457.GH3356@mwanda>
+	<CAAq6er0OPkvTCLt1DvHSjyqM4pH7GMb-D78M09cJY+1ZV3miiQ@mail.gmail.com>
+	<20120120115408.GL3356@mwanda>
+Date: Fri, 20 Jan 2012 12:18:45 +0000
+X-Google-Sender-Auth: NkqoCusbGZf2EQ8iiVRllw7XmEg
+Message-ID: <CAAq6er2K2TaBm_NUgs5E7LbWhZZLwd_kNzPf=kpbtCvccr7kRw@mail.gmail.com>
+Subject: Re: [PATCH 1/6] staging:android_pmem.h: Fixes the space and other
+ formating issues pointed out by checkpatch.pl
+From: Andy Whitcroft <apw@canonical.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Pradheep Shrinivasan <pradheep.sh@gmail.com>, greg@kroah.com,
+        devel@linuxdriverproject.org, swetland@google.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Catalin Marinas <catalin.marinas@arm.com> writes:
-
-> On Thu, Jan 19, 2012 at 08:52:44PM +0000, Dirk Gouders wrote:
->> Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
->> I want to note that in my config CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF is
->> set which causes kmemleak_disable() to be called in kmemleak_init().
+On Fri, Jan 20, 2012 at 11:54 AM, Dan Carpenter
+<dan.carpenter@oracle.com> wrote:
+> It still complains about the following macros where parenthesis are
+> not needed.
 >
-> Thanks for the investigation. Could you please try the patch below?
-> Thanks.
-
-Hi Catalin,
-
-I tested it and that patch solves the problems here.
-
-Thanks a lot for your help,
-
-Dirk
-
+> ERROR: Macros with complex values should be enclosed in parenthesis
+> #156: FILE: staging/android/pmem.c:156:
+> +#define PMEM_IS_FREE(id, index) !(pmem[id].bitmap[index].allocated)
 >
-> From 09e7bd41ff3fd07e4c5eea7bbb0a045921eb5944 Mon Sep 17 00:00:00 2001
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> Date: Fri, 20 Jan 2012 10:42:40 +0000
-> Subject: [PATCH] kmemleak: Disable early logging when kmemleak is off by
->  default
+> Let's just make the check look for an operator with a low
+> precedence.
+> http://en.wikipedia.org/wiki/Order_of_operations#Programming_languages
 >
-> Commit b6693005 (kmemleak: When the early log buffer is exceeded, report
-> the actual number) deferred the disabling of the early logging to
-> kmemleak_init(). However, when CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF=y, the
-> early logging was no longer disabled causing __init kmemleak functions
-> to be called even after the kernel freed the init memory. This patch
-> disables the early logging during kmemleak_init() if kmemleak is left
-> disabled.
+> Otherwise the submitters are going to change it to:
 >
-> Reported-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> ---
->  mm/kmemleak.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> #define PMEM_IS_FREE(id, index) (!(pmem[id].bitmap[index].allocated))
 >
-> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-> index f9f7310..45eb621 100644
-> --- a/mm/kmemleak.c
-> +++ b/mm/kmemleak.c
-> @@ -1757,6 +1757,7 @@ void __init kmemleak_init(void)
->  
->  #ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
->  	if (!kmemleak_skip_disable) {
-> +		atomic_set(&kmemleak_early_log, 0);
->  		kmemleak_disable();
->  		return;
->  	}
+> That has two pairs of unneeded paranthesis and we run the risk of
+> reprogramming the kernel in lisp, by mistake.
+
+Yep we want to avoid that.  As -> binds tighter than many of the
+operators in these bands we can only safely avoid the ()'s if the
+operator does not potentially make a pointer, so for now I have added
+unary minus and the two unary not operators.  I think I want to see
+some examples of other operators before I would be keen to have any
+further exceptions.
+
+Anyhow how does this work for you:
+
+    http://people.canonical.com/~apw/checkpatch/checkpatch-next.pl
+
+-apw
