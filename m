@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab2ATS3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 13:29:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61568 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab2ATS3n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 13:29:43 -0500
+	id S1754990Ab2ATSfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 13:35:37 -0500
+Received: from fieldses.org ([174.143.236.118]:53830 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754450Ab2ATSfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 13:35:34 -0500
+Date: Fri, 20 Jan 2012 13:35:30 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Subject: Re: [patch] nfsd: remove some unneeded checks
+Message-ID: <20120120183530.GA17212@fieldses.org>
+References: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
+ <20120116115258.GC3294@mwanda>
+ <20120116155031.GC1750@fieldses.org>
+ <20120118095601.GE3356@mwanda>
+ <20120118224107.GC27205@fieldses.org>
+ <20120120074818.GA12039@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <CAK1hOcNget=-MjeejiYGo5Vkigq9ey1o7sD2peO+tDGdk3TU9g@mail.gmail.com>
-References: <20120120140444.GC13157@x2.net.home> <CAK1hOcNget=-MjeejiYGo5Vkigq9ey1o7sD2peO+tDGdk3TU9g@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 20 Jan 2012 19:29:21 +0100
-Message-ID: <CAPXgP13GOehS3rKM2oYs18aGTpt0KPyG5RRkJL803kUxA3xb=A@mail.gmail.com>
-Subject: Re: /etc/fstab.d yes or not
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120120074818.GA12039@mwanda>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 19:20, Denys Vlasenko <vda.linux@googlemail.com> wrote:
-> On Fri, Jan 20, 2012 at 3:04 PM, Karel Zak <kzak@redhat.com> wrote:
->>  BTW, systemd allows to define addition mountpoints in
->>  systemd.mount(5) unit file(s), so we already have additional place
->>  for fstab stuff...
->
-> systemd needs a large blunt object be stuck into its eye.
->
-> systemd was supposed to be an init replacement.
+On Fri, Jan 20, 2012 at 10:48:18AM +0300, Dan Carpenter wrote:
+> We check for zero length strings in the caller now, so these aren't
+> needed.
 
-It's much more, and I don't think you have been involved in defining
-the focus of it, and the systemd people do not necessary come to the
-same conclusion as you.
+Thanks!  Applying.--b.
 
-> Its continuing attempts to infiltrate entire system
-> are very worrying.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+> index cf8a6bd..8e9689a 100644
+> --- a/fs/nfsd/export.c
+> +++ b/fs/nfsd/export.c
+> @@ -87,7 +87,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
+>  	struct svc_expkey key;
+>  	struct svc_expkey *ek = NULL;
+>  
+> -	if (mlen < 1 || mesg[mlen-1] != '\n')
+> +	if (mesg[mlen - 1] != '\n')
+>  		return -EINVAL;
+>  	mesg[mlen-1] = 0;
+>  
+> diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
+> index 01153ea..6ab3573 100644
+> --- a/net/sunrpc/svcauth_unix.c
+> +++ b/net/sunrpc/svcauth_unix.c
+> @@ -509,7 +509,7 @@ static int unix_gid_parse(struct cache_detail *cd,
+>  	time_t expiry;
+>  	struct unix_gid ug, *ugp;
+>  
+> -	if (mlen <= 0 || mesg[mlen-1] != '\n')
+> +	if (mesg[mlen - 1] != '\n')
+>  		return -EINVAL;
+>  	mesg[mlen-1] = 0;
+>  
 
-You are free to express your worries somewhere else. Don't hijack
-treads with completely unrelated stuff. That's not welcome in this
-thread and not in general.
 
-> What a *heck* is this?
-
-A platform.
-
-Thanks,
-Kay
