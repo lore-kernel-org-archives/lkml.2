@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab2ATOqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 09:46:43 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:48104
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753503Ab2ATOqW (ORCPT
+	id S1753464Ab2ATOrT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 09:47:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45156 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab2ATOrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 09:46:22 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: standby24x7@gmail.com
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] [trivial] watchdog: Fix typo "unexpectdly"
-Date: Fri, 20 Jan 2012 23:43:19 +0900
-Message-Id: <1327070599-2748-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Fri, 20 Jan 2012 09:47:17 -0500
+Message-ID: <4F197E6F.5070003@gmail.com>
+Date: Fri, 20 Jan 2012 07:47:11 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [TRIVIAL] perf probe usability related fixes.
+References: <20120120121354.GL15447@linux.vnet.ibm.com>
+In-Reply-To: <20120120121354.GL15447@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct typo "unexpectdly" to "unexpectedly" in pnx4008_wdt.c
-and stmp3xxx_wdt.c
+On 01/20/2012 05:13 AM, Srikar Dronamraju wrote:
+> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> Ingo pointed out few perf probe usability related errors during
+> his review of uprobes.
+> 
+> Since these issues are independent of uprobes, fixing them in a
+> separate patch.
+> 
+> Suggested-by: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  tools/perf/util/probe-event.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index f6f5794..da38ec5 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -1825,7 +1825,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+>  	}
+>  
+>  	ret = 0;
+> -	printf("Add new event%s\n", (ntevs > 1) ? "s:" : ":");
+> +	printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
 
-Signed-off-by: Masanari Iida<standby24x7@gmail.com>
-to: linux-watchdog@vger.kernel.org
-cc: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org
----
- drivers/watchdog/pnx4008_wdt.c  |    2 +-
- drivers/watchdog/stmp3xxx_wdt.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+It's not past tense until after write_probe_trace_event() right? Where
+the message is now you can get an error message after that printf.
 
-diff --git a/drivers/watchdog/pnx4008_wdt.c b/drivers/watchdog/pnx4008_wdt.c
-index bd143c9..8e210aa 100644
---- a/drivers/watchdog/pnx4008_wdt.c
-+++ b/drivers/watchdog/pnx4008_wdt.c
-@@ -226,7 +226,7 @@ static long pnx4008_wdt_ioctl(struct file *file, unsigned int cmd,
- static int pnx4008_wdt_release(struct inode *inode, struct file *file)
- {
- 	if (!test_bit(WDT_OK_TO_CLOSE, &wdt_status))
--		printk(KERN_WARNING "WATCHDOG: Device closed unexpectdly\n");
-+		printk(KERN_WARNING "WATCHDOG: Device closed unexpectedly\n");
- 
- 	wdt_disable();
- 	clk_disable(wdt_clk);
-diff --git a/drivers/watchdog/stmp3xxx_wdt.c b/drivers/watchdog/stmp3xxx_wdt.c
-index 4c2a4e8..e37d811 100644
---- a/drivers/watchdog/stmp3xxx_wdt.c
-+++ b/drivers/watchdog/stmp3xxx_wdt.c
-@@ -174,7 +174,7 @@ static int stmp3xxx_wdt_release(struct inode *inode, struct file *file)
- 	if (!nowayout) {
- 		if (!test_bit(WDT_OK_TO_CLOSE, &wdt_status)) {
- 			wdt_ping();
--			pr_debug("%s: Device closed unexpectdly\n", __func__);
-+			pr_debug("%s: Device closed unexpectedly\n", __func__);
- 			ret = -EINVAL;
- 		} else {
- 			wdt_disable();
--- 
-1.7.6.5
+David
 
