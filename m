@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254Ab2ATH46 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 02:56:58 -0500
-Received: from solca.med.ec ([200.105.240.90]:38470 "EHLO mail.solca.med.ec"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860Ab2ATH44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 02:56:56 -0500
-Message-ID: <61218.41.138.180.207.1327046603.squirrel@mail.solca.med.ec>
-Date: Fri, 20 Jan 2012 03:03:23 -0500 (ECT)
-Subject: =?utf-8?B?V2VibWFzdGVyIHBvd2lhZG9taWXFhCEh4oCP4oCP4oCPICA=?=
-From: =?utf-8?B?V2VibWFzdGVyIEFrdHVhbGl6YWNqYSBXeWR6aWHFgg==?= 
-	<info@webmaster.pl>
-Reply-To: customercarewebdept40@w.cn
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
+	id S1752234Ab2ATH7Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 02:59:25 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:55521 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2ATH7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 02:59:23 -0500
+X-AuditID: b753bd60-96f90ba000007b1b-b1-4f191ed8e9f2
+X-AuditID: b753bd60-96f90ba000007b1b-b1-4f191ed8e9f2
+Message-ID: <4F191ED0.8070305@hitachi.com>
+Date: Fri, 20 Jan 2012 16:59:12 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18656.005
-X-TM-AS-Result: No-0.237-4.5-31-10
-X-imss-scan-details: No-0.237-4.5-31-10
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-MatchedRID: bF/ftEib5FfmR+RxuU2vfUwAZYE2FMixerJCitPoIIzfUZT83lbkEMWm
-	DR829mMW+SihPPY9VI/SFZyaJmMIRq4HyN5VK32o3QfwsVk0UbsIoUKaF27lxVFQYAIrTI9WNyn
-	tbJFocoCMBa8Npj7TpPZGqdJJ6r9CB0ZiLk9GkysKige8GupNf4pr/NlGJYu6Fr+z9EnoAxl6vB
-	tqjtop/0V4mhCkeaWfaWNolBtQ1wbDHYSZWYRUCk9o3BPtf0h2+rL5VW+ofZc=
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip v4 0/5] perf script: add BTS analysis features
+References: <20120116052146.2485.48349.stgit@linux3> <20120118114833.GB1024@somewhere.redhat.com>
+In-Reply-To: <20120118114833.GB1024@somewhere.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/01/18 20:48), Frederic Weisbecker wrote:
+> On Mon, Jan 16, 2012 at 02:21:46PM +0900, Akihiro Nagai wrote:
+>> Hi Frederic, David,
+>>
+>> This patch series adds the functions to analyze BTS logs to perf-script and,
+>> makes perf-script more informative version 4.
+>> The patches add the following functions.
+>>   - Unify the expression to "[unknown]"
+>>   - Fix BTS record header to resolve DSOs and symbols of user-space
+>>   - Resolve DSOs and symbols for BTS's branch_from addresses
+>>   - Show the offset of symbols with the 'offs' field specifier.
+>>   - Resolve the real path of [kernel.kallsym] using
+>>     '--show-kernel-path' option.
+>>
+>> Usage:
+>> First, get the BTS log with the following command.
+>> # perf record -e branches:u -c 1 -d<command>
+>>
+>> Second, analyze that trace data.
+>> # perf script -f ip,addr,sym,offs,dso [--show-kernel-path]
+>> This command's output format is:
+>> <branch_to addr>  <branch_to function+offset>  <branch_to DSO>  <branch_from addr>  <branch_from function+offset>  <branch_from DSO>
+>>
+>> Output sample:
+>> # perf record -e branches:u -c 1 -d ls
+>> [snip]
+>> # perf script -f ip,addr,sym,dso,offs --show-kernel-path
+>> [snip]
+>> 402c1c main+0x0             (/root/bin/ls)       3430c21399 __libc_start_main+0xe9 (/lib64/libc-2.14.so)
+>
+> I was confused first, looking for the reason why we have a so strange branch flow
+> until I realized the format is "to from".
+>
+> Can we have "from to" instead? This will be much more intuitive. "from =>  to" would be even better.
+Exactly.
+perf records branch_to information in perf_sample->addr, and branch_from in perf_sample->ip.
+And, currently I use the generic function: process_event() in builtin-script.c to print
+branch information. This function prints perf_sample->addr before it prints perf_sample->ip.
 
+So, I'm going to add the bts specialized codes to process_event().
 
+static void process_event(...)
+{
+     <snip>
+     print_sample_start(sample, thread, attr);
 
-Drodzy Widzowie konto e-mail,
+     if (is_bts_event(attr)) {
+         print_sample_bts(...);
+         return;
+     }
 
+     if (PRINT_FIELD(TRACE))
+     <snip>
+}
 
-Ten komunikat jest od poczty centrum wiadomości do wszystkich na nasze
-konto poczty owners.As pierwszym kwartale 2012 r. Obecnie jest
-przeprowadzenie usługi aktualizacji dla naszej bazy i e-mail centrum
-konta. Jesteśmy usunięcie wszystkich niewykorzystanych konto poczty
-internetowej, aby utworzyć więcej miejsca dla nowych kont.
-
-Aby zapobiec koncie od usuwania i Aby kontynuować korzystanie z naszych
-usług, które są wymagane do aktualizacji i potwierdzenia konta webmail.
-
-
-Aby zakończyć potwierdzenia konta za pierwszy kwartał 2012 r., Jesteś
-odpowiedzieć na tę wiadomość natychmiast i wprowadź dane swojego konta w
-wymienionych poniżej.
-
-
-Potwierdzenie informacji o koncie
-Nazwa użytkownika: ......
-E-mail Login ............
-Hasło: ..................
-Potwierdź hasło :........
-Data urodzenia: .........
-
-
-Ważne * Proszę podać wszystkie te informacje kompletnie i prawidłowo w
-przeciwnym razie ze względów bezpieczeństwa być może będziemy musieli
-zamknąć temporarily.We konto poczty dziękuję za szybkie zajęcie się tą
-matter.Please zrozumieć, że jest to środek bezpieczeństwa przeznaczonych
-do ochrony użytkowników i konta poczty internetowej. Przepraszamy za
-wszelkie niedogodności.
-
+Thank you.
+>
+> Thanks!
+>
+>> 40b390 set_program_name+0x0 (/root/bin/ls)           402c41 main+0x25              (/root/bin/ls)
+>> 40b390 set_program_name+0x0 (/root/bin/ls) ffffffff814ac5ed irq_return+0x0         (/lib/modules/3.2.0+/build/vmlinux)
+>> 401e20 strrchr@plt+0x0      (/root/bin/ls)           40b39e set_program_name+0xe   (/root/bin/ls)
+>> 401e26 strrchr@plt+0x6      (/root/bin/ls)           401e20 strrchr@plt+0x0        (/root/bin/ls)
+>> 401b80 _init+0x18           (/root/bin/ls)           401e2b strrchr@plt+0xb        (/root/bin/ls)
+>> 3430813850 _dl_runtime_resolve+0x0 (/lib64/ld-2.14.so) 401b86 _init+0x1e           (/root/bin/ls)
+>> [snip]
+>
