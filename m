@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab2AUABT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 19:01:19 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:49870 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754027Ab2AUABS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 19:01:18 -0500
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Andy Whitcroft <apw@canonical.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH] include/checkpatch: Prefer __scanf to __attribute__((format(scanf,...)
-Date: Fri, 20 Jan 2012 16:01:12 -0800
-Message-Id: <2cf7ddd75001233e79e928c4dcfae6768af5790c.1327103792.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+	id S1756522Ab2AUABy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 19:01:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43432 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754027Ab2AUABv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 19:01:51 -0500
+References: <20120116183730.GB21112@redhat.com> <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com> <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com> <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com> <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com> <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com> <4F1737C9.3070905@zytor.com> <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com> <4F173F48.2070604@zytor.com> <CA+55aFw3kv_JRsSCQEf6fQd0gX939MuoevDxFtcXkPY+bmyjtA@mail.gmail.com> <4F176605.5020101@zytor.com> <CAK1hOcManWsEvjS2xxtfGTKx=JLPvO2sBkWU-xQP+medV=rbAA@mail.gmail.com> <CAB=4xhqFYdU3s_NQkgdzVVG1r3vGDb=qPewPRFTrJ1B_eiEVDA@mail.gmail.com> <4F19EDAF.2000109@zytor.com> <d8be1991e82ec686433c5c6e255c2bd9.squirrel@webmail.greenhost.nl> <CAB=4xhqVQXtQnsjfWMGdd+rOsO+PyHd-OkC75cXFHnunzeyuAQ@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAB=4xhqVQXtQnsjfWMGdd+rOsO+PyHd-OkC75cXFHnunzeyuAQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "hpanvin@gmail.com" <hpa@zytor.com>
+Date: Fri, 20 Jan 2012 15:58:21 -0800
+To: Roland McGrath <mcgrathr@google.com>, Indan Zupancic <indan@nul.nu>
+CC: Denys Vlasenko <vda.linux@googlemail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
+        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+Message-ID: <529e70ab-8a37-478a-8ba1-af5f5b9156e4@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's equivalent to __printf, so prefer __scanf.
+Linus claims it does break.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/linux/compiler-gcc.h |    3 ++-
- include/linux/kernel.h       |    8 ++++----
- include/xen/xenbus.h         |    4 ++--
- scripts/checkpatch.pl        |    6 ++++++
- 4 files changed, 14 insertions(+), 7 deletions(-)
+Roland McGrath <mcgrathr@google.com> wrote:
 
-diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
-index 3fd17c2..e5834aa 100644
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -87,7 +87,8 @@
-  */
- #define __pure				__attribute__((pure))
- #define __aligned(x)			__attribute__((aligned(x)))
--#define __printf(a,b)			__attribute__((format(printf,a,b)))
-+#define __printf(a, b)			__attribute__((format(printf, a, b)))
-+#define __scanf(a, b)			__attribute__((format(scanf, a, b)))
- #define  noinline			__attribute__((noinline))
- #define __attribute_const__		__attribute__((__const__))
- #define __maybe_unused			__attribute__((unused))
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e834342..30f21ec 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -315,10 +315,10 @@ extern __printf(2, 3)
- char *kasprintf(gfp_t gfp, const char *fmt, ...);
- extern char *kvasprintf(gfp_t gfp, const char *fmt, va_list args);
- 
--extern int sscanf(const char *, const char *, ...)
--	__attribute__ ((format (scanf, 2, 3)));
--extern int vsscanf(const char *, const char *, va_list)
--	__attribute__ ((format (scanf, 2, 0)));
-+extern __scanf(2, 3)
-+int sscanf(const char *, const char *, ...);
-+extern __scanf(2, 0)
-+int vsscanf(const char *, const char *, va_list);
- 
- extern int get_option(char **str, int *pint);
- extern char *get_options(const char *str, int nints, int *ints);
-diff --git a/include/xen/xenbus.h b/include/xen/xenbus.h
-index e8c599b..0a7515c 100644
---- a/include/xen/xenbus.h
-+++ b/include/xen/xenbus.h
-@@ -139,9 +139,9 @@ int xenbus_transaction_start(struct xenbus_transaction *t);
- int xenbus_transaction_end(struct xenbus_transaction t, int abort);
- 
- /* Single read and scanf: returns -errno or num scanned if > 0. */
-+__scanf(4, 5)
- int xenbus_scanf(struct xenbus_transaction t,
--		 const char *dir, const char *node, const char *fmt, ...)
--	__attribute__((format(scanf, 4, 5)));
-+		 const char *dir, const char *node, const char *fmt, ...);
- 
- /* Single printf and write: returns -errno or 0. */
- __printf(4, 5)
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index e3bfcbe..2b52aeb 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3117,6 +3117,12 @@ sub process {
- 			     "__printf(string-index, first-to-check) is preferred over __attribute__((format(printf, string-index, first-to-check)))\n" . $herecurr);
- 		}
- 
-+# Check for __attribute__ format(scanf, prefer __scanf
-+		if ($line =~ /\b__attribute__\s*\(\s*\(\s*format\s*\(\s*scanf\b/) {
-+			WARN("PREFER_SCANF",
-+			     "__scanf(string-index, first-to-check) is preferred over __attribute__((format(scanf, string-index, first-to-check)))\n" . $herecurr);
-+		}
-+
- # check for sizeof(&)
- 		if ($line =~ /\bsizeof\s*\(\s*\&/) {
- 			WARN("SIZEOF_ADDRESS",
+>On Fri, Jan 20, 2012 at 3:49 PM, Indan Zupancic <indan@nul.nu> wrote:
+>> It's a lot easier for existing code to add an extra cs check than to
+>use
+>
+>The issue is whether showing fictitious high bits of %cs as set will
+>break
+>existing applications (debuggers, etc.) that look at it and think that
+>it's
+>nothing but the hardware state zero-extended, as it is today.
+
 -- 
-1.7.8.111.gad25c.dirty
-
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
