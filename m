@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab2ATAAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 19:00:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42685 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753118Ab2ATAAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 19:00:04 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
-Date: Fri, 20 Jan 2012 01:03:34 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
-Cc: Simon Glass <sjg@chromium.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	id S1757201Ab2ATAB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 19:01:56 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53375 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943Ab2ATABz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 19:01:55 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 20 Jan 2012 09:00:37 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: glommer@parallels.com, Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-serial@vger.kernel.org
-References: <1326826563-32215-1-git-send-email-sjg@chromium.org> <201201190102.58788.rjw@sisk.pl> <20120119013731.GK2431@linux.vnet.ibm.com>
-In-Reply-To: <20120119013731.GK2431@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: linux-next: Tree for Jan 19 (mm/memcontrol.c)
+Message-Id: <20120120090037.e32a119f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F189A97.5080007@xenotime.net>
+References: <20120119125932.a4c67005cf6a0938558e8b36@canb.auug.org.au>
+	<4F189A97.5080007@xenotime.net>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201200103.34296.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 19, 2012, Paul E. McKenney wrote:
-> On Thu, Jan 19, 2012 at 01:02:58AM +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, January 18, 2012, Paul E. McKenney wrote:
-> > > On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
-[...] 
-> > Yes, you can, but then I'd say it's not necessary for user space to
-> > be able to carry that out in a tight loop.  So, it seems, alternatively,
-> > we could make that loop a bit less tight, e.g. by adding an arbitrary
-> > sleep to the user space interface for the "disable" case.
+On Thu, 19 Jan 2012 14:35:03 -0800
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+
+> On 01/18/2012 05:59 PM, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Changes since 20120118:
 > 
-> Good point, that would work just as well and be simpler.
+> 
+> on i386:
+> 
+> mm/built-in.o:(__jump_table+0x8): undefined reference to `memcg_socket_limit_enabled'
+> mm/built-in.o:(__jump_table+0x14): undefined reference to `memcg_socket_limit_enabled'
+> 
+> 
+> Full randconfig file is attached.
+> 
 
-Thanks for the confirmation! :-)
-
-By the way, I wonder, would it help to add synchronize_rcu() to
-wakeup_source_add() too?  Then, even if device_wakeup_enable() and
-device_wakeup_disable() are executed in a tight loop for the same
-device, the list_add/list_del operations will always happen in
-different RCU cycles (or at least it seems so).
+Thank you. Forwarding this to Costa.
 
 Thanks,
-Rafael
+-Kame
+
