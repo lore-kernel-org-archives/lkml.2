@@ -1,87 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750990Ab2ATFQi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 00:16:38 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35420 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab2ATFQg convert rfc822-to-8bit (ORCPT
+	id S1751119Ab2ATFVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 00:21:18 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55460 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab2ATFVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 00:16:36 -0500
+	Fri, 20 Jan 2012 00:21:17 -0500
+From: Zumeng Chen <zumeng.chen@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <torvalds@linux-foundation.org>, <mingo@elte.hu>, <ralf@linux-mips.org>,
+        <bruce.ashfield@windriver.com>
+Subject: [PATCH 1/1] mm: msync: fix issues of sys_msync on tmpfs
+Date: Fri, 20 Jan 2012 13:18:39 +0800
+Message-ID: <1327036719-1965-1-git-send-email-zumeng.chen@windriver.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <NEXT-4f18f0a4c42917.06465691@nextmail.ru>
-References: <NEXT-4f18f0a4c42917.06465691@nextmail.ru>
-Date: Fri, 20 Jan 2012 10:46:35 +0530
-Message-ID: <CAD2nsn2GjkoUWaDLxZmkxHm+af9s2fVkt8uGN+v-rS-hCgx2-w@mail.gmail.com>
-Subject: Re: ath9k crash 3.2-rc7
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch fixes two issues as follows:
 
-2012/1/20 MR <g7af0ec1e3ea1e7b1@nextmail.ru>:
->  > I read the roaming script. I need to get the scan results and then
-> issue
->  > "roam" in loop between all the APs I can access, right? Will try just
-> to
->  > collect some new testing data.
->  >
->  > Thanks for the patch - looks like it works fine so far.
->
-> Got a fresh trace... No idea how it happened, to be honest.
->
-> First, I got a few surprisingly non-lethal
->
-> Jan 18 11:39:16 401a0bf1 kernel: [401292.709527] ath: Failed to stop TX
-> DMA, queues=0x005!
-> Jan 18 11:39:16 401a0bf1 kernel: [401292.726868] ath: Failed to stop TX
-> DMA, queues=0x005!
->
-> Jan 19 04:19:28 401a0bf1 kernel: [452270.295826] ath: Failed to stop TX
-> DMA, queues=0x005!
-> Jan 19 04:19:28 401a0bf1 kernel: [452270.313079] ath: Failed to stop TX
-> DMA, queues=0x005!
->
-> On Jan 19, I sshed quite a few gigabytes over cpio/ssh
->
-> Got memory allocation warnings, log sample in the end of message. WiFi
-> driver is mentioned in the stack, but looks mostly harmless.
->
-> Then I suspended (succesfully) and when I got home I checked my email
-> succesfully using WiFi.
->
-> Then I did my standard mistake (closing the lid without stopping
-> screensaver: after some time I get a GL screensaver with DPMS-Off state
-> which is bad for i915 for some reason).
->
-> I got failed GPU hangcheck at
->
-> Jan 19 23:41:39 401a0bf1 kernel: [49726.973809]
-> [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-> and in two seconds X server was gone (I was asleep by that time)
->
-> Then..
->
-> Jan 20 06:37:41 401a0bf1 kernel: [74665.029637] ath: Timeout while waiting
-> for nf to load: AR_PHY_AGC_CONTROL=0x40d22
-> Jan 20 06:37:41 401a0bf1 kernel: [74665.362365] ath: Failed to stop TX
-> DMA, queues=0x005!
-> Jan 20 06:37:41 401a0bf1 kernel: [74665.371028] ------------[ cut here ]--
-> ----------
-> Jan 20 06:37:41 401a0bf1 kernel: [74665.371038] WARNING: at
-> drivers/net/wireless/ath/ath9k/rc.c:697
-> ath_rc_get_highest_rix.clone.18+0x159/0x200 [ath9k]()
+For some filesystem with fsync == noop_fsync, there is not so much thing
+to do, so sys_msync just passes by for all arches but some CPUs.
 
-thanks , i am just looking at this tough to recreate warning and its
-being reported by few users recently. please let us if you some more
-information
+For some CPUs with cache aliases(dmesg|grep alias), it maybe has an issue,
+which reported by msync test suites in ltp-full when the memory of memset
+used by msync01 runs into cache alias randomly.
 
+Consider the following scenario used by msync01 in ltp-full:
+  fildes = open(TEMPFILE, O_RDWR | O_CREAT, 0666)) < 0);
+  .../* initialization fildes by write(fildes); */
+  addr = mmap(0, page_sz, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED,
+	 fildes, 0);
+  /* set buf with memset */
+  memset(addr + OFFSET_1, 1, BUF_SIZE);
 
+  /* msync the addr before using, or MS_SYNC*/
+  msync(addr, page_sz, MS_ASYNC)
+
+  /* Tries to read fildes */
+  lseek(fildes, (off_t) OFFSET_1, SEEK_SET) != (off_t) OFFSET_1) {
+  nread = read(fildes, read_buf, sizeof(read_buf));
+
+  /* Then test the result */
+  if (read_buf[count] != 1) {
+
+The test result is random too for CPUs with cache alias. So in this
+situation, we have to flush the related vma to make sure the read is
+correct.
+
+Signed-off-by: Zumeng Chen <zumeng.chen@windriver.com>
+---
+ mm/msync.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
+
+diff --git a/mm/msync.c b/mm/msync.c
+index 632df45..0021a7e 100644
+--- a/mm/msync.c
++++ b/mm/msync.c
+@@ -13,6 +13,14 @@
+ #include <linux/file.h>
+ #include <linux/syscalls.h>
+ #include <linux/sched.h>
++#include <asm/cacheflush.h>
++
++/* Cache aliases should be taken into accounts when msync. */
++#ifdef cpu_has_dc_aliases
++#define CPU_HAS_CACHE_ALIAS cpu_has_dc_aliases
++#else
++#define CPU_HAS_CACHE_ALIAS 0
++#endif
+ 
+ /*
+  * MS_SYNC syncs the entire file - including mappings.
+@@ -78,6 +86,28 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
+ 		}
+ 		file = vma->vm_file;
+ 		start = vma->vm_end;
++
++		/*
++		 * For some filesystems with fsync == noop_fsync, msync just
++		 * passes by but some CPUs.
++		 * For CPUs with cache alias, msync has to flush the related
++		 * vma explicitly to make sure data coherency between memory
++		 * and cache, which includes MS_SYNC or MS_ASYNC. That is to
++		 * say, cache aliases should not be an async factor, so does
++		 * msync on other arches without cache aliases.
++		 */
++		if (file && file->f_op && file->f_op->fsync == noop_fsync) {
++			if (CPU_HAS_CACHE_ALIAS)
++				flush_cache_range(vma, vma->vm_start,
++							vma->vm_end);
++			if (start >= end) {
++				error = 0;
++				goto out_unlock;
++			}
++			vma = find_vma(mm, start);
++			continue;
++		}
++
+ 		if ((flags & MS_SYNC) && file &&
+ 				(vma->vm_flags & VM_SHARED)) {
+ 			get_file(file);
 -- 
-shafi
+1.7.0.4
+
