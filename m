@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444Ab2ATFnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 00:43:49 -0500
-Received: from mtv-iport-2.cisco.com ([173.36.130.13]:28620 "EHLO
-	mtv-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab2ATFnp (ORCPT
+	id S1751515Ab2ATFok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 00:44:40 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1986 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab2ATFoj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 00:43:45 -0500
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jan 2012 00:43:45 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAIP8GE+rRDoH/2dsb2JhbABDrXuBBYFyAQEBAwESAScCATwFDQEIDgqBBQEBBAENBSKHWpo3AZ5EjCYEiDyMXJJs
-X-IronPort-AV: E=Sophos;i="4.71,540,1320624000"; 
-   d="scan'208";a="26308592"
-User-Agent: Microsoft-Entourage/12.20.0.090605
-Date: Thu, 19 Jan 2012 21:33:45 -0800
-Subject: Re: linux-next: Tree for Jan 19 (cisco/enic)
-From: Roopa Prabhu <roprabhu@cisco.com>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Netdev <netdev@vger.kernel.org>,
-        "Christian Benvenuti (benve)" <benve@cisco.com>,
-        "David Wang (dwang2)" <dwang2@cisco.com>
-Message-ID: <CB3E3CB9.412EA%roprabhu@cisco.com>
-Thread-Topic: linux-next: Tree for Jan 19 (cisco/enic)
-Thread-Index: AczW/ALA7ahkcMLsTrC7MkSN6mZmXAAORDo0
-In-Reply-To: <4F18AA99.8010803@xenotime.net>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
-X-OriginalArrivalTime: 20 Jan 2012 05:33:46.0469 (UTC) FILETIME=[14896950:01CCD735]
+	Fri, 20 Jan 2012 00:44:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 19 Jan 2012 21:44:18 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "laurent.pinchart@ideasonboard.com" 
+	<laurent.pinchart@ideasonboard.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "b08248@gmail.com" <b08248@gmail.com>,
+        "scottwood@freescale.com" <scottwood@freescale.com>
+Date: Fri, 20 Jan 2012 06:44:09 +0100
+Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Thread-Topic: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Thread-Index: AczXNouqin9mBDvnRtuafQLsPqoWUQ==
+Message-ID: <20120120.074409.1835198567920956646.hdoyu@nvidia.com>
+References: <201201191646.13798.laurent.pinchart@ideasonboard.com><20120119160739.GB2205@amd.com><201201191727.10176.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201201191727.10176.laurent.pinchart@ideasonboard.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Date: Thu, 19 Jan 2012 17:27:09 +0100
+Message-ID: <201201191727.10176.laurent.pinchart@ideasonboard.com>
 
+> Hi Joerg,
+> 
+> On Thursday 19 January 2012 17:07:39 Joerg Roedel wrote:
+> > On Thu, Jan 19, 2012 at 04:46:13PM +0100, Laurent Pinchart wrote:
+> > > > +struct iommu_domain_geometry {
+> > > > +	u64 aperture_start;	/* First address that can be mapped    */
+> > > > +	u64 aperture_end;	/* Last address that can be mapped     */
+> > > 
+> > > Would it make sense to use a platform-dependent type that represents
+> > > physical addresses instead of u64 ?
+> > 
+> > Well, u64 is a catch-all datatype which should suit all drivers. Is this
+> > a problem at ARM?
+> 
+> No, it's not a problem for ARM, at least to my knowledge. It just struck me as 
+> weird, as we have specific data types for other kinds of addresses (such as 
+> dma_addr_t).
+> 
+> > We can also go the more complicated way of introducing an iova_addr_t or
+> > something. But if possible I would like to avoid that.
 
-
-On 1/19/12 3:43 PM, "Randy Dunlap" <rdunlap@xenotime.net> wrote:
-
-> On 01/18/2012 05:59 PM, Stephen Rothwell wrote:
->> Hi all,
->> 
->> Changes since 20120118:
-> 
-> 
-> on x86_64:
-> 
-> /next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c: In
-> function 'enic_probe':
-> /next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c:2387:16:
-> error: 'struct enic' has no member named 'num_vfs'
-> /next/linux-next-20120119/drivers/net/ethernet/cisco/enic/enic_main.c:2387:32:
-> error: 'struct enic' has no member named 'num_vfs'
-> 
-> 
-> Full randconfig file is attached.
-> 
-> --
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> 
-Thanks for reporting stephen. Its because you don't have CONFIG_PCI_IOV
-enabled. I will working on the patch. Will submit soon.
-
-
+"dma_addr_t" sounds nicer(and makes still sense) to me than a new "iova_addr_t".
