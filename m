@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751313Ab2ATD7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 22:59:20 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40953 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab2ATD7R (ORCPT
+	id S1751369Ab2ATEFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 23:05:25 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:38897 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab2ATEFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 22:59:17 -0500
-Date: Fri, 20 Jan 2012 04:59:13 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: Don't call release_callchain_buffers if alloc
- fails
-Message-ID: <20120120035910.GB18056@somewhere>
-References: <1327021966-27688-1-git-send-email-namhyung.kim@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327021966-27688-1-git-send-email-namhyung.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Jan 2012 23:05:23 -0500
+X-AuditID: cbfee61b-b7be3ae0000039aa-6a-4f18e80287f6
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: linux-mmc@vger.kernel.org
+Cc: "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/2] mmc: core: Support packed command feature of eMMC4.5
+Date: Fri, 20 Jan 2012 13:05:21 +0900
+Message-id: <002501ccd728$baca1010$305e3030$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczXKLqr8pxYSt7xS+6IHQiT1WIkiQ==
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 10:12:45AM +0900, Namhyung Kim wrote:
-> When alloc_callchain_buffers() fails, it frees all of
-> entries before return. In addition, calling the
-> release_callchain_buffers() will cause a NULL pointer
-> dereference since callchain_cpu_entries is not set.
-> 
-> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+This patch-set adds support of packed command feature
+for eMMC4.5 devices.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Changes in v3:
+	- Add a variable member in mmc_host for minimum number of packed entries.
+	  This value can be overrided by host.
+	- Fix a handling of error sequence.
 
-> ---
->  kernel/events/callchain.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-> index 057e24b665cf..6581a040f399 100644
-> --- a/kernel/events/callchain.c
-> +++ b/kernel/events/callchain.c
-> @@ -115,8 +115,6 @@ int get_callchain_buffers(void)
->  	}
->  
->  	err = alloc_callchain_buffers();
-> -	if (err)
-> -		release_callchain_buffers();
->  exit:
->  	mutex_unlock(&callchain_mutex);
->  
-> -- 
-> 1.7.9.rc1.dirty
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Changes in v2:
+	- Fix the packed read sequence and error handling.
+	- Apply checking the exception status for all cases with
+	  the comments from Maya Erez and Sahitya Tummala.
+	- Fix preparing the packed list with the comment from Maya Erez and Venkatraman.
+
+
+Seungwon Jeon (2):
+      mmc: core: Add packed command feature of eMMC4.5
+      mmc: core: Support packed command for eMMC4.5 device
+
+ drivers/mmc/card/block.c   |  469 +++++++++++++++++++++++++++++++++++++++++---
+ drivers/mmc/card/queue.c   |   48 +++++-
+ drivers/mmc/card/queue.h   |   13 ++
+ drivers/mmc/core/host.c    |    2 +
+ drivers/mmc/core/mmc.c     |   24 +++
+ drivers/mmc/core/mmc_ops.c |    1 +
+ include/linux/mmc/card.h   |    3 +
+ include/linux/mmc/core.h   |    3 +
+ include/linux/mmc/host.h   |    4 +
+ include/linux/mmc/mmc.h    |   15 ++
+ 10 files changed, 555 insertions(+), 27 deletions(-)
+
+Best regards,
+Seungwon Jeon.
+--
+1.7.2.3
+
+
