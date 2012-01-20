@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab2ATMw7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 07:52:59 -0500
-Received: from mga12.intel.com ([143.182.124.36]:63689 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751359Ab2ATMw6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 07:52:58 -0500
+	id S1752978Ab2ATMz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 07:55:59 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:44821 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab2ATMz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 07:55:58 -0500
+Subject: [PATCH RFC] SUNPRC: remove marking service temporary sockets with
+ XPT_CHNGBUF
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Fri, 20 Jan 2012 16:55:39 +0400
+Message-ID: <20120120125243.7733.81374.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <4F1875CC.4010006@linux.intel.com>
-References: <CALLzPKb6kimUjgj9qN9ehx8RO3-bXvGetFQgx48T1rMm22oD2g@mail.gmail.com>
-	<CALLzPKbeXN5gdngo8uYYU8mAow=XhrwBFBhKfG811f37BubQOg@mail.gmail.com>
-	<CA+55aFwwkjFsVuSZWgasN4e_d9suRV4Afr94NMvNt4R7Ej0gbw@mail.gmail.com>
-	<4F1875CC.4010006@linux.intel.com>
-Date: Fri, 20 Jan 2012 14:52:56 +0200
-Message-ID: <CALLzPKYrqD+FdHB0mLqR=gB6dptKGe2ouMO8i4Kj1R7U4Ev8Ow@mail.gmail.com>
-Subject: Re: dmsetup fails on latest kernel
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 9:58 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 01/19/2012 11:05 AM, Linus Torvalds wrote:
->>>
->>>
->>> Hi,
->>>
->>> I have bisected the problem...
->>>
->>> It is introduced by this commit:
->>>
->>> 303395ac3bf3e2cb488435537d416bc840438fcb is the first bad commit
->>> commit 303395ac3bf3e2cb488435537d416bc840438fcb
->>> Author: H. Peter Anvin<hpa@linux.intel.com>
->>> Date:   Fri Nov 11 16:07:41 2011 -0800
->>>
->>>    x86: Generate system call tables and unistd_*.h from tables
->>
->>
->> Interesting. I just munged the old pre-merge
->>
->>   arch/x86/kernel/syscall_table_32.S
->>
->> and the new
->>
->>   arch/x86/syscalls/syscall_32.tbl
->>
->> with some trivial shell scripting, and they are definitely identical.
->>
->> So the tables look like they match 1:1.
->>
->> The compat tables match too, except the new list contains the entry
->> for bdflush (134), but that's a legacy thing that doesn't matter.
->>
->> I wonder what else could be going on. Wrong number of system calls
->> check? Peter, any ideas?
->>
->
-> Not off the top of my head.  I will try to reproduce this and see what the
-> problem is.  Dmitry, what version of binutils and gcc are you using?  It
-> could be that there is a toolchain problem.
->
+This is a cleanup patch.
+Service temporary sockets can be TCP or RDMA only. But XPT_CHNGBUF service
+socket flag is checked only for UDP sockets on receive.
+Thus (if I don't miss something non-obvious) this bit raising for temporary
+sockets can be removed.
 
-gcc (Ubuntu/Linaro 4.6.1-9ubuntu3) 4.6.1
-binutils 2.21.53.20110810-0ubuntu5.1
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
+---
+ net/sunrpc/svcsock.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
->        -hpa
->
->
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index e8af0c9..2867249 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1381,8 +1381,6 @@ void svc_sock_update_bufs(struct svc_serv *serv)
+ 	spin_lock_bh(&serv->sv_lock);
+ 	list_for_each_entry(svsk, &serv->sv_permsocks, sk_xprt.xpt_list)
+ 		set_bit(XPT_CHNGBUF, &svsk->sk_xprt.xpt_flags);
+-	list_for_each_entry(svsk, &serv->sv_tempsocks, sk_xprt.xpt_list)
+-		set_bit(XPT_CHNGBUF, &svsk->sk_xprt.xpt_flags);
+ 	spin_unlock_bh(&serv->sv_lock);
+ }
+ EXPORT_SYMBOL_GPL(svc_sock_update_bufs);
+
