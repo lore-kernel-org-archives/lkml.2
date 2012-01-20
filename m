@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab2ATKFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 05:05:44 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44760 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab2ATKFn (ORCPT
+	id S1752984Ab2ATKGS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 05:06:18 -0500
+Received: from host86-180-251-195.range86-180.btcentralplus.com ([86.180.251.195]:43983
+	"EHLO oak.selfip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab2ATKGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 05:05:43 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19pmdOwA+G7qxphkELgU37v
-Date: Fri, 20 Jan 2012 02:05:28 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: Pinmux bindings proposal
-Message-ID: <20120120100528.GJ22818@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
- <CAJuYYwQoh4_SnA9wmy4x+cG0w0hGukxTkODWtcSw_2QHYuDsrg@mail.gmail.com>
- <20120119165607.GG22818@atomide.com>
- <CAJuYYwQB1pDu-JS5o3XPA1D8WbVcwbdtD43M4y7PeJNWeNXxQQ@mail.gmail.com>
- <20120119182019.GI22818@atomide.com>
- <CAJuYYwQouBDP6dL0B8QOaF0_JsbR7fysySZ5ebcF4op9aTQqbQ@mail.gmail.com>
+	Fri, 20 Jan 2012 05:06:14 -0500
+Message-ID: <4F193C8D.3010506@oak.selfip.net>
+Date: Fri, 20 Jan 2012 10:06:05 +0000
+From: Dave Haywood <tla@oak.selfip.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0) Gecko/20120111 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJuYYwQouBDP6dL0B8QOaF0_JsbR7fysySZ5ebcF4op9aTQqbQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "hpanvin@gmail.com" <hpa@zytor.com>
+CC: Josh Boyer <jwboyer@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: PROBLEM: Postgres fails to start due to kernel issue?
+References: <4F18B911.2060601@oak.selfip.net> <CA+5PVA5U-mJKMR63=1Tc6arjhtTkFNOjvSumFiENdJRyVs1Epg@mail.gmail.com> <534a6e5c-4c14-48bd-a9dc-d5b884daeb63@email.android.com>
+In-Reply-To: <534a6e5c-4c14-48bd-a9dc-d5b884daeb63@email.android.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Abraham <thomas.abraham@linaro.org> [120119 10:05]:
-> On 19 January 2012 23:50, Tony Lindgren <tony@atomide.com> wrote:
-> 
-> I would like to understand the need for populating the
-> pinmux/pingroups tables from dt. The question here is when we have
-> something like
-> 
-> pins = <&pinctrl0 0x0030 0x15 0x15 0x7>;
-> 
-> which specifies the values that need to be written to the hardware
-> registers, would populating pinmux/pingroup tables from dt required.
-> The SoC specific pinctrl driver can provide a way (with the help of
-> pinctrl core) to translate these values and write to corresponding
-> hardware registers. Is there any particular reason for populating the
-> pinmux/pingroups tables from dt?
+On 20/01/2012 03:13, hpanvin@gmail.com wrote:
+> Yes, it almost certainly is.  Fixed in rc1.
 
-Hmm I see. Yes it's still needed as we only want to parse the DT once
-because it's slower unless it was one time only configuration during
-init.
+Correct, working again under 3.3.0-rc1.  Thanks!
 
-If you only need to set pins once during the init, then we could add
-an option for freeing all or most pins after init. That's what we
-have for the current mach-omap2 mux framework as only few pins need
-to be dynamically remuxed. That will require some changes to the
-pinctrl framework though. We would need flags for each pin from DT
-for init_only/dynamic.
+Linux s1 3.3.0-rc1 #135 SMP Fri Jan 20 09:59:56 GMT 2012 i686 
+Pentium III (Coppermine) GenuineIntel GNU/Linux
 
-Regards,
+>
+> Josh Boyer<jwboyer@gmail.com>  wrote:
+>
+>> On Thu, Jan 19, 2012 at 7:45 PM, Dave Haywood<tla@oak.selfip.net>
+>> wrote:
+>>> Hi,
+>>>
+>>>   I noticed after upgrading to 3.2.0-08812-gc2bc3a3 that Postgres-9.1
+>> server
+>>> fails to start with error:
+>>>
+>>> FATAL:  could not create shared memory segment: Function not
+>> implemented
+>>> DETAIL:  Failed system call was shmget(key=5432001, size=30523392,
+>> 03600).
+>>>   After some googling, I thought it was a SYSV shared memory sizing
+>> issue but
+>>> manually changing kernel.shmmax and kernel.shmall had no effect.
+>>>
+>>>   The problem has been introduced between 3.2.0-08694-g53999bf and
+>>> 3.2.0-08812-gc2bc3a3.
+>>>
+>>>   Let me know if you need any more information.  Bisecting is *very*
+>> slow on
+>>> this machine!
+>> If you run strace on it, does it fail with ENOSYS?  This might be
+>> related to an issue Peter just fixed.
+>>
+>> josh
 
-Tony
