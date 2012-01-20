@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2ATAx1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 19:53:27 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57638 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab2ATAxY (ORCPT
+	id S1752699Ab2ATA40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 19:56:26 -0500
+Received: from host86-180-251-195.range86-180.btcentralplus.com ([86.180.251.195]:46899
+	"EHLO oak.selfip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab2ATA4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 19:53:24 -0500
+	Thu, 19 Jan 2012 19:56:25 -0500
+X-Greylist: delayed 672 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jan 2012 19:56:25 EST
+Message-ID: <4F18B911.2060601@oak.selfip.net>
+Date: Fri, 20 Jan 2012 00:45:05 +0000
+From: Dave Haywood <tla@oak.selfip.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0) Gecko/20120111 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <930b350b8504fa9e1272f93bf21dde49.squirrel@webmail.greenhost.nl>
-References: <20120117170512.GB17070@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
- <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
- <CA+55aFyVTh4SQjjcf3x9BSzULttNVcmG9FyaKzhok=2_804xWA@mail.gmail.com>
- <20120118023114.GA9643@alboin.amr.corp.intel.com> <CA+55aFyEde=PLkgsx+FECRrX-dSsOSQkeY_by5=+hnkQhj5hFw@mail.gmail.com>
- <mj+md-20120118.134958.22774.nikam@ucw.cz> <20120118182411.GT11715@one.firstfloor.org>
- <20120119160429.GO7180@jl-vm1.vm.bytemark.co.uk> <930b350b8504fa9e1272f93bf21dde49.squirrel@webmail.greenhost.nl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 19 Jan 2012 16:53:01 -0800
-X-Google-Sender-Auth: _6xtwSovvhdk1GrtGGtbdRm8KIA
-Message-ID: <CA+55aFyo1L81svwpWB-AVBaOOPUuvb3j+U0qDjL=NDVDj9ccYg@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-To: Indan Zupancic <indan@nul.nu>
-Cc: Jamie Lokier <jamie@shareable.org>, Andi Kleen <andi@firstfloor.org>,
-        Martin Mares <mj@ucw.cz>, Andi Kleen <ak@linux.intel.com>,
-        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: PROBLEM: Postgres fails to start due to kernel issue?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 4:21 PM, Indan Zupancic <indan@nul.nu> wrote:
->
-> With current ptrace you can do exactly that. It's just very slow, because
-> you have to copy the data word by word via PTRACE_PEEKDATA. But if Linux
-> would support something like BSD's PT_IO ptrace request, then it could be
-> limited to one extra ptrace command. (PTRACE_STRNCPY would be handy.)
+Hi,
 
-Actually, you could use the new "process_vm_readv/writev()" system
-calls. No need to do the crazy slow ptrace stuff.
+   I noticed after upgrading to 3.2.0-08812-gc2bc3a3 that Postgres-9.1 server fails to start with error:
 
-I dunno. It got merged through Andrew, and the code looks sane, but
-I've never actually seen anybody *use* it. So maybe there is something
-wrong there. And no, it doesn't have a "strncpy" interface, I'm
-afraid.
+FATAL:  could not create shared memory segment: Function not implemented
+DETAIL:  Failed system call was shmget(key=5432001, size=30523392, 03600).
 
-                   Linus
+   After some googling, I thought it was a SYSV shared memory sizing issue but manually changing kernel.shmmax and kernel.shmall had no effect.
+
+   The problem has been introduced between 3.2.0-08694-g53999bf and 3.2.0-08812-gc2bc3a3.
+
+   Let me know if you need any more information.  Bisecting is *very* slow on this machine!
+
+Broken version (latest):
+
+$ sudo sh scripts/ver_linux
+
+Linux s1 3.2.0-09429-g90a4c0f #133 SMP Thu Jan 19 15:17:03 GMT 2012 i686 Pentium III (Coppermine) GenuineIntel GNU/Linux
+
+Gnu C                  4.6.2
+Gnu make               3.82
+binutils               2.21.1
+util-linux             2.19.1
+mount                  support
+module-init-tools      3.16
+e2fsprogs              1.41.14
+Linux C Library        2.14.1
+Dynamic linker (ldd)   2.14.1
+Procps                 3.2.8
+Net-tools              1.60_p20110409135728
+Kbd                    1.15.3wip
+Sh-utils               8.7
+
+$ sudo sysctl -a | grep shm
+kernel.shmmax = 33554432
+kernel.shmall = 2097152
+kernel.shmmni = 4096
+kernel.shm_rmid_forced = 0
+vm.hugetlb_shm_group = 0
+
+Working version (last good backup):
+
+$ sudo sh scripts/ver_linux
+
+Linux s1 3.2.0 #124 SMP Thu Jan 5 08:06:00 GMT 2012 i686 Pentium III (Coppermine) GenuineIntel GNU/Linux
+
+Gnu C                  4.6.2
+Gnu make               3.82
+binutils               2.21.1
+util-linux             2.19.1
+mount                  support
+module-init-tools      3.16
+e2fsprogs              1.41.14
+Linux C Library        2.14.1
+Dynamic linker (ldd)   2.14.1
+Procps                 3.2.8
+Net-tools              1.60_p20110409135728
+Kbd                    1.15.3wip
+Sh-utils               8.7
+
+$ sudo sysctl -a | grep shm
+kernel.shmmax = 33554432
+kernel.shmall = 2097152
+kernel.shmmni = 4096
+kernel.shm_rmid_forced = 0
+vm.hugetlb_shm_group = 0
+
+Dave.
+
+
