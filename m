@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2ATQtC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:49:02 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58357 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519Ab2ATQs7 (ORCPT
+	id S1754951Ab2ATQtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:49:12 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45209 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab2ATQtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:48:59 -0500
-Date: Fri, 20 Jan 2012 08:48:49 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] hid-multitouch: add support for trackpads
-Message-ID: <20120120164849.GA6520@core.coreip.homeip.net>
-References: <1326887468-5148-1-git-send-email-benjamin.tissoires@enac.fr>
- <1326887468-5148-2-git-send-email-benjamin.tissoires@enac.fr>
- <20120120160948.GA18530@polaris.bitmath.org>
+	Fri, 20 Jan 2012 11:49:01 -0500
+Message-ID: <4F199AF9.4030909@gmail.com>
+Date: Fri, 20 Jan 2012 17:48:57 +0100
+From: Vincent Vanackere <vincent.vanackere@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120120160948.GA18530@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mitch Harder <mitch.harder@sabayonlinux.org>
+CC: linux-btrfs@vger.kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG - btrfs] kernel oops in extent_range_uptodate
+References: <4F182BED.3090009@gmail.com> <CAKcLGm9kVOw6D8kPECfhfohH4pAT=09qws7-jRsh1TZJTyh1_A@mail.gmail.com>
+In-Reply-To: <CAKcLGm9kVOw6D8kPECfhfohH4pAT=09qws7-jRsh1TZJTyh1_A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 05:09:48PM +0100, Henrik Rydberg wrote:
-> Hi Benjamin,
-> 
-> > @@ -389,9 +404,19 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-> >  				td->last_field_index = field->index;
-> >  			return -1;
-> >  		}
-> > +		case HID_DG_TOUCH:
-> > +			/* Legacy devices use TIPSWITCH and not TOUCH.
-> > +			 * Let's just ignore this field. */
-> > +			return -1;
-> >  		/* let hid-input decide for the others */
-> >  		return 0;
-> >  
-> > +	case HID_UP_BUTTON:
-> > +		code = ((usage->hid - 1) & HID_USAGE) + BTN_MOUSE;
-> 
-> Why '+' here instead of '|' is  beyond me...
+On 01/19/2012 05:24 PM, Mitch Harder wrote:
+> On Thu, Jan 19, 2012 at 8:42 AM, Vincent Vanackere
+> <vincent.vanackere@gmail.com>  wrote:
+>> Hi,
+>>
+>> With the most current git kernel (90a4c0f51e8e44111a926be6f4c87af3938a79c3)
+>> I'm still getting the same reproducible kernel panic when trying to read a
+>> particular file stored on a btrfs filesystem (as seen in the log there are
+>> indeed disk media errors on this disk).
+>> I'd like the "software" part of this to be fixed - btrfs should definitely
+>> not oops even in case of media error - before sending the disk to RMA. Is
+>> there anything I can do to make progress on this ?
+>>
+> Is this kernel compiled with "Compile the kernel with debug info" (in
+> the "Kernel hacking  --->" configuration section)?
+>
+> It would be nice to have the specific line of code passing the NULL pointer.
 
-Because it is an offset for the range. The fact that it is on power 2
-boundary and we can use "|" is purely coincidential here.
+The kernel was compiled with debug information but modern linux 
+distribution make it really hard to keep your debug information it seems :-(
+I even had to compile btrfs builtin to keep the line numbers... Anyway, 
+thanks to kexec / kdump I finally managed to get this, hope it helps :
 
-Maybe we should even write it as:
+crash> bt -l
+PID: 939    TASK: ffff880218a4adc0  CPU: 0   COMMAND: "btrfs-endio-met"
+  #0 [ffff88022316b9e0] machine_kexec at ffffffff810366aa
+     /usr/src/linux/arch/x86/kernel/machine_kexec_64.c: 339
+  #1 [ffff88022316ba50] crash_kexec at ffffffff810b2df8
+     /usr/src/linux/kernel/kexec.c: 1101
+  #2 [ffff88022316bb20] oops_end at ffffffff816afdd8
+     /usr/src/linux/arch/x86/kernel/dumpstack.c: 228
+  #3 [ffff88022316bb50] no_context at ffffffff816a3141
+     /usr/src/linux/arch/x86/mm/fault.c: 690
+  #4 [ffff88022316bbb0] __bad_area_nosemaphore at ffffffff816a3321
+     /usr/src/linux/arch/x86/mm/fault.c: 767
+  #5 [ffff88022316bc10] bad_area_nosemaphore at ffffffff816a3353
+     /usr/src/linux/arch/x86/mm/fault.c: 775
+  #6 [ffff88022316bc20] do_page_fault at ffffffff816b29b6
+     /usr/src/linux/arch/x86/mm/fault.c: 1122
+  #7 [ffff88022316bd30] page_fault at ffffffff816af235
+     /usr/src/linux/arch/x86_64/kernel/entry.S
+     [exception RIP: extent_range_uptodate+89]
+     RIP: ffffffff812c7239  RSP: ffff88022316bde0  RFLAGS: 00010246
+     RAX: 0000000000000000  RBX: 000000df57385000  RCX: 0000000000000000
+     RDX: 0000000000000001  RSI: 000000000df57385  RDI: 0000000000000000
+     RBP: ffff88022316be00   R8: 0000000000000000   R9: ffff88021f2823c0
+     R10: ffff88022034d010  R11: 0000000000001000  R12: ffff880222908410
+     R13: 000000df573853ff  R14: ffff88022316be98  R15: ffff88021a3e72a8
+     ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+  #8 [ffff88022316be08] end_workqueue_fn at ffffffff812a04b9
+     /usr/src/linux/fs/btrfs/disk-io.c: 1564
+  #9 [ffff88022316be38] worker_loop at ffffffff812d18bf
+     /usr/src/linux/arch/x86/include/asm/atomic.h: 107
+#10 [ffff88022316bee8] kthread at ffffffff81070193
+     /usr/src/linux/kernel/kthread.c: 121
+#11 [ffff88022316bf48] kernel_thread_helper at ffffffff816b8124
+     /usr/src/linux/arch/x86/kernel/entry_64.S: 1163
 
-		code = BTN_MOUSE + ((usage->hid - 1) & HID_USAGE);
-
-Thanks,
-Dmitry
-
--- 
-Dmitry
