@@ -1,92 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab2ATRyI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 12:54:08 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:17038 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab2ATRyC (ORCPT
+	id S1755425Ab2ATRzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 12:55:22 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48442 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754016Ab2ATRzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 12:54:02 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18dkDqAtRRB+vdIcoUNUCuD
-Date: Fri, 20 Jan 2012 18:53:51 +0100
-From: Tony Lindgren <tony@atomide.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: Pinmux bindings proposal
-Message-ID: <20120120175351.GL7807@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
- <CAJuYYwQoh4_SnA9wmy4x+cG0w0hGukxTkODWtcSw_2QHYuDsrg@mail.gmail.com>
- <20120119165607.GG22818@atomide.com>
- <CAJuYYwQB1pDu-JS5o3XPA1D8WbVcwbdtD43M4y7PeJNWeNXxQQ@mail.gmail.com>
- <20120119182019.GI22818@atomide.com>
- <CAJuYYwQouBDP6dL0B8QOaF0_JsbR7fysySZ5ebcF4op9aTQqbQ@mail.gmail.com>
- <20120120100528.GJ22818@atomide.com>
- <CAJuYYwQ79o5JuOQfs8rSdasVg+ei4KX7tGLuDA-yysseZya9TA@mail.gmail.com>
+	Fri, 20 Jan 2012 12:55:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJuYYwQ79o5JuOQfs8rSdasVg+ei4KX7tGLuDA-yysseZya9TA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 20 Jan 2012 15:55:18 -0200
+Message-ID: <CAAA8XhOXuszcyCaMOcVWb-erGAJQdhBHCX-gsJ4KpH+Td7+bPQ@mail.gmail.com>
+Subject: XFS problem
+From: Kelbel Junior <jymmyjr@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Abraham <thomas.abraham@linaro.org> [120120 16:45]:
-> On 20 January 2012 15:35, Tony Lindgren <tony@atomide.com> wrote:
-> > * Thomas Abraham <thomas.abraham@linaro.org> [120119 10:05]:
-> >> On 19 January 2012 23:50, Tony Lindgren <tony@atomide.com> wrote:
-> >>
-> >> I would like to understand the need for populating the
-> >> pinmux/pingroups tables from dt. The question here is when we have
-> >> something like
-> >>
-> >> pins = <&pinctrl0 0x0030 0x15 0x15 0x7>;
-> >>
-> >> which specifies the values that need to be written to the hardware
-> >> registers, would populating pinmux/pingroup tables from dt required.
-> >> The SoC specific pinctrl driver can provide a way (with the help of
-> >> pinctrl core) to translate these values and write to corresponding
-> >> hardware registers. Is there any particular reason for populating the
-> >> pinmux/pingroups tables from dt?
-> >
-> > Hmm I see. Yes it's still needed as we only want to parse the DT once
-> > because it's slower unless it was one time only configuration during
-> > init.
-> 
-> Ok. The time spent on searching for the pin-config property can be
-> reduced by having the device driver (say, i2c) keep a pointer to all
-> the pinconfig properties in its node. The next time a driver needs to
-> reconfigure the pins, the search time can be reduced. The time to
-> parse the property values though would still be applicable. But I
-> would still not opt to build pinmux/pinconfig/pindesc tables from dt.
+Hello again ...
 
-Hmm that's something to consider to save memory as the node will stay
-there. This would allow making all the pinctrl framework data __initdata
-in some cases. You'd probably want to copy the data into the driver in
-some pinctrl framework struct so you could still use pinctrl framework
-functions with this data and not have to parse the node again.
+So ... after changing the memory allocator SLUB to SLAB in the Linux
+kernel and apply the patch mentioned below, the system was stable for
+3 days and today it happened again delay to deliver content on the
+disc.
 
-For building the tables from dt, what I have currently is building
-the tables without any specific knowledge about the pinmux functions.
-I'm thinking that any further knowledge for debugging etc can be done
-later on using user space tools to avoid storing the data in kernel.
+When I went to see if there was something wrong in /var/log/messages
+appear several times this block:
 
-Regards,
+server012 kernel: XFS: possible memory allocation deadlock in
+kmem_alloc (mode:0x250)
+server012 kernel: Pid: 24885, comm: kworker/0:3 Tainted: G W 2.6.38.8-cve #2
+server012 kernel: Call Trace:
+server012 kernel: [<ffffffff811cfc65>] ? kmem_alloc+0xa6/0xb4
+server012 kernel: [<ffffffff811cfc91>] ? kmem_realloc+0x1e/0x51
+server012 kernel: [<ffffffff811b7b4e>] ?
+xfs_iext_realloc_indirect+0x3e/0x46
+server012 kernel: [<ffffffff811b7cf6>] ? xfs_iext_irec_new+0x36/0xcf
+server012 kernel: [<ffffffff811cfc26>] ? kmem_alloc+0x67/0xb4
+server012 kernel: [<ffffffff811b8014>] ?
+xfs_iext_add_indirect_multi+0x195/0x1de
+server012 kernel: [<ffffffff811b8a66>] ? xfs_iext_add+0x1a6/0x1e2
+server012 kernel: [<ffffffff811a4523>] ? xfs_btree_update+0x68/0xb5
+server012 kernel: [<ffffffff811b8b36>] ? xfs_iext_insert+0x34/0x5f
+server012 kernel: [<ffffffff8119de57>] ?
+xfs_bmap_add_extent_unwritten_real+0xace/0xc47
+server012 kernel: [<ffffffff811b80e2>] ? xfs_iext_bno_to_irec+0x85/0xae
+server012 kernel: [<ffffffff8119f367>] ? xfs_bmap_add_extent+0x1fd/0x326
+server012 kernel: [<ffffffff811cfb13>] ? kmem_zone_alloc+0x67/0xb4
+server012 kernel: [<ffffffff811a30b7>] ? xfs_bmbt_init_cursor+0x3a/0x110
+server012 kernel: [<ffffffff811a1d9b>] ? xfs_bmapi+0x9ff/0xd3e
+server012 kernel: [<ffffffff811bc4a1>] ?
+xfs_iomap_write_unwritten+0x1d8/0x27d
+server012 kernel: [<ffffffff8120a7c6>] ? kobject_put+0x47/0x4c
+server012 kernel: [<ffffffff812dda57>] ? put_device+0x12/0x14
+server012 kernel: [<ffffffff811d02b0>] ? xfs_end_io+0x42/0x91
+server012 kernel: [<ffffffff81048789>] ? process_one_work+0x189/0x25e
+server012 kernel: [<ffffffff811d026e>] ? xfs_end_io+0x0/0x91
+server012 kernel: [<ffffffff81048b14>] ? worker_thread+0x132/0x24f
+server012 kernel: [<ffffffff810489e2>] ? worker_thread+0x0/0x24f
+server012 kernel: [<ffffffff8104d55f>] ? kthread+0x81/0x89
+server012 kernel: [<ffffffff81003754>] ? kernel_thread_helper+0x4/0x10
+server012 kernel: [<ffffffff8104d4de>] ? kthread+0x0/0x89
+server012 kernel: [<ffffffff81003750>] ? kernel_thread_helper+0x0/0x10
 
-Tony
+Has anyone seen or had this problem?
+
+below "uname" on host:
+Linux server012 2.6.38.8 #2 SMP Tue Jan 17 10:17:05 BRST 2012 x86_64
+Intel(R) Core(TM) i3 CPU 540 @ 3.07GHz GenuineIntel GNU/Linux
+
+
+
+Thanks.
+Kelbel Junior
+
+
+
+
+2012/1/16 Kelbel Junior <jymmyjr@gmail.com>:
+> Hello, everybody.
+> It appeared that same error message when using kernel version 2.6.38.8 ...
+>
+> Several lines in /var/log/messages with:
+> kernel: XFS: possible memory allocation deadlock in kmem_alloc (mode: 0x250)
+>
+> Does anyone know know if this bug has been fixed in newer versions of Linux
+> kernel? 3.x maybe?
+>
+>
+> 2011/5/11 Christoph Hellwig <>
+>>
+>> And here's the actual patch, sorry:
+>>
+>>
+>> Index: linux-2.6/fs/xfs/linux-2.6/kmem.c
+>> ===================================================================
+>> --- linux-2.6.orig/fs/xfs/linux-2.6/kmem.c	2011-05-11 17:29:51.729191621
+>> +0200
+>>
+>> +++ linux-2.6/fs/xfs/linux-2.6/kmem.c	2011-05-11 17:30:22.915689382 +0200
+>> @@ -56,10 +56,12 @@ kmem_alloc(size_t size, unsigned int __n
+>>  		ptr = kmalloc(size, lflags);
+>>  		if (ptr || (flags & (KM_MAYFAIL|KM_NOSLEEP)))
+>>
+>>  			return ptr;
+>> -		if (!(++retries % 100))
+>> +		if (!(++retries % 100)) {
+>>  			xfs_err(NULL,
+>>  		"possible memory allocation deadlock in %s (mode:0x%x)",
+>>  					__func__, lflags);
+>> +			dump_stack();
+>>
+>> +		}
+>>  		congestion_wait(BLK_RW_ASYNC, HZ/50);
+>>  	} while (1);
+>>  }
+>> @@ -112,10 +114,12 @@ kmem_zone_alloc(kmem_zone_t *zone, unsig
+>>  		ptr = kmem_cache_alloc(zone, lflags);
+>>  		if (ptr || (flags & (KM_MAYFAIL|KM_NOSLEEP)))
+>>
+>>  			return ptr;
+>> -		if (!(++retries % 100))
+>> +		if (!(++retries % 100)) {
+>>  			xfs_err(NULL,
+>>  		"possible memory allocation deadlock in %s (mode:0x%x)",
+>>  					__func__, lflags);
+>> +			dump_stack();
+>>
+>> +		}
+>>  		congestion_wait(BLK_RW_ASYNC, HZ/50);
+>>  	} while (1);
+>>  }
+>>
+>>
+>> 2011/5/11 Christoph Hellwig <>
+>>>
+>>> You're probably running into a different issue.  Any chance you can try
+>>> the attached patch to see where you're stuck exactly?
+>>>
+>>> Also in case you're using slub (CONFIG_SLUB) can you check if it still
+>>>
+>>> happens when using slab (CONFIG_SLAB) instead?
+>>>
+>>>
+>>> 2011/5/10 Felipe Wilhelms Damasio - Taghos <>
+>>>>
+>>>>     Hi Mr. Hellwig,
+>>>>
+>>>>     I saw the XFS deadlock thread regarding 2.6.38:
+>>>>
+>>>> http://www.linux.sgi.com/archives/xfs/2011-03/msg00185.html
+>>>>
+>>>>
+>>>>     I'm seeing too in 2.6.38.4. A lot of
+>>>>
+>>>> XFS: possible memory allocation deadlock in kmem_alloc (mode:0x250)
+>>>>
+>>>>     I checked the changelog for 2.6.38.6 and can't be sure if the fix
+>>>> got
+>>>> in...could you tell me if it did?
+>>>>
+>>>>
+>>>>     Thanks,
+>>>>
+>>>> --
+>>>>
+>>>> Felipe Wilhelms Damasio
+>>>>
+>>>>
+>>>> TAGHOS - Tecnologia
+>>>> Rua Prof. Alvaro Alvim, 211
+>>>> Porto Alegre - RS - (51) 3239-3180
+>>>> www.taghos.com.br <http://www.taghos.com.br/>
+>>>>
+>>>
+>>
+>
