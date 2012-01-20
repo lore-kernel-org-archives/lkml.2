@@ -1,95 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab2ATQnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:43:51 -0500
-Received: from mta3.srv.hcvlny.cv.net ([167.206.4.198]:63952 "EHLO
-	mta3.srv.hcvlny.cv.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab2ATQnt (ORCPT
+	id S1755060Ab2ATQoH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:44:07 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60352
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755014Ab2ATQoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:43:49 -0500
-Date: Fri, 20 Jan 2012 11:44:12 -0500
-From: Michael Breuer <mbreuer@majjas.com>
-Subject: Re: Regression: sky2 kernel between 3.1 and 3.2.1 (last known good
- 3.0.9)
-In-reply-to: <20120120082659.1e06853e@nehalam.linuxnetplumber.net>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Jarek Poplawski <jarkao2@gmail.com>, David Miller <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Message-id: <4F1999DC.3050308@majjas.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-References: <20100120094103.GA6225@ff.dom.local> <4B58B217.8030001@majjas.com>
- <20100121204133.GB3085@del.dom.local> <4B59E7EB.3050605@majjas.com>
- <4F1452B1.4010200@majjas.com>
- <20120120082659.1e06853e@nehalam.linuxnetplumber.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0) Gecko/20120118
- Thunderbird/10.0
+	Fri, 20 Jan 2012 11:44:04 -0500
+Date: Fri, 20 Jan 2012 11:44:00 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PULL REQUEST] Ext3 & ext2 fix, quota improvement
+Message-ID: <20120120164400.GA19032@infradead.org>
+References: <20120120163910.GA16973@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120120163910.GA16973@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/20/2012 11:26 AM, Stephen Hemminger wrote:
-> On Mon, 16 Jan 2012 11:39:13 -0500
-> Michael Breuer<mbreuer@majjas.com>  wrote:
->
->> Synopsis:
->>
->> Receiving DMAR and other errors after approximately three days of
->> uptime. The symptoms exactly match errors seen and then fixed around
->> 2.6.32.4.
->>
->> While the system remains unaffected for too long to do a bisect, I was
->> able to confirm that the problem exists in the 3.1 stable branch (I
->> jumped from 3.0 to 3.2 when 3.2. was released).
->>
->> For now I reverted to the sky2.c from 3.0.9 and am running the rest of
->> the kernel from 3.1.2, but won't be certain that this works until later
->> in the week.
->>
->> Note that 20 seconds prior to the log extract below were DHCP renewal
->> attempts on eth1, the issue below was on eth0. Not sure it's relevant,
->> however back in 2010 a preceding DHCP event did turn out to be relevant
->> to the manifestation of the bug.
->>
->> The 3.2.1-dirty I'm running is from git with a single local patch - for
->> sidewinder force-feedback support (shouldn't be relevant to the sky2 issue).
->>
->> Log extract:
->>
->> Jan 16 05:49:46 mail kernel: [198230.628919] DRHD: handling fault status
->> reg 2
->> [snip]
->>
->>
->>
->
-> Which exact chip version is this?
->    dmesg | grep sky2
->    lspci
-[    9.927143] sky2: driver version 1.29
-[    9.927166] sky2 0000:06:00.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
-[    9.927177] sky2 0000:06:00.0: setting latency timer to 64
-[    9.927254] sky2 0000:06:00.0: Yukon-2 EC Ultra chip revision 3
-[    9.927339] sky2 0000:06:00.0: irq 71 for MSI/MSI-X
-[    9.927562] sky2 0000:06:00.0: eth0: addr 00:26:18:00:1c:3b
-[    9.927578] sky2 0000:04:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[    9.927586] sky2 0000:04:00.0: setting latency timer to 64
-[    9.927640] sky2 0000:04:00.0: Yukon-2 EC Ultra chip revision 3
-[    9.927718] sky2 0000:04:00.0: irq 72 for MSI/MSI-X
-[    9.927856] sky2 0000:04:00.0: eth1: addr 00:26:18:00:1c:3a
-[   23.468135] sky2 0000:06:00.0: eth0: enabling interface
-[   25.709668] sky2 0000:04:00.0: eth1: enabling interface
-[   25.981841] sky2 0000:06:00.0: eth0: Link is up at 1000 Mbps, full 
-duplex, fl    ow control both
-[   27.418742] sky2 0000:04:00.0: eth1: Link is up at 100 Mbps, full 
-duplex, flo    w control rx
+On Fri, Jan 20, 2012 at 05:39:10PM +0100, Jan Kara wrote:
+>       quota: Pass information that quota is stored in system file to userspace
 
-04:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8056 PCI-E 
-Gigabit Ethernet Controller (rev 14)
-05:00.0 IDE interface: Marvell Technology Group Ltd. 88SE6121 SATA II 
-Controller (rev b2)
-06:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8056 PCI-E 
-Gigabit Ethernet Controller (rev 14)
+Was that patch posted somewhere?  How does it apply to e.g. xfs, gfs2
+and ocfs2 that have always stored quota data internally?
 
