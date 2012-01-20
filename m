@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276Ab2ATAEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 19:04:09 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40325 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756115Ab2ATAED convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 19:04:03 -0500
+	id S1757299Ab2ATAGM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 19:06:12 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42683 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab2ATAGK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 19:06:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <201201200046.59766.rjw@sisk.pl>
-References: <1327001336-28703-1-git-send-email-sjg@chromium.org>
-	<201201200046.59766.rjw@sisk.pl>
-Date: Thu, 19 Jan 2012 15:57:10 -0800
-X-Google-Sender-Auth: HKzyHOsg-HHAevd_eUSU528kyRQ
-Message-ID: <CAPnjgZ1_6BM9Xrtn0S2Rp1_YsjcUYi3iyKpH62LyhkR_T63ojg@mail.gmail.com>
-Subject: Re: [PATCH] serial: Fix wakeup init logic to speed up startup
-From: Simon Glass <sjg@chromium.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-X-System-Of-Record: true
+In-Reply-To: <20120119235446.GR7180@jl-vm1.vm.bytemark.co.uk>
+References: <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+ <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+ <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+ <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+ <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <CAObL_7FsNQaPQg-3=AO9RuMNZZsRgDSJYPhPevDKERws9vQJWg@mail.gmail.com>
+ <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk> <CA+55aFyZ-=4J1hVSAJiBiZKgpvuh-t54KPjLijRmU=cBtdi3-w@mail.gmail.com>
+ <20120119235446.GR7180@jl-vm1.vm.bytemark.co.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 19 Jan 2012 16:05:47 -0800
+X-Google-Sender-Auth: kmX7zqsGTBEbB-CsAb4DtANUCVE
+Message-ID: <CA+55aFyh=u0UFkSTmn4r6Kt3D2gSbTsd0RTHwgp7ZVMhcSXhzg@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Andrew Lutomirski <luto@mit.edu>, Indan Zupancic <indan@nul.nu>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
-
-On Thu, Jan 19, 2012 at 3:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, January 19, 2012, Simon Glass wrote:
->> The synchronize_rcu() call resulting from making every serial driver
->> wake-up capable (commit b3b708fa) slows boot down on my Tegra2x system
->> (with CONFIG_PREEMPT disabled).
->>
->> But this is avoidable since it is the device_set_wakeup_enable() and then
->> subsequence disable which causes the delay. We might as well just make
->> the device wakeup capable but not actually enable it for wakeup until
->> needed.
->>
->> Effectively the current code does this:
->>
->>       device_set_wakeup_capable(dev, 1);
->>       device_set_wakeup_enable(dev, 1);
->>       device_set_wakeup_enable(dev, 0);
->>
->> We can just drop the last two lines.
->>
->> Before this change my boot log says:
->> [    0.227062] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
->> [    0.702928] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
->>
->> after:
->> [    0.227264] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
->> [    0.227983] serial8250.0: ttyS0 at MMIO 0x70006040 (irq = 69) is a Tegra
->>
->> for saving of 450ms.
->>
->> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
->> Signed-off-by: Simon Glass <sjg@chromium.org>
+On Thu, Jan 19, 2012 at 3:54 PM, Jamie Lokier <jamie@shareable.org> wrote:
 >
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Mine was: strace currently checks the CS value and may have a bug on
+> existing/older kernels if Xen is involved when using the *normal*
+> syscall entry point (not int $0x80).  Can we patch strace to solve
+> that on those kernels in a generic way, or does the fix need to
+> hard-code knowledge of Xen's CS values (and any similar PV hypervisors
+> if there are any).
 >
-> Thanks!
+> No amount of patching newer kernels will fix that, but it would be
+> nice if newer kernels made it unambiguous.
 
-Thanks for your help with this.
+Ok.  So yeah, I think the heuristics for strace could possibly be
+improved when running under Xen, I agree. See my suggestion for taking
+other register contents into account (%rsp in particular - the code
+segment tends to be mapped low in 64-bit mode, but the stack is almost
+always high unless you are doing something really odd).
 
-Regards,
-Simon
+So heuristics improvements could be a good idea. Very few real
+programs will use "int 0x80" in long mode, since it's slow and limited
+to 32 bit.
 
->
->> ---
->>  drivers/tty/serial/serial_core.c |    6 +++---
->>  1 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
->> index c7bf31a..1305618 100644
->> --- a/drivers/tty/serial/serial_core.c
->> +++ b/drivers/tty/serial/serial_core.c
->> @@ -2348,11 +2348,11 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
->>        */
->>       tty_dev = tty_register_device(drv->tty_driver, uport->line, uport->dev);
->>       if (likely(!IS_ERR(tty_dev))) {
->> -             device_init_wakeup(tty_dev, 1);
->> -             device_set_wakeup_enable(tty_dev, 0);
->> -     } else
->> +             device_set_wakeup_capable(tty_dev, 1);
->> +     } else {
->>               printk(KERN_ERR "Cannot register tty device on line %d\n",
->>                      uport->line);
->> +     }
->>
->>       /*
->>        * Ensure UPF_DEAD is not set.
->>
->
+               Linus
