@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab2ATRmF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 12:42:05 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56438 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab2ATRmC (ORCPT
+	id S1755515Ab2ATRmo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 12:42:44 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:56732 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab2ATRmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 12:42:02 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18PmpTHXkQolWveKOzJF3+H
-Date: Fri, 20 Jan 2012 09:41:57 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 3/4] pinctrl: Add checks for empty names in
- pinmux_search_function
-Message-ID: <20120120174157.GQ22818@atomide.com>
-References: <20120120161610.21955.25082.stgit@kaulin.local>
- <20120120161730.21955.40332.stgit@kaulin.local>
- <74CDBE0F657A3D45AFBB94109FB122FF1780DAB384@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB384@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 20 Jan 2012 12:42:43 -0500
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH v3 0/6] ARM: Remove the __ARCH_WANT_INTERRUPTS_ON_CTXSW definition
+Date: Fri, 20 Jan 2012 17:42:26 +0000
+Message-Id: <1327081352-13178-1-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.9.rc1.3.gb6310
+X-OriginalArrivalTime: 20 Jan 2012 17:42:37.0287 (UTC) FILETIME=[E622AF70:01CCD79A]
+X-MC-Unique: 112012017423904601
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q0KHgppt006962
 
-* Stephen Warren <swarren@nvidia.com> [120120 08:28]:
-> Tony Lindgren wrote at Friday, January 20, 2012 9:18 AM:
-> > Otherwise we can get the following when dealing with
-> > buggy data in a pinmux driver:
-> > 
-> > Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> 
-> > diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-> > index 06b8943..ffe633d 100644
-> > --- a/drivers/pinctrl/pinmux.c
-> > +++ b/drivers/pinctrl/pinmux.c
-> > @@ -584,6 +584,13 @@ static int pinmux_search_function(struct pinctrl_dev *pctldev,
-> >  							   selector);
-> >  		int ret;
-> > 
-> > +		if (!fname) {
-> > +			pr_warning("no name for function%i\n",
-> > +				   selector);
-> > +			selector++;
-> > +			continue;
-> > +		}
-> > +
-> >  		if (!strcmp(map->function, fname)) {
-> >  			/* Found the function, check pin group */
-> >  			ret = pinmux_check_pin_group(pctldev, selector,
-> 
-> Shouldn't this be BUG_ON(!fname)?
->
-> There are lots of other places that pmxops->get_function_name() is
-> called. Wouldn't it be better to enhance e.g. pinmux_check_ops() to
-> validate that all functions have a name during pinctrl registration?
+Hi,
 
-Maybe yeah. I'll take a look next week when I'm back home.
+This is version 3 of the set of patches removing
+__ARCH_WANT_INTERRUPTS_ON_CTXSW on ARM. The series was rebased on top of
+3.3-rc1 and fixed the conflicts with the kernel/sched/ changes and the
+ARM LPAE patches. There are no functional changes from v2. I plan to
+push this to -next and get it ready for 3.4-rc1.
 
-Tony
+Question for Peter/Ingo - how do we merge the first patch that
+introduces finish_arch_post_lock_switch? Do you pick it up or I can
+merge it via rmk (with your ack)?
+
+Thanks,
+
+Catalin
+
+
+Catalin Marinas (4):
+  sched: Introduce the finish_arch_post_lock_switch() scheduler hook
+  ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on ASID-capable CPUs
+  ARM: Remove current_mm per-cpu variable
+  ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on pre-ARMv6 CPUs
+
+Will Deacon (2):
+  ARM: Use TTBR1 instead of reserved context ID
+  ARM: Allow ASID 0 to be allocated to tasks
+
+ arch/arm/include/asm/mmu_context.h |  104 +++++++++++++++++++++++++++---------
+ arch/arm/include/asm/system.h      |    7 ---
+ arch/arm/include/asm/thread_info.h |    1 +
+ arch/arm/mm/context.c              |   63 +++++++++++-----------
+ arch/arm/mm/proc-v7-2level.S       |    9 +---
+ kernel/sched/core.c                |    1 +
+ kernel/sched/sched.h               |    3 +
+ 7 files changed, 117 insertions(+), 71 deletions(-)
+
+
