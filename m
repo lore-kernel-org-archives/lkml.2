@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab2ATUiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 15:38:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44714 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755567Ab2ATUe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755669Ab2ATUe7 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 20 Jan 2012 15:34:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44698 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753612Ab2ATUe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 15:34:57 -0500
 From: Jan Kara <jack@suse.cz>
 To: linux-fsdevel@vger.kernel.org
 Cc: Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
@@ -14,9 +14,9 @@ Cc: Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
         Christoph Hellwig <hch@infradead.org>,
         LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
         linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: [PATCH 2/8] vfs: Protect write paths by sb_start_write - sb_end_write
-Date: Fri, 20 Jan 2012 21:34:40 +0100
-Message-Id: <1327091686-23177-3-git-send-email-jack@suse.cz>
+Subject: [PATCH 3/8] ext4: Protect ext4_page_mkwrite & ext4_setattr with sb_start_write - sb_end_write
+Date: Fri, 20 Jan 2012 21:34:41 +0100
+Message-Id: <1327091686-23177-4-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1327091686-23177-1-git-send-email-jack@suse.cz>
 References: <1327091686-23177-1-git-send-email-jack@suse.cz>
@@ -24,88 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are three entry points which dirty pages in a filesystem.  mmap (handled
-by block_page_mkwrite()), buffered write (handled by
-__generic_file_aio_write()), and truncate (it can dirty last partial page -
-handled inside each filesystem separately). Protect these places with
-sb_start_write() and sb_end_write().
+Since ext4_page_mkwrite() calls into __block_page_mkwrite() it has to
+provide freezing protection on it's own. Also ext4_setattr() needs protection
+because ext4_truncate() can modify last page of the file.
 
 Acked-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/buffer.c  |   22 ++++------------------
- mm/filemap.c |    3 ++-
- 2 files changed, 6 insertions(+), 19 deletions(-)
+ fs/ext4/inode.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 19d8eb7..550714d 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2338,8 +2338,8 @@ EXPORT_SYMBOL(block_commit_write);
-  * beyond EOF, then the page is guaranteed safe against truncation until we
-  * unlock the page.
-  *
-- * Direct callers of this function should call vfs_check_frozen() so that page
-- * fault does not busyloop until the fs is thawed.
-+ * Direct callers of this function should protect against filesystem freezing
-+ * using sb_start_write() - sb_end_write() functions.
-  */
- int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 			 get_block_t get_block)
-@@ -2371,18 +2371,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 848f436..05d6328 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4225,6 +4225,7 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
+ 	if (error)
+ 		return error;
  
- 	if (unlikely(ret < 0))
- 		goto out_unlock;
--	/*
--	 * Freezing in progress? We check after the page is marked dirty and
--	 * with page lock held so if the test here fails, we are sure freezing
--	 * code will wait during syncing until the page fault is done - at that
--	 * point page will be dirty and unlocked so freezing code will write it
--	 * and writeprotect it again.
--	 */
- 	set_page_dirty(page);
--	if (inode->i_sb->s_frozen != SB_UNFROZEN) {
--		ret = -EAGAIN;
--		goto out_unlock;
--	}
- 	wait_on_page_writeback(page);
- 	return 0;
- out_unlock:
-@@ -2397,12 +2386,9 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	int ret;
- 	struct super_block *sb = vma->vm_file->f_path.dentry->d_inode->i_sb;
++	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
+ 	if (is_quota_modification(inode, attr))
+ 		dquot_initialize(inode);
+ 	if ((ia_valid & ATTR_UID && attr->ia_uid != inode->i_uid) ||
+@@ -4327,6 +4328,7 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
+ 		rc = ext4_acl_chmod(inode);
+ 
+ err_out:
++	sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
+ 	ext4_std_error(inode->i_sb, error);
+ 	if (!error)
+ 		error = rc;
+@@ -4733,11 +4735,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	get_block_t *get_block;
+ 	int retries = 0;
  
 -	/*
--	 * This check is racy but catches the common case. The check in
--	 * __block_page_mkwrite() is reliable.
+-	 * This check is racy but catches the common case. We rely on
+-	 * __block_page_mkwrite() to do a reliable check.
 -	 */
--	vfs_check_frozen(sb, SB_FREEZE_WRITE);
-+	sb_start_write(sb, SB_FREEZE_WRITE);
- 	ret = __block_page_mkwrite(vma, vmf, get_block);
-+	sb_end_write(sb, SB_FREEZE_WRITE);
- 	return block_page_mkwrite_return(ret);
- }
- EXPORT_SYMBOL(block_page_mkwrite);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index c0018f2..471b9ae 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2529,7 +2529,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	count = ocount;
- 	pos = *ppos;
- 
 -	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
 +	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
- 
- 	/* We can write back this queue in page reclaim */
- 	current->backing_dev_info = mapping->backing_dev_info;
-@@ -2601,6 +2601,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 				pos, ppos, count, written);
- 	}
+ 	/* Delalloc case is easy... */
+ 	if (test_opt(inode->i_sb, DELALLOC) &&
+ 	    !ext4_should_journal_data(inode) &&
+@@ -4805,5 +4803,6 @@ retry_alloc:
+ out_ret:
+ 	ret = block_page_mkwrite_return(ret);
  out:
 +	sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
- 	current->backing_dev_info = NULL;
- 	return written ? written : err;
+ 	return ret;
  }
 -- 
 1.7.1
