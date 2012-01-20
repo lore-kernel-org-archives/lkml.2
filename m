@@ -1,129 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711Ab2ATEkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 23:40:33 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62854 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab2ATEkc convert rfc822-to-8bit (ORCPT
+	id S1751779Ab2ATExg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 23:53:36 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:60734 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab2ATExf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 23:40:32 -0500
+	Thu, 19 Jan 2012 23:53:35 -0500
+X-Greylist: delayed 1209 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jan 2012 23:53:35 EST
+Date: Fri, 20 Jan 2012 13:33:24 +0900
+From: Norbert Preining <preining@logic.at>
+To: linux-kernel@vger.kernel.org
+Subject: kworker thread eating CPU time in 3.3-rc1
+Message-ID: <20120120043324.GA9929@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-In-Reply-To: <CAKPZvrZwvHRaWnvBxQyXiHTds+N7aUiWStdHgrDtLXPrSQRjrA@mail.gmail.com>
-References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
-	<1326192547.11926.5.camel@linux-s257.site>
-	<CAL-cBk011b4QbSRRuKxbZhNKxQQ-DkRHvq34Ua881h+AKXY_NQ@mail.gmail.com>
-	<CAKPZvrZdw_n_JRw=WvUXEwO6E8HtE=tgQo0G5MCERbwjOY+Fgw@mail.gmail.com>
-	<CAL-cBk1J-LWCHQxzqVuj1x7B2CxN-8+bBoNTBPCG_8SntHkQOg@mail.gmail.com>
-	<CAKPZvrZwvHRaWnvBxQyXiHTds+N7aUiWStdHgrDtLXPrSQRjrA@mail.gmail.com>
-Date: Fri, 20 Jan 2012 10:10:30 +0530
-Message-ID: <CAKPZvrbrOze=DTsLQBEORj7+fmXHSxq477xnvLR6zKtTbEKiTg@mail.gmail.com>
-Subject: Re: high speed cams are not working on usbip
-From: nagarjun kommineni <nagarjunkommineni@gmail.com>
-To: David Chang <dchang@suse.com>
-Cc: joeyli <jlee@suse.com>, linux-kernel@vger.kernel.org, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Dear all,
 
-I think we need to increase the depth of video buffers in UVC subsystem.
+(please cc)
 
+today I switched from 3.2 to 3.3-rc1 and now I have permanently
+2 kworker threads each eating up 10-20% CPU time, which seems a bit
+exaggerated, comparted to all the rest at below or around 1%.
+There is nothing really crazy running, just a gnome3 desktop, firefox,
+nothing fancy.
 
-On 1/16/12, nagarjun kommineni <nagarjunkommineni@gmail.com> wrote:
-> Hi,
->
-> Both server and client are working at 100Mbps.
->
-> On 1/16/12, David Chang <dchang@suse.com> wrote:
->> Hi,
->>
->> 在 2012年1月11日下午3:47，nagarjun kommineni <nagarjunkommineni@gmail.com> 寫道：
->>> hi,
->>> these are the my test specifications.
->>>
->>> OS:            Scientific Linux 6.1 (default kernel 2.6.32)
->>> Kernel:       3.1.4 (I have built it)
->>> Web Cam:  Logitech Pro 9000
->>> Test App:   Gstreamer
->>>
->>> To see the web cam output I have used the Gstreamer  with the following
->>> command.
->>> gst-launch v4l2src ! video/x-raw-yuv,width=160,height=120,framerate=15/1
->>> !
->>> ffmpegcolorspace ! autovideosink
->>>
->>> my cam supported resloutions are 160*120, 176*144, 320*240, 352*288,
->>> 640*480, 800*600, 960*720, 1600*1200.
->>>
->>> it works fine upto 320*240, beyond this it doesn't work.
->>
->> What's the speed of server and client network interface?
->>
->> David
->>>
->>>
->>> 2012/1/10 David Chang <dchang@suse.com>
->>>>
->>>> Hi Joey,
->>>>
->>>> 2012/1/10 joeyli <jlee@suse.com>:
->>>> > 於 二，2012-01-10 於 13:46 +0530，nagarjun kommineni 提到：
->>>> >> Hi,
->>>> >>
->>>> >> problem with usbip in drivers/staging/usbip
->>>> >>
->>>> >>  I have configured one pc as server and one as client, with this
->>>> >> configuration high speed web cams are not working for higher
->>>> >> resolutions.
->>>> >>
->>>> >
->>>> > How "high" does this web's speed?
->>>> >
->>>> >> please have a look at this problem.
->>>> >>
->>>> >
->>>> > David,
->>>> > as I remember you test webcam in old kernel before? looks works fine.
->>>>
->>>> Yes, but I would suggest using lower resolution.
->>>>
->>>> Regards,
->>>> David
->>>> >
->>>> >
->>>> > Thanks
->>>> > Joey Lee
->>>> >
->>>> >
->>>> > --
->>>> > To unsubscribe from this list: send the line "unsubscribe
->>>> > linux-kernel"
->>>> > in
->>>> > the body of a message to majordomo@vger.kernel.org
->>>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> > Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>>
->>>
->>>
->>> --
->>> Regards,
->>> Nagarjuna Kommineni.
->>>
->>>
->>
->
->
-> --
-> Regards,
-> Nagarjuna Kommineni.
->
+Any idea where this might come from?
 
+Please let me know if you need more information.
 
--- 
-Regards,
-Nagarjuna Kommineni.
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+HASSOP (n.)
+The pocket down the back of an armchair used for storing two-shilling
+bits and pieces of Lego.
+			--- Douglas Adams, The Meaning of Liff
