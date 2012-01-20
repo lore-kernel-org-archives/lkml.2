@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab2ATUf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 15:35:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44749 "EHLO mx2.suse.de"
+	id S1756086Ab2ATUf1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 15:35:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44740 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755788Ab2ATUfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 15:35:02 -0500
+	id S1755786Ab2ATUfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 15:35:01 -0500
 From: Jan Kara <jack@suse.cz>
 To: linux-fsdevel@vger.kernel.org
 Cc: Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
@@ -13,45 +13,40 @@ Cc: Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>,
         Christoph Hellwig <hch@infradead.org>,
         LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, Valerie Aurora <val@vaaconsulting.com>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 7/8] Documentation: Correct s_umount state for freeze_fs/unfreeze_fs
-Date: Fri, 20 Jan 2012 21:34:45 +0100
-Message-Id: <1327091686-23177-8-git-send-email-jack@suse.cz>
+        linux-ext4@vger.kernel.org
+Subject: [PATCH 0/8] Fix filesystem freezing
+Date: Fri, 20 Jan 2012 21:34:38 +0100
+Message-Id: <1327091686-23177-1-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1327091686-23177-1-git-send-email-jack@suse.cz>
-References: <1327091686-23177-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Valerie Aurora <val@vaaconsulting.com>
 
-freeze_fs/unfreeze_fs ops are called with s_umount held for write, not read.
+  Hello,
 
-Signed-off-by: Valerie Aurora <val@vaaconsulting.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- Documentation/filesystems/Locking |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+  This is the second iteration of my patches to improve filesystem freezing.
+Filesystem freezing is currently racy and thus we can end up with dirty data
+on frozen filesystem (see changelog of the first patch for detailed race
+description and proposed fix). This patch series aims at fixing this.
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index d819ba1..7e46a94 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -134,8 +134,8 @@ evict_inode:
- put_super:		write
- write_super:		read
- sync_fs:		read
--freeze_fs:		read
--unfreeze_fs:		read
-+freeze_fs:		write
-+unfreeze_fs:		write
- statfs:			maybe(read)	(see below)
- remount_fs:		write
- umount_begin:		no
--- 
-1.7.1
+The biggest changes since v1:
+  * have two counters to provide safe state transitions for SB_FREEZE_WRITE
+    and SB_FREEZE_TRANS states
+  * use percpu counters instead of own percpu structure
+  * added documentation fixes from the old fs freezing series
+  * converted XFS to use SB_FREEZE_TRANS counter instead of its private
+    m_active_trans counter
 
+Now I'm sending this mostly as a heads up so that people see current state
+because these patches are still racy. The problem is that when superblock is in
+SB_FREEZE_WRITE state inodes can still be dirtied (e.g. through touch_atime,
+directory operations or similar). These inodes then are not flushed and when
+superblock passes to SB_FREEZE_TRANS state, flusher thread deadlocks on trying
+to flush them.
+
+To fix this, we will have to block also operations dirtying inodes already
+in SB_FREEZE_WRITE state. I'm now looking into how to do this in the easiest
+way.
+
+								Honza
