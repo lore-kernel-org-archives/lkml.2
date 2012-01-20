@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab2ATWg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 17:36:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33978 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756279Ab2ATWft (ORCPT
+	id S1756574Ab2ATWkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 17:40:49 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:56981 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756237Ab2ATWkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 17:35:49 -0500
-From: Tyler Hicks <tyhicks@canonical.com>
-To: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        john.johansen@canonical.com, dustin.kirkland@gazzang.com,
-        Cong Wang <xiyou.wangcong@gmail.com>, Li Wang <liwang@nudt.edu.cn>
-Subject: [PATCH 3/3] eCryptfs: Remove unused ecryptfs_read()
-Date: Fri, 20 Jan 2012 16:35:07 -0600
-Message-Id: <1327098907-28963-4-git-send-email-tyhicks@canonical.com>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1327098907-28963-1-git-send-email-tyhicks@canonical.com>
-References: <1327098907-28963-1-git-send-email-tyhicks@canonical.com>
+	Fri, 20 Jan 2012 17:40:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAK1hOcManWsEvjS2xxtfGTKx=JLPvO2sBkWU-xQP+medV=rbAA@mail.gmail.com>
+References: <20120116183730.GB21112@redhat.com> <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+ <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+ <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+ <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+ <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+ <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+ <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+ <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com> <4F1737C9.3070905@zytor.com>
+ <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com>
+ <4F173F48.2070604@zytor.com> <CA+55aFw3kv_JRsSCQEf6fQd0gX939MuoevDxFtcXkPY+bmyjtA@mail.gmail.com>
+ <4F176605.5020101@zytor.com> <CAK1hOcManWsEvjS2xxtfGTKx=JLPvO2sBkWU-xQP+medV=rbAA@mail.gmail.com>
+From: Roland McGrath <mcgrathr@google.com>
+Date: Fri, 20 Jan 2012 14:40:19 -0800
+Message-ID: <CAB=4xhqFYdU3s_NQkgdzVVG1r3vGDb=qPewPRFTrJ1B_eiEVDA@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
+        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
+        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ecryptfs_read() has been ifdef'ed out for years now and it was
-apparently unused before then. It is time to get rid of it for good.
+If you change the size of a regset, then the new full size will be the size
+of the core file notes.  Existing userland tools will not be expecting
+this, they expect a known exact size.  If you need to add new stuff, it
+really is easier all around to add a new regset flavor.  When adding a new
+one, you can make it variable-sized from the start so as to be extensible
+in the future.  We did this for NT_X86_XSTATE, for example.
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
----
- fs/ecryptfs/read_write.c |   73 ----------------------------------------------
- 1 files changed, 0 insertions(+), 73 deletions(-)
 
-diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
-index 608c1c3..5c0106f 100644
---- a/fs/ecryptfs/read_write.c
-+++ b/fs/ecryptfs/read_write.c
-@@ -282,76 +282,3 @@ int ecryptfs_read_lower_page_segment(struct page *page_for_ecryptfs,
- 	flush_dcache_page(page_for_ecryptfs);
- 	return rc;
- }
--
--#if 0
--/**
-- * ecryptfs_read
-- * @data: The virtual address into which to write the data read (and
-- *        possibly decrypted) from the lower file
-- * @offset: The offset in the decrypted view of the file from which to
-- *          read into @data
-- * @size: The number of bytes to read into @data
-- * @ecryptfs_file: The eCryptfs file from which to read
-- *
-- * Read an arbitrary amount of data from an arbitrary location in the
-- * eCryptfs page cache. This is done on an extent-by-extent basis;
-- * individual extents are decrypted and read from the lower page
-- * cache (via VFS reads). This function takes care of all the
-- * address translation to locations in the lower filesystem.
-- *
-- * Returns zero on success; non-zero otherwise
-- */
--int ecryptfs_read(char *data, loff_t offset, size_t size,
--		  struct file *ecryptfs_file)
--{
--	struct inode *ecryptfs_inode = ecryptfs_file->f_dentry->d_inode;
--	struct page *ecryptfs_page;
--	char *ecryptfs_page_virt;
--	loff_t ecryptfs_file_size = i_size_read(ecryptfs_inode);
--	loff_t data_offset = 0;
--	loff_t pos;
--	int rc = 0;
--
--	if ((offset + size) > ecryptfs_file_size) {
--		rc = -EINVAL;
--		printk(KERN_ERR "%s: Attempt to read data past the end of the "
--			"file; offset = [%lld]; size = [%td]; "
--		       "ecryptfs_file_size = [%lld]\n",
--		       __func__, offset, size, ecryptfs_file_size);
--		goto out;
--	}
--	pos = offset;
--	while (pos < (offset + size)) {
--		pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
--		size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
--		size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
--		size_t total_remaining_bytes = ((offset + size) - pos);
--
--		if (num_bytes > total_remaining_bytes)
--			num_bytes = total_remaining_bytes;
--		ecryptfs_page = ecryptfs_get_locked_page(ecryptfs_inode,
--							 ecryptfs_page_idx);
--		if (IS_ERR(ecryptfs_page)) {
--			rc = PTR_ERR(ecryptfs_page);
--			printk(KERN_ERR "%s: Error getting page at "
--			       "index [%ld] from eCryptfs inode "
--			       "mapping; rc = [%d]\n", __func__,
--			       ecryptfs_page_idx, rc);
--			goto out;
--		}
--		ecryptfs_page_virt = kmap_atomic(ecryptfs_page, KM_USER0);
--		memcpy((data + data_offset),
--		       ((char *)ecryptfs_page_virt + start_offset_in_page),
--		       num_bytes);
--		kunmap_atomic(ecryptfs_page_virt, KM_USER0);
--		flush_dcache_page(ecryptfs_page);
--		SetPageUptodate(ecryptfs_page);
--		unlock_page(ecryptfs_page);
--		page_cache_release(ecryptfs_page);
--		pos += num_bytes;
--		data_offset += num_bytes;
--	}
--out:
--	return rc;
--}
--#endif  /*  0  */
--- 
-1.7.8.3
-
+Thanks,
+Roland
