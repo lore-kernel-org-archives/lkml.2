@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2ATQ3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:29:11 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63708 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab2ATQ3H (ORCPT
+	id S1754461Ab2ATQig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:38:36 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:7924
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753855Ab2ATQie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:29:07 -0500
-Date: Fri, 20 Jan 2012 20:29:00 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, david@lang.hm,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andrey Vagin <avagin@openvz.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-Message-ID: <20120120162900.GP1954@moon>
-References: <4F15C249.3000602@zytor.com>
- <m1obu29fnf.fsf@fess.ebiederm.org>
- <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm>
- <20120118224956.GF15652@moon>
- <m1zkdk4mj5.fsf@fess.ebiederm.org>
- <20120119065541.GA31379@moon>
- <m1ty3rukr1.fsf@fess.ebiederm.org>
- <20120120084008.GD1954@moon>
- <20120120090225.GD2786@moon>
- <4F197F73.3010000@zytor.com>
+	Fri, 20 Jan 2012 11:38:34 -0500
+X-SpamScore: -4
+X-BigFish: VPS-4(zz4015Lzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LY3VK3-01-JMS-02
+X-M-MSG: 
+Date: Fri, 20 Jan 2012 17:38:23 +0100
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH resend] x86, amd: Add missing feature flag for fam15h models
+ 10h-1fh processors
+Message-ID: <20120120163823.GC24508@alberich.amd.com>
+References: <20120105182859.GG14947@alberich.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4F197F73.3010000@zytor.com>
+In-Reply-To: <20120105182859.GG14947@alberich.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 06:51:31AM -0800, H. Peter Anvin wrote:
-> On 01/20/2012 01:02 AM, Cyrill Gorcunov wrote:
-> > On Fri, Jan 20, 2012 at 12:40:08PM +0400, Cyrill Gorcunov wrote:
-> > ...
-> >> +
-> >> +static __init int kcmp_cookie_init(void)
-> >> +{
-> >> +	int i, j;
-> >> +
-> >> +	for (i = 0; i < KCMP_TYPES; i++) {
-> >> +		for (j = 0; j < 2; j++) {
-> >> +			get_random_bytes(&cookies[i][j], sizeof(cookies[i][j]));
-> >> +
-> >> +			if (cookies[i][j])
-> >> +				continue;
-> >> +
-> >> +			/*
-> >> +			 * This is impossible case but just to be sure.
-> >> +			 */
-> >> +			cookies_valid = false;
-> >> +			WARN_ONCE(1, "Can't get random bytes for k-pointers\n");
-> >> +		}
-> >> +	}
-> >> +
-> >> +	cookies_valid = true;
-> > 
-> > darn, this string of course should be on top,
-> > i'll update don't complain on this nit.
-> > 
-> 
-> This code is wrong.  You will have a zero cookie, legitimately, once in
-> 2^32 or 2^64 attempts, depending on the bitness.
->
 
-We've had kind of emergency pool before which were used in such cases.
-These legitime cases can happen not that frequently, so I guess -- can
-we use it again?
+That is the last one missing for those CPUs.
 
-	if (cookies[i][j])
-		continue;
-	else
-		cookies[i][j] = some-value;
+Others were recently added with commits
 
-One wont know which exactly values we were using.
+ fb215366b3c7320ac25dca766a0152df16534932
+ (KVM: expose latest Intel cpu new features (BMI1/BMI2/FMA/AVX2) to guest)
 
-> The other thing is that for the multiplicative cookie you should OR in
-> the value (~(~0UL >> 1) | 1) in order to make sure that the value is (a)
-> large and (b) odd.
-> 
+and
 
-I see, i'll update (at first, I occasionally translated odd as 'even' which
-made me really scratching the head, until I realized it's 'odd'! :)
+ commit 969df4b82904a30fef19a67398a0c854d223ea67
+ (x86: Report cpb and eff_freq_ro flags correctly)
 
-	Cyrill
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+
+Please apply.
+
+
+Thanks,
+
+Andreas
+
+
+ arch/x86/include/asm/cpufeature.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 17c5d4b..8d67d42 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -159,6 +159,7 @@
+ #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
+ #define X86_FEATURE_LWP		(6*32+15) /* Light Weight Profiling */
+ #define X86_FEATURE_FMA4	(6*32+16) /* 4 operands MAC instructions */
++#define X86_FEATURE_TCE		(6*32+17) /* translation cache extension */
+ #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
+ #define X86_FEATURE_TBM		(6*32+21) /* trailing bit manipulations */
+ #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
+-- 
+1.7.8.3
+
+
+
