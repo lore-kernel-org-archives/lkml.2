@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2ATOuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 09:50:06 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:27155 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752830Ab2ATOuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 09:50:03 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: EyrD9KQVM1n9JiXR2DQWB.8hoElSkIEKmHKtXaM.M9VuciE
- 3A2ho_PsSaEtRVwc.98o2CHijO3F_gWQKBgBiBtJrSZ4hUQ4PLLAVCDwzAGp
- tD8FhuVExAOFVdy72tIIcFHGat6mNxflGsRYrnSzBi9u1ThIRM2TWP2r7aZi
- MTsamYI9dndA1QqNLh_7ODZ0fiMECYiY0t6a3wKaYvwRXvi3htYRH9CB4q53
- DopSJffOiquH3fHL1cFqQGn9QBF76snnzWcSWXPe50V74kb0Nxm64bRWkf7e
- QFaPo8sOBShrQwlEkmUCIyrttMhTxBX0SO24YtyFn8PVgpRL29hON73dpnw0
- CirVIJhS5OTlELLary_BBgdZsYOEHzYPoSCzz4l0egpoKnxxsUr2zpPNzcs9
- FY.nQHMW8awemdHlcdD2Uzy3gGPglqodCl4fn
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 20 Jan 2012 08:49:57 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Hung task when calling clone() due to netfilter/slab
-In-Reply-To: <m1y5t3yuil.fsf@fess.ebiederm.org>
-Message-ID: <alpine.DEB.2.00.1201200848040.25882@router.home>
-References: <1326558605.19951.7.camel@lappy> <1326561043.5287.24.camel@edumazet-laptop> <1326632384.11711.3.camel@lappy> <1326648305.5287.78.camel@edumazet-laptop> <alpine.DEB.2.00.1201170910130.4800@router.home> <1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <alpine.DEB.2.00.1201170927020.4800@router.home> <1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.DEB.2.00.1201170942240.4800@router.home> <alpine.DEB.2.00.1201171620590.14697@router.home> <m1bopz2ws3.fsf@fess.ebiederm.org>
- <m14nvr2vbu.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1201191959540.14480@router.home> <m1y5t3yuil.fsf@fess.ebiederm.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753509Ab2ATOwb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 09:52:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41309 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751820Ab2ATOwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 09:52:30 -0500
+Message-ID: <4F197F73.3010000@zytor.com>
+Date: Fri, 20 Jan 2012 06:51:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, david@lang.hm,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andrey Vagin <avagin@openvz.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
+References: <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com> <20120117144452.GG16213@moon> <4F15C249.3000602@zytor.com> <m1obu29fnf.fsf@fess.ebiederm.org> <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm> <20120118224956.GF15652@moon> <m1zkdk4mj5.fsf@fess.ebiederm.org> <20120119065541.GA31379@moon> <m1ty3rukr1.fsf@fess.ebiederm.org> <20120120084008.GD1954@moon> <20120120090225.GD2786@moon>
+In-Reply-To: <20120120090225.GD2786@moon>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jan 2012, Eric W. Biederman wrote:
+On 01/20/2012 01:02 AM, Cyrill Gorcunov wrote:
+> On Fri, Jan 20, 2012 at 12:40:08PM +0400, Cyrill Gorcunov wrote:
+> ...
+>> +
+>> +static __init int kcmp_cookie_init(void)
+>> +{
+>> +	int i, j;
+>> +
+>> +	for (i = 0; i < KCMP_TYPES; i++) {
+>> +		for (j = 0; j < 2; j++) {
+>> +			get_random_bytes(&cookies[i][j], sizeof(cookies[i][j]));
+>> +
+>> +			if (cookies[i][j])
+>> +				continue;
+>> +
+>> +			/*
+>> +			 * This is impossible case but just to be sure.
+>> +			 */
+>> +			cookies_valid = false;
+>> +			WARN_ONCE(1, "Can't get random bytes for k-pointers\n");
+>> +		}
+>> +	}
+>> +
+>> +	cookies_valid = true;
+> 
+> darn, this string of course should be on top,
+> i'll update don't complain on this nit.
+> 
 
-> On the flip side removing from sysfs with locks held must be done
-> carefully, and as a default I would recommend not to hold locks over
-> removing things from sysfs.  As removal blocks waiting for all of the
-> callers into sysfs those sysfs attributes to complete.
->
-> It looks like you are ok on the removal because none of the sysfs
-> attributes appear to take the slub_lock, just /proc/slabinfo.  But
-> it does look like playing with fire.
+This code is wrong.  You will have a zero cookie, legitimately, once in
+2^32 or 2^64 attempts, depending on the bitness.
 
-Ok then I guess my last patch is needed to make sysfs operations safe.
+The other thing is that for the multiplicative cookie you should OR in
+the value (~(~0UL >> 1) | 1) in order to make sure that the value is (a)
+large and (b) odd.
 
-It may be good to audit the kernel for locks being held while calling
-sysfs functions. Isnt there a lockdep check that ensures that no locks are
-held?
+	-hpa
 
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
