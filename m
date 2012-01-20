@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab2ATNtz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 08:49:55 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:53828 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab2ATNtx (ORCPT
+	id S1753205Ab2ATNyj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 08:54:39 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40700 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab2ATNyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 08:49:53 -0500
-Date: Fri, 20 Jan 2012 16:50:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Pradheep Shrinivasan <pradheep.sh@gmail.com>, greg@kroah.com,
-        devel@linuxdriverproject.org, swetland@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] staging:android_pmem.h: Fixes the space and other
- formating issues pointed out by checkpatch.pl
-Message-ID: <20120120135046.GN3356@mwanda>
-References: <1326856764-2531-1-git-send-email-pradheep.sh@gmail.com>
- <20120118065620.GE3294@mwanda>
- <CANz8tm1imZ3njy_uV0tkq0sXwyB5ZLLJsrp4G1zjcBDnJUrjiw@mail.gmail.com>
- <20120118185457.GH3356@mwanda>
- <CAAq6er0OPkvTCLt1DvHSjyqM4pH7GMb-D78M09cJY+1ZV3miiQ@mail.gmail.com>
- <20120120115408.GL3356@mwanda>
- <1327066144.6176.27.camel@joe2Laptop>
+	Fri, 20 Jan 2012 08:54:36 -0500
+Message-ID: <4F197219.4010105@gmail.com>
+Date: Fri, 20 Jan 2012 07:54:33 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R92lf0Oi2sxyK3LA"
-Content-Disposition: inline
-In-Reply-To: <1327066144.6176.27.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F1970F9.0122,ss=1,re=0.000,fgs=0
+To: Michael Bohan <mbohan@codeaurora.org>
+CC: grant.likely@secretlab.ca, tglx@linutronix.de,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: irq: Allow for specification of no preallocated
+ irqs
+References: <1327013024-22530-1-git-send-email-mbohan@codeaurora.org> <4F18A18C.9090302@gmail.com> <4F18B577.8080101@codeaurora.org>
+In-Reply-To: <4F18B577.8080101@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/19/2012 06:29 PM, Michael Bohan wrote:
+> On 1/19/2012 3:04 PM, Rob Herring wrote:
+>> No doubt that arch_probe_nr_irqs is doing the wrong thing on ARM, but no
+>> pre-allocation is not what we want either. We ultimately want
+>> arch_probe_nr_irqs to return NR_IRQS_LEGACY (16) to reserve IRQ0 (aka
+>> NO_IRQ) and legacy ISA IRQs. With my series, NR_IRQS is set to
+>> NR_IRQS_LEGACY for SPARSE_IRQ. You can accomplish the same thing without
+>> that series by setting .nr_irqs to NR_IRQS for non-DT and to
+>> NR_IRQS_LEGACY for DT. For platforms to work in single kernel builds,
+>> they will need to select SPARSE_IRQ.
+> 
+> One issue here is that IRQ_BITMAP_BITS is defined as a function of
+> NR_IRQS. Currently, there's a hack in place that arbitrarily tacks on
+> 8196 bits to the end, giving the max virq supported as 8212 with your
+> patches. Unfortunately, the system I'm running on will require higher
+> values than that, so this actually breaks me.
+> 
+> It seems like the right solution to this problem is to have the
+> allocated_irqs bitmap expandable at runtime. Or perhaps use a different
+> data structure to begin with?
 
---R92lf0Oi2sxyK3LA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I believe the correct solution is using the radix tree in irqdomain as
+Ben H suggested. Does that not work?
 
-On Fri, Jan 20, 2012 at 05:29:04AM -0800, Joe Perches wrote:
-> > #define PMEM_IS_FREE(id, index) (!(pmem[id].bitmap[index].allocated))
-> >=20
-> > That has two pairs of unneeded paranthesis and we run the risk of
-> > reprogramming the kernel in lisp, by mistake.
->=20
-> I think the outer parens are necessary.
-> Imagine PMEM_IS_FREE(foo, bar).another_dereference
-
-That's not going to happen in real life.
-
-regards,
-dan carpenter
-
-
---R92lf0Oi2sxyK3LA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPGXE2AAoJEOnZkXI/YHqRGyoQAK8LA899n4zq1DFeLJgSPFRb
-uIjmIyBi6DJoU6iXiIXkxS03zJstukb3xp2+nEHxuFfYssJgFiheLl0msBhR/2J9
-KVa/c1mtWpgPAW4PRpQf6r7KXmXr0FcxrhpF7uXwAgAZxskxW5jhEu4emw95MzGw
-9E6pa8chVcFGe+UZzLtapSKNs3+BRuuNmoWppVCXyF5krnfnMZPGgcZ+Q++iZc38
-bTmBc1MxS8lgzea+JE/gEndISFWNH0z3AhFJ0hhji/wo6E6OChJaqvBaRBoHs/Rz
-s5XeMlL3GEwhKT10SKMmDggytoO4ObWO6klscFyB3QCGa3aWP1oTbwkSg5gHr38F
-509BoUQ/oAlF/A0pS/2DX3XKDwfg0QqpR+haC51awy1GYCQuOeruokAEF+GC3JcT
-TAE89Exe5UtYE01/Hw4JjE44jc6z4y5cfGMoOqAqPklU6lsrOkPf/v+x0nOIIlNJ
-S3GIFC33ehazuyMJniBp7iDnprgAQFdKZ5XtMr5D8+7HN5qoReEpxqSI1ngXqf0I
-isRiSQ5SDx8NgLMpKwlIWNcufFbgFS3RgQK8EK8WjQ5OBVqcjJftqdXSAKn14LqA
-jfreVeow2VFeyjIq28BNq3xKzoyEgRKB1azB070oj0GfujcAq/lWUOsV663FTOx6
-rAjm6N/AhK7ouZQ2rge3
-=AJTi
------END PGP SIGNATURE-----
-
---R92lf0Oi2sxyK3LA--
+Rob
