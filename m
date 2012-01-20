@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2ATQ5K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:57:10 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16119 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab2ATQ5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:57:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 20 Jan 2012 08:57:06 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Tony Lindgren <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
-Date: Fri, 20 Jan 2012 08:57:05 -0800
-Subject: RE: [PATCH 2/4] pinctrl: Fix pinmux_hog_maps when ctrl_dev_name is
- not set
-Thread-Topic: [PATCH 2/4] pinctrl: Fix pinmux_hog_maps when ctrl_dev_name is
- not set
-Thread-Index: AczXjwLVIWBa3rfdTp6aqdvk7YPCBQABTbvg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB383@HQMAIL01.nvidia.com>
-References: <20120120161610.21955.25082.stgit@kaulin.local>
- <20120120161727.21955.7437.stgit@kaulin.local>
-In-Reply-To: <20120120161727.21955.7437.stgit@kaulin.local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1753974Ab2ATQ6M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:58:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41800 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753802Ab2ATQ6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 11:58:10 -0500
+Message-ID: <4F199CE7.3020900@zytor.com>
+Date: Fri, 20 Jan 2012 08:57:11 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, david@lang.hm,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andrey Vagin <avagin@openvz.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
+References: <4F15C249.3000602@zytor.com> <m1obu29fnf.fsf@fess.ebiederm.org> <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm> <20120118224956.GF15652@moon> <m1zkdk4mj5.fsf@fess.ebiederm.org> <20120119065541.GA31379@moon> <m1ty3rukr1.fsf@fess.ebiederm.org> <20120120084008.GD1954@moon> <20120120090225.GD2786@moon> <4F197F73.3010000@zytor.com> <20120120162900.GP1954@moon>
+In-Reply-To: <20120120162900.GP1954@moon>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0KGvJmM006804
 
-Tony Lindgren wrote at Friday, January 20, 2012 9:17 AM:
-> The ctrl_dev_name is optional for struct pinmux_map assuming
-> that ctrl_dev is set. Without this patch we can get:
-> 
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+On 01/20/2012 08:29 AM, Cyrill Gorcunov wrote:
+>
+> We've had kind of emergency pool before which were used in such cases.
+> These legitime cases can happen not that frequently, so I guess -- can
+> we use it again?
+>
+> 	if (cookies[i][j])
+> 		continue;
+> 	else
+> 		cookies[i][j] = some-value;
+>
+> One wont know which exactly values we were using.
+>
 
-> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+I would not worry about get_random_bytes() returning nothing... if so, a 
+lot of other places in the kernel would be broken.
 
+>> The other thing is that for the multiplicative cookie you should OR in
+>> the value (~(~0UL>>  1) | 1) in order to make sure that the value is (a)
+>> large and (b) odd.
+>>
+>
+> I see, i'll update (at first, I occasionally translated odd as 'even' which
+> made me really scratching the head, until I realized it's 'odd'! :)
+>
+> 	Cyrill
 
-> @@ -992,9 +992,12 @@ int pinmux_hog_maps(struct pinctrl_dev *pctldev)
-> 
->  	for (i = 0; i < pinmux_maps_num; i++) {
->  		struct pinmux_map const *map = &pinmux_maps[i];
-> +		int match_found = 0;
-> 
-> -		if (((map->ctrl_dev == dev) ||
-> -		     !strcmp(map->ctrl_dev_name, devname)) &&
-> +		if (map->ctrl_dev_name && !strcmp(map->ctrl_dev_name, devname))
-> +				match_found = 1;
-> +
-> +		if (((map->ctrl_dev == dev) || match_found) &&
->  		    map->hog_on_boot) {
->  			/* OK time to hog! */
->  			ret = pinmux_hog_map(pctldev, map);
-
-Wouldn't it be better if match_found was true for all matching cases,
-in other words for the new code to be:
-
-		int match_found = 0;
-
-		if (map->ctrl_dev_name && !strcmp(map->ctrl_dev_name, devname))
-				match_found = 1;
-		if (map->ctrl_dev == dev)
-				match_found = 1;
-		if (match_found && map->hog_on_boot) {
-
--- 
-nvpublic
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
