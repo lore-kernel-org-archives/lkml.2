@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab2ATOwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 09:52:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41309 "EHLO mail.zytor.com"
+	id S1753543Ab2ATOyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 09:54:09 -0500
+Received: from mail.opencsw.org ([82.220.5.51]:56770 "EHLO mail.opencsw.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751820Ab2ATOwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 09:52:30 -0500
-Message-ID: <4F197F73.3010000@zytor.com>
-Date: Fri, 20 Jan 2012 06:51:31 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, david@lang.hm,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andrey Vagin <avagin@openvz.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC] syscalls, x86: Add __NR_kcmp syscall
-References: <CACVxJT8TJXopJ5-_0j=6CsWXJL8wMOFCerfvmhWa7wcYnejFEg@mail.gmail.com> <20120117144452.GG16213@moon> <4F15C249.3000602@zytor.com> <m1obu29fnf.fsf@fess.ebiederm.org> <alpine.DEB.2.02.1201181404480.6780@asgard.lang.hm> <20120118224956.GF15652@moon> <m1zkdk4mj5.fsf@fess.ebiederm.org> <20120119065541.GA31379@moon> <m1ty3rukr1.fsf@fess.ebiederm.org> <20120120084008.GD1954@moon> <20120120090225.GD2786@moon>
-In-Reply-To: <20120120090225.GD2786@moon>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
+	id S1752646Ab2ATOyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 09:54:07 -0500
+X-Greylist: delayed 656 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jan 2012 09:54:07 EST
+Date: Fri, 20 Jan 2012 15:43:09 +0100
+From: Attila Kinali <attila@kinali.ch>
+To: Karel Zak <kzak@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Subject: Re: /etc/fstab.d yes or not
+Message-Id: <20120120154309.3ae5f9e4a8f55c477dc423ab@kinali.ch>
+In-Reply-To: <20120120140444.GC13157@x2.net.home>
+References: <20120120140444.GC13157@x2.net.home>
+Organization: GEHIRN
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2012 01:02 AM, Cyrill Gorcunov wrote:
-> On Fri, Jan 20, 2012 at 12:40:08PM +0400, Cyrill Gorcunov wrote:
-> ...
->> +
->> +static __init int kcmp_cookie_init(void)
->> +{
->> +	int i, j;
->> +
->> +	for (i = 0; i < KCMP_TYPES; i++) {
->> +		for (j = 0; j < 2; j++) {
->> +			get_random_bytes(&cookies[i][j], sizeof(cookies[i][j]));
->> +
->> +			if (cookies[i][j])
->> +				continue;
->> +
->> +			/*
->> +			 * This is impossible case but just to be sure.
->> +			 */
->> +			cookies_valid = false;
->> +			WARN_ONCE(1, "Can't get random bytes for k-pointers\n");
->> +		}
->> +	}
->> +
->> +	cookies_valid = true;
+On Fri, 20 Jan 2012 15:04:44 +0100
+Karel Zak <kzak@redhat.com> wrote:
+
+>  I'd like to add support for /etc/fstab.d to libmount. The library is
+>  currently used by mount, umount and mount.nfs. The goal is to use it
+>  on more places.
 > 
-> darn, this string of course should be on top,
-> i'll update don't complain on this nit.
+>  The /etc/fstab.d directory has been requested by people who maintains
+>  large number of mountpoints etc.
 > 
+>  The directory is not replacement for /etc/fstab, it's additional place
+>  where you can describe your filesystems.
 
-This code is wrong.  You will have a zero cookie, legitimately, once in
-2^32 or 2^64 attempts, depending on the bitness.
+It might not be my place to say anthing about this, as I am just
+a mere mortal .... 
 
-The other thing is that for the multiplicative cookie you should OR in
-the value (~(~0UL >> 1) | 1) in order to make sure that the value is (a)
-large and (b) odd.
+But I'd like to express my concerns on this. In the years i've been
+using Linux, the system has become a very complex beast. While in the 
+beginning I could just dig trough a couple of scripts to figure out
+how a certain system worked, or more likely why it didn't work...
+nowadays i have to have knowledge of a dozen of complex interacting
+daemons to figure out why gedit refuses to edit a simple text file.
 
-	-hpa
+Complexity is added everywhere, to make a few corner cases a little
+bit more simple. Making it more difficult for the 99% who do
+not care about these corner cases. This in turn makes Linux this
+opaque system that only a handfull of selected can understand, who
+invest their whole life to the understanding of its many subsystems.
+If this continues like this, in a decade or two, Linux will become
+like windows. A system nobody clearly understands, which somehow works,
+but sometimes not.. and nobody knows why.
+
+Hence, i would like to ask you to consider not adding /etc/fstab.d
+unless there is a very good reason to do it. And "to make it simpler
+for people who have a lot of mountpoints" is IMHO not a good reason.
+How many mountpoints must one use that a single file becomes a problem?
+
+
+			Attila Kinali
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+The trouble with you, Shev, is you don't say anything until you've saved
+up a whole truckload of damned heavy brick arguments and then you dump
+them all out and never look at the bleeding body mangled beneath the heap
+		-- Tirin, The Dispossessed, U. Le Guin
