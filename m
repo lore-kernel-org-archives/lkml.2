@@ -1,59 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab2ATD17 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 22:27:59 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:30213
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751111Ab2ATD14 (ORCPT
+	id S1751417Ab2ATD2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 22:28:23 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39013 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab2ATD2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 22:27:56 -0500
-X-SpamScore: -3
-X-BigFish: VS-3(zz1432Nzz1202h1082kzzz2dhc1bhc31hc1ah2a8h668h839h941h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4F18DF95.80700@freescale.com>
-Date: Fri, 20 Jan 2012 11:29:25 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, <vinod.koul@intel.com>,
-        <artem.bityutskiy@intel.com>, <shijie8@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <LW@KARO-electronics.de>,
-        <alsa-devel@alsa-project.org>, <b29396@freescale.com>
-Subject: Re: [PATCH 00/10] patch set about the MXS-DMA
-References: <1326953767-24155-1-git-send-email-b32955@freescale.com> <20120119091034.GH2247@S2101-09.ap.freescale.net> <20120119094513.GB2630@pengutronix.de>
-In-Reply-To: <20120119094513.GB2630@pengutronix.de>
-Content-Type: text/plain; charset="GB2312"
+	Thu, 19 Jan 2012 22:28:21 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 20 Jan 2012 12:26:58 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
+Subject: [PATCH v3] memcg: remove PCG_CACHE page_cgroup flag
+Message-Id: <20120120122658.1b14b512.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120119181711.8d697a6b.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20120119181711.8d697a6b.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I think this version is much simplified.
 
->>> [2] patch 6 ~ patch 10: rewrite the last parameter of mxs_dma_prep_slave_sg().
->> For the sake of bitsec, at least patches #7 and #8 need to be one patch.
->> That said, if I apply the series and then check out the commit at patch
->> #7, you need to all mxs-dma client drivers, mxs-mmc, gpmi do not break.
-> I'd say patch 6-10 should be squashed, simply. My personal preference is
-> to change #9 to simply read the register when needed and do not expand
-It's better to add a new field. i also want to add a new field
-`bch_version`, because different
-BCH version may support different ECC strength. For example, some
-version BCH can support to 24 bit,
-while the latest BCH may support to 40 bit. So the BCH version may
-limits the computing of ECC strength.
+==
+>From 5700a4fe9c581e1ebaa021ba6119dc8d921b024f Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 19 Jan 2012 17:09:41 +0900
+Subject: [PATCH v3] memcg: remove PCG_CACHE
 
-Best Regards
-Huang Shijie
+We record 'the page is cache' by PCG_CACHE bit to page_cgroup.
+Here, "CACHE" means anonymous user pages (and SwapCache). This
+doesn't include shmem.
 
-> the struct, but this is a minor thing.
->
-> Regards,
->
->    Wolfram
->
+Consdering callers, at charge/uncharge, the caller should know
+what  the page is and we don't need to record it by using 1bit
+per page.
+
+This patch removes PCG_CACHE bit and make callers of
+mem_cgroup_charge_statistics() to specify what the page is.
+
+Changelog since v2
+ - removed 'not_rss', added 'anon'
+ - changed a meaning of arguments to mem_cgroup_charge_statisitcs()
+ - removed a patch to mem_cgroup_uncharge_cache
+ - simplified comment.
+
+Changelog since RFC.
+ - rebased onto memcg-devel
+ - rename 'file' to 'not_rss'
+ - some cleanup and added comment.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/page_cgroup.h |    8 +------
+ mm/memcontrol.c             |   48 +++++++++++++++++++++++-------------------
+ 2 files changed, 27 insertions(+), 29 deletions(-)
+
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index a2d1177..1060292 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -4,7 +4,6 @@
+ enum {
+ 	/* flags for mem_cgroup */
+ 	PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
+-	PCG_CACHE, /* charged as cache */
+ 	PCG_USED, /* this object is in use. */
+ 	PCG_MIGRATION, /* under page migration */
+ 	/* flags for mem_cgroup and file and I/O status */
+@@ -64,11 +63,6 @@ static inline void ClearPageCgroup##uname(struct page_cgroup *pc)	\
+ static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
+ 	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
+ 
+-/* Cache flag is set only once (at allocation) */
+-TESTPCGFLAG(Cache, CACHE)
+-CLEARPCGFLAG(Cache, CACHE)
+-SETPCGFLAG(Cache, CACHE)
+-
+ TESTPCGFLAG(Used, USED)
+ CLEARPCGFLAG(Used, USED)
+ SETPCGFLAG(Used, USED)
+@@ -85,7 +79,7 @@ static inline void lock_page_cgroup(struct page_cgroup *pc)
+ {
+ 	/*
+ 	 * Don't take this lock in IRQ context.
+-	 * This lock is for pc->mem_cgroup, USED, CACHE, MIGRATION
++	 * This lock is for pc->mem_cgroup, USED, MIGRATION
+ 	 */
+ 	bit_spin_lock(PCG_LOCK, &pc->flags);
+ }
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ff24520..f000c82 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -672,15 +672,19 @@ static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
+ }
+ 
+ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
+-					 bool file, int nr_pages)
++					 bool rss, int nr_pages)
+ {
+ 	preempt_disable();
+ 
+-	if (file)
+-		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_CACHE],
++	/*
++	 * Here, RSS means 'mapped anon' and anon's SwapCache. Shmem/tmpfs is
++	 * counted as CACHE even if it's on ANON LRU.
++	 */
++	if (rss)
++		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_RSS],
+ 				nr_pages);
+ 	else
+-		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_RSS],
++		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_CACHE],
+ 				nr_pages);
+ 
+ 	/* pagein of a big page is an event. So, ignore page size */
+@@ -2409,6 +2413,8 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 				       struct page_cgroup *pc,
+ 				       enum charge_type ctype)
+ {
++	bool anon;
++
+ 	lock_page_cgroup(pc);
+ 	if (unlikely(PageCgroupUsed(pc))) {
+ 		unlock_page_cgroup(pc);
+@@ -2428,21 +2434,14 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 	 * See mem_cgroup_add_lru_list(), etc.
+  	 */
+ 	smp_wmb();
+-	switch (ctype) {
+-	case MEM_CGROUP_CHARGE_TYPE_CACHE:
+-	case MEM_CGROUP_CHARGE_TYPE_SHMEM:
+-		SetPageCgroupCache(pc);
+-		SetPageCgroupUsed(pc);
+-		break;
+-	case MEM_CGROUP_CHARGE_TYPE_MAPPED:
+-		ClearPageCgroupCache(pc);
+-		SetPageCgroupUsed(pc);
+-		break;
+-	default:
+-		break;
+-	}
+ 
+-	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), nr_pages);
++	SetPageCgroupUsed(pc);
++	if (ctype == MEM_CGROUP_CHARGE_TYPE_MAPPED)
++		anon = true;
++	else
++		anon = false;
++
++	mem_cgroup_charge_statistics(memcg, anon, nr_pages);
+ 	unlock_page_cgroup(pc);
+ 	WARN_ON_ONCE(PageLRU(page));
+ 	/*
+@@ -2507,6 +2506,7 @@ static int mem_cgroup_move_account(struct page *page,
+ {
+ 	unsigned long flags;
+ 	int ret;
++	bool anon = PageAnon(page);
+ 
+ 	VM_BUG_ON(from == to);
+ 	VM_BUG_ON(PageLRU(page));
+@@ -2535,14 +2535,14 @@ static int mem_cgroup_move_account(struct page *page,
+ 		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+ 		preempt_enable();
+ 	}
+-	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -nr_pages);
++	mem_cgroup_charge_statistics(from, anon, -nr_pages);
+ 	if (uncharge)
+ 		/* This is not "cancel", but cancel_charge does all we need. */
+ 		__mem_cgroup_cancel_charge(from, nr_pages);
+ 
+ 	/* caller should have done css_get */
+ 	pc->mem_cgroup = to;
+-	mem_cgroup_charge_statistics(to, PageCgroupCache(pc), nr_pages);
++	mem_cgroup_charge_statistics(to, anon, nr_pages);
+ 	/*
+ 	 * We charges against "to" which may not have any tasks. Then, "to"
+ 	 * can be under rmdir(). But in current implementation, caller of
+@@ -2890,6 +2890,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ 	struct mem_cgroup *memcg = NULL;
+ 	unsigned int nr_pages = 1;
+ 	struct page_cgroup *pc;
++	bool anon;
+ 
+ 	if (mem_cgroup_disabled())
+ 		return NULL;
+@@ -2921,6 +2922,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ 		/* See mem_cgroup_prepare_migration() */
+ 		if (page_mapped(page) || PageCgroupMigration(pc))
+ 			goto unlock_out;
++		anon = true;
+ 		break;
+ 	case MEM_CGROUP_CHARGE_TYPE_SWAPOUT:
+ 		if (!PageAnon(page)) {	/* Shared memory */
+@@ -2928,12 +2930,14 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ 				goto unlock_out;
+ 		} else if (page_mapped(page)) /* Anon */
+ 				goto unlock_out;
++		anon = true;
+ 		break;
+ 	default:
++		anon = false;
+ 		break;
+ 	}
+ 
+-	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), -nr_pages);
++	mem_cgroup_charge_statistics(memcg, anon, -nr_pages);
+ 
+ 	ClearPageCgroupUsed(pc);
+ 	/*
+@@ -3319,7 +3323,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 	/* fix accounting on old pages */
+ 	lock_page_cgroup(pc);
+ 	memcg = pc->mem_cgroup;
+-	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), -1);
++	mem_cgroup_charge_statistics(memcg, false, -1);
+ 	ClearPageCgroupUsed(pc);
+ 	unlock_page_cgroup(pc);
+ 
+-- 
+1.7.4.1
 
 
