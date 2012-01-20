@@ -1,76 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab2ATQWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:22:23 -0500
-Received: from nagini.codelibre.net ([80.68.93.164]:35750 "EHLO
-	nagini.codelibre.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab2ATQWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:22:22 -0500
-Date: Fri, 20 Jan 2012 16:22:20 +0000
-From: Roger Leigh <rleigh@codelibre.net>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org
-Subject: Re: /etc/fstab.d yes or not
-Message-ID: <20120120162220.GN8797@codelibre.net>
-References: <20120120140444.GC13157@x2.net.home>
- <20120120154912.GK8797@codelibre.net>
- <CAPXgP13a9v+f1uNdpe-c+aApLfLpgn15b1-gZxRPd0wMvU=B-Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPXgP13a9v+f1uNdpe-c+aApLfLpgn15b1-gZxRPd0wMvU=B-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754834Ab2ATQ1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:27:06 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:42256 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753649Ab2ATQ1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 11:27:03 -0500
+Date: Fri, 20 Jan 2012 08:26:59 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Michael Breuer <mbreuer@majjas.com>
+Cc: Jarek Poplawski <jarkao2@gmail.com>, David Miller <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Regression: sky2 kernel between 3.1 and 3.2.1 (last known good
+ 3.0.9)
+Message-ID: <20120120082659.1e06853e@nehalam.linuxnetplumber.net>
+In-Reply-To: <4F1452B1.4010200@majjas.com>
+References: <20100120094103.GA6225@ff.dom.local>
+	<4B58B217.8030001@majjas.com>
+	<20100121204133.GB3085@del.dom.local>
+	<4B59E7EB.3050605@majjas.com>
+	<4F1452B1.4010200@majjas.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 05:13:12PM +0100, Kay Sievers wrote:
-> On Fri, Jan 20, 2012 at 16:49, Roger Leigh <rleigh@codelibre.net> wrote:
-> > On Fri, Jan 20, 2012 at 03:04:44PM +0100, Karel Zak wrote:
-> >>  I'd like to add support for /etc/fstab.d to libmount. The library is
-> >>  currently used by mount, umount and mount.nfs. The goal is to use it
-> >>  on more places.
-> >>
-> >>  The /etc/fstab.d directory has been requested by people who maintains
-> >>  large number of mountpoints etc.
-> >>
-> >>  The directory is not replacement for /etc/fstab, it's additional place
-> >>  where you can describe your filesystems.
-> >
-> > As a general comment, I would like to use fstab.d for replacing
-> > the initscripts which mount kernel filesystems in Debian initscripts
-> > (sysvinit).  We currently hardcode the logic to mount each filesystem
-> > and additionally hardcode the defaults, and permit the defaults to
-> > be overridden by the user via /etc/default/* or via entries in
-> > /etc/fstab.  This could be done much more straightforwardly using
-> > entries such as /etc/fstab.d/kernfs and /etc/fstab.d/tmpfs etc.
+On Mon, 16 Jan 2012 11:39:13 -0500
+Michael Breuer <mbreuer@majjas.com> wrote:
+
+> Synopsis:
 > 
-> It is just very wrong to expose kernel filesystems to system mounts.
-> Please invent your own config if you want that for packaging. The
-> kernel filesystems do not belong in fstab, and for the same reason not
-> in fstab.d/.
+> Receiving DMAR and other errors after approximately three days of 
+> uptime. The symptoms exactly match errors seen and then fixed around 
+> 2.6.32.4.
+> 
+> While the system remains unaffected for too long to do a bisect, I was 
+> able to confirm that the problem exists in the 3.1 stable branch (I 
+> jumped from 3.0 to 3.2 when 3.2. was released).
+> 
+> For now I reverted to the sky2.c from 3.0.9 and am running the rest of 
+> the kernel from 3.1.2, but won't be certain that this works until later 
+> in the week.
+> 
+> Note that 20 seconds prior to the log extract below were DHCP renewal 
+> attempts on eth1, the issue below was on eth0. Not sure it's relevant, 
+> however back in 2010 a preceding DHCP event did turn out to be relevant 
+> to the manifestation of the bug.
+> 
+> The 3.2.1-dirty I'm running is from git with a single local patch - for 
+> sidewinder force-feedback support (shouldn't be relevant to the sky2 issue).
+> 
+> Log extract:
+> 
+> Jan 16 05:49:46 mail kernel: [198230.628919] DRHD: handling fault status 
+> reg 2
+> Jan 16 05:49:46 mail kernel: [198230.628925] sky2 0000:06:00.0: error 
+> interrupt status=0x80000000
+> Jan 16 05:49:46 mail kernel: [198230.628929] DMAR:[DMA Read] Request 
+> device [06:00.0] fault addr fff78000
+> Jan 16 05:49:46 mail kernel: [198230.628931] DMAR:[fault reason 06] PTE 
+> Read access is not set
+> Jan 16 05:49:46 mail kernel: [198230.628939] sky2 0000:06:00.0: PCI 
+> hardware error (0x2010)
+> Jan 16 05:49:53 mail dhclient[1616]: DHCPREQUEST on eth1 to 
+> 10.240.184.29 port 67
+> Jan 16 05:50:01 mail kernel: [198246.288400] ------------[ cut here 
+> ]------------
+> Jan 16 05:50:01 mail kernel: [198246.288408] WARNING: at 
+> net/sched/sch_generic.c:255 dev_watchdog+0x247/0x250()
+> Jan 16 05:50:01 mail kernel: [198246.288411] Hardware name: System 
+> Product Name
+> Jan 16 05:50:01 mail kernel: [198246.288413] NETDEV WATCHDOG: eth0 
+> (sky2): transmit queue 0 timed out
+> Jan 16 05:50:01 mail kernel: [198246.288415] Modules linked in: tcp_lp 
+> cpufreq_stats ebtable_nat ebtables nf_conntrack_netbios_ns 
+> nf_conntrack_broadcast ip6table_mangle ip6table_filter ip6_tables 
+> iptable_mangle ipt_MASQUERADE iptable_nat nf_nat iptable_raw tun bridge 
+> stp llc lockd sit tunnel4 ipt_LOG nf_conntrack_ftp nf_conntrack_ipv6 
+> nf_defrag_ipv6 xt_CHECKSUM xt_multiport xt_DSCP w83627ehf xt_mark 
+> xt_dscp hwmon_vid binfmt_misc raid1 btrfs sunrpc zlib_deflate libcrc32c 
+> snd_hda_codec_analog snd_ens1371 gameport snd_hda_intel snd_rawmidi 
+> snd_ac97_codec snd_hda_codec snd_hwdep ac97_bus snd_seq snd_seq_device 
+> snd_pcm gspca_spca505 snd_timer gspca_main snd videodev media soundcore 
+> i2c_i801 iTCO_wdt microcode v4l2_compat_ioctl32 snd_page_alloc 
+> i7core_edac sky2 edac_core pcspkr iTCO_vendor_support virtio_net virtio 
+> virtio_ring kvm_intel kvm uinput ipv6 raid456 async_raid6_recov async_pq 
+> raid6_pq async_xor firewire_ohci firewire_core pata_acpi ata_generic xor 
+> async_memcpy async_tx crc_itu_t pata_marvell nouveau ttm d
+> Jan 16 05:50:01 mail kernel: rm_kms_helper drm i2c_algo_bit i2c_core 
+> mxm_wmi video [last unloaded: nf_conntrack_broadcast]
+> Jan 16 05:50:01 mail kernel: [198246.288487] Pid: 0, comm: swapper/0 
+> Tainted: G        W    3.2.1-dirty #1
+> Jan 16 05:50:01 mail kernel: [198246.288489] Call Trace:
+> Jan 16 05:50:01 mail kernel: [198246.288491] <IRQ>  [<ffffffff81050a4f>] 
+> warn_slowpath_common+0x7f/0xc0
+> Jan 16 05:50:01 mail kernel: [198246.288501]  [<ffffffff8101f0bd>] ? 
+> lapic_next_event+0x1d/0x30
+> Jan 16 05:50:01 mail kernel: [198246.288504]  [<ffffffff81050b46>] 
+> warn_slowpath_fmt+0x46/0x50
+> Jan 16 05:50:01 mail kernel: [198246.288509]  [<ffffffff81009319>] ? 
+> read_tsc+0x9/0x20
+> Jan 16 05:50:01 mail kernel: [198246.288513]  [<ffffffff814a81e7>] 
+> dev_watchdog+0x247/0x250
+> Jan 16 05:50:01 mail kernel: [198246.288518]  [<ffffffff8105fbbb>] 
+> run_timer_softirq+0x12b/0x3b0
+> Jan 16 05:50:01 mail kernel: [198246.288521]  [<ffffffff814a7fa0>] ? 
+> qdisc_reset+0x50/0x50
+> Jan 16 05:50:01 mail kernel: [198246.288525]  [<ffffffff81057d18>] 
+> __do_softirq+0xa8/0x210
+> Jan 16 05:50:01 mail kernel: [198246.288529]  [<ffffffff8157496c>] 
+> call_softirq+0x1c/0x30
+> Jan 16 05:50:01 mail kernel: [198246.288533]  [<ffffffff810041e5>] 
+> do_softirq+0x65/0xa0
+> Jan 16 05:50:01 mail kernel: [198246.288536]  [<ffffffff810580fe>] 
+> irq_exit+0x8e/0xb0
+> Jan 16 05:50:01 mail kernel: [198246.288539]  [<ffffffff815750a3>] 
+> do_IRQ+0x63/0xe0
+> Jan 16 05:50:01 mail kernel: [198246.288543]  [<ffffffff8156ad2e>] 
+> common_interrupt+0x6e/0x6e
+> Jan 16 05:50:01 mail kernel: [198246.288545] <EOI>  [<ffffffff81307b6d>] 
+> ? intel_idle+0xed/0x150
+> Jan 16 05:50:01 mail kernel: [198246.288551]  [<ffffffff81307b4f>] ? 
+> intel_idle+0xcf/0x150
+> Jan 16 05:50:01 mail kernel: [198246.288555]  [<ffffffff8144d331>] 
+> cpuidle_idle_call+0xc1/0x280
+> Jan 16 05:50:01 mail kernel: [198246.288559]  [<ffffffff8100122a>] 
+> cpu_idle+0xca/0x120
+> Jan 16 05:50:01 mail kernel: [198246.288563]  [<ffffffff8154741e>] 
+> rest_init+0x72/0x74
+> Jan 16 05:50:01 mail kernel: [198246.288568]  [<ffffffff81b6abdd>] 
+> start_kernel+0x3b5/0x3c0
+> Jan 16 05:50:01 mail kernel: [198246.288572]  [<ffffffff81b6a32b>] 
+> x86_64_start_reservations+0x132/0x136
+> Jan 16 05:50:01 mail kernel: [198246.288576]  [<ffffffff81b6a140>] ? 
+> early_idt_handlers+0x140/0x140
+> Jan 16 05:50:01 mail kernel: [198246.288580]  [<ffffffff81b6a431>] 
+> x86_64_start_kernel+0x102/0x111
+> Jan 16 05:50:01 mail kernel: [198246.288583] ---[ end trace 
+> bb26011d21a2b1d7 ]---
+> Jan 16 05:50:01 mail kernel: [198246.288586] sky2 0000:06:00.0: eth0: tx 
+> timeout
+> Jan 16 05:50:01 mail kernel: [198246.288593] sky2 0000:06:00.0: eth0: 
+> transmit ring 115 .. 10 report=115 done=115
+> 
+> 
+> 
 
-To be fair, these can be split into two categories: kernel filesystems
-such as procfs, sysfs etc., and special-purpose tmpfs mounts.  The
-former could be kept in the init scripts, but the latter are commonly
-required to be customised (or disabled) by admins, and the fstab format
-is the natural way to express this.  This would include tmpfs mounts
-for e.g. /run, /run/lock, /run/shm, potentially /tmp] and others, each
-of which has separate limits.
 
-Inventing custom file formats for these (as is the current situation)
-is both opaque to the admin and less amenable to preservation/upgrading
-of the admins customisations and the defaults.
-
-
-Regards,
-Roger
-
--- 
-  .''`.  Roger Leigh
- : :' :  Debian GNU/Linux             http://people.debian.org/~rleigh/
- `. `'   Printing on GNU/Linux?       http://gutenprint.sourceforge.net/
-   `-    GPG Public Key: 0x25BFB848   Please GPG sign your mail.
+Which exact chip version is this?
+  dmesg | grep sky2
+  lspci
