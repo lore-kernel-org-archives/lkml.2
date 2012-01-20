@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab2ATC3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jan 2012 21:29:06 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:50941 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab2ATC3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jan 2012 21:29:04 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        davem <davem@davemloft.net>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, kaber@trash.net, pablo@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, netfilter-devel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Hung task when calling clone() due to netfilter/slab
-References: <1326558605.19951.7.camel@lappy>
-	<1326561043.5287.24.camel@edumazet-laptop>
-	<1326632384.11711.3.camel@lappy>
-	<1326648305.5287.78.camel@edumazet-laptop>
-	<alpine.DEB.2.00.1201170910130.4800@router.home>
-	<1326813630.2259.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1201170927020.4800@router.home>
-	<1326814208.2259.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1201170942240.4800@router.home>
-	<alpine.DEB.2.00.1201171620590.14697@router.home>
-	<m1bopz2ws3.fsf@fess.ebiederm.org> <m14nvr2vbu.fsf@fess.ebiederm.org>
-	<alpine.DEB.2.00.1201191959540.14480@router.home>
-Date: Thu, 19 Jan 2012 18:31:30 -0800
-In-Reply-To: <alpine.DEB.2.00.1201191959540.14480@router.home> (Christoph
-	Lameter's message of "Thu, 19 Jan 2012 20:03:51 -0600 (CST)")
-Message-ID: <m1y5t3yuil.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753400Ab2ATDNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jan 2012 22:13:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39239 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab2ATDNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jan 2012 22:13:17 -0500
+References: <4F18B911.2060601@oak.selfip.net> <CA+5PVA5U-mJKMR63=1Tc6arjhtTkFNOjvSumFiENdJRyVs1Epg@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+5PVA5U-mJKMR63=1Tc6arjhtTkFNOjvSumFiENdJRyVs1Epg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX185gFy2Q5E0Qolu5TZV0B/n7LqTpHGaBUs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: PROBLEM: Postgres fails to start due to kernel issue?
+From: "hpanvin@gmail.com" <hpa@zytor.com>
+Date: Thu, 19 Jan 2012 19:13:02 -0800
+To: Josh Boyer <jwboyer@gmail.com>, Dave Haywood <tla@oak.selfip.net>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Message-ID: <534a6e5c-4c14-48bd-a9dc-d5b884daeb63@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter <cl@linux.com> writes:
+Yes, it almost certainly is.  Fixed in rc1.
 
-> On Thu, 19 Jan 2012, Eric W. Biederman wrote:
->
->> Oh.  I see.  The problem is calling kobject_uevent (which happens to
->> live in slabs sysfs_slab_add) with a lock held.  And kobject_uevent
->> makes a blocking call to userspace.
+Josh Boyer <jwboyer@gmail.com> wrote:
+
+>On Thu, Jan 19, 2012 at 7:45 PM, Dave Haywood <tla@oak.selfip.net>
+>wrote:
+>> Hi,
 >>
->> No locks held seems to be a good policy on that one.
+>>  I noticed after upgrading to 3.2.0-08812-gc2bc3a3 that Postgres-9.1
+>server
+>> fails to start with error:
+>>
+>> FATAL:  could not create shared memory segment: Function not
+>implemented
+>> DETAIL:  Failed system call was shmget(key=5432001, size=30523392,
+>03600).
+>>
+>>  After some googling, I thought it was a SYSV shared memory sizing
+>issue but
+>> manually changing kernel.shmmax and kernel.shmall had no effect.
+>>
+>>  The problem has been introduced between 3.2.0-08694-g53999bf and
+>> 3.2.0-08812-gc2bc3a3.
+>>
+>>  Let me know if you need any more information.  Bisecting is *very*
+>slow on
+>> this machine!
 >
-> Well we can just remove that call to kobject_uevent instead then. Does it
-> do anything useful? Cannot remember why we put that in there.
+>If you run strace on it, does it fail with ENOSYS?  This might be
+>related to an issue Peter just fixed.
+>
+>josh
 
-Empirically it sounds like something is listening for it and doing cat
-/proc/slabinfo.  Something like that would have to occur for their to be
-a deadlock that was observed.
-
-On the flip side removing from sysfs with locks held must be done
-carefully, and as a default I would recommend not to hold locks over
-removing things from sysfs.  As removal blocks waiting for all of the
-callers into sysfs those sysfs attributes to complete.
-
-It looks like you are ok on the removal because none of the sysfs
-attributes appear to take the slub_lock, just /proc/slabinfo.  But
-it does look like playing with fire.
-
-Eric
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
