@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab2ATR4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 12:56:19 -0500
-Received: from mga11.intel.com ([192.55.52.93]:36381 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754016Ab2ATR4S convert rfc822-to-8bit (ORCPT
+	id S1755505Ab2ATR52 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 12:57:28 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37413 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755232Ab2ATR5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 12:56:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="109155561"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>, Don Zickus <dzickus@redhat.com>,
-        Chen Gong <gong.chen@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
- smp_send_stop()
-Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
- below smp_send_stop()
-Thread-Index: AQHMy9CqWb3Eal+luUidUg+JrwynPJX+IWHAgAAOOECAAJk+gIAGFpuAgACYuICAASNngIAAuA6AgACm9AD//5HLQIADWlqQgAlb+CWAAVZ7cA==
-Date: Fri, 20 Jan 2012 17:56:15 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F0275EE@ORSMSX104.amr.corp.intel.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com>
- <20120105210123.GI5650@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827BBD8@USINDEVS01.corp.hds.com>
- <4F0BAB33.2090201@linux.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
- <4F0D3A0B.4090709@linux.intel.com> <20120111172544.GS5650@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28FD61F@ORSMSX104.amr.corp.intel.com>,<32727E9A83EE9A42A1F0906295A3A77B2C78F49973@USINDEVS01.corp.hds.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2DA7B65F2A@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2DA7B65F2A@USINDEVS01.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Jan 2012 12:57:24 -0500
 MIME-Version: 1.0
+In-Reply-To: <CABqD9hbUm2Ff7iL5jraE7-J_GqYPf3_r4X+TJKVMeOJBZ9X-Yw@mail.gmail.com>
+References: <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+ <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+ <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+ <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+ <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+ <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <CAObL_7FsNQaPQg-3=AO9RuMNZZsRgDSJYPhPevDKERws9vQJWg@mail.gmail.com>
+ <20120119160113.GN7180@jl-vm1.vm.bytemark.co.uk> <CA+55aFyZ-=4J1hVSAJiBiZKgpvuh-t54KPjLijRmU=cBtdi3-w@mail.gmail.com>
+ <CABqD9hbUm2Ff7iL5jraE7-J_GqYPf3_r4X+TJKVMeOJBZ9X-Yw@mail.gmail.com>
+From: Roland McGrath <mcgrathr@google.com>
+Date: Fri, 20 Jan 2012 09:56:58 -0800
+Message-ID: <CAB=4xho3i=snOZ2+KugF4pN063gKztXzJLnyT2534XVqa43+Sg@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: Will Drewry <wad@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
+        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Do you have any comments?
+In arch_ptrace, task_user_regset_view is called on current.  On an x86-64
+kernel, that path is only reached for a 64-bit syscall.  compat_arch_ptrace
+doesn't use it at all, always using the 32-bit view.  So your change would
+have no effect on PTRACE_GETREGS.
 
-I'm stuck in because I don't know how assign probabilities to
-the failure cases with kmsg_dump() before and after the smp_send_stop().
+It would only affect PTRACE_GETREGSET, which calls task_user_regset_view on
+the target task.  Is that what you meant?  I think that would be confusing
+at best.  A caller of PTRACE_GETREGSET is expecting a particular layout
+based on what type of task he thinks he's dealing with.  The caller can
+look at the iov_len in the result to discern which layout it actually got
+filled in, but I don't think that's what callers expect.
 
-There's a well documented tendency in humans to stick with the status
-quo in such situations.  I'm definitely finding it hard to provide
-a positive recommendation (ACK).
+The other use of task_user_regset_view is in core dump
+(binfmt_elf.c:fill_note_info).  Off hand I don't think there's a way a core
+dump can be started while still "inside" a syscall so that TS_COMPAT could
+ever be set.  But that should be double-checked.
 
-So I'll just talk out loud here for a bit in case someone sees
-something obviously flawed in my understanding.
+As to whether it was considered before, I doubt that it was.  I don't
+really recall the sequence of events, but I think that I did all the
+user_regset code before I was really cognizant of the TS_COMPAT subtleties.
 
-Problem statement: We'd like to maximize our chances of saving the
-tail of the kernel log when the system goes down. With the current
-ordering there is a concern that other cpus will interfere with the
-one that is saving the log.
 
-Problems in current code flow:
-*) Other cpus might hold locks that we need. Our options are to fail,
-   or to "bust" the locks (but busting the locks may lead to other
-   problems in the code path - those locks were there for a reason).
-   There are only a couple of ways that this could be an issue.
-   1) The lock is held because someone is doing some other pstore
-   filesystem operation (reading and erasing records). This has a
-   very low probability. Normal code flow will have some process harvest
-   records from pstore in some /etc/rc.d/* script - this process should
-   take much less than a second.
-   2) The lock is held because some other kmsg_dump() store is in progress.
-   This one seems more worrying - think of an OOPS (or several) right
-   before we panic
-
-Problems in proposed code flow:
-*) smp_send_stop() fails:
-   1) doesn't actually stop other cpus (we are no worse off than before we
-   made this change)
-   2) doesn't return - so we don't even try to dump to pstore back end. x86
-   code has recently been hardened (though I can still imagine a pathological
-   case where in a crash the cpu calling this is uncertain of its own
-   identity, and somehow manages to stop itself - perhaps we are so screwed up
-   in this case that we have no hope anyway)
-*) Even if it succeeds - we may still run into problems busting locks because
-   even though the cpu that held them isn't executing, the data structures
-   or device registers protected by the lock may be in an inconsistent state.
-*) If we had just let this other cpus keep running, they'd have finished their
-   operation and freed up the problem lock anyway
-
--Tony
+Thanks,
+Roland
