@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab2ATQQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 11:16:04 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60937 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab2ATQQC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 11:16:02 -0500
-Date: Fri, 20 Jan 2012 09:15:57 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Michael Bohan <mbohan@codeaurora.org>
-Cc: Rob Herring <robherring2@gmail.com>, tglx@linutronix.de,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: irq: Allow for specification of no preallocated irqs
-Message-ID: <20120120161557.GT4223@ponder.secretlab.ca>
-References: <1327013024-22530-1-git-send-email-mbohan@codeaurora.org>
- <4F18A18C.9090302@gmail.com>
- <4F18B577.8080101@codeaurora.org>
+	id S1754590Ab2ATQRN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 11:17:13 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:31347 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754016Ab2ATQRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 11:17:12 -0500
+Message-ID: <4F199372.7090501@parallels.com>
+Date: Fri, 20 Jan 2012 20:16:50 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F18B577.8080101@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/2] SUNRPC: make /proc helpers network-namespace-aware
+References: <20111206123748.15702.93290.stgit@localhost6.localdomain6>	 <4F19512F.1000903@parallels.com> <20120120143047.GB9877@fieldses.org> <1327070356.23030.0.camel@lade.trondhjem.org>
+In-Reply-To: <1327070356.23030.0.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 04:29:43PM -0800, Michael Bohan wrote:
-> On 1/19/2012 3:04 PM, Rob Herring wrote:
-> >No doubt that arch_probe_nr_irqs is doing the wrong thing on ARM, but no
-> >pre-allocation is not what we want either. We ultimately want
-> >arch_probe_nr_irqs to return NR_IRQS_LEGACY (16) to reserve IRQ0 (aka
-> >NO_IRQ) and legacy ISA IRQs. With my series, NR_IRQS is set to
-> >NR_IRQS_LEGACY for SPARSE_IRQ. You can accomplish the same thing without
-> >that series by setting .nr_irqs to NR_IRQS for non-DT and to
-> >NR_IRQS_LEGACY for DT. For platforms to work in single kernel builds,
-> >they will need to select SPARSE_IRQ.
-> 
-> One issue here is that IRQ_BITMAP_BITS is defined as a function of
-> NR_IRQS. Currently, there's a hack in place that arbitrarily tacks
-> on 8196 bits to the end, giving the max virq supported as 8212 with
-> your patches. Unfortunately, the system I'm running on will require
-> higher values than that, so this actually breaks me.
+20.01.2012 18:39, Trond Myklebust пишет:
+> On Fri, 2012-01-20 at 09:30 -0500, bfields@fieldses.org wrote:
+>> On Fri, Jan 20, 2012 at 03:34:07PM +0400, Stanislav Kinsbursky wrote:
+>>> Excuse me, Trond, Bruce, but what about this patch set?
+>>> It is not included in Trond's "devel" branch.
+>>> Maybe they are in your repo, Bruce?
+>>
+>> Everything that I had from you is in -rc1 now.
+>>
+>> --b.
+>
+> I can carry these patches if you like. They don't seem to conflict with
+> anything already in my repository.
+>
 
-Are that many irqs actually going to be in-use at one time?  If not, then the driver should use the irq_domain radix tree reverse map anyway.
+Yes, would be great. Thank you.
 
-g.
-
+-- 
+Best regards,
+Stanislav Kinsbursky
