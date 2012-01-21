@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab2AUMv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 07:51:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53896 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751253Ab2AUMv0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 07:51:26 -0500
-Date: Sat, 21 Jan 2012 12:51:23 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V1] mfd: tps65910: Add wakeup support
-Message-ID: <20120121125123.GB10206@opensource.wolfsonmicro.com>
-References: <1327057770-6688-1-git-send-email-ldewangan@nvidia.com>
- <20120120125152.GE18297@opensource.wolfsonmicro.com>
- <4F196568.1080503@nvidia.com>
- <20120120130201.GF18297@opensource.wolfsonmicro.com>
- <4F19671E.7030003@nvidia.com>
- <20120120131355.GG18297@opensource.wolfsonmicro.com>
- <4F1AA084.9080502@nvidia.com>
+	id S1751701Ab2AUM4o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 07:56:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43477 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345Ab2AUM4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 07:56:42 -0500
+Date: Sat, 21 Jan 2012 07:51:53 -0500
+From: Greg KH <gregkh@suse.de>
+To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        devel@driverdev.osuosl.org, techeng <dzshen@gmail.com>, clyu@citiz.net,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add Winbond WB528SD Secure Digital (SD) card reader
+ driver
+Message-ID: <20120121125153.GB18829@suse.de>
+References: <4F1A98F5.3080402@freemail.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4F1AA084.9080502@nvidia.com>
-X-Cookie: You dialed 5483.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F1A98F5.3080402@freemail.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 04:54:52PM +0530, Laxman Dewangan wrote:
+On Sat, Jan 21, 2012 at 11:52:37AM +0100, Németh Márton wrote:
+> From: Márton Németh <nm127@freemail.hu>
+> 
+> This driver version of Winbond WB528SD can detect mechanical card
+> presence only. The information is provided through sysfs.
 
-> During initialization of device, we need to tell that device is
-> wakeup capable and hence we need to call the: device_wakeup_init()
-> and device_set_wakeup_capable(dev, true).
-> Then it exposes the required sysfs to userspace to select the wakeup
-> enable or not i.e. power/wakeup to be written as enabled or
-> disabled.
-> Based on user selection, the function device_may_wakeup() will
-> return true/false based on  power/wakeup enabled/disabled. So before
-> entering into the suspend, we need to check this function and call
-> enable_irq_wakeup() to have the wakeup enabled actually in the soc.
-> In resume we need to call disable_irq_wake() again.
+How is it provided through sysfs?  Is this done in a standard way?  If
+not, why not?
 
-Yes, that sounds about right.  You don't strictly need to worry about
-the wake setup except when suspending but it tends to be easier to
-implement that way.
+Why is this driver submitted to the staging tree?  What is keeping it
+from going into the "real" portion of the kernel for other card readers?
+
+We need a TODO file for what is needed to get it moved out of staging.
+
+Oh, and it needs to do a bit more than just detect a card to be useful,
+right?  How about read/write to it?
+
+thanks,
+
+greg k-h
