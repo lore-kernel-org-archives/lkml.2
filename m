@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab2AUTRy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 14:17:54 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34995 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750940Ab2AUTRt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 14:17:49 -0500
+	id S1751784Ab2AUTSc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 14:18:32 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41849 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab2AUTSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 14:18:09 -0500
+Date: Sat, 21 Jan 2012 19:18:06 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Szymon Janc <szymon@janc.net.pl>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] binfmt_misc: Fix compilation error in parse_command()
+Message-ID: <20120121191806.GD23916@ZenIV.linux.org.uk>
+References: <1327172558-19180-1-git-send-email-szymon@janc.net.pl>
 MIME-Version: 1.0
-In-Reply-To: <20120121.133933.227768598621914035.davem@davemloft.net>
-References: <1327156996-12505-1-git-send-email-netdev@pradeepdalvi.com>
-	<1327161238.2574.3.camel@edumazet-laptop>
-	<CA+Dx6HbdHV9qHksqb0oH-zhYdJCm6Tu8btwG1Zs5ty1CPXXckA@mail.gmail.com>
-	<20120121.133933.227768598621914035.davem@davemloft.net>
-Date: Sun, 22 Jan 2012 00:47:47 +0530
-Message-ID: <CA+Dx6Hbbe0OadeyNQtO1__dU3K5VSecHajFQPSJiD=GSci+Nqw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] netdev/ethernet: dev_alloc_skb to netdev_alloc_skb
-From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org, hch@lst.de,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327172558-19180-1-git-send-email-szymon@janc.net.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 22, 2012 at 12:09 AM, David Miller <davem@davemloft.net> wrote:
-> From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-> Date: Sat, 21 Jan 2012 22:16:06 +0530
->
->> I appreciate your concerns. Although I feel, it is essential to add
->> relevant comments by respective (corporate/paid :-) developers, if
->> their hardware needs hardcoded 2. And especially, if their expectation
->> is to buy their hardware, even for the smaller purpose of having
->> uniform mechanism. Long live Open Source! :-)
->
-> I see the smiley but it is your responsibility to learn how a driver
-> works before making changes to it that break them.  Stop talking such
-> foolishness, it is very unbecoming of a serious developer.
+On Sat, Jan 21, 2012 at 08:02:37PM +0100, Szymon Janc wrote:
+> This fix compilation error with CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+> enabled. It looks like gcc 4.6.2 is not able to prove that count
+> is within sizeof(s) bounds (although it is).
+> 
+>   CC [M]  fs/binfmt_misc.o
+> In file included from arch/x86/include/asm/uaccess.h:573:0,
+>                  from include/linux/uaccess.h:5,
+>                  from include/linux/highmem.h:7,
+>                  from include/linux/pagemap.h:10,
+>                  from fs/binfmt_misc.c:26:
+> In function ???copy_from_user???,
+>     inlined from ???parse_command.part.1??? at fs/binfmt_misc.c:421:20:
+> arch/x86/include/asm/uaccess_32.h:211:26: error: call to ???copy_from_user_overflow??? declared with attribute error: copy_from_user() buffer size is not provably correct
+> make[1]: *** [fs/binfmt_misc.o] Error 1
+> make: *** [fs] Error 2
+> 
+> Signed-off-by: Szymon Janc <szymon@janc.net.pl>
+> ---
+>  fs/binfmt_misc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+> index a9198df..4879d35 100644
+> --- a/fs/binfmt_misc.c
+> +++ b/fs/binfmt_misc.c
+> @@ -418,7 +418,7 @@ static int parse_command(const char __user *buffer, size_t count)
+>  		return 0;
+>  	if (count > 3)
+>  		return -EINVAL;
+> -	if (copy_from_user(s, buffer, count))
+> +	if (copy_from_user(s, buffer, min(count, sizeof(s))))
 
-Certainly! I completely agree to the point of being responsible
-contributor and in another words, not to break existing things due to
-lack of information.
-Although I mentioned so, due to realized importance of
-comments/documentation over the expectations of owning hardware for
-testing. Especially, if those points are so much critical to the
-hardware. And also more importantly, while accessing Kernel resources.
-Anyways, I would avoid touching +2 further, like I've avoided for +3,
-+4, +5 and so on, in this patch & resubmit the patch. Thanks!
+File a report in gcc bugzilla.  Note that
+	* count is size_t and thus unsigned
+	* sizeof(s) is 4
+IOW, min(count, sizeof(s)) should do no better (or worse) than count here.
+If gcc is unable to prove that, it really needs to be fixed...
