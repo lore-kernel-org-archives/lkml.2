@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750872Ab2AUR3Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 12:29:16 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:36325 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750702Ab2AUR3M (ORCPT
+	id S1750878Ab2AURcM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 12:32:12 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34955 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab2AURcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 12:29:12 -0500
-Message-ID: <4F1B0399.5000801@xenotime.net>
-Date: Sat, 21 Jan 2012 10:27:37 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sat, 21 Jan 2012 12:32:10 -0500
+Date: Sat, 21 Jan 2012 18:32:07 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Robert Morell <rmorell@nvidia.com>
+Cc: "Semwal, Sumit" <sumit.semwal@ti.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "sumit.semwal@linaro.org" <sumit.semwal@linaro.org>
+Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
+Message-ID: <20120121173207.GF3821@phenom.ffwll.local>
+Mail-Followup-To: Robert Morell <rmorell@nvidia.com>,
+	"Semwal, Sumit" <sumit.semwal@ti.com>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Arnd Bergmann <arnd@arndb.de>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	"sumit.semwal@linaro.org" <sumit.semwal@linaro.org>
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
+ <1326845297-6233-1-git-send-email-rmorell@nvidia.com>
+ <1326845297-6233-2-git-send-email-rmorell@nvidia.com>
+ <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
+ <20120120180457.GE29824@morell.nvidia.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Vasiliy Kulikov <segoon@openwall.com>,
-        Dan Ballard <dan@mindstab.net>, Jiri Kosina <jkosina@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>, Stephen Wilson <wilsons@start.ca>,
-        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2] sysctl: control functionality of /proc/pid/mem
-References: <20120121090644.GA31670@www.outflux.net>
-In-Reply-To: <20120121090644.GA31670@www.outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+In-Reply-To: <20120120180457.GE29824@morell.nvidia.com>
+X-Operating-System: Linux phenom 3.2.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2012 01:06 AM, Kees Cook wrote:
-> Add the "proc_pid_mem" sysctl to control whether or not /proc/pid/mem is
-> allowed to work: 0: disabled, 1: read only, 2: read/write.
+On Fri, Jan 20, 2012 at 10:04:57AM -0800, Robert Morell wrote:
+> On Wed, Jan 18, 2012 at 01:10:04AM -0800, Semwal, Sumit wrote:
+> > On Wed, Jan 18, 2012 at 5:38 AM, Robert Morell <rmorell@nvidia.com> wrote:
+> > > EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
+> > > issue, and not really an interface".  The dma-buf infrastructure is
+> > > explicitly intended as an interface between modules/drivers, so it
+> > > should use EXPORT_SYMBOL instead.
+> > 
+> > + Konrad, Arnd, Mauro: there were strong objections on using
+> > EXPORT_SYMBOL in place of EXPORT_SYMBOL_GPL by all 3 of them; I
+> > suggest we first arrive at a consensus before merging this patch.
+> 
+> This discussion seems to have stagnated; how do we move forward here?
+> 
+> Sumit, as the primary author and new maintainer (congrats!) of the
+> dma-buf infrastructure, it seems like it's really your call how to
+> proceed.  I'd still like to see this be something that we can use from
+> the nvidia and fglrx drivers for Xorg buffer sharing, as I and Dave have
+> argued in this thread.  It really seems to me that this change on a
+> technical level won't have any adverse effect on the scenarios where it
+> can be used today, but it will allow it to be used more widely, which
+> will prevent duplication and fragmentation in the future and be greatly
+> appreciated by users of hardware such as Optimus.
 
-Maybe mention that the default is 2 (or did you mean to change that sooner
-or later?).
+Given that I've participated quite a bit in the design of dma_buf as-is,
+let me throw in my totally irrelevant opinion, too ;-)
 
+I'll refrain from comment on the actual patch, it's obviously a hot topic.
+Furthermore I might need to ask Intel's legal dep for guidance to asses
+things wrt my own contributions to dma_buf.
 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  Documentation/sysctl/kernel.txt |   14 ++++++++++++++
->  fs/proc/base.c                  |   14 +++++++++++++-
->  kernel/sysctl.c                 |   14 ++++++++++++++
->  3 files changed, 41 insertions(+), 1 deletions(-)
+Otoh I'd like nvidia to be on board, especially when we're desingned
+additions to dma_buf required to make it really work for multiple gpus. In
+additions it looks like that the nvidia blob will only be an importer of a
+dma_buf, at least for the use-cases discussed here.
 
+So why don't you just ditch this patch here and add a small shim to your
+blob to interface with drm's prime as an importing driver? I personally
+would deem that acceptable and I think Dave wouldn't mind too much,
+either.
+
+Yours, Daniel
+
+Disclaimer: This is my own opinion and I do not speak as an Intel employee
+here.
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
