@@ -1,123 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab2AUKKE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 05:10:04 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:22178 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab2AUKIz (ORCPT
+	id S932313Ab2AUKKL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 05:10:11 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:16592 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab2AUKJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 05:08:55 -0500
+	Sat, 21 Jan 2012 05:09:14 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Ram Pai <linuxram@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 01/21] PCI : Calculate right add_size
-Date: Sat, 21 Jan 2012 02:08:17 -0800
-Message-Id: <1327140517-14811-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 12/21] PCI: Merge pci_dev_resource_x and pci_dev_resource
+Date: Sat, 21 Jan 2012 02:08:28 -0800
+Message-Id: <1327140517-14811-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
 References: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4F1A8EB2.002E,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4F1A8EBF.00D4,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During debug one SRIOV enabled hotplug, found add_size is not passed properly.
+pci_dev_resource_x is superset of pci_dev_resource
 
-the device have devices under two level bridges..
+and those two are temp struct during resource reallocating.
 
- +-[0000:80]-+-00.0-[81-8f]--
- |           +-01.0-[90-9f]--
- |           +-02.0-[a0-af]----00.0-[a1-a3]--+-02.0-[a2]--+-00.0  Oracle Corporation Device
- |           |                               \-03.0-[a3]--+-00.0  Oracle Corporation Device
+pci_dev_resource usage is quite limted.
 
-so later parent bridge will not try to add big range.
-[  557.455077] pci 0000:a0:00.0: BAR 14: assigned [mem 0xf9000000-0xf93fffff]
-[  557.461974] pci 0000:a0:00.0: BAR 15: assigned [mem 0xf6000000-0xf61fffff pref]
-[  557.469340] pci 0000:a1:02.0: BAR 14: assigned [mem 0xf9000000-0xf91fffff]
-[  557.476231] pci 0000:a1:02.0: BAR 15: assigned [mem 0xf6000000-0xf60fffff pref]
-[  557.483582] pci 0000:a1:03.0: BAR 14: assigned [mem 0xf9200000-0xf93fffff]
-[  557.490468] pci 0000:a1:03.0: BAR 15: assigned [mem 0xf6100000-0xf61fffff pref]
-[  557.497833] pci 0000:a1:03.0: BAR 14: can't assign mem (size 0x200000)
-[  557.504378] pci 0000:a1:03.0: failed to add optional resources res=[mem 0xf9200000-0xf93fffff]
-[  557.513026] pci 0000:a1:02.0: BAR 14: can't assign mem (size 0x200000)
-[  557.519578] pci 0000:a1:02.0: failed to add optional resources res=[mem 0xf9000000-0xf91fffff]
+So just use pci_dev_resource_x, and rename it as new pci_dev_resource.
 
-it turns out We did not calculate size1 properly.
+-v2: According to Linus, Separate free_list change to another patch
 
-static resource_size_t calculate_memsize(resource_size_t size,
-                resource_size_t min_size,
-                resource_size_t size1,
-                resource_size_t old_size,
-                resource_size_t align)
-{
-        if (size < min_size)
-                size = min_size;
-        if (old_size == 1 )
-                old_size = 0;
-        if (size < old_size)
-                size = old_size;
-        size = ALIGN(size + size1, align);
-        return size;
-}
-
-We should not pass add_size with min_size in calculate_memsize.
-that will make add_size not contribute final add_size.
-
-Just pass add_size with size1 to calculate_memsize()
-
-With this change, We should have chance to remove extra addon in pci_reassign_resource...
-
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/setup-bus.c |    4 ++--
- drivers/pci/setup-res.c |    5 +++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/pci/setup-bus.c |   36 +++++++++++++++---------------------
+ 1 files changed, 15 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 86b69f85..9d932f4 100644
+index 4c5509e..af2a98a 100644
 --- a/drivers/pci/setup-bus.c
 +++ b/drivers/pci/setup-bus.c
-@@ -612,7 +612,7 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
- 	if (children_add_size > add_size)
- 		add_size = children_add_size;
- 	size1 = (!realloc_head || (realloc_head && !add_size)) ? size0 :
--		calculate_iosize(size, min_size+add_size, size1,
-+		calculate_iosize(size, min_size, add_size + size1,
- 			resource_size(b_res), 4096);
- 	if (!size0 && !size1) {
- 		if (b_res->start || b_res->end)
-@@ -726,7 +726,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 	if (children_add_size > add_size)
- 		add_size = children_add_size;
- 	size1 = (!realloc_head || (realloc_head && !add_size)) ? size0 :
--		calculate_memsize(size, min_size+add_size, 0,
-+		calculate_memsize(size, min_size, add_size,
- 				resource_size(b_res), min_align);
- 	if (!size0 && !size1) {
- 		if (b_res->start || b_res->end)
-diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-index 5717509b..8b25f9c 100644
---- a/drivers/pci/setup-res.c
-+++ b/drivers/pci/setup-res.c
-@@ -233,11 +233,12 @@ int pci_reassign_resource(struct pci_dev *dev, int resno, resource_size_t addsiz
- 		return -EINVAL;
+@@ -31,12 +31,6 @@ struct pci_dev_resource {
+ 	struct list_head list;
+ 	struct resource *res;
+ 	struct pci_dev *dev;
+-};
+-
+-struct pci_dev_resource_x {
+-	struct list_head list;
+-	struct resource *res;
+-	struct pci_dev *dev;
+ 	resource_size_t start;
+ 	resource_size_t end;
+ 	resource_size_t add_size;
+@@ -72,7 +66,7 @@ static int add_to_list(struct list_head *head,
+ 		 struct pci_dev *dev, struct resource *res,
+ 		 resource_size_t add_size, resource_size_t min_align)
+ {
+-	struct pci_dev_resource_x *tmp;
++	struct pci_dev_resource *tmp;
+ 
+ 	tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
+ 	if (!tmp) {
+@@ -104,7 +98,7 @@ static void add_to_failed_list(struct list_head *head,
+ static void remove_from_list(struct list_head *realloc_head,
+ 				 struct resource *res)
+ {
+-	struct pci_dev_resource_x *dev_res_x, *tmp;
++	struct pci_dev_resource *dev_res_x, *tmp;
+ 
+ 	list_for_each_entry_safe(dev_res_x, tmp, realloc_head, list) {
+ 		if (dev_res_x->res == res) {
+@@ -118,7 +112,7 @@ static void remove_from_list(struct list_head *realloc_head,
+ static resource_size_t get_res_add_size(struct list_head *realloc_head,
+ 					struct resource *res)
+ {
+-	struct pci_dev_resource_x *dev_res_x;
++	struct pci_dev_resource *dev_res_x;
+ 
+ 	list_for_each_entry(dev_res_x, realloc_head, list) {
+ 		if (dev_res_x->res == res) {
+@@ -227,7 +221,7 @@ static void reassign_resources_sorted(struct list_head *realloc_head,
+ 		struct list_head *head)
+ {
+ 	struct resource *res;
+-	struct pci_dev_resource_x *dev_res_x, *tmp;
++	struct pci_dev_resource *dev_res_x, *tmp;
+ 	struct pci_dev_resource *dev_res;
+ 	resource_size_t add_size;
+ 	int idx;
+@@ -325,7 +319,7 @@ static void __assign_resources_sorted(struct list_head *head,
+ 	 */
+ 	LIST_HEAD(save_head);
+ 	LIST_HEAD(local_fail_head);
+-	struct pci_dev_resource_x *dev_res_x;
++	struct pci_dev_resource *dev_res_x;
+ 	struct pci_dev_resource *dev_res;
+ 
+ 	/* Check if optional add_size is there */
+@@ -335,7 +329,7 @@ static void __assign_resources_sorted(struct list_head *head,
+ 	/* Save original start, end, flags etc at first */
+ 	list_for_each_entry(dev_res, head, list) {
+ 		if (add_to_list(&save_head, dev_res->dev, dev_res->res, 0, 0)) {
+-			free_list(pci_dev_resource_x, &save_head);
++			free_list(pci_dev_resource, &save_head);
+ 			goto requested_and_reassign;
+ 		}
+ 	}
+@@ -353,12 +347,12 @@ static void __assign_resources_sorted(struct list_head *head,
+ 		/* Remove head list from realloc_head list */
+ 		list_for_each_entry(dev_res, head, list)
+ 			remove_from_list(realloc_head, dev_res->res);
+-		free_list(pci_dev_resource_x, &save_head);
++		free_list(pci_dev_resource, &save_head);
+ 		free_list(pci_dev_resource, head);
+ 		return;
  	}
  
--	new_size = resource_size(res) + addsize + min_align;
-+	/* already aligned with min_align */
-+	new_size = resource_size(res) + addsize;
- 	ret = _pci_assign_resource(dev, resno, new_size, min_align);
- 	if (!ret) {
- 		res->flags &= ~IORESOURCE_STARTALIGN;
--		dev_info(&dev->dev, "BAR %d: assigned %pR\n", resno, res);
-+		dev_info(&dev->dev, "BAR %d: reassigned %pR\n", resno, res);
- 		if (resno < PCI_BRIDGE_RESOURCES)
- 			pci_update_resource(dev, resno);
+-	free_list(pci_dev_resource_x, &local_fail_head);
++	free_list(pci_dev_resource, &local_fail_head);
+ 	/* Release assigned resource */
+ 	list_for_each_entry(dev_res, head, list)
+ 		if (dev_res->res->parent)
+@@ -371,7 +365,7 @@ static void __assign_resources_sorted(struct list_head *head,
+ 		res->end = dev_res_x->end;
+ 		res->flags = dev_res_x->flags;
  	}
+-	free_list(pci_dev_resource_x, &save_head);
++	free_list(pci_dev_resource, &save_head);
+ 
+ requested_and_reassign:
+ 	/* Satisfy the must-have resource requests */
+@@ -1256,7 +1250,7 @@ pci_assign_unassigned_resources(void)
+ 	int tried_times = 0;
+ 	enum release_type rel_type = leaf_only;
+ 	LIST_HEAD(fail_head);
+-	struct pci_dev_resource_x *dev_res_x;
++	struct pci_dev_resource *dev_res_x;
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+ 				  IORESOURCE_PREFETCH;
+ 	unsigned long failed_type;
+@@ -1304,7 +1298,7 @@ again:
+ 	 */
+ 	failed_type &= type_mask;
+ 	if ((failed_type == IORESOURCE_IO) || (tried_times >= pci_try_num)) {
+-		free_list(pci_dev_resource_x, &fail_head);
++		free_list(pci_dev_resource, &fail_head);
+ 		goto enable_and_dump;
+ 	}
+ 
+@@ -1335,7 +1329,7 @@ again:
+ 		if (dev_res_x->dev->subordinate)
+ 			res->flags = 0;
+ 	}
+-	free_list(pci_dev_resource_x, &fail_head);
++	free_list(pci_dev_resource, &fail_head);
+ 
+ 	goto again;
+ 
+@@ -1356,7 +1350,7 @@ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
+ 					want additional resources */
+ 	int tried_times = 0;
+ 	LIST_HEAD(fail_head);
+-	struct pci_dev_resource_x *dev_res_x;
++	struct pci_dev_resource *dev_res_x;
+ 	int retval;
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+ 				  IORESOURCE_PREFETCH;
+@@ -1372,7 +1366,7 @@ again:
+ 
+ 	if (tried_times >= 2) {
+ 		/* still fail, don't need to try more */
+-		free_list(pci_dev_resource_x, &fail_head);
++		free_list(pci_dev_resource, &fail_head);
+ 		goto enable_all;
+ 	}
+ 
+@@ -1400,7 +1394,7 @@ again:
+ 		if (dev_res_x->dev->subordinate)
+ 			res->flags = 0;
+ 	}
+-	free_list(pci_dev_resource_x, &fail_head);
++	free_list(pci_dev_resource, &fail_head);
+ 
+ 	goto again;
+ 
 -- 
 1.7.7
 
