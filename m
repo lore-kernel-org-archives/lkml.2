@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab2AUIJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 03:09:59 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37020 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312Ab2AUIJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 03:09:57 -0500
-Date: Sat, 21 Jan 2012 09:09:39 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] vmstat reports no interrupts
-Message-ID: <20120121080939.GA32134@elte.hu>
-References: <20120114000101.GL1068@n2100.arm.linux.org.uk>
- <1327005616.4826.4.camel@edumazet-laptop>
+	id S1752889Ab2AUIK2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 03:10:28 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6736 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab2AUIKZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 03:10:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sat, 21 Jan 2012 00:10:21 -0800
+Message-ID: <4F1A72D8.90202@nvidia.com>
+Date: Sat, 21 Jan 2012 13:40:00 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1327005616.4826.4.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V1] mfd: tps65910: Add wakeup support
+References: <1327057770-6688-1-git-send-email-ldewangan@nvidia.com> <20120120125152.GE18297@opensource.wolfsonmicro.com> <4F196568.1080503@nvidia.com> <20120120130201.GF18297@opensource.wolfsonmicro.com> <4F19671E.7030003@nvidia.com> <20120120131355.GG18297@opensource.wolfsonmicro.com>
+In-Reply-To: <20120120131355.GG18297@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 20 January 2012 06:43 PM, Mark Brown wrote:
+> On Fri, Jan 20, 2012 at 06:37:42PM +0530, Laxman Dewangan wrote:
+>
+>>> No, that's it - when you call those userspace will get control via sysfs
+>>> for turning on and off the wakeup support.
+>> So should I call them in driver by default without taking parameter
+>> from platform data?
+> That's the normal behaviour for drivers unless there's some specific
+> reason for doing something different.  The choice may well depend on the
+> application software running on the system rather than the kernel.
+Ok, going through the details of documentation under 
+/sys/devices/.../power/wakeup files of
+power/device.txt, i think following should be the change if we want to 
+control the wakeup control
+through user sapce:
+During initialization of device, we need to tell that device is wakeup 
+capable and hence we need to
+call the: device_wakeup_init() and device_set_wakeup_capable(dev, true).
 
-* Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Then it exposes the required sysfs to userspace to select the wakeup 
+enable or not i.e. power/wakeup
+to be written as enabled or disabled.
 
-> Le samedi 14 janvier 2012 à 00:01 +0000, Russell King - ARM Linux a
-> écrit :
-> > From: Russell King <rmk+kernel@arm.linux.org.uk>
-> > proc: fix /proc/stat intr sum
-> > 
-> > Commit 3292beb340c7688 (sched/accounting: Change cpustat fields to an array)
-> > deleted the code which provides us with the sum of all interrupts in
-> > the system, causing vmstat to report zero interrupts occuring in the
-> > system.  Fix this by restoring the code.
-> > 
-> > Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> > Tested-by: Russell King <rmk+kernel@arm.linux.org.uk> [on ARM]
-> > ---
-> >  fs/proc/stat.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-> > index d76ca6a..121f77c 100644
-> > --- a/fs/proc/stat.c
-> > +++ b/fs/proc/stat.c
-> > @@ -77,6 +77,8 @@ static int show_stat(struct seq_file *p, void *v)
-> >  		steal += kcpustat_cpu(i).cpustat[CPUTIME_STEAL];
-> >  		guest += kcpustat_cpu(i).cpustat[CPUTIME_GUEST];
-> >  		guest_nice += kcpustat_cpu(i).cpustat[CPUTIME_GUEST_NICE];
-> > +		sum += kstat_cpu_irqs_sum(i);
-> > +		sum += arch_irq_stat_cpu(i);
-> >  
-> >  		for (j = 0; j < NR_SOFTIRQS; j++) {
-> >  			unsigned int softirq_stat = kstat_softirqs_cpu(j, i);
-> > 
-> 
-> Any news on this patch being accepted and pushed to Linus ?
+Based on user selection, the function device_may_wakeup() will return 
+true/false based on
+power/wakeup enabled/disabled.
+So before entering into the suspend, we need to check this function and 
+call enable_irq_wakeup() to
+have the wakeup enabled actually in the soc. In resume we need to call 
+disable_irq_wake() again.
 
-It should be in v3.3-rc1.
+If this is correct approach then I can push the another patch.
 
-Thanks,
-
-	Ingo
