@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab2AUBMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 20:12:49 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40843 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab2AUBMs (ORCPT
+	id S1755513Ab2AUBSc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 20:18:32 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:35348
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752446Ab2AUBSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 20:12:48 -0500
-Date: Sat, 21 Jan 2012 01:12:43 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: sparc32 vs lib/mpi
-Message-ID: <20120121011243.GC23916@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jan 2012 20:18:31 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: trivial@kernel.org, standby24x7@gmail.com
+Subject: [PATCH/RESEND] [trivial] sctp : Fix typo in net/sctp/socket.c
+Date: Sat, 21 Jan 2012 10:18:01 +0900
+Message-Id: <1327108681-1682-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	I realize that very few people care about sparc32 these days,
-but...
-	a) __clz_tab[] is defined (with identical contents) in
-lib/mpi/mpi-bit.c and arch/sparc/lib/divdi3.S.  Linker is unhappy,
-of course...
-	b) the same thing ends up using __udiv_qrnnd(), which simply
-does not exist on sparc32.  There's a Cthulhu-scaring cascade of
-ifdefs in lib/mpi/longlong.h, with several variants of udiv_qrnnd()
-for sparc.  Unfortunately, it falls back on use of __udiv_qrnnd()...
-Note that arch/sparc/math-emu/sfp-util_32.h has a definition of
-udiv_qrnnd() which might match one of inline assembly variants in
-lib/mpi/longlong.h.  Or not.  BTW, what the hell is LONGLONG_STANDALONE?
+Signed-off-by: Masanari Iida<standby24x7@gmail.com>
 
-	Could somebody who might remember still remember that stuff
-come up with comments?  For now I'm disabling everything from
-INTEGRITY_SIGNATURE down to MPILIB on sparc32 cross-build, but it
-would be nice to get it at least somewhat sorted out...
+Correct a typo "sctp_setsocktopt_bindx" to "sctp_setsockopt_bindx"
+in net/sctp/socket.c
+---
+ net/sctp/socket.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 408ebd0..658483e 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -970,7 +970,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(struct sock* sk,
+ 	void *addr_buf;
+ 	struct sctp_af *af;
+ 
+-	SCTP_DEBUG_PRINTK("sctp_setsocktopt_bindx: sk %p addrs %p"
++	SCTP_DEBUG_PRINTK("sctp_setsockopt_bindx: sk %p addrs %p"
+ 			  " addrs_size %d opt %d\n", sk, addrs, addrs_size, op);
+ 
+ 	if (unlikely(addrs_size <= 0))
+-- 
+1.7.6.5
+
