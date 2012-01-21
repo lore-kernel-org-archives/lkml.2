@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750969Ab2AURSp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 12:18:45 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:44956 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750741Ab2AURSn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 12:18:43 -0500
+	id S1750872Ab2AUR3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 12:29:16 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:36325 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750702Ab2AUR3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 12:29:12 -0500
+Message-ID: <4F1B0399.5000801@xenotime.net>
+Date: Sat, 21 Jan 2012 10:27:37 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1327164143.2050.9.camel@joe2Laptop>
-References: <1327140612-9694-1-git-send-email-solid.se7en@gmail.com>
-	<1327140612-9694-3-git-send-email-solid.se7en@gmail.com>
-	<1327164143.2050.9.camel@joe2Laptop>
-Date: Sat, 21 Jan 2012 09:18:43 -0800
-Message-ID: <CAEMzQTZ5ASCrrDJ6KSe41=yKL+7ayo_LfkZh3vagcopiGAj1tQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] xgifb: checkpatch cleanup, printk() KERN_*
-From: sam hansen <solid.se7en@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Vasiliy Kulikov <segoon@openwall.com>,
+        Dan Ballard <dan@mindstab.net>, Jiri Kosina <jkosina@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, Stephen Wilson <wilsons@start.ca>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2] sysctl: control functionality of /proc/pid/mem
+References: <20120121090644.GA31670@www.outflux.net>
+In-Reply-To: <20120121090644.GA31670@www.outflux.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> These last two should be KERN_CONT
-> though the block could be rewritten as
->
->        if (XGIInitNew(pdev))
->                printk(KERN_INFO "XGIfb: XGIInitNew() ... OK\n");
->        else
->                printk(KERN_ERR "XGIfb: XGIInitNew() ... Fail\n");
->
-> Emitting any dmesg output like "XGIInitNew() ... OK\n"
-> is almost always low value.
->
-> Perhaps just emitting on the error case is better:
->        if (!XGIInitNew(pdev))
->                printk(KERN_ERR "XGIfb: XBIInitNew() failed\n");
+On 01/21/2012 01:06 AM, Kees Cook wrote:
+> Add the "proc_pid_mem" sysctl to control whether or not /proc/pid/mem is
+> allowed to work: 0: disabled, 1: read only, 2: read/write.
 
-Cool.  See Re: Dan.  I will fold the printk logic up.
+Maybe mention that the default is 2 (or did you mean to change that sooner
+or later?).
 
-> One other thing.  It would be better to add
-> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> before any #include and convert all the
-> printks(KERN_<LEVEL> to pr_<level>(
-> stripping all the leading XGIfb: too.
 
-I might take a stab at eliminating explicit calls to printk and use a macro.
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  Documentation/sysctl/kernel.txt |   14 ++++++++++++++
+>  fs/proc/base.c                  |   14 +++++++++++++-
+>  kernel/sysctl.c                 |   14 ++++++++++++++
+>  3 files changed, 41 insertions(+), 1 deletions(-)
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
