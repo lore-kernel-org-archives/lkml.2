@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab2AUTpy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 14:45:54 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:35306 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751015Ab2AUTpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 14:45:52 -0500
-Message-ID: <1327175138.2050.21.camel@joe2Laptop>
-Subject: Re: [PATCH 3/3] xgifb: checkpatch cleanup, printk() KERN_*
-From: Joe Perches <joe@perches.com>
-To: sam hansen <solid.se7en@gmail.com>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 21 Jan 2012 11:45:38 -0800
-In-Reply-To: <CAEMzQTZZnPfGK4CZGw+PraL59f4C8eADfvpaGUrVd38d5TFA+A@mail.gmail.com>
-References: <1327140612-9694-1-git-send-email-solid.se7en@gmail.com>
-	 <1327140612-9694-3-git-send-email-solid.se7en@gmail.com>
-	 <1327164143.2050.9.camel@joe2Laptop>
-	 <CAEMzQTZZnPfGK4CZGw+PraL59f4C8eADfvpaGUrVd38d5TFA+A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751260Ab2AUUix (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 15:38:53 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52162 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751015Ab2AUUit convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 15:38:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5KDxkcMn3OrvujeSHhzF7PjG0hsYqMXe1HmpPJaLHvDg@mail.gmail.com>
+References: <20120121021318.14723.45698.stgit@amt.stowe> <20120121021330.14723.72537.stgit@amt.stowe>
+ <CAErSpo5KDxkcMn3OrvujeSHhzF7PjG0hsYqMXe1HmpPJaLHvDg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 21 Jan 2012 13:38:27 -0700
+Message-ID: <CAErSpo5jofU94+8p3h8_TZ2bCiSWGZKL57sZ311R9kC_HhqC7g@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ACPI, APEI: Add RAM mapping support to ACPI
+To: Myron Stowe <myron.stowe@redhat.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, rjw@sisk.pl,
+        ying.huang@intel.com, trenn@suse.de, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-01-21 at 11:22 -0800, sam hansen wrote:
-> > One other thing.  It would be better to add
-> > #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> > before any #include and convert all the
-> > printks(KERN_<LEVEL> to pr_<level>(
-> > stripping all the leading XGIfb: too.
-> 
-> So, an administrative question.  Sorry for my noob-ishness but... I
-> will be 1) modifying the patch regarding prink to use pr_LVL (and a
-> few logic tweaks), and will also be introducing a new patch to set up
-> the pr_fmt macro for kbuild.  I can find lots of information regarding
-> how to create/submit a patch, but not a lot of information about how
-> to modify/resubmit a patch you've already submitted and received
-> feedback for.
++cc Tony, linux-ia64
 
-Rework the commented things in a new branch.
-
-Apply the patches to the new branch one at
-a time, modify as necessary then
-git commit --amend
-the appropriately changed files while modifying
-change logs.
-
-Then resubmit with
-	git format-patch --subject-prefix="PATCH V2"
-You could also add --in-reply-to=originalemailid
-
-> The pr_fmt patch will likely just be a new patch outside of this patch
-> set? 
-
-A new patch would be fine.
-Here's a little regex based tool for part of that conversion
-http://lwn.net/Articles/380161/
-
-An example would be:
-$ ./scripts/cvt_kernel_style.pl			\
-	--convert=convert_printk_to_pr_level	\
-	-o drivers/staging/xgifb/XGI_main_26.c
-
-
+On Sat, Jan 21, 2012 at 8:04 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Jan 20, 2012 at 7:13 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
+>> From: Myron Stowe <mstowe@redhat.com>
+>>
+>> This patch adds support for RAM to ACPI's mapping capabilities in order
+>> to support APEI error injection (EINJ) actions.
+>>
+>> This patch re-factors similar functionality introduced in commit
+>> 76da3fb3575, bringing it into osl.c in preparation for removing
+>> ./drivers/acpi/atomicio.[ch].
+>>
+>> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+>> ---
+>>
+>>  drivers/acpi/osl.c |   36 ++++++++++++++++++++++++++++++++++--
+>>  1 files changed, 34 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+>> index f363a55..8ee64ea 100644
+>> --- a/drivers/acpi/osl.c
+>> +++ b/drivers/acpi/osl.c
+>> @@ -31,6 +31,7 @@
+>>  #include <linux/kernel.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/mm.h>
+>> +#include <linux/highmem.h>
+>>  #include <linux/pci.h>
+>>  #include <linux/interrupt.h>
+>>  #include <linux/kmod.h>
+>> @@ -321,6 +322,37 @@ acpi_map_lookup_virt(void __iomem *virt, acpi_size size)
+>>        return NULL;
+>>  }
+>>
+>> +#ifndef CONFIG_IA64
+>> +#define should_use_kmap(pfn)   page_is_ram(pfn)
+>> +#else
+>> +/* ioremap will take care of cache attributes */
+>> +#define should_use_kmap(pfn)   0
+>> +#endif
+>> +
+>> +static void __iomem *acpi_map(acpi_physical_address pg_off, unsigned long pg_sz)
+>> +{
+>> +       unsigned long pfn;
+>> +
+>> +       pfn = pg_off >> PAGE_SHIFT;
+>> +       if (should_use_kmap(pfn)) {
+>> +               if (pg_sz > PAGE_SIZE)
+>> +                       return NULL;
+>> +               return (void __iomem __force *)kmap(pfn_to_page(pfn));
+>> +       } else
+>> +               return acpi_os_ioremap(pg_off, pg_sz);
+>
+> This implies that ioremap() works differently on ia64 than on x86.
+> Apparently one can ioremap() RAM on x86, but not on ia64.  Why is this
+> different?  Shouldn't we instead fix ioremap() on ia64 so it works the
+> same as on x86?
+>
+> I looked at the ia64 ioremap(), and I can't see the reason it fails
+> for RAM.  Huang, do you remember the details from 76da3fb3575?
+>
+>> +}
+>> +
+>> +static void acpi_unmap(acpi_physical_address pg_off, void __iomem *vaddr)
+>> +{
+>> +       unsigned long pfn;
+>> +
+>> +       pfn = pg_off >> PAGE_SHIFT;
+>> +       if (page_is_ram(pfn))
+>> +               kunmap(pfn_to_page(pfn));
+>> +       else
+>> +               iounmap(vaddr);
+>
+> I hope we can resolve the ioremap() question so we don't need this
+> patch at all.  But if we do need this, I don't like the asymmetry here
+> -- on x86 RAM, I think we use ioremap() and kunmap(), which seems
+> wrong.  We should be able to use ioremap() and iounmap().
+>
+>> +}
+>> +
+>>  void __iomem *__init_refok
+>>  acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
+>>  {
+>> @@ -353,7 +385,7 @@ acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
+>>
+>>        pg_off = round_down(phys, PAGE_SIZE);
+>>        pg_sz = round_up(phys + size, PAGE_SIZE) - pg_off;
+>> -       virt = acpi_os_ioremap(pg_off, pg_sz);
+>> +       virt = acpi_map(pg_off, pg_sz);
+>>        if (!virt) {
+>>                mutex_unlock(&acpi_ioremap_lock);
+>>                kfree(map);
+>> @@ -384,7 +416,7 @@ static void acpi_os_map_cleanup(struct acpi_ioremap *map)
+>>  {
+>>        if (!map->refcount) {
+>>                synchronize_rcu();
+>> -               iounmap(map->virt);
+>> +               acpi_unmap(map->phys, map->virt);
+>>                kfree(map);
+>>        }
+>>  }
+>>
