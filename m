@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab2AUPym (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 10:54:42 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:57194 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752218Ab2AUPyk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 10:54:40 -0500
+	id S1752724Ab2AUP55 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 10:57:57 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38817 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab2AUP5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 10:57:55 -0500
+Date: Sat, 21 Jan 2012 18:58:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: walter harms <wharms@bfs.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch 2/2] [media] ds3000: off by one in ds3000_read_snr()
+Message-ID: <20120121155848.GR3356@mwanda>
+References: <20120117073021.GB11358@elgon.mountain>
+ <4F16FC26.80306@bfs.de>
+ <20120119093327.GI3356@mwanda>
+ <4F17EFE1.3060804@bfs.de>
+ <20120119122202.GJ3294@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <20120121082857.GC32134@elte.hu>
-References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
-	<CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
-	<20120121082857.GC32134@elte.hu>
-Date: Sun, 22 Jan 2012 00:54:40 +0900
-Message-ID: <CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
-Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, linux-nvme@infradead.org,
-        hpa@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xSu31lw3TgkWXnjh"
+Content-Disposition: inline
+In-Reply-To: <20120119122202.GJ3294@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090206.4F1AE07A.00AA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 17:28, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
->
->> On Thu, Jan 19, 2012 at 5:01 PM, Matthew Wilcox
->> <matthew.r.wilcox@intel.com> wrote:
->> > The only places that uses readq/writeq are in the initialisation
->> > path.  Since they're not performance critical, always use readl/writel.
->>
->> The arch rules are that i fthe architecture has readq/writeq, they
->> will be #define'd (they may be inline functions, but there will be a
->>
->>   #define readq readq
->>
->> to make it visible to the preprocessor as well).
->>
->> So if you don't need the atomicity guarantees of a "real" readq, you
->> can do this instead:
->>
->>   #ifndef readq
->>   static inline u64 readq(void __iomem *addr)
->>   {
->>         return readl(addr) | (((u64) readl(addr + 4)) << 32LL);
->>   }
->>   #endif
->>
->> and then use readq() as if it existed.
->>
->> And I do think we should expose this in some generic manner. Because
->> we currently don't, we already have that pattern copied in quite a few
->> drivers.
->>
->> Maybe <asm-generic/io-nonatomic.h> or something? Making it
->> clear that its not atomic, but avoiding the silly duplication
->> we do now..
->>
->> This whole mess was introduced in commit dbee8a0affd5 ("x86:
->> remove 32-bit versions of readq()/writeq()"), and it already
->> talked about the problems but didn't help with the drivers
->> that simply don't care.
->>
->> All the people in those threads were doing their
->> self-satisfied "writeq is broken", without much acknowledging
->> that 99% of users simply don't seem to care.
->>
->> "Occupy Writeq - We are the 99%"
->
-> Agreed, and offering a generic facility for silly duplication
-> was the motivation of the original commit by Hitoshi Mitake.
->
-> This:
->
-> | The presense of a writeq() implementation on 32-bit x86 that
-> | splits the 64-bit write into two 32-bit writes turns out to
-> | break the mpt2sas driver (and in general is risky for drivers
-> | as was discussed in
-> |   <http://lkml.kernel.org/r/adaab6c1h7c.fsf@cisco.com>).
->
-> is actually a mostly bogus statement and creates more problems
-> than it solves.
->
-> Hitoshi-san, would you be interested in re-adding the generic
-> readq/writeq definitions in a slight variation to 2c5643b1c5, to
-> a separate io-nonatomic.h file, so that drivers that want it can
-> #include that file and be happy?
 
-It sounds nice. In the previous discussion, I suggested that
-chaning the name of non-atomic readq/writeq to
-readq_nonatomic/writeq_nonatomic. And James Bottomley
-replied that it is fine but not really very useful:
+--xSu31lw3TgkWXnjh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-https://lkml.org/lkml/2011/5/19/13
+On Thu, Jan 19, 2012 at 03:22:02PM +0300, Dan Carpenter wrote:
+> It's a good point.  I will redo the patch.
 
-The idea of providing non-atomic readq/writeq in the new file
-with the name which express non-atomicity clearly might be
-able to satisfy both of safety and usefulness.
+Sorry, I've decided to bail on this.  The original code is buggy but
+I don't know what's going on well enough to fix it with any
+confidence.
 
-It will reduce the duplication of the definition. In addition
-readq/writeq users don't have to type the long symbols with
-_nonatomic suffix and can know non-atomicity from the name
-of header file.
+regards,
+dan carpenter
 
-I'd like to hear opinions from James, Roland and folks who
-dislike non-atomic readq/writeq.
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
+--xSu31lw3TgkWXnjh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPGuC3AAoJEOnZkXI/YHqRs24QALB8tg1uafSQZlErsvpJRqgP
+9O7zFTdLafnCGQWk82SYRfDl2y2n7DZmrx7RiWUtKPk+d/jJb7onqpo97FEDYR49
+LYnz3HLWuZhVNqo+Mna8D0dLPtUXZS589lzLBkRgvCRCd1bZ9Wh/Ib13aHcKq2y9
+PcIbO9sydIe5kfx+1m9muHXurPPokLBlMmCw3fRc1u7X/wwYJw9xz85wqz4FOXvF
+30fbGQMuWy5a8vaCWAgfgbwj35kUqaRl0XNkBS/8dLuWzqyeBHZPFPf7j1PIFGeK
+kaMrZJH0WKQVllCCXO0zhEe301237AgSqfVg/HPxNiAgL9vrihWiBOphUFd6VAYB
+SVW2fDhpSc9M3iJmm9r0rjSy+1MS5oIn8IIO6OepLKDwJFXEhDgv4lWnna8cgV2d
+RBvtSgalYmLkV4NLJMDufQ+FnfzvvSrtvSacYc2tjnA91CNxdW5Y4hA+/YJHkYRY
+KnGwW1+hDRRpTmM+ph60m1aXMxK34R6z1cayjwIhmNsM49PnvGfrTEu1YCfmDZBu
+nFoXxuN5K/0lVuDnMjiEvZkzfWSC12jv/PI8O/XBbRSmCAxfsxxtRyNKvDh3rX3r
+lDBHHGUHoqdM82F6WzOpl5WNA1tNwV4ApeHMfDfT7zHGyPdv+Ub5aBfZEBLhLGEQ
+z6/zJuPy8WOHl7pVPitj
+=2qph
+-----END PGP SIGNATURE-----
+
+--xSu31lw3TgkWXnjh--
