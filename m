@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab2AUHpP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 02:45:15 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:25068 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751372Ab2AUHpL (ORCPT
+	id S1752264Ab2AUHyH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 02:54:07 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49189 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2AUHyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 02:45:11 -0500
-X-IronPort-AV: E=Sophos;i="4.71,547,1320620400"; 
-   d="scan'208";a="140840610"
-Date: Sat, 21 Jan 2012 08:45:08 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Brice Goglin <Brice.Goglin@inria.fr>
-cc: Greg Dietsche <Gregory.Dietsche@cuw.edu>, julia.lawall@lip6.fr,
-        Michal Marek <mmarek@suse.cz>, mmarek@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coccicheck: change handling of C={1,2} when M= is set
-In-Reply-To: <4F1A6AC1.70300@inria.fr>
-Message-ID: <alpine.DEB.2.02.1201210843550.1939@hadrien>
-References: <4F1928FC.8090300@inria.fr> <1327101035-7684-1-git-send-email-Gregory.Dietsche@cuw.edu> <1327101035-7684-2-git-send-email-Gregory.Dietsche@cuw.edu> <4F1A6AC1.70300@inria.fr>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 21 Jan 2012 02:54:01 -0500
+Message-ID: <4F1A6F5E.70909@gmail.com>
+Date: Sat, 21 Jan 2012 18:55:10 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-596520168-1327131909=:1939"
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Woogyom Kim <milo.kim@ti.com>,
+        Daniel Jeong <daniel.jeong@ti.com>, Minkyu Kang <mk7.kang@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Peter Edwards <sweetlilmre@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: Re: [PATCH] power_supply: Convert power_supply i2c drivers to module_i2c_driver
+References: <1327128174.24831.1.camel@phoenix>
+In-Reply-To: <1327128174.24831.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-596520168-1327131909=:1939
-Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
-
-
-
-On Sat, 21 Jan 2012, Brice Goglin wrote:
-
-> Thanks a lot Greg, make C=2 CHECK=script/coccicheck M=... is back.
+On 21/01/12 17:42, Axel Lin wrote:
+> Factor out some boilerplate code for i2c driver registration
+> into module_i2c_driver.
 >
-> Tested-by: Brice Goglin <Brice.Goglin@inria.fr>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Ryan Mallon <rmallon@gmail.com>
+> Cc: Woogyom Kim <milo.kim@ti.com>
+> Cc: Daniel Jeong <daniel.jeong@ti.com>
+> Cc: Minkyu Kang <mk7.kang@samsung.com>
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Cc: Rhyland Klein <rklein@nvidia.com>
+> Cc: Peter Edwards <sweetlilmre@gmail.com>
+> ---
+>  drivers/power/ds2782_battery.c   |   12 +-----------
+>  drivers/power/lp8727_charger.c   |   13 +------------
+>  drivers/power/max17040_battery.c |   12 +-----------
+>  drivers/power/max17042_battery.c |   12 +-----------
+>  drivers/power/sbs-battery.c      |   12 +-----------
+>  drivers/power/z2_battery.c       |   13 +------------
+>  6 files changed, 6 insertions(+), 68 deletions(-)
 >
->
->
-> Le 21/01/2012 00:10, Greg Dietsche a écrit :
->> This patch reverts a portion of d0bc1fb4 so that coccicheck will
->> work properly when C=1 or C=2.
->>
->> Reported-by: Brice Goglin <Brice.Goglin@inria.fr>
->> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+> index bfbce5d..6e3d76a 100644
+> --- a/drivers/power/ds2782_battery.c
+> +++ b/drivers/power/ds2782_battery.c
+> @@ -404,17 +404,7 @@ static struct i2c_driver ds278x_battery_driver = {
+>  	.id_table	= ds278x_id,
+>  };
+>  
+> -static int __init ds278x_init(void)
+> -{
+> -	return i2c_add_driver(&ds278x_battery_driver);
+> -}
+> -module_init(ds278x_init);
+> -
+> -static void __exit ds278x_exit(void)
+> -{
+> -	i2c_del_driver(&ds278x_battery_driver);
+> -}
+> -module_exit(ds278x_exit);
+> +module_i2c_driver(ds278x_battery_driver);
+>  
+>  MODULE_AUTHOR("Ryan Mallon");
+>  MODULE_DESCRIPTION("Maxim/Dallas DS2782 Stand-Alone Fuel Gauage IC driver");
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+For ds2782:
 
->> ---
->>  scripts/coccicheck |   13 ++++---------
->>  1 files changed, 4 insertions(+), 9 deletions(-)
->>
->> diff --git a/scripts/coccicheck b/scripts/coccicheck
->> index 3c27764..823e972 100755
->> --- a/scripts/coccicheck
->> +++ b/scripts/coccicheck
->> @@ -9,15 +9,10 @@ if [ "$C" = "1" -o "$C" = "2" ]; then
->>  #    FLAGS="-ignore_unknown_options -very_quiet"
->>  #    OPTIONS=$*
->>
->> -    if [ "$KBUILD_EXTMOD" = "" ] ; then
->> -        # Workaround for Coccinelle < 0.2.3
->> -        FLAGS="-I $srctree/include -very_quiet"
->> -        shift $(( $# - 1 ))
->> -        OPTIONS=$1
->> -    else
->> -	echo M= is not currently supported when C=1 or C=2
->> -	exit 1
->> -    fi
->> +# Workaround for Coccinelle < 0.2.3
->> +	FLAGS="-I $srctree/include -very_quiet"
->> +	shift $(( $# - 1 ))
->> +	OPTIONS=$1
->>  else
->>      ONLINE=0
->>      FLAGS="-very_quiet"
->
->
---8323329-596520168-1327131909=:1939--
+Acked-by: Ryan Mallon <rmallon@gmail.com>
+
