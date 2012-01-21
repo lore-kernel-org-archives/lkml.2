@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab2AUK0u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 05:26:50 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55079 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab2AUK0r convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 05:26:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
-References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
-Date: Sat, 21 Jan 2012 02:26:46 -0800
-X-Google-Sender-Auth: buRUYBIJuGjt_mlo2yiTtv9BBkA
-Message-ID: <CAE9FiQUFYcaVWorPPP7PQqiBPnKv-iBkPm_qbGz4T_xLR2THiQ@mail.gmail.com>
-Subject: Re: [PATCH 0/7] PCI: pcie hotplug related patch
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755535Ab2AUKfL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 05:35:11 -0500
+Received: from lo.gmane.org ([80.91.229.12]:37667 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754040Ab2AUKfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 05:35:08 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Lubos Kolouch <lubos.kolouch@gmail.com>
+Subject: i915 wakes from suspend to RAM with blank screen after commit
+ cd9dde44f47501394b9f0715b6a36a92aa74c0d0
+Date: Sat, 21 Jan 2012 10:32:14 +0000 (UTC)
+Message-ID: <jfe47e$5dn$1@dough.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 188.122.213.132
+User-Agent: Pan/0.135 (Tomorrow I'll Wake Up and Scald Myself with Tea; GIT
+	30dc37b master)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 1:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> b40c9ef: pciehp: Disable/enable link during slot power off/on
-> fe877ae: pciehp: Add Disable/enable link functions
-> 292e286: pciehp: Add pcie_wait_link_not_active()
-> 186b3fd: pciehp: print out link status when dlla get active.
-> 2781df4: pciehp: Checking pci conf reading to new added device instead of sleep 1s
-> bf1c4ac: PCI: Separate pci_bus_read_dev_vendor_id from pci_scan_device
-> 601c6f1: PCI: Make sriov work with hotplug remove
->
->  drivers/pci/hotplug/pciehp_hpc.c |  133 +++++++++++++++++++++++++++++++-------
->  drivers/pci/pci.h                |    2 +
->  drivers/pci/probe.c              |   48 +++++++++-----
->  drivers/pci/remove.c             |   28 ++++++++-
->  4 files changed, 169 insertions(+), 42 deletions(-)
->
-> First one is for hotplug with sriov under bridge.
-> following two are for hotplug probing with pci conf reading.
-> Last four are for pcie link disable when power off slots.
+Hello,
 
-could be found at:
+After upgrading kernel from 3.1.5 to 3.2.0 the notebook cannot wake from
+suspend to RAM properly. The problem stays even with 3.3-rc1.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-pci-hp
+It wakes, but the screen is blank and computer needs to be rebooted.
 
-Thanks
+When woken, computer is working otherwise (can ping it, ssh to it etc.)
 
-Yinghai
+I git bisected it to commit
+cd9dde44f47501394b9f0715b6a36a92aa74c0d0 is the first bad commit
+commit cd9dde44f47501394b9f0715b6a36a92aa74c0d0
+Author: Adam Jackson <ajax@redhat.com>
+Date:   Fri Oct 14 12:43:49 2011 -0400
+
+    drm/i915/dp: Fix the math in intel_dp_link_required
+
+    The previous code was confused about units, which is pretty reasonable
+    given that the units themselves are confusing.
+
+    Signed-off-by: Adam Jackson <ajax@redhat.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+
+:040000 040000 3c0a0f38fc6482a401340e03fa3fbd687d11eda4
+294673b782b3ecc93540f46f7721d385bd30cfac M    drivers
+
+
+Reproducible: Always
+
+Steps to Reproduce:
+1. suspend to RAM
+2. start the computer
+Actual Results:  
+Screen is blank
+
+Expected Results:  
+Screen should be normal as before suspend
+
