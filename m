@@ -1,172 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab2AUJxb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 04:53:31 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:59924 "EHLO
+	id S1754519Ab2AUKI5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 05:08:57 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:22170 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519Ab2AUJwz (ORCPT
+	with ESMTP id S1752256Ab2AUKIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 04:52:55 -0500
+	Sat, 21 Jan 2012 05:08:53 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 1/7] PCI: Make sriov work with hotplug remove
-Date: Sat, 21 Jan 2012 01:52:13 -0800
-Message-Id: <1327139539-14301-2-git-send-email-yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 00/21] PCI : bridge resource reallocation patchset
+Date: Sat, 21 Jan 2012 02:08:16 -0800
+Message-Id: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
-References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F1A8AE9.005C,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4F1A8EB1.0012,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hot remove pci express module that have pcie switch and support SRIOV, got
+a181193: PCI: only enable pci realloc when SRIOV bar is not assigned
+6662c73: PCI: Make pci bridge reallocating enabled/disabled
+1a60212: PCI: Retry on type IORESOURCE_IO allocation.
+59e4fd4: PCI: Fix cardbus bridge resources as optional size handling
+daa08ff: PCI: Disable cardbus bridge MEM1 pref CTL
+e11dc0e: PCI: remove add_to_failed_list()
+11af29c: PCI: add debug print out for add_size
+6a30c7b: PCI: Change free_list() to function
+e5aa050: PCI: Rename dev_res_x to add_res or fail_res
+ff503cf: PCI: Merge pci_dev_resource_x and pci_dev_resource
+2874630: PCI: Replace resource_list with generic list
+8eedd1e: PCI: Move struct resource_list to setup-bus.c
+23a6d3e: PCI: Move pdev_sort_resources() to setup-bus.c
+93acbd6: PCI: Fixing multiple retrying with pci resource optional resources allocation under multi bridges
+7f5dac3: PCI: Make pci_rescan_bus handle add_list
+18dd9be: PCI: Make rescan bus could increase bridge resource size if needed
+52e0afc: PCI: Using add_list in pcie hotplug path.
+2b6542d: PCI: Try to assign required+option size at first
+4beb962: PCI: Move get_res_add_size() early
+8cb9020: PCI: Make add_to_list() return status
+8535f21: PCI : Calculate right add_size
 
-[ 5918.610127] pciehp 0000:80:02.2:pcie04: pcie_isr: intr_loc 1
-[ 5918.615779] pciehp 0000:80:02.2:pcie04: Attention button interrupt received
-[ 5918.622730] pciehp 0000:80:02.2:pcie04: Button pressed on Slot(3)
-[ 5918.629002] pciehp 0000:80:02.2:pcie04: pciehp_get_power_status: SLOTCTRL a8 value read 1f9
-[ 5918.637416] pciehp 0000:80:02.2:pcie04: PCI slot #3 - powering off due to button press.
-[ 5918.647125] pciehp 0000:80:02.2:pcie04: pcie_isr: intr_loc 10
-[ 5918.653039] pciehp 0000:80:02.2:pcie04: pciehp_green_led_blink: SLOTCTRL a8 write cmd 200
-[ 5918.661229] pciehp 0000:80:02.2:pcie04: pciehp_set_attention_status: SLOTCTRL a8 write cmd c0
-[ 5924.667627] pciehp 0000:80:02.2:pcie04: Disabling domain:bus:device=0000:b0:00
-[ 5924.674909] pciehp 0000:80:02.2:pcie04: pciehp_get_power_status: SLOTCTRL a8 value read 2f9
-[ 5924.683262] pciehp 0000:80:02.2:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:b0:00
-[ 5924.693976] libfcoe_device_notification: NETDEV_UNREGISTER eth6
-[ 5924.764979] libfcoe_device_notification: NETDEV_UNREGISTER eth14
-[ 5924.873539] libfcoe_device_notification: NETDEV_UNREGISTER eth15
-[ 5924.995209] libfcoe_device_notification: NETDEV_UNREGISTER eth16
-[ 5926.114407] sxge 0000:b2:00.0: PCI INT A disabled
-[ 5926.119342] BUG: unable to handle kernel NULL pointer dereference at (null)
-[ 5926.127189] IP: [<ffffffff81353a3b>] pci_stop_bus_device+0x33/0x83
-[ 5926.133377] PGD 0
-[ 5926.135402] Oops: 0000 [#1] SMP
-[ 5926.138659] CPU 2
-[ 5926.140499] Modules linked in:
-...
-[ 5926.143754]
-[ 5926.275823] Call Trace:
-[ 5926.278267]  [<ffffffff81353a38>] pci_stop_bus_device+0x30/0x83
-[ 5926.284180]  [<ffffffff81353af4>] pci_remove_bus_device+0x1a/0xba
-[ 5926.290264]  [<ffffffff81366311>] pciehp_unconfigure_device+0x110/0x17b
-[ 5926.296866]  [<ffffffff81365dd9>] ? pciehp_disable_slot+0x188/0x188
-[ 5926.303123]  [<ffffffff81365d6f>] pciehp_disable_slot+0x11e/0x188
-[ 5926.309206]  [<ffffffff81365e68>] pciehp_power_thread+0x8f/0xe0
-...
+those patches will fix optional resource size pass over parent bus problem.
 
- +-[0000:80]-+-00.0-[81-8f]--
- |           +-01.0-[90-9f]--
- |           +-02.0-[a0-af]--
- |           +-02.2-[b0-bf]----00.0-[b1-b3]--+-02.0-[b2]--+-00.0 Device
- |           |                               |            +-00.1 Device
- |           |                               |            +-00.2 Device
- |           |                               |            \-00.3 Device
- |           |                               \-03.0-[b3]--+-00.0 Device
- |           |                                            +-00.1 Device
- |           |                                            +-00.2 Device
- |           |                                            \-00.3 Device
+and try allocate request + optional resource at first, and then if failed will
+fall back to get requested at first then try to expand to optional one.
 
-root complex: 80:02.2
-pci express modules: have pcie switch and are listed as b0:00.0, b1:02.0 and b1:03.0.
-                end devices  are b2:00.0 and b3.00.0.
-                VFs are: b2:00.1,... b2:00.3, and b3:00.1,...,b3:00.3
+at last will try auto detect if we need to realloc bridge resource.
 
-Root cause: when doing pci_stop_bus_device() with phys fn, it will stop virt fn and
-remove the fn, so
-	list_for_each_safe(l, n, &bus->devices)
-will have problem to refer freed n that is pointed to vf entry.
+Also replace local resource_list and resource_list_x with generic list.
 
-Solution is just replacing list_for_each_safe() with list_for_each().
-	pci_stop_bus_device(dev) will not remove dev from bus->devices list,
-	so We only need use for_each here.
+or get from
 
-During reviewing the patch, Bjorn said:
-|   The PCI hot-remove path calls pci_stop_bus_devices() via
-|   pci_remove_bus_device().
-|
-|   pci_stop_bus_devices() traverses the bus->devices list (point A below),
-|   stopping each device in turn, which calls the driver remove() method.  When
-|   the device is an SR-IOV PF, the driver calls pci_disable_sriov(), which
-|   also uses pci_remove_bus_device() to remove the VF devices from the
-|   bus->devices list (point B).
-|
-|       pci_remove_bus_device
-|         pci_stop_bus_device
-|           pci_stop_bus_devices(subordinate)
-|             list_for_each(bus->devices)             <-- A
-|               pci_stop_bus_device(PF)
-|                 ...
-|                   driver->remove
-|                     pci_disable_sriov
-|                       ...
-|                         pci_remove_bus_device(VF)
-|                             <remove from bus_list>  <-- B
-|
-|   At B, we're changing the same list we're iterating through at A, so when
-|   the driver remove() method returns, the pci_stop_bus_devices() iterator has
-|   a pointer to a list entry that has already been freed.
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci2
 
-Discussion thread can be found : https://lkml.org/lkml/2011/10/15/141
+Thanks
 
--v2: updated changelog.
--v3: According to Kenji, do not allocate another list for PF.
-     Also We don't need to check dev->is_virtfn anymore, because PF should come
-	first in the list, and even VF come first, it is still ok.
--v4: According to Kenji, expand list_for_each(), and add is_virtfn checking
+Yinghai
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/remove.c |   28 +++++++++++++++++++++++++++-
- 1 files changed, 27 insertions(+), 1 deletions(-)
+ Documentation/kernel-parameters.txt |    7 +-
+ drivers/pci/pci-sysfs.c             |    5 +-
+ drivers/pci/pci.c                   |    4 +-
+ drivers/pci/pci.h                   |    2 +-
+ drivers/pci/probe.c                 |   22 +-
+ drivers/pci/setup-bus.c             |  629 ++++++++++++++++++++++++-----------
+ drivers/pci/setup-res.c             |   52 +---
+ include/linux/ioport.h              |    6 -
+ include/linux/pci.h                 |    2 +-
+ 9 files changed, 451 insertions(+), 278 deletions(-)
 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 7f87bee..932c5e2 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -123,10 +123,36 @@ void pci_remove_behind_bridge(struct pci_dev *dev)
- static void pci_stop_bus_devices(struct pci_bus *bus)
- {
- 	struct list_head *l, *n;
-+	struct list_head *head = &bus->devices;
- 
-+	/*
-+	 * pci_stop_bus_device(dev) will not remove dev from bus->devices list,
-+	 *  so We don't need use _safe version for_each here.
-+	 * Also _safe version has problem when pci_stop_bus_device() for PF try
-+	 *  to remove VFs.
-+	 */
-+	for (l = head->next; l != head;) {
-+		struct pci_dev *dev = pci_dev_b(l);
-+
-+		/*
-+		 * VFs are removed by pci_remove_bus_device() in the
-+		 *  pci_stop_bus_devices() code path for PF.
-+		 *  aka, bus->devices get updated in the process.
-+		 * barrier() will make sure we get right next from that list.
-+		 */
-+		if (!dev->is_virtfn) {
-+			pci_stop_bus_device(dev);
-+			barrier();
-+		}
-+		l = l->next;
-+	}
-+
-+	/* For left over VFs in case */
- 	list_for_each_safe(l, n, &bus->devices) {
- 		struct pci_dev *dev = pci_dev_b(l);
--		pci_stop_bus_device(dev);
-+
-+		if (dev->is_virtfn)
-+			pci_stop_bus_device(dev);
- 	}
- }
- 
--- 
-1.7.7
+
+
 
