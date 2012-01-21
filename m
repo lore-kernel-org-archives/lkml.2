@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698Ab2AUSFD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 13:05:03 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:43773 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751539Ab2AUSE5 (ORCPT
+	id S1751456Ab2AUSEr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 13:04:47 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:50078 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751254Ab2AUSE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 13:04:57 -0500
-Message-ID: <4F1B0BFC.2010105@xenotime.net>
-Date: Sat, 21 Jan 2012 11:03:24 -0800
+	Sat, 21 Jan 2012 13:04:29 -0500
+Message-ID: <4F1B0BE0.1010807@xenotime.net>
+Date: Sat, 21 Jan 2012 11:02:56 -0800
 From: Randy Dunlap <rdunlap@xenotime.net>
 Organization: YPO4
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 14/14] docbook: fix sched source file names in device-drivers
- book
+CC: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
+        linux-usb <linux-usb@vger.kernel.org>
+Subject: [PATCH 7/14] kernel-doc: fix new warning in usb.h
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
@@ -27,28 +26,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <rdunlap@xenotime.net>
 
-Fix warning since kernel scheduler functions and kernel-doc
-notation were moved to other files.
+Fix new kernel-doc warning:
 
-docproc: lnx-33-rc1/kernel/sched.c: No such file or directory
+Warning(include/linux/usb.h:1251): No description found for parameter 'num_mapped_sgs'
 
 Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- Documentation/DocBook/device-drivers.tmpl |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/usb.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- lnx-33-rc1.orig/Documentation/DocBook/device-drivers.tmpl
-+++ lnx-33-rc1/Documentation/DocBook/device-drivers.tmpl
-@@ -50,7 +50,9 @@
- 
-      <sect1><title>Delaying, scheduling, and timer routines</title>
- !Iinclude/linux/sched.h
--!Ekernel/sched.c
-+!Ekernel/sched/core.c
-+!Ikernel/sched/cpupri.c
-+!Ikernel/sched/fair.c
- !Iinclude/linux/completion.h
- !Ekernel/timer.c
-      </sect1>
+--- lnx-33-rc1.orig/include/linux/usb.h
++++ lnx-33-rc1/include/linux/usb.h
+@@ -1073,6 +1073,7 @@ typedef void (*usb_complete_t)(struct ur
+  *	which the host controller driver should use in preference to the
+  *	transfer_buffer.
+  * @sg: scatter gather buffer list
++ * @num_mapped_sgs: (internal) number of mapped sg entries
+  * @num_sgs: number of entries in the sg list
+  * @transfer_buffer_length: How big is transfer_buffer.  The transfer may
+  *	be broken up into chunks according to the current maximum packet
