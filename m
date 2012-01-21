@@ -1,151 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309Ab2AUUxq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 15:53:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36886 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab2AUUxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 15:53:45 -0500
-Date: Sat, 21 Jan 2012 12:53:25 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Zumeng Chen <zumeng.chen@windriver.com>
-cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, mingo@elte.hu,
-        ralf@linux-mips.org, bruce.ashfield@windriver.com, linux-mm@kvack.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH 1/1] mm: msync: fix issues of sys_msync on tmpfs
-In-Reply-To: <1327036719-1965-1-git-send-email-zumeng.chen@windriver.com>
-Message-ID: <alpine.LSU.2.00.1201211206380.1290@eggly.anvils>
-References: <1327036719-1965-1-git-send-email-zumeng.chen@windriver.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1751362Ab2AUU5I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 15:57:08 -0500
+Received: from home.keithp.com ([63.227.221.253]:39104 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054Ab2AUU5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 15:57:04 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Intel HD Graphic QM57 chipset: Dell U3011 monitor turns to power saving mode
+In-Reply-To: <20120121185621.GA31106@Krystal>
+References: <20120121185621.GA31106@Krystal>
+User-Agent: Notmuch/0.11 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sat, 21 Jan 2012 12:57:00 -0800
+Message-ID: <86ehuskc4j.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jan 2012, Zumeng Chen wrote:
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> This patch fixes two issues as follows:
+On Sat, 21 Jan 2012 13:56:21 -0500, Mathieu Desnoyers <mathieu.desnoyers@ef=
+ficios.com> wrote:
 
-Two issues?  You write of a cache aliasing issue, I don't see a second.
+> Dell U3011 monitor turns to power saving mode when resolution set to 2560=
+ x 1600
+> (intermittent)
+>=20
+> Reproduced with:
+> Linux 2.6.38-1-amd64 (Debian kernel)
+> Linux 3.1.0-1-amd64  (Debian kernel)
+> Linux 3.2.0-1-amd64  (Debian kernel)
+>=20
+> The computer is a Lenovo X201 Tablet (Intel QM57 chipset), on a X200
+> docking station. The docking station uses a DisplayPort cable to connect
+> to the monitor.  I tried upgrading my Bios from 1.34/1.13 to 1.38/1.14
+> (latest), which did not fix the problem. I cannot use anything else
+> than DisplayPort in this case to connect the monitor at 2560 x 1600,
+> because this resolution requires either the bandwidth provided by a
+> dual-link DVI (which I cannot connect in my docking station), or
+> DisplayPort.
 
-> 
-> For some filesystem with fsync == noop_fsync, there is not so much thing
-> to do, so sys_msync just passes by for all arches but some CPUs.
-> 
-> For some CPUs with cache aliases(dmesg|grep alias), it maybe has an issue,
-> which reported by msync test suites in ltp-full when the memory of memset
-> used by msync01 runs into cache alias randomly.
-> 
-> Consider the following scenario used by msync01 in ltp-full:
->   fildes = open(TEMPFILE, O_RDWR | O_CREAT, 0666)) < 0);
->   .../* initialization fildes by write(fildes); */
->   addr = mmap(0, page_sz, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED,
-> 	 fildes, 0);
->   /* set buf with memset */
->   memset(addr + OFFSET_1, 1, BUF_SIZE);
-> 
->   /* msync the addr before using, or MS_SYNC*/
->   msync(addr, page_sz, MS_ASYNC)
+I use this same monitor, and have run it with an X200 in the past.
 
-Actually, that MS_ASYNC msync() does nothing at all but validate its
-arguments these days, even on filesystems with an effective fsync(). 
-We write out dirty pages to disk in good time, msync() or not.
+Can you capture a dmesg output with the kernel parameter drm.debug=3D0xe
+set? That will let us see the DP link training adventure and see what's
+broken. If you can, separate traces of working and non-working tries
+would be nice.
 
-> 
->   /* Tries to read fildes */
->   lseek(fildes, (off_t) OFFSET_1, SEEK_SET) != (off_t) OFFSET_1) {
->   nread = read(fildes, read_buf, sizeof(read_buf));
+And, of course, trying 3.3-rc1 would be helpful as that's what any
+test patches would be developed on top of.
 
-My grasp of cache aliasing issues is very poor, please excuse me if I'm
-wrong; but I don't think a patch to msync() should be necessary at all
-(and ltp's msync01 test is testing nothing more than args to msync()).
+=2D-=20
+keith.packard@intel.com
 
-In the case of tmpfs, that read() system call above should route through
-to mm/shmem.c do_shmem_file_read(), which contains these same lines as
-the more common mm/filemap.c do_generic_file_read():
+--=-=-=
+Content-Type: application/pgp-signature
 
-	/* If users can be writing to this page using arbitrary
-	 * virtual addresses, take care about potential aliasing
-	 * before reading the page on the kernel side.
-	 */
-	if (mapping_writably_mapped(mapping))
-		flush_dcache_page(page);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-The mapping_writably_mapped() test ought to be succeeding in this case
-(please check with printk's, perhaps some change has messed that up),
-so flush_dcache_page(page) should be called, and any aliasing issues
-resolved before the data is copied back to userspace.
-
-I assume your problem is on MIPS, since you copied Ralf and linux-mips:
-if the MIPS flush_dcache_page() is not working right, then you'll need
-to follow up with them.
-
-Hugh
-
-> 
->   /* Then test the result */
->   if (read_buf[count] != 1) {
-> 
-> The test result is random too for CPUs with cache alias. So in this
-> situation, we have to flush the related vma to make sure the read is
-> correct.
-> 
-> Signed-off-by: Zumeng Chen <zumeng.chen@windriver.com>
-
-> ---
->  mm/msync.c |   30 ++++++++++++++++++++++++++++++
->  1 files changed, 30 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/msync.c b/mm/msync.c
-> index 632df45..0021a7e 100644
-> --- a/mm/msync.c
-> +++ b/mm/msync.c
-> @@ -13,6 +13,14 @@
->  #include <linux/file.h>
->  #include <linux/syscalls.h>
->  #include <linux/sched.h>
-> +#include <asm/cacheflush.h>
-> +
-> +/* Cache aliases should be taken into accounts when msync. */
-> +#ifdef cpu_has_dc_aliases
-> +#define CPU_HAS_CACHE_ALIAS cpu_has_dc_aliases
-> +#else
-> +#define CPU_HAS_CACHE_ALIAS 0
-> +#endif
->  
->  /*
->   * MS_SYNC syncs the entire file - including mappings.
-> @@ -78,6 +86,28 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
->  		}
->  		file = vma->vm_file;
->  		start = vma->vm_end;
-> +
-> +		/*
-> +		 * For some filesystems with fsync == noop_fsync, msync just
-> +		 * passes by but some CPUs.
-> +		 * For CPUs with cache alias, msync has to flush the related
-> +		 * vma explicitly to make sure data coherency between memory
-> +		 * and cache, which includes MS_SYNC or MS_ASYNC. That is to
-> +		 * say, cache aliases should not be an async factor, so does
-> +		 * msync on other arches without cache aliases.
-> +		 */
-> +		if (file && file->f_op && file->f_op->fsync == noop_fsync) {
-> +			if (CPU_HAS_CACHE_ALIAS)
-> +				flush_cache_range(vma, vma->vm_start,
-> +							vma->vm_end);
-> +			if (start >= end) {
-> +				error = 0;
-> +				goto out_unlock;
-> +			}
-> +			vma = find_vma(mm, start);
-> +			continue;
-> +		}
-> +
->  		if ((flags & MS_SYNC) && file &&
->  				(vma->vm_flags & VM_SHARED)) {
->  			get_file(file);
-> -- 
-> 1.7.0.4
+iQIVAwUBTxsmnDYtFsjWk68qAQjuzg/+PkF/rIf7yOHM0dhPZ0/R1ikxvAHEJr7N
+pUZ8W2XbPsEHY4bC/6iGcu2NlCIjoAsNK6j+6i0gDC9DCVUbd/Z9M1z2LftgHbBM
+CT/m0F76YzWhbB59Cfsbr1vmmf/92YLcgHONsn69XrTna7K2envGoNyNIyuWoJci
+Z4QLaw7NObvpRoQ6ckiAbW1hB3XbXcobKyG/cGdWoDiJw+CK6WqGVjoJ3d8Iecse
++UONd9nUIV8H10HslyavxjOBU0r4XFPf7t6G8+Q4Awv/OHYhva+JUsgUgLCB3Sze
+fKjURyXL/IPq5BnpMi0FSSkMvV4RQlH4f28hZOPQ0I4OYE6myMKtFRl4QwdHnCsn
+oKp0uZF7JrEAT3Fl/s7mVoCZlbHOX4kfiKpZE8lA1WHT6xC1gRHKG+6/nqwy7spI
+tcdjDnxw8cosFDM9jteQQXHdSaOdnxv6fn9S7nLcqLN93Lzr2Lo0H/UnM46g2Jgz
+ZmE9eOaaRtssHwHG4jZw95A5pI1sYY8syqvnTjGLihvJPiaqf3WVu2OqcGZ1NVXe
+uRwDLczMd3lChBCLmUw8GYcrl6Kgmr+yx28AKfE0J3JiILLmhhZQzYzWVUEUTqfe
+ZuTijJpu+jE3aMuKKk525l5YQFBZevIAqtvWu6rklvxTmtnrFdk+T5jsVTcL6F47
+Mo6jk6xOPw0=
+=7T7Q
+-----END PGP SIGNATURE-----
+--=-=-=--
