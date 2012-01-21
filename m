@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356Ab2AUMWv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 07:22:51 -0500
-Received: from mother.openwall.net ([195.42.179.200]:61061 "EHLO openwall.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751033Ab2AUMWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 07:22:50 -0500
-Date: Sat, 21 Jan 2012 16:22:48 +0400
-From: "Dmitry D. Khlebnikov" <galaxy@openwall.com>
-To: Maciej Rutecki <maciej.rutecki@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: kernel 3.2 crashes too early on HP dc7700 and HP t5000 series
-Message-ID: <20120121122248.GJ13535@openwall.com>
-References: <20120110114905.GC13535@openwall.com> <201201191908.01122.maciej.rutecki@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201201191908.01122.maciej.rutecki@gmail.com>
+	id S1751443Ab2AUMc0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 07:32:26 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41555 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab2AUMcY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 07:32:24 -0500
+Message-ID: <4F1AB053.109@gmail.com>
+Date: Sat, 21 Jan 2012 13:32:19 +0100
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heungjun Kim <riverful.kim@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Andrew Chew <achew@nvidia.com>, Paul Mundt <lethal@linux-sh.org>,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Johannes Obermaier <johannes.obermaier@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Steven Toth <stoth@kernellabs.com>, linux-media@vger.kernel.org
+Subject: Re: [PATCH] [media] convert drivers/media/* to use module_i2c_driver()
+References: <1327140645.3928.1.camel@phoenix>
+In-Reply-To: <1327140645.3928.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maciej,
+On 01/21/2012 11:10 AM, Axel Lin wrote:
+> This patch converts the drivers in drivers/media/* to use the
+> module_i2_driver() macro which makes the code smaller and a bit simpler.
+> 
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
 
-On Thu, Jan 19, 2012 at 07:08:01PM +0100, Maciej Rutecki wrote:
-> I created a Bugzilla entry at 
-> https://bugzilla.kernel.org/show_bug.cgi?id=42611
-> for your bug report, please add your address to the CC list in there, thanks!
+For s5k6aa, noon010pc30, sr030pc30, m5mols modules,
 
-Thanks for doing that, however, I'm a bit concerned that my e-mail
-address is now exposed there (that bugzilla doesn't obfuscate or protect
-e-mail addresses -- which is quite concerning), is there any way how to
-remove my primary work e-mail from that page?  Or at least to replace it
-with "gm.outside+lklm@gmail.com"?
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-Thanks!
-
--- 
-(GM)
-
+--
+Thanks,
+Sylwester
