@@ -1,46 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab2AUJws (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 04:52:48 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42681 "EHLO
+	id S1754949Ab2AUJxZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 04:53:25 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:42701 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab2AUJwp (ORCPT
+	with ESMTP id S1754480Ab2AUJwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 04:52:45 -0500
+	Sat, 21 Jan 2012 04:52:51 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 0/7] PCI: pcie hotplug related patch
-Date: Sat, 21 Jan 2012 01:52:12 -0800
-Message-Id: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 2/7] PCI: Separate pci_bus_read_dev_vendor_id from pci_scan_device
+Date: Sat, 21 Jan 2012 01:52:14 -0800
+Message-Id: <1327139539-14301-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090201.4F1A8AE7.0004,ss=1,re=0.000,fgs=0
+In-Reply-To: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
+References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F1A8AE7.0011,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-b40c9ef: pciehp: Disable/enable link during slot power off/on
-fe877ae: pciehp: Add Disable/enable link functions
-292e286: pciehp: Add pcie_wait_link_not_active()
-186b3fd: pciehp: print out link status when dlla get active.
-2781df4: pciehp: Checking pci conf reading to new added device instead of sleep 1s
-bf1c4ac: PCI: Separate pci_bus_read_dev_vendor_id from pci_scan_device
-601c6f1: PCI: Make sriov work with hotplug remove
+Will reuse that function for pciehp probing.
 
- drivers/pci/hotplug/pciehp_hpc.c |  133 +++++++++++++++++++++++++++++++-------
- drivers/pci/pci.h                |    2 +
- drivers/pci/probe.c              |   48 +++++++++-----
- drivers/pci/remove.c             |   28 ++++++++-
- 4 files changed, 169 insertions(+), 42 deletions(-)
+-v2: according to Kenji, fix crs timeout checking, and export the function
+     for later using when pciehp is compiled as module.
 
-First one is for hotplug with sriov under bridge.
-following two are for hotplug probing with pci conf reading.
-Last four are for pcie link disable when power off slots.
+Suggested-by: Matthew Wilcox <matthew@wil.cx>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/pci.h   |    2 ++
+ drivers/pci/probe.c |   48 +++++++++++++++++++++++++++++++-----------------
+ 2 files changed, 33 insertions(+), 17 deletions(-)
 
-Thanks
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index b74084e..8dadbd3 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -205,6 +205,8 @@ enum pci_bar_type {
+ 	pci_bar_mem64,		/* A 64-bit memory BAR */
+ };
+ 
++bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
++				int crs_timeout);
+ extern int pci_setup_device(struct pci_dev *dev);
+ extern int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 				struct resource *res, unsigned int reg);
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 04e74f4..101e90f 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1113,40 +1113,54 @@ struct pci_dev *alloc_pci_dev(void)
+ }
+ EXPORT_SYMBOL(alloc_pci_dev);
+ 
+-/*
+- * Read the config data for a PCI device, sanity-check it
+- * and fill in the dev structure...
+- */
+-static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
++bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *l,
++				 int crs_timeout)
+ {
+-	struct pci_dev *dev;
+-	u32 l;
+ 	int delay = 1;
+ 
+-	if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l))
+-		return NULL;
++	if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, l))
++		return false;
+ 
+ 	/* some broken boards return 0 or ~0 if a slot is empty: */
+-	if (l == 0xffffffff || l == 0x00000000 ||
+-	    l == 0x0000ffff || l == 0xffff0000)
+-		return NULL;
++	if (*l == 0xffffffff || *l == 0x00000000 ||
++	    *l == 0x0000ffff || *l == 0xffff0000)
++		return false;
+ 
+ 	/* Configuration request Retry Status */
+-	while (l == 0xffff0001) {
++	while (*l == 0xffff0001) {
++		if (!crs_timeout)
++			return false;
++
+ 		msleep(delay);
+ 		delay *= 2;
+-		if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l))
+-			return NULL;
++		if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, l))
++			return false;
+ 		/* Card hasn't responded in 60 seconds?  Must be stuck. */
+-		if (delay > 60 * 1000) {
++		if (delay > crs_timeout) {
+ 			printk(KERN_WARNING "pci %04x:%02x:%02x.%d: not "
+ 					"responding\n", pci_domain_nr(bus),
+ 					bus->number, PCI_SLOT(devfn),
+ 					PCI_FUNC(devfn));
+-			return NULL;
++			return false;
+ 		}
+ 	}
+ 
++	return true;
++}
++EXPORT_SYMBOL(pci_bus_read_dev_vendor_id);
++
++/*
++ * Read the config data for a PCI device, sanity-check it
++ * and fill in the dev structure...
++ */
++static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
++{
++	struct pci_dev *dev;
++	u32 l;
++
++	if (!pci_bus_read_dev_vendor_id(bus, devfn, &l, 60*1000))
++		return NULL;
++
+ 	dev = alloc_pci_dev();
+ 	if (!dev)
+ 		return NULL;
+-- 
+1.7.7
 
-Yinghai Lu
