@@ -1,141 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab2AUQ6w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 11:58:52 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55374 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752504Ab2AUQ6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 11:58:51 -0500
-Date: Sat, 21 Jan 2012 17:58:30 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Hitoshi Mitake <h.mitake@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, linux-nvme@infradead.org,
-        hpa@linux.intel.com
-Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without
- readq/writeq
-Message-ID: <20120121165830.GA9216@elte.hu>
-References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
- <CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
- <20120121082857.GC32134@elte.hu>
- <CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+	id S1752724Ab2AURCL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 12:02:11 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51941 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab2AURCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 12:02:07 -0500
+Date: Sat, 21 Jan 2012 11:01:57 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Cc: John Hughes <john@atlantech.com>, Jeff Layton <jlayton@poochiereds.net>,
+        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: [Sony Vaio TX3] TPM chip prevents machine from suspending a second
+ time
+Message-ID: <20120121170157.GA18053@burratino>
+References: <20110328100846.0ba2e039@tlielax.poochiereds.net>
+ <4D90C472.3090908@linux.vnet.ibm.com>
+ <20110328141241.06a435f8@tlielax.poochiereds.net>
+ <20110328154543.1bb979fd@tlielax.poochiereds.net>
+ <4D91157F.2020502@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+In-Reply-To: <4D91157F.2020502@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Stefan et al,
 
-* Hitoshi Mitake <h.mitake@gmail.com> wrote:
+John Hughes wrote[1]:
 
-> On Sat, Jan 21, 2012 at 17:28, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >
-> >> On Thu, Jan 19, 2012 at 5:01 PM, Matthew Wilcox
-> >> <matthew.r.wilcox@intel.com> wrote:
-> >> > The only places that uses readq/writeq are in the initialisation
-> >> > path.  Since they're not performance critical, always use readl/writel.
-> >>
-> >> The arch rules are that i fthe architecture has readq/writeq, they
-> >> will be #define'd (they may be inline functions, but there will be a
-> >>
-> >>   #define readq readq
-> >>
-> >> to make it visible to the preprocessor as well).
-> >>
-> >> So if you don't need the atomicity guarantees of a "real" readq, you
-> >> can do this instead:
-> >>
-> >>   #ifndef readq
-> >>   static inline u64 readq(void __iomem *addr)
-> >>   {
-> >>         return readl(addr) | (((u64) readl(addr + 4)) << 32LL);
-> >>   }
-> >>   #endif
-> >>
-> >> and then use readq() as if it existed.
-> >>
-> >> And I do think we should expose this in some generic manner. Because
-> >> we currently don't, we already have that pattern copied in quite a few
-> >> drivers.
-> >>
-> >> Maybe <asm-generic/io-nonatomic.h> or something? Making it
-> >> clear that its not atomic, but avoiding the silly duplication
-> >> we do now..
-> >>
-> >> This whole mess was introduced in commit dbee8a0affd5 ("x86:
-> >> remove 32-bit versions of readq()/writeq()"), and it already
-> >> talked about the problems but didn't help with the drivers
-> >> that simply don't care.
-> >>
-> >> All the people in those threads were doing their
-> >> self-satisfied "writeq is broken", without much acknowledging
-> >> that 99% of users simply don't seem to care.
-> >>
-> >> "Occupy Writeq - We are the 99%"
-> >
-> > Agreed, and offering a generic facility for silly duplication
-> > was the motivation of the original commit by Hitoshi Mitake.
-> >
-> > This:
-> >
-> > | The presense of a writeq() implementation on 32-bit x86 that
-> > | splits the 64-bit write into two 32-bit writes turns out to
-> > | break the mpt2sas driver (and in general is risky for drivers
-> > | as was discussed in
-> > |   <http://lkml.kernel.org/r/adaab6c1h7c.fsf@cisco.com>).
-> >
-> > is actually a mostly bogus statement and creates more problems
-> > than it solves.
-> >
-> > Hitoshi-san, would you be interested in re-adding the generic
-> > readq/writeq definitions in a slight variation to 2c5643b1c5, to
-> > a separate io-nonatomic.h file, so that drivers that want it can
-> > #include that file and be happy?
-> 
-> It sounds nice. In the previous discussion, I suggested that
-> chaning the name of non-atomic readq/writeq to
-> readq_nonatomic/writeq_nonatomic. And James Bottomley
-> replied that it is fine but not really very useful:
-> 
-> https://lkml.org/lkml/2011/5/19/13
-> 
-> The idea of providing non-atomic readq/writeq in the new file
-> with the name which express non-atomicity clearly might be
-> able to satisfy both of safety and usefulness.
-> 
-> It will reduce the duplication of the definition. In addition
-> readq/writeq users don't have to type the long symbols with
-> _nonatomic suffix and can know non-atomicity from the name
-> of header file.
-> 
-> I'd like to hear opinions from James, Roland and folks who
-> dislike non-atomic readq/writeq.
+> On a sony vaio tx3 when tpm_tis is loaded suspend only works once. 
+[...]
+> dmesg shows
+>
+> [ 1859.244142] legacy_suspend(): pnp_bus_suspend+0x0/0x57 returns 38
+> [ 1859.244150] PM: Device 00:07 failed to suspend: error 38
+> [ 1859.456685] PM: Some devices failed to suspend
 
-Drivers that want the definition add this line to their driver:
+Stefan Berger wrote, in response to a similar report[2]:
 
-#include <asm/io-nonatomic.h>
+> Ok, so this error code means TPM_INVALID_POSTINIT  (not a posix
+> code) and means that this command was received in the wrong sequence
+> relative to a TPM_Startup command. Well, what's supposed to be
+> happening is this:
+>
+> When the machines (S3) suspends then the OS needs to send a
+> TPM_SaveState() to the TPM. This is done by the Linux driver. Once
+> the VM resumes, the BIOS is supposed to send a TPM_Startup(ST_STATE)
+> to the TPM.
+>
+> Now the fun starts when a BIOS isn't doing that (even though the
+> spec says it's supposed to)
+[...]
+>                                                        I could try
+> to send you a small tool that you would have to run from user space
+> upon resume so that we can see that this error goes away. If that's
+> verified we could subsequently write a patch for the TPM driver to
+> also send the TPM_Startup(ST_STATE) to the TPM, which then in the
+> case of most BIOSes would be the 2nd time that the TPM receives such
+> a command. I think TPMs should be able to digest this 2nd
+> TPM_Startup() well, but I'd have to check -- but really we would
+> ill-fix it just because of one (possibly) buggy BIOS.
 
-and then readq()/writeq() does the obvious thing. No need for 
-readq_nonatomic()/writeq_nonatomic() - that extra line declares 
-things clearly enough and cannot be added accidentally.
+The tool is at [3].  John verified that the tool gets suspend working
+reliably on his machine.
+
+[...]
+> Well, we now could (once) probe the TPM after the resume and send a test 
+> command to it and see whether it returns error code 38 and if so send 
+> the TPM_Startup() from the driver -- as a work-around for your broken BIOS.
+
+Versions tested and found to exhibit the problem:
+
+ - Debian 2.6.35~rc6-1~experimental.1 (close to v2.6.35-rc6)
+ - Debian 2.6.36-1~experimental.1 (close to v2.6.36)
+ - Debian 2.6.37~rc5-1~experimental.3 (close to v2.6.37-rc5)
+ - Debian 2.6.37-1 (close to v2.6.37)
+ - v3.2-rc2 + Vaio keyboard fixes
+ - Debian 3.2.1-1 (close to v3.2.1)
+ - v3.3-rc1 + Vaio keyboard fixes
+
+Known problem?  Any hints for getting this to work out of the box?  (If
+there's no generic fix, maybe it would be possible to use a quirks
+table of some kind?)
 
 Thanks,
+Jonathan
 
-	Ingo
+[1] http://bugs.debian.org/591031
+[2] http://thread.gmane.org/gmane.linux.kernel/1119143/focus=1119476
+[3] http://thread.gmane.org/gmane.linux.kernel/1119143/focus=1119495
