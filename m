@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab2AUEsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 23:48:20 -0500
-Received: from imr3.ericy.com ([198.24.6.13]:37457 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756561Ab2AUEsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 23:48:18 -0500
-Date: Fri, 20 Jan 2012 20:46:31 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86/platform: (TS-5500) revised ADC driver
-Message-ID: <20120121044631.GA4143@ericsson.com>
-References: <1326930731-21215-5-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1327103002-5834-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	id S1751443Ab2AUFwu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 00:52:50 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:40663 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2AUFwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 00:52:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1327103002-5834-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120121025712.GB4656@google.com>
+References: <1325654312-32477-1-git-send-email-msb@chromium.org>
+	<1325654312-32477-3-git-send-email-msb@chromium.org>
+	<20120121000842.GB2908@dhcp-172-17-108-109.mtv.corp.google.com>
+	<20120121025712.GB4656@google.com>
+Date: Fri, 20 Jan 2012 21:52:45 -0800
+X-Google-Sender-Auth: M6rfky2YIno6wZMlUnFeerAJ3-g
+Message-ID: <CAOS58YOZEcDrUEaZXBmrys32bnRTPN_n5mZeyYXgVH=-6swz8Q@mail.gmail.com>
+Subject: Re: [PATCH 3/3] cgroup: remove extra calls to find_existing_css_set
+From: Tejun Heo <tj@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 06:43:22PM -0500, Vivien Didelot wrote:
-> Update of the ADC driver according to the Guenter Roeck's review.
-> 
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> ---
->  arch/x86/platform/ts5500/ts5500_adc.c |  228 +++++++++++++--------------------
->  1 files changed, 89 insertions(+), 139 deletions(-)
-> 
-> diff --git a/arch/x86/platform/ts5500/ts5500_adc.c b/arch/x86/platform/ts5500/ts5500_adc.c
-> index fc4560f..da6decf 100644
-> --- a/arch/x86/platform/ts5500/ts5500_adc.c
-> +++ b/arch/x86/platform/ts5500/ts5500_adc.c
-> @@ -62,57 +62,62 @@
->  
-Hi Vivien,
+Hello,
 
-This isn't really a revised driver ... it is a patch on top of the previous version.
+On Fri, Jan 20, 2012 at 6:57 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
+> If I break out of step 2 via the goto (out_put_css_set_refs), I only
+> want to put back the refs I've gotten so far.
 
-Regarding the location, I'd really like to know from the powers-that-be if
-	arch/x86/platform/ts5500/
-or
-	drivers/platform/x86
-or
-	drivers/hwmon
+But isn't tc->cg NULL if that happens?  (ooh, the if statement should
+be testing tc->cg, my bad).
 
-would be the appropriate location for a driver like this. As mentioned before,
-my strong preference is drivers/hwmon, but I would like to hear from others.
+Thanks.
 
-Also, I am not sure if the current approach is appropriate to start with.
-Looking at the datasheet as well as into existing kernel code, it appears quite likely 
-that some kind of more or less generic MAX197 driver exists somewhere. The existence 
-of is_max197_installed() - without any calling code - is a strong indication that
-this is the case, as well as the "static" platform data in your original patch.
-It might be more appropriate to take this more or less generic driver, move it to
-drivers/hwmon, and provide - for example through platform data - a means
-to read from and write to the chip on a per-platform basis, ie with per-platform
-access functions.
-
-Thanks,
-Guenter
+-- 
+tejun
