@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab2AUKNH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 05:13:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44213 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757051Ab2AUKKV (ORCPT
+	id S932351Ab2AUKKQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 05:10:16 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:16590 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab2AUKJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 05:10:21 -0500
-From: Sam Hansen <solid.se7en@gmail.com>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sam Hansen <solid.se7en@gmail.com>
-Subject: [PATCH 2/3] xgifb: checkpatch cleanup __func__
-Date: Sat, 21 Jan 2012 02:10:11 -0800
-Message-Id: <1327140612-9694-2-git-send-email-solid.se7en@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1327140612-9694-1-git-send-email-solid.se7en@gmail.com>
-References: <1327140612-9694-1-git-send-email-solid.se7en@gmail.com>
+	Sat, 21 Jan 2012 05:09:14 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 10/21] PCI: Move struct resource_list to setup-bus.c
+Date: Sat, 21 Jan 2012 02:08:26 -0800
+Message-Id: <1327140517-14811-11-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
+References: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090207.4F1A8EBD.0019,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced an instance of __FUNCTION__ with __func__ in XGI_main_26.c.
+No user outside of setup-bus.c now.
 
-Signed-off-by: Sam Hansen <solid.se7en@gmail.com>
+later will convert resource_list to regular list.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/staging/xgifb/XGI_main_26.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/pci/setup-bus.c |    6 ++++++
+ include/linux/ioport.h  |    6 ------
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index dd97b73..a743e1b 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -55,7 +55,7 @@ static unsigned int refresh_rate;
- #undef XGIFBDEBUG
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index f233d12..b067a4c 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -27,6 +27,12 @@
+ #include <linux/slab.h>
+ #include "pci.h"
  
- #ifdef XGIFBDEBUG
--#define DPRINTK(fmt, args...) printk(KERN_DEBUG "%s: " fmt, __FUNCTION__ , ## args)
-+#define DPRINTK(fmt, args...) printk(KERN_DEBUG "%s: " fmt, __func__ , ## args)
- #else
- #define DPRINTK(fmt, args...)
- #endif
++struct resource_list {
++	struct resource_list *next;
++	struct resource *res;
++	struct pci_dev *dev;
++};
++
+ struct resource_list_x {
+ 	struct resource_list_x *next;
+ 	struct resource *res;
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 9d57a71..e885ba2 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -23,12 +23,6 @@ struct resource {
+ 	struct resource *parent, *sibling, *child;
+ };
+ 
+-struct resource_list {
+-	struct resource_list *next;
+-	struct resource *res;
+-	struct pci_dev *dev;
+-};
+-
+ /*
+  * IO resources have these defined flags.
+  */
 -- 
-1.7.5.4
+1.7.7
 
