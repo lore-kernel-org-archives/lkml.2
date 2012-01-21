@@ -1,291 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab2AUSJx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 13:09:53 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:54035 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751074Ab2AUSJt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 13:09:49 -0500
-X-WSS-ID: 0LY5UG5-0A-3P3-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
-Date: Sat, 21 Jan 2012 10:09:36 -0800
-Subject: [PATCH 3/4] leds-lp5521: support led pattern data
-Thread-Topic: [PATCH 3/4] leds-lp5521: support led pattern data
-Thread-Index: AczYZ9XQzl/GODbbQ8iok7bA14umkA==
-Message-ID: <B567DBAB974C0544994013492B949F8E3812CD3808@EXMAIL03.scwf.nsc.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
+	id S1751259Ab2AUSP3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 13:15:29 -0500
+Received: from home.keithp.com ([63.227.221.253]:35375 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890Ab2AUSP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 13:15:28 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Lubos Kolouch <lubos.kolouch@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: i915 wakes from suspend to RAM with blank screen after commit cd9dde44f47501394b9f0715b6a36a92aa74c0d0
+In-Reply-To: <jfe47e$5dn$1@dough.gmane.org>
+References: <jfe47e$5dn$1@dough.gmane.org>
+User-Agent: Notmuch/0.11 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sat, 21 Jan 2012 10:15:24 -0800
+Message-ID: <86mx9gkjlv.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-X-WSS-ID: 630420EE1LS9843279-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lp5521 has autonomous operation mode without external control.
-Using lp5521_platform_data, various led patterns can be configurable.
-For supporting this feature, new functions and device attribute are added.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Structure of lp5521_led_pattern: 3 channels are supported - red, green and blue.
-Pattern(s) of each channel and numbers of pattern(s) are defined in the platform data.
-Pattern data are hexa codes which include pattern commands such like
-set pwm, wait, ramp up/down, branch and so on.
+On Sat, 21 Jan 2012 10:32:14 +0000 (UTC), Lubos Kolouch <lubos.kolouch@gmai=
+l.com> wrote:
 
-Pattern mode functions:
-* lp5521_clear_program_memory
-	Before running new led pattern, program memory should be cleared.
-* lp5521_write_program_memory
-	Pattern data updated in the program memory via the i2c.
-* lp5521_get_pattern
-	Get pattern from predefined in the platform data.
-* lp5521_run_led_pattern
-	Stop current pattern or run new pattern.
-	Transition time is required between different operation mode.
+> I git bisected it to commit
+> cd9dde44f47501394b9f0715b6a36a92aa74c0d0 is the first bad commit
+> commit cd9dde44f47501394b9f0715b6a36a92aa74c0d0
+> Author: Adam Jackson <ajax@redhat.com>
+> Date:   Fri Oct 14 12:43:49 2011 -0400
 
-Device attribute - 'led_pattern':
-To load specific led pattern, new device attribute is added.
+Did you try reverting this single commit on top of 3.3-rc1?
 
-When the lp5521 driver is unloaded, stop current led pattern mode.
+And, can you collect the dmesg output with the kernel parameter drm.debug=
+=3D0xe
+added to the boot line, both messages at boot time *and* messages during
+resume would be needed. If it works at boot time, I'm quite surprised it
+somehow doesn't work at resume...
 
-Documentation updated : description about how to define the led patterns and example.
+=2D-=20
+keith.packard@intel.com
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- Documentation/leds/leds-lp5521.txt |   38 ++++++++++++++
- drivers/leds/leds-lp5521.c         |  100 ++++++++++++++++++++++++++++++++++++
- include/linux/leds-lp5521.h        |   11 ++++
- 3 files changed, 149 insertions(+), 0 deletions(-)
+--=-=-=
+Content-Type: application/pgp-signature
 
-diff --git a/Documentation/leds/leds-lp5521.txt b/Documentation/leds/leds-lp5521.txt
-index e3c66c6..0e542ab 100644
---- a/Documentation/leds/leds-lp5521.txt
-+++ b/Documentation/leds/leds-lp5521.txt
-@@ -111,3 +111,41 @@ static struct lp5521_platform_data lp5521_pdata = {
- 	.clock_mode = LP5521_CLOCK_INT,
- 	.update_config = LP5521_CONFIGS,
- };
-+
-+LED patterns : LP5521 has autonomous operation without external control.
-+Pattern data can be defined in the platform data.
-+
-+example of led pattern data :
-+
-+/* RGB(50,5,0) 500ms on, 500ms off, infinite loop */
-+static u8 pattern_red[] = {
-+		0x40, 0x32, 0x60, 0x00,	0x40, 0x00, 0x60, 0x00,
-+		};
-+
-+static u8 pattern_green[] = {
-+		0x40, 0x05, 0x60, 0x00, 0x40, 0x00, 0x60, 0x00,
-+		};
-+
-+static struct lp5521_led_pattern board_led_patterns[] = {
-+	{
-+		.r = pattern_red,
-+		.g = pattern_green,
-+		.size_r = ARRAY_SIZE(pattern_red),
-+		.size_g = ARRAY_SIZE(pattern_green),
-+	},
-+};
-+
-+static struct lp5521_platform_data lp5521_platform_data = {
-+        .led_config     = lp5521_led_config,
-+        .num_channels   = ARRAY_SIZE(lp5521_led_config),
-+        .clock_mode     = LP5521_CLOCK_EXT,
-+	.patterns = board_led_patterns,
-+	.num_patterns = ARRAY_SIZE(board_led_patterns),
-+};
-+
-+Then predefined led pattern(s) can be executed via the sysfs.
-+To start the pattern #1,
-+# echo 1 > /sys/bus/i2c/devices/xxxx/led_pattern
-+(xxxx : i2c bus & slave address)
-+To end the pattern,
-+# echo 0 > /sys/bus/i2c/devices/xxxx/led_pattern
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 4fa792d..471cef1 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -85,6 +85,9 @@
- /* Status */
- #define LP5521_EXT_CLK_USED		0x08
- 
-+/* Pattern Mode */
-+#define PATTERN_OFF	0
-+
- struct lp5521_engine {
- 	int		id;
- 	u8		mode;
-@@ -522,6 +525,100 @@ static ssize_t lp5521_selftest(struct device *dev,
- 	return sprintf(buf, "%s\n", ret ? "FAIL" : "OK");
- }
- 
-+static void lp5521_clear_program_memory(struct i2c_client *cl)
-+{
-+	int i;
-+	u8 rgb_mem[] = {
-+		LP5521_REG_R_PROG_MEM,
-+		LP5521_REG_G_PROG_MEM,
-+		LP5521_REG_B_PROG_MEM,
-+	};
-+
-+	for (i = 0; i < ARRAY_SIZE(rgb_mem); i++) {
-+		lp5521_write(cl, rgb_mem[i], 0);
-+		lp5521_write(cl, rgb_mem[i] + 1, 0);
-+	}
-+}
-+
-+static void lp5521_write_program_memory(struct i2c_client *cl,
-+				u8 base, u8 *rgb, int size)
-+{
-+	int i;
-+
-+	if (!rgb || size <= 0)
-+		return;
-+
-+	for (i = 0; i < size; i++)
-+		lp5521_write(cl, base + i, *(rgb + i));
-+
-+	lp5521_write(cl, base + i, 0);
-+	lp5521_write(cl, base + i + 1, 0);
-+}
-+
-+static inline struct lp5521_led_pattern *lp5521_get_pattern
-+					(struct lp5521_chip *chip, u8 offset)
-+{
-+	struct lp5521_led_pattern *ptn;
-+	ptn = chip->pdata->patterns + (offset - 1);
-+	return ptn;
-+}
-+
-+static void lp5521_run_led_pattern(int mode, struct lp5521_chip *chip)
-+{
-+	struct lp5521_led_pattern *ptn;
-+	struct i2c_client *cl = chip->client;
-+	int num_patterns = chip->pdata->num_patterns;
-+
-+	if (mode > num_patterns || !(chip->pdata->patterns))
-+		return;
-+
-+	if (mode == PATTERN_OFF) {
-+		lp5521_write(cl, LP5521_REG_ENABLE,
-+			LP5521_MASTER_ENABLE | LP5521_LOGARITHMIC_PWM);
-+		usleep_range(1000, 2000);
-+		lp5521_write(cl, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
-+	} else {
-+		ptn = lp5521_get_pattern(chip, mode);
-+		if (!ptn)
-+			return;
-+
-+		lp5521_write(cl, LP5521_REG_OP_MODE, LP5521_CMD_LOAD);
-+		usleep_range(1000, 2000);
-+
-+		lp5521_clear_program_memory(cl);
-+
-+		lp5521_write_program_memory(cl, LP5521_REG_R_PROG_MEM,
-+					ptn->r, ptn->size_r);
-+		lp5521_write_program_memory(cl, LP5521_REG_G_PROG_MEM,
-+					ptn->g, ptn->size_g);
-+		lp5521_write_program_memory(cl, LP5521_REG_B_PROG_MEM,
-+					ptn->b, ptn->size_b);
-+
-+		lp5521_write(cl, LP5521_REG_OP_MODE, LP5521_CMD_RUN);
-+		usleep_range(1000, 2000);
-+		lp5521_write(cl, LP5521_REG_ENABLE,
-+			LP5521_MASTER_ENABLE | LP5521_LOGARITHMIC_PWM |
-+			LP5521_EXEC_RUN);
-+	}
-+}
-+
-+static ssize_t store_led_pattern(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t len)
-+{
-+	struct lp5521_chip *chip = i2c_get_clientdata(to_i2c_client(dev));
-+	unsigned long val;
-+	int ret;
-+
-+	ret = strict_strtoul(buf, 16, &val);
-+	if (ret)
-+		return ret;
-+
-+	lp5521_run_led_pattern(val, chip);
-+
-+	return len;
-+}
-+
- /* led class device attributes */
- static DEVICE_ATTR(led_current, S_IRUGO | S_IWUSR, show_current, store_current);
- static DEVICE_ATTR(max_current, S_IRUGO , show_max_current, NULL);
-@@ -547,6 +644,7 @@ static DEVICE_ATTR(engine1_load, S_IWUSR, NULL, store_engine1_load);
- static DEVICE_ATTR(engine2_load, S_IWUSR, NULL, store_engine2_load);
- static DEVICE_ATTR(engine3_load, S_IWUSR, NULL, store_engine3_load);
- static DEVICE_ATTR(selftest, S_IRUGO, lp5521_selftest, NULL);
-+static DEVICE_ATTR(led_pattern, S_IWUSR, NULL, store_led_pattern);
- 
- static struct attribute *lp5521_attributes[] = {
- 	&dev_attr_engine1_mode.attr,
-@@ -556,6 +654,7 @@ static struct attribute *lp5521_attributes[] = {
- 	&dev_attr_engine1_load.attr,
- 	&dev_attr_engine2_load.attr,
- 	&dev_attr_engine3_load.attr,
-+	&dev_attr_led_pattern.attr,
- 	NULL
- };
- 
-@@ -743,6 +842,7 @@ static int lp5521_remove(struct i2c_client *client)
- 	struct lp5521_chip *chip = i2c_get_clientdata(client);
- 	int i;
- 
-+	lp5521_run_led_pattern(PATTERN_OFF, chip);
- 	lp5521_unregister_sysfs(client);
- 
- 	for (i = 0; i < chip->num_leds; i++) {
-diff --git a/include/linux/leds-lp5521.h b/include/linux/leds-lp5521.h
-index e9ab583..3f071ec 100644
---- a/include/linux/leds-lp5521.h
-+++ b/include/linux/leds-lp5521.h
-@@ -32,6 +32,15 @@ struct lp5521_led_config {
- 	u8		max_current;
- };
- 
-+struct lp5521_led_pattern {
-+	u8 *r;
-+	u8 *g;
-+	u8 *b;
-+	u8 size_r;
-+	u8 size_g;
-+	u8 size_b;
-+};
-+
- #define LP5521_CLOCK_AUTO	0
- #define LP5521_CLOCK_INT	1
- #define LP5521_CLOCK_EXT	2
-@@ -57,6 +66,8 @@ struct lp5521_platform_data {
- 	void	(*enable)(bool state);
- 	const char *label;
- 	u8	update_config;
-+	struct lp5521_led_pattern *patterns;
-+	int num_patterns;
- };
- 
- #endif /* __LINUX_LP5521_H */
--- 
-1.7.4.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-
-Best Regards,
-Milo (Woogyom) Kim
-Texas Instruments Incorporated
-
-
+iQIVAwUBTxsAvTYtFsjWk68qAQhjQhAAxCzTz3OY1LJeri1SyMOYFz2Cgie4t3H/
+IZqsjmXHNLDuBeHrMrmmYXBjGq+RsXaTNFDsQ59gzSqJUESufvxKFtUhH8WH+oTA
+spqpgcDWAenErWZieruZ+WgkQLPDQvwOZM/k87KeMp4kq87gwxciQ1Y4lYahIAQe
+Ij2QUO6zWwvFALr0k8CiM6f7vfl+rPeEiM5hkA+Sm2LZ3L8eixzMQtsAyeGiLotf
++JQPZ9nzsHB91YzK+IsdVuVw/VW16wyTQAnXYY3++2Xh/yol4elKiALUXo0xcOwZ
+8Ur9+8zm8GisdupFTc1L5Ou7BeZ2nz9DoVL1QMPQSSkqZpSwmOKrYr/qzGzMHU8B
+ud4Dd/FxThYQVYQRGLbXzjTCYcE5Jv14ys6a7o9Rja91YtFzlZ/9H2qVozgzFkKT
+dBHtqgFdZNTa17yho4CPuYLnT683WDxspE3C0y5hGyp/z2JlLZJY9dvGFYjPr/+A
+ZRvIh/NdhEkRo/3PHt2PR7mGqdFJam7xFt/MwPTYY1+kvy5qB9LQOraa9w4UDfmF
+UlwIFfrc+/JLeL/nnMK5cNtbb7izNtcrapeCpjygzH7q8cNSnRcF13ojauVGXhfe
+h3aKwPpZPKzlw/vLWp5drYBMNG7HocFJF4o6fHfdnW19O3v315KGQU5FvZnJsd5j
+b9VWajMrkSk=
+=5dnL
+-----END PGP SIGNATURE-----
+--=-=-=--
