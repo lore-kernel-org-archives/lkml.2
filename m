@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab2AUEXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 23:23:41 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:40123 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249Ab2AUEXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 23:23:40 -0500
-From: Kashyap Gada <gada.kashyap@gmail.com>
-To: gregkh@suse.de
-Cc: rebecca@android.com, jgennis@google.com, dima@android.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Kashyap Gada <gada.kashyap@gmail.com>
-Subject: [PATCH 6/6] Staging: android: Add parenthesis to macros with complex values in pmem.c
-Date: Sat, 21 Jan 2012 04:23:32 +0000
-Message-Id: <1327119812-19851-1-git-send-email-gada.kashyap@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-Signed-off-by: Kashyap Gada <gada.kashyap@gmail.com>
+	id S1756869Ab2AUEsU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 23:48:20 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:37457 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756561Ab2AUEsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 23:48:18 -0500
+Date: Fri, 20 Jan 2012 20:46:31 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86/platform: (TS-5500) revised ADC driver
+Message-ID: <20120121044631.GA4143@ericsson.com>
+References: <1326930731-21215-5-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <1327103002-5834-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1327103002-5834-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/drivers/staging/android/pmem.c b/drivers/staging/android/pmem.c
-index c589c0c..b685c18 100644
---- a/drivers/staging/android/pmem.c
-+++ b/drivers/staging/android/pmem.c
-@@ -38,17 +38,17 @@
-  * the file should not be released until put_pmem_file is called */
- #define PMEM_FLAGS_BUSY 0x1
- /* indicates that this is a suballocation of a larger master range */
--#define PMEM_FLAGS_CONNECTED 0x1 << 1
-+#define PMEM_FLAGS_CONNECTED (x1 << 1)
- /* indicates this is a master and not a sub allocation and that it is mmaped */
--#define PMEM_FLAGS_MASTERMAP 0x1 << 2
-+#define PMEM_FLAGS_MASTERMAP (0x1 << 2)
- /* submap and unsubmap flags indicate:
-  * 00: subregion has never been mmaped
-  * 10: subregion has been mmaped, reference to the mm was taken
-  * 11: subretion has ben released, refernece to the mm still held
-  * 01: subretion has been released, reference to the mm has been released
-  */
--#define PMEM_FLAGS_SUBMAP 0x1 << 3
--#define PMEM_FLAGS_UNSUBMAP 0x1 << 4
-+#define PMEM_FLAGS_SUBMAP (0x1 << 3)
-+#define PMEM_FLAGS_UNSUBMAP (0x1 << 4)
- 
- 
- struct pmem_data {
-@@ -153,8 +153,8 @@ struct pmem_info {
- static struct pmem_info pmem[PMEM_MAX_DEVICES];
- static int id_count;
- 
--#define PMEM_IS_FREE(id, index) !(pmem[id].bitmap[index].allocated)
--#define PMEM_ORDER(id, index) pmem[id].bitmap[index].order
-+#define PMEM_IS_FREE(id, index) (!(pmem[id].bitmap[index].allocated))
-+#define PMEM_ORDER(id, index) (pmem[id].bitmap[index].order)
- #define PMEM_BUDDY_INDEX(id, index) (index ^ (1 << PMEM_ORDER(id, index)))
- #define PMEM_NEXT_INDEX(id, index) (index + (1 << PMEM_ORDER(id, index)))
- #define PMEM_OFFSET(index) (index * PMEM_MIN_ALLOC)
--- 
-1.7.5.4
+On Fri, Jan 20, 2012 at 06:43:22PM -0500, Vivien Didelot wrote:
+> Update of the ADC driver according to the Guenter Roeck's review.
+> 
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> ---
+>  arch/x86/platform/ts5500/ts5500_adc.c |  228 +++++++++++++--------------------
+>  1 files changed, 89 insertions(+), 139 deletions(-)
+> 
+> diff --git a/arch/x86/platform/ts5500/ts5500_adc.c b/arch/x86/platform/ts5500/ts5500_adc.c
+> index fc4560f..da6decf 100644
+> --- a/arch/x86/platform/ts5500/ts5500_adc.c
+> +++ b/arch/x86/platform/ts5500/ts5500_adc.c
+> @@ -62,57 +62,62 @@
+>  
+Hi Vivien,
 
+This isn't really a revised driver ... it is a patch on top of the previous version.
+
+Regarding the location, I'd really like to know from the powers-that-be if
+	arch/x86/platform/ts5500/
+or
+	drivers/platform/x86
+or
+	drivers/hwmon
+
+would be the appropriate location for a driver like this. As mentioned before,
+my strong preference is drivers/hwmon, but I would like to hear from others.
+
+Also, I am not sure if the current approach is appropriate to start with.
+Looking at the datasheet as well as into existing kernel code, it appears quite likely 
+that some kind of more or less generic MAX197 driver exists somewhere. The existence 
+of is_max197_installed() - without any calling code - is a strong indication that
+this is the case, as well as the "static" platform data in your original patch.
+It might be more appropriate to take this more or less generic driver, move it to
+drivers/hwmon, and provide - for example through platform data - a means
+to read from and write to the chip on a per-platform basis, ie with per-platform
+access functions.
+
+Thanks,
+Guenter
