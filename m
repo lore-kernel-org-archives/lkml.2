@@ -1,132 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab2AUJxZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 04:53:25 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42701 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab2AUJwv (ORCPT
+	id S1755907Ab2AUJxh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 04:53:37 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:59925 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532Ab2AUJwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 04:52:51 -0500
+	Sat, 21 Jan 2012 04:52:55 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 2/7] PCI: Separate pci_bus_read_dev_vendor_id from pci_scan_device
-Date: Sat, 21 Jan 2012 01:52:14 -0800
-Message-Id: <1327139539-14301-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 3/7] pciehp: Checking pci conf reading to new added device instead of sleep 1s
+Date: Sat, 21 Jan 2012 01:52:15 -0800
+Message-Id: <1327139539-14301-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
 References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4F1A8AE7.0011,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090207.4F1A8AEA.0080,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will reuse that function for pciehp probing.
+During reviewing
+|	PCI: pciehp: wait 1000 ms before Link Training check
+Linus said:
+>...
+> That's a *long* time, and it's irritating to the user. It makes the
+> user think "the machine is slow".
+>...
+> And quite frankly, an unconditional one-second delay here seems bad.
+>Two seconds was unacceptable, one second is just bad.
 
--v2: according to Kenji, fix crs timeout checking, and export the function
-     for later using when pciehp is compiled as module.
+Try to access the pci conf of pci device that is supposed to show up in 1s,
+if could read back valid vender/device id, could bail out early.
 
-Suggested-by: Matthew Wilcox <matthew@wil.cx>
+Related discussion could be found:
+	https://lkml.org/lkml/2011/12/6/339
+
+-v2: seperate code to pci_bus_read_dev_vendor_id() from pci_scan_device()
+    and reuse it from pciehp code. Suggested by Matthew Wilcox.
+-v3: According to Kenj, don't use array in stack, and don't wait too long
+    for crs, also return fail status if not found.
+    Also separate pci_bus_dev_read_vendor_id() change to another patch.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/pci.h   |    2 ++
- drivers/pci/probe.c |   48 +++++++++++++++++++++++++++++++-----------------
- 2 files changed, 33 insertions(+), 17 deletions(-)
+ drivers/pci/hotplug/pciehp_hpc.c |   49 ++++++++++++++++++++++++++-----------
+ 1 files changed, 34 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index b74084e..8dadbd3 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -205,6 +205,8 @@ enum pci_bar_type {
- 	pci_bar_mem64,		/* A 64-bit memory BAR */
- };
- 
-+bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
-+				int crs_timeout);
- extern int pci_setup_device(struct pci_dev *dev);
- extern int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- 				struct resource *res, unsigned int reg);
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 04e74f4..101e90f 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1113,40 +1113,54 @@ struct pci_dev *alloc_pci_dev(void)
+diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+index 7b14148..ad8c1be 100644
+--- a/drivers/pci/hotplug/pciehp_hpc.c
++++ b/drivers/pci/hotplug/pciehp_hpc.c
+@@ -265,10 +265,37 @@ static void pcie_wait_link_active(struct controller *ctrl)
+ 	ctrl_dbg(ctrl, "Data Link Layer Link Active not set in 1000 msec\n");
  }
- EXPORT_SYMBOL(alloc_pci_dev);
  
--/*
-- * Read the config data for a PCI device, sanity-check it
-- * and fill in the dev structure...
-- */
--static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
-+bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *l,
-+				 int crs_timeout)
- {
--	struct pci_dev *dev;
--	u32 l;
- 	int delay = 1;
- 
--	if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l))
--		return NULL;
-+	if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, l))
-+		return false;
- 
- 	/* some broken boards return 0 or ~0 if a slot is empty: */
--	if (l == 0xffffffff || l == 0x00000000 ||
--	    l == 0x0000ffff || l == 0xffff0000)
--		return NULL;
-+	if (*l == 0xffffffff || *l == 0x00000000 ||
-+	    *l == 0x0000ffff || *l == 0xffff0000)
-+		return false;
- 
- 	/* Configuration request Retry Status */
--	while (l == 0xffff0001) {
-+	while (*l == 0xffff0001) {
-+		if (!crs_timeout)
-+			return false;
++static bool pci_bus_check_dev(struct pci_bus *bus, int devfn)
++{
++	u32 l;
++	int count = 0;
++	int delay = 1000, step = 20;
++	bool found = false;
 +
- 		msleep(delay);
- 		delay *= 2;
--		if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l))
--			return NULL;
-+		if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, l))
-+			return false;
- 		/* Card hasn't responded in 60 seconds?  Must be stuck. */
--		if (delay > 60 * 1000) {
-+		if (delay > crs_timeout) {
- 			printk(KERN_WARNING "pci %04x:%02x:%02x.%d: not "
- 					"responding\n", pci_domain_nr(bus),
- 					bus->number, PCI_SLOT(devfn),
- 					PCI_FUNC(devfn));
--			return NULL;
-+			return false;
- 		}
++	do {
++		found = pci_bus_read_dev_vendor_id(bus, devfn, &l, 0);
++		count++;
++
++		if (found)
++			break;
++
++		msleep(step);
++		delay -= step;
++	} while (delay > 0);
++
++	if (count > 1 && pciehp_debug)
++		printk(KERN_DEBUG "pci %04x:%02x:%02x.%d id reading try %d times with interval %d ms to get %08x\n",
++			pci_domain_nr(bus), bus->number, PCI_SLOT(devfn),
++			PCI_FUNC(devfn), count, step, l);
++
++	return found;
++}
++
+ int pciehp_check_link_status(struct controller *ctrl)
+ {
+ 	u16 lnk_status;
+ 	int retval = 0;
++	bool found = false;
+ 
+         /*
+          * Data Link Layer Link Active Reporting must be capable for
+@@ -280,13 +307,10 @@ int pciehp_check_link_status(struct controller *ctrl)
+         else
+                 msleep(1000);
+ 
+-	/*
+-	 * Need to wait for 1000 ms after Data Link Layer Link Active
+-	 * (DLLLA) bit reads 1b before sending configuration request.
+-	 * We need it before checking Link Training (LT) bit becuase
+-	 * LT is still set even after DLLLA bit is set on some platform.
+-	 */
+-	msleep(1000);
++	/* wait 100ms before read pci conf, and try in 1s */
++	msleep(100);
++	found = pci_bus_check_dev(ctrl->pcie->port->subordinate,
++					PCI_DEVFN(0, 0));
+ 
+ 	retval = pciehp_readw(ctrl, PCI_EXP_LNKSTA, &lnk_status);
+ 	if (retval) {
+@@ -302,16 +326,11 @@ int pciehp_check_link_status(struct controller *ctrl)
+ 		return retval;
  	}
  
-+	return true;
-+}
-+EXPORT_SYMBOL(pci_bus_read_dev_vendor_id);
+-	/*
+-	 * If the port supports Link speeds greater than 5.0 GT/s, we
+-	 * must wait for 100 ms after Link training completes before
+-	 * sending configuration request.
+-	 */
+-	if (ctrl->pcie->port->subordinate->max_bus_speed > PCIE_SPEED_5_0GT)
+-		msleep(100);
+-
+ 	pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
+ 
++	if (!found && !retval)
++		retval = -1;
 +
-+/*
-+ * Read the config data for a PCI device, sanity-check it
-+ * and fill in the dev structure...
-+ */
-+static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
-+{
-+	struct pci_dev *dev;
-+	u32 l;
-+
-+	if (!pci_bus_read_dev_vendor_id(bus, devfn, &l, 60*1000))
-+		return NULL;
-+
- 	dev = alloc_pci_dev();
- 	if (!dev)
- 		return NULL;
+ 	return retval;
+ }
+ 
 -- 
 1.7.7
 
