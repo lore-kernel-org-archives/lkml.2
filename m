@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab2AUDCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 22:02:09 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:54276 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754681Ab2AUDCH (ORCPT
+	id S1756600Ab2AUDLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 22:11:01 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52338 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796Ab2AUDK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 22:02:07 -0500
-Date: Sat, 21 Jan 2012 04:02:04 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cgroup: add xattr support
-Message-ID: <20120121030204.GE2100@tango.0pointer.de>
-References: <4F13DA90.2000603@cn.fujitsu.com>
- <4F13DAA9.4070703@cn.fujitsu.com>
- <20120117175322.GC6762@google.com>
- <CAPXgP13fT3V4L0x6uj9ZdAOw25BgQtEpa8QzLB-_c_Yn+9kO2Q@mail.gmail.com>
- <20120118213638.GA21533@google.com>
- <20120119014727.GG29242@tango.0pointer.de>
- <20120119022005.GG21533@google.com>
- <20120119024021.GI21533@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120119024021.GI21533@google.com>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Fri, 20 Jan 2012 22:10:59 -0500
+X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=SLimC-UJQSPXCd1Fy1kA:9 a=PUjeQqilurYA:10 a=GOv06XaBDmIuLXldm0MA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1327115453.3756.23.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.0.17-rt33
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Fri, 20 Jan 2012 22:10:53 -0500
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-4VyH/MnErY1oStexH+WO"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18.01.12 18:40, Tejun Heo (tj@kernel.org) wrote:
 
-> 
-> On Wed, Jan 18, 2012 at 06:20:05PM -0800, Tejun Heo wrote:
-> > Hello, Lennart, Li.
-> > 
-> > Two things.
-> > 
-> > * Probably I'm missing something but isn't the systemd cgroup
-> >   hierarchy already managed by systemd?  If so, I don't see how
-> >   managing tmpfs on the side would noticeably make things more
-> >   fragile.  It would take a bit more care after, for example, restart
-> >   but it shouldn't be too complex, no?
-> > 
-> > * FS attributes already being used for userland information seems like
-> >   a good argument, but we shouldn't add separate specialized xattr
-> >   implementation to different pseudo filesystems.  For it to be
-> >   acceptable, it should be a libfs thing easily applicable to any
-> >   pseudo FS and definitely shouldn't be using kmem for storage.
-> 
-> Also note that tmpfs also implies size limit.  We definitely need some
-> form of control over the amount of memory xattr may consume.
+--=-4VyH/MnErY1oStexH+WO
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: quoted-printable
 
-Good point. But then again we don't even have anything resembling for
-tmpfs either, where it would be much more important... :-(
 
-Given that cgroupfs is probably mostly read-only for normal users, the
-requirement for quotas on it is probably much less important than for tmpfs
-though.
+Dear RT Folks,
 
-Lennart
+I'm pleased to announce the 3.0.17-rt33 stable release.
 
--- 
-Lennart Poettering - Red Hat, Inc.
+
+This release is just an update to the new stable 3.0.17 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: b4cf0136e3209f51a9f7bb9f07f71670affaf046
+
+
+Or to build 3.0.17-rt33 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.17.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.17-rt33.=
+patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
+--=-4VyH/MnErY1oStexH+WO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPGiy9AAoJEIy3vGnGbaoAsrcP/RKyNtKo+zChVQEbERZWfjUc
+9iOB+jgWRetAoPt6nGTT6Tg27Ert1qmLzO1tHK2X7Eq0gGT5fpXk0eXCHN7R6b5b
+Z0tjXJEV4kPBi+BEMeJqvZ7VXNgTzGRHoihB0gypkgLNllujfXS7NS1KX7LiOcII
+TsMbZsf+Go7Kzi+f4x7NazSy0Jh3g7PXdNk+j1hOSro5tcxNqYNT4QOK8zoosE11
+ZtBee+w2WsJPA4mGjQF/9PXxzeeYdFvytt6QJ/f10YVW+PqmJGoyuDLmeLkcoUDa
+IK1i7a4VWJ9WxuMAL7mowPdKqw7CqYk9TXlKXnW5ztkGj2/EA8HxWbKJHXs0gWk/
+gdb0fN5WEtkjvFJWa5d4QxWRYBT4K0qElt9iLaZXmF7dEADxkC/BfK5GVUPpl7y2
+yDlbaFwcboeQR1yYNbX90GuNoRlaBmJgfbB1JlAXlPbOkclFBdy4i7vdJSiskaBD
+Wm2c058Qp15DxufP5LESKVNd3mc/sTf0BqO6W+ZBzFwdQytSOBBzlB+TJtwlAVfp
+9/zHrce8XzpJaOfcw/TSEiplX7ONx3Oo4SjMgsl/pMx9yZY3GW2xCWnOice0BZe+
+Oscu6a5mUoHpTs0ZhSt0W45sKZ++deCr+uQkaV5Yrt6K6SMbfm/jbGsiDiQVUXYX
+tZYEe8FVV74qYHJy+ivP
+=WyyY
+-----END PGP SIGNATURE-----
+
+--=-4VyH/MnErY1oStexH+WO--
+
