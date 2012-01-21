@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559Ab2AUKKp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 05:10:45 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:22298 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755235Ab2AUKJS (ORCPT
+	id S932669Ab2AUKLB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 05:11:01 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44213 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082Ab2AUKKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 05:09:18 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 21/21] PCI: only enable pci realloc when SRIOV bar is not assigned
-Date: Sat, 21 Jan 2012 02:08:37 -0800
-Message-Id: <1327140517-14811-22-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
-References: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4F1A8ECA.001D,ss=1,re=0.000,fgs=0
+	Sat, 21 Jan 2012 05:10:23 -0500
+From: Sam Hansen <solid.se7en@gmail.com>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sam Hansen <solid.se7en@gmail.com>
+Subject: [PATCH 3/3] xgifb: checkpatch cleanup, printk() KERN_*
+Date: Sat, 21 Jan 2012 02:10:12 -0800
+Message-Id: <1327140612-9694-3-git-send-email-solid.se7en@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1327140612-9694-1-git-send-email-solid.se7en@gmail.com>
+References: <1327140612-9694-1-git-send-email-solid.se7en@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If bios does not assign those BAR or wrong address, then kernel will
-try to do pci realloc.
+Added KERN_ facility levels in XGI_main_26.c and vb_init.c in a few different
+printk() statements.
 
-in that case, user still can use pci=realloc=off to override it.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Sam Hansen <solid.se7en@gmail.com>
 ---
- drivers/pci/setup-bus.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |   16 ++++++++--------
+ drivers/staging/xgifb/vb_init.c     |    2 +-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 1c97e14..3070e1b 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -1271,6 +1271,31 @@ static bool __init pci_realloc_enabled(void)
- 	return pci_realloc_enable > 0;
- }
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index a743e1b..389768d 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -1711,7 +1711,7 @@ static int XGIfb_get_dram_size(struct xgifb_video_info *xgifb_info)
+ 	/* xgifb_info->video_size = 0x200000; */ /* 1024x768x16 */
+ 	/* xgifb_info->video_size = 0x1000000; */ /* benchmark */
  
-+static void __init pci_realloc_detect(void)
-+{
-+	struct pci_dev *dev = NULL;
-+
-+	if (pci_realloc_enable != -1)
-+		return;
-+
-+#ifdef CONFIG_PCI_IOV
-+	for_each_pci_dev(dev) {
-+		int i;
-+
-+		for (i = PCI_IOV_RESOURCES; i <= PCI_IOV_RESOURCE_END; i++) {
-+			struct resource *r = &dev->resource[i];
-+
-+			/* Not assigned, or rejected by kernel */
-+			if (r->flags && !r->start) {
-+				pci_realloc_enable = 2;
-+
-+				return;
-+			}
-+		}
-+	}
-+#endif
-+}
-+
- /*
-  * first try will not touch pci bridge res
-  * second  and later try will clear small leaf bridge res
-@@ -1292,6 +1317,7 @@ pci_assign_unassigned_resources(void)
- 	int pci_try_num = 1;
+-	printk("XGIfb: SR14=%x DramSzie %x ChannelNum %x\n",
++	printk(KERN_INFO "XGIfb: SR14=%x DramSzie %x ChannelNum %x\n",
+ 	       reg,
+ 	       xgifb_info->video_size, ChannelNum);
+ 	return 0;
+@@ -1917,7 +1917,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+ 	xgifb_info->vga_base = pci_resource_start(pdev, 2) + 0x30;
+ 	hw_info->pjIOAddress = (unsigned char *)xgifb_info->vga_base;
+ 	/* XGI_Pr.RelIO  = ioremap(pci_resource_start(pdev, 2), 128) + 0x30; */
+-	printk("XGIfb: Relocate IO address: %lx [%08lx]\n",
++	printk(KERN_INFO "XGIfb: Relocate IO address: %lx [%08lx]\n",
+ 	       (unsigned long)pci_resource_start(pdev, 2),
+ 	       xgifb_info->dev_info.RelIO);
  
- 	/* don't realloc if asked to do so */
-+	pci_realloc_detect();
- 	if (pci_realloc_enabled()) {
- 		int max_depth = pci_get_max_depth();
+@@ -1937,7 +1937,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+ 	reg1 = xgifb_reg_get(XGISR, IND_XGI_PASSWORD);
  
+ 	if (reg1 != 0xa1) { /*I/O error */
+-		printk("\nXGIfb: I/O error!!!");
++		printk(KERN_ERR "\nXGIfb: I/O error!!!");
+ 		ret = -EIO;
+ 		goto error;
+ 	}
+@@ -1989,7 +1989,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+ 	if (!request_mem_region(xgifb_info->video_base,
+ 				xgifb_info->video_size,
+ 				"XGIfb FB")) {
+-		printk("unable request memory size %x",
++		printk(KERN_ERR "unable to request memory size %x",
+ 		       xgifb_info->video_size);
+ 		printk(KERN_ERR "XGIfb: Fatal error: Unable to reserve frame buffer memory\n");
+ 		printk(KERN_ERR "XGIfb: Is there another framebuffer driver active?\n");
+@@ -2018,12 +2018,12 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+ 	printk(KERN_INFO "XGIfb: MMIO at 0x%lx, mapped to 0x%p, size %ldk\n",
+ 	       xgifb_info->mmio_base, xgifb_info->mmio_vbase,
+ 	       xgifb_info->mmio_size / 1024);
+-	printk("XGIfb: XGIInitNew() ...");
++	printk(KERN_INFO "XGIfb: XGIInitNew() ...");
+ 	pci_set_drvdata(pdev, xgifb_info);
+ 	if (XGIInitNew(pdev))
+-		printk("OK\n");
++		printk(KERN_INFO "OK\n");
+ 	else
+-		printk("Fail\n");
++		printk(KERN_ERR "Fail\n");
+ 
+ 	xgifb_info->mtrr = (unsigned int) 0;
+ 
+@@ -2064,7 +2064,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+ 		} */
+ 		else {
+ 			hw_info->ujVBChipID = VB_CHIP_301;
+-			printk("XGIfb: XGI301 bridge detected\n");
++			printk(KERN_INFO "XGIfb: XGI301 bridge detected\n");
+ 		}
+ 		break;
+ 	case HASVB_302:
+diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
+index 4ccd988..2b72e26 100644
+--- a/drivers/staging/xgifb/vb_init.c
++++ b/drivers/staging/xgifb/vb_init.c
+@@ -1483,7 +1483,7 @@ unsigned char XGIInitNew(struct pci_dev *pdev)
+ 	/* Newdebugcode(0x99); */
+ 
+ 	if (pVBInfo->FBAddr == NULL) {
+-		printk("\n pVBInfo->FBAddr == 0 ");
++		printk(KERN_INFO "\n pVBInfo->FBAddr == 0 ");
+ 		return 0;
+ 	}
+ 	printk("1");
 -- 
-1.7.7
+1.7.5.4
 
