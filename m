@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab2AUDLB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 22:11:01 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52338 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796Ab2AUDK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 22:10:59 -0500
-X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=SLimC-UJQSPXCd1Fy1kA:9 a=PUjeQqilurYA:10 a=GOv06XaBDmIuLXldm0MA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1327115453.3756.23.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.0.17-rt33
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Fri, 20 Jan 2012 22:10:53 -0500
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-4VyH/MnErY1oStexH+WO"
+	id S1756466Ab2AUDQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 22:16:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:49382 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754715Ab2AUDQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 22:16:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="101088318"
+Message-ID: <1327115758.7922.30.camel@yhuang-dev>
+Subject: Re: [PATCH 0/3] ACPI: Re-factor and remove
+ ./drivers/acpi/atomicio.[ch]
+From: Huang Ying <ying.huang@intel.com>
+To: Myron Stowe <myron.stowe@redhat.com>, lenb@kernel.org
+Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, bhelgaas@google.com,
+        trenn@suse.de, linux-kernel@vger.kernel.org
+Date: Sat, 21 Jan 2012 11:15:58 +0800
+In-Reply-To: <20120121021318.14723.45698.stgit@amt.stowe>
+References: <20120121021318.14723.45698.stgit@amt.stowe>
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-01-20 at 19:13 -0700, Myron Stowe wrote:
+> I recently submitted a patch series that re-factored some existing
+> work that Huang Ying introduced adding support for accessing ACPI
+> generic registers, backed by Memory Mapped I/O (MMIO), while within
+> interrupt context:
+>   Original series: http://marc.info/?l=linux-acpi&m=128769263327206&w=2
+>   Follow on series: http://marc.info/?l=linux-kernel&m=132070825520957&w=2
+> 
+> An underlying goal has been to re-factor ./drivers/acpi/atomicio.c into
+> ./drivers/acpi/osl.c, providing equivalent functionality but in a more
+> generalized manner, to allow usage in non-specific (i.e. APEI) contexts
+> and remove atomicio.c.
+> 
+> In the most recent follow on series, there ended up being additions to
+> atomicio.c that coincided with the attempt to remove it and as such, the
+> series final removal patch could not be taken without first pulling the
+> additions into osl.c.  The fact that the follow on series conversion
+> patch - commit 700130b41f4 - was taken has inadvertently created
+> regressions with respect to the recent atomicio.c additions due to the
+> conversion patch effectively making atomicio.c obsolete.
+> 
+> The additions were commit 04c25997c97 "ACPI, Add 64bit read/write
+> support to atomicio on i386" and commit 76da3fb3575 "ACPI, Add RAM
+> mapping support to ACPI atomic IO support".
+> 
+> This patch series addresses both of these issues, bringing in the
+> additional functionality into the re-factored files (apei-base.c and
+> osl.c) and then again, reintroduces the patch to remove
+> ./drivers/acpi/atomicio.[ch].
+> ---
+> 
+> Myron Stowe (3):
+>       ACPI: Remove ./drivers/acpi/atomicio.[ch]
 
---=-4VyH/MnErY1oStexH+WO
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+It appears there is no one uses atomicio.[ch] now.  So I think it is
+safe to push this into 3.3.
 
+>       ACPI, APEI: Add RAM mapping support to ACPI
+>       ACPI, APEI: Add 64-bit read/write support for APEI on i386
 
-Dear RT Folks,
+These two patches are just fixes.  So I think we should push these two
+patches into 3.3.
 
-I'm pleased to announce the 3.0.17-rt33 stable release.
+Len, Do you agree?
 
+Best Regards,
+Huang Ying
 
-This release is just an update to the new stable 3.0.17 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: b4cf0136e3209f51a9f7bb9f07f71670affaf046
-
-
-Or to build 3.0.17-rt33 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.17.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.17-rt33.=
-patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
---=-4VyH/MnErY1oStexH+WO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPGiy9AAoJEIy3vGnGbaoAsrcP/RKyNtKo+zChVQEbERZWfjUc
-9iOB+jgWRetAoPt6nGTT6Tg27Ert1qmLzO1tHK2X7Eq0gGT5fpXk0eXCHN7R6b5b
-Z0tjXJEV4kPBi+BEMeJqvZ7VXNgTzGRHoihB0gypkgLNllujfXS7NS1KX7LiOcII
-TsMbZsf+Go7Kzi+f4x7NazSy0Jh3g7PXdNk+j1hOSro5tcxNqYNT4QOK8zoosE11
-ZtBee+w2WsJPA4mGjQF/9PXxzeeYdFvytt6QJ/f10YVW+PqmJGoyuDLmeLkcoUDa
-IK1i7a4VWJ9WxuMAL7mowPdKqw7CqYk9TXlKXnW5ztkGj2/EA8HxWbKJHXs0gWk/
-gdb0fN5WEtkjvFJWa5d4QxWRYBT4K0qElt9iLaZXmF7dEADxkC/BfK5GVUPpl7y2
-yDlbaFwcboeQR1yYNbX90GuNoRlaBmJgfbB1JlAXlPbOkclFBdy4i7vdJSiskaBD
-Wm2c058Qp15DxufP5LESKVNd3mc/sTf0BqO6W+ZBzFwdQytSOBBzlB+TJtwlAVfp
-9/zHrce8XzpJaOfcw/TSEiplX7ONx3Oo4SjMgsl/pMx9yZY3GW2xCWnOice0BZe+
-Oscu6a5mUoHpTs0ZhSt0W45sKZ++deCr+uQkaV5Yrt6K6SMbfm/jbGsiDiQVUXYX
-tZYEe8FVV74qYHJy+ivP
-=WyyY
------END PGP SIGNATURE-----
-
---=-4VyH/MnErY1oStexH+WO--
 
