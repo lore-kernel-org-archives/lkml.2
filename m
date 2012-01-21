@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab2AUAAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 19:00:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45621 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab2AUAAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 19:00:11 -0500
-Date: Fri, 20 Jan 2012 16:00:03 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 2/3] cgroup: replace tasklist_lock with rcu_read_lock
-Message-ID: <20120121000003.GA2908@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1325654312-32477-1-git-send-email-msb@chromium.org>
- <1325654312-32477-2-git-send-email-msb@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325654312-32477-2-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756312Ab2AUABT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 19:01:19 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:49870 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754027Ab2AUABS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 19:01:18 -0500
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH] include/checkpatch: Prefer __scanf to __attribute__((format(scanf,...)
+Date: Fri, 20 Jan 2012 16:01:12 -0800
+Message-Id: <2cf7ddd75001233e79e928c4dcfae6768af5790c.1327103792.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 09:18:31PM -0800, Mandeep Singh Baines wrote:
-> We can replace the tasklist_lock in cgroup_attach_proc with an
-> rcu_read_lock.
-> 
-> Changes in V4:
-> * https://lkml.org/lkml/2011/12/23/284 (Frederic Weisbecker)
->   * Minimize size of rcu_read_lock critical section
->   * Add comment
-> * https://lkml.org/lkml/2011/12/26/136 (Li Zefan)
->   * Split into two patches
-> Changes in V3:
-> * https://lkml.org/lkml/2011/12/22/419 (Frederic Weisbecker)
->   * Add an rcu_read_lock to protect against exit
-> Changes in V2:
-> * https://lkml.org/lkml/2011/12/22/86 (Tejun Heo)
->   * Use a goto instead of returning -EAGAIN
-> 
-> Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: containers@lists.linux-foundation.org
-> Cc: cgroups@vger.kernel.org
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Paul Menage <paul@paulmenage.org>
+It's equivalent to __printf, so prefer __scanf.
 
-Applied 1 and 2 to cgroup/for-3.4 w/ ack's added.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/linux/compiler-gcc.h |    3 ++-
+ include/linux/kernel.h       |    8 ++++----
+ include/xen/xenbus.h         |    4 ++--
+ scripts/checkpatch.pl        |    6 ++++++
+ 4 files changed, 14 insertions(+), 7 deletions(-)
 
-Thanks.
-
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 3fd17c2..e5834aa 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -87,7 +87,8 @@
+  */
+ #define __pure				__attribute__((pure))
+ #define __aligned(x)			__attribute__((aligned(x)))
+-#define __printf(a,b)			__attribute__((format(printf,a,b)))
++#define __printf(a, b)			__attribute__((format(printf, a, b)))
++#define __scanf(a, b)			__attribute__((format(scanf, a, b)))
+ #define  noinline			__attribute__((noinline))
+ #define __attribute_const__		__attribute__((__const__))
+ #define __maybe_unused			__attribute__((unused))
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index e834342..30f21ec 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -315,10 +315,10 @@ extern __printf(2, 3)
+ char *kasprintf(gfp_t gfp, const char *fmt, ...);
+ extern char *kvasprintf(gfp_t gfp, const char *fmt, va_list args);
+ 
+-extern int sscanf(const char *, const char *, ...)
+-	__attribute__ ((format (scanf, 2, 3)));
+-extern int vsscanf(const char *, const char *, va_list)
+-	__attribute__ ((format (scanf, 2, 0)));
++extern __scanf(2, 3)
++int sscanf(const char *, const char *, ...);
++extern __scanf(2, 0)
++int vsscanf(const char *, const char *, va_list);
+ 
+ extern int get_option(char **str, int *pint);
+ extern char *get_options(const char *str, int nints, int *ints);
+diff --git a/include/xen/xenbus.h b/include/xen/xenbus.h
+index e8c599b..0a7515c 100644
+--- a/include/xen/xenbus.h
++++ b/include/xen/xenbus.h
+@@ -139,9 +139,9 @@ int xenbus_transaction_start(struct xenbus_transaction *t);
+ int xenbus_transaction_end(struct xenbus_transaction t, int abort);
+ 
+ /* Single read and scanf: returns -errno or num scanned if > 0. */
++__scanf(4, 5)
+ int xenbus_scanf(struct xenbus_transaction t,
+-		 const char *dir, const char *node, const char *fmt, ...)
+-	__attribute__((format(scanf, 4, 5)));
++		 const char *dir, const char *node, const char *fmt, ...);
+ 
+ /* Single printf and write: returns -errno or 0. */
+ __printf(4, 5)
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e3bfcbe..2b52aeb 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3117,6 +3117,12 @@ sub process {
+ 			     "__printf(string-index, first-to-check) is preferred over __attribute__((format(printf, string-index, first-to-check)))\n" . $herecurr);
+ 		}
+ 
++# Check for __attribute__ format(scanf, prefer __scanf
++		if ($line =~ /\b__attribute__\s*\(\s*\(\s*format\s*\(\s*scanf\b/) {
++			WARN("PREFER_SCANF",
++			     "__scanf(string-index, first-to-check) is preferred over __attribute__((format(scanf, string-index, first-to-check)))\n" . $herecurr);
++		}
++
+ # check for sizeof(&)
+ 		if ($line =~ /\bsizeof\s*\(\s*\&/) {
+ 			WARN("SIZEOF_ADDRESS",
 -- 
-tejun
+1.7.8.111.gad25c.dirty
+
