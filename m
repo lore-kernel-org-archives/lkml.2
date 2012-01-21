@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab2AUOYL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 09:24:11 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:61000
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751385Ab2AUOYI (ORCPT
+	id S1752234Ab2AUOmH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 09:42:07 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41728 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab2AUOmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 09:24:08 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: trivial@kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] mpt2sas : Fix typo in mpt2sas_config.c
-Date: Sat, 21 Jan 2012 23:23:37 +0900
-Message-Id: <1327155817-2620-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Sat, 21 Jan 2012 09:42:01 -0500
+MIME-Version: 1.0
+Date: Sat, 21 Jan 2012 22:41:59 +0800
+Message-ID: <CAJd=RBDVxT5Pc2HZjz15LUb7xhFbztpFmXqLXVB3nCoQLKHiHg@mail.gmail.com>
+Subject: [PATCH] mm: vmscan: fix malused nr_reclaimed in shrinking zone
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-mm@kvack.org
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "mappping" to "mapping"
-in drivers/scsi/mpt2sas/mpt2sas_config.c
+The value of nr_reclaimed is the amount of pages reclaimed in the current round,
+whereas nr_to_reclaim shoud be compared with the amount of pages
+reclaimed in all
+rounds, so we have to buffer the pages reclaimed in the past rounds for correct
+comparison.
 
-Signed-off-by: Masanari Iida<standby24x7@gmail.com>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_config.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_config.c b/drivers/scsi/mpt2sas/mpt2sas_config.c
-index 36ea0b2..2b4d376 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_config.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_config.c
-@@ -149,7 +149,7 @@ _config_display_some_debug(struct MPT2SAS_ADAPTER *ioc, u16 smid,
- 			desc = "raid_config";
- 			break;
- 		case MPI2_CONFIG_EXTPAGETYPE_DRIVER_MAPPING:
--			desc = "driver_mappping";
-+			desc = "driver_mapping";
- 			break;
- 		}
- 		break;
--- 
-1.7.6.5
+--- a/mm/vmscan.c	Sat Jan 14 14:02:20 2012
++++ b/mm/vmscan.c	Sat Jan 21 22:23:48 2012
+@@ -2081,13 +2081,15 @@ static void shrink_mem_cgroup_zone(int p
+ 				   struct scan_control *sc)
+ {
+ 	unsigned long nr[NR_LRU_LISTS];
++	unsigned long reclaimed = 0;
+ 	unsigned long nr_to_scan;
+ 	enum lru_list lru;
+-	unsigned long nr_reclaimed, nr_scanned;
++	unsigned long nr_reclaimed = 0, nr_scanned;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+ 	struct blk_plug plug;
 
+ restart:
++	reclaimed += nr_reclaimed;
+ 	nr_reclaimed = 0;
+ 	nr_scanned = sc->nr_scanned;
+ 	get_scan_count(mz, sc, nr, priority);
+@@ -2113,7 +2115,8 @@ restart:
+ 		 * with multiple processes reclaiming pages, the total
+ 		 * freeing target can get unreasonably large.
+ 		 */
+-		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
++		if ((nr_reclaimed + reclaimed) >= nr_to_reclaim &&
++					priority < DEF_PRIORITY)
+ 			break;
+ 	}
+ 	blk_finish_plug(&plug);
