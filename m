@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351Ab2AUKKQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 05:10:16 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:16590 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab2AUKJO (ORCPT
+	id S932094Ab2AUKJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 05:09:59 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:22184 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040Ab2AUKI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 05:09:14 -0500
+	Sat, 21 Jan 2012 05:08:56 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Ram Pai <linuxram@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 10/21] PCI: Move struct resource_list to setup-bus.c
-Date: Sat, 21 Jan 2012 02:08:26 -0800
-Message-Id: <1327140517-14811-11-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 03/21] PCI: Move get_res_add_size() early
+Date: Sat, 21 Jan 2012 02:08:19 -0800
+Message-Id: <1327140517-14811-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
 References: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090207.4F1A8EBD.0019,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4F1A8EB4.0004,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No user outside of setup-bus.c now.
+Need to call it from __assign_resources_sorted() later.
 
-later will convert resource_list to regular list.
-
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/setup-bus.c |    6 ++++++
- include/linux/ioport.h  |    6 ------
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/pci/setup-bus.c |   29 +++++++++++++++--------------
+ 1 files changed, 15 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index f233d12..b067a4c 100644
+index 0282fde..75d43eb 100644
 --- a/drivers/pci/setup-bus.c
 +++ b/drivers/pci/setup-bus.c
-@@ -27,6 +27,12 @@
- #include <linux/slab.h>
- #include "pci.h"
+@@ -99,6 +99,21 @@ static void add_to_failed_list(struct resource_list_x *head,
+ 			0 /* dont care */);
+ }
  
-+struct resource_list {
-+	struct resource_list *next;
-+	struct resource *res;
-+	struct pci_dev *dev;
-+};
++static resource_size_t get_res_add_size(struct resource_list_x *realloc_head,
++					struct resource *res)
++{
++	struct resource_list_x *list;
 +
- struct resource_list_x {
- 	struct resource_list_x *next;
- 	struct resource *res;
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 9d57a71..e885ba2 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -23,12 +23,6 @@ struct resource {
- 	struct resource *parent, *sibling, *child;
- };
++	/* check if it is in realloc_head list */
++	for (list = realloc_head->next; list && list->res != res;
++			list = list->next)
++		;
++	if (list)
++		return list->add_size;
++
++	return 0;
++}
++
+ static void __dev_sort_resources(struct pci_dev *dev,
+ 				 struct resource_list *head)
+ {
+@@ -550,20 +565,6 @@ static resource_size_t calculate_memsize(resource_size_t size,
+ 	return size;
+ }
  
--struct resource_list {
--	struct resource_list *next;
--	struct resource *res;
--	struct pci_dev *dev;
--};
+-static resource_size_t get_res_add_size(struct resource_list_x *realloc_head,
+-					struct resource *res)
+-{
+-	struct resource_list_x *list;
 -
- /*
-  * IO resources have these defined flags.
-  */
+-	/* check if it is in realloc_head list */
+-	for (list = realloc_head->next; list && list->res != res;
+-			list = list->next);
+-	if (list)
+-		return list->add_size;
+-
+-	return 0;
+-}
+-
+ /**
+  * pbus_size_io() - size the io window of a given bus
+  *
 -- 
 1.7.7
 
