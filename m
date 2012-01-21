@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab2AUIVL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 03:21:11 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:19282 "EHLO
+	id S1752792Ab2AUIXS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 03:23:18 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:19525 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab2AUIVK (ORCPT
+	with ESMTP id S1750983Ab2AUIXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 03:21:10 -0500
-Date: Sat, 21 Jan 2012 11:22:08 +0300
+	Sat, 21 Jan 2012 03:23:17 -0500
+Date: Sat, 21 Jan 2012 11:24:16 +0300
 From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Christopher Lais <chris+android@zenthought.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH 1/2] Staging: android: binder: Add some error checks
-Message-ID: <20120121082208.GL3294@mwanda>
-References: <1327118181-3542-1-git-send-email-arve@android.com>
- <1327118181-3542-2-git-send-email-arve@android.com>
+To: Kashyap Gada <gada.kashyap@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dima@android.com, jgennis@google.com, rebecca@android.com
+Subject: Re: [PATCH 6/6] Staging: android: Add parenthesis to macros with
+ complex values in pmem.c
+Message-ID: <20120121082416.GM3294@mwanda>
+References: <1327119812-19851-1-git-send-email-gada.kashyap@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qgd2S+2VS1hsWwXW"
+	protocol="application/pgp-signature"; boundary="/t6ASE28jIy1gGy9"
 Content-Disposition: inline
-In-Reply-To: <1327118181-3542-2-git-send-email-arve@android.com>
+In-Reply-To: <1327119812-19851-1-git-send-email-gada.kashyap@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F1A7570.008D,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090208.4F1A75F0.00A0,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Qgd2S+2VS1hsWwXW
-Content-Type: text/plain; charset=iso-8859-1
+--/t6ASE28jIy1gGy9
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jan 20, 2012 at 07:56:20PM -0800, Arve Hj=F8nnev=E5g wrote:
-> - Add a mutex to protect against two processes mmapping the
->   same binder_proc.
-> - After locking mmap_sem, check that the vma we want to access
->   (still) points to the same mm_struct.
-> - Use proc->tsk instead of current to get the files struct since
->   this is where we get the rlimit from.
+On Sat, Jan 21, 2012 at 04:23:32AM +0000, Kashyap Gada wrote:
+> -#define PMEM_IS_FREE(id, index) !(pmem[id].bitmap[index].allocated)
+> -#define PMEM_ORDER(id, index) pmem[id].bitmap[index].order
+> +#define PMEM_IS_FREE(id, index) (!(pmem[id].bitmap[index].allocated))
+> +#define PMEM_ORDER(id, index) (pmem[id].bitmap[index].order)
 
-This doesn't seem related to the locking change at all.  Probably
-this patch should be split into three patches, one bugfix per
-patch, unless they are very closely related.
+These are not needed.  We're modifying checkpatch.pl to not complain
+about these, but it hasn't been merged yet.
 
 regards,
 dan carpenter
 
 
---Qgd2S+2VS1hsWwXW
+--/t6ASE28jIy1gGy9
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPGnWwAAoJEOnZkXI/YHqRq2gP/2yvNw+nzg7qx2uOasWUA2Ol
-rXwIKHQ2sbV2ojR2uzzSnU9uKlFmx0KWBFdSKLJdkeoeVUZekeRnc8YPXQzxKJ10
-PUjKBsTQKWq7yTvR8N3IMOwpYiJbQDgzZyMT2YeVJ7BA93YtcWGwcGKNEHgtOJ7P
-IZrHTU+rBe9LIbnHaNpLQeQchd1H/P35XM7D7eIWS4rNnrXJLXN4MeTcHZ/sPaPT
-CmwHIQKFCT5DVvzlOgdMxfmiSuqFBnti5O74+b5NQCTKnP0h703X6cQu5B0jARnI
-9VpsjebmOuRdqnPV+F2QdfFTn047SKhej2shh2nyOV4CIMpELIZIRC5daVfrbjJg
-0L5E7EUZ33RFNrLqhqwntazKYVwtyTgpuo9HCDSyqdTkY2qOhCzyGfu/bluURDvy
-CEYaNf2zYTlfyVxdn3f7cHs7gzdfwUPl2QzgTReZGL3x0NQrgUZ6w0LMzVFSyOqa
-eeMh/lhaLNumBUfi1/jNpIg5PdsQr8LUCjdvGbpz1UDiZDlp7QqSTE296kpANbxg
-WDwY8NbhGOi5ebpPCyhMHT9ljrVF5Atl8RJc3ZoM5aX/8L9mlN4VV4C8JA3HU/LL
-5N9fIDAp1Z2fC9qmfpZQbkJBlK1L/GShdGKfStBGRju9VtE7A6niS+Js0erY4XNN
-ovNmSxp7Waq4G/MjLGz2
-=N0s2
+iQIcBAEBAgAGBQJPGnYvAAoJEOnZkXI/YHqRT/oP/AmkD9OBZfuAbQfP6hwrZl4U
+G0xA5KlhsWh4IVvLA0ri8CFso06sa6yrcB1+7C++k1mREzLiuxxI7I0V8v4oC05b
+crBJ3oAtLELvwNrxDuKeBgIM8nVtqO09ApbzskHibw7ZIklbxqqqCWtSxLiQmBbD
+8u3sno2e1sV2a7gU00hHbubyyrs5w7xpYfUo4tBlHLplV7qLkoxuOpfp2ncezNbu
+yGFVrD3xF9YMJ5Ag6AACHhYKcK8ZSfinriuIep/qcq9PEXo4HUwvVqtp5o4ok2jS
+KNX8FgOR9pLEwpBMX0lkCgb0lWF5hnhHlSVMxHx5sL1inT4tB2itwD/o7ZbXxD8a
+fnuPw/V680BO91gnNxqbHMuSym6vq9G+024CML1XtBV+5QdQkha4eBbM8h+h1w55
+uq+ZrEAQdnkx5blP94VkCp4LvHEWI+bBIij5lA6kHuUsRyiwjxJSamAQX5vGnYRE
+RsyjM5tNudPdpf1pbRPUYtLoqv9Vvr2ZMDzHPu8wCvW5lv23awxkuyXW96pXxhvP
+a8dyyKj9huyd0jx11OZ4cB6YWCf2jP5hoeWLgggNcqElc81hjwxVzIzZQlp3PPjd
+bqmbOWjEj+eww7UppV6auq+4Mzb+KLOHTGdbO7pJRyV50wbYVi91oGRc7a8fEQQA
+hK9yQNo2QsU8Q2Wsi2T9
+=4j2J
 -----END PGP SIGNATURE-----
 
---Qgd2S+2VS1hsWwXW--
+--/t6ASE28jIy1gGy9--
