@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab2AUMc0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 07:32:26 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41555 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab2AUMcY (ORCPT
+	id S1751503Ab2AUMdx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 07:33:53 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44740 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751033Ab2AUMdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 07:32:24 -0500
-Message-ID: <4F1AB053.109@gmail.com>
-Date: Sat, 21 Jan 2012 13:32:19 +0100
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+	Sat, 21 Jan 2012 07:33:51 -0500
+Date: Sat, 21 Jan 2012 12:33:42 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] drivers/video/backlight/wm831x_bl.c: use devm_
+ functions
+Message-ID: <20120121123341.GA10206@opensource.wolfsonmicro.com>
+References: <1327094732-9050-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1327094732-9050-2-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heungjun Kim <riverful.kim@samsung.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Andrew Chew <achew@nvidia.com>, Paul Mundt <lethal@linux-sh.org>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Johannes Obermaier <johannes.obermaier@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Steven Toth <stoth@kernellabs.com>, linux-media@vger.kernel.org
-Subject: Re: [PATCH] [media] convert drivers/media/* to use module_i2c_driver()
-References: <1327140645.3928.1.camel@phoenix>
-In-Reply-To: <1327140645.3928.1.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327094732-9050-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2012 11:10 AM, Axel Lin wrote:
-> This patch converts the drivers in drivers/media/* to use the
-> module_i2_driver() macro which makes the code smaller and a bit simpler.
+On Fri, Jan 20, 2012 at 10:25:29PM +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> The various devm_ functions allocate memory that is released when a driver
+> detaches.  This patch uses these functions for data that is allocated in
+> the probe function of a platform device and is only freed in the remove
+> function.
 
-For s5k6aa, noon010pc30, sr030pc30, m5mols modules,
-
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-
---
-Thanks,
-Sylwester
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
