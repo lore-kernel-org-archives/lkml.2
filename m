@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2AUOSV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 09:18:21 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:43253 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751775Ab2AUOSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 09:18:18 -0500
-Message-ID: <4F1AC8F6.1060703@parallels.com>
-Date: Sat, 21 Jan 2012 18:17:26 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <netdev@vger.kernel.org>, <eric.dumazet@gmail.com>,
-        <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 1/3] net: fix socket memcg build with !CONFIG_NET
-References: <1327071436-20763-1-git-send-email-glommer@parallels.com> <1327071436-20763-2-git-send-email-glommer@parallels.com> <20120120.141446.136970067758991080.davem@davemloft.net>
-In-Reply-To: <20120120.141446.136970067758991080.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.255.67.4]
+	id S1752118Ab2AUOYL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 09:24:11 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:61000
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751385Ab2AUOYI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 09:24:08 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: trivial@kernel.org, standby24x7@gmail.com
+Subject: [PATCH] [trivial] mpt2sas : Fix typo in mpt2sas_config.c
+Date: Sat, 21 Jan 2012 23:23:37 +0900
+Message-Id: <1327155817-2620-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2012 11:14 PM, David Miller wrote:
-> From: Glauber Costa<glommer@parallels.com>
-> Date: Fri, 20 Jan 2012 18:57:14 +0400
->
->> There is still a build bug with the sock memcg code, that triggers
->> with !CONFIG_NET, that survived my series of randconfig builds.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> Reported-by: Randy Dunlap<rdunlap@xenotime.net>
->> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->
-> Why are you undoing the static branch optimization?  That was a one of
-> the things that made me agree to even putting this code in.
->
-> Find a way to fix this without removing the static branch.
->
-Dave,
+Correct spelling "mappping" to "mapping"
+in drivers/scsi/mpt2sas/mpt2sas_config.c
 
-I am not removing the static branch. This is just a macro, that expands 
-to the static branch when the options are in place, and to 0 if they are 
-not.
+Signed-off-by: Masanari Iida<standby24x7@gmail.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_config.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-if (0) { } is certainly be removed to the compiler, so the code is out
-anyway.
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_config.c b/drivers/scsi/mpt2sas/mpt2sas_config.c
+index 36ea0b2..2b4d376 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_config.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_config.c
+@@ -149,7 +149,7 @@ _config_display_some_debug(struct MPT2SAS_ADAPTER *ioc, u16 smid,
+ 			desc = "raid_config";
+ 			break;
+ 		case MPI2_CONFIG_EXTPAGETYPE_DRIVER_MAPPING:
+-			desc = "driver_mappping";
++			desc = "driver_mapping";
+ 			break;
+ 		}
+ 		break;
+-- 
+1.7.6.5
+
