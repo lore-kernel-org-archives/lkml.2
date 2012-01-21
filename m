@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab2AUOtZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 09:49:25 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:58436 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab2AUOtY (ORCPT
+	id S1751918Ab2AUOz2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 09:55:28 -0500
+Received: from relay01.digicable.hu ([92.249.128.189]:44166 "EHLO
+	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab2AUOzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 09:49:24 -0500
+	Sat, 21 Jan 2012 09:55:24 -0500
+Message-ID: <4F1AD195.70305@freemail.hu>
+Date: Sat, 21 Jan 2012 15:54:13 +0100
+From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Date: Sat, 21 Jan 2012 22:49:23 +0800
-Message-ID: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
-Subject: [PATCH] mm: memcg: fix over reclaiming mem cgroup
-From: Hillf Danton <dhillf@gmail.com>
-To: linux-mm@kvack.org
-Cc: Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@suse.de>
+CC: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        devel@driverdev.osuosl.org, techeng <dzshen@gmail.com>, clyu@citiz.net,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add Winbond WB528SD Secure Digital (SD) card reader driver
+References: <4F1A98F5.3080402@freemail.hu> <20120121125153.GB18829@suse.de>
+In-Reply-To: <20120121125153.GB18829@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Original: 188.143.83.36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In soft limit reclaim, overreclaim occurs when pages are reclaimed from mem
-group that is under its soft limit, or when more pages are reclaimd than the
-exceeding amount, then performance of reclaimee goes down accordingly.
+Hi Greg,
 
-A helper function is added to compute the number of pages that exceed the soft
-limit of given mem cgroup, then the excess pages are used when every reclaimee
-is reclaimed to avoid overreclaim.
+thanks for your response and your questions, I think it will help my
+work very much.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+Greg KH wrote:
+> On Sat, Jan 21, 2012 at 11:52:37AM +0100, Németh Márton wrote:
+>> From: Márton Németh <nm127@freemail.hu>
+>>
+>> This driver version of Winbond WB528SD can detect mechanical card
+>> presence only. The information is provided through sysfs.
+> 
+> How is it provided through sysfs?  Is this done in a standard way?  If
+> not, why not?
 
---- a/mm/memcontrol.c	Tue Jan 17 20:41:36 2012
-+++ b/mm/memcontrol.c	Sat Jan 21 21:18:46 2012
-@@ -1662,6 +1662,21 @@ static int mem_cgroup_soft_reclaim(struc
- 	return total;
- }
+I used device_create_file()/device_remove_file() and DEVICE_ATTR(), in
+that sense it is standard. I'm not sure, however, that you a referring
+to this, rather referring to the standard way how other SD card readers
+provide the card presence information to the user space, right?
+To tell you the truth, I could not find an other PCI card driver which
+I can take as an example, I would need some help on this.
 
-+unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg)
-+{
-+	unsigned long pages;
-+
-+	if (mem_cgroup_disabled())
-+		return 0;
-+	if (!memcg)
-+		return 0;
-+	if (mem_cgroup_is_root(memcg))
-+		return 0;
-+
-+	pages = res_counter_soft_limit_excess(&memcg->res) >> PAGE_SHIFT;
-+	return pages;
-+}
-+
- /*
-  * Check OOM-Killer is already running under our hierarchy.
-  * If someone is running, return false.
---- a/mm/vmscan.c	Sat Jan 14 14:02:20 2012
-+++ b/mm/vmscan.c	Sat Jan 21 21:30:06 2012
-@@ -2150,8 +2150,34 @@ static void shrink_zone(int priority, st
- 			.mem_cgroup = memcg,
- 			.zone = zone,
- 		};
-+		unsigned long old;
-+		bool clobbered = false;
-+
-+		if (memcg != NULL) {
-+			unsigned long excess;
-+
-+			excess = mem_cgroup_excess_pages(memcg);
-+			/*
-+			 * No bother reclaiming pages from mem cgroup that
-+			 * is under soft limit
-+			 */
-+			if (!excess)
-+				goto next;
-+			/*
-+			 * And reclaim no more pages than excess
-+			 */
-+			if (excess < sc->nr_to_reclaim) {
-+				old = sc->nr_to_reclaim;
-+				sc->nr_to_reclaim = excess;
-+				clobbered = true;
-+			}
-+		}
+> Why is this driver submitted to the staging tree?  What is keeping it
+> from going into the "real" portion of the kernel for other card readers?
 
- 		shrink_mem_cgroup_zone(priority, &mz, sc);
-+
-+		if (clobbered)
-+			sc->nr_to_reclaim = old;
-+next:
- 		/*
- 		 * Limit reclaim has historically picked one memcg and
- 		 * scanned it with decreasing priority levels until
---- a/include/linux/memcontrol.h	Thu Jan 19 22:03:14 2012
-+++ b/include/linux/memcontrol.h	Sat Jan 21 21:35:50 2012
-@@ -161,6 +161,7 @@ unsigned long mem_cgroup_soft_limit_recl
- 						gfp_t gfp_mask,
- 						unsigned long *total_scanned);
- u64 mem_cgroup_get_limit(struct mem_cgroup *memcg);
-+unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg);
+Interrupt handling, read, write and connecting the driver upwards to the
+block subsystem, I guess.
 
- void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-@@ -376,6 +377,11 @@ unsigned long mem_cgroup_soft_limit_recl
+> We need a TODO file for what is needed to get it moved out of staging.
 
- static inline
- u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
-+{
-+	return 0;
-+}
-+
-+static inline unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg)
- {
- 	return 0;
- }
+I can create one, no problem.
+
+> Oh, and it needs to do a bit more than just detect a card to be useful,
+> right?  How about read/write to it?
+
+Sure. My intention was to get feedback for my work as early as possible.
+I reached a state where a minimal level of functionality is available:
+the mechanical SD card presence is available for userspace programs.
+
+The read/write access will be a bit more difficult, I guess because I
+currently don't have access to the register programming reference of
+this device, I can use the trial-and-error method, for example.
+
+	Márton Németh
+
+
+
