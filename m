@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab2AUHyH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 02:54:07 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49189 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab2AUHyB (ORCPT
+	id S1752473Ab2AUH5R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 02:57:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60275 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2AUH5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 02:54:01 -0500
-Message-ID: <4F1A6F5E.70909@gmail.com>
-Date: Sat, 21 Jan 2012 18:55:10 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Woogyom Kim <milo.kim@ti.com>,
-        Daniel Jeong <daniel.jeong@ti.com>, Minkyu Kang <mk7.kang@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Peter Edwards <sweetlilmre@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: [PATCH] power_supply: Convert power_supply i2c drivers to module_i2c_driver
-References: <1327128174.24831.1.camel@phoenix>
-In-Reply-To: <1327128174.24831.1.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sat, 21 Jan 2012 02:57:13 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: tytso@mit.edu, adilger.kernel@dilger.ca
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH] ext4: add error handling when discarding is fail in FITRIM ioctl
+Date: Sat, 21 Jan 2012 02:56:12 -0500
+Message-Id: <1327132572-11841-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/01/12 17:42, Axel Lin wrote:
-> Factor out some boilerplate code for i2c driver registration
-> into module_i2c_driver.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Cc: Ryan Mallon <rmallon@gmail.com>
-> Cc: Woogyom Kim <milo.kim@ti.com>
-> Cc: Daniel Jeong <daniel.jeong@ti.com>
-> Cc: Minkyu Kang <mk7.kang@samsung.com>
-> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Cc: Rhyland Klein <rklein@nvidia.com>
-> Cc: Peter Edwards <sweetlilmre@gmail.com>
-> ---
->  drivers/power/ds2782_battery.c   |   12 +-----------
->  drivers/power/lp8727_charger.c   |   13 +------------
->  drivers/power/max17040_battery.c |   12 +-----------
->  drivers/power/max17042_battery.c |   12 +-----------
->  drivers/power/sbs-battery.c      |   12 +-----------
->  drivers/power/z2_battery.c       |   13 +------------
->  6 files changed, 6 insertions(+), 68 deletions(-)
->
-> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-> index bfbce5d..6e3d76a 100644
-> --- a/drivers/power/ds2782_battery.c
-> +++ b/drivers/power/ds2782_battery.c
-> @@ -404,17 +404,7 @@ static struct i2c_driver ds278x_battery_driver = {
->  	.id_table	= ds278x_id,
->  };
->  
-> -static int __init ds278x_init(void)
-> -{
-> -	return i2c_add_driver(&ds278x_battery_driver);
-> -}
-> -module_init(ds278x_init);
-> -
-> -static void __exit ds278x_exit(void)
-> -{
-> -	i2c_del_driver(&ds278x_battery_driver);
-> -}
-> -module_exit(ds278x_exit);
-> +module_i2c_driver(ds278x_battery_driver);
->  
->  MODULE_AUTHOR("Ryan Mallon");
->  MODULE_DESCRIPTION("Maxim/Dallas DS2782 Stand-Alone Fuel Gauage IC driver");
+Although free extents is proper not trimmed(mmc driver return error code while sending trim command), currently FITRIM ioctl return success.
+I tried to add exception routine to inform user error code.
 
-For ds2782:
+#> ./fitrim_test 
+end_request: I/O error, dev mmcblk0, sector 27232
+EXT4-fs warning (device mmcblk0): ext4_trim_all_free:4857: Discard command returned error -5
+#>
 
-Acked-by: Ryan Mallon <rmallon@gmail.com>
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+---
+ fs/ext4/mballoc.c |   22 +++++++++++++++-------
+ 1 files changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index cb990b2..09cc09a 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4901,10 +4901,11 @@ error_return:
+  * one will allocate those blocks, mark it as used in buddy bitmap. This must
+  * be called with under the group lock.
+  */
+-static void ext4_trim_extent(struct super_block *sb, int start, int count,
++static int ext4_trim_extent(struct super_block *sb, int start, int count,
+ 			     ext4_group_t group, struct ext4_buddy *e4b)
+ {
+ 	struct ext4_free_extent ex;
++	int err;
+ 
+ 	trace_ext4_trim_extent(sb, group, start, count);
+ 
+@@ -4920,9 +4921,10 @@ static void ext4_trim_extent(struct super_block *sb, int start, int count,
+ 	 */
+ 	mb_mark_used(e4b, &ex);
+ 	ext4_unlock_group(sb, group);
+-	ext4_issue_discard(sb, group, start, count);
++	err = ext4_issue_discard(sb, group, start, count);
+ 	ext4_lock_group(sb, group);
+ 	mb_free_blocks(NULL, e4b, start, ex.fe_len);
++	return err;
+ }
+ 
+ /**
+@@ -4978,15 +4980,21 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
+ 		next = mb_find_next_bit(bitmap, max, start);
+ 
+ 		if ((next - start) >= minblocks) {
+-			ext4_trim_extent(sb, start,
+-					 next - start, group, &e4b);
+-			count += next - start;
++			ret = ext4_trim_extent(sb, start,
++						next - start, group, &e4b);
++			if (ret < 0) {
++				if (ret != -EOPNOTSUPP)
++					ext4_warning(sb, "Discard command "
++						 "returned error %d\n", ret);
++				break;
++			} else
++				count += next - start;
+ 		}
+ 		free_count += next - start;
+ 		start = next + 1;
+ 
+ 		if (fatal_signal_pending(current)) {
+-			count = -ERESTARTSYS;
++			ret = -ERESTARTSYS;
+ 			break;
+ 		}
+ 
+@@ -5009,7 +5017,7 @@ out:
+ 	ext4_debug("trimmed %d blocks in the group %d\n",
+ 		count, group);
+ 
+-	return count;
++	return (ret < 0) ? ret : count;
+ }
+ 
+ /**
+-- 
+1.7.5.4
 
