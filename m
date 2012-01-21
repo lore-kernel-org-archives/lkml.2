@@ -1,116 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314Ab2AUUxI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 15:53:08 -0500
-Received: from home.keithp.com ([63.227.221.253]:44643 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899Ab2AUUxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 15:53:06 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Lubos Kolouch <lubos.kolouch@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: i915 wakes from suspend to RAM with blank screen after commit cd9dde44f47501394b9f0715b6a36a92aa74c0d0
-In-Reply-To: <20120121184453.GA2698@nbgentoo>
-References: <jfe47e$5dn$1@dough.gmane.org> <86mx9gkjlv.fsf@sumi.keithp.com> <20120121184453.GA2698@nbgentoo>
-User-Agent: Notmuch/0.11 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Sat, 21 Jan 2012 12:53:00 -0800
-Message-ID: <86hazokcb7.fsf@sumi.keithp.com>
+	id S1751309Ab2AUUxq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 15:53:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36886 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab2AUUxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 15:53:45 -0500
+Date: Sat, 21 Jan 2012 12:53:25 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Zumeng Chen <zumeng.chen@windriver.com>
+cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, mingo@elte.hu,
+        ralf@linux-mips.org, bruce.ashfield@windriver.com, linux-mm@kvack.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH 1/1] mm: msync: fix issues of sys_msync on tmpfs
+In-Reply-To: <1327036719-1965-1-git-send-email-zumeng.chen@windriver.com>
+Message-ID: <alpine.LSU.2.00.1201211206380.1290@eggly.anvils>
+References: <1327036719-1965-1-git-send-email-zumeng.chen@windriver.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+On Fri, 20 Jan 2012, Zumeng Chen wrote:
 
---==-=-=
+> This patch fixes two issues as follows:
 
-On Sat, 21 Jan 2012 19:44:53 +0100, Lubos Kolouch <lubos.kolouch@gmail.com> wrote:
+Two issues?  You write of a cache aliasing issue, I don't see a second.
 
-> dmesg after boot - http://paste.pocoo.org/show/538343/
-> dmesg after failed resume -  http://paste.pocoo.org/show/538344/
+> 
+> For some filesystem with fsync == noop_fsync, there is not so much thing
+> to do, so sys_msync just passes by for all arches but some CPUs.
+> 
+> For some CPUs with cache aliases(dmesg|grep alias), it maybe has an issue,
+> which reported by msync test suites in ltp-full when the memory of memset
+> used by msync01 runs into cache alias randomly.
+> 
+> Consider the following scenario used by msync01 in ltp-full:
+>   fildes = open(TEMPFILE, O_RDWR | O_CREAT, 0666)) < 0);
+>   .../* initialization fildes by write(fildes); */
+>   addr = mmap(0, page_sz, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED,
+> 	 fildes, 0);
+>   /* set buf with memset */
+>   memset(addr + OFFSET_1, 1, BUF_SIZE);
+> 
+>   /* msync the addr before using, or MS_SYNC*/
+>   msync(addr, page_sz, MS_ASYNC)
 
-Ok, that's weird -- we're choosing a different display port link speed
-on resume than at boot time. I have a theory that intel_dp_mode_fixup is
-accidentally using the current bpp value when computing the values
-needed for the new mode, and that this value may differ between boot and
-resume.
+Actually, that MS_ASYNC msync() does nothing at all but validate its
+arguments these days, even on filesystems with an effective fsync(). 
+We write out dirty pages to disk in good time, msync() or not.
 
-Here's a patch to dump some debug info out to test this theory.
+> 
+>   /* Tries to read fildes */
+>   lseek(fildes, (off_t) OFFSET_1, SEEK_SET) != (off_t) OFFSET_1) {
+>   nread = read(fildes, read_buf, sizeof(read_buf));
 
+My grasp of cache aliasing issues is very poor, please excuse me if I'm
+wrong; but I don't think a patch to msync() should be necessary at all
+(and ltp's msync01 test is testing nothing more than args to msync()).
 
---==-=-=
-Content-Type: application/pgp-signature
+In the case of tmpfs, that read() system call above should route through
+to mm/shmem.c do_shmem_file_read(), which contains these same lines as
+the more common mm/filemap.c do_generic_file_read():
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+	/* If users can be writing to this page using arbitrary
+	 * virtual addresses, take care about potential aliasing
+	 * before reading the page on the kernel side.
+	 */
+	if (mapping_writably_mapped(mapping))
+		flush_dcache_page(page);
 
-iQIVAwUBTxslrDYtFsjWk68qAQghJg/8CS7tuKhL0umzslKhGvJyL4+MuXuVXFfb
-WRe0tAR1n8ulBQ/9uEvzu2f13d3MvB9JvNKf+e/xgiSEwnkYD+qF5xVaXIzSU4cq
-1n7ChIfkK45qISn8+wxVcOzUFyX0BYhu0sti+CsJABU6YV7x8HRXsPM7J1M9sEaK
-TUAnHKPP/wiCX2fM4osZABRqTijLRdiFfuNI6fqPadhtIuCm68cSivji4rcLgTco
-V8ztQ6ukd34lSjx8zmXQolD64vWtzqaq9iXev6I+zGK4MVNu7iYcdtbDbjtgz3o5
-qw/j5L9ozP5c9k/djiKBbhb3MuPQtBOlliAsW2QtmKEsFdabkjLo5uLC1CHOt/ES
-Xbak9W7ejwcHqmZRQmMaMUuKECItdRWtHUpMBAvcXRRb+tejyShhYXDkxwb4icx0
-0gZ8CBOP4rJ5X4Cl1o1CcCtQlVRoCTwib+t6Ea5iUK8cdaeqcb751ywZqL4x8h3O
-qUtMmH1Lrk4wgrHyW9IIvp3WOXWZ7oAAdu7n/rOODf7q9YmpFAKgEJJZOJUwhBO/
-2HAm0eUct8Jpj7w6F1vQwXOGpIqPzbJoQjoYVpWLWDSdM9nlp4u7G7fVPwp/aXWJ
-pHJ+V2vOyyfFQlg3aem4iDqo6WxbWSdpTEY7U9rNVE8/l0DS5E9COQEp85uvKkBV
-8A587rtsBpo=
-=AqYt
------END PGP SIGNATURE-----
---==-=-=--
+The mapping_writably_mapped() test ought to be succeeding in this case
+(please check with printk's, perhaps some change has messed that up),
+so flush_dcache_page(page) should be called, and any aliasing issues
+resolved before the data is copied back to userspace.
 
---=-=-=
-Content-Type: text/x-diff
-Content-Disposition: inline;
- filename=0001-drm-i915-Output-a-bit-of-debug-info-for-display-port.patch
+I assume your problem is on MIPS, since you copied Ralf and linux-mips:
+if the MIPS flush_dcache_page() is not working right, then you'll need
+to follow up with them.
 
->From 2b16db9fccc6927f3e09020144d5148acc025f58 Mon Sep 17 00:00:00 2001
-From: Keith Packard <keithp@keithp.com>
-Date: Sat, 21 Jan 2012 12:48:38 -0800
-Subject: [PATCH] drm/i915: Output a bit of debug info for display port
- bandwidth
+Hugh
 
-Something weird is going on with link bandwidth testing; this may
-help sort out what's wrong.
+> 
+>   /* Then test the result */
+>   if (read_buf[count] != 1) {
+> 
+> The test result is random too for CPUs with cache alias. So in this
+> situation, we have to flush the related vma to make sure the read is
+> correct.
+> 
+> Signed-off-by: Zumeng Chen <zumeng.chen@windriver.com>
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/intel_dp.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index db3b461..796d534 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -697,10 +697,13 @@ intel_dp_mode_fixup(struct drm_encoder *encoder, struct drm_display_mode *mode,
- 		mode->clock = intel_dp->panel_fixed_mode->clock;
- 	}
- 
-+	DRM_DEBUG_KMS("using bpp %d to find link_bw and lane_count\n", bpp);
- 	for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
- 		for (clock = 0; clock <= max_clock; clock++) {
- 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
- 
-+			DRM_DEBUG_KMS("lane_count %d clock %d link_avail %d link_required %d\n",
-+				      lane_count, clock, link_avail, intel_dp_link_required(intel_dp, mode->clock, bpp));
- 			if (intel_dp_link_required(intel_dp, mode->clock, bpp)
- 					<= link_avail) {
- 				intel_dp->link_bw = bws[clock];
--- 
-1.7.8.3
-
-
---=-=-=
-
-
-Please try this on the broken kernel, sending along the dmesg output at
-boot and resume time again.
-
--- 
-keith.packard@intel.com
-
---=-=-=--
+> ---
+>  mm/msync.c |   30 ++++++++++++++++++++++++++++++
+>  1 files changed, 30 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/msync.c b/mm/msync.c
+> index 632df45..0021a7e 100644
+> --- a/mm/msync.c
+> +++ b/mm/msync.c
+> @@ -13,6 +13,14 @@
+>  #include <linux/file.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/sched.h>
+> +#include <asm/cacheflush.h>
+> +
+> +/* Cache aliases should be taken into accounts when msync. */
+> +#ifdef cpu_has_dc_aliases
+> +#define CPU_HAS_CACHE_ALIAS cpu_has_dc_aliases
+> +#else
+> +#define CPU_HAS_CACHE_ALIAS 0
+> +#endif
+>  
+>  /*
+>   * MS_SYNC syncs the entire file - including mappings.
+> @@ -78,6 +86,28 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
+>  		}
+>  		file = vma->vm_file;
+>  		start = vma->vm_end;
+> +
+> +		/*
+> +		 * For some filesystems with fsync == noop_fsync, msync just
+> +		 * passes by but some CPUs.
+> +		 * For CPUs with cache alias, msync has to flush the related
+> +		 * vma explicitly to make sure data coherency between memory
+> +		 * and cache, which includes MS_SYNC or MS_ASYNC. That is to
+> +		 * say, cache aliases should not be an async factor, so does
+> +		 * msync on other arches without cache aliases.
+> +		 */
+> +		if (file && file->f_op && file->f_op->fsync == noop_fsync) {
+> +			if (CPU_HAS_CACHE_ALIAS)
+> +				flush_cache_range(vma, vma->vm_start,
+> +							vma->vm_end);
+> +			if (start >= end) {
+> +				error = 0;
+> +				goto out_unlock;
+> +			}
+> +			vma = find_vma(mm, start);
+> +			continue;
+> +		}
+> +
+>  		if ((flags & MS_SYNC) && file &&
+>  				(vma->vm_flags & VM_SHARED)) {
+>  			get_file(file);
+> -- 
+> 1.7.0.4
