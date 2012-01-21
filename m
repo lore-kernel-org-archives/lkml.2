@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2AUBB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 20:01:26 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:37243 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab2AUBBZ convert rfc822-to-8bit (ORCPT
+	id S1755603Ab2AUBMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 20:12:49 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40843 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab2AUBMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 20:01:25 -0500
+	Fri, 20 Jan 2012 20:12:48 -0500
+Date: Sat, 21 Jan 2012 01:12:43 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: sparc32 vs lib/mpi
+Message-ID: <20120121011243.GC23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <4F187FA1.9090006@jp.fujitsu.com>
-References: <4F171B6B.2040303@gmail.com>
-	<1327003271-11730-1-git-send-email-venki@google.com>
-	<4F187FA1.9090006@jp.fujitsu.com>
-Date: Fri, 20 Jan 2012 17:01:24 -0800
-Message-ID: <CABeCy1ZQmqEGPWZqCcw_oAufGaQe1NcPsn49DafgGfo+K7HGuA@mail.gmail.com>
-Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
-From: Venki Pallipadi <venki@google.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: kosaki.motohiro@gmail.com, akpm@linux-foundation.org, travis@sgi.com,
-        srivatsa.bhat@linux.vnet.ibm.com, paul.mckenney@linaro.org,
-        rjw@sisk.pl, paul.gortmaker@windriver.com,
-        linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 12:40 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> On 1/19/2012 3:01 PM, Venkatesh Pallipadi wrote:
->> Does this look better? Will send separate patch to fix code
->> using num_possible_cpus() when they actually need nr_cpu_ids.
->
-> Sound ok to me. but I have two requests.
->
->  - Please mesure how much time (or cycle) spented by cpumask_weight(cpu_possible_mask).
+	I realize that very few people care about sparc32 these days,
+but...
+	a) __clz_tab[] is defined (with identical contents) in
+lib/mpi/mpi-bit.c and arch/sparc/lib/divdi3.S.  Linker is unhappy,
+of course...
+	b) the same thing ends up using __udiv_qrnnd(), which simply
+does not exist on sparc32.  There's a Cthulhu-scaring cascade of
+ifdefs in lib/mpi/longlong.h, with several variants of udiv_qrnnd()
+for sparc.  Unfortunately, it falls back on use of __udiv_qrnnd()...
+Note that arch/sparc/math-emu/sfp-util_32.h has a definition of
+udiv_qrnnd() which might match one of inline assembly variants in
+lib/mpi/longlong.h.  Or not.  BTW, what the hell is LONGLONG_STANDALONE?
 
-On two of the recentish x86 server CPUs, __sw_hweight64() base
-mask_weight() takes ~300 cycles. popcnt instruction based weight takes
-<10 cycles.
-
->  - After your patch, nr_possible_cpus() return different value from before.
-
-Yes. I have tested this on x86 and haven't seen any problem.
-
->   Please verify this change doesn't makes any side effect.
->
->
+	Could somebody who might remember still remember that stuff
+come up with comments?  For now I'm disabling everything from
+INTEGRITY_SIGNATURE down to MPILIB on sparc32 cross-build, but it
+would be nice to get it at least somewhat sorted out...
