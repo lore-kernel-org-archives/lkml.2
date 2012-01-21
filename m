@@ -1,39 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260Ab2AUSfR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 13:35:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39837 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750848Ab2AUSfP (ORCPT
+	id S1751373Ab2AUSg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 13:36:28 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:54783 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab2AUSg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 13:35:15 -0500
-Date: Sat, 21 Jan 2012 18:35:12 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+	Sat, 21 Jan 2012 13:36:27 -0500
+Subject: Re: [PATCH] scripts/kernel-doc: fix fatal error caused by
+ cfg80211.h
+From: Johannes Berg <johannes@sipsolutions.net>
 To: Randy Dunlap <rdunlap@xenotime.net>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 4/14] kernel-doc: fix new warning in regulator core
-Message-ID: <20120121183512.GF10751@opensource.wolfsonmicro.com>
-References: <4F1B0BCE.4050505@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F1B0BCE.4050505@xenotime.net>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4F1B049A.1020409@xenotime.net>
+References: <4F1B049A.1020409@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 21 Jan 2012 19:36:22 +0100
+Message-ID: <1327170982.3528.0.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 11:02:38AM -0800, Randy Dunlap wrote:
+On Sat, 2012-01-21 at 10:31 -0800, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> include/net/cfg80211.h uses __must_check in functions that
+> have kernel-doc notation.  This was confusing scripts/kernel-doc,
+> so have scripts/kernel-doc ignore "__must_check".
+> 
+> Error(include/net/cfg80211.h:2702): cannot understand prototype: 'struct cfg80211_bss * __must_check cfg80211_inform_bss(...)
 
-> @@ -2731,6 +2731,7 @@ static void rdev_init_debugfs(struct reg
->   * @dev: struct device for the regulator
->   * @init_data: platform provided init data, passed through by driver
->   * @driver_data: private regulator data
-> + * @of_node: target of device structure (may be NULL)
+Thanks Randy, I'd seen this a little while ago but not gotten around to
+investigating.
 
-Please don't apply this, I can't actually parse that description so I'm
-fairly sure users will struggle also.  I'll try to get round to writing
-something better at some point.
+johannes
+
+
