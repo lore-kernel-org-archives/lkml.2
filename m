@@ -1,279 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab2AUCOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 21:14:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56988 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756337Ab2AUCNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 21:13:32 -0500
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 1/3] ACPI, APEI: Add 64-bit read/write support for APEI on i386
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, ying.huang@intel.com,
-        bhelgaas@google.com, trenn@suse.de, linux-kernel@vger.kernel.org
-Date: Fri, 20 Jan 2012 19:13:24 -0700
-Message-ID: <20120121021324.14723.53165.stgit@amt.stowe>
-In-Reply-To: <20120121021318.14723.45698.stgit@amt.stowe>
-References: <20120121021318.14723.45698.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756710Ab2AUCR5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 21:17:57 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56097 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab2AUCR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 21:17:56 -0500
+From: Kashyap Gada <gada.kashyap@gmail.com>
+To: gregkh@suse.de
+Cc: john.stultz@linaro.org, arve@android.com, ccross@android.com,
+        bringert@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Kashyap Gada <gada.kashyap@gmail.com>
+Subject: [PATCH 4/4] Staging: android: Fix struct definitioni warning from static to const
+Date: Sat, 21 Jan 2012 02:17:49 +0000
+Message-Id: <1327112269-17530-1-git-send-email-gada.kashyap@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+Signed-off-by: Kashyap Gada <gada.kashyap@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Myron Stowe <mstowe@redhat.com>
-
-Base ACPI (CA) currently does not support atomic 64-bit reads and writes
-(acpi_read() and acpi_write() split 64-bit loads/stores into two
-32-bit transfers) yet APEI expects 64-bit transfer capability, even
-when running on 32-bit systems.
-
-This patch implements 64-bit read and write routines for APEI usage.
-
-This patch re-factors similar functionality introduced in commit
-04c25997c97, bringing it into the ACPI subsystem in preparation for
-removing ./drivers/acpi/atomicio.[ch].  In the implementation I have
-replicated acpi_os_read_memory() and acpi_os_write_memory(), creating
-64-bit versions for APEI to utilize, as opposed to something more
-elegant.  My thinking is that we should attempt to see if we can get
-ACPI's CA/OSL changed so that the existing acpi_read() and acpi_write()
-interfaces are natively 64-bit capable and then subsequently remove the
-replication.
-
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
+ drivers/staging/android/ashmem.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- drivers/acpi/apei/apei-base.c |   35 +-----------
- drivers/acpi/osl.c            |  116 +++++++++++++++++++++++++++++++++++++++++
- include/acpi/acpiosxf.h       |    4 +
- 3 files changed, 124 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-index e45350c..e5d53b7 100644
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -596,33 +596,19 @@ int apei_read(u64 *val, struct acpi_generic_address *reg)
- {
- 	int rc;
- 	u64 address;
--	u32 tmp, width = reg->bit_width;
- 	acpi_status status;
- 
- 	rc = apei_check_gar(reg, &address);
- 	if (rc)
- 		return rc;
- 
--	if (width == 64)
--		width = 32;	/* Break into two 32-bit transfers */
--
- 	*val = 0;
- 	switch(reg->space_id) {
- 	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
--		status = acpi_os_read_memory((acpi_physical_address)
--					     address, &tmp, width);
-+		status = acpi_os_read_memory64((acpi_physical_address)
-+					     address, val, reg->bit_width);
- 		if (ACPI_FAILURE(status))
- 			return -EIO;
--		*val = tmp;
--
--		if (reg->bit_width == 64) {
--			/* Read the top 32 bits */
--			status = acpi_os_read_memory((acpi_physical_address)
--						     (address + 4), &tmp, 32);
--			if (ACPI_FAILURE(status))
--				return -EIO;
--			*val |= ((u64)tmp << 32);
--		}
- 		break;
- 	case ACPI_ADR_SPACE_SYSTEM_IO:
- 		status = acpi_os_read_port(address, (u32 *)val, reg->bit_width);
-@@ -642,31 +628,18 @@ int apei_write(u64 val, struct acpi_generic_address *reg)
- {
- 	int rc;
- 	u64 address;
--	u32 width = reg->bit_width;
- 	acpi_status status;
- 
- 	rc = apei_check_gar(reg, &address);
- 	if (rc)
- 		return rc;
- 
--	if (width == 64)
--		width = 32;	/* Break into two 32-bit transfers */
--
- 	switch (reg->space_id) {
- 	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
--		status = acpi_os_write_memory((acpi_physical_address)
--					      address, ACPI_LODWORD(val),
--					      width);
-+		status = acpi_os_write_memory64((acpi_physical_address)
-+					      address, val, reg->bit_width);
- 		if (ACPI_FAILURE(status))
- 			return -EIO;
--
--		if (reg->bit_width == 64) {
--			status = acpi_os_write_memory((acpi_physical_address)
--						      (address + 4),
--						      ACPI_HIDWORD(val), 32);
--			if (ACPI_FAILURE(status))
--				return -EIO;
--		}
- 		break;
- 	case ACPI_ADR_SPACE_SYSTEM_IO:
- 		status = acpi_os_write_port(address, val, reg->bit_width);
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index fcc12d8..5498a6d 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -710,6 +710,67 @@ acpi_os_read_memory(acpi_physical_address phys_addr, u32 * value, u32 width)
- 	return AE_OK;
+diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+index 4a00174a5..9f1f27e 100644
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -680,7 +680,7 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	return ret;
  }
  
-+#ifdef readq
-+static inline u64 read64(const volatile void __iomem *addr)
-+{
-+	return readq(addr);
-+}
-+#else
-+static inline u64 read64(const volatile void __iomem *addr)
-+{
-+	u64 l, h;
-+	l = readl(addr);
-+	h = readl(addr+4);
-+	return l | (h << 32);
-+}
-+#endif
-+
-+acpi_status
-+acpi_os_read_memory64(acpi_physical_address phys_addr, u64 *value, u32 width)
-+{
-+	void __iomem *virt_addr;
-+	unsigned int size = width / 8;
-+	bool unmap = false;
-+	u64 dummy;
-+
-+	rcu_read_lock();
-+	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
-+	if (!virt_addr) {
-+		rcu_read_unlock();
-+		virt_addr = acpi_os_ioremap(phys_addr, size);
-+		if (!virt_addr)
-+			return AE_BAD_ADDRESS;
-+		unmap = true;
-+	}
-+
-+	if (!value)
-+		value = &dummy;
-+
-+	switch (width) {
-+	case 8:
-+		*(u8 *) value = readb(virt_addr);
-+		break;
-+	case 16:
-+		*(u16 *) value = readw(virt_addr);
-+		break;
-+	case 32:
-+		*(u32 *) value = readl(virt_addr);
-+		break;
-+	case 64:
-+		*(u64 *) value = read64(virt_addr);
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	if (unmap)
-+		iounmap(virt_addr);
-+	else
-+		rcu_read_unlock();
-+
-+	return AE_OK;
-+}
-+
- acpi_status
- acpi_os_write_memory(acpi_physical_address phys_addr, u32 value, u32 width)
- {
-@@ -749,6 +810,61 @@ acpi_os_write_memory(acpi_physical_address phys_addr, u32 value, u32 width)
- 	return AE_OK;
- }
- 
-+#ifdef writeq
-+static inline void write64(u64 val, volatile void __iomem *addr)
-+{
-+	writeq(val, addr);
-+}
-+#else
-+static inline void write64(u64 val, volatile void __iomem *addr)
-+{
-+	writel(val, addr);
-+	writel(val>>32, addr+4);
-+}
-+#endif
-+
-+acpi_status
-+acpi_os_write_memory64(acpi_physical_address phys_addr, u64 value, u32 width)
-+{
-+	void __iomem *virt_addr;
-+	unsigned int size = width / 8;
-+	bool unmap = false;
-+
-+	rcu_read_lock();
-+	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
-+	if (!virt_addr) {
-+		rcu_read_unlock();
-+		virt_addr = acpi_os_ioremap(phys_addr, size);
-+		if (!virt_addr)
-+			return AE_BAD_ADDRESS;
-+		unmap = true;
-+	}
-+
-+	switch (width) {
-+	case 8:
-+		writeb(value, virt_addr);
-+		break;
-+	case 16:
-+		writew(value, virt_addr);
-+		break;
-+	case 32:
-+		writel(value, virt_addr);
-+		break;
-+	case 64:
-+		write64(value, virt_addr);
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	if (unmap)
-+		iounmap(virt_addr);
-+	else
-+		rcu_read_unlock();
-+
-+	return AE_OK;
-+}
-+
- acpi_status
- acpi_os_read_pci_configuration(struct acpi_pci_id * pci_id, u32 reg,
- 			       u64 *value, u32 width)
-diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
-index 2fe8639..7c9aebe 100644
---- a/include/acpi/acpiosxf.h
-+++ b/include/acpi/acpiosxf.h
-@@ -218,9 +218,13 @@ acpi_status acpi_os_write_port(acpi_io_address address, u32 value, u32 width);
-  */
- acpi_status
- acpi_os_read_memory(acpi_physical_address address, u32 * value, u32 width);
-+acpi_status
-+acpi_os_read_memory64(acpi_physical_address address, u64 *value, u32 width);
- 
- acpi_status
- acpi_os_write_memory(acpi_physical_address address, u32 value, u32 width);
-+acpi_status
-+acpi_os_write_memory64(acpi_physical_address address, u64 value, u32 width);
- 
- /*
-  * Platform and hardware-independent PCI configuration space access
+-const struct file_operations ashmem_fops = {
++static const struct file_operations ashmem_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = ashmem_open,
+ 	.release = ashmem_release,
+-- 
+1.7.5.4
 
