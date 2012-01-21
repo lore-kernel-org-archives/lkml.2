@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab2AUM45 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 07:56:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43480 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452Ab2AUM4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 07:56:43 -0500
-Date: Sat, 21 Jan 2012 07:53:14 -0500
-From: Greg KH <gregkh@suse.de>
-To: Kashyap Gada <gada.kashyap@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        bringert@android.com, linux-kernel@vger.kernel.org, arve@android.com,
-        john.stultz@linaro.org, ccross@android.com
-Subject: Re: [PATCH 4/4] Staging: android: Fix struct definitioni warning
- from static to const
-Message-ID: <20120121125314.GC18829@suse.de>
-References: <1327112269-17530-1-git-send-email-gada.kashyap@gmail.com>
- <20120121080838.GK3294@mwanda>
+	id S1751763Ab2AUM5t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 07:57:49 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18165 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab2AUM5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 07:57:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sat, 21 Jan 2012 04:57:44 -0800
+Message-ID: <4F1AB634.4090106@nvidia.com>
+Date: Sat, 21 Jan 2012 18:27:24 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120121080838.GK3294@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V1] mfd: tps65910: Add wakeup support
+References: <1327057770-6688-1-git-send-email-ldewangan@nvidia.com> <20120120125152.GE18297@opensource.wolfsonmicro.com> <4F196568.1080503@nvidia.com> <20120120130201.GF18297@opensource.wolfsonmicro.com> <4F19671E.7030003@nvidia.com> <20120120131355.GG18297@opensource.wolfsonmicro.com> <4F1AA084.9080502@nvidia.com> <20120121125123.GB10206@opensource.wolfsonmicro.com>
+In-Reply-To: <20120121125123.GB10206@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 11:08:38AM +0300, Dan Carpenter wrote:
-> On Sat, Jan 21, 2012 at 02:17:49AM +0000, Kashyap Gada wrote:
-> > ---
-> >  drivers/staging/android/ashmem.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-> > index 4a00174a5..9f1f27e 100644
-> > --- a/drivers/staging/android/ashmem.c
-> > +++ b/drivers/staging/android/ashmem.c
-> > @@ -680,7 +680,7 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> >  	return ret;
-> >  }
-> >  
-> > -const struct file_operations ashmem_fops = {
-> > +static const struct file_operations ashmem_fops = {
-> >  	.owner = THIS_MODULE,
-> >  	.open = ashmem_open,
-> >  	.release = ashmem_release,
-> 
-> No.  We're not going to merge the broken patch which removes the
-> static.
-> 
-> Plus your patch numbering is totally bogus.
-> [PATCH 2/2]
-> [PATCH 3/3]
-> [PATCH 4/4]
-> [PATCH 5/5]
-> 
-> The second number is supposed to say how many patches there are in
-> the series.  If these were bug fixes, we'd go out of our way to work
-> with you, but you're just sending random whitespace fixes so they
-> have to be pretty much perfect.  (In other words, please slow down
-> and work more carefully or else focus on fixing bugs instead of
-> whitespace).
-
-The patches also don't have the most basic things needed for acceptance
-(i.e. a description and most importantly, a Signed-off-by:), so I can't
-take them at all.
-
-greg k-h
+On Saturday 21 January 2012 06:21 PM, Mark Brown wrote:
+> On Sat, Jan 21, 2012 at 04:54:52PM +0530, Laxman Dewangan wrote:
+>
+>> During initialization of device, we need to tell that device is
+>> wakeup capable and hence we need to call the: device_wakeup_init()
+>> and device_set_wakeup_capable(dev, true).
+>> Then it exposes the required sysfs to userspace to select the wakeup
+>> enable or not i.e. power/wakeup to be written as enabled or
+>> disabled.
+>> Based on user selection, the function device_may_wakeup() will
+>> return true/false based on  power/wakeup enabled/disabled. So before
+>> entering into the suspend, we need to check this function and call
+>> enable_irq_wakeup() to have the wakeup enabled actually in the soc.
+>> In resume we need to call disable_irq_wake() again.
+> Yes, that sounds about right.  You don't strictly need to worry about
+> the wake setup except when suspending but it tends to be easier to
+> implement that way.
+Thanks, I will send another patch for implementing this way.
