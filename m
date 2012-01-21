@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab2AVACS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 19:02:18 -0500
-Received: from utopia.booyaka.com ([72.9.107.138]:37097 "EHLO
+	id S1751825Ab2AVACQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 19:02:16 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:37093 "EHLO
 	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab2AVACO (ORCPT
+	with ESMTP id S1751052Ab2AVACO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 21 Jan 2012 19:02:14 -0500
-MBOX-Line: From nobody Sat Jan 21 16:59:33 2012
-Subject: [PATCH 3/8] ARM: OMAP2+: hwmod data: add HDQ/1-wire hwmod shared data
+MBOX-Line: From nobody Sat Jan 21 16:59:32 2012
+Subject: [PATCH 2/8] ARM: OMAP2+: HDQ1W: add custom reset function
 To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 From: Paul Walmsley <paul@pwsan.com>
-Cc: NeilBrown <neilb@suse.de>
-Date: Sat, 21 Jan 2012 16:59:33 -0700
-Message-ID: <20120121235932.17619.51239.stgit@dusk>
+Cc: NeilBrown <neilb@suse.de>, "Avinash.H.M" <avinashhm@ti.com>
+Date: Sat, 21 Jan 2012 16:59:32 -0700
+Message-ID: <20120121235931.17619.78948.stgit@dusk>
 In-Reply-To: <20120121235333.17619.56725.stgit@dusk>
 References: <20120121235333.17619.56725.stgit@dusk>
 User-Agent: StGit/0.15
@@ -25,107 +25,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Much of the HDQ1W integration data is common between multiple generations
-of OMAP SoCs, so rather than make several copies, we add it once into
-files which are compiled for multiple SoCs.
+Implement a custom reset function for the HDQ1W IP block.  This is
+because the HDQ1W IP block, like I2C, has an internal clock gating bit
+that needs to be toggled after setting the SOFTRESET bit to allow the
+reset to propagate.
 
 Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Cc: NeilBrown <neilb@suse.de>
+Cc: Avinash.H.M <avinashhm@ti.com>
 ---
- .../omap_hwmod_2xxx_3xxx_interconnect_data.c       |    9 ++++++++
- .../mach-omap2/omap_hwmod_2xxx_3xxx_ipblock_data.c |   22 ++++++++++++++++++++
- arch/arm/mach-omap2/omap_hwmod_common_data.h       |    4 ++++
- 3 files changed, 35 insertions(+), 0 deletions(-)
+ arch/arm/mach-omap2/Makefile            |    2 -
+ arch/arm/mach-omap2/hdq1w.c             |   72 +++++++++++++++++++++++++++++++
+ arch/arm/plat-omap/include/plat/hdq1w.h |   36 ++++++++++++++++
+ 3 files changed, 109 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/hdq1w.c
+ create mode 100644 arch/arm/plat-omap/include/plat/hdq1w.h
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_2xxx_3xxx_interconnect_data.c b/arch/arm/mach-omap2/omap_hwmod_2xxx_3xxx_interconnect_data.c
-index 04637fa..cbb4ef6 100644
---- a/arch/arm/mach-omap2/omap_hwmod_2xxx_3xxx_interconnect_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_2xxx_3xxx_interconnect_data.c
-@@ -171,3 +171,12 @@ struct omap_hwmod_addr_space omap2_mcbsp1_addrs[] = {
- 	},
- 	{ }
- };
-+
-+struct omap_hwmod_addr_space omap2_hdq1w_addr_space[] = {
-+	{
-+		.pa_start       = 0x480b2000,
-+		.pa_end         = 0x480b2fff,
-+		.flags          = ADDR_TYPE_RT,
-+	},
-+	{ }
-+};
-diff --git a/arch/arm/mach-omap2/omap_hwmod_2xxx_3xxx_ipblock_data.c b/arch/arm/mach-omap2/omap_hwmod_2xxx_3xxx_ipblock_data.c
-index c11273d..e4cdd74 100644
---- a/arch/arm/mach-omap2/omap_hwmod_2xxx_3xxx_ipblock_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_2xxx_3xxx_ipblock_data.c
-@@ -2,6 +2,7 @@
-  * omap_hwmod_2xxx_3xxx_ipblock_data.c - common IP block data for OMAP2/3
-  *
-  * Copyright (C) 2011 Nokia Corporation
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index fc9b238..f7fb929 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -4,7 +4,7 @@
+ 
+ # Common support
+ obj-y := id.o io.o control.o mux.o devices.o serial.o gpmc.o timer.o pm.o \
+-	 common.o gpio.o dma.o wd_timer.o display.o
++	 common.o gpio.o dma.o wd_timer.o display.o hdq1w.o
+ 
+ omap-2-3-common				= irq.o sdrc.o
+ hwmod-common				= omap_hwmod.o \
+diff --git a/arch/arm/mach-omap2/hdq1w.c b/arch/arm/mach-omap2/hdq1w.c
+new file mode 100644
+index 0000000..15849ce
+--- /dev/null
++++ b/arch/arm/mach-omap2/hdq1w.c
+@@ -0,0 +1,72 @@
++/*
++ * IP block integration code for the HDQ1W/1-wire IP block
++ *
 + * Copyright (C) 2012 Texas Instruments, Inc.
-  * Paul Walmsley
-  *
-  * This program is free software; you can redistribute it and/or modify
-@@ -12,6 +13,7 @@
- #include <plat/serial.h>
- #include <plat/dma.h>
- #include <plat/common.h>
++ * Paul Walmsley
++ *
++ * Based on the I2C reset code in arch/arm/mach-omap2/i2c.c by
++ *     Avinash.H.M <avinashhm@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ */
++
++#include <plat/omap_hwmod.h>
 +#include <plat/hdq1w.h>
- 
- #include <mach/irqs.h>
- 
-@@ -323,3 +325,23 @@ struct omap_hwmod_irq_info omap2_mcspi2_mpu_irqs[] = {
- 	{ .irq = -1 }
- };
- 
-+struct omap_hwmod_class_sysconfig omap2_hdq1w_sysc = {
-+	.rev_offs	= 0x0,
-+	.sysc_offs	= 0x14,
-+	.syss_offs	= 0x18,
-+	.sysc_flags	= (SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE |
-+			   SYSS_HAS_RESET_STATUS),
-+	.sysc_fields    = &omap_hwmod_sysc_type1,
-+};
 +
-+struct omap_hwmod_class omap2_hdq1w_class = {
-+	.name	= "hdq1w",
-+	.sysc	= &omap2_hdq1w_sysc,
-+	.reset	= &omap_hdq1w_reset,
-+};
++#include "common.h"
 +
-+struct omap_hwmod_irq_info omap2_hdq1w_mpu_irqs[] = {
-+	{ .irq = 58, },
-+	{ .irq = -1 }
-+};
++/* Maximum microseconds to wait for OMAP module to softreset */
++#define MAX_MODULE_SOFTRESET_WAIT	10000
 +
-diff --git a/arch/arm/mach-omap2/omap_hwmod_common_data.h b/arch/arm/mach-omap2/omap_hwmod_common_data.h
-index ad5d8f0..a5fc96a 100644
---- a/arch/arm/mach-omap2/omap_hwmod_common_data.h
-+++ b/arch/arm/mach-omap2/omap_hwmod_common_data.h
-@@ -50,6 +50,7 @@ extern struct omap_hwmod_addr_space omap2430_mcspi3_addr_space[];
- extern struct omap_hwmod_addr_space omap2_dma_system_addrs[];
- extern struct omap_hwmod_addr_space omap2_mailbox_addrs[];
- extern struct omap_hwmod_addr_space omap2_mcbsp1_addrs[];
-+extern struct omap_hwmod_addr_space omap2_hdq1w_addr_space[];
- 
- /* Common IP block data across OMAP2xxx */
- extern struct omap_hwmod_irq_info omap2xxx_timer12_mpu_irqs[];
-@@ -94,6 +95,7 @@ extern struct omap_hwmod_irq_info omap2_gpio4_irqs[];
- extern struct omap_hwmod_irq_info omap2_dma_system_irqs[];
- extern struct omap_hwmod_irq_info omap2_mcspi1_mpu_irqs[];
- extern struct omap_hwmod_irq_info omap2_mcspi2_mpu_irqs[];
-+extern struct omap_hwmod_irq_info omap2_hdq1w_mpu_irqs[];
- 
- /* OMAP hwmod classes - forward declarations */
- extern struct omap_hwmod_class l3_hwmod_class;
-@@ -105,6 +107,8 @@ extern struct omap_hwmod_class omap2_dss_hwmod_class;
- extern struct omap_hwmod_class omap2_dispc_hwmod_class;
- extern struct omap_hwmod_class omap2_rfbi_hwmod_class;
- extern struct omap_hwmod_class omap2_venc_hwmod_class;
-+extern struct omap_hwmod_class_sysconfig omap2_hdq1w_sysc;
-+extern struct omap_hwmod_class omap2_hdq1w_class;
- 
- extern struct omap_hwmod_class omap2xxx_timer_hwmod_class;
- extern struct omap_hwmod_class omap2xxx_wd_timer_hwmod_class;
++/**
++ * omap_hdq1w_reset - reset the OMAP HDQ1W module
++ * @oh: struct omap_hwmod *
++ *
++ * OCP soft reset the HDQ1W IP block.  Section 20.6.1.4 "HDQ1W/1-Wire
++ * Software Reset" of the OMAP34xx Technical Reference Manual Revision
++ * ZR (SWPU223R) does not include the rather important fact that, for
++ * the reset to succeed, the HDQ1W module's internal clock gate must be
++ * programmed to allow the clock to propagate to the rest of the
++ * module.  In this sense, it's rather similar to the I2C custom reset
++ * function.  Returns 0.
++ */
++int omap_hdq1w_reset(struct omap_hwmod *oh)
++{
++	u32 v;
++	int c = 0;
++
++	/* Write to the SOFTRESET bit */
++	omap_hwmod_softreset(oh);
++
++	/* Enable the module's internal clocks */
++	v = omap_hwmod_read(oh, HDQ_CTRL_STATUS_OFFSET);
++	v |= 1 << HDQ_CTRL_STATUS_CLOCKENABLE_SHIFT;
++	omap_hwmod_write(v, oh, HDQ_CTRL_STATUS_OFFSET);
++
++	/* Poll on RESETDONE bit */
++	omap_test_timeout((omap_hwmod_read(oh,
++				oh->class->sysc->syss_offs)
++				& SYSS_RESETDONE_MASK),
++				MAX_MODULE_SOFTRESET_WAIT, c);
++
++	if (c == MAX_MODULE_SOFTRESET_WAIT)
++		pr_warning("%s: %s: softreset failed (waited %d usec)\n",
++			__func__, oh->name, MAX_MODULE_SOFTRESET_WAIT);
++	else
++		pr_debug("%s: %s: softreset in %d usec\n", __func__,
++			oh->name, c);
++
++	return 0;
++}
+diff --git a/arch/arm/plat-omap/include/plat/hdq1w.h b/arch/arm/plat-omap/include/plat/hdq1w.h
+new file mode 100644
+index 0000000..0c1efc8
+--- /dev/null
++++ b/arch/arm/plat-omap/include/plat/hdq1w.h
+@@ -0,0 +1,36 @@
++/*
++ * Shared macros and function prototypes for the HDQ1W/1-wire IP block
++ *
++ * Copyright (C) 2012 Texas Instruments, Inc.
++ * Paul Walmsley
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ */
++#ifndef ARCH_ARM_MACH_OMAP2_HDQ1W_H
++#define ARCH_ARM_MACH_OMAP2_HDQ1W_H
++
++#include <plat/omap_hwmod.h>
++
++/*
++ * XXX A future cleanup patch should modify
++ * drivers/w1/masters/omap_hdq.c to use these macros
++ */
++#define HDQ_CTRL_STATUS_OFFSET			0x0c
++#define HDQ_CTRL_STATUS_CLOCKENABLE_SHIFT	5
++
++
++extern int omap_hdq1w_reset(struct omap_hwmod *oh);
++
++#endif
 
 
