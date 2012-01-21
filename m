@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab2AUAg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jan 2012 19:36:58 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:55654 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804Ab2AUAg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jan 2012 19:36:56 -0500
-Date: Fri, 20 Jan 2012 16:36:52 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] crc32: Don't reference unnecessary crc32 tables in
-	single-bit mode
-Message-ID: <20120121003652.GD2749@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
+	id S1754711Ab2AUApr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jan 2012 19:45:47 -0500
+Received: from trent.utfs.org ([194.246.123.103]:60146 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753063Ab2AUApm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jan 2012 19:45:42 -0500
+Date: Fri, 20 Jan 2012 16:45:38 -0800 (PST)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org
+Subject: Re: error: 'cpus_in_crash' defined but not used
+In-Reply-To: <alpine.DEB.2.01.1201172104410.2895@trent.utfs.org>
+Message-ID: <alpine.DEB.2.01.1201201642580.2895@trent.utfs.org>
+References: <alpine.DEB.2.01.1201172006310.2895@trent.utfs.org> <alpine.DEB.2.01.1201172104410.2895@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012100-1780-0000-0000-000002815F53
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00106705; UDB=6.00026825; UTC=2012-01-21
- 00:36:55
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling with single bit mode (CRC32_BIT=y) we shouldn't reference the
-crc32 tables, since they aren't built in single-bit mode.  Many thanks to Randy
-Dunlap for finding this bug:
-http://marc.info/?l=linux-kernel&m=132709702422141&w=2
+> On Tue, 17 Jan 2012 at 20:13, Christian Kujau wrote:
+> > 
+> > compiling today's git (mainline, a25a2b8) on powerpc32 gives:
+> > 
+> >   CC      arch/powerpc/kernel/crash.o
+> > cc1: warnings being treated as errors
+> > /usr/local/src/linux-2.6-git/arch/powerpc/kernel/crash.c:49: error: 
+> > ‘cpus_in_crash’ defined but not used
+> > make[2]: *** [arch/powerpc/kernel/crash.o] Error 1
+> > make[1]: *** [arch/powerpc/kernel] Error 2
+> > make: *** [sub-make] Error 2
 
-This patch is against next-20120120.
+This still happens in 3.3.0-rc1 and is fixed by the patch below.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
+.config is here: http://nerdbynature.de/bits/3.2.0/
 
- lib/crc32.c |   21 +++++++++++++++++++--
- 1 files changed, 19 insertions(+), 2 deletions(-)
+Thoughts?
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index ebc5911..b0d278f 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -174,16 +174,26 @@ static inline u32 __pure crc32_le_generic(u32 crc, unsigned char const *p,
- 	return crc;
- }
- 
-+#if CRC_LE_BITS == 1
-+u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
-+{
-+	return crc32_le_generic(crc, p, len, NULL, CRCPOLY_LE);
-+}
-+u32 __pure __crc32c_le(u32 crc, unsigned char const *p, size_t len)
-+{
-+	return crc32_le_generic(crc, p, len, NULL, CRC32C_POLY_LE);
-+}
-+#else
- u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
- {
- 	return crc32_le_generic(crc, p, len, crc32table_le, CRCPOLY_LE);
- }
--EXPORT_SYMBOL(crc32_le);
--
- u32 __pure __crc32c_le(u32 crc, unsigned char const *p, size_t len)
- {
- 	return crc32_le_generic(crc, p, len, crc32ctable_le, CRC32C_POLY_LE);
- }
-+#endif
-+EXPORT_SYMBOL(crc32_le);
- EXPORT_SYMBOL(__crc32c_le);
- 
- /**
-@@ -233,10 +243,17 @@ static inline u32 __pure crc32_be_generic(u32 crc, unsigned char const *p,
- 	return crc;
- }
- 
-+#if CRC_LE_BITS == 1
-+u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
-+{
-+	return crc32_be_generic(crc, p, len, NULL, CRCPOLY_BE);
-+}
-+#else
- u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
- {
- 	return crc32_be_generic(crc, p, len, crc32table_be, CRCPOLY_BE);
- }
-+#endif
- EXPORT_SYMBOL(crc32_be);
- 
- #ifdef CONFIG_CRC32_SELFTEST
+Thanks,
+Christian.
 
+> I could not find cpus_in_crash anywhere in the sourcetree, except for 
+> arch/powerpc/kernel/crash.c. Moving the definition into the CONFIG_SMP 
+> ifdef helps on my UP system, of course - not sure about other machines 
+> though:
+> 
+> diff --git a/arch/powerpc/kernel/crash.c b/arch/powerpc/kernel/crash.c
+> index 28be345..abef751 100644
+> --- a/arch/powerpc/kernel/crash.c
+> +++ b/arch/powerpc/kernel/crash.c
+> @@ -46,7 +46,6 @@
+>  
+>  /* This keeps a track of which one is the crashing cpu. */
+>  int crashing_cpu = -1;
+> -static atomic_t cpus_in_crash;
+>  static int time_to_dump;
+>  
+>  #define CRASH_HANDLER_MAX 3
+> @@ -66,6 +65,7 @@ static int handle_fault(struct pt_regs *regs)
+>  
+>  #ifdef CONFIG_SMP
+>  
+> +static atomic_t cpus_in_crash;
+>  void crash_ipi_callback(struct pt_regs *regs)
+>  {
+>  	static cpumask_t cpus_state_saved = CPU_MASK_NONE;
+> 
+> 
+> Christian.
+> -- 
+> BOFH excuse #272:
+> 
+> Netscape has crashed
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+BOFH excuse #51:
+
+Cosmic ray particles crashed through the hard disk platter
