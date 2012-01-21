@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab2AUToj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 14:44:39 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:36195 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751015Ab2AUTog (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 14:44:36 -0500
-Message-ID: <4F1B2356.4040302@xenotime.net>
-Date: Sat, 21 Jan 2012 12:43:02 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] idr: make idr_get_next() good for rcu_read_lock()
-References: <alpine.LSU.2.00.1201182155480.7862@eggly.anvils> <1326958401.1113.22.camel@edumazet-laptop> <CAOS58YO585NYMLtmJv3f9vVdadFqoWF+Y5vZ6Va=2qHELuePJA@mail.gmail.com> <1326979818.2249.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LSU.2.00.1201191235330.29542@eggly.anvils> <alpine.LSU.2.00.1201191247210.29542@eggly.anvils> <20120120154807.c55c9ac7.akpm@linux-foundation.org> <alpine.LSU.2.00.1201201922110.1396@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1201201922110.1396@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751519Ab2AUTpy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 14:45:54 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:35306 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751015Ab2AUTpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 14:45:52 -0500
+Message-ID: <1327175138.2050.21.camel@joe2Laptop>
+Subject: Re: [PATCH 3/3] xgifb: checkpatch cleanup, printk() KERN_*
+From: Joe Perches <joe@perches.com>
+To: sam hansen <solid.se7en@gmail.com>
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 21 Jan 2012 11:45:38 -0800
+In-Reply-To: <CAEMzQTZZnPfGK4CZGw+PraL59f4C8eADfvpaGUrVd38d5TFA+A@mail.gmail.com>
+References: <1327140612-9694-1-git-send-email-solid.se7en@gmail.com>
+	 <1327140612-9694-3-git-send-email-solid.se7en@gmail.com>
+	 <1327164143.2050.9.camel@joe2Laptop>
+	 <CAEMzQTZZnPfGK4CZGw+PraL59f4C8eADfvpaGUrVd38d5TFA+A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2012 07:45 PM, Hugh Dickins wrote:
-> On Fri, 20 Jan 2012, Andrew Morton wrote:
->> On Thu, 19 Jan 2012 12:48:48 -0800 (PST)
->> Hugh Dickins <hughd@google.com> wrote:
->>> Copied comment on RCU locking from idr_find().
->>>
->>> + *
->>> + * This function can be called under rcu_read_lock(), given that the leaf
->>> + * pointers lifetimes are correctly managed.
->>
->> Awkward comment.  It translates to "..., because the leaf pointers
->> lifetimes are correctly managed".
->>
->> Is that what we really meant?  Or did we mean "..., provided the leaf
->> pointers lifetimes are correctly managed"?
+On Sat, 2012-01-21 at 11:22 -0800, sam hansen wrote:
+> > One other thing.  It would be better to add
+> > #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > before any #include and convert all the
+> > printks(KERN_<LEVEL> to pr_<level>(
+> > stripping all the leading XGIfb: too.
 > 
-> You are right, and part of me realized that even as I copied in the
-> comment.  I wanted to express the same optimism for idr_get_next() 
-> as was already expressed for idr_find() - whatever it meant ;)
-> 
-> I thought it was meaning a bit of both: idr.c is managing its end well
-> enough that rcu_read_lock() can now be used, but the caller has to
-> manage their locking and lifetimes appropriately too.
-> 
->>
->> Also, "pointers" should have been "pointer" or "pointer's"!
-> 
-> You're afraid of Linus turning his "its/it's" wrath from Al to yourself.
-> 
-> Since "lifetimes" is in the plural, I think it would have to be
-> "pointers'" - I _think_ that's correct, rather than "pointers's".
+> So, an administrative question.  Sorry for my noob-ishness but... I
+> will be 1) modifying the patch regarding prink to use pr_LVL (and a
+> few logic tweaks), and will also be introducing a new patch to set up
+> the pr_fmt macro for kbuild.  I can find lots of information regarding
+> how to create/submit a patch, but not a lot of information about how
+> to modify/resubmit a patch you've already submitted and received
+> feedback for.
 
-That seems correct to me also.
+Rework the commented things in a new branch.
 
-> But then, it's not the lifetimes of the pointers, but the lifetimes
-> of the objects that they point to, that's in question.  So what it
-> ought to say is...
-> 
-> ... falls asleep.
+Apply the patches to the new branch one at
+a time, modify as necessary then
+git commit --amend
+the appropriately changed files while modifying
+change logs.
 
-ack.
+Then resubmit with
+	git format-patch --subject-prefix="PATCH V2"
+You could also add --in-reply-to=originalemailid
 
-and thanks for doing all of that radix tree test harness work, Hugh.
+> The pr_fmt patch will likely just be a new patch outside of this patch
+> set? 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+A new patch would be fine.
+Here's a little regex based tool for part of that conversion
+http://lwn.net/Articles/380161/
+
+An example would be:
+$ ./scripts/cvt_kernel_style.pl			\
+	--convert=convert_printk_to_pr_level	\
+	-o drivers/staging/xgifb/XGI_main_26.c
+
+
