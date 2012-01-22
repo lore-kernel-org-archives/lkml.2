@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2AVD0S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 22:26:18 -0500
+	id S1752011Ab2AVD0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 22:26:16 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:34431 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab2AVDZf (ORCPT
+	with ESMTP id S1751844Ab2AVDZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 22:25:35 -0500
+	Sat, 21 Jan 2012 22:25:41 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/17] blkcg: make CONFIG_BLK_CGROUP bool
-Date: Sat, 21 Jan 2012 19:25:09 -0800
-Message-Id: <1327202725-3383-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/17] elevator: make elevator_init_fn() return 0/-errno
+Date: Sat, 21 Jan 2012 19:25:12 -0800
+Message-Id: <1327202725-3383-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1327202725-3383-1-git-send-email-tj@kernel.org>
 References: <1327202725-3383-1-git-send-email-tj@kernel.org>
@@ -21,121 +21,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Block cgroup core can be built as module; however, it isn't too useful
-as blk-throttle can only be built-in and cfq-iosched is usually the
-default built-in scheduler.  Scheduled blkcg cleanup requires calling
-into blkcg from block core.  To simplify that, disallow building blkcg
-as module by making CONFIG_BLK_CGROUP bool.
+elevator_ops->elevator_init_fn() has a weird return value.  It returns
+a void * which the caller should assign to q->elevator->elevator_data
+and %NULL return denotes init failure.
 
-If building blkcg core as module really matters, which I doubt, we can
-revisit it after blkcg API cleanup.
+Update such that it returns integer 0/-errno and sets elevator_data
+directly as necessary.
+
+This makes the interface more conventional and eases further cleanup.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/Kconfig.iosched |    5 +----
- block/blk-cgroup.c    |   17 -----------------
- block/blk-cgroup.h    |   10 ++--------
- init/Kconfig          |    2 +-
- 4 files changed, 4 insertions(+), 30 deletions(-)
+ block/cfq-iosched.c      |    9 +++++----
+ block/deadline-iosched.c |    8 +++++---
+ block/elevator.c         |   12 ++----------
+ block/noop-iosched.c     |    8 +++++---
+ include/linux/elevator.h |    2 +-
+ 5 files changed, 18 insertions(+), 21 deletions(-)
 
-diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
-index 3199b76..8dca96d 100644
---- a/block/Kconfig.iosched
-+++ b/block/Kconfig.iosched
-@@ -23,8 +23,7 @@ config IOSCHED_DEADLINE
- 
- config IOSCHED_CFQ
- 	tristate "CFQ I/O scheduler"
--	# If BLK_CGROUP is a module, CFQ has to be built as module.
--	depends on (BLK_CGROUP=m && m) || !BLK_CGROUP || BLK_CGROUP=y
-+	depends on BLK_CGROUP
- 	default y
- 	---help---
- 	  The CFQ I/O scheduler tries to distribute bandwidth equally
-@@ -34,8 +33,6 @@ config IOSCHED_CFQ
- 
- 	  This is the default I/O scheduler.
- 
--	  Note: If BLK_CGROUP=m, then CFQ can be built only as module.
--
- config CFQ_GROUP_IOSCHED
- 	bool "CFQ Group Scheduling support"
- 	depends on IOSCHED_CFQ && BLK_CGROUP
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index fa8f263..7bfc574 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -50,10 +50,7 @@ struct cgroup_subsys blkio_subsys = {
- 	.attach = blkiocg_attach,
- 	.destroy = blkiocg_destroy,
- 	.populate = blkiocg_populate,
--#ifdef CONFIG_BLK_CGROUP
--	/* note: blkio_subsys_id is otherwise defined in blk-cgroup.h */
- 	.subsys_id = blkio_subsys_id,
--#endif
- 	.use_id = 1,
- 	.module = THIS_MODULE,
- };
-@@ -1679,17 +1676,3 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
- 	spin_unlock(&blkio_list_lock);
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 529dfba..f3d6b04 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3662,7 +3662,7 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ 	kfree(cfqd);
  }
- EXPORT_SYMBOL_GPL(blkio_policy_unregister);
--
--static int __init init_cgroup_blkio(void)
+ 
+-static void *cfq_init_queue(struct request_queue *q)
++static int cfq_init_queue(struct request_queue *q)
+ {
+ 	struct cfq_data *cfqd;
+ 	int i, j;
+@@ -3671,7 +3671,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 
+ 	cfqd = kmalloc_node(sizeof(*cfqd), GFP_KERNEL | __GFP_ZERO, q->node);
+ 	if (!cfqd)
+-		return NULL;
++		return -ENOMEM;
+ 
+ 	/* Init root service tree */
+ 	cfqd->grp_service_tree = CFQ_RB_ROOT;
+@@ -3698,7 +3698,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	if (blkio_alloc_blkg_stats(&cfqg->blkg)) {
+ 		kfree(cfqg);
+ 		kfree(cfqd);
+-		return NULL;
++		return -ENOMEM;
+ 	}
+ 
+ 	rcu_read_lock();
+@@ -3729,6 +3729,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, &cfqd->root_group);
+ 
+ 	cfqd->queue = q;
++	q->elevator->elevator_data = cfqd;
+ 
+ 	init_timer(&cfqd->idle_slice_timer);
+ 	cfqd->idle_slice_timer.function = cfq_idle_slice_timer;
+@@ -3753,7 +3754,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	 * second, in order to have larger depth for async operations.
+ 	 */
+ 	cfqd->last_delayed_sync = jiffies - HZ;
+-	return cfqd;
++	return 0;
+ }
+ 
+ /*
+diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
+index 7bf12d7..599b12e 100644
+--- a/block/deadline-iosched.c
++++ b/block/deadline-iosched.c
+@@ -337,13 +337,13 @@ static void deadline_exit_queue(struct elevator_queue *e)
+ /*
+  * initialize elevator private data (deadline_data).
+  */
+-static void *deadline_init_queue(struct request_queue *q)
++static int deadline_init_queue(struct request_queue *q)
+ {
+ 	struct deadline_data *dd;
+ 
+ 	dd = kmalloc_node(sizeof(*dd), GFP_KERNEL | __GFP_ZERO, q->node);
+ 	if (!dd)
+-		return NULL;
++		return -ENOMEM;
+ 
+ 	INIT_LIST_HEAD(&dd->fifo_list[READ]);
+ 	INIT_LIST_HEAD(&dd->fifo_list[WRITE]);
+@@ -354,7 +354,9 @@ static void *deadline_init_queue(struct request_queue *q)
+ 	dd->writes_starved = writes_starved;
+ 	dd->front_merges = 1;
+ 	dd->fifo_batch = fifo_batch;
+-	return dd;
++
++	q->elevator->elevator_data = dd;
++	return 0;
+ }
+ 
+ /*
+diff --git a/block/elevator.c b/block/elevator.c
+index 42543e3..8dc65b1 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -168,14 +168,6 @@ static struct elevator_type *elevator_get(const char *name)
+ 	return e;
+ }
+ 
+-static int elevator_init_queue(struct request_queue *q)
 -{
--	return cgroup_load_subsys(&blkio_subsys);
+-	q->elevator->elevator_data = q->elevator->type->ops.elevator_init_fn(q);
+-	if (q->elevator->elevator_data)
+-		return 0;
+-	return -ENOMEM;
 -}
 -
--static void __exit exit_cgroup_blkio(void)
--{
--	cgroup_unload_subsys(&blkio_subsys);
--}
--
--module_init(init_cgroup_blkio);
--module_exit(exit_cgroup_blkio);
--MODULE_LICENSE("GPL");
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 6f3ace7..3551687 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -24,13 +24,7 @@ enum blkio_policy_id {
- /* Max limits for throttle policy */
- #define THROTL_IOPS_MAX		UINT_MAX
+ static char chosen_elevator[ELV_NAME_MAX];
  
--#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
--
--#ifndef CONFIG_BLK_CGROUP
--/* When blk-cgroup is a module, its subsys_id isn't a compile-time constant */
--extern struct cgroup_subsys blkio_subsys;
--#define blkio_subsys_id blkio_subsys.subsys_id
--#endif
-+#ifdef CONFIG_BLK_CGROUP
+ static int __init elevator_setup(char *str)
+@@ -271,7 +263,7 @@ int elevator_init(struct request_queue *q, char *name)
+ 	if (!q->elevator)
+ 		return -ENOMEM;
  
- enum stat_type {
- 	/* Total time spent (in ns) between request dispatch to the driver and
-@@ -303,7 +297,7 @@ static inline void blkiocg_update_idle_time_stats(struct blkio_group *blkg) {}
- static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg) {}
- #endif
+-	err = elevator_init_queue(q);
++	err = e->ops.elevator_init_fn(q);
+ 	if (err) {
+ 		kobject_put(&q->elevator->kobj);
+ 		return err;
+@@ -974,7 +966,7 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
+ 	if (!q->elevator)
+ 		goto fail_init;
  
--#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
-+#ifdef CONFIG_BLK_CGROUP
- extern struct blkio_cgroup blkio_root_cgroup;
- extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
- extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
-diff --git a/init/Kconfig b/init/Kconfig
-index 3f42cd6..da9222d 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -766,7 +766,7 @@ config RT_GROUP_SCHED
- endif #CGROUP_SCHED
+-	err = elevator_init_queue(q);
++	err = new_e->ops.elevator_init_fn(q);
+ 	if (err) {
+ 		kobject_put(&q->elevator->kobj);
+ 		goto fail_init;
+diff --git a/block/noop-iosched.c b/block/noop-iosched.c
+index 413a0b1..5d1bf70 100644
+--- a/block/noop-iosched.c
++++ b/block/noop-iosched.c
+@@ -59,15 +59,17 @@ noop_latter_request(struct request_queue *q, struct request *rq)
+ 	return list_entry(rq->queuelist.next, struct request, queuelist);
+ }
  
- config BLK_CGROUP
--	tristate "Block IO controller"
-+	bool "Block IO controller"
- 	depends on BLOCK
- 	default n
- 	---help---
+-static void *noop_init_queue(struct request_queue *q)
++static int noop_init_queue(struct request_queue *q)
+ {
+ 	struct noop_data *nd;
+ 
+ 	nd = kmalloc_node(sizeof(*nd), GFP_KERNEL, q->node);
+ 	if (!nd)
+-		return NULL;
++		return -ENOMEM;
++
+ 	INIT_LIST_HEAD(&nd->queue);
+-	return nd;
++	q->elevator->elevator_data = nd;
++	return 0;
+ }
+ 
+ static void noop_exit_queue(struct elevator_queue *e)
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index c24f3d7..d7726c9 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -33,7 +33,7 @@ typedef void (elevator_put_req_fn) (struct request *);
+ typedef void (elevator_activate_req_fn) (struct request_queue *, struct request *);
+ typedef void (elevator_deactivate_req_fn) (struct request_queue *, struct request *);
+ 
+-typedef void *(elevator_init_fn) (struct request_queue *);
++typedef int (elevator_init_fn) (struct request_queue *);
+ typedef void (elevator_exit_fn) (struct elevator_queue *);
+ 
+ struct elevator_ops
 -- 
 1.7.7.3
 
