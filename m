@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab2AVTS6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 14:18:58 -0500
-Received: from mail.windriver.com ([147.11.1.11]:45265 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2AVTS4 (ORCPT
+	id S1752363Ab2AVTVi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 14:21:38 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:48925 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2AVTVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 14:18:56 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: linux@arm.linux.org.uk, JBottomley@parallels.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [PATCH] arm: prevent inlining in arxescsi.c causing build failures
-Date: Sun, 22 Jan 2012 14:16:55 -0500
-Message-Id: <1327259815-3880-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.7.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 22 Jan 2012 14:21:37 -0500
+Date: Sun, 22 Jan 2012 14:21:29 -0500 (EST)
+Message-Id: <20120122.142129.1690845179274032982.davem@davemloft.net>
+To: joe@perches.com
+Cc: standby24x7@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH/RESEND] [trivial] sctp : Fix typo in net/sctp/socket.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1327109035.1921.1.camel@joe2Laptop>
+References: <1327108681-1682-1-git-send-email-standby24x7@gmail.com>
+	<1327109035.1921.1.camel@joe2Laptop>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 Jan 2012 11:21:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following failure is seen in routine coverage builds:
+From: Joe Perches <joe@perches.com>
+Date: Fri, 20 Jan 2012 17:23:55 -0800
 
-  CC [M]  drivers/scsi/arm/arxescsi.o
-/tmp/cccEyiO7.s: Assembler messages:
-/tmp/cccEyiO7.s:334: Error: symbol `.loop_1' is already defined
-/tmp/cccEyiO7.s:337: Error: symbol `.loop_2' is already defined
-/tmp/cccEyiO7.s:343: Error: symbol `.loop_3' is already defined
-/tmp/cccEyiO7.s:365: Error: symbol `.loop_1' is already defined
-/tmp/cccEyiO7.s:368: Error: symbol `.loop_2' is already defined
-/tmp/cccEyiO7.s:374: Error: symbol `.loop_3' is already defined
-make[4]: *** [drivers/scsi/arm/arxescsi.o] Error 1
+> On Sat, 2012-01-21 at 10:18 +0900, Masanari Iida wrote:
+>> Signed-off-by: Masanari Iida<standby24x7@gmail.com>
+>> 
+>> Correct a typo "sctp_setsocktopt_bindx" to "sctp_setsockopt_bindx"
+>> in net/sctp/socket.c
+>> ---
+>>  net/sctp/socket.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+>> index 408ebd0..658483e 100644
+>> --- a/net/sctp/socket.c
+>> +++ b/net/sctp/socket.c
+>> @@ -970,7 +970,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(struct sock* sk,
+>>  	void *addr_buf;
+>>  	struct sctp_af *af;
+>>  
+>> -	SCTP_DEBUG_PRINTK("sctp_setsocktopt_bindx: sk %p addrs %p"
+>> +	SCTP_DEBUG_PRINTK("sctp_setsockopt_bindx: sk %p addrs %p"
+>>  			  " addrs_size %d opt %d\n", sk, addrs, addrs_size, op);
+> 
+> Let the compiler do it.
+> 
+> 	SCTP_DEBUG_PRINTK("%s: sk %p addrs %p addrs_size %d opt %d\n",
+> 			  __func__, sk, addrs, addrs_size, op);
 
-It is caused by multiple inline of arxescsi_pseudo_dma_write()
-which is responsible for the above labels.  Marking the fcn
-as non-inline fixes the issue.
-
-Arnd Bergmann considered un-inlinling vs fixing the loop[1] to
-use local labels and came to the following conclusion:
-
-  The problem is mostly in the code: The symbols are defined in an
-  inline assembly that is not meant to be instantiated multiple times.
-  gcc may decide to unroll the loop in which this is done, which causes
-  the error above. Unrolling the loop is a rather silly thing to do
-  here, because the code is rather large and does not at all benefit
-  from unrolling. You can use the patch below to fix the code to still
-  work if the loop is unrolled, but I also think that marking the
-  function as uninline is a good idea, in particular because I don't
-  trust the old assembly to still do the right thing otherwise:
-  It manually saves and restores the registers on the stack, where
-  you nowadays would specify specific clobbers for the registers
-  it uses, and let the compiler take care of it. It also doesn't
-  contain a memory clobber for the buffer, so keeping the function
-  out-of-line is probably the safe choice.
-
-[1] https://lkml.org/lkml/2011/12/1/189
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-
----
-v2: add desc. from Arnd indicating why un-inlining is the best choice
-
-diff --git a/drivers/scsi/arm/arxescsi.c b/drivers/scsi/arm/arxescsi.c
-index a750aa7..2608a9e 100644
---- a/drivers/scsi/arm/arxescsi.c
-+++ b/drivers/scsi/arm/arxescsi.c
-@@ -72,7 +72,8 @@ arxescsi_dma_setup(struct Scsi_Host *host, struct scsi_pointer *SCp,
- 	return fasdma_pseudo;
- }
- 
--static void arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
-+static noinline void
-+arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
- {
-        __asm__ __volatile__(
-        "               stmdb   sp!, {r0-r12}\n"
--- 
-1.7.7.2
-
+Masanari, please integrate Joe's feedback into your patch.
