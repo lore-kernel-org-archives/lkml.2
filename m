@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab2AVSQA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 13:16:00 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36573 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751756Ab2AVSP7 (ORCPT
+	id S1752234Ab2AVSbA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 13:31:00 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38099 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab2AVSa7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 13:15:59 -0500
+	Sun, 22 Jan 2012 13:30:59 -0500
 MIME-Version: 1.0
-Date: Sun, 22 Jan 2012 13:15:58 -0500
-Message-ID: <CAMW5UfYGU+K0tet+z8g+fYS54jba57gaWW_C7r3VY9JcrDryRQ@mail.gmail.com>
-Subject: [PATCH] drivers/usb/misc/sisusbvga/sisusb.c Add support for Triton
- See 2 Xtreme
-From: Josh Coombs <josh.coombs@gmail.com>
-To: thomas@winischhofer.net
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <CAGAKE886que4x4h7N7fszGQXKE3Fej_yAShjOiKEEZrL5Gocbw@mail.gmail.com>
+References: <CAGAKE8_zLr9nrQ_-cXQGzycFo6746t8OzKK6DpCd9tcahyRfPQ@mail.gmail.com>
+	<CAGAKE8_wL0GcbjDNWOw4sa8euxZyGDgkdW9EgohpmG48Qk3-nQ@mail.gmail.com>
+	<CAO+b5-pZofpN7-e8H+toE98j24fby5u8_Nzfzkz_S31u5wDmwA@mail.gmail.com>
+	<CAGAKE88--L1igeZFusU=TxRD6fyfKWZYhn7az6-xkS_mtVg8CA@mail.gmail.com>
+	<CAGAKE8_b_Omxzg4C-VMiuM9aEhnRPkPD9=5DW9retGfcfOhBuQ@mail.gmail.com>
+	<CAGAKE8-3k0FN5B91ff2XFpYuHfwB-bmr4b7EBEe-aSWfQr1mSw@mail.gmail.com>
+	<CAO+b5-qsdn8i_BdAqJo_6CU3Lh6JTPSSsyg-m_bP+xcN5aBgxg@mail.gmail.com>
+	<CAGAKE886que4x4h7N7fszGQXKE3Fej_yAShjOiKEEZrL5Gocbw@mail.gmail.com>
+Date: Sun, 22 Jan 2012 18:30:57 +0000
+X-Google-Sender-Auth: CsaIJV-bocVYfTdVvZIsRvxXDb0
+Message-ID: <CAO+b5-rdNTk=P16=k1CxL=rkVEDUubCAmw+oaRmJ4hsCurrPog@mail.gmail.com>
+Subject: Re: [Scst-devel] BUG: Process hang when kvm crashed, stacktrace cfs+kvm
+From: Bart Van Assche <bvanassche@acm.org>
+To: kordex <kordex@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu, peterz@infradead.org,
+        kvm@vger.kernel.org, avi@redhat.com,
+        scst-devel <scst-devel@lists.sourceforge.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas,
+On Sat, Jan 21, 2012 at 9:19 PM, kordex <kordex@gmail.com> wrote:
+> I hit sysrq+t sysrq+p in order to print the tasks with stacktraces and
+> registers. Using ps -e -o  pid,state,command will hang ps output,
+> while ps -e -o pid,state will not.
 
-I've been playing with a Triton See 2 Xtreme SiS based USB VGA adapter
-and had decent luck with it under your driver after adding it's device
-ID.
+Sorry, haven't seen such a hang ever before. Does it also occur with
+older kernels than 3.1 ? Is it reproducible with 3.3-rc1 ?
 
---- drivers/usb/misc/sisusbvga/sisusb.c.orig	2012-01-22 13:01:07.000000000 -0500
-+++ drivers/usb/misc/sisusbvga/sisusb.c	2012-01-22 13:01:26.000000000 -0500
-@@ -3247,6 +3247,7 @@ static const struct usb_device_id sisusb
- 	{ USB_DEVICE(0x0711, 0x0903) },
- 	{ USB_DEVICE(0x0711, 0x0918) },
- 	{ USB_DEVICE(0x0711, 0x0920) },
-+        { USB_DEVICE(0x0711, 0x0950) },
- 	{ USB_DEVICE(0x182d, 0x021c) },
- 	{ USB_DEVICE(0x182d, 0x0269) },
- 	{ }
-
-I've been primarily using it on an ARMv5 system, and will try to test
-on x86 soon.  I've used the patch on both 3.1-release and 3.2-release.
- I just verified 3.3-RC1 hasn't had any changes to the sisusb driver
-and will be building a test kernel this afternoon.  Given it's just a
-one line tweak, is this patch sufficient to go upstream, or would you
-like some additional info from my setup first?
-
-Signed-off-by: Joshua Coombs <josh.coombs@gmail.com>
+Bart.
