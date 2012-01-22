@@ -1,213 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751202Ab2AVIwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 03:52:17 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43271 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab2AVIwP (ORCPT
+	id S1751353Ab2AVJCM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 04:02:12 -0500
+Received: from www17.your-server.de ([213.133.104.17]:51821 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2AVJCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 03:52:15 -0500
-Date: Sun, 22 Jan 2012 08:51:57 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: linux-pcmcia@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH,FIXED] PCMCIA card inserted, five s2ram cycles, you're dead
-Message-ID: <20120122085157.GR1068@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sun, 22 Jan 2012 04:02:09 -0500
+X-Greylist: delayed 1775 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jan 2012 04:02:09 EST
+Message-ID: <1327221144.1434.20.camel@localhost.localdomain>
+Subject: coccinelle: semantic patches related to devm_ functions - Fatal
+ error/Parse error
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Julia.Lawall@lip6.fr, mmarek@suse.cz,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 22 Jan 2012 09:32:24 +0100
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-D12tWzGmGh/6aGgR821U"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last night, I wrote:
-> static int pcmcia_bus_early_resume(struct pcmcia_socket *skt)
-> {
->         if (!verify_cis_cache(skt)) {
->                 pcmcia_put_socket(skt);
->                 return 0;
->         }
-> 
-> I've not been able to check that theory tonight.  Maybe someone who
-> knows the code can suggest - if not, I'll try deleting that
-> pcmcia_put_socket() call at some point tomorrow.
 
-Yes, this does appear to be the problem.  Tested patch below.  It looks
-like the bug has been around since July 2010 - maybe no one suspends and
-resumes with their PCMCIA (not Cardbus) card inserted.
+--=-D12tWzGmGh/6aGgR821U
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Given its age, it seems to affect many stable kernels.
+Hello,
 
-Note that this is a memory-corrupting bug: not only does it cause the
-warning, but as a result of dropping the refcount to zero, it causes the
-pcmcia_socket0 device structure to be freed while it still has references,
-causing slab caches corruption.  A fatal oops quickly follows this warning
-- often even just a 'dmesg' following the warning causes the kernel to
-oops.
+Again I wanted to run all coccinelle patches against the latest rc1, but
+I got this error:
+Fatal error: exception Failure("plus: parse error:=20
+ =3D File "/home/thomas/source/linux/scripts/coccinelle/api/devm_request_an=
+d_ioremap.cocci", line 32, column 42,  charpos =3D 816
+    around =3D '\|', whole content =3D -                              \(res=
+->name\|dev_name(dev)\))) {
+"
 
-8<====
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH] Fix PCMCIA socket refcount decrementing on each resume
+I'm using version 1.0.0-0.rc4.2.fc16.
 
-While testing suspend/resume on an ARM device with PCMCIA support, and
-a CF card inserted, I found that after five suspend and resumes, the
-kernel would complain, and shortly die after with slab corruption.
+bug or feature?
 
-WARNING: at include/linux/kref.h:41 kobject_get+0x28/0x50()
-
-As the message doesn't give a clue about which kobject, and the built-in
-debugging in drivers/base/power/main.c happens too late, this was added
-right before each get_device():
-
-printk("%s: %p [%s] %u\n", __func__, dev, kobject_name(&dev->kobj), atomic_read(&dev->kobj.kref.refcount));
-
-and on the 3rd s2ram cycle, the following behaviour observed:
-
-On the 3rd suspend/resume cycle:
-
-dpm_prepare: c1a0d998 [pcmcia_socket0] 3
-dpm_suspend: c1a0d998 [pcmcia_socket0] 3
-dpm_suspend_noirq: c1a0d998 [pcmcia_socket0] 3
-dpm_resume_noirq: c1a0d998 [pcmcia_socket0] 3
-dpm_resume: c1a0d998 [pcmcia_socket0] 3
-dpm_complete: c1a0d998 [pcmcia_socket0] 2
-
-4th:
-
-dpm_prepare: c1a0d998 [pcmcia_socket0] 2
-dpm_suspend: c1a0d998 [pcmcia_socket0] 2
-dpm_suspend_noirq: c1a0d998 [pcmcia_socket0] 2
-dpm_resume_noirq: c1a0d998 [pcmcia_socket0] 2
-dpm_resume: c1a0d998 [pcmcia_socket0] 2
-dpm_complete: c1a0d998 [pcmcia_socket0] 1
-
-5th:
-
-dpm_prepare: c1a0d998 [pcmcia_socket0] 1
-dpm_suspend: c1a0d998 [pcmcia_socket0] 1
-dpm_suspend_noirq: c1a0d998 [pcmcia_socket0] 1
-dpm_resume_noirq: c1a0d998 [pcmcia_socket0] 1
-dpm_resume: c1a0d998 [pcmcia_socket0] 1
-dpm_complete: c1a0d998 [pcmcia_socket0] 0
-------------[ cut here ]------------
-WARNING: at include/linux/kref.h:41 kobject_get+0x28/0x50()
-Modules linked in: ucb1x00_core
-Backtrace:
-[<c0212090>] (dump_backtrace+0x0/0x110) from [<c04799dc>] (dump_stack+0x18/0x1c)
-[<c04799c4>] (dump_stack+0x0/0x1c) from [<c021cba0>] (warn_slowpath_common+0x50/0x68)
-[<c021cb50>] (warn_slowpath_common+0x0/0x68) from [<c021cbdc>] (warn_slowpath_null+0x24/0x28)
-[<c021cbb8>] (warn_slowpath_null+0x0/0x28) from [<c0335374>] (kobject_get+0x28/0x50)
-[<c033534c>] (kobject_get+0x0/0x50) from [<c03804f4>] (get_device+0x1c/0x24)
-[<c0388c90>] (dpm_complete+0x0/0x1a0) from [<c0389cc0>] (dpm_resume_end+0x1c/0x20)
-...
-
-Looking at commit 7b24e7988263 (pcmcia: split up central event handler),
-the following change was made to cs.c:
-
-@@ -546,8 +524,8 @@ static int socket_late_resume(struct pcmcia_socket *skt)
-                return 0;
-        }
- #endif
--
--       send_event(skt, CS_EVENT_PM_RESUME, CS_EVENT_PRI_LOW);
-+       if (!(skt->state & SOCKET_CARDBUS) && (skt->callback))
-+               skt->callback->early_resume(skt);
-        return 0;
- }
+kind regards
+thomas
 
 
-And the corresponding change in ds.c is from:
+--=-D12tWzGmGh/6aGgR821U
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
--static int ds_event(struct pcmcia_socket *skt, event_t event, int priority)
--{
--       struct pcmcia_socket *s = pcmcia_get_socket(skt);
-...
--       switch (event) {
-...
--       case CS_EVENT_PM_RESUME:
--               if (verify_cis_cache(skt) != 0) {
--                       dev_dbg(&skt->dev, "cis mismatch - different card\n");
--                       /* first, remove the card */
--                       ds_event(skt, CS_EVENT_CARD_REMOVAL, CS_EVENT_PRI_HIGH);
--                       mutex_lock(&s->ops_mutex);
--                       destroy_cis_cache(skt);
--                       kfree(skt->fake_cis);
--                       skt->fake_cis = NULL;
--                       s->functions = 0;
--                       mutex_unlock(&s->ops_mutex);
--                       /* now, add the new card */
--                       ds_event(skt, CS_EVENT_CARD_INSERTION,
--                                CS_EVENT_PRI_LOW);
--               }
--               break;
-...
--    }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
--    pcmcia_put_socket(s);
+iQEcBAABAgAGBQJPG8mZAAoJEK2Y/UtDbsHs0HYH/iMrhd6qQjclWoH9pxHSa0CH
+Eovi3EcLcZD6UUcFAAC3up7O5Bx9GoIhQi+UTV5NVtK4wv01t6spBd34zE7BBhxq
+MYhknKrklVguPksgfkVc8TIgPJJhHFq0rps/YaMlk3j7BnPWE1qCYv5ejV4fKE11
+l3ZvYQ8Qoy8KzbOxTnFhiU8JtU+CwpNmw6cDnUiNR1C/Jw2n5XzzMxiLoTuO8L9F
+oEdjwls7kjswZ9IiGwJWqZ9JrIN5zLzpROGfINYbHifcPMxmy1QYdeZp1zr2Vxlp
+Gon+yztRrTslg9tMAPYBj7LzyhfQyef7TZ4wwAzLcwtquU+zrm8hVrZLmd/tKpI=
+=BYl8
+-----END PGP SIGNATURE-----
 
--    return 0;
--} /* ds_event */
+--=-D12tWzGmGh/6aGgR821U--
 
-to:
-
-+static int pcmcia_bus_early_resume(struct pcmcia_socket *skt)
-+{
-+       if (!verify_cis_cache(skt)) {
-+               pcmcia_put_socket(skt);
-+               return 0;
-+       }
-
-+       dev_dbg(&skt->dev, "cis mismatch - different card\n");
-
-+       /* first, remove the card */
-+       pcmcia_bus_remove(skt);
-+       mutex_lock(&skt->ops_mutex);
-+       destroy_cis_cache(skt);
-+       kfree(skt->fake_cis);
-+       skt->fake_cis = NULL;
-+       skt->functions = 0;
-+       mutex_unlock(&skt->ops_mutex);
-
-+       /* now, add the new card */
-+       pcmcia_bus_add(skt);
-+       return 0;
-+}
-
-As can be seen, the original function called pcmcia_get_socket() and
-pcmcia_put_socket() around the guts, whereas the replacement code
-calls pcmcia_put_socket() only in one path.  This creates an imbalance
-in the refcounting.
-
-Testing with pcmcia_put_socket() put removed shows that the bug is gone:
-
-dpm_suspend: c1a10998 [pcmcia_socket0] 5
-dpm_suspend_noirq: c1a10998 [pcmcia_socket0] 5
-dpm_resume_noirq: c1a10998 [pcmcia_socket0] 5
-dpm_resume: c1a10998 [pcmcia_socket0] 5
-dpm_complete: c1a10998 [pcmcia_socket0] 5
-
-Cc: <stable@vger.kernel.org>
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
--- 
- drivers/pcmcia/ds.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/pcmcia/ds.c b/drivers/pcmcia/ds.c
-index 749c2a1..1932029 100644
---- a/drivers/pcmcia/ds.c
-+++ b/drivers/pcmcia/ds.c
-@@ -1269,10 +1269,8 @@ static int pcmcia_bus_add(struct pcmcia_socket *skt)
- 
- static int pcmcia_bus_early_resume(struct pcmcia_socket *skt)
- {
--	if (!verify_cis_cache(skt)) {
--		pcmcia_put_socket(skt);
-+	if (!verify_cis_cache(skt))
- 		return 0;
--	}
- 
- 	dev_dbg(&skt->dev, "cis mismatch - different card\n");
- 
