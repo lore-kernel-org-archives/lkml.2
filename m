@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab2AVO5D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 09:57:03 -0500
-Received: from static-212-123-84-234.clienti.tiscali.it ([212.123.84.234]:33856
-	"EHLO mail.m31.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897Ab2AVO5C (ORCPT
+	id S1752011Ab2AVP3P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 10:29:15 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:62283 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751627Ab2AVP3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 09:57:02 -0500
-X-Greylist: delayed 611 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jan 2012 09:57:02 EST
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>
-Subject: [PATCH] avr32: select generic atomic64_t support
-Date: Sun, 22 Jan 2012 15:46:33 +0100
-Message-Id: <1327243593-29215-1-git-send-email-fabio.baltieri@gmail.com>
-X-Mailer: git-send-email 1.7.5.1
+	Sun, 22 Jan 2012 10:29:14 -0500
+MIME-Version: 1.0
+Date: Sun, 22 Jan 2012 16:29:13 +0100
+Message-ID: <CADDKRnDHvptV_gODG8XgqEkWGW0AyDfJJkP1dU2uBL6rs5yzDA@mail.gmail.com>
+Subject: [v3.3-rc1] media:dvb-t regression bisected
+From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable use of the generic atomic64 implementation on AVR32 platforms.
-Without this the kernel fails to build as the architecture does not
-provide its version.
+with v3.3-rc1 I can not watch dvb-t. I get the following
+errors from the media player (Kaffeine,vlc):
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
----
- arch/avr32/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+kaffeine(1801): DvbDevice::frontendEvent: tuning failed
+vlc: [0xa278d78] main stream error: cannot pre fill buffer
 
-diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
-index 197e96f..3dea7231 100644
---- a/arch/avr32/Kconfig
-+++ b/arch/avr32/Kconfig
-@@ -8,6 +8,7 @@ config AVR32
- 	select HAVE_KPROBES
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
-+	select GENERIC_ATOMIC64
- 	select HARDIRQS_SW_RESEND
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
--- 
-1.7.5.1
+I have a CinergyT2 usb-stick.
 
+I was able to bisect the problem to:
+commit 7830bbaff9f5f9cefcdc9acfb1783b230cc69fac
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Mon Dec 26 15:41:01 2011 -0300
+
+[media] cinergyT2-fe: convert set_fontend to use DVBv5 parameters
