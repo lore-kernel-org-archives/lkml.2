@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab2AVTLz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 14:11:55 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33994 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086Ab2AVTLy convert rfc822-to-8bit (ORCPT
+	id S1752327Ab2AVTS6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 14:18:58 -0500
+Received: from mail.windriver.com ([147.11.1.11]:45265 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2AVTS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 14:11:54 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Joseph Parmelee <jparmele@wildbear.com>
-Subject: Re: Sound broken in 3.2.0 and 3.2.1
-Date: Sun, 22 Jan 2012 20:11:49 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <alpine.LNX.2.00.1201131241090.1239@bruno>
-In-Reply-To: <alpine.LNX.2.00.1201131241090.1239@bruno>
+	Sun, 22 Jan 2012 14:18:56 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: linux@arm.linux.org.uk, JBottomley@parallels.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] arm: prevent inlining in arxescsi.c causing build failures
+Date: Sun, 22 Jan 2012 14:16:55 -0500
+Message-Id: <1327259815-3880-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.7.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201201222011.49672.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On piątek, 13 stycznia 2012 o 20:44:03 Joseph Parmelee wrote:
-> Hello:
-> 
-> I have built standard kernels 3.2.0 and 3.2.1 and their respective modules.
-> Both exhibit no sound with the following sound modules installed:
-> 
->    snd_pcm_oss
->    snd_mixer_oss
->    snd_hda_codec_realtek
->    snd_hda_intel
->    snd_hda_codec
->    snd_pcm
->    snd_timer
->    snd
->    soundcore
->    snd_page_alloc
-> 
-> Kernels 3.1.8 works as expected with the same set of modules (for 3.1.8)
-> installed.
-> 
-> What appears to be happening is that the available controls are not being
-> properly elucidated in 3.2.x.  For example both aumix and gamix show that
-> the PCM control is missing; it appears normally in 3.1.x using the same set
-> of driver modules.  This is causing the immediate problem as this control
-> is set to zero on bootup and cannot be accessed thereafter.  Sound appears
-> to play normally through the alsa driver in mplayer for example, and the
-> internal mplayer volume control appears to work normally, but there is no
-> sound.
-> 
-> The controls elucidated differ as follows (taken from gamix) for the same
-> hardware (intel hda with realtek alc662 codec):
-> 
-> 3.1.x:
-> 
->     1 - PCM
->     2 - Headphone
->     3 - Rear Mic
->     4 - Front Mic
->     5 - Line
->     6 - Auto-mute Mode
->     7 - Capture
->     8 - Capture 1
->     9 - Input Source
->    10 - Input Source 1
->    11 - IEC958
->    12 - Master
-> 
-> 
-> 3.2.x:
-> 
->     1 - Master
->     2 - Channel Mode
->     3 - Front
->     4 - Surround
->     5 - Center
->     6 - LFE
->     7 - Headphone
->     8 - Rear Mic
->     9 - Line
->    10 - Auto-mute Mode
->    11 - Capture
->    12 - Capture 1
->    13 - Input Source
->    14 - Input Source 1
->    15 - IEC958
-> 
-> 
+The following failure is seen in routine coverage builds:
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42631
-for your bug report, please add your address to the CC list in there, thanks!
+  CC [M]  drivers/scsi/arm/arxescsi.o
+/tmp/cccEyiO7.s: Assembler messages:
+/tmp/cccEyiO7.s:334: Error: symbol `.loop_1' is already defined
+/tmp/cccEyiO7.s:337: Error: symbol `.loop_2' is already defined
+/tmp/cccEyiO7.s:343: Error: symbol `.loop_3' is already defined
+/tmp/cccEyiO7.s:365: Error: symbol `.loop_1' is already defined
+/tmp/cccEyiO7.s:368: Error: symbol `.loop_2' is already defined
+/tmp/cccEyiO7.s:374: Error: symbol `.loop_3' is already defined
+make[4]: *** [drivers/scsi/arm/arxescsi.o] Error 1
 
+It is caused by multiple inline of arxescsi_pseudo_dma_write()
+which is responsible for the above labels.  Marking the fcn
+as non-inline fixes the issue.
+
+Arnd Bergmann considered un-inlinling vs fixing the loop[1] to
+use local labels and came to the following conclusion:
+
+  The problem is mostly in the code: The symbols are defined in an
+  inline assembly that is not meant to be instantiated multiple times.
+  gcc may decide to unroll the loop in which this is done, which causes
+  the error above. Unrolling the loop is a rather silly thing to do
+  here, because the code is rather large and does not at all benefit
+  from unrolling. You can use the patch below to fix the code to still
+  work if the loop is unrolled, but I also think that marking the
+  function as uninline is a good idea, in particular because I don't
+  trust the old assembly to still do the right thing otherwise:
+  It manually saves and restores the registers on the stack, where
+  you nowadays would specify specific clobbers for the registers
+  it uses, and let the compiler take care of it. It also doesn't
+  contain a memory clobber for the buffer, so keeping the function
+  out-of-line is probably the safe choice.
+
+[1] https://lkml.org/lkml/2011/12/1/189
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+
+---
+v2: add desc. from Arnd indicating why un-inlining is the best choice
+
+diff --git a/drivers/scsi/arm/arxescsi.c b/drivers/scsi/arm/arxescsi.c
+index a750aa7..2608a9e 100644
+--- a/drivers/scsi/arm/arxescsi.c
++++ b/drivers/scsi/arm/arxescsi.c
+@@ -72,7 +72,8 @@ arxescsi_dma_setup(struct Scsi_Host *host, struct scsi_pointer *SCp,
+ 	return fasdma_pseudo;
+ }
+ 
+-static void arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
++static noinline void
++arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
+ {
+        __asm__ __volatile__(
+        "               stmdb   sp!, {r0-r12}\n"
 -- 
-Maciej Rutecki
-http://www.mrutecki.pl
+1.7.7.2
+
