@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab2AVQMV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 11:12:21 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56374 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab2AVQMT (ORCPT
+	id S1752059Ab2AVQd1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 11:33:27 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59453 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891Ab2AVQdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 11:12:19 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] regulator: Provide devm_regulator_bulk_get()
-Date: Sun, 22 Jan 2012 16:12:13 +0000
-Message-Id: <1327248733-26260-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1327248733-26260-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1327248733-26260-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Sun, 22 Jan 2012 11:33:25 -0500
+From: Fabio Estevam <festevam@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, guenter.roeck@ericsson.com,
+        durgadoss.r@intel.com, khali@linux-fr.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] thermal: thermal_sys: Fix build warning
+Date: Sun, 22 Jan 2012 14:33:15 -0200
+Message-Id: <1327249995-18682-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow drivers to benefit from both the bulk APIs and managed resources
-simultaneously.
+Fix the following build warning:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+drivers/thermal/thermal_sys.c:63: warning: 'thermal_event_seqnum' defined but not used
+
+,which happens when CONFIG_NET is not set.
+
+Move 'thermal_event_seqnum' definition inside the '#ifdef CONFIG_NET'
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- drivers/regulator/core.c           |   46 ++++++++++++++++++++++++++++++++++++
- include/linux/regulator/consumer.h |    2 +
- 2 files changed, 48 insertions(+), 0 deletions(-)
+ drivers/thermal/thermal_sys.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 88bcb11..1432c22 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2463,6 +2463,52 @@ err:
- }
- EXPORT_SYMBOL_GPL(regulator_bulk_get);
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index dd9a574..11f5955 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -60,8 +60,6 @@ static LIST_HEAD(thermal_tz_list);
+ static LIST_HEAD(thermal_cdev_list);
+ static DEFINE_MUTEX(thermal_list_lock);
  
-+/**
-+ * devm_regulator_bulk_get - managed get multiple regulator consumers
-+ *
-+ * @dev:           Device to supply
-+ * @num_consumers: Number of consumers to register
-+ * @consumers:     Configuration of consumers; clients are stored here.
-+ *
-+ * @return 0 on success, an errno on failure.
-+ *
-+ * This helper function allows drivers to get several regulator
-+ * consumers in one operation with management, the regulators will
-+ * automatically be freed when the device is unbound.  If any of the
-+ * regulators cannot be acquired then any regulators that were
-+ * allocated will be freed before returning to the caller.
-+ */
-+int devm_regulator_bulk_get(struct device *dev, int num_consumers,
-+			    struct regulator_bulk_data *consumers)
-+{
-+	int i;
-+	int ret;
-+
-+	for (i = 0; i < num_consumers; i++)
-+		consumers[i].consumer = NULL;
-+
-+	for (i = 0; i < num_consumers; i++) {
-+		consumers[i].consumer = devm_regulator_get(dev,
-+							   consumers[i].supply);
-+		if (IS_ERR(consumers[i].consumer)) {
-+			ret = PTR_ERR(consumers[i].consumer);
-+			dev_err(dev, "Failed to get supply '%s': %d\n",
-+				consumers[i].supply, ret);
-+			consumers[i].consumer = NULL;
-+			goto err;
-+		}
-+	}
-+
-+	return 0;
-+
-+err:
-+	for (i = 0; i < num_consumers && consumers[i].consumer; i++)
-+		devm_regulator_put(consumers[i].consumer);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(devm_regulator_bulk_get);
-+
- static void regulator_bulk_enable_async(void *data, async_cookie_t cookie)
+-static unsigned intC;
+-
+ static int get_idr(struct idr *idr, struct mutex *lock, int *id)
  {
- 	struct regulator_bulk_data *bulk = data;
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index 60c2f99..35c4283 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -148,6 +148,8 @@ int regulator_disable_deferred(struct regulator *regulator, int ms);
+ 	int err;
+@@ -1304,6 +1302,8 @@ static struct genl_multicast_group thermal_event_mcgrp = {
+ 	.name = THERMAL_GENL_MCAST_GROUP_NAME,
+ };
  
- int regulator_bulk_get(struct device *dev, int num_consumers,
- 		       struct regulator_bulk_data *consumers);
-+int devm_regulator_bulk_get(struct device *dev, int num_consumers,
-+			    struct regulator_bulk_data *consumers);
- int regulator_bulk_enable(int num_consumers,
- 			  struct regulator_bulk_data *consumers);
- int regulator_bulk_disable(int num_consumers,
++static unsigned int thermal_event_seqnum;
++
+ int generate_netlink_event(u32 orig, enum events event)
+ {
+ 	struct sk_buff *skb;
 -- 
-1.7.7.3
+1.7.1
 
