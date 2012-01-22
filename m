@@ -1,86 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab2AVJaL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 04:30:11 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61722 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2AVJaG convert rfc822-to-8bit (ORCPT
+	id S1751422Ab2AVJ7s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 04:59:48 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44873 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab2AVJ7p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 04:30:06 -0500
+	Sun, 22 Jan 2012 04:59:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120120140157.GA11241@quack.suse.cz>
-References: <CAG3n4CS5vyx2sn9t0geQoxa+kE+Nk9Q-0fwTCU6o9iQ33bORjA@mail.gmail.com>
- <20120120140157.GA11241@quack.suse.cz>
-From: Tomer Margalit <tomermargalit@gmail.com>
-Date: Sun, 22 Jan 2012 11:29:44 +0200
-Message-ID: <CAG3n4CRS5soJkZK4UaAQn8A1jZmTkDJGiks6zrmem9WczSKQ4w@mail.gmail.com>
-Subject: Re: Failing a bio right
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Nezer Zaidenberg <nzaidenberg@mac.com>
+X-Originating-IP: [79.181.26.205]
+In-Reply-To: <1326265454_1663@mail4.comsite.net>
+References: <1326040026-7285-7-git-send-email-gilad@benyossef.com>
+	<1326265454_1663@mail4.comsite.net>
+Date: Sun, 22 Jan 2012 11:59:44 +0200
+Message-ID: <CAOtvUMd4iXTEcmcdW5hpZ+mWbWExvbgzVbz0Zv0TgSiaT9X6QA@mail.gmail.com>
+Subject: Re: [PATCH v6 6/8] fs: only send IPI to invalidate LRU BH when needed
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jav,
+On Wed, Jan 11, 2012 at 9:04 AM, Milton Miller <miltonm@bga.com> wrote:
+> On Sun Jan 08 2012 about 11:28:17 EST, Gilad Ben-Yossef wrote:
 
-Thanks for the reply.
-
-On Fri, Jan 20, 2012 at 4:01 PM, Jan Kara <jack@suse.cz> wrote:
->  Hello,
 >
-> On Thu 19-01-12 18:04:19, Tomer Margalit wrote:
->> I have a make_request function that blocks writes (by using
->> wait_event_interruptible on some event).
->> I want the user to be able to stop the function if it takes too long
->> (that's the reason for the interruptible version).
->> So when the call is interrupted I call bio_endio with the EINTR error
->> to signal the interruption.
->> Usually this works fine, but after a lot of writes, the system says
->> "lost page write due to I/O error on device".
->  This is because end_buffer_write_sync() doesn't really distinguish
-> errors.  So when some error happens it complains about I/O error.
+>> +
+>> +static int local_bh_lru_avail(int cpu, void *dummy)
+>> +{
 >
->> At this point the process hangs.
->  That is strange - you should probably collect stack trace of the failing
-> process (e.g. via 'echo w >/proc/sysrq-trigger'). That should tell us more.
+> This is not about the availibilty of the lru, but rather the
+> decision if it is empty.  How about has_bh_in_lru() ?
+
+Right. Good point.
+
 >
-
-I cannot get a stack trace of the process since it hangs (probably in
-the write) - for instance doing 'gdb -p PID` or `strace -p PID` causes
-those to hang as well. The process doesn't segfault either.
-
->> Is this the right way to do what I'm trying to do?
->  I'm not sure how is it supposed to work. Writes happen usually in an
-
-The bdev I am creating is a virtual disk that replicates writes to a
-remote location. My intention is that it will behave like a socket -
-i.e. block until writes can be done. Actually the bdev is additionally
-meant to be semi-synchronous, so that after a buffer is filled, all
-writes are blocked until some buffers are sent to the remote end.
-
-This works in principle, but when I try to cancel a write which is
-taking too long (for instance 100MB), it doesn't do anything (since
-it's stuck in the kernel).
-
-> async manner (through page cache and flusher thread) or are you using
-> direct IO? Also if a write is interrupted at this point, you just lost the
-
-All of this behavior happens when I do the final fsync(2) after all
-the data has been written.
-
-> content of the buffer (as it is marked clean and !uptodate). Users usually
-> don't like that.
+>> + struct bh_lru *b = per_cpu_ptr(&bh_lrus, cpu);
+>> + int i;
+>>
+>> + for (i = 0; i < BH_LRU_SIZE; i++) {
+>> + if (b->bhs[i])
+>> + return 1;
+>> + }
 >
+>
+> If we change the loop in invalidate_bh to be end to beginning, then we
+> could get by only checking b->bhs[0] instead of all BH_LRU_SIZE words.
+> (The other loops all start by having entry 0 as a valid entry and pushing
+> towards higher slots as they age.)  We might say we don't care, but I
+> think we need to know if another cpu is still invalidating in case it
+> gets stuck in brelse, we need to wait for all the invalidates to occur
+> before we can continue to kill the device.
 
-I don't mind about contents lost since the user doesn't want to wait
-until the end of the write (if done without flush it may take as long
-as it requires, but flushing means wait until writes are done).
+hmm... less cycles for the check and less cache lines to pull from all
+the CPUs is certainly better, but I'm guessing walking backwards on
+the bh_lru array is less cache friendly then doing it in the straight up
+way because of data cache  prediction logic.  Which one has a bigger
+impact? I'm not really sure.
 
-As a side note, I use the fsync since I have also implemented a
-marking mechanism for the bdev - and before creating a mark I need to
-make sure all previous writes have been flushed.
+I do think it's a little bit more complicated then the current dead simple
+approach.
 
-Thanks,
-  Tomer
+I don't really mind making the change but those invalidates are rare. The rest
+of logic in the bh lru management is "dopey-but-simple" (so says the comment
+ so my gut feeling is that its better to have simple code even if possibly less
+optimized in this code path.
+
+> The other question is locking, what covers the window from getting
+> the bh until it is installed if the lru was empty?  It looks like
+> it could be a large hole, but I'm not sure it wasn't there before.
+> By when do we need them freed?  The locking seems to be irq-disable
+> for smp and preempt-disable for up, can we use an RCU grace period?
+
+Good question. As you realized already the only case where we race
+is when going from empty list to having a single item. We'll send an IPI
+in all other cases.
+
+The way I see it, with the current code if you were about
+to install a new bh lru and you got hit with the invalidating IPI
+before you disabled
+preemption/interrupts, you have the same race, and you also have the same
+race if you got the invalidate IPI, cleaned everything up and then someone calls
+to install a bh in the LRU, since there is nothing stopping you from
+installing an LRU bh after the invalidate.
+
+So, if the callers to the invalidate path care about this, they must somehow
+make sure whatever type of BHs (belong to a specific device or fs) they are
+interested in getting  off the LRU are never being added (on any CPU) after the
+point they call the invalidate or they are broken already. Again, this
+is all true
+for the current code to the best of my understanding.
+
+My code doesn't change that. It does make the race window slightly bigger by
+a couple of instructions, though so it might expose subtle bugs we had
+all along.
+I can't really tell if it's a good or bad thing :-)
+
+> There seem to be more on_each_cpu calls in the bdev invalidate
+> so we need more patches, although each round trip though ipi
+> takes time; we could also consider if they take time.
+
+
+Sure, I plan to get to all of them in the end (and also all the work
+queue variants)
+and at least look at them, but I prefer to tackle the low hanging fruits first.
+
+I maintain a rough TODO list of those I intend to visit and status here:
+ https://github.com/gby/linux/wiki
+
+Thanks!
+Gilad
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
