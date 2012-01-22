@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab2AVJY3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 04:24:29 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:44831 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885Ab2AVJYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 04:24:24 -0500
-Message-ID: <4F1BD5C4.9000006@msgid.tls.msk.ru>
-Date: Sun, 22 Jan 2012 13:24:20 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110805 Icedove/5.0
+	id S1751353Ab2AVJaL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 04:30:11 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61722 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2AVJaG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jan 2012 04:30:06 -0500
 MIME-Version: 1.0
-To: Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: overwriting module params given on kernel command line?
-X-Enigmail-Version: 1.2.1
-OpenPGP: id=804465C5
+In-Reply-To: <20120120140157.GA11241@quack.suse.cz>
+References: <CAG3n4CS5vyx2sn9t0geQoxa+kE+Nk9Q-0fwTCU6o9iQ33bORjA@mail.gmail.com>
+ <20120120140157.GA11241@quack.suse.cz>
+From: Tomer Margalit <tomermargalit@gmail.com>
+Date: Sun, 22 Jan 2012 11:29:44 +0200
+Message-ID: <CAG3n4CRS5soJkZK4UaAQn8A1jZmTkDJGiks6zrmem9WczSKQ4w@mail.gmail.com>
+Subject: Re: Failing a bio right
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nezer Zaidenberg <nzaidenberg@mac.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Jav,
 
-I noticed that recent kernels does not allow overwriting
-module parameters given on kernel command line anymore.
+Thanks for the reply.
 
-One particular example of this is ipv6.disable.  I usually
-boot kernel with ipv6.disable=1, because all these systems
-does not have ipv6 connectivity anyway and v6 isn't needed.
-But I remember that in earlier versions it was possible to
-specify this parameter in modprobe line:
+On Fri, Jan 20, 2012 at 4:01 PM, Jan Kara <jack@suse.cz> wrote:
+>  Hello,
+>
+> On Thu 19-01-12 18:04:19, Tomer Margalit wrote:
+>> I have a make_request function that blocks writes (by using
+>> wait_event_interruptible on some event).
+>> I want the user to be able to stop the function if it takes too long
+>> (that's the reason for the interruptible version).
+>> So when the call is interrupted I call bio_endio with the EINTR error
+>> to signal the interruption.
+>> Usually this works fine, but after a lot of writes, the system says
+>> "lost page write due to I/O error on device".
+>  This is because end_buffer_write_sync() doesn't really distinguish
+> errors.  So when some error happens it complains about I/O error.
+>
+>> At this point the process hangs.
+>  That is strange - you should probably collect stack trace of the failing
+> process (e.g. via 'echo w >/proc/sysrq-trigger'). That should tell us more.
+>
 
- rmmod ipv6; modprobe ipv6 disable=0
+I cannot get a stack trace of the process since it hangs (probably in
+the write) - for instance doing 'gdb -p PID` or `strace -p PID` causes
+those to hang as well. The process doesn't segfault either.
 
-and v6 were enabled after this reload (rmmod is possible
-while it is disabled).  It works in, at least, 2.6.32
-kernels.
+>> Is this the right way to do what I'm trying to do?
+>  I'm not sure how is it supposed to work. Writes happen usually in an
 
-But now, in 3.0, the modprobe command line parameter appears
-to be ignored and the one specified on _kernel_ command
-line takes precedence.
+The bdev I am creating is a virtual disk that replicates writes to a
+remote location. My intention is that it will behave like a socket -
+i.e. block until writes can be done. Actually the bdev is additionally
+meant to be semi-synchronous, so that after a buffer is filled, all
+writes are blocked until some buffers are sent to the remote end.
 
-To me, it does not look right, I'd expect modprobe command
-line to be "stronger" than kernel command line.
+This works in principle, but when I try to cancel a write which is
+taking too long (for instance 100MB), it doesn't do anything (since
+it's stuck in the kernel).
 
-So, am I right that kernel command line has more "weight"
-here, and if yes, why?
+> async manner (through page cache and flusher thread) or are you using
+> direct IO? Also if a write is interrupted at this point, you just lost the
+
+All of this behavior happens when I do the final fsync(2) after all
+the data has been written.
+
+> content of the buffer (as it is marked clean and !uptodate). Users usually
+> don't like that.
+>
+
+I don't mind about contents lost since the user doesn't want to wait
+until the end of the write (if done without flush it may take as long
+as it requires, but flushing means wait until writes are done).
+
+As a side note, I use the fsync since I have also implemented a
+marking mechanism for the bdev - and before creating a mark I need to
+make sure all previous writes have been flushed.
 
 Thanks,
-
-/mjt
+  Tomer
