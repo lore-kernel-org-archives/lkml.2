@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab2AVTb6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 14:31:58 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56517 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab2AVTb4 (ORCPT
+	id S1752448Ab2AVTgH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 14:36:07 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:49069 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab2AVTgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 14:31:56 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: David Miller <davem@davemloft.net>
-Subject: Re: recvmsg sleeping from invalid context
-Date: Sun, 22 Jan 2012 20:31:51 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: davej@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <20120113182401.GA25885@redhat.com> <201201220854.59968.maciej.rutecki@gmail.com> <20120122.141006.530154674609252253.davem@davemloft.net>
-In-Reply-To: <20120122.141006.530154674609252253.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	Sun, 22 Jan 2012 14:36:04 -0500
+Date: Sun, 22 Jan 2012 14:35:56 -0500 (EST)
+Message-Id: <20120122.143556.1031473969223729555.davem@davemloft.net>
+To: glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 1/3] net: fix socket memcg build with !CONFIG_NET
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F1AC8F6.1060703@parallels.com>
+References: <1327071436-20763-2-git-send-email-glommer@parallels.com>
+	<20120120.141446.136970067758991080.davem@davemloft.net>
+	<4F1AC8F6.1060703@parallels.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201222031.51116.maciej.rutecki@gmail.com>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 Jan 2012 11:35:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On niedziela, 22 stycznia 2012 o 20:10:06 David Miller wrote:
-> From: Maciej Rutecki <maciej.rutecki@gmail.com>
-> Date: Sun, 22 Jan 2012 08:54:59 +0100
-> 
-> > I created a Bugzilla entry at
-> > https://bugzilla.kernel.org/show_bug.cgi?id=42629
-> > for your bug report, please add your address to the CC list in there,
-> > thanks!
-> 
-> Please don't do this, none of the networking developers use bugzilla,
-> we keep the discussion and analysis going here on netdev.
+From: Glauber Costa <glommer@parallels.com>
+Date: Sat, 21 Jan 2012 18:17:26 +0400
 
-These entries are using for tracking regressions, for *all* kernel parts, 
-without any exception. I see no reason to treat someone differently. If netdev 
-provides any interface to tracking regressions, then show me it. But then why 
-you do not use one common tool for all kernel?
+> I am not removing the static branch. This is just a macro, that
+> expands to the static branch when the options are in place, and to 0
+> if they are not.
+> 
+> if (0) { } is certainly be removed to the compiler, so the code is out
+> anyway.
 
-Regards
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+That's rather non-intuitive, oh well.
+
+I'll apply this, but all of this stuff is an ifdef mess.
