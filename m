@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab2AVD03 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 22:26:29 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34431 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab2AVDZz (ORCPT
+	id S1752216Ab2AVD02 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 22:26:28 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47464 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751870Ab2AVDZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 22:25:55 -0500
+	Sat, 21 Jan 2012 22:25:53 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/17] blkcg: update blkg get functions take blkio_cgroup as parameter
-Date: Sat, 21 Jan 2012 19:25:18 -0800
-Message-Id: <1327202725-3383-11-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/17] blkcg: move rcu_read_lock() outside of blkio_group get functions
+Date: Sat, 21 Jan 2012 19:25:17 -0800
+Message-Id: <1327202725-3383-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1327202725-3383-1-git-send-email-tj@kernel.org>
 References: <1327202725-3383-1-git-send-email-tj@kernel.org>
@@ -21,155 +21,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In both blkg get functions - throtl_get_tg() and cfq_get_cfqg(),
-instead of obtaining blkcg of %current explicitly, let the caller
-specify the blkcg to use as parameter and make both functions hold on
-to the blkcg.
+rcu_read_lock() in throtl_get_tb() and cfq_get_cfqg() holds onto
+@blkcg while looking up blkg.  For API cleanup, the next patch will
+make the caller responsible for determining @blkcg to look blkg from
+and let them specify it as a parameter.  Move rcu read locking out to
+the callers to prepare for the change.
 
-This is part of block cgroup interface cleanup and will help making
-blkcg API more modular.
+-v2: Originally this patch was described as a fix for RCU read locking
+     bug around @blkg, which Vivek pointed out to be incorrect.  It
+     was from misunderstanding the role of rcu locking as protecting
+     @blkg not @blkcg.  Patch description updated.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-throttle.c |   16 +++++++---------
- block/cfq-iosched.c  |   20 ++++++++++++--------
- 2 files changed, 19 insertions(+), 17 deletions(-)
+ block/blk-throttle.c |   18 ++++++------------
+ block/cfq-iosched.c  |   11 +++++------
+ 2 files changed, 11 insertions(+), 18 deletions(-)
 
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 16fb95b..254c8cb 100644
+index 3bc1cc9..16fb95b 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -303,21 +303,23 @@ throtl_grp *throtl_find_tg(struct throtl_data *td, struct blkio_cgroup *blkcg)
- 	return tg;
- }
- 
--static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
-+static struct throtl_grp *throtl_get_tg(struct throtl_data *td,
-+					struct blkio_cgroup *blkcg)
- {
- 	struct throtl_grp *tg = NULL, *__tg = NULL;
--	struct blkio_cgroup *blkcg;
- 	struct request_queue *q = td->queue;
- 
- 	/* no throttling for dead queue */
+@@ -313,25 +313,23 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
  	if (unlikely(blk_queue_bypass(q)))
  		return NULL;
  
--	blkcg = task_blkio_cgroup(current);
+-	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
  	tg = throtl_find_tg(td, blkcg);
- 	if (tg)
+-	if (tg) {
+-		rcu_read_unlock();
++	if (tg)
  		return tg;
+-	}
  
-+	if (!css_tryget(&blkcg->css))
-+		return NULL;
-+
  	/*
  	 * Need to allocate a group. Allocation of group also needs allocation
  	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
-@@ -331,6 +333,7 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+ 	 * we need to drop rcu lock and queue_lock before we call alloc.
+ 	 */
+-	rcu_read_unlock();
+ 	spin_unlock_irq(q->queue_lock);
++	rcu_read_unlock();
+ 
+ 	tg = throtl_alloc_tg(td);
+ 
  	/* Group allocated and queue is still alive. take the lock */
- 	rcu_read_lock();
++	rcu_read_lock();
  	spin_lock_irq(q->queue_lock);
-+	css_put(&blkcg->css);
  
  	/* Make sure @q is still alive */
- 	if (unlikely(blk_queue_bypass(q))) {
-@@ -339,11 +342,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	}
+@@ -343,7 +341,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+ 	/*
+ 	 * Initialize the new group. After sleeping, read the blkcg again.
+ 	 */
+-	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
  
  	/*
--	 * Initialize the new group. After sleeping, read the blkcg again.
--	 */
--	blkcg = task_blkio_cgroup(current);
--
--	/*
- 	 * If some other thread already allocated the group while we were
- 	 * not holding queue lock, free up the group
- 	 */
-@@ -1147,7 +1145,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 	 * IO group
- 	 */
- 	spin_lock_irq(q->queue_lock);
--	tg = throtl_get_tg(td);
-+	tg = throtl_get_tg(td, blkcg);
- 	if (unlikely(!tg))
- 		goto out_unlock;
+@@ -354,7 +351,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
  
+ 	if (__tg) {
+ 		kfree(tg);
+-		rcu_read_unlock();
+ 		return __tg;
+ 	}
+ 
+@@ -365,7 +361,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+ 	}
+ 
+ 	throtl_init_add_tg_lists(td, tg, blkcg);
+-	rcu_read_unlock();
+ 	return tg;
+ }
+ 
+@@ -1134,7 +1129,6 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 	 * basic fields like stats and io rates. If a group has no rules,
+ 	 * just update the dispatch stats in lockless manner and return.
+ 	 */
+-
+ 	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
+ 	tg = throtl_find_tg(td, blkcg);
+@@ -1144,11 +1138,9 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 		if (tg_no_rule_group(tg, rw)) {
+ 			blkiocg_update_dispatch_stats(&tg->blkg, bio->bi_size,
+ 					rw, rw_is_sync(bio->bi_rw));
+-			rcu_read_unlock();
+-			goto out;
++			goto out_unlock_rcu;
+ 		}
+ 	}
+-	rcu_read_unlock();
+ 
+ 	/*
+ 	 * Either group has not been allocated yet or it is not an unlimited
+@@ -1206,6 +1198,8 @@ queue_bio:
+ 
+ out_unlock:
+ 	spin_unlock_irq(q->queue_lock);
++out_unlock_rcu:
++	rcu_read_unlock();
+ out:
+ 	return throttled;
+ }
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 1cc3392..d89d582 100644
+index b110cd8..1cc3392 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1122,17 +1122,19 @@ cfq_find_cfqg(struct cfq_data *cfqd, struct blkio_cgroup *blkcg)
-  * Search for the cfq group current task belongs to. request_queue lock must
-  * be held.
-  */
--static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
-+static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd,
-+				      struct blkio_cgroup *blkcg)
- {
--	struct blkio_cgroup *blkcg;
+@@ -1128,13 +1128,10 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
  	struct cfq_group *cfqg = NULL, *__cfqg = NULL;
  	struct request_queue *q = cfqd->queue;
  
--	blkcg = task_blkio_cgroup(current);
+-	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
  	cfqg = cfq_find_cfqg(cfqd, blkcg);
- 	if (cfqg)
+-	if (cfqg) {
+-		rcu_read_unlock();
++	if (cfqg)
  		return cfqg;
+-	}
  
-+	if (!css_tryget(&blkcg->css))
-+		return NULL;
-+
  	/*
  	 * Need to allocate a group. Allocation of group also needs allocation
- 	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
-@@ -1142,16 +1144,14 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
- 	 * around by the time we return. CFQ queue allocation code does
- 	 * the same. It might be racy though.
- 	 */
--
- 	rcu_read_unlock();
- 	spin_unlock_irq(q->queue_lock);
+@@ -1164,7 +1161,6 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
  
- 	cfqg = cfq_alloc_cfqg(cfqd);
+ 	if (__cfqg) {
+ 		kfree(cfqg);
+-		rcu_read_unlock();
+ 		return __cfqg;
+ 	}
  
- 	spin_lock_irq(q->queue_lock);
--
- 	rcu_read_lock();
--	blkcg = task_blkio_cgroup(current);
-+	css_put(&blkcg->css);
+@@ -1172,7 +1168,6 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
+ 		cfqg = &cfqd->root_group;
  
- 	/*
- 	 * If some other thread already allocated the group while we were
-@@ -1271,7 +1271,8 @@ static void cfq_clear_queue(struct request_queue *q)
+ 	cfq_init_add_cfqg_lists(cfqd, cfqg, blkcg);
+-	rcu_read_unlock();
+ 	return cfqg;
  }
  
- #else /* GROUP_IOSCHED */
--static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
-+static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd,
-+				      struct blkio_cgroup *blkcg)
- {
- 	return &cfqd->root_group;
- }
-@@ -2860,6 +2861,7 @@ static struct cfq_queue *
- cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
- 		     struct io_context *ioc, gfp_t gfp_mask)
- {
-+	struct blkio_cgroup *blkcg;
- 	struct cfq_queue *cfqq, *new_cfqq = NULL;
- 	struct cfq_io_cq *cic;
+@@ -2870,6 +2865,8 @@ cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
  	struct cfq_group *cfqg;
-@@ -2867,7 +2869,9 @@ cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
- retry:
- 	rcu_read_lock();
  
--	cfqg = cfq_get_cfqg(cfqd);
-+	blkcg = task_blkio_cgroup(current);
+ retry:
++	rcu_read_lock();
 +
-+	cfqg = cfq_get_cfqg(cfqd, blkcg);
+ 	cfqg = cfq_get_cfqg(cfqd);
  	cic = cfq_cic_lookup(cfqd, ioc);
  	/* cic always exists here */
- 	cfqq = cic_to_cfqq(cic, is_sync);
+@@ -2885,6 +2882,7 @@ retry:
+ 			cfqq = new_cfqq;
+ 			new_cfqq = NULL;
+ 		} else if (gfp_mask & __GFP_WAIT) {
++			rcu_read_unlock();
+ 			spin_unlock_irq(cfqd->queue->queue_lock);
+ 			new_cfqq = kmem_cache_alloc_node(cfq_pool,
+ 					gfp_mask | __GFP_ZERO,
+@@ -2910,6 +2908,7 @@ retry:
+ 	if (new_cfqq)
+ 		kmem_cache_free(cfq_pool, new_cfqq);
+ 
++	rcu_read_unlock();
+ 	return cfqq;
+ }
+ 
 -- 
 1.7.7.3
 
