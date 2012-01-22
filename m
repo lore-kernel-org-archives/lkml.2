@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab2AVD02 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 22:26:28 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47464 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751870Ab2AVDZx (ORCPT
+	id S1752196Ab2AVD0Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 22:26:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34431 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab2AVDZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 22:25:53 -0500
+	Sat, 21 Jan 2012 22:25:50 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/17] blkcg: move rcu_read_lock() outside of blkio_group get functions
-Date: Sat, 21 Jan 2012 19:25:17 -0800
-Message-Id: <1327202725-3383-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/17] blkcg: shoot down blkio_groups on elevator switch
+Date: Sat, 21 Jan 2012 19:25:16 -0800
+Message-Id: <1327202725-3383-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1327202725-3383-1-git-send-email-tj@kernel.org>
 References: <1327202725-3383-1-git-send-email-tj@kernel.org>
@@ -21,171 +21,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rcu_read_lock() in throtl_get_tb() and cfq_get_cfqg() holds onto
-@blkcg while looking up blkg.  For API cleanup, the next patch will
-make the caller responsible for determining @blkcg to look blkg from
-and let them specify it as a parameter.  Move rcu read locking out to
-the callers to prepare for the change.
-
--v2: Originally this patch was described as a fix for RCU read locking
-     bug around @blkg, which Vivek pointed out to be incorrect.  It
-     was from misunderstanding the role of rcu locking as protecting
-     @blkg not @blkcg.  Patch description updated.
+Elevator switch may involve changes to blkcg policies.  Shoot down all
+blkg's while preparing for elevator switch.  Combined with the
+previous bypass updates, this ensures that no blkg exists until
+elevator switch is complete and will allow moving blkg management to
+blkcg core layer.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-throttle.c |   18 ++++++------------
- block/cfq-iosched.c  |   11 +++++------
- 2 files changed, 11 insertions(+), 18 deletions(-)
+ block/blk-cgroup.c   |   12 ++++++++++++
+ block/blk-cgroup.h   |    6 +++++-
+ block/blk-throttle.c |    7 +++++++
+ block/cfq-iosched.c  |   11 +++++++++++
+ block/elevator.c     |    2 ++
+ 5 files changed, 37 insertions(+), 1 deletions(-)
 
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index cbaad8c..f344b53 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -1619,6 +1619,18 @@ done:
+ 	return &blkcg->css;
+ }
+ 
++void blkcg_clear_queue(struct request_queue *q)
++{
++	struct blkio_policy_type *pol;
++
++	lockdep_assert_held(q->queue_lock);
++
++	spin_lock(&blkio_list_lock);
++	list_for_each_entry(pol, &blkio_list, list)
++		pol->ops.blkio_clear_queue_fn(q);
++	spin_unlock(&blkio_list_lock);
++}
++
+ /*
+  * We cannot support shared io contexts, as we have no mean to support
+  * two tasks with the same ioc in two different groups without major rework
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 3551687..6fa49cb 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -203,7 +203,7 @@ extern unsigned int blkcg_get_write_iops(struct blkio_cgroup *blkcg,
+ 				     dev_t dev);
+ 
+ typedef void (blkio_unlink_group_fn) (void *key, struct blkio_group *blkg);
+-
++typedef void (blkio_clear_queue_fn)(struct request_queue *q);
+ typedef void (blkio_update_group_weight_fn) (void *key,
+ 			struct blkio_group *blkg, unsigned int weight);
+ typedef void (blkio_update_group_read_bps_fn) (void * key,
+@@ -217,6 +217,7 @@ typedef void (blkio_update_group_write_iops_fn) (void *key,
+ 
+ struct blkio_policy_ops {
+ 	blkio_unlink_group_fn *blkio_unlink_group_fn;
++	blkio_clear_queue_fn *blkio_clear_queue_fn;
+ 	blkio_update_group_weight_fn *blkio_update_group_weight_fn;
+ 	blkio_update_group_read_bps_fn *blkio_update_group_read_bps_fn;
+ 	blkio_update_group_write_bps_fn *blkio_update_group_write_bps_fn;
+@@ -230,6 +231,8 @@ struct blkio_policy_type {
+ 	enum blkio_policy_id plid;
+ };
+ 
++extern void blkcg_clear_queue(struct request_queue *q);
++
+ /* Blkio controller policy registration */
+ extern void blkio_policy_register(struct blkio_policy_type *);
+ extern void blkio_policy_unregister(struct blkio_policy_type *);
+@@ -247,6 +250,7 @@ struct blkio_group {
+ struct blkio_policy_type {
+ };
+ 
++static inline void blkcg_clear_queue(struct request_queue *q) { }
+ static inline void blkio_policy_register(struct blkio_policy_type *blkiop) { }
+ static inline void blkio_policy_unregister(struct blkio_policy_type *blkiop) { }
+ 
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 3bc1cc9..16fb95b 100644
+index 702c0e6..3bc1cc9 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -313,25 +313,23 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	if (unlikely(blk_queue_bypass(q)))
- 		return NULL;
- 
--	rcu_read_lock();
- 	blkcg = task_blkio_cgroup(current);
- 	tg = throtl_find_tg(td, blkcg);
--	if (tg) {
--		rcu_read_unlock();
-+	if (tg)
- 		return tg;
--	}
- 
- 	/*
- 	 * Need to allocate a group. Allocation of group also needs allocation
- 	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
- 	 * we need to drop rcu lock and queue_lock before we call alloc.
- 	 */
--	rcu_read_unlock();
- 	spin_unlock_irq(q->queue_lock);
-+	rcu_read_unlock();
- 
- 	tg = throtl_alloc_tg(td);
- 
- 	/* Group allocated and queue is still alive. take the lock */
-+	rcu_read_lock();
- 	spin_lock_irq(q->queue_lock);
- 
- 	/* Make sure @q is still alive */
-@@ -343,7 +341,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	/*
- 	 * Initialize the new group. After sleeping, read the blkcg again.
- 	 */
--	rcu_read_lock();
- 	blkcg = task_blkio_cgroup(current);
- 
- 	/*
-@@ -354,7 +351,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 
- 	if (__tg) {
- 		kfree(tg);
--		rcu_read_unlock();
- 		return __tg;
- 	}
- 
-@@ -365,7 +361,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	}
- 
- 	throtl_init_add_tg_lists(td, tg, blkcg);
--	rcu_read_unlock();
- 	return tg;
+@@ -1029,6 +1029,12 @@ void throtl_unlink_blkio_group(void *key, struct blkio_group *blkg)
+ 	spin_unlock_irqrestore(td->queue->queue_lock, flags);
  }
  
-@@ -1134,7 +1129,6 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 	 * basic fields like stats and io rates. If a group has no rules,
- 	 * just update the dispatch stats in lockless manner and return.
- 	 */
--
- 	rcu_read_lock();
- 	blkcg = task_blkio_cgroup(current);
- 	tg = throtl_find_tg(td, blkcg);
-@@ -1144,11 +1138,9 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 		if (tg_no_rule_group(tg, rw)) {
- 			blkiocg_update_dispatch_stats(&tg->blkg, bio->bi_size,
- 					rw, rw_is_sync(bio->bi_rw));
--			rcu_read_unlock();
--			goto out;
-+			goto out_unlock_rcu;
- 		}
- 	}
--	rcu_read_unlock();
- 
- 	/*
- 	 * Either group has not been allocated yet or it is not an unlimited
-@@ -1206,6 +1198,8 @@ queue_bio:
- 
- out_unlock:
- 	spin_unlock_irq(q->queue_lock);
-+out_unlock_rcu:
-+	rcu_read_unlock();
- out:
- 	return throttled;
- }
++static void throtl_clear_queue(struct request_queue *q)
++{
++	lockdep_assert_held(q->queue_lock);
++	throtl_release_tgs(q->td);
++}
++
+ static void throtl_update_blkio_group_common(struct throtl_data *td,
+ 				struct throtl_grp *tg)
+ {
+@@ -1097,6 +1103,7 @@ static void throtl_shutdown_wq(struct request_queue *q)
+ static struct blkio_policy_type blkio_policy_throtl = {
+ 	.ops = {
+ 		.blkio_unlink_group_fn = throtl_unlink_blkio_group,
++		.blkio_clear_queue_fn = throtl_clear_queue,
+ 		.blkio_update_group_read_bps_fn =
+ 					throtl_update_blkio_group_read_bps,
+ 		.blkio_update_group_write_bps_fn =
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index b110cd8..1cc3392 100644
+index f3d6b04..b110cd8 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1128,13 +1128,10 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
- 	struct cfq_group *cfqg = NULL, *__cfqg = NULL;
- 	struct request_queue *q = cfqd->queue;
- 
--	rcu_read_lock();
- 	blkcg = task_blkio_cgroup(current);
- 	cfqg = cfq_find_cfqg(cfqd, blkcg);
--	if (cfqg) {
--		rcu_read_unlock();
-+	if (cfqg)
- 		return cfqg;
--	}
- 
- 	/*
- 	 * Need to allocate a group. Allocation of group also needs allocation
-@@ -1164,7 +1161,6 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
- 
- 	if (__cfqg) {
- 		kfree(cfqg);
--		rcu_read_unlock();
- 		return __cfqg;
- 	}
- 
-@@ -1172,7 +1168,6 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
- 		cfqg = &cfqd->root_group;
- 
- 	cfq_init_add_cfqg_lists(cfqd, cfqg, blkcg);
--	rcu_read_unlock();
- 	return cfqg;
+@@ -1265,6 +1265,16 @@ static void cfq_unlink_blkio_group(void *key, struct blkio_group *blkg)
+ 	spin_unlock_irqrestore(cfqd->queue->queue_lock, flags);
  }
  
-@@ -2870,6 +2865,8 @@ cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
- 	struct cfq_group *cfqg;
- 
- retry:
-+	rcu_read_lock();
++static struct elevator_type iosched_cfq;
 +
- 	cfqg = cfq_get_cfqg(cfqd);
- 	cic = cfq_cic_lookup(cfqd, ioc);
- 	/* cic always exists here */
-@@ -2885,6 +2882,7 @@ retry:
- 			cfqq = new_cfqq;
- 			new_cfqq = NULL;
- 		} else if (gfp_mask & __GFP_WAIT) {
-+			rcu_read_unlock();
- 			spin_unlock_irq(cfqd->queue->queue_lock);
- 			new_cfqq = kmem_cache_alloc_node(cfq_pool,
- 					gfp_mask | __GFP_ZERO,
-@@ -2910,6 +2908,7 @@ retry:
- 	if (new_cfqq)
- 		kmem_cache_free(cfq_pool, new_cfqq);
++static void cfq_clear_queue(struct request_queue *q)
++{
++	lockdep_assert_held(q->queue_lock);
++	/* shoot down blkgs iff the current elevator is cfq */
++	if (q->elevator->type == &iosched_cfq)
++		cfq_release_cfq_groups(q->elevator->elevator_data);
++}
++
+ #else /* GROUP_IOSCHED */
+ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
+ {
+@@ -3881,6 +3891,7 @@ static struct elevator_type iosched_cfq = {
+ static struct blkio_policy_type blkio_policy_cfq = {
+ 	.ops = {
+ 		.blkio_unlink_group_fn =	cfq_unlink_blkio_group,
++		.blkio_clear_queue_fn = cfq_clear_queue,
+ 		.blkio_update_group_weight_fn =	cfq_update_blkio_group_weight,
+ 	},
+ 	.plid = BLKIO_POLICY_PROP,
+diff --git a/block/elevator.c b/block/elevator.c
+index 078a491..5e371e4 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -38,6 +38,7 @@
+ #include <trace/events/block.h>
  
-+	rcu_read_unlock();
- 	return cfqq;
- }
+ #include "blk.h"
++#include "blk-cgroup.h"
  
+ static DEFINE_SPINLOCK(elv_list_lock);
+ static LIST_HEAD(elv_list);
+@@ -939,6 +940,7 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
+ 
+ 	spin_lock_irq(q->queue_lock);
+ 	ioc_clear_queue(q);
++	blkcg_clear_queue(q);
+ 	spin_unlock_irq(q->queue_lock);
+ 
+ 	/* allocate, init and register new elevator */
 -- 
 1.7.7.3
 
