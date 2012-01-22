@@ -1,89 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab2AXGMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 01:12:17 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:38107 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751235Ab2AXGMQ (ORCPT
+	id S1754012Ab2AXGOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 01:14:20 -0500
+Received: from [108.167.133.190] ([108.167.133.190]:58315 "EHLO
+	daw.dawaerna.info" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750885Ab2AXGOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 01:12:16 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAF5LHk95LElR/2dsb2JhbABCrimBBoFyAQEEATocIwULCAMYLhQlAyETh3wIuEATjBMElReSYg
-Date: Tue, 24 Jan 2012 17:12:11 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Edward Shishkin <edward@redhat.com>
-Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
-Message-ID: <20120124061211.GK15102@dastard>
-References: <1325774407-28531-1-git-send-email-jack@suse.cz>
- <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
- <20120116160136.GC16431@quack.suse.cz>
- <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
- <20120117003613.GA28571@dastard>
- <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
- <20120123030422.GE15102@dastard>
- <20120123214709.GB17974@thunk.org>
- <CA+55aFxggjW6FKhf7KSCRMD-4YF9ymsxDQ+EMtUTThX16r-8tw@mail.gmail.com>
+	Tue, 24 Jan 2012 01:14:19 -0500
+X-Greylist: delayed 134874 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jan 2012 01:14:19 EST
+To: linux-kernel@vger.kernel.org
+Subject: =?win1256?B?x+HT7c8gx+Hf0e3jIM3d2eUgx+Hh5aE=?=
+X-PHP-Script: 108.167.133.190/~dawaerna/maillist/maillist/admin.php for 213.6.58.11
+Date: Sun, 22 Jan 2012 10:46:25 -0600
+From: "Dawaer Co." <dawaer.list@yahoo.com>
+Message-ID: <56c80ff92ef3ea7331c4a5c1a0084cc2@108.167.133.190>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.72]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxggjW6FKhf7KSCRMD-4YF9ymsxDQ+EMtUTThX16r-8tw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="win1256"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - daw.dawaerna.info
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [500 500] / [47 12]
+X-AntiAbuse: Sender Address Domain - daw.dawaerna.info
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 03:49:39PM -0800, Linus Torvalds wrote:
-> On Mon, Jan 23, 2012 at 1:47 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> >
-> > So how does XFS decide whether a write should fail and shutdown the
-> > file system, or just "try forever"?
-> 
-> Why would it bother? XFS tends to be a filesystem that you'd only use
-> for core files in environments where you have a system manager that
-> knows what he is doing.
+ÇáÓíÏ ÇáßÑíã ÍÝÙå Çááå¡
+ÇáÓáÇã Úáíßã æÑÍãÉ Çááå æ ÈÑßÇÊå¡
+ 
+íãßäßã ÊÕãíã Ãæ ÊØæíÑ ãæÞÚßã ÇáÇáßÊÑæäí ÈÃÝÖá ÇáÃÓÚÇÑ æ ÃÌæÏ ÇáÊÞäíÇÊ.
+ 
+áÇ ÊÊÑÏÏ ÈÒíÇÑÉ ãæÞÚäÇ ÇáÇáßÊÑæäí www.dawaer.ps 
+ 
+ÏÇÆÑÉ ÇáÊÓæíÞ
+ÔÑßÉ ÏæÇÆÑ
 
-Oh, man, what a troll.
-
-Even my *TV* uses XFS. First google reference:
-
-http://settorezero.blogspot.com/2010/10/xfs-filesystem-and-samsung-ledtvs.html
-
-You won't find a more hostile "pull-the-drive-without-unmounting"
-environment than a TV. XFS handles this sort of stuff just fine and
-it has for a long time.
-
-> So there, maybe "try forever" is the right
-> thing to do.
-
-You still haven't grasped that there are many different
-classes of IO errors and that some require different handling to
-others. :/
-
-> Things are a bit different with some random unreliable USB stick FAT32
-> filesystem that just died on you, with a normal user that just removes
-> the thing or doesn't even notice that the stick is now dead. There the
-> "try forever" is totally the wrong thing to do.
-
-I'm not saying that "try forever" is how all errors should be
-handled. You are completely focussed on that as the only possible
-error handling technique that can be used. Stop being stupid!
-
-I'm saying that the dirty, uptodate, errored buffer should
-be handled back to the filesystem so that it can decide what to do
-with it.  For filesystems that can differentiate the types of
-errors, let them choose how to handle the problem. Those that are
-unable to handle the error can do the invalidation themselves. One
-size does not fit all...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
