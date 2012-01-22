@@ -1,39 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751021Ab2AVHo3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 02:44:29 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33069 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab2AVHo2 (ORCPT
+	id S1751165Ab2AVHzI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 02:55:08 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34359 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab2AVHzG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 02:44:28 -0500
+	Sun, 22 Jan 2012 02:55:06 -0500
 From: Maciej Rutecki <maciej.rutecki@gmail.com>
 Reply-To: maciej.rutecki@gmail.com
-To: "Dmitry D. Khlebnikov" <galaxy@openwall.com>
-Subject: Re: kernel 3.2 crashes too early on HP dc7700 and HP t5000 series
-Date: Sun, 22 Jan 2012 08:44:21 +0100
+To: Dave Jones <davej@redhat.com>
+Subject: Re: recvmsg sleeping from invalid context
+Date: Sun, 22 Jan 2012 08:54:59 +0100
 User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <20120110114905.GC13535@openwall.com> <201201191908.01122.maciej.rutecki@gmail.com> <20120121122248.GJ13535@openwall.com>
-In-Reply-To: <20120121122248.GJ13535@openwall.com>
+Cc: netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120113182401.GA25885@redhat.com>
+In-Reply-To: <20120113182401.GA25885@redhat.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201220844.21391.maciej.rutecki@gmail.com>
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201201220854.59968.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sobota, 21 stycznia 2012 o 13:22:48 Dmitry D. Khlebnikov wrote:
-> gm.outside+lklm@gmail.com"?
+On piątek, 13 stycznia 2012 o 19:24:01 Dave Jones wrote:
+> getting a ton of these on the latest head
+> (099469502f62fbe0d7e4f0b83a2f22538367f734)
+> 
+> BUG: sleeping function called from invalid context at mm/memory.c:3905
+> in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
+> INFO: lockdep is turned off.
+> Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
+> Call Trace:
+>  [<ffffffff81099415>] __might_sleep+0x145/0x200
+>  [<ffffffff811752a4>] might_fault+0x34/0xb0
+>  [<ffffffff81551555>] ? sock_def_readable+0x25/0x1a0
+>  [<ffffffff8155c387>] put_cmsg+0x77/0x120
+>  [<ffffffff8159379c>] netlink_recvmsg+0x35c/0x480
+>  [<ffffffff8155201a>] ? sock_update_classid+0x9a/0x260
+>  [<ffffffff81552052>] ? sock_update_classid+0xd2/0x260
+>  [<ffffffff81549fbd>] sock_recvmsg+0x11d/0x140
+>  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
+>  [<ffffffff8117530c>] ? might_fault+0x9c/0xb0
+>  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
+>  [<ffffffff8154b1b3>] __sys_recvmsg+0x153/0x2d0
+>  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+>  [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
+>  [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
+>  [<ffffffff811bc43b>] ? fget_light+0xfb/0x470
+>  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+>  [<ffffffff8154e2e9>] sys_recvmsg+0x49/0x90
+>  [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
+> 
+> 
+> BUG: sleeping function called from invalid context at kernel/mutex.c:271
+> in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
+> INFO: lockdep is turned off.
+> Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
+> Call Trace:
+>  [<ffffffff81099415>] __might_sleep+0x145/0x200
+>  [<ffffffff816a529e>] mutex_lock_nested+0x2e/0x50
+>  [<ffffffff812022d0>] inotify_poll+0x30/0x60
+>  [<ffffffff811d16f0>] do_sys_poll+0x280/0x500
+>  [<ffffffff811d01b0>] ? poll_freewait+0xe0/0xe0
+>  [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+>  [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+>  [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+>  [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+>  [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+>  [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+>  [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+>  [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
+>  [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
+>  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+>  [<ffffffff8154dc2b>] ? sys_sendto+0x15b/0x190
+>  [<ffffffff810b776d>] ? ktime_get_ts+0xad/0xe0
+>  [<ffffffff811d049a>] ? poll_select_set_timeout+0x7a/0x90
+>  [<ffffffff811d1a56>] sys_poll+0x76/0x110
+>  [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
+> 
 
-I remove previous e-mail, but you must add e-mail above yourself, because I 
-got:
-"CC: 	
-gm.outside+lklm@xxxxx did not match anything "
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=42629
+for your bug report, please add your address to the CC list in there, thanks!
 
-Regards
 -- 
 Maciej Rutecki
 http://www.mrutecki.pl
