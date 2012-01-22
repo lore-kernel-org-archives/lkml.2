@@ -1,183 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab2AVUqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 15:46:25 -0500
-Received: from smtp-out003.kontent.com ([81.88.40.217]:38327 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab2AVUqX (ORCPT
+	id S1752529Ab2AVVI6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 16:08:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50508 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2AVVI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 15:46:23 -0500
-From: Oliver Neukum <oliver@neukum.org>
-To: ondra.havel@gmail.com
-Subject: Re: [PATCH] input: Hanvon Art Master I and Rollick tablet support (USB)
-Date: Sun, 22 Jan 2012 21:48:12 +0100
-User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-References: <alpine.LRH.2.00.1201222100130.6825@linux.fjfi.cvut.cz>
-In-Reply-To: <alpine.LRH.2.00.1201222100130.6825@linux.fjfi.cvut.cz>
+	Sun, 22 Jan 2012 16:08:56 -0500
+Date: Sun, 22 Jan 2012 13:08:13 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-46cd6a7f680d14f6f80ede9f04aeb70fa83bd266@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@gmail.com, mingo@elte.hu
+In-Reply-To: <1327021966-27688-2-git-send-email-namhyung.kim@lge.com>
+References: <1327021966-27688-2-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Call perf_cgroup_event_time() directly
+Git-Commit-ID: 46cd6a7f680d14f6f80ede9f04aeb70fa83bd266
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201222148.13247.oliver@neukum.org>
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 22 Jan 2012 13:08:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 22. Januar 2012, 21:07:49 schrieb ondra.havel@gmail.com:
+Commit-ID:  46cd6a7f680d14f6f80ede9f04aeb70fa83bd266
+Gitweb:     http://git.kernel.org/tip/46cd6a7f680d14f6f80ede9f04aeb70fa83bd266
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Fri, 20 Jan 2012 10:12:46 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 21 Jan 2012 09:33:42 +0100
 
-> +static void hanvon_irq(struct urb *urb)
-> +{
-> +	struct hanvon *hanvon = urb->context;
-> +	unsigned char *data = hanvon->data;
-> +	struct input_dev *dev = hanvon->dev;
-> +	int retval;
-> +
-> +	switch (urb->status) {
-> +		case 0:
-> +			/* success */
-> +			break;
-> +		case -ECONNRESET:
-> +		case -ENOENT:
-> +		case -ESHUTDOWN:
-> +			/* this urb is terminated, clean up */
-> +			dbg("%s - urb shutting down with status: %d", __func__, urb->status);
-> +			return;
-> +		default:
-> +			dbg("%s - nonzero urb status received: %d", __func__, urb->status);
-> +			goto exit;
-> +	}
-> +
-> +	switch(data[0]) {
-> +		case 0x01:	/* button press */
-> +			if(data[1]==0x55)	/* left side */
-> +				report_buttons(hanvon,lbuttons,data[2]);
-> +
-> +			if(data[3]==0xaa)	/* right side (am1107, am1209) */
-> +				report_buttons(hanvon,rbuttons,data[4]);
-> +			break;
-> +		case 0x02:	/* position change */
-> +			if((data[1] & 0xf0) != 0) {
-> +				input_report_abs(dev, ABS_X, get_unaligned_be16(&data[2]));
-> +				input_report_abs(dev, ABS_Y, get_unaligned_be16(&data[4]));
+perf: Call perf_cgroup_event_time() directly
 
-Why unaligned?
+The perf_event_time() will call perf_cgroup_event_time()
+if @event is a cgroup event. Just do it directly and avoid
+the extra check..
 
-> +				input_report_abs(dev, ABS_TILT_X, data[7] & 0x3f);
-> +				input_report_abs(dev, ABS_TILT_Y, data[8]);
-> +				input_report_abs(dev, ABS_PRESSURE, get_unaligned_be16(&data[6])>>6);
-> +			}
-> +
-> +		input_report_key(dev, BTN_LEFT, data[1] & 0x1);
-> +		input_report_key(dev, BTN_RIGHT, data[1] & 0x2);		/* stylus button pressed (right click) */
-> +		input_report_key(dev, lbuttons[0], data[1] & 0x20);
-> +		break;
-> +	}
-> +
-> +	input_sync(dev);
-> +
-> +exit:
-> +	retval = usb_submit_urb (urb, GFP_ATOMIC);
-> +	if (retval)
-> +		err("%s - usb_submit_urb failed with result %d", __func__, retval);
-> +}
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/1327021966-27688-2-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/events/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-[..]
-> +static int hanvon_probe(struct usb_interface *intf, const struct usb_device_id *id)
-> +{
-> +	struct usb_device *dev = interface_to_usbdev(intf);
-> +	struct usb_endpoint_descriptor *endpoint;
-> +	struct hanvon *hanvon;
-> +	struct input_dev *input_dev;
-> +	int error = -ENOMEM, i;
-> +
-> +	hanvon = kzalloc(sizeof(struct hanvon), GFP_KERNEL);
-> +	input_dev = input_allocate_device();
-> +	if (!hanvon || !input_dev)
-> +		goto fail1;
-> +
-> +	hanvon->data = (unsigned char *)usb_alloc_coherent(dev, USB_AM_PACKET_LEN, GFP_KERNEL, &hanvon->data_dma);
-> +	if (!hanvon->data)
-> +		goto fail1;
-> +
-> +	hanvon->irq = usb_alloc_urb(0, GFP_KERNEL);
-> +	if (!hanvon->irq)
-> +		goto fail2;
-> +
-> +	hanvon->usbdev = dev;
-> +	hanvon->dev = input_dev;
-> +
-> +	usb_make_path(dev, hanvon->phys, sizeof(hanvon->phys));
-> +	strlcat(hanvon->phys, "/input0", sizeof(hanvon->phys));
-> +
-> +	input_dev->name = "Hanvon Artmaster I tablet";
-> +	input_dev->phys = hanvon->phys;
-> +	usb_to_input_id(dev, &input_dev->id);
-> +	input_dev->dev.parent = &intf->dev;
-> +
-> +	input_set_drvdata(input_dev, hanvon);
-> +
-> +	input_dev->open = hanvon_open;
-> +	input_dev->close = hanvon_close;
-> +
-> +	input_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS) | BIT_MASK(EV_REL);
-> +	input_dev->keybit[BIT_WORD(BTN_DIGI)] |= BIT_MASK(BTN_TOOL_PEN) | BIT_MASK(BTN_TOUCH);
-> +	input_dev->keybit[BIT_WORD(BTN_LEFT)] |= BIT_MASK(BTN_LEFT) | BIT_MASK(BTN_RIGHT);
-> +	for(i=0;i<sizeof(lbuttons)/sizeof(lbuttons[0]);i++)
-> +		__set_bit(lbuttons[i], input_dev->keybit);
-> +	for(i=0;i<sizeof(rbuttons)/sizeof(rbuttons[0]);i++)
-> +		__set_bit(rbuttons[i], input_dev->keybit);
-> +
-> +	input_set_abs_params(input_dev, ABS_X, 0, AM_MAX_ABS_X, 4, 0);
-> +	input_set_abs_params(input_dev, ABS_Y, 0, AM_MAX_ABS_Y, 4, 0);
-> +	input_set_abs_params(input_dev, ABS_TILT_X, 0, AM_MAX_TILT_X, 0, 0);
-> +	input_set_abs_params(input_dev, ABS_TILT_Y, 0, AM_MAX_TILT_Y, 0, 0);
-> +	input_set_abs_params(input_dev, ABS_PRESSURE, 0, AM_MAX_PRESSURE, 0, 0);
-> +	input_set_capability(input_dev, EV_REL, REL_WHEEL);
-> +
-> +	endpoint = &intf->cur_altsetting->endpoint[0].desc;
-> +
-> +	usb_fill_int_urb(hanvon->irq, dev,
-> +			 usb_rcvintpipe(dev, endpoint->bEndpointAddress),
-> +			 hanvon->data, USB_AM_PACKET_LEN,
-> +			 hanvon_irq, hanvon, endpoint->bInterval);
-> +	hanvon->irq->transfer_dma = hanvon->data_dma;
-> +	hanvon->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-> +
-> +	error = input_register_device(hanvon->dev);
-> +	if (error)
-> +		goto fail3;
-> +
-> +	usb_set_intfdata(intf, hanvon);
-> +	return 0;
-> +
-> +fail3:	usb_free_urb(hanvon->irq);
-> +fail2:	usb_free_coherent(dev, USB_AM_PACKET_LEN, hanvon->data, hanvon->data_dma);
-> +fail1:	input_free_device(input_dev);
-> +	kfree(hanvon);
-> +	return error;
-> +}
-> +
-> +static void hanvon_disconnect(struct usb_interface *intf)
-> +{
-> +	struct hanvon *hanvon = usb_get_intfdata(intf);
-> +
-> +	usb_set_intfdata(intf, NULL);
-> +	if (hanvon) {
-
-How can it be NULL?
-
-> +		usb_kill_urb(hanvon->irq);
-
-Here you race with open()
-
-> +		input_unregister_device(hanvon->dev);
-> +		usb_free_urb(hanvon->irq);
-> +		usb_free_coherent(interface_to_usbdev(intf), USB_AM_PACKET_LEN, hanvon->data, hanvon->data_dma);
-> +		kfree(hanvon);
-> +	}
-> +}
-
-	Regards
-		Oliver
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a8f4ac0..32b48c8 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -815,7 +815,7 @@ static void update_event_times(struct perf_event *event)
+ 	 * here.
+ 	 */
+ 	if (is_cgroup_event(event))
+-		run_end = perf_event_time(event);
++		run_end = perf_cgroup_event_time(event);
+ 	else if (ctx->is_active)
+ 		run_end = ctx->time;
+ 	else
