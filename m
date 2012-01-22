@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab2AVBwW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 20:52:22 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:48532 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab2AVBwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 20:52:21 -0500
-Message-ID: <4F1B6BCE.3070105@interlog.com>
-Date: Sat, 21 Jan 2012 20:52:14 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1751567Ab2AVC1p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 21:27:45 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46826 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab2AVC1n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jan 2012 21:27:43 -0500
+Message-ID: <4F1B741C.3050903@lwfinger.net>
+Date: Sat, 21 Jan 2012 20:27:40 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>
-CC: Tomas Fasth <tomfa@debian.org>, Martin Pitt <mpitt@debian.org>,
-        kumba@gentoo.org, =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] sdparm 1.07 available
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, wireless <linux-wireless@vger.kernel.org>,
+        Alok Kataria <akataria@vmware.com>, Dan Hecht <dhecht@vmware.com>
+Subject: Re: (Very old) Regression following commit bfc0f59
+References: <4F1B71F5.6020000@lwfinger.net>
+In-Reply-To: <4F1B71F5.6020000@lwfinger.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sdparm is a command line utility designed to get and set
-SCSI device parameters (cf hdparm for ATA disks). The
-parameters are held in mode pages. Apart from SCSI devices
-(e.g. disks, tapes and enclosures) sdparm can be used on
-any device that uses a SCSI command set. Almost all CD/DVD/BD
-drives use the SCSI MMC set irrespective of the transport.
-sdparm also can decode VPD pages including the device
-identification page. Commands to start and stop the media;
-load and unload removable media and some other housekeeping
-functions are supported. sdparm supports both the Linux
-kernel 2.4 and 2.6 series with ports to FreeBSD, Solaris,
-Tru64 and Windows.
+On 01/21/2012 08:18 PM, Larry Finger wrote:
+> I recently discovered that an ancient laptop built by Mtech and containing an
+> AMD K6 450/2 CPU was generating errors when using the Cardbus versions of
+> Broadcom cards using either b43 of b43legacy. Expecting some change in those
+> drivers or ssb, I found a kernel old enough to work without the error, and did a
+> bisection. I was very surprised when "x86: merge tsc calibration", which is
+> commit bfc0f5947afa5e3a13e55867f4478c8a92c11dca (dated July 1, 2008), turned out
+> to be the source of the regression. It was verified by generating a reversion
+> patch. One main difference is that the bad code gets a processor speed of
+> 214.398 MHz, whereas reverting the commit yields 428.845 MHz, which is more in
+> keeping with the stated frequency of 450 MHz. As the machine is more than 10
+> years old, the clock may have drifted considerably.
 
-The version tracks changes in draft standards from
-www.t10.org since October 2010.
+The newest kernel that was running on this laptop was 3.2-rc4. When I updated to 
+3.3-rc1, the problem above was fixed, thus nothing needs to be done.
 
-For more information and downloads see:
-     http://sg.danny.cz/sg/sdparm.html
+Larry
 
-
-ChangeLog for sdparm-1.07 [20120121] [svn: r188]
-   - LB provisioning + Block limits VPD pages to sbc3r27
-   - Enhanced phy control page: optical mode enabled (spl-r07)
-   - Phy control and discover page: sync to spl2r02
-   - sync with spc4r31+32 (handle status good with sense)
-   - extended inquiry VPD: add POA_SUP, HRA_SUP and VSA_SUP
-   - application tag mode page subcode 0xf0->0x2 (sbc3r28)
-   - add 'sinq' pseudo VPD page for standard inquiry response
-   - add power consumption mode and VPD pages (spc4r33)
-   - point out some mode page numbers are vendor specific
-
-ChangeLog for sdparm-1.06 [20101031] [svn: r166]
-   ...
-
-Doug Gilbert
