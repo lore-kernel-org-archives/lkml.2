@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab2AVTZm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 14:25:42 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:48996 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab2AVTZk (ORCPT
+	id S1752389Ab2AVTbZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 14:31:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37263 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab2AVTbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 14:25:40 -0500
-Date: Sun, 22 Jan 2012 14:25:38 -0500 (EST)
-Message-Id: <20120122.142538.1924306838695106082.davem@davemloft.net>
-To: rdunlap@xenotime.net
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 10/14] kernel-doc: fix new warning in net/sock.h
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F1B0BEE.6000205@xenotime.net>
-References: <4F1B0BEE.6000205@xenotime.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 22 Jan 2012 11:25:39 -0800 (PST)
+	Sun, 22 Jan 2012 14:31:25 -0500
+Date: Sun, 22 Jan 2012 12:31:24 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Correct bad gpio naming
+Message-ID: <20120122193124.GX4223@ponder.secretlab.ca>
+References: <4F1C4E25.6070801@antcom.de>
+MIME-Version: 1.0
+In-Reply-To: <4F1C4E25.6070801@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
-Date: Sat, 21 Jan 2012 11:03:10 -0800
+On Sun, Jan 22, 2012 at 06:57:57PM +0100, Roland Stigge wrote:
+> One of the GPIO names in drivers/gpio/gpio-lpc32xx.c
+> was bad. Renaming gpi000 -> gpio00
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Fix new kernel-doc warning:
-> 
-> Warning(include/net/sock.h:372): No description found for parameter 'sk_cgrp_prioidx'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Applied.  Careful though, this patch was corrupt (missing carriage
+return before 'static' and had to be applied by hand.
 
-Applied.
+g.
+
+> 
+> diff --git a/drivers/gpio/gpio-lpc32xx.c b/drivers/gpio/gpio-lpc32xx.c
+> index 5b69480..ddfacc5 100644
+> --- a/drivers/gpio/gpio-lpc32xx.c
+> +++ b/drivers/gpio/gpio-lpc32xx.c
+> @@ -96,7 +96,7 @@ static const char *gpio_p2_names[LPC32XX_GPIO_P2_MAX] = {
+>  };
+>   static const char *gpio_p3_names[LPC32XX_GPIO_P3_MAX] = {
+> -	"gpi000", "gpio01", "gpio02", "gpio03",
+> +	"gpio00", "gpio01", "gpio02", "gpio03",
+>  	"gpio04", "gpio05"
+>  };
+> 
