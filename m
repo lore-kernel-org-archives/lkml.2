@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab2AVM6R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 07:58:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61553 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab2AVM6Q (ORCPT
+	id S1751961Ab2AVNNP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 08:13:15 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:47597 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751724Ab2AVNNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 07:58:16 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Chris Zankel <chris@zankel.net>
-Subject: [PATCH] xtensa: fix memscan
-Date: Sun, 22 Jan 2012 21:58:29 +0900
-Message-Id: <1327237109-25284-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Sun, 22 Jan 2012 08:13:14 -0500
+Content-Type: text/plain; charset="utf-8"
+Date: Sun, 22 Jan 2012 14:13:10 +0100
+From: "Lars Callenbach" <lars.callenbach@gmx.de>
+Message-ID: <20120122131310.191470@gmx.net>
+MIME-Version: 1.0
+Subject: PROBLEM:  nouveau & ttm module crashes  
+To: linux-kernel@vger.kernel.org
+X-Authenticated: #7374987
+X-Flags: 0001
+X-Mailer: WWW-Mail 6100 (Global Message Exchange)
+X-Priority: 3
+X-Provags-ID: V01U2FsdGVkX18FE+8U/R4Fvx1klkMtSq+VKRtLbW6MWbq+RWOKIP
+ d9c5NU+NEjCFctrGZQOiKmzWHsN54sXa26ww== 
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: MW5ub68reSEqX+rrG3QhDUx+IGRvb8DT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define memscan as memchr is wrong. Because the return value of memscan
-and memchr are different when the character is not found.
-So use generic memscan implementation to fix it.
+Hello,
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Chris Zankel <chris@zankel.net>
----
- arch/xtensa/include/asm/string.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+I have had some problems with nouveau on my box. Loading the module  
+crashes Linux 3.2.1 (modprobe hangs with kernel trace). The following two 
+code fragments are relevant and should be changed:
 
-diff --git a/arch/xtensa/include/asm/string.h b/arch/xtensa/include/asm/string.h
-index 5fb8c27..405a8c4 100644
---- a/arch/xtensa/include/asm/string.h
-+++ b/arch/xtensa/include/asm/string.h
-@@ -118,7 +118,4 @@ extern void *memmove(void *__dest, __const__ void *__src, size_t __n);
- /* Don't build bcopy at all ...  */
- #define __HAVE_ARCH_BCOPY
- 
--#define __HAVE_ARCH_MEMSCAN
--#define memscan memchr
--
- #endif	/* _XTENSA_STRING_H */
+1) drivers/gpu/drm/ttm/ttm_bo.c - line 1529
+you should comment BUG_ON; this validation will be done two lines later  
+in drm_mm_takedown more gracefully. On my box this line is triggered
+and results in a hang of modprobe.
+
+2) drivers/gpu/drm/nouveau/nouveau_hw.c - line 1024
+dev!=NULL but dev->vblank_enabled == NULL (is not catched and results in
+Null pointer reference)
+
+With both changes it is possible to load nouveau without kernel crashes on 
+my box. 
+
+
+Regards, 
+   Lars
 -- 
-1.7.4.4
-
+Empfehlen Sie GMX DSL Ihren Freunden und Bekannten und wir
+belohnen Sie mit bis zu 50,- Euro! https://freundschaftswerbung.gmx.de
