@@ -1,126 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567Ab2AVDAr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jan 2012 22:00:47 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37198 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab2AVDAq convert rfc822-to-8bit (ORCPT
+	id S1751761Ab2AVDIX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jan 2012 22:08:23 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47700 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab2AVDIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jan 2012 22:00:46 -0500
-Date: Sun, 22 Jan 2012 07:00:26 +0400
-From: Igor Murzov <intergalactic.anonymous@gmail.com>
-To: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Sergey V <sftp.mtuci@gmail.com>
-Subject: [PATCH] drm/radeon: fix memory corruption in reading bios chunks
-Message-ID: <20120122070026.7ad9fad4@garik>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.4; i486-slackware-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Sat, 21 Jan 2012 22:08:22 -0500
+MIME-Version: 1.0
+Date: Sun, 22 Jan 2012 11:08:20 +0800
+Message-ID: <CAJd=RBC8dCGgqXqP+yjW2+pVoSeFXwXfjx8DLHhMuY8goOadZw@mail.gmail.com>
+Subject: [PATCH] mm: vmscan: ensure reclaiming pages on the lru lists of zone
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-mm@kvack.org
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 52d6091e72e8476cf20f762fa3729f6b919622a4 Mon Sep 17 00:00:00 2001
-From: Igor Murzov <e-mail@date.by>
-Date: Sun, 22 Jan 2012 07:05:51 +0400
-Subject: [PATCH] drm/radeon: fix memory corruption in reading bios chunks
+It is possible that the memcg input into shrink_mem_cgroup_zone() in
+each round is not NULL, and the loop terminates at NULL case. And there
+is chance that pages on the lru lists of zone are not reclaimed.
 
-At a boot time I observed following bug:
+Mem cgroup iteration is refactored a bit to ensure the NULL case is also
+input into the function.
 
- BUG: unable to handle kernel paging request at ffff8800a4244000
- IP: [<ffffffff81275b5b>] memcpy+0xb/0x120
- PGD 1816063 PUD 1fe7d067 PMD 1ff9f067 PTE 80000000a4244160
- Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
- CPU 0 
- Modules linked in: btusb bluetooth brcmsmac brcmutil crc8 cordic b43 radeon(+)
-  mac80211 cfg80211 ttm ohci_hcd drm_kms_helper rfkill drm ssb agpgart mmc_core
-  sp5100_tco video battery ac thermal processor rtc_cmos thermal_sys snd_hda_codec_hdmi
-  joydev snd_hda_codec_conexant button bcma pcmcia snd_hda_intel snd_hda_codec
-  snd_hwdep snd_pcm shpchp pcmcia_core k8temp snd_timer atl1c snd psmouse hwmon
-  i2c_piix4 i2c_algo_bit soundcore evdev i2c_core ehci_hcd sg serio_raw snd_page_alloc
-  loop btrfs
- 
- Pid: 1008, comm: modprobe Not tainted 3.3.0-rc1 #21 LENOVO 20046                           /AMD CRB
- RIP: 0010:[<ffffffff81275b5b>]  [<ffffffff81275b5b>] memcpy+0xb/0x120
- RSP: 0018:ffff8800aa72db00  EFLAGS: 00010246
- RAX: ffff8800a4150000 RBX: 0000000000001000 RCX: 0000000000000087
- RDX: 0000000000000000 RSI: ffff8800a4244000 RDI: ffff8800a4150bc8
- RBP: ffff8800aa72db78 R08: 0000000000000010 R09: ffffffff8174bbec
- R10: ffffffff812ee010 R11: 0000000000000001 R12: 0000000000001000
- R13: 0000000000010000 R14: ffff8800a4140000 R15: ffff8800aaba1800
- FS:  00007ff9a3bd4720(0000) GS:ffff8800afa00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: ffff8800a4244000 CR3: 00000000a9c18000 CR4: 00000000000006f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process modprobe (pid: 1008, threadinfo ffff8800aa72c000, task ffff8800aa0e4000)
- Stack:
-  ffffffffa04e7c7b 0000000000000001 0000000000010000 ffff8800aa72db28
-  ffffffff00000001 0000000000001000 ffffffff8113cbef 0000000000000020
-  ffff8800a4243420 ffff880000000002 ffff8800aa72db08 ffff8800a9d42000
- Call Trace:
-  [<ffffffffa04e7c7b>] ? radeon_atrm_get_bios_chunk+0x8b/0xd0 [radeon]
-  [<ffffffff8113cbef>] ? kmalloc_order_trace+0x3f/0xb0
-  [<ffffffffa04a9298>] radeon_get_bios+0x68/0x2f0 [radeon]
-  [<ffffffffa04c7a30>] rv770_init+0x40/0x280 [radeon]
-  [<ffffffffa047d740>] radeon_device_init+0x560/0x600 [radeon]
-  [<ffffffffa047ef4f>] radeon_driver_load_kms+0xaf/0x170 [radeon]
-  [<ffffffffa043cdde>] drm_get_pci_dev+0x18e/0x2c0 [drm]
-  [<ffffffffa04e7e95>] radeon_pci_probe+0xad/0xb5 [radeon]
-  [<ffffffff81296c5f>] local_pci_probe+0x5f/0xd0
-  [<ffffffff81297418>] pci_device_probe+0x88/0xb0
-  [<ffffffff813417aa>] ? driver_sysfs_add+0x7a/0xb0
-  [<ffffffff813418d8>] really_probe+0x68/0x180
-  [<ffffffff81341be5>] driver_probe_device+0x45/0x70
-  [<ffffffff81341cb3>] __driver_attach+0xa3/0xb0
-  [<ffffffff81341c10>] ? driver_probe_device+0x70/0x70
-  [<ffffffff813400ce>] bus_for_each_dev+0x5e/0x90
-  [<ffffffff8134172e>] driver_attach+0x1e/0x20
-  [<ffffffff81341298>] bus_add_driver+0xc8/0x280
-  [<ffffffff813422c6>] driver_register+0x76/0x140
-  [<ffffffff812976d6>] __pci_register_driver+0x66/0xe0
-  [<ffffffffa043d021>] drm_pci_init+0x111/0x120 [drm]
-  [<ffffffff8133c67a>] ? vga_switcheroo_register_handler+0x3a/0x60
-  [<ffffffffa0229000>] ? 0xffffffffa0228fff
-  [<ffffffffa02290ec>] radeon_init+0xec/0xee [radeon]
-  [<ffffffff810002f2>] do_one_initcall+0x42/0x180
-  [<ffffffff8109d8d2>] sys_init_module+0x92/0x1e0
-  [<ffffffff815407a9>] system_call_fastpath+0x16/0x1b
- Code: 58 2a 43 50 88 43 4e 48 83 c4 08 5b c9 c3 66 90 e8 cb fd ff ff eb
-  e6 90 90 90 90 90 90 90 90 90 48 89 f8 89 d1 c1 e9 03 83 e2 07 <f3> 48
-  a5 89 d1 f3 a4 c3 20 48 83 ea 20 4c 8b 06 4c 8b 4e 08 4c 
- RIP  [<ffffffff81275b5b>] memcpy+0xb/0x120
-  RSP <ffff8800aa72db00>
- CR2: ffff8800a4244000
- ---[ end trace fcffa1599cf56382 ]---
-
-Call to acpi_evaluate_object() not always returns 4096 bytes chunks,
-on my system it can return 2048 bytes chunk, so pass the length of
-retrieved chunk to memcpy(), not the length of the recieving buffer.
-
-Signed-off-by: Igor Murzov <e-mail@date.by>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
 ---
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atpx_handler.c b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-index 9d95792..13ac63b 100644
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -58,9 +58,9 @@ static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
- 	}
- 
- 	obj = (union acpi_object *)buffer.pointer;
--	memcpy(bios+offset, obj->buffer.pointer, len);
-+	memcpy(bios+offset, obj->buffer.pointer, obj->buffer.length);
- 	kfree(buffer.pointer);
--	return len;
-+	return obj->buffer.length;
+--- a/mm/vmscan.c	Sat Jan 14 14:02:20 2012
++++ b/mm/vmscan.c	Sun Jan 22 10:09:32 2012
+@@ -2142,14 +2142,14 @@ static void shrink_zone(int priority, st
+ 		.zone = zone,
+ 		.priority = priority,
+ 	};
+-	struct mem_cgroup *memcg;
++	struct mem_cgroup_zone mz = {
++		.zone = zone,
++	};
++	struct mem_cgroup *memcg = NULL;
+
+-	memcg = mem_cgroup_iter(root, NULL, &reclaim);
+ 	do {
+-		struct mem_cgroup_zone mz = {
+-			.mem_cgroup = memcg,
+-			.zone = zone,
+-		};
++		memcg = mem_cgroup_iter(root, memcg, &reclaim);
++		mz.mem_cgroup = memcg,
+
+ 		shrink_mem_cgroup_zone(priority, &mz, sc);
+ 		/*
+@@ -2166,7 +2166,6 @@ static void shrink_zone(int priority, st
+ 			mem_cgroup_iter_break(root, memcg);
+ 			break;
+ 		}
+-		memcg = mem_cgroup_iter(root, memcg, &reclaim);
+ 	} while (memcg);
  }
- 
- bool radeon_atrm_supported(struct pci_dev *pdev)
--- 
-1.7.5.1
-
