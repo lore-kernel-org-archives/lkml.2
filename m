@@ -1,83 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab2AWSJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 13:09:09 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:58073 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab2AWSJI (ORCPT
+	id S1753368Ab2AWSK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 13:10:28 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:32809 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab2AWSK0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 13:09:08 -0500
-Date: Mon, 23 Jan 2012 13:06:01 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, bp@amd64.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        lenb@kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: WARN... Device 'cpu1' does not have a release() function, it is
- broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
-Message-ID: <20120123180601.GA24553@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F1DA214.00D3,ss=1,re=0.000,fgs=0
+	Mon, 23 Jan 2012 13:10:26 -0500
+X-IronPort-AV: E=Sophos;i="4.71,557,1320652800"; 
+   d="scan'208";a="619171478"
+Message-ID: <1327342224.2628.3.camel@lade.trondhjem.org>
+Subject: Re: linux-next: build failure after merge of the final tree (nfs
+ tree related)
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Date: Mon, 23 Jan 2012 13:10:24 -0500
+In-Reply-To: <20120123135942.3e991094b91d9087d2ba81ae@canb.auug.org.au>
+References: <20120123135942.3e991094b91d9087d2ba81ae@canb.auug.org.au>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 23 Jan 2012 18:10:26.0098 (UTC) FILETIME=[48104920:01CCD9FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I bring a CPU down in a guest (which should be the same as bringing a
-CPU down using the ACPI framework), I get this:
+On Mon, 2012-01-23 at 13:59 +1100, Stephen Rothwell wrote: 
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> ppc44x_defconfig) failed like this:
+> 
+> net/sunrpc/svcsock.c: In function 'svc_setup_socket':
+> net/sunrpc/svcsock.c:1412:40: error: 'struct sock_common' has no member named 'skc_net'
+> 
+> This build has CONFIG_NET_NS unset.
+> 
+> Caused by commit eff9c3383687 ("SUNRPC: pass network namespace to service
+> registering routines").
+> 
+> I applied this (suboptimal) patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 23 Jan 2012 13:55:01 +1100
+> Subject: [PATCH] SUNRPC: fixup for namespace changes
+> 
+> Fixes this build error when CONFIG_NET_NS is not set:
+> 
+> net/sunrpc/svcsock.c: In function 'svc_setup_socket':
+> net/sunrpc/svcsock.c:1412:40: error: 'struct sock_common' has no member named 'skc_net'
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  net/sunrpc/svcsock.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+> index e8af0c9..4d02d1a 100644
+> --- a/net/sunrpc/svcsock.c
+> +++ b/net/sunrpc/svcsock.c
+> @@ -41,6 +41,7 @@
+>  #include <net/ipv6.h>
+>  #include <net/tcp.h>
+>  #include <net/tcp_states.h>
+> +#include <net/net_namespace.h>
+>  #include <asm/uaccess.h>
+>  #include <asm/ioctls.h>
+>  
+> @@ -1409,7 +1410,13 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
+>  
+>  	/* Register socket with portmapper */
+>  	if (*errp >= 0 && pmap_register)
+> -		*errp = svc_register(serv, sock->sk->sk_net, inet->sk_family,
+> +		*errp = svc_register(serv,
+> +#ifdef CONFIG_NET_NS
+> +				     sock->sk->sk_net,
+> +#else
+> +				     &init_net,
+> +#endif
+> +				     inet->sk_family,
+>  				     inet->sk_protocol,
+>  				     ntohs(inet_sk(inet)->inet_sport));
+>  
+> -- 
+> 1.7.9.rc0.23.g7e521
 
-[   14.484206] SMP alternatives: switching to UP code
-[   14.514287] ------------[ cut here ]------------
-[   14.514318] WARNING: at /home/konrad/linux-linus/drivers/base/core.c:194 device_release+0x82/0x90()
-[   14.514354] Device 'cpu1' does not have a release() function, it is broken and must be fixed.
-[   14.514386] Modules linked in: radeon fbcon tileblit font ttm bitblit softcursor drm_kms_helper xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea xen_kbdfront xenfs xen_privcmd
-[   14.514557] Pid: 22, comm: xenwatch Not tainted 3.3.0-rc1 #1
-[   14.514586] Call Trace:
-[   14.515094]  [<ffffffff810897fa>] warn_slowpath_common+0x7a/0xb0
-[   14.515094]  [<ffffffff810898d1>] warn_slowpath_fmt+0x41/0x50
-[   14.515094]  [<ffffffff813dea02>] device_release+0x82/0x90
-[   14.515094]  [<ffffffff812dfb85>] kobject_release+0x45/0x90
-[   14.515094]  [<ffffffff812dfa4c>] kobject_put+0x2c/0x60
-[   14.515094]  [<ffffffff813de6a2>] put_device+0x12/0x20
-[   14.515094]  [<ffffffff813df409>] device_unregister+0x19/0x20
-[   14.515094]  [<ffffffff813e4edf>] unregister_cpu+0x4f/0x80
-[   14.515094]  [<ffffffff81052c7c>] arch_unregister_cpu+0x1c/0x20
-[   14.515094]  [<ffffffff8137f787>] handle_vcpu_hotplug_event+0xc7/0xd0
-[   14.515094]  [<ffffffff8137b900>] xenwatch_thread+0xb0/0x180
-[   14.515094]  [<ffffffff810ad3f0>] ? wake_up_bit+0x40/0x40
-[   14.515094]  [<ffffffff8137b850>] ? split+0xf0/0xf0
-[   14.515094]  [<ffffffff810acd16>] kthread+0x96/0xa0
-[   14.515094]  [<ffffffff816151e4>] kernel_thread_helper+0x4/0x10
-[   14.515094]  [<ffffffff8160cc80>] ? retint_restore_args+0x5/0x6
-[   14.515094]  [<ffffffff816151e0>] ? gs_change+0x13/0x13
-[   14.515094] ---[ end trace 8f70af51a2e2611f ]---
+Stanislav,
 
-Looking at "commit e032d80774315869aa2285b217fdbbfed86c0b49
-Author: Greg Kroah-Hartman <gregkh@suse.de>
-Date:   Mon Jan 16 14:40:28 2012 -0800
+Shouldn't we just be using a 'sock_net(sock->sk)'?
 
-    mce: fix warning messages about static struct mce_device
-"
+Cheers
+  Trond
 
-it looks like the corret fix is to make the 'cpu_devices' in
-arch/x86/kernel/topology.c to be changed to be more dynamic
-(or perhaps have an empty release function)?
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Is anybody else hitting this with ACPI CPU hot-unplug? Or do I have
-the privilige of being the first? Oh, I hadn't done a full bisection
-but v3.2 does not have this.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-The guest config is quite simple:
-extra="console=hvc0 debug earlyprintk=xen memblock=debug"
-kernel="/mnt/lab/bootstrap-x86_64/vmlinuz"
-ramdisk="/mnt/lab/bootstrap-x86_64/initramfs.cpio.gz"
-memory=1024
-maxmem=2048
-vcpus=2
-name="bootstrap-x86_64"
-on_crash="preserve"
-vfb = [ 'vnc=1, vnclisten=0.0.0.0,vncunused=1']
