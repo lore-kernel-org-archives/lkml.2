@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab2AWTNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 14:13:13 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40372 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753743Ab2AWTNM (ORCPT
+	id S1753906Ab2AWTNV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 14:13:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36557 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab2AWTNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 14:13:12 -0500
+	Mon, 23 Jan 2012 14:13:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120123.135350.756110788533975068.davem@davemloft.net>
-References: <1327343283-4830-1-git-send-email-netdev@pradeepdalvi.com>
-	<1327344034.6317.3.camel@joe2Laptop>
-	<20120123.135350.756110788533975068.davem@davemloft.net>
-Date: Tue, 24 Jan 2012 00:43:10 +0530
-Message-ID: <CA+Dx6HYga9HkwzZNCXc7-q7JvV5PJ2w-QqT4p1zb+upWfn3+Ag@mail.gmail.com>
-Subject: Re: [PATCH/RESEND] drivers/net/ethernet: dev_alloc_skb to netdev_alloc_skb
-From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, netdev@vger.kernel.org, hch@lst.de,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+In-Reply-To: <B567DBAB974C0544994013492B949F8E3812C6D0CD@EXMAIL03.scwf.nsc.com>
+References: <AczXFZjmtQHOiXDCSJi9Lr1dSJlaCQ==>
+	<B567DBAB974C0544994013492B949F8E3812C6D0CD@EXMAIL03.scwf.nsc.com>
+Date: Mon, 23 Jan 2012 20:13:18 +0100
+Message-ID: <CACRpkdbyK3eevSu3JeTzWguhJkSAm+8vmxymV03UhxhNQUtVsw@mail.gmail.com>
+Subject: Re: [PATCH 3/7] leds-lm3530: add 'is_vin_always_on' in the lm3530_platform_data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "shreshthakumar.sahu@stericsson.com" 
+	<shreshthakumar.sahu@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 12:23 AM, David Miller <davem@davemloft.net> wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Mon, 23 Jan 2012 10:40:34 -0800
->
->> Perhaps you should break this large patch
->> into multiple separate patches.
->
-> Agreed, this patch is way too large especially for what is obviously
-> turning out to be a very non-trivial transformation in some cases
-> and also new patch submitters should generally avoid large patches
-> like this.
+On Fri, Jan 20, 2012 at 2:48 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
 
-Acked! Will try to separate out trivial & non-trivial changes.
-Although, still trivial changes would be big enough. And at the same
-time, splitting changes into 118 patches might turn out to be
-cumbersome for review.
+> The 'IN' pin(Input voltage connection) can be always turned on
+> in case it is connected with VBATT.
+> To support this case, 'is_vin_always_on' is added.
+> If VIN is always on, then we don't need to control the regulator for IN pin.
+>
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+(...)
+> +       if (!drvdata->enable && !pltfm->is_vin_always_on) {
+>                ret = regulator_enable(drvdata->regulator);
+>                if (ret) {
+>                        dev_err(&drvdata->client->dev,
+> @@ -256,7 +256,7 @@ static void lm3530_brightness_set(struct led_classdev *led_cdev,
+>                else
+>                        drvdata->brightness = brt_val / 2;
+>
+> -               if (brt_val == 0) {
+> +               if (brt_val == 0 && !pdata->is_vin_always_on) {
+>                        err = regulator_disable(drvdata->regulator);
+
+NACK on this, and paging Mark.
+
+As far as I know we want to get rid of different design patterns
+avoiding the regulator interface. The way forward for this is
+either:
+
+(A) Provide a fixed voltage regulator in your platform for this
+  device (AFAIK the voltage does not even have to be correct)
+(B) Enable dummy regulators in your platform
+
+(A) is more elegant.
+
+Yours,
+Linus Walleij
