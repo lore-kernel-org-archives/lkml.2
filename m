@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab2AXAFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:05:07 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57068 "EHLO smtps.tip.net.au"
+	id S1755528Ab2AXAFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:05:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42383 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754871Ab2AXAFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:05:05 -0500
-Date: Tue, 24 Jan 2012 11:04:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Robert Richter <robert.richter@amd.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: unable to fetch the oprofile tree
-Message-Id: <20120124110455.519021de79b6fef5ad383ec2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__24_Jan_2012_11_04_55_+1100_UINw/N8ndqIOAH6v"
+	id S1754803Ab2AWXrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:47:33 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:23 2012
+Message-Id: <20120123234023.499175049@clark.kroah.org>
+User-Agent: quilt/0.50-11.1
+Date: Mon, 23 Jan 2012 15:38:52 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [06/90] ext4: fix undefined behavior in ext4_fill_flex_info()
+In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__24_Jan_2012_11_04_55_+1100_UINw/N8ndqIOAH6v
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Robert,
+------------------
 
-Trying to fetch the oprofile tree produced this error for the past few
-days:
+From: Xi Wang <xi.wang@gmail.com>
 
-fatal: unable to connect to amd64.org:
-amd64.org[0: 217.160.130.188]: errno=3DConnection timed out
+commit d50f2ab6f050311dbf7b8f5501b25f0bf64a439b upstream.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Commit 503358ae01b70ce6909d19dd01287093f6b6271c ("ext4: avoid divide by
+zero when trying to mount a corrupted file system") fixes CVE-2009-4307
+by performing a sanity check on s_log_groups_per_flex, since it can be
+set to a bogus value by an attacker.
 
---Signature=_Tue__24_Jan_2012_11_04_55_+1100_UINw/N8ndqIOAH6v
-Content-Type: application/pgp-signature
+	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
+	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+	if (groups_per_flex < 2) { ... }
 
-iQIcBAEBCAAGBQJPHfWnAAoJEECxmPOUX5FEML0QAJ7v9pVO546Lmgx0DRYiHxoV
-Q/9VPYL67N43AZ9sgxuNbq9nbDZFBCdUt+TFA6UuHpHJGcZRio0g0A81zRT0c2N8
-CKw5TXb9uRrQA53IR1vbp4BLQa4qy1O2ZGjKruLAwIzSf0AUi76qua2c62Cq4TsH
-W+U6yHx/kyNeiTp7qSubjM3jsgGCbDmHnjHbfrGVdMzfOAN2HZ8QQgU3yTgr6BkJ
-lFsCxCnkSloCJuklfL+b8a0xob9m2guXL7nL4mvq6YAT+IhecUgpFXPIXoKuh6sJ
-rFDJGVMvoV7zc88iXX+hJ7JAj/166u1GUEidkbF4+AYfgF9TYXcd+mi/SXh/TGjM
-HiMZDYnQoVfOkYmnQwyJHlByAhr1Vu9i/xmNf59LaqC8zbcCaewamDR0kID9qMjx
-2DK5zu3t2rgDtbUL4ev1o2Sp0QIn5QRm16rBL9XQnsv6SXHqZHZXBIWupSX3/q3S
-EyRNKRkZGpJRtiinH/gVrCu5NUDYEZUW0OBl+9SPhvKMwSd4299kiCSaQ44J7wIh
-tssDL2Fqv4a6eDk15b+OAtR2emNzOfh/9Qe9DFsYnSuE/+QP/O9xyr3sqWGvQXp9
-nYqeDfKuvyxKtEF7yIBo/Lmm+y2a19gf0Go/XWFR1Rch0acC6Y2yu+yLHThZPDPE
-xMuxeMl8K7+513zDuQE7
-=SGxQ
------END PGP SIGNATURE-----
+This patch fixes two potential issues in the previous commit.
 
---Signature=_Tue__24_Jan_2012_11_04_55_+1100_UINw/N8ndqIOAH6v--
+1) The sanity check might only work on architectures like PowerPC.
+On x86, 5 bits are used for the shifting amount.  That means, given a
+large s_log_groups_per_flex value like 36, groups_per_flex = 1 << 36
+is essentially 1 << 4 = 16, rather than 0.  This will bypass the check,
+leaving s_log_groups_per_flex and groups_per_flex inconsistent.
+
+2) The sanity check relies on undefined behavior, i.e., oversized shift.
+A standard-confirming C compiler could rewrite the check in unexpected
+ways.  Consider the following equivalent form, assuming groups_per_flex
+is unsigned for simplicity.
+
+	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+	if (groups_per_flex == 0 || groups_per_flex == 1) {
+
+We compile the code snippet using Clang 3.0 and GCC 4.6.  Clang will
+completely optimize away the check groups_per_flex == 0, leaving the
+patched code as vulnerable as the original.  GCC keeps the check, but
+there is no guarantee that future versions will do the same.
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/ext4/super.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1957,17 +1957,16 @@ static int ext4_fill_flex_info(struct su
+ 	struct ext4_group_desc *gdp = NULL;
+ 	ext4_group_t flex_group_count;
+ 	ext4_group_t flex_group;
+-	int groups_per_flex = 0;
++	unsigned int groups_per_flex = 0;
+ 	size_t size;
+ 	int i;
+ 
+ 	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
+-	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+-
+-	if (groups_per_flex < 2) {
++	if (sbi->s_log_groups_per_flex < 1 || sbi->s_log_groups_per_flex > 31) {
+ 		sbi->s_log_groups_per_flex = 0;
+ 		return 1;
+ 	}
++	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+ 
+ 	/* We allocate both existing and potentially added groups */
+ 	flex_group_count = ((sbi->s_groups_count + groups_per_flex - 1) +
+
+
