@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab2AWPoT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 10:44:19 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:42294 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2AWPoS (ORCPT
+	id S1753282Ab2AWPri (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 10:47:38 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:34173 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab2AWPrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 10:44:18 -0500
-MIME-Version: 1.0
-From: Sagar Borikar <sagar.borikar@gmail.com>
-Date: Mon, 23 Jan 2012 07:43:56 -0800
-Message-ID: <CAFwMWxs7S+6VqA00NFVKum=QHU2266Mj2kXcoHzRfyXU8+dv7A@mail.gmail.com>
-Subject: mmap locked doesn't return
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 23 Jan 2012 10:47:37 -0500
+Date: Mon, 23 Jan 2012 16:47:34 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, acme@infradead.org, robert.richter@amd.com,
+        ming.m.lin@intel.com, andi@firstfloor.org, asharma@fb.com,
+        ravitillo@lbl.gov, vweaver1@eecs.utk.edu
+Subject: Re: [PATCH 00/13] perf_events: add support for sampling taken branches (v3)
+Message-ID: <20120123154734.GY11715@one.firstfloor.org>
+References: <1326127761-2723-1-git-send-email-eranian@google.com> <CABPqkBTYrEeSefnXr4-ezmXHjNv1XkfVZGULzY5-=FE3tr3pfg@mail.gmail.com> <1327321532.2446.6.camel@twins> <CABPqkBQFpyP1-gmtfJq=q1kAcc6hKPgND2uHjVBxbAPj_kK4EA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBQFpyP1-gmtfJq=q1kAcc6hKPgND2uHjVBxbAPj_kK4EA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> Now, we still need to make progress on:
+>   - fixing throttling
+>   - PEBS-LL
 
+    Raw PEBS really too
 
-We are observing that mmap when called with MAP_SHARED and MAP_LOCKED
-flags on the disk which has the bad sectors, doesn't return either
-success or failure and gets stuck somewhere in mmap routine. Disk
-replacement is the obvious solution but the question is what makes
-mmap not to return failure?
-Individual mapping works fine i.e. on the same disk at same offset
-when mmap is invoked with MAP_SHARED or MAP_LOCKED the call succeeds
-but when they both are clubbed together, it doesn't return anything.
+>   - IBS
+>   - event scheduling
+>   - LWP
 
-strace output snippet
+     - Back-to-back events
 
-open("/dev/dm-4p2", O_RDWR)             = 3
-mmap(NULL, 10485760, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_LOCKED, 3, 0x4000000
+-Andi
 
-
-setup:
-
-2.6.23 LST kernel
-Westmere platform - 4 socket cpu
-RAM -192GB
-
-
-Thanks
-Sagar
+-- 
+ak@linux.intel.com -- Speaking for myself only.
