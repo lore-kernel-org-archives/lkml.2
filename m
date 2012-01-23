@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab2AWXty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42672 "EHLO mx2.suse.de"
+	id S1756194Ab2AWX7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:59:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42667 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755496Ab2AWXtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:51 -0500
+	id S932129Ab2AWXts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:48 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
-Message-Id: <20120123234028.540509366@clark.kroah.org>
+Message-Id: <20120123234028.456946324@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:52 -0800
+Date: Mon, 23 Jan 2012 15:39:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
+        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [66/90] ALSA: HDA: Fix internal microphone on Dell Studio 16 XPS 1645
+Subject: [65/90] ALSA: virtuoso: Xonar DS: fix polarity of front output
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit ffe535edb9a9c5b4d5fe03dfa3d89a1495580f1b upstream.
+commit f0e48b6bd4e407459715240cd241ddb6b89bdf81 upstream.
 
-More than one user reports that changing the model from "both" to
-"dmic" makes their Internal Mic work.
+The two DACs for the front output and the surround/center/LFE/back
+outputs are wired up out of phase, so when channels are duplicated,
+their sound can cancel out each other and result in a weaker bass
+response.  To fix this, reverse the polarity of the neutron flow to
+the front output.
 
-Tested-by: Martin Ling <martin-launchpad@earth.li>
-BugLink: https://bugs.launchpad.net/bugs/795823
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Reported-any-tested-by: Daniel Hill <daniel@enemyplanet.geek.nz>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/oxygen/xonar_wm87x6.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -1602,7 +1602,7 @@ static const struct snd_pci_quirk stac92
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02bd,
- 				"Dell Studio 1557", STAC_DELL_M6_DMIC),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02fe,
--				"Dell Studio XPS 1645", STAC_DELL_M6_BOTH),
-+				"Dell Studio XPS 1645", STAC_DELL_M6_DMIC),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0413,
- 				"Dell Studio 1558", STAC_DELL_M6_DMIC),
- 	{} /* terminator */
+--- a/sound/pci/oxygen/xonar_wm87x6.c
++++ b/sound/pci/oxygen/xonar_wm87x6.c
+@@ -177,6 +177,7 @@ static void wm8776_registers_init(struct
+ 	struct xonar_wm87x6 *data = chip->model_data;
+ 
+ 	wm8776_write(chip, WM8776_RESET, 0);
++	wm8776_write(chip, WM8776_PHASESWAP, WM8776_PH_MASK);
+ 	wm8776_write(chip, WM8776_DACCTRL1, WM8776_DZCEN |
+ 		     WM8776_PL_LEFT_LEFT | WM8776_PL_RIGHT_RIGHT);
+ 	wm8776_write(chip, WM8776_DACMUTE, chip->dac_mute ? WM8776_DMUTE : 0);
 
 
