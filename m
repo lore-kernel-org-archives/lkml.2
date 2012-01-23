@@ -1,355 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab2AWBWQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 20:22:16 -0500
-Received: from mailgw1.fjfi.cvut.cz ([147.32.9.3]:56011 "EHLO
-	mailgw1.fjfi.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab2AWBWP (ORCPT
+	id S1752666Ab2AWB0U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 20:26:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61752 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab2AWB0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 20:22:15 -0500
-X-CTU-FNSPE-Virus-Scanned: amavisd-new at fjfi.cvut.cz
-X-CTU-FNSPE: this_is_mailgw_for_ctu_fnspe_header
-X-CTU-FNSPE-Helo: linux.fjfi.cvut.cz
-X-CTU-FNSPE-Client-Address: 147.32.5.111
-X-CTU-FNSPE-Client-Name: linux.fjfi.cvut.cz
-X-CTU-FNSPE-Sender: ondra.havel@gmail.com
-X-CTU-FNSPE-Recip: oliver@neukum.org
-Date: Mon, 23 Jan 2012 02:22:07 +0100 (CET)
-From: ondra.havel@gmail.com
-X-X-Sender: taxman@linux.fjfi.cvut.cz
-To: oliver@neukum.org
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH v2] input: Hanvon Art Master I and Rollick tablet support
- (USB)
-Message-ID: <alpine.LRH.2.00.1201230211440.12906@linux.fjfi.cvut.cz>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	Sun, 22 Jan 2012 20:26:19 -0500
+Message-ID: <4F1CB737.3030701@gmail.com>
+Date: Sun, 22 Jan 2012 17:26:15 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: ERROR: "mc13xxx_parse_regulators_dt" [drivers/regulator/mc13892-regulator.ko]
+ undefined!
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver supports multiple Hanvon tablets (USB).
-They are:
+this is with using ubuntus generic .config
 
-Artmaster I: AM0806, AM1107, AM1209
-Rollick: RL0604
+   CC      arch/x86/boot/main.o
+   CC      arch/x86/boot/version.o
+   CC      arch/x86/boot/apm.o
+   CC      arch/x86/boot/video-vesa.o
+   LD      arch/x86/boot/setup.elf
+   OBJCOPY arch/x86/boot/setup.bin
+   OBJCOPY arch/x86/boot/vmlinux.bin
+   BUILD   arch/x86/boot/bzImage
+Setup is 16752 bytes (padded to 16896 bytes).
+System is 4587 kB
+CRC 5d463dba
+Kernel: arch/x86/boot/bzImage is ready  (#3)
+   Building modules, stage 2.
+   MODPOST 3362 modules
+ERROR: "mc13xxx_parse_regulators_dt" 
+[drivers/regulator/mc13892-regulator.ko] undefined!
+ERROR: "mc13xxx_get_num_regulators_dt" 
+[drivers/regulator/mc13892-regulator.ko] undefined!
+WARNING: modpost: Found 26 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
 
-Updated upon Oliver Neukum's review. Thanks a lot.
 
-
-Signed-off-by: Ondra Havel <ondra.havel@gmail.com>
----
-
-
-  drivers/input/tablet/Kconfig  |   11 ++
-  drivers/input/tablet/Makefile |    1
-  drivers/input/tablet/hanvon.c |  263 +++++++++++++++++++++++++++++++++++++++++
-  3 files changed, 275 insertions(+), 0 deletions(-)
-
-
-
-diff --git a/drivers/input/tablet/Kconfig b/drivers/input/tablet/Kconfig
-index 58a8775..25481e9 100644
---- a/drivers/input/tablet/Kconfig
-+++ b/drivers/input/tablet/Kconfig
-@@ -49,6 +49,17 @@ config TABLET_USB_GTCO
-            To compile this driver as a module, choose M here: the
-            module will be called gtco.
-
-+config TABLET_USB_HANVON
-+	tristate "Hanvon Art Master I and Rollick tablet support (USB)"
-+	depends on USB_ARCH_HAS_HCD
-+	select USB
-+	help
-+	  Say Y here if you want to use the USB version of the Hanvon Art
-+	  Master I or Rollick tablets.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called hanvon.
-+
-  config TABLET_USB_HANWANG
-  	tristate "Hanwang Art Master III tablet support (USB)"
-  	depends on USB_ARCH_HAS_HCD
-diff --git a/drivers/input/tablet/Makefile b/drivers/input/tablet/Makefile
-index 3f6c252..d159383 100644
---- a/drivers/input/tablet/Makefile
-+++ b/drivers/input/tablet/Makefile
-@@ -8,6 +8,7 @@ wacom-objs	:= wacom_wac.o wacom_sys.o
-  obj-$(CONFIG_TABLET_USB_ACECAD)	+= acecad.o
-  obj-$(CONFIG_TABLET_USB_AIPTEK)	+= aiptek.o
-  obj-$(CONFIG_TABLET_USB_GTCO)	+= gtco.o
-+obj-$(CONFIG_TABLET_USB_HANVON) += hanvon.o
-  obj-$(CONFIG_TABLET_USB_HANWANG) += hanwang.o
-  obj-$(CONFIG_TABLET_USB_KBTAB)	+= kbtab.o
-  obj-$(CONFIG_TABLET_USB_WACOM)	+= wacom.o
-diff --git a/drivers/input/tablet/hanvon.c b/drivers/input/tablet/hanvon.c
-new file mode 100644
-index 0000000..2f34582
---- /dev/null
-+++ b/drivers/input/tablet/hanvon.c
-@@ -0,0 +1,263 @@
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/usb/input.h>
-+
-+#define DRIVER_VERSION "0.4a"
-+#define DRIVER_AUTHOR "Ondra Havel <ondra.havel@gmail.com>"
-+#define DRIVER_DESC "USB Hanvon tablet driver"
-+#define DRIVER_LICENSE "GPL"
-+
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_LICENSE(DRIVER_LICENSE);
-+
-+#define USB_VENDOR_ID_HANVON	0x0b57
-+#define USB_PRODUCT_ID_AM0806	0x8502
-+#define USB_PRODUCT_ID_AM1107	0x8505
-+#define USB_PRODUCT_ID_AM1209	0x8501
-+#define USB_PRODUCT_ID_RL0604	0x851f
-+#define USB_AM_PACKET_LEN	10
-+
-+static int lbuttons[]={BTN_0,BTN_1,BTN_2,BTN_3};	/* reported on all AMs */
-+static int rbuttons[]={BTN_4,BTN_5,BTN_6,BTN_7};	/* reported on AM1107+ */
-+
-+#define AM_WHEEL_THRESHOLD	4
-+
-+#define AM_MAX_ABS_X	0x27de
-+#define AM_MAX_ABS_Y	0x1cfe
-+#define AM_MAX_TILT_X	0x3f
-+#define AM_MAX_TILT_Y	0x7f
-+#define AM_MAX_PRESSURE	0x400
-+
-+struct hanvon {
-+	unsigned char *data;
-+	dma_addr_t data_dma;
-+	struct mutex mutex;
-+	struct input_dev *dev;
-+	struct usb_device *usbdev;
-+	struct urb *irq;
-+	int old_wheel_pos;
-+	char phys[32];
-+};
-+
-+static void report_buttons(struct hanvon *hanvon, int buttons[],unsigned char dta)
-+{
-+	struct input_dev *dev = hanvon->dev;
-+
-+	if((dta & 0xf0) == 0xa0) {
-+		input_report_key(dev, buttons[1], dta & 0x02);
-+		input_report_key(dev, buttons[2], dta & 0x04);
-+		input_report_key(dev, buttons[3], dta & 0x08);
-+	} else {
-+		if(dta <= 0x3f) {	/* slider area active */
-+			int diff = dta - hanvon->old_wheel_pos;
-+			if(abs(diff) < AM_WHEEL_THRESHOLD)
-+				input_report_rel(dev, REL_WHEEL, diff);
-+
-+			hanvon->old_wheel_pos = dta;
-+		}
-+	}
-+}
-+
-+static void hanvon_irq(struct urb *urb)
-+{
-+	struct hanvon *hanvon = urb->context;
-+	unsigned char *data = hanvon->data;
-+	struct input_dev *dev = hanvon->dev;
-+	int ret;
-+
-+	switch (urb->status) {
-+		case 0:
-+			/* success */
-+			break;
-+		case -ECONNRESET:
-+		case -ENOENT:
-+		case -ESHUTDOWN:
-+			/* this urb is terminated, clean up */
-+			dbg("%s - urb shutting down with status: %d", __func__, urb->status);
-+			return;
-+		default:
-+			dbg("%s - nonzero urb status received: %d", __func__, urb->status);
-+			goto exit;
-+	}
-+
-+	switch(data[0]) {
-+		case 0x01:	/* button press */
-+			if(data[1]==0x55)	/* left side */
-+				report_buttons(hanvon,lbuttons,data[2]);
-+
-+			if(data[3]==0xaa)	/* right side (am1107, am1209) */
-+				report_buttons(hanvon,rbuttons,data[4]);
-+			break;
-+		case 0x02:	/* position change */
-+			if((data[1] & 0xf0) != 0) {
-+				input_report_abs(dev, ABS_X, be16_to_cpup((__be16 *)&data[2]));
-+				input_report_abs(dev, ABS_Y, be16_to_cpup((__be16 *)&data[4]));
-+				input_report_abs(dev, ABS_TILT_X, data[7] & 0x3f);
-+				input_report_abs(dev, ABS_TILT_Y, data[8]);
-+				input_report_abs(dev, ABS_PRESSURE, be16_to_cpup((__be16 *)&data[6])>>6);
-+			}
-+
-+		input_report_key(dev, BTN_LEFT, data[1] & 0x1);
-+		input_report_key(dev, BTN_RIGHT, data[1] & 0x2);		/* stylus button pressed (right click) */
-+		input_report_key(dev, lbuttons[0], data[1] & 0x20);
-+		break;
-+	}
-+
-+	input_sync(dev);
-+
-+exit:
-+	ret = usb_submit_urb (urb, GFP_ATOMIC);
-+	if (ret)
-+		err("%s - usb_submit_urb failed with result %d", __func__, ret);
-+}
-+
-+static struct usb_device_id hanvon_ids[] = {
-+	{ USB_DEVICE(USB_VENDOR_ID_HANVON, USB_PRODUCT_ID_AM1209) },
-+	{ USB_DEVICE(USB_VENDOR_ID_HANVON, USB_PRODUCT_ID_AM1107) },
-+	{ USB_DEVICE(USB_VENDOR_ID_HANVON, USB_PRODUCT_ID_AM0806) },
-+	{ USB_DEVICE(USB_VENDOR_ID_HANVON, USB_PRODUCT_ID_RL0604) },
-+	{ }
-+};
-+
-+MODULE_DEVICE_TABLE(usb, hanvon_ids);
-+
-+static int hanvon_open(struct input_dev *dev)
-+{
-+	int ret=0;
-+	struct hanvon *hanvon = input_get_drvdata(dev);
-+
-+	hanvon->old_wheel_pos = -AM_WHEEL_THRESHOLD-1;
-+	hanvon->irq->dev = hanvon->usbdev;
-+	mutex_lock(&hanvon->mutex);
-+	if(usb_submit_urb(hanvon->irq, GFP_KERNEL))
-+		ret = -EIO;
-+	mutex_unlock(&hanvon->mutex);
-+	return ret;
-+}
-+
-+static void hanvon_close(struct input_dev *dev)
-+{
-+	struct hanvon *hanvon = input_get_drvdata(dev);
-+
-+	mutex_lock(&hanvon->mutex);
-+	usb_kill_urb(hanvon->irq);
-+	mutex_unlock(&hanvon->mutex);
-+}
-+
-+static int hanvon_probe(struct usb_interface *intf, const struct usb_device_id *id)
-+{
-+	struct usb_device *dev = interface_to_usbdev(intf);
-+	struct usb_endpoint_descriptor *endpoint;
-+	struct hanvon *hanvon;
-+	struct input_dev *input_dev;
-+	int error = -ENOMEM, i;
-+
-+	hanvon = kzalloc(sizeof(struct hanvon), GFP_KERNEL);
-+	input_dev = input_allocate_device();
-+	if (!hanvon || !input_dev)
-+		goto fail1;
-+
-+	hanvon->data = (unsigned char *)usb_alloc_coherent(dev, USB_AM_PACKET_LEN, GFP_KERNEL, &hanvon->data_dma);
-+	if (!hanvon->data)
-+		goto fail1;
-+
-+	hanvon->irq = usb_alloc_urb(0, GFP_KERNEL);
-+	if (!hanvon->irq)
-+		goto fail2;
-+
-+	hanvon->usbdev = dev;
-+	hanvon->dev = input_dev;
-+
-+	usb_make_path(dev, hanvon->phys, sizeof(hanvon->phys));
-+	strlcat(hanvon->phys, "/input0", sizeof(hanvon->phys));
-+
-+	input_dev->name = "Hanvon Artmaster I tablet";
-+	input_dev->phys = hanvon->phys;
-+	usb_to_input_id(dev, &input_dev->id);
-+	input_dev->dev.parent = &intf->dev;
-+
-+	input_set_drvdata(input_dev, hanvon);
-+
-+	input_dev->open = hanvon_open;
-+	input_dev->close = hanvon_close;
-+
-+	input_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS) | BIT_MASK(EV_REL);
-+	input_dev->keybit[BIT_WORD(BTN_DIGI)] |= BIT_MASK(BTN_TOOL_PEN) | BIT_MASK(BTN_TOUCH);
-+	input_dev->keybit[BIT_WORD(BTN_LEFT)] |= BIT_MASK(BTN_LEFT) | BIT_MASK(BTN_RIGHT);
-+	for(i=0;i<sizeof(lbuttons)/sizeof(lbuttons[0]);i++)
-+		__set_bit(lbuttons[i], input_dev->keybit);
-+	for(i=0;i<sizeof(rbuttons)/sizeof(rbuttons[0]);i++)
-+		__set_bit(rbuttons[i], input_dev->keybit);
-+
-+	input_set_abs_params(input_dev, ABS_X, 0, AM_MAX_ABS_X, 4, 0);
-+	input_set_abs_params(input_dev, ABS_Y, 0, AM_MAX_ABS_Y, 4, 0);
-+	input_set_abs_params(input_dev, ABS_TILT_X, 0, AM_MAX_TILT_X, 0, 0);
-+	input_set_abs_params(input_dev, ABS_TILT_Y, 0, AM_MAX_TILT_Y, 0, 0);
-+	input_set_abs_params(input_dev, ABS_PRESSURE, 0, AM_MAX_PRESSURE, 0, 0);
-+	input_set_capability(input_dev, EV_REL, REL_WHEEL);
-+
-+	endpoint = &intf->cur_altsetting->endpoint[0].desc;
-+
-+	usb_fill_int_urb(hanvon->irq, dev,
-+			 usb_rcvintpipe(dev, endpoint->bEndpointAddress),
-+			 hanvon->data, USB_AM_PACKET_LEN,
-+			 hanvon_irq, hanvon, endpoint->bInterval);
-+	hanvon->irq->transfer_dma = hanvon->data_dma;
-+	hanvon->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-+
-+	error = input_register_device(hanvon->dev);
-+	if (error)
-+		goto fail3;
-+
-+	usb_set_intfdata(intf, hanvon);
-+	mutex_init(&hanvon->mutex);
-+	return 0;
-+
-+fail3:	usb_free_urb(hanvon->irq);
-+fail2:	usb_free_coherent(dev, USB_AM_PACKET_LEN, hanvon->data, hanvon->data_dma);
-+fail1:	input_free_device(input_dev);
-+	kfree(hanvon);
-+	return error;
-+}
-+
-+static void hanvon_disconnect(struct usb_interface *intf)
-+{
-+	struct hanvon *hanvon = usb_get_intfdata(intf);
-+
-+	usb_set_intfdata(intf, NULL);
-+	usb_kill_urb(hanvon->irq);
-+	input_unregister_device(hanvon->dev);
-+	usb_free_urb(hanvon->irq);
-+	usb_free_coherent(interface_to_usbdev(intf), USB_AM_PACKET_LEN, hanvon->data, hanvon->data_dma);
-+	kfree(hanvon);
-+}
-+
-+static struct usb_driver hanvon_driver = {
-+	.name =	"hanvon",
-+	.probe = hanvon_probe,
-+	.disconnect = hanvon_disconnect,
-+	.id_table = hanvon_ids,
-+};
-+
-+static int __init hanvon_init(void)
-+{
-+	int ret;
-+
-+	if((ret = usb_register(&hanvon_driver)) != 0)
-+		return ret;
-+
-+	printk(DRIVER_DESC " " DRIVER_VERSION "\n");
-+
-+	return 0;
-+}
-+
-+static void __exit hanvon_exit(void)
-+{
-+	usb_deregister(&hanvon_driver);
-+}
-+
-+module_init(hanvon_init);
-+module_exit(hanvon_exit);
+Justin P. Mattock
