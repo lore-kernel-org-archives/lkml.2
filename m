@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab2AWVJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 16:09:00 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56160 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab2AWVIz (ORCPT
+	id S1754560Ab2AWVJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 16:09:07 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57353 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab2AWVJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 16:08:55 -0500
+	Mon, 23 Jan 2012 16:09:04 -0500
 MIME-Version: 1.0
-From: grant.likely@secretlab.ca
+From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org
 Cc: Grant Likely <grant.likely@secretlab.ca>,
         Thomas Gleixner <tglx@linutronix.de>
 Subject: [PATCH] irqdesc: Consolidate irq reservation logic
-Date: Mon, 23 Jan 2012 14:08:50 -0700
-Message-Id: <4f1dcc66.0c6a650a.09ec.fffffb38@mx.google.com>
+Date: Mon, 23 Jan 2012 14:08:59 -0700
+Message-Id: <1327352939-14907-1-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Grant Likely <grant.likely@secretlab.ca>
 
 irq_reserve_irqs() and irq_alloc_descs() use largely identical code for
 finding the range of irqs to reserve.  This patch consolidates it into
