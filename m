@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab2AWRWF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 12:22:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59173 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753156Ab2AWRVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 12:21:54 -0500
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2 5/5] vfio: VFIO core Kconfig and Makefile
-To: chrisw@sous-sol.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
-        joerg.roedel@amd.com, agraf@suse.de, benve@cisco.com,
-        aafabbri@cisco.com, B08248@freescale.com, B07421@freescale.com,
-        avi@redhat.com, konrad.wilk@oracle.com, kvm@vger.kernel.org,
-        qemu-devel@nongnu.org, iommu@lists.linux-foundation.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 23 Jan 2012 10:21:14 -0700
-Message-ID: <20120123172114.26865.89847.stgit@bling.home>
-In-Reply-To: <20120123165620.26865.51875.stgit@bling.home>
-References: <20120123165620.26865.51875.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1753444Ab2AWRWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 12:22:30 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36292 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab2AWRW2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 12:22:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1327116249-18274-1-git-send-email-gada.kashyap@gmail.com>
+References: <1327116249-18274-1-git-send-email-gada.kashyap@gmail.com>
+Date: Mon, 23 Jan 2012 09:22:27 -0800
+X-Google-Sender-Auth: WUej2h_SIDZK7NZy-9ic0iakKtI
+Message-ID: <CAPz4a6AUAMxcMkVkgc9UJ1tok36jNE5hZzJc_9n5EJqRQCcz2w@mail.gmail.com>
+Subject: Re: [PATCH 5/5] Staging: android: Add KERN_ facility level in printk
+ () in pmem.c
+From: Dima Zavin <dima@android.com>
+To: Kashyap Gada <gada.kashyap@gmail.com>
+Cc: gregkh@suse.de, rebecca@android.com, rschultz@google.com,
+        jgennis@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the base code.
+We really should just get rid of pmem.c altogether. We will remove it
+from our android common tree too. We don't actually use it anymore in
+any of our products. There are some legacy users of it, like Qualcomm,
+but I'm sure they have a bunch of patches on top of it and thus are
+maintaining it separately anyway.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+--Dima
 
- MAINTAINERS           |    8 ++++++++
- drivers/Kconfig       |    2 ++
- drivers/Makefile      |    1 +
- drivers/vfio/Kconfig  |    8 ++++++++
- drivers/vfio/Makefile |    3 +++
- 5 files changed, 22 insertions(+), 0 deletions(-)
- create mode 100644 drivers/vfio/Kconfig
- create mode 100644 drivers/vfio/Makefile
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index df8cb66..2f3a5c8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7129,6 +7129,14 @@ S:	Maintained
- F:	Documentation/filesystems/vfat.txt
- F:	fs/fat/
- 
-+VFIO DRIVER
-+M:	Alex Williamson <alex.williamson@redhat.com>
-+L:	kvm@vger.kernel.org
-+S:	Maintained
-+F:	Documentation/vfio.txt
-+F:	drivers/vfio/
-+F:	include/linux/vfio.h
-+
- VIDEOBUF2 FRAMEWORK
- M:	Pawel Osciak <pawel@osciak.com>
- M:	Marek Szyprowski <m.szyprowski@samsung.com>
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index d5138e6..f168bf3 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -114,6 +114,8 @@ source "drivers/auxdisplay/Kconfig"
- 
- source "drivers/uio/Kconfig"
- 
-+source "drivers/vfio/Kconfig"
-+
- source "drivers/vlynq/Kconfig"
- 
- source "drivers/virtio/Kconfig"
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 71a1f16..6be03a1 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -59,6 +59,7 @@ obj-$(CONFIG_ATM)		+= atm/
- obj-$(CONFIG_FUSION)		+= message/
- obj-y				+= firewire/
- obj-$(CONFIG_UIO)		+= uio/
-+obj-$(CONFIG_VFIO)		+= vfio/
- obj-y				+= cdrom/
- obj-y				+= auxdisplay/
- obj-$(CONFIG_PCCARD)		+= pcmcia/
-diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-new file mode 100644
-index 0000000..9acb1e7
---- /dev/null
-+++ b/drivers/vfio/Kconfig
-@@ -0,0 +1,8 @@
-+menuconfig VFIO
-+	tristate "VFIO Non-Privileged userspace driver framework"
-+	depends on IOMMU_API
-+	help
-+	  VFIO provides a framework for secure userspace device drivers.
-+	  See Documentation/vfio.txt for more details.
-+
-+	  If you don't know what to do here, say N.
-diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
-new file mode 100644
-index 0000000..088faf1
---- /dev/null
-+++ b/drivers/vfio/Makefile
-@@ -0,0 +1,3 @@
-+vfio-y := vfio_main.o vfio_iommu.o
-+
-+obj-$(CONFIG_VFIO) := vfio.o
-
+On Fri, Jan 20, 2012 at 7:24 PM, Kashyap Gada <gada.kashyap@gmail.com> wrote:
+> diff --git a/drivers/staging/android/pmem.c b/drivers/staging/android/pmem.c
+> index 65ba61a..c589c0c 100644
+> --- a/drivers/staging/android/pmem.c
+> +++ b/drivers/staging/android/pmem.c
+> @@ -831,7 +831,7 @@ static int pmem_connect(unsigned long connect, struct file *file)
+>        src_file = fget_light(connect, &put_needed);
+>        DLOG("connect %p to %p\n", file, src_file);
+>        if (!src_file) {
+> -               printk("pmem: src file not found!\n");
+> +               printk(KERN_ERR "pmem: src file not found!\n");
+>                ret = -EINVAL;
+>                goto err_no_file;
+>        }
+> @@ -934,7 +934,7 @@ int pmem_remap(struct pmem_region *region, struct file *file,
+>        if (unlikely(!PMEM_IS_PAGE_ALIGNED(region->offset) ||
+>                 !PMEM_IS_PAGE_ALIGNED(region->len))) {
+>  #if PMEM_DEBUG
+> -               printk("pmem: request for unaligned pmem suballocation "
+> +               printk(KERN_DEBUG "pmem: request for unaligned pmem suballocation "
+>                       "%lx %lx\n", region->offset, region->len);
+>  #endif
+>                return -EINVAL;
+> --
+> 1.7.5.4
+>
