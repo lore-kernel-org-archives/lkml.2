@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab2AWLeW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 06:34:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60964 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab2AWLeV convert rfc822-to-8bit (ORCPT
+	id S1752844Ab2AWLkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 06:40:52 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:11182 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab2AWLku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 06:34:21 -0500
-Message-ID: <1327318449.2446.5.camel@twins>
-Subject: Re: [PATCH] trace: reset sleep/block start time on task switch
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Date: Mon, 23 Jan 2012 12:34:09 +0100
-In-Reply-To: <1327026020-32376-1-git-send-email-asharma@fb.com>
-References: <1327026020-32376-1-git-send-email-asharma@fb.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 23 Jan 2012 06:40:50 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h63h)
+X-Spam-TCS-SCL: 2:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LY91RV-01-25A-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Michal Marek <mmarek@suse.cz>
+CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH] kbuild: Fix link to headers in 'make deb-pkg'
+Date: Mon, 23 Jan 2012 12:40:28 +0100
+Message-ID: <1327318828-12984-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-19 at 18:20 -0800, Arun Sharma wrote:
-> Without this patch, the first sample we get on a
-> task might be bad because of a stale sleep_start
-> value that wasn't reset at the last task switch
-> because the tracepoint was not active.
-> 
-> The problem can be worked around via perf record
-> --filter "sleeptime < some-large-number" in practice
-> and it's not clear if the added code to the context
-> switch path is worth it.
-> 
-> I'm posting this patch regardless, just in case
-> more people start noticing this and start wondering
-> where the bogus numbers came from.
-> 
-> Signed-off-by: Arun Sharma <asharma@fb.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Cc: Andrew Vagin <avagin@openvz.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  include/trace/events/sched.h |    3 ---
->  kernel/sched/core.c          |    3 +++
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-> index 6ba596b..814cdf1 100644
-> --- a/include/trace/events/sched.h
-> +++ b/include/trace/events/sched.h
-> @@ -378,9 +378,6 @@ static inline u64 trace_get_sleeptime(struct task_struct *tsk)
->  
->  	block = tsk->se.statistics.block_start;
->  	sleep = tsk->se.statistics.sleep_start;
-> -	tsk->se.statistics.block_start = 0;
-> -	tsk->se.statistics.sleep_start = 0;
-> -
->  	return block ? block : sleep ? sleep : 0;
->  #else
->  	return 0;
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 457c881..6349cee 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1937,7 +1937,10 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
->  	local_irq_enable();
->  #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
->  	finish_lock_switch(rq, prev);
-> +
->  	trace_sched_stat_sleeptime(current, rq->clock);
-> +	current->se.statistics.block_start = 0;
-> +	current->se.statistics.sleep_start = 0;
->  
->  	fire_sched_in_preempt_notifiers(current);
->  	if (mm)
+The Link to the kernel header files in the debian packages
+point to the original build directory. This is a bad choice
+if the packages were installed on a different machine. Fix
+this in by manually re-creating the link in the builddeb
+script.
+With this patch applied the lib/modules/$version dir always
+exists, so move the "$ARCH = um" check out of the modules
+check too.
 
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ scripts/package/builddeb |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
-Its not just your tracepoint data being wrong, it'll wreck all related
-stats :/
-
-This'll fail to compile for !CONFIG_SCHEDSTAT I guess.. I should have
-paid more attention to the initial patch, that tracepoint having
-side-effects is a big no-no.
-
-Having unconditional writes there is somewhat sad, but I suspect putting
-a conditional around it isn't going to help much.. bah can we
-restructure things so we don't need this?
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index f6cbc3d..46f63dc 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -91,6 +91,7 @@ fi
+ rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
+ mkdir -m 755 -p "$tmpdir/DEBIAN"
+ mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
++mkdir -p  "$tmpdir/lib/modules/$version"
+ mkdir -m 755 -p "$fwdir/DEBIAN"
+ mkdir -p "$fwdir/lib" "$fwdir/usr/share/doc/$fwpackagename"
+ mkdir -m 755 -p "$libc_headers_dir/DEBIAN"
+@@ -121,10 +122,14 @@ fi
+ 
+ if grep -q '^CONFIG_MODULES=y' .config ; then
+ 	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
+-	if [ "$ARCH" = "um" ] ; then
+-		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
+-		rmdir "$tmpdir/lib/modules/$version"
+-	fi
++fi
++
++# Make sure link to the headers is correct
++ln -snf "/usr/src/$kernel_headers_packagename" "$tmpdir/lib/modules/$version/build"
++
++if [ "$ARCH" = "um" ] ; then
++	mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
++	rmdir "$tmpdir/lib/modules/$version"
+ fi
+ 
+ make headers_check
+-- 
+1.7.5.4
 
 
