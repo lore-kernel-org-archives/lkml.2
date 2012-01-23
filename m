@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab2AWPID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 10:08:03 -0500
-Received: from tservice.ru ([195.178.208.66]:43682 "EHLO tservice.net.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752899Ab2AWPIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 10:08:01 -0500
-Date: Mon, 23 Jan 2012 18:07:53 +0300
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, neilb@suse.de
-Subject: Re: [PATCH] W1: OMAP HDQ1W: use 32-bit register accesses
-Message-ID: <20120123150753.GA21395@ioremap.net>
-References: <alpine.DEB.2.00.1201221319270.26641@utopia.booyaka.com>
+	id S1753220Ab2AWPJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 10:09:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32141 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752899Ab2AWPJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 10:09:17 -0500
+Date: Mon, 23 Jan 2012 16:03:09 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] If init dies, log a signal which killed it, if any.
+Message-ID: <20120123150309.GA8153@redhat.com>
+References: <1327097836-8485-1-git-send-email-vda.linux@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1201221319270.26641@utopia.booyaka.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1327097836-8485-1-git-send-email-vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul
+On 01/20, Denys Vlasenko wrote:
+>
+> I just received another user's pleas for help when their
+> init mysteriously died. I again explained that they need to check
+> whether it died because of bad instruction, a segv, or something else.
+> Which was an annoying detour into writing a trivial C program
+> to spawn his init and print its exit code:
+>
+> http://lists.busybox.net/pipermail/busybox/2012-January/077172.html
+>
+> I hear you saying "just test it under /bin/sh". Well, the crashing init
+> _was_ /bin/sh.
+>
+> Which prompted me to make kernel do this first step automatically.
+> We can print exit code, which makes it possible to see that
+> death was from e.g. SIGILL without writing test programs.
+>
+> The code is fairly self-explanatory. Compile-tested.
+>
+> Changes in v.2: don't try to decode signal names, just print
+> exit status in hex.
 
-Patchset looks good, feel free to add my ack
+Looks reasonable to me.
 
-On Sun, Jan 22, 2012 at 01:26:23PM -0700, Paul Walmsley (paul@pwsan.com) wrote:
-> 
-> HDQ/1-wire registers are 32 bits long, even if the register contents
-> fit into 8 bits, so accesses must be 32-bit aligned.  Evidently the
-> OMAP2/3 interconnects allowed the driver to get away with 8 bit accesses,
-> but the OMAP4 puts a stop to that:
-> 
-> [    1.488800] Driver for 1-wire Dallas network protocol.
-> [    1.495025] Bad mode in data abort handler detected
-> [    1.500122] Internal error: Oops - bad mode: 0 [#1] SMP
-> [    1.505615] Modules linked in:
-> [    1.508819] CPU: 0    Not tainted  (3.3.0-rc1-00008-g45030e9 #992)
-> [    1.515289] PC is at 0xffff0018
-> [    1.518615] LR is at omap_hdq_probe+0xd4/0x2cc
-> 
-> The OMAP4430 ES2 Rev X TRM does warn about this restriction in section 
-> 23.2.6.2 "HDQ/1-Wire Registers".
-> 
-> Fixes the crash on OMAP4430 ES2 Pandaboard.  Tested also on OMAP34xx and 
-> OMAP2420; it seems to work fine on those chips, although due to the lack 
-> of boards with HDQ/1-wire devices here, a more indepth test was not 
-> possible.
-> 
+Probably you should re-send the patch to Andrew, I do not know who
+else can pick it.
+
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+
+> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
 > ---
-> Intended for the v3.4 merge window.
-> 
->  drivers/w1/masters/omap_hdq.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/w1/masters/omap_hdq.c b/drivers/w1/masters/omap_hdq.c
-> index 63e3eda..291897c 100644
-> --- a/drivers/w1/masters/omap_hdq.c
-> +++ b/drivers/w1/masters/omap_hdq.c
-> @@ -100,20 +100,20 @@ static struct w1_bus_master omap_w1_master = {
->  /* HDQ register I/O routines */
->  static inline u8 hdq_reg_in(struct hdq_data *hdq_data, u32 offset)
->  {
-> -	return __raw_readb(hdq_data->hdq_base + offset);
-> +	return __raw_readl(hdq_data->hdq_base + offset);
->  }
->  
->  static inline void hdq_reg_out(struct hdq_data *hdq_data, u32 offset, u8 val)
->  {
-> -	__raw_writeb(val, hdq_data->hdq_base + offset);
-> +	__raw_writel(val, hdq_data->hdq_base + offset);
->  }
->  
->  static inline u8 hdq_reg_merge(struct hdq_data *hdq_data, u32 offset,
->  			u8 val, u8 mask)
->  {
-> -	u8 new_val = (__raw_readb(hdq_data->hdq_base + offset) & ~mask)
-> +	u8 new_val = (__raw_readl(hdq_data->hdq_base + offset) & ~mask)
->  			| (val & mask);
-> -	__raw_writeb(new_val, hdq_data->hdq_base + offset);
-> +	__raw_writel(new_val, hdq_data->hdq_base + offset);
->  
->  	return new_val;
->  }
-> -- 
-> 1.7.8.3
+>  kernel/exit.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 294b170..0c540a5 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -710,8 +710,11 @@ static struct task_struct *find_new_reaper(struct task_struct *father)
+>
+>  	if (unlikely(pid_ns->child_reaper == father)) {
+>  		write_unlock_irq(&tasklist_lock);
+> -		if (unlikely(pid_ns == &init_pid_ns))
+> -			panic("Attempted to kill init!");
+> +		if (unlikely(pid_ns == &init_pid_ns)) {
+> +			panic("Attempted to kill init! exitcode=%08x\n",
+> +				father->signal->group_exit_code ?:
+> +					father->exit_code);
+> +		}
+>
+>  		zap_pid_ns_processes(pid_ns);
+>  		write_lock_irq(&tasklist_lock);
+> --
+> 1.7.7.5
+>
 
--- 
-	Evgeniy Polyakov
