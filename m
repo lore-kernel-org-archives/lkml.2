@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab2AXADv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:03:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42450 "EHLO mx2.suse.de"
+	id S1755619Ab2AWXr4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:47:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42430 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755660Ab2AWXsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:48:03 -0500
+	id S1755596Ab2AWXrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:47:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
-Message-Id: <20120123234025.912948874@clark.kroah.org>
+Message-Id: <20120123234025.688252555@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:21 -0800
+Date: Mon, 23 Jan 2012 15:39:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [35/90] UBI: fix debugging messages
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Miklos Szeredi <mszeredi@suse.cz>, Hugh Dickins <hughd@google.com>
+Subject: [32/90] memcg: add mem_cgroup_replace_page_cache() to fix LRU issue
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +27,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-commit 72f0d453d81d35087b1d3ad7c8285628c2be6e1d upstream.
+commit ab936cbcd02072a34b60d268f94440fd5cf1970b upstream.
 
-Patch ab50ff684707031ed4bad2fdd313208ae392e5bb broke UBI debugging messages:
-before that commit when UBI debugging was enabled, users saw few useful
-debugging messages after attaching an MTD device. However, that patch turned
-'dbg_msg()' into 'pr_debug()', so to enable the debugging messages users have
-to enable them first via /sys/kernel/debug/dynamic_debug/control, which is
-very impractical.
+Commit ef6a3c6311 ("mm: add replace_page_cache_page() function") added a
+function replace_page_cache_page().  This function replaces a page in the
+radix-tree with a new page.  WHen doing this, memory cgroup needs to fix
+up the accounting information.  memcg need to check PCG_USED bit etc.
 
-This commit makes 'dbg_msg()' to use 'printk()' instead of 'pr_debug()', just
-as it was before the breakage.
+In some(many?) cases, 'newpage' is on LRU before calling
+replace_page_cache().  So, memcg's LRU accounting information should be
+fixed, too.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+This patch adds mem_cgroup_replace_page_cache() and removes the old hooks.
+ In that function, old pages will be unaccounted without touching
+res_counter and new page will be accounted to the memcg (of old page).
+WHen overwriting pc->mem_cgroup of newpage, take zone->lru_lock and avoid
+races with LRU handling.
+
+Background:
+  replace_page_cache_page() is called by FUSE code in its splice() handling.
+  Here, 'newpage' is replacing oldpage but this newpage is not a newly allocated
+  page and may be on LRU. LRU mis-accounting will be critical for memory cgroup
+  because rmdir() checks the whole LRU is empty and there is no account leak.
+  If a page is on the other LRU than it should be, rmdir() will fail.
+
+This bug was added in March 2011, but no bug report yet.  I guess there
+are not many people who use memcg and FUSE at the same time with upstream
+kernels.
+
+The result of this bug is that admin cannot destroy a memcg because of
+account leak.  So, no panic, no deadlock.  And, even if an active cgroup
+exist, umount can succseed.  So no problem at shutdown.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/ubi/debug.h |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/linux/memcontrol.h |    6 ++++++
+ mm/filemap.c               |   18 ++----------------
+ mm/memcontrol.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 52 insertions(+), 16 deletions(-)
 
---- a/drivers/mtd/ubi/debug.h
-+++ b/drivers/mtd/ubi/debug.h
-@@ -51,7 +51,10 @@ struct ubi_mkvol_req;
- 	pr_debug("UBI DBG " type ": " fmt "\n", ##__VA_ARGS__)
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -119,6 +119,8 @@ struct zone_reclaim_stat*
+ mem_cgroup_get_reclaim_stat_from_page(struct page *page);
+ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+ 					struct task_struct *p);
++extern void mem_cgroup_replace_page_cache(struct page *oldpage,
++					struct page *newpage);
  
- /* Just a debugging messages not related to any specific UBI subsystem */
--#define dbg_msg(fmt, ...) ubi_dbg_msg("msg", fmt, ##__VA_ARGS__)
-+#define dbg_msg(fmt, ...)                                    \
-+	printk(KERN_DEBUG "UBI DBG (pid %d): %s: " fmt "\n", \
-+	       current->pid, __func__, ##__VA_ARGS__)
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ extern int do_swap_account;
+@@ -370,6 +372,10 @@ static inline
+ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+ {
+ }
++static inline void mem_cgroup_replace_page_cache(struct page *oldpage,
++				struct page *newpage)
++{
++}
+ #endif /* CONFIG_CGROUP_MEM_CONT */
+ 
+ #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -396,24 +396,11 @@ EXPORT_SYMBOL(filemap_write_and_wait_ran
+ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+ {
+ 	int error;
+-	struct mem_cgroup *memcg = NULL;
+ 
+ 	VM_BUG_ON(!PageLocked(old));
+ 	VM_BUG_ON(!PageLocked(new));
+ 	VM_BUG_ON(new->mapping);
+ 
+-	/*
+-	 * This is not page migration, but prepare_migration and
+-	 * end_migration does enough work for charge replacement.
+-	 *
+-	 * In the longer term we probably want a specialized function
+-	 * for moving the charge from old to new in a more efficient
+-	 * manner.
+-	 */
+-	error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
+-	if (error)
+-		return error;
+-
+ 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+ 	if (!error) {
+ 		struct address_space *mapping = old->mapping;
+@@ -435,13 +422,12 @@ int replace_page_cache_page(struct page
+ 		if (PageSwapBacked(new))
+ 			__inc_zone_page_state(new, NR_SHMEM);
+ 		spin_unlock_irq(&mapping->tree_lock);
++		/* mem_cgroup codes must not be called under tree_lock */
++		mem_cgroup_replace_page_cache(old, new);
+ 		radix_tree_preload_end();
+ 		if (freepage)
+ 			freepage(old);
+ 		page_cache_release(old);
+-		mem_cgroup_end_migration(memcg, old, new, true);
+-	} else {
+-		mem_cgroup_end_migration(memcg, old, new, false);
+ 	}
+ 
+ 	return error;
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3422,6 +3422,50 @@ int mem_cgroup_shmem_charge_fallback(str
+ 	return ret;
+ }
+ 
++/*
++ * At replace page cache, newpage is not under any memcg but it's on
++ * LRU. So, this function doesn't touch res_counter but handles LRU
++ * in correct way. Both pages are locked so we cannot race with uncharge.
++ */
++void mem_cgroup_replace_page_cache(struct page *oldpage,
++				  struct page *newpage)
++{
++	struct mem_cgroup *memcg;
++	struct page_cgroup *pc;
++	struct zone *zone;
++	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
++	unsigned long flags;
 +
- /* General debugging messages */
- #define dbg_gen(fmt, ...) ubi_dbg_msg("gen", fmt, ##__VA_ARGS__)
- /* Messages from the eraseblock association sub-system */
++	if (mem_cgroup_disabled())
++		return;
++
++	pc = lookup_page_cgroup(oldpage);
++	/* fix accounting on old pages */
++	lock_page_cgroup(pc);
++	memcg = pc->mem_cgroup;
++	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), -1);
++	ClearPageCgroupUsed(pc);
++	unlock_page_cgroup(pc);
++
++	if (PageSwapBacked(oldpage))
++		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
++
++	zone = page_zone(newpage);
++	pc = lookup_page_cgroup(newpage);
++	/*
++	 * Even if newpage->mapping was NULL before starting replacement,
++	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
++	 * LRU while we overwrite pc->mem_cgroup.
++	 */
++	spin_lock_irqsave(&zone->lru_lock, flags);
++	if (PageLRU(newpage))
++		del_page_from_lru_list(zone, newpage, page_lru(newpage));
++	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type);
++	if (PageLRU(newpage))
++		add_page_to_lru_list(zone, newpage, page_lru(newpage));
++	spin_unlock_irqrestore(&zone->lru_lock, flags);
++}
++
+ #ifdef CONFIG_DEBUG_VM
+ static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
+ {
 
 
