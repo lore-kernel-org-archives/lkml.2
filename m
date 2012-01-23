@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab2AWTT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 14:19:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47359 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab2AWTT2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 14:19:28 -0500
+	id S1753874Ab2AWTTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 14:19:35 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49968 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753727Ab2AWTTe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 14:19:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <B567DBAB974C0544994013492B949F8E3812C6D0D3@EXMAIL03.scwf.nsc.com>
-References: <AczXFgV8f/jdU5qUSd6MQcwmtcr9IA==>
-	<B567DBAB974C0544994013492B949F8E3812C6D0D3@EXMAIL03.scwf.nsc.com>
-Date: Mon, 23 Jan 2012 20:19:28 +0100
-Message-ID: <CACRpkdYLfNOdRsFpo8u4u_X0obAeuYtvt8bkcyCQ536tw86RyQ@mail.gmail.com>
-Subject: Re: [PATCH 6/7] leds-lm3530: replace 'pltfm' with 'pdata'
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "shreshthakumar.sahu@stericsson.com" 
-	<shreshthakumar.sahu@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
+In-Reply-To: <1327344034.6317.3.camel@joe2Laptop>
+References: <1327343283-4830-1-git-send-email-netdev@pradeepdalvi.com>
+	<1327344034.6317.3.camel@joe2Laptop>
+Date: Tue, 24 Jan 2012 00:49:32 +0530
+Message-ID: <CA+Dx6HY92Z8KtDXf73O3QMWLj__+Q2g7PxjiZ7omn+tuh8YK5A@mail.gmail.com>
+Subject: Re: [PATCH/RESEND] drivers/net/ethernet: dev_alloc_skb to netdev_alloc_skb
+From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 2:51 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
-
-> Use 'pdata' rather than 'pltfm' in lm3530_init_registers().
+On Tue, Jan 24, 2012 at 12:10 AM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2012-01-23 at 23:58 +0530, Pradeep A. Dalvi wrote:
+>> Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
+>>   - Removed extra skb->dev = dev after netdev_alloc_skb
+> []
+>> diff --git a/drivers/net/ethernet/amd/lance.c b/drivers/net/ethernet/amd/lance.c
+> []
+>> @@ -871,13 +871,12 @@ lance_init_ring(struct net_device *dev, gfp_t gfp)
+>>               struct sk_buff *skb;
+>>               void *rx_buff;
+>>
+>> -             skb = alloc_skb(PKT_BUF_SZ, GFP_DMA | gfp);
+>> +             skb = netdev_alloc_skb(dev, PKT_BUF_SZ);
 >
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> This change seems suspect.
+> I stopped reading here.
+>
+> Perhaps you should break this large patch
+> into multiple separate patches.
+>
+> The trivial, obviously correct
+> and the possibly broken.
 
-You're ringht this is a more common naming.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-...but it won't apply because i NACKed the regulator avoidance
-patch... so it'll need updating.
-
-Yours,
-Linus Walleij
+Not really sure what made you suspect something in here. If you could
+help me understand possibly broken scenarios, would essentially be
+helpful. Thanks in advance!
