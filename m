@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab2AWXtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42563 "EHLO mx2.suse.de"
+	id S1755998Ab2AWXtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:49:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42555 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755948Ab2AWXs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:48:58 -0500
+	id S1755963Ab2AWXsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:48:54 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:27 2012
-Message-Id: <20120123234027.211952075@clark.kroah.org>
+Message-Id: <20120123234027.122572814@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:36 -0800
+Date: Mon, 23 Jan 2012 15:39:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Daney <david.daney@cavium.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [50/90] recordmcount: Fix handling of elf64 big-endian objects.
+        alan@lxorguk.ukuu.org.uk, Jack Steiner <steiner@sgi.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [49/90] x86, UV: Update Boot messages for SGI UV2 platform
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Daney <david.daney@cavium.com>
+From: Jack Steiner <steiner@sgi.com>
 
-commit 2e885057b7f75035f0b85e02f737891482815a81 upstream.
+commit da517a08ac5913cd80ce3507cddd00f2a091b13c upstream.
 
-In ELF64, the sh_flags field is 64-bits wide.  recordmcount was
-erroneously treating it as a 32-bit wide field.  For little endian
-objects this works because the flags of interest (SHF_EXECINSTR)
-reside in the lower 32 bits of the word, and you get the same result
-with either a 32-bit or 64-bit read.  Big endian objects on the
-other hand do not work at all with this error.
+SGI UV systems print a message during boot:
 
-The fix:  Correctly treat sh_flags as 64-bits wide in elf64 objects.
+	UV: Found <num> blades
 
-The symptom I observed was that my
-__start_mcount_loc..__stop_mcount_loc was empty even though ftrace
-function tracing was enabled.
+Due to packaging changes, the blade count is not accurate for
+on the next generation of the platform. This patch corrects the
+count.
 
-Link: http://lkml.kernel.org/r/1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com
-
-Signed-off-by: David Daney <david.daney@cavium.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+Link: http://lkml.kernel.org/r/20120106191900.GA19772@sgi.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- scripts/recordmcount.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/apic/x2apic_uv_x.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -462,7 +462,7 @@ __has_rel_mcount(Elf_Shdr const *const r
- 		succeed_file();
- 	}
- 	if (w(txthdr->sh_type) != SHT_PROGBITS ||
--	    !(w(txthdr->sh_flags) & SHF_EXECINSTR))
-+	    !(_w(txthdr->sh_flags) & SHF_EXECINSTR))
- 		return NULL;
- 	return txtname;
- }
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -779,7 +779,12 @@ void __init uv_system_init(void)
+ 	for(i = 0; i < UVH_NODE_PRESENT_TABLE_DEPTH; i++)
+ 		uv_possible_blades +=
+ 		  hweight64(uv_read_local_mmr( UVH_NODE_PRESENT_TABLE + i * 8));
+-	printk(KERN_DEBUG "UV: Found %d blades\n", uv_num_possible_blades());
++
++	/* uv_num_possible_blades() is really the hub count */
++	printk(KERN_INFO "UV: Found %d blades, %d hubs\n",
++			is_uv1_hub() ? uv_num_possible_blades() :
++			(uv_num_possible_blades() + 1) / 2,
++			uv_num_possible_blades());
+ 
+ 	bytes = sizeof(struct uv_blade_info) * uv_num_possible_blades();
+ 	uv_blade_info = kzalloc(bytes, GFP_KERNEL);
 
 
