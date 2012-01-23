@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab2AWPJS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 10:09:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899Ab2AWPJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 10:09:17 -0500
-Date: Mon, 23 Jan 2012 16:03:09 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] If init dies, log a signal which killed it, if any.
-Message-ID: <20120123150309.GA8153@redhat.com>
-References: <1327097836-8485-1-git-send-email-vda.linux@googlemail.com>
+	id S1753271Ab2AWPKB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 10:10:01 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47943 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752974Ab2AWPKA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 10:10:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327097836-8485-1-git-send-email-vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F1D4852.9070002@redhat.com>
+References: <CADDKRnDHvptV_gODG8XgqEkWGW0AyDfJJkP1dU2uBL6rs5yzDA@mail.gmail.com>
+	<4F1D4852.9070002@redhat.com>
+Date: Mon, 23 Jan 2012 16:09:58 +0100
+Message-ID: <CADDKRnAzGH=iF5XycONdXgaNHxHUbZjv_KV7LZ+gBqF1SpYB7A@mail.gmail.com>
+Subject: Re: [v3.3-rc1] media:dvb-t regression bisected
+From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20, Denys Vlasenko wrote:
->
-> I just received another user's pleas for help when their
-> init mysteriously died. I again explained that they need to check
-> whether it died because of bad instruction, a segv, or something else.
-> Which was an annoying detour into writing a trivial C program
-> to spawn his init and print its exit code:
->
-> http://lists.busybox.net/pipermail/busybox/2012-January/077172.html
->
-> I hear you saying "just test it under /bin/sh". Well, the crashing init
-> _was_ /bin/sh.
->
-> Which prompted me to make kernel do this first step automatically.
-> We can print exit code, which makes it possible to see that
-> death was from e.g. SIGILL without writing test programs.
->
-> The code is fairly self-explanatory. Compile-tested.
->
-> Changes in v.2: don't try to decode signal names, just print
-> exit status in hex.
+Thank you very much, the patch works!
 
-Looks reasonable to me.
+Joerg
 
-Probably you should re-send the patch to Andrew, I do not know who
-else can pick it.
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-
-> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
-> ---
->  kernel/exit.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
+2012/1/23 Mauro Carvalho Chehab <mchehab@redhat.com>:
+> Em 22-01-2012 13:29, Jörg Otte escreveu:
+>> with v3.3-rc1 I can not watch dvb-t. I get the following
+>> errors from the media player (Kaffeine,vlc):
+>>
+>> kaffeine(1801): DvbDevice::frontendEvent: tuning failed
+>> vlc: [0xa278d78] main stream error: cannot pre fill buffer
+>>
+>> I have a CinergyT2 usb-stick.
+>>
+>> I was able to bisect the problem to:
+>> commit 7830bbaff9f5f9cefcdc9acfb1783b230cc69fac
+>> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> Date:   Mon Dec 26 15:41:01 2011 -0300
+>>
+>> [media] cinergyT2-fe: convert set_fontend to use DVBv5 parameters
 >
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 294b170..0c540a5 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -710,8 +710,11 @@ static struct task_struct *find_new_reaper(struct task_struct *father)
+> Could you please try this patch?
 >
->  	if (unlikely(pid_ns->child_reaper == father)) {
->  		write_unlock_irq(&tasklist_lock);
-> -		if (unlikely(pid_ns == &init_pid_ns))
-> -			panic("Attempted to kill init!");
-> +		if (unlikely(pid_ns == &init_pid_ns)) {
-> +			panic("Attempted to kill init! exitcode=%08x\n",
-> +				father->signal->group_exit_code ?:
-> +					father->exit_code);
-> +		}
+> [PATCH] cinergyT2-fe: Fix bandwdith settings
 >
->  		zap_pid_ns_processes(pid_ns);
->  		write_lock_irq(&tasklist_lock);
-> --
-> 1.7.7.5
+> Changeset 7830bbaff9f mangled the bandwidth field for CinergyT2.
+> Properly fill it.
 >
-
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+>
+> diff --git a/drivers/media/dvb/dvb-usb/cinergyT2-fe.c b/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
+> index 8a57ed8..1efc028 100644
+> --- a/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
+> +++ b/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
+> @@ -276,14 +276,15 @@ static int cinergyt2_fe_set_frontend(struct dvb_frontend *fe)
+>        param.flags = 0;
+>
+>        switch (fep->bandwidth_hz) {
+> +       default:
+>        case 8000000:
+> -               param.bandwidth = 0;
+> +               param.bandwidth = 8;
+>                break;
+>        case 7000000:
+> -               param.bandwidth = 1;
+> +               param.bandwidth = 7;
+>                break;
+>        case 6000000:
+> -               param.bandwidth = 2;
+> +               param.bandwidth = 6;
+>                break;
+>        }
+>
