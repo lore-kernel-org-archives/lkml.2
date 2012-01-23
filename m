@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab2AWJd5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 04:33:57 -0500
-Received: from ams-iport-2.cisco.com ([144.254.224.141]:30476 "EHLO
-	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab2AWJd4 (ORCPT
+	id S1752863Ab2AWJoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 04:44:04 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46467 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752227Ab2AWJoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 04:33:56 -0500
-X-IronPort-AV: E=Sophos;i="4.71,555,1320624000"; 
-   d="scan'208";a="64350105"
-From: Hans Verkuil <hansverk@cisco.com>
-Organization: Cisco Systems Norway
-To: Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH] [media] convert drivers/media/* to use module_i2c_driver()
-Date: Mon, 23 Jan 2012 10:33:30 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2-0.slh.2-aptosid-amd64; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heungjun Kim <riverful.kim@samsung.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Andrew Chew <achew@nvidia.com>, Paul Mundt <lethal@linux-sh.org>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Johannes Obermaier <johannes.obermaier@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Steven Toth <stoth@kernellabs.com>, linux-media@vger.kernel.org
-References: <1327140645.3928.1.camel@phoenix>
-In-Reply-To: <1327140645.3928.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201231033.30369.hansverk@cisco.com>
+	Mon, 23 Jan 2012 04:44:02 -0500
+Message-ID: <1327311836.2525.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] netdev/ethernet: dev_alloc_skb to netdev_alloc_skb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Viral Mehta <viral.vkm@gmail.com>
+Cc: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
+Date: Mon, 23 Jan 2012 10:43:56 +0100
+In-Reply-To: <CANX6Da=Y5zJ4xi8=gLZZ8tUnnqxNCpvC0yBGruObWzYHrucLLg@mail.gmail.com>
+References: <1327179463-13980-1-git-send-email-netdev@pradeepdalvi.com>
+	 <CANX6Da=Y5zJ4xi8=gLZZ8tUnnqxNCpvC0yBGruObWzYHrucLLg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For modules:
+Le lundi 23 janvier 2012 à 14:10 +0530, Viral Mehta a écrit :
+> On Sun, Jan 22, 2012 at 2:27 AM, Pradeep A. Dalvi
+> <netdev@pradeepdalvi.com> wrote:
+> > Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
+> >
+> > Signed-off-by: Pradeep A. Dalvi <netdev@pradeepdalvi.com>
+> 
+> and these too ??
+> 
+> vmehta@viralmehta:~/linux-3.2/drivers/infiniband/hw$ grep dev_alloc_skb -r .
+> ./ipath/ipath_driver.c:	skb = __dev_alloc_skb(len, gfp_mask);
+> ./nes/nes_cm.c:	skb = dev_alloc_skb(MAX_CM_BUFFER);
+> ./nes/nes_cm.c:		skb = dev_alloc_skb(MAX_CM_BUFFER);
 
-adv7170
-adv7175
-bt819
-bt856
-bt866
-cs5345
-cx53l32a
-cx25840-core
-indycam
-ks0127
-m52790
-msp3400-driver
-saa6588
-saa6752hs
-saa7110
-saa7115
-saa7127
-saa717x
-saa7191
-tda7432
-tda9840
-tea6415c
-tea6420
-tlv320aic23b
-tuner-core
-tvaudio
-upd64031a
-upd64083
-vp27smpx
-wm8739
-wm8775
+Those should probably use a mere alloc_skb(), since they dont need the
+NET_SKB_PAD
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+> ./nes/nes_cm.c:		skb = dev_alloc_skb(MAX_CM_BUFFER);
+> ./nes/nes_cm.c:		skb = dev_alloc_skb(MAX_CM_BUFFER);
+> ./nes/nes_cm.c:		skb = dev_alloc_skb(MAX_CM_BUFFER);
+> ./nes/nes_hw.c:		skb = dev_alloc_skb(nesvnic->max_frame_size);
+> ./nes/nes_hw.c:		skb = dev_alloc_skb(nesvnic->max_frame_size);
+> ./nes/nes_mgt.c:		skb = dev_alloc_skb(mgtvnic->nesvnic->max_frame_size);
+> ./nes/nes_mgt.c:			skb = dev_alloc_skb(nesvnic->max_frame_size);
+> ./amso1100/c2.c:	skb = dev_alloc_skb(c2_port->rx_buf_size);
+> vmehta@viralmehta:~/linux-3.2/drivers/infiniband/hw$
+> --
 
-Regards,
 
-	Hans
