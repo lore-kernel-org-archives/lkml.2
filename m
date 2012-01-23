@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab2AWEYT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 23:24:19 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58503 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab2AWEYR convert rfc822-to-8bit (ORCPT
+	id S1752805Ab2AWEZg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 23:25:36 -0500
+Received: from mail.windriver.com ([147.11.1.11]:49819 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab2AWEZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 23:24:17 -0500
+	Sun, 22 Jan 2012 23:25:35 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: arnd@arndb.de, greg@kroah.com
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] c2port: fix build error for duramar2150 due to missing header.
+Date: Sun, 22 Jan 2012 23:24:15 -0500
+Message-Id: <1327292655-30565-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.7.2
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20120123120933.6d4c9cc7050fce2e9fbc9d3a@canb.auug.org.au>
-References: <20120123120933.6d4c9cc7050fce2e9fbc9d3a@canb.auug.org.au>
-Date: Sun, 22 Jan 2012 20:24:16 -0800
-Message-ID: <CAOesGMgH0owngSkJq72Wf01Z7YSsD9pzRZWtzSvZt+Q7ZA6qng@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the crypto tree with the tegra tree
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Henning Heinold <heinold@inf.fu-berlin.de>,
-        Varun Wadekar <vwadekar@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 22, 2012 at 5:09 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Herbert,
->
-> Today's linux-next merge of the crypto tree got a conflict in
-> arch/arm/mach-tegra/fuse.c between commit b2609c7c7237 ("ARM: tegra:
-> fuse: add functions to access chip revision") from the tegra tree and
-> commit e87e06cd8cc0 ("arm: tegra: export tegra_chip_uid") from the crypto
-> tree.
->
-> Just context changes. �I fixed it up (see below) and can carry the fix as
-> necessary.
+This file needs the basic headers for resource management,
+otherwise we will see this build error:
 
-I should cherry-pick in the same change as Herbert is carrying, and do
-the rest of the fuse changes on top of that. I'll do that for
-tomorrows -next.
+ CC [M]  drivers/misc/c2port/c2port-duramar2150.o
+ drivers/misc/c2port/c2port-duramar2150.c: In function ‘duramar2150_c2port_init’:
+ drivers/misc/c2port/c2port-duramar2150.c:125:2: error: implicit declaration of function ‘request_region’ [-Werror=implicit-function-declaration]
+ drivers/misc/c2port/c2port-duramar2150.c:139:2: error: implicit declaration of function ‘release_region’ [-Werror=implicit-function-declaration]
 
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
+diff --git a/drivers/misc/c2port/c2port-duramar2150.c b/drivers/misc/c2port/c2port-duramar2150.c
+index 778fc3f..5484301 100644
+--- a/drivers/misc/c2port/c2port-duramar2150.c
++++ b/drivers/misc/c2port/c2port-duramar2150.c
+@@ -15,6 +15,7 @@
+ #include <linux/module.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
++#include <linux/ioport.h>
+ #include <linux/c2port.h>
+ 
+ #define DATA_PORT	0x325
+-- 
+1.7.7.2
 
--Olof
