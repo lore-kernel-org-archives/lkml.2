@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2AWXta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42630 "EHLO mx2.suse.de"
+	id S932119Ab2AWXto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:49:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42660 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756129Ab2AWXt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:27 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
-Message-Id: <20120123234025.502996144@clark.kroah.org>
+	id S932096Ab2AWXtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
+Message-Id: <20120123234028.299579430@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:16 -0800
+Date: Mon, 23 Jan 2012 15:39:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [30/90] rtl8192se: Fix BUG caused by failure to check skb allocation
+        alan@lxorguk.ukuu.org.uk, Alasdair G Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [63/90] dm: do not forward ioctls from logical volumes to the
+ underlying device
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit d90db4b12bc1b9b8a787ef28550fdb767ee25a49 upstream.
+commit ec8013beddd717d1740cfefb1a9b900deef85462 upstream.
 
-When downloading firmware into the device, the driver fails to check the
-return when allocating an skb. When the allocation fails, a BUG can be
-generated, as seen in https://bugzilla.redhat.com/show_bug.cgi?id=771656.
+A logical volume can map to just part of underlying physical volume.
+In this case, it must be treated like a partition.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Based on a patch from Alasdair G Kergon.
+
+Cc: Alasdair G Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192se/fw.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/md/dm-flakey.c |   11 ++++++++++-
+ drivers/md/dm-linear.c |   12 +++++++++++-
+ drivers/md/dm-mpath.c  |    6 ++++++
+ 3 files changed, 27 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.c
-@@ -196,6 +196,8 @@ static bool _rtl92s_firmware_downloadcod
- 		/* Allocate skb buffer to contain firmware */
- 		/* info and tx descriptor info. */
- 		skb = dev_alloc_skb(frag_length);
-+		if (!skb)
-+			return false;
- 		skb_reserve(skb, extra_descoffset);
- 		seg_ptr = (u8 *)skb_put(skb, (u32)(frag_length -
- 					extra_descoffset));
-@@ -575,6 +577,8 @@ static bool _rtl92s_firmware_set_h2c_cmd
+--- a/drivers/md/dm-flakey.c
++++ b/drivers/md/dm-flakey.c
+@@ -149,8 +149,17 @@ static int flakey_status(struct dm_targe
+ static int flakey_ioctl(struct dm_target *ti, unsigned int cmd, unsigned long arg)
+ {
+ 	struct flakey_c *fc = ti->private;
++	struct dm_dev *dev = fc->dev;
++	int r = 0;
  
- 	len = _rtl92s_get_h2c_cmdlen(MAX_TRANSMIT_BUFFER_SIZE, 1, &cmd_len);
- 	skb = dev_alloc_skb(len);
-+	if (!skb)
-+		return false;
- 	cb_desc = (struct rtl_tcb_desc *)(skb->cb);
- 	cb_desc->queue_index = TXCMD_QUEUE;
- 	cb_desc->cmd_or_init = DESC_PACKET_TYPE_NORMAL;
+-	return __blkdev_driver_ioctl(fc->dev->bdev, fc->dev->mode, cmd, arg);
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (fc->start ||
++	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
++	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
+ }
+ 
+ static int flakey_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
+--- a/drivers/md/dm-linear.c
++++ b/drivers/md/dm-linear.c
+@@ -116,7 +116,17 @@ static int linear_ioctl(struct dm_target
+ 			unsigned long arg)
+ {
+ 	struct linear_c *lc = (struct linear_c *) ti->private;
+-	return __blkdev_driver_ioctl(lc->dev->bdev, lc->dev->mode, cmd, arg);
++	struct dm_dev *dev = lc->dev;
++	int r = 0;
++
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (lc->start ||
++	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
++	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
+ }
+ 
+ static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -1584,6 +1584,12 @@ static int multipath_ioctl(struct dm_tar
+ 
+ 	spin_unlock_irqrestore(&m->lock, flags);
+ 
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
+ 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
+ }
+ 
 
 
