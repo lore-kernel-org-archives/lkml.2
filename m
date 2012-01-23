@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab2AWSyD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 13:54:03 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:57391 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729Ab2AWSyB (ORCPT
+	id S1753832Ab2AWSyz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 13:54:55 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60880 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab2AWSyy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 13:54:01 -0500
-Date: Mon, 23 Jan 2012 13:53:50 -0500 (EST)
-Message-Id: <20120123.135350.756110788533975068.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@pradeepdalvi.com, netdev@vger.kernel.org, hch@lst.de,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH/RESEND] drivers/net/ethernet: dev_alloc_skb to
- netdev_alloc_skb
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1327344034.6317.3.camel@joe2Laptop>
-References: <1327343283-4830-1-git-send-email-netdev@pradeepdalvi.com>
-	<1327344034.6317.3.camel@joe2Laptop>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Jan 2012 10:53:53 -0800 (PST)
+	Mon, 23 Jan 2012 13:54:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120123142436.181674896@openvz.org>
+References: <20120123142036.025893883@openvz.org>
+	<20120123142436.181674896@openvz.org>
+Date: Mon, 23 Jan 2012 10:54:53 -0800
+X-Google-Sender-Auth: fM9df1KgiPhORgCaf7gG6KsoXSA
+Message-ID: <CAGXu5j+JrntZcr1sZ1sHXmOTT5jCuMp5HUQnucHqEgF+LXX5VA@mail.gmail.com>
+Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+ entry v8
+From: Kees Cook <keescook@chromium.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Mon, 23 Jan 2012 10:40:34 -0800
+On Mon, Jan 23, 2012 at 6:20 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> When we do checkpoint of a task we need to know the list of children
+> the task, has but there is no easy and fast way to generate reverse
+> parent->children chain from arbitrary <pid> (while a parent pid is
+> provided in "PPid" field of /proc/<pid>/status).
+> [...]
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> Perhaps you should break this large patch
-> into multiple separate patches.
+Reviewed-by: Kees Cook <keescook@chromium.org>
 
-Agreed, this patch is way too large especially for what is obviously
-turning out to be a very non-trivial transformation in some cases
-and also new patch submitters should generally avoid large patches
-like this.
+> +static int children_seq_show(struct seq_file *seq, void *v)
+> +{
+> +       struct inode *inode = seq->private;
+> +       pid_t pid;
+> +
+> +       pid = pid_nr_ns(v, inode->i_sb->s_fs_info);
+> +       return seq_printf(seq, " %d", pid);
+> +}
+
+Does this mean the file contents always starts with a space? I think
+I'd prefer a trailing space than a leading one. Better yet, neither.
+:)
+
+-Kees
+
+-- 
+Kees Cook
+ChromeOS Security
