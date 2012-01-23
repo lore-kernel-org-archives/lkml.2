@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab2AWOcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 09:32:46 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52747 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752317Ab2AWOcp (ORCPT
+	id S1753127Ab2AWOiT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 09:38:19 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:37748 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab2AWOiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 09:32:45 -0500
+	Mon, 23 Jan 2012 09:38:17 -0500
+Message-ID: <4F1D7056.1080705@linux.vnet.ibm.com>
+Date: Mon, 23 Jan 2012 08:36:06 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20120123141710.GA26809@sepie.suse.cz>
-References: <1326819051-25712-1-git-send-email-lucas.demarchi@profusion.mobi>
- <1326861219.490.4.camel@cr0> <CAPXgP12vChg=820uamRa6dTekEQD_xa6mg-nroOm1br+7-JCqw@mail.gmail.com>
- <20120123141710.GA26809@sepie.suse.cz>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Mon, 23 Jan 2012 12:32:22 -0200
-Message-ID: <CAMOw1v7+Hb8RgBdA3ZPzEFM0Mt5y=_6=RF12CodciOw0Yq2vmg@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: do not check for ancient modutils tools
-To: Michal Marek <mmarek@suse.cz>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Cong Wang <amwang@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-modules@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
+References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com> <20120120141232.a7572919.akpm@linux-foundation.org>
+In-Reply-To: <20120120141232.a7572919.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012314-1780-0000-0000-0000028DBA7C
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00107443; UDB=6.00026946; UTC=2012-01-23
+ 14:38:16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 12:17 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On Fri, Jan 20, 2012 at 05:40:58PM +0100, Kay Sievers wrote:
->> On Wed, Jan 18, 2012 at 05:33, Cong Wang <amwang@redhat.com> wrote:
->> > On Tue, 2012-01-17 at 14:50 -0200, Lucas De Marchi wrote:
->> >> scripts/depmod.sh checks for the output of '-V' expecting that it has
->> >> module-init-tools in it. It's a hack to prevent users from using
->> >> modutils instead of module-init-tools, that only works with 2.4.x
->> >> kernels. This however prints an annoying warning for kmod tool, that is
->> >> currently replacing module-init-tools.
->
-> You could call kmod "module-init-tools 3.13 (compatible; kmod 3)" ;)
->
-> Just kidding.
+Hey Andrew, 
 
-I even wrote a patch to fake kmod as module-init-tools 4.0. Not worth
-applying though  :-)
+Thanks again for responding.
 
+On 01/20/2012 04:12 PM, Andrew Morton wrote:
+> On Mon,  9 Jan 2012 16:51:56 -0600
+> Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> 
+>> This patch creates a new memory allocation library named
+>> zsmalloc.
+> 
+> I haven't really begun to look at this yet.  The code is using many
+> fields of struct page in new ways.  This is key information for anyone
+> to effectively review the code.  So please carefully document (within
+> the code itself) the ways in which the various page fields are used:
+> semantic meaning of the overload, relationships between them, any
+> locking rules or assumptions.
 
->
->> >> Rather than putting another check for kmod's version, just remove it
->> >> since users of 2.4.x kernel are unlikely to upgrade to 3.x, and if they
->> >> do, let depmod fail in that case because they should know what they are
->> >> doing.
->> >>
->> >> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
->> >
->> > Acked-by: WANG Cong <amwang@redhat.com>
->>
->> Michal, mind picking this up? The warning it produces with kmod is
->> really misleading, and the check seems unnecessary these days.
->
-> I applied it to kbuild.git#rc-fixes and will send it to Linus for 3.3.
+Will do.
+
+> It appears that a pile of dead code will be generated if CPU hotplug is
+> disabled.  (That's if it compiles at all!).  Please take a look at users
+> of hotcpu_notifier() - this facility cunningly causes all the hotplug code
+> to vanish from vmlinux if it is unneeded.
+
+I'll take a look at hotcpu_notifier() users.  Thanks.
+
+> afacit this code should be added to core mm/.  Addition of code like
+> this to core mm/ will be fiercely resisted on principle!  Hence the
+> (currently missing) justifications for adding it had best be good ones.
+
+Thanks for the insight.  I'll put some work into spelling out the benefits
+this code provides that are not currently provided by any other code in the
+kernel right now (afaik).
+
+If you think this belongs in mm/ then disregard my previous comment in
+the response to the cover letter.  I guess I was leaning toward putting it
+in lib/ specifically because I knew that it would be hard to get it into mm/.
 
 Thanks
-Lucas De Marchi
+--
+Seth
+
