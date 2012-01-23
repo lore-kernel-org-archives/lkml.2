@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab2AWXtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42606 "EHLO mx2.suse.de"
+	id S932173Ab2AWXt5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:49:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42675 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755925Ab2AWXtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:18 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
-Message-Id: <20120123234025.335241938@clark.kroah.org>
+	id S932160Ab2AWXtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:55 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
+Message-Id: <20120123234028.628058547@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:14 -0800
+Date: Mon, 23 Jan 2012 15:39:53 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roberto Sassu <roberto.sassu@polito.it>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [28/90] ima: fix invalid memory reference
+        alan@lxorguk.ukuu.org.uk, Thomas Renninger <trenn@suse.de>,
+        Bruno Friedmann <bruno@ioda-net.ch>, Len Brown <len.brown@intel.com>
+Subject: [67/90] intel idle: Make idle driver more robust
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,66 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roberto Sassu <roberto.sassu@polito.it>
+From: Thomas Renninger <trenn@suse.de>
 
-commit 7b7e5916aa2f46e57f8bd8cb89c34620ebfda5da upstream.
+commit 5c2a9f06a9cd7194f884cdc88144866235dec07d upstream.
 
-Don't free a valid measurement entry on TPM PCR extend failure.
+kvm -cpu host passes the original cpuid info to the guest.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Latest kvm version seem to return true for mwait_leaf cpuid
+function on recent Intel CPUs. But it does not return mwait
+C-states (mwait_substates), instead zero is returned.
+
+While real CPUs seem to always return non-zero values, the intel
+idle driver should not get active in kvm (mwait_substates == 0)
+case and bail out.
+Otherwise a Null pointer exception will happen later when the
+cpuidle subsystem tries to get active:
+[0.984807] BUG: unable to handle kernel NULL pointer dereference at (null)
+[0.984807] IP: [<(null)>] (null)
+...
+[0.984807][<ffffffff8143cf34>] ? cpuidle_idle_call+0xb4/0x340
+[0.984807][<ffffffff8159e7bc>] ? __atomic_notifier_call_chain+0x4c/0x70
+[0.984807][<ffffffff81001198>] ? cpu_idle+0x78/0xd0
+
+Reference:
+https://bugzilla.novell.com/show_bug.cgi?id=726296
+
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: Bruno Friedmann <bruno@ioda-net.ch>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/integrity/ima/ima_queue.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/idle/intel_idle.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/security/integrity/ima/ima_queue.c
-+++ b/security/integrity/ima/ima_queue.c
-@@ -23,6 +23,8 @@
- #include <linux/slab.h>
- #include "ima.h"
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -321,7 +321,8 @@ static int intel_idle_probe(void)
+ 	cpuid(CPUID_MWAIT_LEAF, &eax, &ebx, &ecx, &mwait_substates);
  
-+#define AUDIT_CAUSE_LEN_MAX 32
-+
- LIST_HEAD(ima_measurements);	/* list of all measurements */
+ 	if (!(ecx & CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
+-		!(ecx & CPUID5_ECX_INTERRUPT_BREAK))
++	    !(ecx & CPUID5_ECX_INTERRUPT_BREAK) ||
++	    !mwait_substates)
+ 			return -ENODEV;
  
- /* key: inode (before secure-hashing a file) */
-@@ -94,7 +96,8 @@ static int ima_pcr_extend(const u8 *hash
- 
- 	result = tpm_pcr_extend(TPM_ANY_NUM, CONFIG_IMA_MEASURE_PCR_IDX, hash);
- 	if (result != 0)
--		pr_err("IMA: Error Communicating to TPM chip\n");
-+		pr_err("IMA: Error Communicating to TPM chip, result: %d\n",
-+		       result);
- 	return result;
- }
- 
-@@ -106,8 +109,9 @@ int ima_add_template_entry(struct ima_te
- {
- 	u8 digest[IMA_DIGEST_SIZE];
- 	const char *audit_cause = "hash_added";
-+	char tpm_audit_cause[AUDIT_CAUSE_LEN_MAX];
- 	int audit_info = 1;
--	int result = 0;
-+	int result = 0, tpmresult = 0;
- 
- 	mutex_lock(&ima_extend_list_mutex);
- 	if (!violation) {
-@@ -129,9 +133,11 @@ int ima_add_template_entry(struct ima_te
- 	if (violation)		/* invalidate pcr */
- 		memset(digest, 0xff, sizeof digest);
- 
--	result = ima_pcr_extend(digest);
--	if (result != 0) {
--		audit_cause = "TPM error";
-+	tpmresult = ima_pcr_extend(digest);
-+	if (tpmresult != 0) {
-+		snprintf(tpm_audit_cause, AUDIT_CAUSE_LEN_MAX, "TPM_error(%d)",
-+			 tpmresult);
-+		audit_cause = tpm_audit_cause;
- 		audit_info = 0;
- 	}
- out:
+ 	pr_debug(PREFIX "MWAIT substates: 0x%x\n", mwait_substates);
 
 
