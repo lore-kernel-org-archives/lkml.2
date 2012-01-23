@@ -1,410 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab2AWNNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 08:13:11 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61066 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab2AWNNJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 08:13:09 -0500
+	id S1752733Ab2AWNPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 08:15:41 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58544 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752321Ab2AWNPj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 08:15:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <3900291.2831326843194846.JavaMail.root@5-MeO-DMT.ynet.sk>
-References: <18947389.2811326843064500.JavaMail.root@5-MeO-DMT.ynet.sk> <3900291.2831326843194846.JavaMail.root@5-MeO-DMT.ynet.sk>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Mon, 23 Jan 2012 14:12:48 +0100
-X-Google-Sender-Auth: D6AOAWBMZAgybMcHZRdOHWTJpuA
-Message-ID: <CAGsizzLUwA_=fZFX-4ZnYU4K-nj1A2DV_BZKOMKxgQDh2Rs54g@mail.gmail.com>
-Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CA+Dx6HbqAhjS6TNy=t+jvrwrmpTuQ3c=Wq0UnMzFRr9Q+JKpKQ@mail.gmail.com>
+References: <1327179463-13980-1-git-send-email-netdev@pradeepdalvi.com>
+	<1327311925.2525.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<CA+Dx6HbqAhjS6TNy=t+jvrwrmpTuQ3c=Wq0UnMzFRr9Q+JKpKQ@mail.gmail.com>
+Date: Mon, 23 Jan 2012 18:45:37 +0530
+Message-ID: <CA+Dx6HY6x7B0Z7hL8EpuPVz2cAKUc6S3f7prjjQZ8ycS79Rjew@mail.gmail.com>
+Subject: Re: [PATCH] netdev/ethernet: dev_alloc_skb to netdev_alloc_skb
+From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/18 Stefan Gula <steweg@ynet.sk>:
-> From: Stefan Gula <steweg@gmail.com>
+On Mon, Jan 23, 2012 at 4:07 PM, Pradeep A. Dalvi
+<netdev@pradeepdalvi.com> wrote:
+> On Mon, Jan 23, 2012 at 3:15 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> Le dimanche 22 janvier 2012 à 02:27 +0530, Pradeep A. Dalvi a écrit :
+>>> Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
+>>>
+>>
+>> ...
+>>
+>>
+>>> diff --git a/drivers/net/ethernet/3com/3c515.c b/drivers/net/ethernet/3com/3c515.c
+>>> index f67a5d3..68fd765 100644
+>>> --- a/drivers/net/ethernet/3com/3c515.c
+>>> +++ b/drivers/net/ethernet/3com/3c515.c
+>>> @@ -826,7 +826,7 @@ static int corkscrew_open(struct net_device *dev)
+>>>                               vp->rx_ring[i].next = 0;
+>>>                       vp->rx_ring[i].status = 0;      /* Clear complete bit. */
+>>>                       vp->rx_ring[i].length = PKT_BUF_SZ | 0x80000000;
+>>> -                     skb = dev_alloc_skb(PKT_BUF_SZ);
+>>> +                     skb = netdev_alloc_skb(dev, PKT_BUF_SZ);
+>>>                       vp->rx_skbuff[i] = skb;
+>>>                       if (skb == NULL)
+>>>                               break;  /* Bad news!  */
+>>
+>>
+>> One of the difference between netdev_alloc_skb() and dev_alloc_skb() is
+>> the former initializes skb->dev.
+>>
+>> So you should remove the extra "skb->dev = dev;" lines that sometimes
+>> are after the dev_alloc_skb() calls.
+>>
+>> [ They were redundant anyway because eth_type_trans() also sets skb->dev
+>> ]
 >
-> This patch is an extension for current Ethernet over GRE
-> implementation, which allows user to create virtual bridge (multipoint
-> VPN) and forward traffic based on Ethernet MAC address information in
-> it. It simulates the Bridge behavior learning mechanism, but instead
-> of learning port ID from which given MAC address comes, it learns IP
-> address of peer which encapsulated given packet. Multicast, Broadcast
-> and unknown-multicast traffic is send over network as multicast
-> encapsulated GRE packet, so one Ethernet multipoint GRE tunnel can be
-> represented as one single virtual switch on logical level and be also
-> represented as one multicast IPv4 address on network level.
+> Thanks! Shall take extra skb->dev = dev into consideration.
 >
-> Signed-off-by: Stefan Gula <steweg@gmail.com>
->
-> ---
->
-> code was merged with Eric Dumazet proposal (all except the reordering of orig_source as that needed to be previous value), tested and fixed with additional lines in ipgre_tap_netdev_ops struct, orig_source line was moved before pskb_may_pull
->
-> diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff linux-3.2.1-orig/include/net/ipip.h linux-3.2.1-my/include/net/ipip.h
-> --- linux-3.2.1-orig/include/net/ipip.h 2012-01-12 20:42:45.000000000 +0100
-> +++ linux-3.2.1-my/include/net/ipip.h   2012-01-16 11:17:01.000000000 +0100
-> @@ -27,6 +27,14 @@ struct ip_tunnel {
->        __u32                   o_seqno;        /* The last output seqno */
->        int                     hlen;           /* Precalculated GRE header length */
->        int                     mlink;
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +#define GRETAP_BR_HASH_BITS 8
-> +#define GRETAP_BR_HASH_SIZE (1 << GRETAP_BR_HASH_BITS)
-> +       struct hlist_head       hash[GRETAP_BR_HASH_SIZE];
-> +       spinlock_t              hash_lock;
-> +       unsigned long           ageing_time;
-> +       struct timer_list       gc_timer;
-> +#endif
->
->        struct ip_tunnel_parm   parms;
->
-> diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff linux-3.2.1-orig/net/ipv4/Kconfig linux-3.2.1-my/net/ipv4/Kconfig
-> --- linux-3.2.1-orig/net/ipv4/Kconfig   2012-01-12 20:42:45.000000000 +0100
-> +++ linux-3.2.1-my/net/ipv4/Kconfig     2012-01-16 12:37:00.000000000 +0100
-> @@ -211,6 +211,15 @@ config NET_IPGRE_BROADCAST
->          Network), but can be distributed all over the Internet. If you want
->          to do that, say Y here and to "IP multicast routing" below.
->
-> +config NET_IPGRE_BRIDGE
-> +       bool "IP: Ethernet over multipoint GRE over IP"
-> +       depends on IP_MULTICAST && NET_IPGRE && NET_IPGRE_BROADCAST
-> +       help
-> +         Allows you to use multipoint GRE VPN as virtual switch and interconnect
-> +         several L2 endpoints over L3 routed infrastructure. It is useful for
-> +         creating multipoint L2 VPNs which can be later used inside bridge
-> +         interfaces If you want to use. GRE multipoint L2 VPN feature say Y.
-> +
->  config IP_MROUTE
->        bool "IP: multicast routing"
->        depends on IP_MULTICAST
-> diff -uprN -X linux-3.2.1-orig/Documentation/dontdiff linux-3.2.1-orig/net/ipv4/ip_gre.c linux-3.2.1-my/net/ipv4/ip_gre.c
-> --- linux-3.2.1-orig/net/ipv4/ip_gre.c  2012-01-12 20:42:45.000000000 +0100
-> +++ linux-3.2.1-my/net/ipv4/ip_gre.c    2012-01-18 00:33:55.000000000 +0100
-> @@ -52,6 +52,11 @@
->  #include <net/ip6_route.h>
->  #endif
->
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +#include <linux/jhash.h>
-> +#include <asm/unaligned.h>
-> +#endif
-> +
->  /*
->    Problems & solutions
->    --------------------
-> @@ -134,6 +139,172 @@ struct ipgre_net {
->        struct net_device *fb_tunnel_dev;
->  };
->
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +       /*
-> +        * This part of code includes codes to enable L2 ethernet
-> +        * switch virtualization over IP routed infrastructure with
-> +        * utilization of multicast capable endpoint using Ethernet
-> +        * over GRE
-> +        *
-> +        * Author: Stefan Gula
-> +        * Signed-off-by: Stefan Gula <steweg@gmail.com>
-> +        */
-> +struct ipgre_tap_bridge_entry {
-> +       struct hlist_node       hlist;
-> +       __be32                  raddr;
-> +       unsigned char           addr[ETH_ALEN];
-> +       unsigned long           updated;
-> +       struct rcu_head         rcu;
-> +};
-> +
-> +static u32 ipgre_salt __read_mostly;
-> +
-> +static inline int ipgre_tap_bridge_hash(const unsigned char *mac)
-> +{
-> +       u32 key = get_unaligned((u32 *)(mac + 2));
-> +
-> +       return jhash_1word(key, ipgre_salt) & (GRETAP_BR_HASH_SIZE - 1);
-> +}
-> +
-> +static inline int ipgre_tap_bridge_has_expired(const struct ip_tunnel *tunnel,
-> +                               const struct ipgre_tap_bridge_entry *entry)
-> +{
-> +       return time_before_eq(entry->updated + tunnel->ageing_time,
-> +                               jiffies);
-> +}
-> +
-> +static inline void ipgre_tap_bridge_delete(struct ipgre_tap_bridge_entry *entry)
-> +{
-> +       hlist_del_rcu(&entry->hlist);
-> +       kfree_rcu(entry, rcu);
-> +}
-> +
-> +static void ipgre_tap_bridge_cleanup(unsigned long _data)
-> +{
-> +       struct ip_tunnel *tunnel = (struct ip_tunnel *)_data;
-> +       unsigned long delay = tunnel->ageing_time;
-> +       unsigned long next_timer = jiffies + tunnel->ageing_time;
-> +       int i;
-> +
-> +       spin_lock(&tunnel->hash_lock);
-> +       for (i = 0; i < GRETAP_BR_HASH_SIZE; i++) {
-> +               struct ipgre_tap_bridge_entry *entry;
-> +               struct hlist_node *h, *n;
-> +
-> +               hlist_for_each_entry_safe(entry, h, n,
-> +                       &tunnel->hash[i], hlist)
-> +               {
-> +                       unsigned long this_timer;
-> +                       this_timer = entry->updated + delay;
-> +                       if (time_before_eq(this_timer, jiffies))
-> +                               ipgre_tap_bridge_delete(entry);
-> +                       else if (time_before(this_timer, next_timer))
-> +                               next_timer = this_timer;
-> +               }
-> +       }
-> +       spin_unlock(&tunnel->hash_lock);
-> +       mod_timer(&tunnel->gc_timer, round_jiffies_up(next_timer));
-> +}
-> +
-> +static void ipgre_tap_bridge_flush(struct ip_tunnel *tunnel)
-> +{
-> +       int i;
-> +
-> +       spin_lock_bh(&tunnel->hash_lock);
-> +       for (i = 0; i < GRETAP_BR_HASH_SIZE; i++) {
-> +               struct ipgre_tap_bridge_entry *entry;
-> +               struct hlist_node *h, *n;
-> +
-> +               hlist_for_each_entry_safe(entry, h, n,
-> +                       &tunnel->hash[i], hlist)
-> +               {
-> +                       ipgre_tap_bridge_delete(entry);
-> +               }
-> +       }
-> +       spin_unlock_bh(&tunnel->hash_lock);
-> +}
-> +
-> +static struct ipgre_tap_bridge_entry *__ipgre_tap_bridge_get(
-> +       struct ip_tunnel *tunnel, const unsigned char *addr)
-> +{
-> +       struct hlist_node *h;
-> +       struct ipgre_tap_bridge_entry *entry;
-> +
-> +       hlist_for_each_entry_rcu(entry, h,
-> +                       &tunnel->hash[ipgre_tap_bridge_hash(addr)], hlist) {
-> +               if (!compare_ether_addr(entry->addr, addr)) {
-> +                       if (unlikely(ipgre_tap_bridge_has_expired(tunnel,
-> +                               entry)))
-> +                               break;
-> +                       return entry;
-> +               }
-> +       }
-> +
-> +       return NULL;
-> +}
-> +
-> +static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_find(
-> +       struct hlist_head *head,
-> +       const unsigned char *addr)
-> +{
-> +       struct hlist_node *h;
-> +       struct ipgre_tap_bridge_entry *entry;
-> +
-> +       hlist_for_each_entry(entry, h, head, hlist) {
-> +               if (!compare_ether_addr(entry->addr, addr))
-> +                       return entry;
-> +       }
-> +       return NULL;
-> +}
-> +
-> +
-> +static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_find_rcu(
-> +       struct hlist_head *head,
-> +       const unsigned char *addr)
-> +{
-> +       struct hlist_node *h;
-> +       struct ipgre_tap_bridge_entry *entry;
-> +
-> +       hlist_for_each_entry_rcu(entry, h, head, hlist) {
-> +               if (!compare_ether_addr(entry->addr, addr))
-> +                       return entry;
-> +       }
-> +       return NULL;
-> +}
-> +
-> +static struct ipgre_tap_bridge_entry *ipgre_tap_bridge_create(
-> +       struct hlist_head *head,
-> +       __be32 source,
-> +       const unsigned char *addr)
-> +{
-> +       struct ipgre_tap_bridge_entry *entry;
-> +
-> +       entry = kmalloc(sizeof(*entry), GFP_ATOMIC);
-> +       if (entry) {
-> +               memcpy(entry->addr, addr, ETH_ALEN);
-> +               entry->raddr = source;
-> +               entry->updated = jiffies;
-> +               hlist_add_head_rcu(&entry->hlist, head);
-> +       }
-> +       return entry;
-> +}
-> +
-> +static __be32 ipgre_tap_bridge_get_raddr(struct ip_tunnel *tunnel,
-> +       const unsigned char *addr)
-> +{
-> +       __be32 raddr = 0;
-> +       struct ipgre_tap_bridge_entry *entry;
-> +
-> +       rcu_read_lock();
-> +       entry = __ipgre_tap_bridge_get(tunnel, addr);
-> +       if (entry)
-> +               raddr = entry->raddr;
-> +       rcu_read_unlock();
-> +
-> +       return raddr;
-> +}
-> +
-> +#endif
->  /* Tunnel hash table */
->
->  /*
-> @@ -562,6 +733,12 @@ static int ipgre_rcv(struct sk_buff *skb
->        struct ip_tunnel *tunnel;
->        int    offset = 4;
->        __be16 gre_proto;
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +       __be32 orig_source;
-> +       struct hlist_head *head;
-> +       struct ipgre_tap_bridge_entry *entry;
-> +       const struct ethhdr *tethhdr;
-> +#endif
->
->        if (!pskb_may_pull(skb, 16))
->                goto drop_nolock;
-> @@ -654,6 +831,9 @@ static int ipgre_rcv(struct sk_buff *skb
->
->                /* Warning: All skb pointers will be invalidated! */
->                if (tunnel->dev->type == ARPHRD_ETHER) {
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +                       orig_source = iph->saddr;
-> +#endif
->                        if (!pskb_may_pull(skb, ETH_HLEN)) {
->                                tunnel->dev->stats.rx_length_errors++;
->                                tunnel->dev->stats.rx_errors++;
-> @@ -663,6 +843,32 @@ static int ipgre_rcv(struct sk_buff *skb
->                        iph = ip_hdr(skb);
->                        skb->protocol = eth_type_trans(skb, tunnel->dev);
->                        skb_postpull_rcsum(skb, eth_hdr(skb), ETH_HLEN);
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +                       if (ipv4_is_multicast(tunnel->parms.iph.daddr)) {
-> +                               tethhdr = eth_hdr(skb);
-> +                               if (!is_multicast_ether_addr(
-> +                                       tethhdr->h_source)) {
-> +                                       head = &tunnel->hash[
-> +                                               ipgre_tap_bridge_hash(
-> +                                                       tethhdr->h_source)];
-> +                                       entry = ipgre_tap_bridge_find_rcu(head,
-> +                                               tethhdr->h_source);
-> +                                       if (likely(entry)) {
-> +                                               entry->raddr = orig_source;
-> +                                               entry->updated = jiffies;
-> +                                       } else {
-> +                                         spin_lock(&tunnel->hash_lock);
-> +                                         if (!ipgre_tap_bridge_find(head,
-> +                                               tethhdr->h_source))
-> +                                               ipgre_tap_bridge_create(
-> +                                                       head,
-> +                                                       orig_source,
-> +                                                       tethhdr->h_source);
-> +                                         spin_unlock(&tunnel->hash_lock);
-> +                                       }
-> +                               }
-> +                       }
-> +#endif
->                }
->
->                tstats = this_cpu_ptr(tunnel->dev->tstats);
-> @@ -702,7 +908,7 @@ static netdev_tx_t ipgre_tunnel_xmit(str
->        struct iphdr  *iph;                     /* Our new IP header */
->        unsigned int max_headroom;              /* The extra header space needed */
->        int    gre_hlen;
-> -       __be32 dst;
-> +       __be32 dst = 0;
->        int    mtu;
->
->        if (dev->type == ARPHRD_ETHER)
-> @@ -716,7 +922,15 @@ static netdev_tx_t ipgre_tunnel_xmit(str
->                tiph = &tunnel->parms.iph;
->        }
->
-> -       if ((dst = tiph->daddr) == 0) {
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +       if ((dev->type == ARPHRD_ETHER) &&
-> +               ipv4_is_multicast(tunnel->parms.iph.daddr))
-> +               dst = ipgre_tap_bridge_get_raddr(tunnel,
-> +                       ((struct ethhdr *)skb->data)->h_dest);
-> +#endif
-> +       if (dst == 0)
-> +               dst = tiph->daddr;
-> +       if (dst == 0) {
->                /* NBMA tunnel */
->
->                if (skb_dst(skb) == NULL) {
-> @@ -1209,6 +1423,16 @@ static int ipgre_open(struct net_device
->                        return -EADDRNOTAVAIL;
->                t->mlink = dev->ifindex;
->                ip_mc_inc_group(__in_dev_get_rtnl(dev), t->parms.iph.daddr);
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +               if (t->dev->type == ARPHRD_ETHER) {
-> +                       INIT_HLIST_HEAD(t->hash);
-> +                       spin_lock_init(&t->hash_lock);
-> +                       t->ageing_time = 300 * HZ;
-> +                       setup_timer(&t->gc_timer, ipgre_tap_bridge_cleanup,
-> +                               (unsigned long) t);
-> +                       mod_timer(&t->gc_timer, jiffies + t->ageing_time);
-> +               }
-> +#endif
->        }
->        return 0;
->  }
-> @@ -1219,6 +1443,12 @@ static int ipgre_close(struct net_device
->
->        if (ipv4_is_multicast(t->parms.iph.daddr) && t->mlink) {
->                struct in_device *in_dev;
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +               if (t->dev->type == ARPHRD_ETHER) {
-> +                       ipgre_tap_bridge_flush(t);
-> +                       del_timer_sync(&t->gc_timer);
-> +               }
-> +#endif
->                in_dev = inetdev_by_index(dev_net(dev), t->mlink);
->                if (in_dev)
->                        ip_mc_dec_group(in_dev, t->parms.iph.daddr);
-> @@ -1488,6 +1718,10 @@ static int ipgre_tap_init(struct net_dev
->  static const struct net_device_ops ipgre_tap_netdev_ops = {
->        .ndo_init               = ipgre_tap_init,
->        .ndo_uninit             = ipgre_tunnel_uninit,
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +       .ndo_open               = ipgre_open,
-> +       .ndo_stop               = ipgre_close,
-> +#endif
->        .ndo_start_xmit         = ipgre_tunnel_xmit,
->        .ndo_set_mac_address    = eth_mac_addr,
->        .ndo_validate_addr      = eth_validate_addr,
-> @@ -1705,6 +1939,9 @@ static int __init ipgre_init(void)
->
->        printk(KERN_INFO "GRE over IPv4 tunneling driver\n");
->
-> +#ifdef CONFIG_NET_IPGRE_BRIDGE
-> +       get_random_bytes(&ipgre_salt, sizeof(ipgre_salt));
-> +#endif
->        err = register_pernet_device(&ipgre_net_ops);
->        if (err < 0)
->                return err;
-is there anything else needed from my side to get this code into the
-kernel or should I only wait for the maintainers to check it?
+> Eric, is this ok to assume that the memory address given to
+> dma_map_single & received from dma_unmap_single would remain same
+> across all platforms? Thanks in advance!
+
+Eric, please ignore last question. Realized my mistake! :-)
