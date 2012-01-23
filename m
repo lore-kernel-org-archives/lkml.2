@@ -1,55 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab2AWWZF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 17:25:05 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:55650 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab2AWWZD (ORCPT
+	id S1754623Ab2AWW30 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 17:29:26 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47325 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087Ab2AWW3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 17:25:03 -0500
-Date: Mon, 23 Jan 2012 17:22:38 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        dave@linux.vnet.ibm.com, cascardo@holoscopio.com,
-        sjenning@linux.vnet.ibm.com
-Subject: Re: [PATCH] zcache fix for 3.3-rc1.
-Message-ID: <20120123222238.GB31852@phenom.dumpdata.com>
-References: <1327355540-30681-1-git-send-email-konrad.wilk@oracle.com>
- <20120123221155.GA10265@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120123221155.GA10265@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F1DDE38.001B,ss=1,re=0.000,fgs=0
+	Mon, 23 Jan 2012 17:29:24 -0500
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: linux-kbuild@vger.kernel.org
+Cc: Arnaud Lacombe <lacombar@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Uwe Kleine-Konig <u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] kconfig: fix new choices being skipped upon config update
+Date: Mon, 23 Jan 2012 17:29:05 -0500
+Message-Id: <1327357745-9095-1-git-send-email-lacombar@gmail.com>
+X-Mailer: git-send-email 1.7.9.rc1.23.g51649
+In-Reply-To: <20120120164036.GO4066@pengutronix.de>
+References: <20120120164036.GO4066@pengutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 02:11:55PM -0800, Greg KH wrote:
-> On Mon, Jan 23, 2012 at 04:52:19PM -0500, Konrad Rzeszutek Wilk wrote:
-> > Hey Greg,
-> > 
-> > I posted this patch some time ago  [https://lkml.org/lkml/2012/1/13/253]
-> > but I am not seeing it in you tree.
-> 
-> Did you copy me on it?  I don't see it anywhere in my to-apply queues.
+Running `oldconfig' after any of the following configuration change:
 
-Ugh, I did not - I seemed to have forgotten to CC you and had assumed you
-would be omnipresent and would magically pick it up. Sorry about that mishap.
-> 
-> > Was wondering if you could stick this patch in your tree? It fixes
-> > a performance regressions which is quite noticable in small memory systems
-> > where a 'swapoff' ends up taking more than it should.
-> 
-> So this is needed for 3.3?  How about older kernels?  3.2?  3.0?
+either trivial addition, such as:
 
-That would be splendid if you could stick it on the stable tree :-)
+config A
+	bool "A"
 
-> 
-> thanks,
-> 
-> greg k-h
+choice
+	prompt "Choice ?"
+	depends on A
+
+	config CHOICE_B
+		bool "Choice B"
+
+	config CHOICE_C
+		bool "Choice C"
+endchoice
+
+or more tricky change:
+
+OLD KCONFIG                      |  NEW KCONFIG
+                                 |
+                                 |  config A
+                                 |          bool "A"
+                                 |
+choice                           |  choice
+        prompt "Choice ?"        |          prompt "Choice ?"
+                                 |
+        config CHOICE_C          |          config CHOICE_C
+                bool "Choice C"  |                  bool "Choice C"
+                                 |
+        config CHOICE_D          |          config CHOICE_D
+                bool "Choice D"  |                  bool "Choice D"
+endchoice                        |
+                                 |          config CHOICE_E
+                                 |                  bool "Choice E"
+                                 |                  depends on A
+                                 |  endchoice
+
+will not cause the choice to be considered as NEW, and thus not be asked. The
+cause of this behavior is that choice's novelty are computed statically right
+after the saved configuration has been read. At this point, the new dependency's
+value is still unknown and asserted to be `no'. Moreover, no update to this
+decision is made afterward.
+
+Correct this by dynamically evaluating a choice's novelty, and removing the
+static evaluation.
+
+Cc: linux-kbuild@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Uwe Kleine-Konig <u.kleine-koenig@pengutronix.de>
+Reported-by: Uwe Kleine-Konig <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+---
+ scripts/kconfig/confdata.c |   26 ++++++--------------------
+ scripts/kconfig/symbol.c   |    9 ++++++++-
+ 2 files changed, 14 insertions(+), 21 deletions(-)
+
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 5a58965..47aed3f 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -344,10 +344,8 @@ int conf_read_simple(const char *name, int def)
+ 
+ int conf_read(const char *name)
+ {
+-	struct symbol *sym, *choice_sym;
+-	struct property *prop;
+-	struct expr *e;
+-	int i, flags;
++	struct symbol *sym;
++	int i;
+ 
+ 	sym_set_change_count(0);
+ 
+@@ -357,7 +355,7 @@ int conf_read(const char *name)
+ 	for_all_symbols(i, sym) {
+ 		sym_calc_value(sym);
+ 		if (sym_is_choice(sym) || (sym->flags & SYMBOL_AUTO))
+-			goto sym_ok;
++			continue;
+ 		if (sym_has_value(sym) && (sym->flags & SYMBOL_WRITE)) {
+ 			/* check that calculated value agrees with saved value */
+ 			switch (sym->type) {
+@@ -366,30 +364,18 @@ int conf_read(const char *name)
+ 				if (sym->def[S_DEF_USER].tri != sym_get_tristate_value(sym))
+ 					break;
+ 				if (!sym_is_choice(sym))
+-					goto sym_ok;
++					continue;
+ 				/* fall through */
+ 			default:
+ 				if (!strcmp(sym->curr.val, sym->def[S_DEF_USER].val))
+-					goto sym_ok;
++					continue;
+ 				break;
+ 			}
+ 		} else if (!sym_has_value(sym) && !(sym->flags & SYMBOL_WRITE))
+ 			/* no previous value and not saved */
+-			goto sym_ok;
++			continue;
+ 		conf_unsaved++;
+ 		/* maybe print value in verbose mode... */
+-	sym_ok:
+-		if (!sym_is_choice(sym))
+-			continue;
+-		/* The choice symbol only has a set value (and thus is not new)
+-		 * if all its visible childs have values.
+-		 */
+-		prop = sym_get_choice_prop(sym);
+-		flags = sym->flags;
+-		expr_list_for_each_sym(prop->expr, e, choice_sym)
+-			if (choice_sym->visible != no)
+-				flags &= choice_sym->flags;
+-		sym->flags &= flags | ~SYMBOL_DEF_USER;
+ 	}
+ 
+ 	for_all_symbols(i, sym) {
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index 071f00c..22a3c40 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -262,11 +262,18 @@ static struct symbol *sym_calc_choice(struct symbol *sym)
+ 	struct symbol *def_sym;
+ 	struct property *prop;
+ 	struct expr *e;
++	int flags;
+ 
+ 	/* first calculate all choice values' visibilities */
++	flags = sym->flags;
+ 	prop = sym_get_choice_prop(sym);
+-	expr_list_for_each_sym(prop->expr, e, def_sym)
++	expr_list_for_each_sym(prop->expr, e, def_sym) {
+ 		sym_calc_visibility(def_sym);
++		if (def_sym->visible != no)
++			flags &= def_sym->flags;
++	}
++
++	sym->flags &= flags | ~SYMBOL_DEF_USER;
+ 
+ 	/* is the user choice visible? */
+ 	def_sym = sym->def[S_DEF_USER].val;
+-- 
+1.7.9.rc1.23.g51649
+
