@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab2AWHpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 02:45:00 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2107 "EHLO
+	id S1752321Ab2AWHrU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 02:47:20 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2249 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab2AWHo7 (ORCPT
+	with ESMTP id S1751675Ab2AWHrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 02:44:59 -0500
+	Mon, 23 Jan 2012 02:47:19 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 22 Jan 2012 23:44:58 -0800
+	by hqnvupgp05.nvidia.com on Sun, 22 Jan 2012 23:47:18 -0800
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: sameo@linux.intel.com, jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
         broonie@opensource.wolfsonmicro.com, gg@slimlogic.co.uk,
         linux-kernel@vger.kernel.org
 Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH] mfd: tps65910: Add wakeup support
-Date: Mon, 23 Jan 2012 13:14:09 +0530
-Message-Id: <1327304649-10851-1-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V2] mfd: tps65910: Add wakeup support
+Date: Mon, 23 Jan 2012 13:16:15 +0530
+Message-Id: <1327304775-12202-1-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
