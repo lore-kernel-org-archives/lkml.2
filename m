@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2AXAKC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:10:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42071 "EHLO mx2.suse.de"
+	id S1755136Ab2AWXqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:46:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42025 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754709Ab2AWXqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:46:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:03 2012
-Message-Id: <20120123234203.726492543@clark.kroah.org>
+	id S1755049Ab2AWXqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:46:02 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:01 2012
+Message-Id: <20120123234201.776571387@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:41:10 -0800
+Date: Mon, 23 Jan 2012 15:40:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [24/27] ALSA: HDA: Fix internal microphone on Dell Studio 16 XPS 1645
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [01/27] ext4: fix undefined behavior in ext4_fill_flex_info()
 In-Reply-To: <20120123234224.GA19510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit ffe535edb9a9c5b4d5fe03dfa3d89a1495580f1b upstream.
+commit d50f2ab6f050311dbf7b8f5501b25f0bf64a439b upstream.
 
-More than one user reports that changing the model from "both" to
-"dmic" makes their Internal Mic work.
+Commit 503358ae01b70ce6909d19dd01287093f6b6271c ("ext4: avoid divide by
+zero when trying to mount a corrupted file system") fixes CVE-2009-4307
+by performing a sanity check on s_log_groups_per_flex, since it can be
+set to a bogus value by an attacker.
 
-Tested-by: Martin Ling <martin-launchpad@earth.li>
-BugLink: https://bugs.launchpad.net/bugs/795823
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
+	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+
+	if (groups_per_flex < 2) { ... }
+
+This patch fixes two potential issues in the previous commit.
+
+1) The sanity check might only work on architectures like PowerPC.
+On x86, 5 bits are used for the shifting amount.  That means, given a
+large s_log_groups_per_flex value like 36, groups_per_flex = 1 << 36
+is essentially 1 << 4 = 16, rather than 0.  This will bypass the check,
+leaving s_log_groups_per_flex and groups_per_flex inconsistent.
+
+2) The sanity check relies on undefined behavior, i.e., oversized shift.
+A standard-confirming C compiler could rewrite the check in unexpected
+ways.  Consider the following equivalent form, assuming groups_per_flex
+is unsigned for simplicity.
+
+	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+	if (groups_per_flex == 0 || groups_per_flex == 1) {
+
+We compile the code snippet using Clang 3.0 and GCC 4.6.  Clang will
+completely optimize away the check groups_per_flex == 0, leaving the
+patched code as vulnerable as the original.  GCC keeps the check, but
+there is no guarantee that future versions will do the same.
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/super.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -1598,7 +1598,7 @@ static struct snd_pci_quirk stac92hd73xx
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02bd,
- 				"Dell Studio 1557", STAC_DELL_M6_DMIC),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02fe,
--				"Dell Studio XPS 1645", STAC_DELL_M6_BOTH),
-+				"Dell Studio XPS 1645", STAC_DELL_M6_DMIC),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0413,
- 				"Dell Studio 1558", STAC_DELL_M6_DMIC),
- 	{} /* terminator */
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1705,17 +1705,16 @@ static int ext4_fill_flex_info(struct su
+ 	struct ext4_group_desc *gdp = NULL;
+ 	ext4_group_t flex_group_count;
+ 	ext4_group_t flex_group;
+-	int groups_per_flex = 0;
++	unsigned int groups_per_flex = 0;
+ 	size_t size;
+ 	int i;
+ 
+ 	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
+-	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+-
+-	if (groups_per_flex < 2) {
++	if (sbi->s_log_groups_per_flex < 1 || sbi->s_log_groups_per_flex > 31) {
+ 		sbi->s_log_groups_per_flex = 0;
+ 		return 1;
+ 	}
++	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+ 
+ 	/* We allocate both existing and potentially added groups */
+ 	flex_group_count = ((sbi->s_groups_count + groups_per_flex - 1) +
 
 
