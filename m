@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab2AWXpK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:45:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41925 "EHLO mx2.suse.de"
+	id S1754522Ab2AWXpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:45:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41938 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753654Ab2AWXpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:45:08 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:02 2012
-Message-Id: <20120123234202.693344341@clark.kroah.org>
+	id S1753654Ab2AWXpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:45:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:03 2012
+Message-Id: <20120123234202.949515136@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:40:58 -0800
+Date: Mon, 23 Jan 2012 15:41:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ludwig Nussel <ludwig.nussel@suse.de>,
-        harvey.harrison@gmail.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [12/27] x86: Fix mmap random address range
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [15/27] [media] V4L/DVB: v4l2-ioctl: integer overflow in video_usercopy()
 In-Reply-To: <20120123234224.GA19510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludwig Nussel <ludwig.nussel@suse.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 9af0c7a6fa860698d080481f24a342ba74b68982 upstream.
+commit 6c06108be53ca5e94d8b0e93883d534dd9079646 upstream.
 
-On x86_32 casting the unsigned int result of get_random_int() to
-long may result in a negative value.  On x86_32 the range of
-mmap_rnd() therefore was -255 to 255.  The 32bit mode on x86_64
-used 0 to 255 as intended.
+If ctrls->count is too high the multiplication could overflow and
+array_size would be lower than expected.  Mauro and Hans Verkuil
+suggested that we cap it at 1024.  That comes from the maximum
+number of controls with lots of room for expantion.
 
-The bug was introduced by 675a081 ("x86: unify mmap_{32|64}.c")
-in January 2008.
+$ grep V4L2_CID include/linux/videodev2.h | wc -l
+211
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: harvey.harrison@gmail.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/201111152246.pAFMklOB028527@wpaz5.hot.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/mm/mmap.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/video/v4l2-ioctl.c |    6 ++++++
+ include/linux/videodev2.h        |    1 +
+ 2 files changed, 7 insertions(+)
 
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -87,9 +87,9 @@ static unsigned long mmap_rnd(void)
- 	*/
- 	if (current->flags & PF_RANDOMIZE) {
- 		if (mmap_is_ia32())
--			rnd = (long)get_random_int() % (1<<8);
-+			rnd = get_random_int() % (1<<8);
- 		else
--			rnd = (long)(get_random_int() % (1<<28));
-+			rnd = get_random_int() % (1<<28);
- 	}
- 	return rnd << PAGE_SHIFT;
- }
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -414,6 +414,9 @@ video_usercopy(struct file *file, unsign
+ 		p->error_idx = p->count;
+ 		user_ptr = (void __user *)p->controls;
+ 		if (p->count) {
++			err = -EINVAL;
++			if (p->count > V4L2_CID_MAX_CTRLS)
++				goto out_ext_ctrl;
+ 			ctrls_size = sizeof(struct v4l2_ext_control) * p->count;
+ 			/* Note: v4l2_ext_controls fits in sbuf[] so mbuf is still NULL. */
+ 			mbuf = kmalloc(ctrls_size, GFP_KERNEL);
+@@ -1912,6 +1915,9 @@ long video_ioctl2(struct file *file,
+ 		p->error_idx = p->count;
+ 		user_ptr = (void __user *)p->controls;
+ 		if (p->count) {
++			err = -EINVAL;
++			if (p->count > V4L2_CID_MAX_CTRLS)
++				goto out_ext_ctrl;
+ 			ctrls_size = sizeof(struct v4l2_ext_control) * p->count;
+ 			/* Note: v4l2_ext_controls fits in sbuf[] so mbuf is still NULL. */
+ 			mbuf = kmalloc(ctrls_size, GFP_KERNEL);
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -858,6 +858,7 @@ struct v4l2_querymenu {
+ #define V4L2_CTRL_FLAG_NEXT_CTRL	0x80000000
+ 
+ /*  User-class control IDs defined by V4L2 */
++#define V4L2_CID_MAX_CTRLS		1024
+ #define V4L2_CID_BASE			(V4L2_CTRL_CLASS_USER | 0x900)
+ #define V4L2_CID_USER_BASE 		V4L2_CID_BASE
+ /*  IDs reserved for driver specific controls */
 
 
