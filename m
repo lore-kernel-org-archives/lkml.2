@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab2AWVIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 16:08:09 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58444 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab2AWVIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 16:08:06 -0500
-MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
-        benh@kernel.crashing.org, Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Michal Simek <monstr@monstr.eu>
-Subject: [RFCv2 04/14] irq_domain: convert microblaze from irq_host to irq_domain
-Date: Mon, 23 Jan 2012 14:07:40 -0700
-Message-Id: <1327352870-14687-5-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
-References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
+	id S1754601Ab2AWVKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 16:10:45 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:41344 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754459Ab2AWVKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 16:10:37 -0500
+Date: Tue, 24 Jan 2012 08:10:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the nfs tree
+Message-Id: <20120124081019.7c20935475f97925306de7e7@canb.auug.org.au>
+In-Reply-To: <1327342389.2628.6.camel@lade.trondhjem.org>
+References: <20120123113949.b8d1940bb60128c5c4efeece@canb.auug.org.au>
+	<1327342389.2628.6.camel@lade.trondhjem.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__24_Jan_2012_08_10_19_+1100_+zQzepLY7AkmF.i5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial change, microblaze doesn't use irq remapping yet.
+--Signature=_Tue__24_Jan_2012_08_10_19_+1100_+zQzepLY7AkmF.i5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Michal Simek <monstr@monstr.eu>
----
- arch/microblaze/include/asm/irq.h |    4 ++--
- arch/microblaze/kernel/irq.c      |    2 +-
- arch/microblaze/kernel/setup.c    |    2 --
- 3 files changed, 3 insertions(+), 5 deletions(-)
+Hi Trond,
 
-diff --git a/arch/microblaze/include/asm/irq.h b/arch/microblaze/include/asm/irq.h
-index a175132..7798ad1 100644
---- a/arch/microblaze/include/asm/irq.h
-+++ b/arch/microblaze/include/asm/irq.h
-@@ -39,7 +39,7 @@ static inline void irq_dispose_mapping(unsigned int virq)
- 	return;
- }
- 
--struct irq_host;
-+struct irq_domain;
- 
- /**
-  * irq_create_mapping - Map a hardware interrupt into linux virq space
-@@ -51,7 +51,7 @@ struct irq_host;
-  * If the sense/trigger is to be specified, set_irq_type() should be called
-  * on the number returned from that call.
-  */
--extern unsigned int irq_create_mapping(struct irq_host *host,
-+extern unsigned int irq_create_mapping(struct irq_domain *host,
- 					irq_hw_number_t hwirq);
- 
- #endif /* _ASM_MICROBLAZE_IRQ_H */
-diff --git a/arch/microblaze/kernel/irq.c b/arch/microblaze/kernel/irq.c
-index bbebcae..3f613df 100644
---- a/arch/microblaze/kernel/irq.c
-+++ b/arch/microblaze/kernel/irq.c
-@@ -51,7 +51,7 @@ next_irq:
- 
- /* MS: There is no any advance mapping mechanism. We are using simple 32bit
-   intc without any cascades or any connection that's why mapping is 1:1 */
--unsigned int irq_create_mapping(struct irq_host *host, irq_hw_number_t hwirq)
-+unsigned int irq_create_mapping(struct irq_domain *host, irq_hw_number_t hwirq)
- {
- 	return hwirq + IRQ_OFFSET;
- }
-diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
-index d4fc1a9..208cd04 100644
---- a/arch/microblaze/kernel/setup.c
-+++ b/arch/microblaze/kernel/setup.c
-@@ -52,8 +52,6 @@ void __init setup_arch(char **cmdline_p)
- 
- 	unflatten_device_tree();
- 
--	/* NOTE I think that this function is not necessary to call */
--	/* irq_early_init(); */
- 	setup_cpuinfo();
- 
- 	microblaze_cache_init();
--- 
-1.7.5.4
+On Mon, 23 Jan 2012 13:13:09 -0500 Trond Myklebust <Trond.Myklebust@netapp.=
+com> wrote:
+>
+> Yep. I believe that is identical to the patch Bryan sent to James
+> Bottomley a few days ago. Could you please carry the above in your tree
+> until the iscsi folks get around to fixing this?
 
+Yeah, no problem.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__24_Jan_2012_08_10_19_+1100_+zQzepLY7AkmF.i5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPHcy7AAoJEECxmPOUX5FENrYP+gNYvpU/E7nPm0eMbydEeAVp
+nkm3b/MkvkdOr26mj5yAfe6DFwERuIJX5o6N9CDCDO7C6BjAHFd79G/GX7/O7YR4
+4VYYwJuaRZMNxT0VfNhxlhM4MEE+afksy5V1dZM+iUuH1Ir921T6SuKh1sCD3QH+
+wrtjLaFaSaqIjmJvr9ecEg2kijUMjQ18gkv3gkpLpA0msvYz/8tc9ooVy0gF9XlA
+yUaHMdZ79nqwbAkch6FN8x5xA/GEqtjlCX0fNAiHwF2akJhsK0XIFASSOrLW4IGk
+zjs5QvEf9I+LTK/fkve7hIuGCb6vsjuSvPijSbVlRmvILpl1ef5EpAbh/uh0hwtz
+0H2jrd6jLL+ojjK4e8bY++V4pQDLcKPRuudGeXdOj6tRyhjctU3oMnac+zw/y3k+
+Q4wbNIDv9iLcQMOUwJZHxsNJGS0B8HigfQ5TbzXaNAbXmQvfaUC9fsaRtnUt0HbS
+ApzCMCVFGLjD0vKJcl15ynDGqGmOVgBjmUozyHiNTQWLCCzKALjOnj6oH1mEce+y
+kdJDV+aKOiJxK6KdoX3HJ0Y/dkVC7OtX64ZpGbvkzwpVq+QT2X8ug7frGBY9QnrA
+YZQIbtPDo3p6a7+n6Cc5R7zkhejZGYQAsq/uTq2F4wE4dfzM+MCAw4FKSjKdCJpJ
+IZ+umTulAxHKTBjA8SDK
+=nPRI
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__24_Jan_2012_08_10_19_+1100_+zQzepLY7AkmF.i5--
