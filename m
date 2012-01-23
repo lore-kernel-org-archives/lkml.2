@@ -1,106 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2AWXsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:48:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42547 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755932Ab2AWXsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:48:47 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:27 2012
-Message-Id: <20120123234026.944683503@clark.kroah.org>
-User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:33 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [47/90] nfsd: Fix oops when parsing a 0 length export
-In-Reply-To: <20120123234211.GA19504@kroah.com>
+	id S1756197Ab2AWXuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:50:12 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62676 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab2AWXuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:50:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120123214709.GB17974@thunk.org>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
+ <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
+ <20120116160136.GC16431@quack.suse.cz> <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+ <20120117003613.GA28571@dastard> <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
+ <20120123030422.GE15102@dastard> <20120123214709.GB17974@thunk.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 Jan 2012 15:49:39 -0800
+X-Google-Sender-Auth: XuUtfO9mtrVU9Hi-1C9c99QiwPk
+Message-ID: <CA+55aFxggjW6FKhf7KSCRMD-4YF9ymsxDQ+EMtUTThX16r-8tw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+To: "Ted Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jan 23, 2012 at 1:47 PM, Ted Ts'o <tytso@mit.edu> wrote:
+>
+> So how does XFS decide whether a write should fail and shutdown the
+> file system, or just "try forever"?
 
-------------------
+Why would it bother? XFS tends to be a filesystem that you'd only use
+for core files in environments where you have a system manager that
+knows what he is doing. So there, maybe "try forever" is the right
+thing to do.
 
-From: Sasha Levin <levinsasha928@gmail.com>
+Things are a bit different with some random unreliable USB stick FAT32
+filesystem that just died on you, with a normal user that just removes
+the thing or doesn't even notice that the stick is now dead. There the
+"try forever" is totally the wrong thing to do.
 
-commit b2ea70afade7080360ac55c4e64ff7a5fafdb67b upstream.
-
-expkey_parse() oopses when handling a 0 length export. This is easily
-triggerable from usermode by writing 0 bytes into
-'/proc/[proc id]/net/rpc/nfsd.fh/channel'.
-
-Below is the log:
-
-[ 1402.286893] BUG: unable to handle kernel paging request at ffff880077c49fff
-[ 1402.287632] IP: [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632] PGD 2206063 PUD 1fdfd067 PMD 1ffbc067 PTE 8000000077c49160
-[ 1402.287632] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1402.287632] CPU 1
-[ 1402.287632] Pid: 20198, comm: trinity Not tainted 3.2.0-rc2-sasha-00058-gc65cd37 #6
-[ 1402.287632] RIP: 0010:[<ffffffff812b4b99>]  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632] RSP: 0018:ffff880077f0fd68  EFLAGS: 00010292
-[ 1402.287632] RAX: ffff880077c49fff RBX: 00000000ffffffea RCX: 0000000001043400
-[ 1402.287632] RDX: 0000000000000000 RSI: ffff880077c4a000 RDI: ffffffff82283de0
-[ 1402.287632] RBP: ffff880077f0fe18 R08: 0000000000000001 R09: ffff880000000000
-[ 1402.287632] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880077c4a000
-[ 1402.287632] R13: ffffffff82283de0 R14: 0000000001043400 R15: ffffffff82283de0
-[ 1402.287632] FS:  00007f25fec3f700(0000) GS:ffff88007d400000(0000) knlGS:0000000000000000
-[ 1402.287632] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1402.287632] CR2: ffff880077c49fff CR3: 0000000077e1d000 CR4: 00000000000406e0
-[ 1402.287632] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1402.287632] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1402.287632] Process trinity (pid: 20198, threadinfo ffff880077f0e000, task ffff880077db17b0)
-[ 1402.287632] Stack:
-[ 1402.287632]  ffff880077db17b0 ffff880077c4a000 ffff880077f0fdb8 ffffffff810b411e
-[ 1402.287632]  ffff880000000000 ffff880077db17b0 ffff880077c4a000 ffffffff82283de0
-[ 1402.287632]  0000000001043400 ffffffff82283de0 ffff880077f0fde8 ffffffff81111f63
-[ 1402.287632] Call Trace:
-[ 1402.287632]  [<ffffffff810b411e>] ? lock_release+0x1af/0x1bc
-[ 1402.287632]  [<ffffffff81111f63>] ? might_fault+0x97/0x9e
-[ 1402.287632]  [<ffffffff81111f1a>] ? might_fault+0x4e/0x9e
-[ 1402.287632]  [<ffffffff81a8bcf2>] cache_do_downcall+0x3e/0x4f
-[ 1402.287632]  [<ffffffff81a8c950>] cache_write.clone.16+0xbb/0x130
-[ 1402.287632]  [<ffffffff81a8c9df>] ? cache_write_pipefs+0x1a/0x1a
-[ 1402.287632]  [<ffffffff81a8c9f8>] cache_write_procfs+0x19/0x1b
-[ 1402.287632]  [<ffffffff8118dc54>] proc_reg_write+0x8e/0xad
-[ 1402.287632]  [<ffffffff8113fe81>] vfs_write+0xaa/0xfd
-[ 1402.287632]  [<ffffffff8114142d>] ? fget_light+0x35/0x9e
-[ 1402.287632]  [<ffffffff8113ff8b>] sys_write+0x48/0x6f
-[ 1402.287632]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
-[ 1402.287632] Code: c0 c9 c3 55 48 63 d2 48 89 e5 48 8d 44 32 ff 41 57 41 56 41 55 41 54 53 bb ea ff ff ff 48 81 ec 88 00 00 00 48 89 b5 58 ff ff ff
-[ 1402.287632]  38 0a 0f 85 89 02 00 00 c6 00 00 48 8b 3d 44 4a e5 01 48 85
-[ 1402.287632] RIP  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632]  RSP <ffff880077f0fd68>
-[ 1402.287632] CR2: ffff880077c49fff
-[ 1402.287632] ---[ end trace 368ef53ff773a5e3 ]---
-
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/nfsd/export.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -88,7 +88,7 @@ static int expkey_parse(struct cache_det
- 	struct svc_expkey key;
- 	struct svc_expkey *ek = NULL;
- 
--	if (mesg[mlen-1] != '\n')
-+	if (mlen < 1 || mesg[mlen-1] != '\n')
- 		return -EINVAL;
- 	mesg[mlen-1] = 0;
- 
-
-
+                            Linus
