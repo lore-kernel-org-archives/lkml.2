@@ -1,97 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab2AWOpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 09:45:12 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49381 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab2AWOpK convert rfc822-to-8bit (ORCPT
+	id S1753220Ab2AWOpZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 09:45:25 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:38369 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753178Ab2AWOpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 09:45:10 -0500
+	Mon, 23 Jan 2012 09:45:15 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Earl Chew <echew@ixiacom.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <adobriyan@gmail.com>
+Subject: Re: [PATCH] Support single byte reads from integers published in procfs by kernel/sysctl.c
+References: <4F1C5995.3060806@ixiacom.com>
+Date: Mon, 23 Jan 2012 06:47:46 -0800
+In-Reply-To: <4F1C5995.3060806@ixiacom.com> (Earl Chew's message of "Sun, 22
+	Jan 2012 10:46:45 -0800")
+Message-ID: <m1fwf6pjal.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1327327879.2525.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <22013455.801327321838477.JavaMail.root@5-MeO-DMT.ynet.sk> <1327327879.2525.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Mon, 23 Jan 2012 15:44:49 +0100
-X-Google-Sender-Auth: gEEod9Ucx8SamDopBy6Ntq99cS8
-Message-ID: <CAGsizzLK4HNT+Y3FP_f96LxgROx5BoL-J5iaBj7+Ok5-973+gw@mail.gmail.com>
-Subject: Re: [patch v1, kernel version 3.2.1] Source mode for macvlan interaface
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX187GwZrKGZJdxvpVcr//tPCBqvwJgqJyNc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/23 Eric Dumazet <eric.dumazet@gmail.com>:
-> Le lundi 23 janvier 2012 à 13:30 +0100, Stefan Gula a écrit :
->> From: Stefan Gula <steweg@gmail.com>
->>
->> New mode of macvlan interface called "source" allows one to specify,
->> which  frames are allowed to be received by given macvlan interface.
->> This logic is used only on received frames on underlaying interface.
->> The ability to send frames from macvlan interface through underlaying
->> interface is not modified. This feature allows one to simulate 802.1x
->> mac based VLAN bahaviour by using proper netlink message to configure
->> this behavior with utililty such as "ip link" from iproute2 suite.
->>
->> Signed-off-by: Stefan Gula <steweg@gmail.com>
->
-> Please limit line lengths to 70 chars.
->
-> I dont understand your patch description at all, and reading its body I
-> still dont understand its purpose.
->
-> Is it sort of firewall rules (ebtable) or bridging code ?
-Probably partially both of them. Today to achieve the same you need
-2/3 things in kernel:
-- veth module (optional)
-- bridge module
-- ebtables module
+Earl Chew <echew@ixiacom.com> writes:
 
-In real life scenarios, where 802.1x is deployed with mac based
-authentication feature usually in wireless networks, but sometimes
-also in wired ones, RADIUS message includes part which instruct NAS to
-set given user to proper VLAN. As nature of having multiple clients
-behind the same physical interface, there is a need to separate the
-incoming traffic from clients based on their MAC address (source MAC
-addresses in incoming frames). That can be achieved by two ways. One
-way is that driver of physical interface allows that directly (usually
-not true) or by using virtualization on network layer by:
-- incoming interface and all possible outgoing interfaces into one huge bridge
-- creating ebtables set of rules that permits given traffic back and
-forth through this bridge
-- to maintain certain level of segmentation and easy of maintenance
-sometime people do (optional steps):
-  - creating one veth per VLAN
-  - creating one small bridge per VLAN
-  - putting one end of veth link into the small bridge with all
-possible physical outgoing interfaces for given VLAN
-  - putting second end of veth link into the huge bridge instead of
-physical outgoing interfaces for given VLAN
-- in case that some MAC address resides on multiple VLANs (e.g. some
-HW L3 switch used to route traffic), you will end up with problem due
-the process of learning on that huge bridge, will allows it to exists
-only behind of one port, which is not true as it can exists behind
-multiple ports in different VLANs
-
-My patch simple removes this need for using of the huge bridge with
-ebtables rules and solves the problem of residing MAC address in
-multiple VLANs.
-
->> +static void macvlan_hash_del_sources(struct macvlan_source_list *list,
->> +                                     bool sync)
->> +{
->> +     hlist_del_rcu(&list->hlist);
->> +     kfree_rcu(list, rcu);
->> +     if (sync)
->> +             synchronize_rcu();
->> +}
->> +
+> The following illustrates the problem:
 >
-> Please explain why are you using synchronize_rcu() here, as there must
-> be a good reason, but I missed it.
-I though so, but I was not sure whether that should be removed or not
-so I rather leave it there as I followed the original code structure
-of macvlan driver. So should I remove it?
+>     cat /proc/sys/kernel/threads-max | od -bc
+>     0000000 065 062 071 071 062 012
+>               5   2   9   9   2  \n
+>     0000006
+>
+>     dd bs=1 < /proc/sys/kernel/threads-max | od -bc
+>     1+0 records in
+>     1+0 records out
+>     1 byte (1 B) copied, 0.000102707 s, 9.7 kB/s
+>     0000000 065
+>               5
+>     0000001
+>
+> The implementation in sysctl.c is inconsistent because support
+> for small reads is available for strings (eg /proc/sys/kernel/core_pattern),
+> but not integers.
+
+The difference between strings and integers is that with strings
+single byte reads/writes actually make sense.
+
+Single decimal digits reads don't make much sense at all for integers.
+
+Is there any compelling reason to support this complete idiocy from user
+space programs?
+
+Eric
+
+> This issue was also reported in:
+>
+>     https://bugzilla.kernel.org/show_bug.cgi?id=19182
+>
+> Signed-off-by: Earl Chew <echew@ixiacom.com>
+> ---
+>  kernel/sysctl.c |   83 +++++++++++++++++++++++++++++++++++++-----------------
+>  1 files changed, 57 insertions(+), 26 deletions(-)
+>
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index ae27196..b13d47b 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -2215,31 +2215,41 @@ static int proc_get_long(char **buf, size_t *size,
+>   * @size: the size of the user buffer
+>   * @val: the integer to be converted
+>   * @neg: sign of the number, %TRUE for negative
+> + * @skip: the number of characters to skip
+>   *
+>   * In case of success %0 is returned and @buf and @size are updated with
+>   * the amount of bytes written.
+>   */
+>  static int proc_put_long(void __user **buf, size_t *size, unsigned long val,
+> -			  bool neg)
+> +			  bool neg, loff_t *skip)
+>  {
+>  	int len;
+>  	char tmp[TMPBUFLEN], *p = tmp;
+>  
+>  	sprintf(p, "%s%lu", neg ? "-" : "", val);
+> -	len = strlen(tmp);
+> -	if (len > *size)
+> -		len = *size;
+> -	if (copy_to_user(*buf, tmp, len))
+> -		return -EFAULT;
+> -	*size -= len;
+> -	*buf += len;
+> +	len = strlen(p);
+> +	if (*skip >= len) {
+> +		*skip -= len;
+> +	} else {
+> +		p += *skip;
+> +		len -= *skip;
+> +		*skip = 0;
+> +		if (len > *size)
+> +			len = *size;
+> +		if (copy_to_user(*buf, p, len))
+> +			return -EFAULT;
+> +		*size -= len;
+> +		*buf += len;
+> +	}
+>  	return 0;
+>  }
+>  #undef TMPBUFLEN
+>  
+> -static int proc_put_char(void __user **buf, size_t *size, char c)
+> +static int proc_put_char(void __user **buf, size_t *size, char c, loff_t *skip)
+>  {
+> -	if (*size) {
+> +	if (*skip) {
+> +		(*skip)--;
+> +	} else if (*size) {
+>  		char __user **buffer = (char __user **)buf;
+>  		if (put_user(c, *buffer))
+>  			return -EFAULT;
+> @@ -2279,10 +2289,11 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
+>  {
+>  	int *i, vleft, first = 1, err = 0;
+>  	unsigned long page = 0;
+> +	loff_t skip = *ppos;
+>  	size_t left;
+>  	char *kbuf;
+>  	
+> -	if (!tbl_data || !table->maxlen || !*lenp || (*ppos && !write)) {
+> +	if (!tbl_data || !table->maxlen || !*lenp) {
+>  		*lenp = 0;
+>  		return 0;
+>  	}
+> @@ -2331,18 +2342,26 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
+>  				err = -EINVAL;
+>  				break;
+>  			}
+> -			if (!first)
+> -				err = proc_put_char(&buffer, &left, '\t');
+> +			if (!first) {
+> +				err = proc_put_char(
+> +					&buffer, &left, '\t', &skip);
+> +			}
+>  			if (err)
+>  				break;
+> -			err = proc_put_long(&buffer, &left, lval, neg);
+> +			err = proc_put_long(&buffer, &left, lval, neg, &skip);
+>  			if (err)
+>  				break;
+>  		}
+>  	}
+>  
+> -	if (!write && !first && left && !err)
+> -		err = proc_put_char(&buffer, &left, '\n');
+> +	if (!write) {
+> +		if (!first && !err)
+> +			err = proc_put_char(&buffer, &left, '\n', &skip);
+> +		if (!err && skip) {
+> +			*lenp = 0;
+> +			return 0;
+> +		}
+> +	}
+>  	if (write && !err && left)
+>  		left -= proc_skip_spaces(&kbuf);
+>  free:
+> @@ -2497,10 +2516,11 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+>  	unsigned long *i, *min, *max;
+>  	int vleft, first = 1, err = 0;
+>  	unsigned long page = 0;
+> +	loff_t skip = *ppos;
+>  	size_t left;
+>  	char *kbuf;
+>  
+> -	if (!data || !table->maxlen || !*lenp || (*ppos && !write)) {
+> +	if (!data || !table->maxlen || !*lenp) {
+>  		*lenp = 0;
+>  		return 0;
+>  	}
+> @@ -2546,15 +2566,22 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+>  		} else {
+>  			val = convdiv * (*i) / convmul;
+>  			if (!first)
+> -				err = proc_put_char(&buffer, &left, '\t');
+> -			err = proc_put_long(&buffer, &left, val, false);
+> +				err = proc_put_char(
+> +					&buffer, &left, '\t', &skip);
+> +			err = proc_put_long(&buffer, &left, val, false, &skip);
+>  			if (err)
+>  				break;
+>  		}
+>  	}
+>  
+> -	if (!write && !first && left && !err)
+> -		err = proc_put_char(&buffer, &left, '\n');
+> +	if (!write) {
+> +		if (!first && !err)
+> +			err = proc_put_char(&buffer, &left, '\n', &skip);
+> +		if (!err && skip) {
+> +			*lenp = 0;
+> +			return 0;
+> +		}
+> +	}
+>  	if (write && !err)
+>  		left -= proc_skip_spaces(&kbuf);
+>  free:
+> @@ -2805,6 +2832,7 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
+>  	int err = 0;
+>  	bool first = 1;
+>  	size_t left = *lenp;
+> +	loff_t skip = *ppos;
+>  	unsigned long bitmap_len = table->maxlen;
+>  	unsigned long *bitmap = (unsigned long *) table->data;
+>  	unsigned long *tmp_bitmap = NULL;
+> @@ -2893,18 +2921,21 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
+>  						   bit_a + 1) - 1;
+>  
+>  			if (!first) {
+> -				err = proc_put_char(&buffer, &left, ',');
+> +				err = proc_put_char(&buffer, &left, ',', &skip);
+>  				if (err)
+>  					break;
+>  			}
+> -			err = proc_put_long(&buffer, &left, bit_a, false);
+> +			err = proc_put_long(
+> +				&buffer, &left, bit_a, false, &skip);
+>  			if (err)
+>  				break;
+>  			if (bit_a != bit_b) {
+> -				err = proc_put_char(&buffer, &left, '-');
+> +				err = proc_put_char(
+> +					&buffer, &left, '-', &skip);
+>  				if (err)
+>  					break;
+> -				err = proc_put_long(&buffer, &left, bit_b, false);
+> +				err = proc_put_long(
+> +					&buffer, &left, bit_b, false, &skip);
+>  				if (err)
+>  					break;
+>  			}
+> @@ -2912,7 +2943,7 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
+>  			first = 0; bit_b++;
+>  		}
+>  		if (!err)
+> -			err = proc_put_char(&buffer, &left, '\n');
+> +			err = proc_put_char(&buffer, &left, '\n', &skip);
+>  	}
+>  
+>  	if (!err) {
