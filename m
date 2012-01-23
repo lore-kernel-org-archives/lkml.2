@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab2AWJ07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 04:26:59 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58163 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752516Ab2AWJ06 (ORCPT
+	id S1752798Ab2AWJd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 04:33:57 -0500
+Received: from ams-iport-2.cisco.com ([144.254.224.141]:30476 "EHLO
+	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab2AWJd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 04:26:58 -0500
-Date: Mon, 23 Jan 2012 09:26:24 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v3 0/6] ARM: Remove the __ARCH_WANT_INTERRUPTS_ON_CTXSW
- definition
-Message-ID: <20120123092624.GA11983@arm.com>
-References: <1327081352-13178-1-git-send-email-catalin.marinas@arm.com>
- <1327310131.2446.1.camel@twins>
+	Mon, 23 Jan 2012 04:33:56 -0500
+X-IronPort-AV: E=Sophos;i="4.71,555,1320624000"; 
+   d="scan'208";a="64350105"
+From: Hans Verkuil <hansverk@cisco.com>
+Organization: Cisco Systems Norway
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH] [media] convert drivers/media/* to use module_i2c_driver()
+Date: Mon, 23 Jan 2012 10:33:30 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2-0.slh.2-aptosid-amd64; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heungjun Kim <riverful.kim@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Andrew Chew <achew@nvidia.com>, Paul Mundt <lethal@linux-sh.org>,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Johannes Obermaier <johannes.obermaier@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Steven Toth <stoth@kernellabs.com>, linux-media@vger.kernel.org
+References: <1327140645.3928.1.camel@phoenix>
+In-Reply-To: <1327140645.3928.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327310131.2446.1.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201231033.30369.hansverk@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 09:15:31AM +0000, Peter Zijlstra wrote:
-> On Fri, 2012-01-20 at 17:42 +0000, Catalin Marinas wrote:
-> > This is version 3 of the set of patches removing
-> > __ARCH_WANT_INTERRUPTS_ON_CTXSW on ARM. The series was rebased on top of
-> > 3.3-rc1 and fixed the conflicts with the kernel/sched/ changes and the
-> > ARM LPAE patches. There are no functional changes from v2. I plan to
-> > push this to -next and get it ready for 3.4-rc1.
-> > 
-> > Question for Peter/Ingo - how do we merge the first patch that
-> > introduces finish_arch_post_lock_switch? Do you pick it up or I can
-> > merge it via rmk (with your ack)?
-> 
-> I'm fine either way, I'll probably ask Ingo to pull your tree so that I
-> can stack some other patches on top.
+For modules:
 
-In which case I would need Russell's acked-by.
+adv7170
+adv7175
+bt819
+bt856
+bt866
+cs5345
+cx53l32a
+cx25840-core
+indycam
+ks0127
+m52790
+msp3400-driver
+saa6588
+saa6752hs
+saa7110
+saa7115
+saa7127
+saa717x
+saa7191
+tda7432
+tda9840
+tea6415c
+tea6420
+tlv320aic23b
+tuner-core
+tvaudio
+upd64031a
+upd64083
+vp27smpx
+wm8739
+wm8775
 
-Thanks.
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
--- 
-Catalin
+Regards,
+
+	Hans
