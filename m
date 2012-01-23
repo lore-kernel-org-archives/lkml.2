@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab2AWXto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42660 "EHLO mx2.suse.de"
+	id S932145Ab2AWXtu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:49:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42663 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096Ab2AWXtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:41 -0500
+	id S932096Ab2AWXtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:45 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
-Message-Id: <20120123234028.299579430@clark.kroah.org>
+Message-Id: <20120123234028.372681262@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:49 -0800
+Date: Mon, 23 Jan 2012 15:39:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alasdair G Kergon <agk@redhat.com>,
-        dm-devel@redhat.com, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [63/90] dm: do not forward ioctls from logical volumes to the
- underlying device
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [64/90] proc: clean up and fix /proc/<pid>/mem handling
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,83 +24,266 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit ec8013beddd717d1740cfefb1a9b900deef85462 upstream.
+commit e268337dfe26dfc7efd422a804dbb27977a3cccc upstream.
 
-A logical volume can map to just part of underlying physical volume.
-In this case, it must be treated like a partition.
+Jüri Aedla reported that the /proc/<pid>/mem handling really isn't very
+robust, and it also doesn't match the permission checking of any of the
+other related files.
 
-Based on a patch from Alasdair G Kergon.
+This changes it to do the permission checks at open time, and instead of
+tracking the process, it tracks the VM at the time of the open.  That
+simplifies the code a lot, but does mean that if you hold the file
+descriptor open over an execve(), you'll continue to read from the _old_
+VM.
 
-Cc: Alasdair G Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+That is different from our previous behavior, but much simpler.  If
+somebody actually finds a load where this matters, we'll need to revert
+this commit.
+
+I suspect that nobody will ever notice - because the process mapping
+addresses will also have changed as part of the execve.  So you cannot
+actually usefully access the fd across a VM change simply because all
+the offsets for IO would have changed too.
+
+Reported-by: Jüri Aedla <asd@ut.ee>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-flakey.c |   11 ++++++++++-
- drivers/md/dm-linear.c |   12 +++++++++++-
- drivers/md/dm-mpath.c  |    6 ++++++
- 3 files changed, 27 insertions(+), 2 deletions(-)
+ fs/proc/base.c |  145 +++++++++++++++------------------------------------------
+ 1 file changed, 39 insertions(+), 106 deletions(-)
 
---- a/drivers/md/dm-flakey.c
-+++ b/drivers/md/dm-flakey.c
-@@ -149,8 +149,17 @@ static int flakey_status(struct dm_targe
- static int flakey_ioctl(struct dm_target *ti, unsigned int cmd, unsigned long arg)
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -194,65 +194,7 @@ static int proc_root_link(struct inode *
+ 	return result;
+ }
+ 
+-static struct mm_struct *__check_mem_permission(struct task_struct *task)
+-{
+-	struct mm_struct *mm;
+-
+-	mm = get_task_mm(task);
+-	if (!mm)
+-		return ERR_PTR(-EINVAL);
+-
+-	/*
+-	 * A task can always look at itself, in case it chooses
+-	 * to use system calls instead of load instructions.
+-	 */
+-	if (task == current)
+-		return mm;
+-
+-	/*
+-	 * If current is actively ptrace'ing, and would also be
+-	 * permitted to freshly attach with ptrace now, permit it.
+-	 */
+-	if (task_is_stopped_or_traced(task)) {
+-		int match;
+-		rcu_read_lock();
+-		match = (tracehook_tracer_task(task) == current);
+-		rcu_read_unlock();
+-		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
+-			return mm;
+-	}
+-
+-	/*
+-	 * No one else is allowed.
+-	 */
+-	mmput(mm);
+-	return ERR_PTR(-EPERM);
+-}
+-
+-/*
+- * If current may access user memory in @task return a reference to the
+- * corresponding mm, otherwise ERR_PTR.
+- */
+-static struct mm_struct *check_mem_permission(struct task_struct *task)
+-{
+-	struct mm_struct *mm;
+-	int err;
+-
+-	/*
+-	 * Avoid racing if task exec's as we might get a new mm but validate
+-	 * against old credentials.
+-	 */
+-	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
+-	if (err)
+-		return ERR_PTR(err);
+-
+-	mm = __check_mem_permission(task);
+-	mutex_unlock(&task->signal->cred_guard_mutex);
+-
+-	return mm;
+-}
+-
+-struct mm_struct *mm_for_maps(struct task_struct *task)
++static struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
  {
- 	struct flakey_c *fc = ti->private;
-+	struct dm_dev *dev = fc->dev;
-+	int r = 0;
+ 	struct mm_struct *mm;
+ 	int err;
+@@ -263,7 +205,7 @@ struct mm_struct *mm_for_maps(struct tas
  
--	return __blkdev_driver_ioctl(fc->dev->bdev, fc->dev->mode, cmd, arg);
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (fc->start ||
-+	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
-+	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
+ 	mm = get_task_mm(task);
+ 	if (mm && mm != current->mm &&
+-			!ptrace_may_access(task, PTRACE_MODE_READ)) {
++			!ptrace_may_access(task, mode)) {
+ 		mmput(mm);
+ 		mm = ERR_PTR(-EACCES);
+ 	}
+@@ -272,6 +214,11 @@ struct mm_struct *mm_for_maps(struct tas
+ 	return mm;
  }
  
- static int flakey_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
---- a/drivers/md/dm-linear.c
-+++ b/drivers/md/dm-linear.c
-@@ -116,7 +116,17 @@ static int linear_ioctl(struct dm_target
- 			unsigned long arg)
++struct mm_struct *mm_for_maps(struct task_struct *task)
++{
++	return mm_access(task, PTRACE_MODE_READ);
++}
++
+ static int proc_pid_cmdline(struct task_struct *task, char * buffer)
  {
- 	struct linear_c *lc = (struct linear_c *) ti->private;
--	return __blkdev_driver_ioctl(lc->dev->bdev, lc->dev->mode, cmd, arg);
-+	struct dm_dev *dev = lc->dev;
-+	int r = 0;
+ 	int res = 0;
+@@ -816,38 +763,39 @@ static const struct file_operations proc
+ 
+ static int mem_open(struct inode* inode, struct file* file)
+ {
+-	file->private_data = (void*)((long)current->self_exec_id);
++	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
++	struct mm_struct *mm;
 +
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (lc->start ||
-+	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
++	if (!task)
++		return -ESRCH;
 +
-+	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
++	mm = mm_access(task, PTRACE_MODE_ATTACH);
++	put_task_struct(task);
++
++	if (IS_ERR(mm))
++		return PTR_ERR(mm);
++
+ 	/* OK to pass negative loff_t, we can catch out-of-range */
+ 	file->f_mode |= FMODE_UNSIGNED_OFFSET;
++	file->private_data = mm;
++
+ 	return 0;
  }
  
- static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1584,6 +1584,12 @@ static int multipath_ioctl(struct dm_tar
+ static ssize_t mem_read(struct file * file, char __user * buf,
+ 			size_t count, loff_t *ppos)
+ {
+-	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
++	int ret;
+ 	char *page;
+ 	unsigned long src = *ppos;
+-	int ret = -ESRCH;
+-	struct mm_struct *mm;
++	struct mm_struct *mm = file->private_data;
  
- 	spin_unlock_irqrestore(&m->lock, flags);
+-	if (!task)
+-		goto out_no_task;
++	if (!mm)
++		return 0;
  
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
- 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
+-	ret = -ENOMEM;
+ 	page = (char *)__get_free_page(GFP_TEMPORARY);
+ 	if (!page)
+-		goto out;
+-
+-	mm = check_mem_permission(task);
+-	ret = PTR_ERR(mm);
+-	if (IS_ERR(mm))
+-		goto out_free;
+-
+-	ret = -EIO;
+- 
+-	if (file->private_data != (void*)((long)current->self_exec_id))
+-		goto out_put;
++		return -ENOMEM;
+ 
+ 	ret = 0;
+  
+@@ -874,13 +822,7 @@ static ssize_t mem_read(struct file * fi
+ 	}
+ 	*ppos = src;
+ 
+-out_put:
+-	mmput(mm);
+-out_free:
+ 	free_page((unsigned long) page);
+-out:
+-	put_task_struct(task);
+-out_no_task:
+ 	return ret;
  }
  
+@@ -889,27 +831,15 @@ static ssize_t mem_write(struct file * f
+ {
+ 	int copied;
+ 	char *page;
+-	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+ 	unsigned long dst = *ppos;
+-	struct mm_struct *mm;
++	struct mm_struct *mm = file->private_data;
+ 
+-	copied = -ESRCH;
+-	if (!task)
+-		goto out_no_task;
++	if (!mm)
++		return 0;
+ 
+-	copied = -ENOMEM;
+ 	page = (char *)__get_free_page(GFP_TEMPORARY);
+ 	if (!page)
+-		goto out_task;
+-
+-	mm = check_mem_permission(task);
+-	copied = PTR_ERR(mm);
+-	if (IS_ERR(mm))
+-		goto out_free;
+-
+-	copied = -EIO;
+-	if (file->private_data != (void *)((long)current->self_exec_id))
+-		goto out_mm;
++		return -ENOMEM;
+ 
+ 	copied = 0;
+ 	while (count > 0) {
+@@ -933,13 +863,7 @@ static ssize_t mem_write(struct file * f
+ 	}
+ 	*ppos = dst;
+ 
+-out_mm:
+-	mmput(mm);
+-out_free:
+ 	free_page((unsigned long) page);
+-out_task:
+-	put_task_struct(task);
+-out_no_task:
+ 	return copied;
+ }
+ 
+@@ -959,11 +883,20 @@ loff_t mem_lseek(struct file *file, loff
+ 	return file->f_pos;
+ }
+ 
++static int mem_release(struct inode *inode, struct file *file)
++{
++	struct mm_struct *mm = file->private_data;
++
++	mmput(mm);
++	return 0;
++}
++
+ static const struct file_operations proc_mem_operations = {
+ 	.llseek		= mem_lseek,
+ 	.read		= mem_read,
+ 	.write		= mem_write,
+ 	.open		= mem_open,
++	.release	= mem_release,
+ };
+ 
+ static ssize_t environ_read(struct file *file, char __user *buf,
 
 
