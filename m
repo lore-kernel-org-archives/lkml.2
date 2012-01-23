@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab2AWJFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 04:05:14 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:56018 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661Ab2AWJFN (ORCPT
+	id S1752789Ab2AWJFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 04:05:44 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:33421 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab2AWJFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 04:05:13 -0500
-Message-ID: <1327309415.1955.87.camel@aeonflux>
-Subject: Re: [PATCH] Regression: Revert "Bluetooth: use buffer priority to
- mark URB_ISO_ASAP flag"
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org
-Date: Mon, 23 Jan 2012 10:03:35 +0100
-In-Reply-To: <1327298281-2502-1-git-send-email-keithp@keithp.com>
-References: <1327298281-2502-1-git-send-email-keithp@keithp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 23 Jan 2012 04:05:41 -0500
+Date: Mon, 23 Jan 2012 10:05:37 +0100
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: Re: [PATCH] [media] convert drivers/media/* to use module_i2c_driver()
+In-reply-to: <1327140645.3928.1.camel@phoenix>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heungjun Kim <riverful.kim@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Andrew Chew <achew@nvidia.com>, Paul Mundt <lethal@linux-sh.org>,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Johannes Obermaier <johannes.obermaier@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Steven Toth <stoth@kernellabs.com>, linux-media@vger.kernel.org
+Message-id: <4F1D22E1.2040507@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124
+ Thunderbird/8.0
+References: <1327140645.3928.1.camel@phoenix>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keith,
+Hi,
 
-> URB_ISO_ASAP may only be used with iso end points, but this patch was
-> attempting to use it with a bulk endpoint. When DEBUG is defined in
-> the USB stack, it checks for invalid flags and returns -EINVAL instead
-> of actually transmitting the data.
-> 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-> ---
+For module s5p-tv/hdmiphy
 
-a version of this patch should be already upstream or in stable trees.
-If you are sending this again, then it might slipped through. Johan?
+Acked-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 
-> Ok, so this is a comedy of errors. The Bluetooth code is trying to use
-> an iso-specific flag (URB_ISO_ASAP) on a bulk endpoint, which is
-> invalid, but normally harmless. Unless the USB code is compiled for
-> debugging, in which case it checks a bunch for incorrect usage and
-> discards URBs which are wrong.
-> 
-> As far as I'm concerned, #ifdef DEBUG code should never ever change
-> the behaviour of the code, and so I'd say the USB code is even more
-> broken than the bluetooth code...
-
-And yes, this one is hilarious.
-
-Regards
-
-Marcel
-
-
+--
+Regards,
+Tomasz Stanislawski
