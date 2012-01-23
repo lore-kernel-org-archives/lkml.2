@@ -1,63 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2AWTNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 14:13:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36557 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab2AWTNT (ORCPT
+	id S1753889Ab2AWTOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 14:14:25 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:49013 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab2AWTOY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 14:13:19 -0500
+	Mon, 23 Jan 2012 14:14:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <B567DBAB974C0544994013492B949F8E3812C6D0CD@EXMAIL03.scwf.nsc.com>
-References: <AczXFZjmtQHOiXDCSJi9Lr1dSJlaCQ==>
-	<B567DBAB974C0544994013492B949F8E3812C6D0CD@EXMAIL03.scwf.nsc.com>
-Date: Mon, 23 Jan 2012 20:13:18 +0100
-Message-ID: <CACRpkdbyK3eevSu3JeTzWguhJkSAm+8vmxymV03UhxhNQUtVsw@mail.gmail.com>
-Subject: Re: [PATCH 3/7] leds-lm3530: add 'is_vin_always_on' in the lm3530_platform_data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Kim, Milo" <Milo.Kim@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "shreshthakumar.sahu@stericsson.com" 
-	<shreshthakumar.sahu@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
+In-Reply-To: <20120123130221.GA15113@tiehlicka.suse.cz>
+References: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
+	<20120123130221.GA15113@tiehlicka.suse.cz>
+Date: Mon, 23 Jan 2012 11:14:23 -0800
+Message-ID: <CALWz4izWYb=_svn=UJ1C--pWXv59H2ahn6EJEnTpJv-dT6WGsw@mail.gmail.com>
+Subject: Re: [PATCH] mm: memcg: fix over reclaiming mem cgroup
+From: Ying Han <yinghan@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 2:48 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
-
-> The 'IN' pin(Input voltage connection) can be always turned on
-> in case it is connected with VBATT.
-> To support this case, 'is_vin_always_on' is added.
-> If VIN is always on, then we don't need to control the regulator for IN pin.
+On Mon, Jan 23, 2012 at 5:02 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Sat 21-01-12 22:49:23, Hillf Danton wrote:
+>> In soft limit reclaim, overreclaim occurs when pages are reclaimed from mem
+>> group that is under its soft limit, or when more pages are reclaimd than the
+>> exceeding amount, then performance of reclaimee goes down accordingly.
 >
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-(...)
-> +       if (!drvdata->enable && !pltfm->is_vin_always_on) {
->                ret = regulator_enable(drvdata->regulator);
->                if (ret) {
->                        dev_err(&drvdata->client->dev,
-> @@ -256,7 +256,7 @@ static void lm3530_brightness_set(struct led_classdev *led_cdev,
->                else
->                        drvdata->brightness = brt_val / 2;
+> First of all soft reclaim is more a help for the global memory pressure
+> balancing rather than any guarantee about how much we reclaim for the
+> group.
+> We need to do more changes in order to make it a guarantee.
+> For example you implementation will cause severe problems when all
+> cgroups are soft unlimited (default conf.) or when nobody is above the
+> limit but the total consumption triggers the global reclaim. Therefore
+> nobody is in excess and you would skip all groups and only bang on the
+> root memcg.
 >
-> -               if (brt_val == 0) {
-> +               if (brt_val == 0 && !pdata->is_vin_always_on) {
->                        err = regulator_disable(drvdata->regulator);
+> Ying Han has a patch which basically skips all cgroups which are under
+> its limit until we reach a certain reclaim priority but even for this we
+> need some additional changes - e.g. reverse the current default setting
+> of the soft limit.
+>
+> Anyway, I like the nr_to_reclaim reduction idea because we have to do
+> this in some way because the global reclaim starts with ULONG
+> nr_to_scan.
 
-NACK on this, and paging Mark.
+Agree with Michal where there are quite a lot changes we need to get
+in for soft limit before any further optimization.
 
-As far as I know we want to get rid of different design patterns
-avoiding the regulator interface. The way forward for this is
-either:
+Hillf, please refer to the patch from Johannes
+https://lkml.org/lkml/2012/1/13/99 which got quite a lot recent
+discussions. I am expecting to get that in before further soft limit
+changes.
 
-(A) Provide a fixed voltage regulator in your platform for this
-  device (AFAIK the voltage does not even have to be correct)
-(B) Enable dummy regulators in your platform
+Thanks
 
-(A) is more elegant.
+--Ying
 
-Yours,
-Linus Walleij
+
+
+>
+>> A helper function is added to compute the number of pages that exceed the soft
+>> limit of given mem cgroup, then the excess pages are used when every reclaimee
+>> is reclaimed to avoid overreclaim.
+>>
+>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> ---
+>>
+>> --- a/mm/memcontrol.c Tue Jan 17 20:41:36 2012
+>> +++ b/mm/memcontrol.c Sat Jan 21 21:18:46 2012
+>> @@ -1662,6 +1662,21 @@ static int mem_cgroup_soft_reclaim(struc
+>>       return total;
+>>  }
+>>
+>> +unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg)
+>> +{
+>> +     unsigned long pages;
+>> +
+>> +     if (mem_cgroup_disabled())
+>> +             return 0;
+>> +     if (!memcg)
+>> +             return 0;
+>> +     if (mem_cgroup_is_root(memcg))
+>> +             return 0;
+>> +
+>> +     pages = res_counter_soft_limit_excess(&memcg->res) >> PAGE_SHIFT;
+>> +     return pages;
+>> +}
+>> +
+>>  /*
+>>   * Check OOM-Killer is already running under our hierarchy.
+>>   * If someone is running, return false.
+>> --- a/mm/vmscan.c     Sat Jan 14 14:02:20 2012
+>> +++ b/mm/vmscan.c     Sat Jan 21 21:30:06 2012
+>> @@ -2150,8 +2150,34 @@ static void shrink_zone(int priority, st
+>>                       .mem_cgroup = memcg,
+>>                       .zone = zone,
+>>               };
+>> +             unsigned long old;
+>> +             bool clobbered = false;
+>> +
+>> +             if (memcg != NULL) {
+>> +                     unsigned long excess;
+>> +
+>> +                     excess = mem_cgroup_excess_pages(memcg);
+>> +                     /*
+>> +                      * No bother reclaiming pages from mem cgroup that
+>> +                      * is under soft limit
+>> +                      */
+>> +                     if (!excess)
+>> +                             goto next;
+>> +                     /*
+>> +                      * And reclaim no more pages than excess
+>> +                      */
+>> +                     if (excess < sc->nr_to_reclaim) {
+>> +                             old = sc->nr_to_reclaim;
+>> +                             sc->nr_to_reclaim = excess;
+>> +                             clobbered = true;
+>> +                     }
+>> +             }
+>>
+>>               shrink_mem_cgroup_zone(priority, &mz, sc);
+>> +
+>> +             if (clobbered)
+>> +                     sc->nr_to_reclaim = old;
+>> +next:
+>>               /*
+>>                * Limit reclaim has historically picked one memcg and
+>>                * scanned it with decreasing priority levels until
+>> --- a/include/linux/memcontrol.h      Thu Jan 19 22:03:14 2012
+>> +++ b/include/linux/memcontrol.h      Sat Jan 21 21:35:50 2012
+>> @@ -161,6 +161,7 @@ unsigned long mem_cgroup_soft_limit_recl
+>>                                               gfp_t gfp_mask,
+>>                                               unsigned long *total_scanned);
+>>  u64 mem_cgroup_get_limit(struct mem_cgroup *memcg);
+>> +unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg);
+>>
+>>  void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
+>>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>> @@ -376,6 +377,11 @@ unsigned long mem_cgroup_soft_limit_recl
+>>
+>>  static inline
+>>  u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>> +static inline unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg)
+>>  {
+>>       return 0;
+>>  }
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9
+> Czech Republic
