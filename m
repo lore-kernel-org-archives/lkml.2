@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab2AWRV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 12:21:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57071 "EHLO mx1.redhat.com"
+	id S1753311Ab2AWRVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 12:21:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54225 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890Ab2AWRVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 12:21:21 -0500
+	id S1752422Ab2AWRVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 12:21:40 -0500
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2 1/5] vfio: Introduce documentation for VFIO driver
+Subject: [PATCH v2 3/5] vfio: VFIO core group interface
 To: chrisw@sous-sol.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
         joerg.roedel@amd.com, agraf@suse.de, benve@cisco.com,
         aafabbri@cisco.com, B08248@freescale.com, B07421@freescale.com,
         avi@redhat.com, konrad.wilk@oracle.com, kvm@vger.kernel.org,
         qemu-devel@nongnu.org, iommu@lists.linux-foundation.org,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 23 Jan 2012 10:20:45 -0700
-Message-ID: <20120123172045.26865.64874.stgit@bling.home>
+Date: Mon, 23 Jan 2012 10:21:01 -0700
+Message-ID: <20120123172101.26865.56777.stgit@bling.home>
 In-Reply-To: <20120123165620.26865.51875.stgit@bling.home>
 References: <20120123165620.26865.51875.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -26,378 +26,1312 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Including rationale for design, example usage and API description.
+This provides the base group management with conduits to the
+IOMMU driver and VFIO bus drivers.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- Documentation/vfio.txt |  359 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 359 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/vfio.txt
+ drivers/vfio/vfio_main.c    | 1248 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/vfio/vfio_private.h |   36 +
+ 2 files changed, 1284 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/vfio/vfio_main.c
+ create mode 100644 drivers/vfio/vfio_private.h
 
-diff --git a/Documentation/vfio.txt b/Documentation/vfio.txt
+diff --git a/drivers/vfio/vfio_main.c b/drivers/vfio/vfio_main.c
 new file mode 100644
-index 0000000..4dfccf6
+index 0000000..fcd6476
 --- /dev/null
-+++ b/Documentation/vfio.txt
-@@ -0,0 +1,359 @@
-+VFIO - "Virtual Function I/O"[1]
-+-------------------------------------------------------------------------------
-+Many modern system now provide DMA and interrupt remapping facilities
-+to help ensure I/O devices behave within the boundaries they've been
-+allotted.  This includes x86 hardware with AMD-Vi and Intel VT-d,
-+POWER systems with Partitionable Endpoints (PEs) and embedded PowerPC
-+systems such as Freescale PAMU.  The VFIO driver is an IOMMU/device
-+agnostic framework for exposing direct device access to userspace, in
-+a secure, IOMMU protected environment.  In other words, this allows
-+safe[2], non-privileged, userspace drivers.
++++ b/drivers/vfio/vfio_main.c
+@@ -0,0 +1,1248 @@
++/*
++ * VFIO framework
++ *
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
++ */
 +
-+Why do we want that?  Virtual machines often make use of direct device
-+access ("device assignment") when configured for the highest possible
-+I/O performance.  From a device and host perspective, this simply
-+turns the VM into a userspace driver, with the benefits of
-+significantly reduced latency, higher bandwidth, and direct use of
-+bare-metal device drivers[3].
++#include <linux/cdev.h>
++#include <linux/compat.h>
++#include <linux/device.h>
++#include <linux/file.h>
++#include <linux/anon_inodes.h>
++#include <linux/fs.h>
++#include <linux/idr.h>
++#include <linux/iommu.h>
++#include <linux/mm.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++#include <linux/uaccess.h>
++#include <linux/vfio.h>
++#include <linux/wait.h>
 +
-+Some applications, particularly in the high performance computing
-+field, also benefit from low-overhead, direct device access from
-+userspace.  Examples include network adapters (often non-TCP/IP based)
-+and compute accelerators.  Prior to VFIO, these drivers had to either
-+go through the full development cycle to become proper upstream
-+driver, be maintained out of tree, or make use of the UIO framework,
-+which has no notion of IOMMU protection, limited interrupt support,
-+and requires root privileges to access things like PCI configuration
-+space.
++#include "vfio_private.h"
 +
-+The VFIO driver framework intends to unify these, replacing both the
-+KVM PCI specific device assignment code as well as provide a more
-+secure, more featureful userspace driver environment than UIO.
++#define DRIVER_VERSION	"0.2"
++#define DRIVER_AUTHOR	"Alex Williamson <alex.williamson@redhat.com>"
++#define DRIVER_DESC	"VFIO - User Level meta-driver"
 +
-+Groups, Devices, and IOMMUs
-+-------------------------------------------------------------------------------
++static struct vfio {
++	dev_t			devt;
++	struct cdev		cdev;
++	struct list_head	group_list;
++	struct mutex		lock;
++	struct kref		kref;
++	struct class		*class;
++	struct idr		idr;
++	wait_queue_head_t	release_q;
++} vfio;
 +
-+Userspace drivers are primarily concerned with manipulating individual
-+devices and setting up mappings in the IOMMU for those devices.
-+Unfortunately, the IOMMU doesn't always have the granularity to track
-+mappings for an individual device.  Sometimes this is a topology
-+barrier, such as a PCIe-to-PCI bridge interposing the device and
-+IOMMU, other times this is an IOMMU limitation.  In any case, the
-+reality is that devices are not always independent with respect to the
-+IOMMU.  Translations setup for one device can be used by another
-+device in these scenarios.
++static const struct file_operations vfio_group_fops;
 +
-+The IOMMU API exposes these relationships by identifying an "IOMMU
-+group" for these dependent devices.  Devices on the same bus with the
-+same IOMMU group (or just "group" for this document) are not isolated
-+from each other with respect to DMA mappings.  For userspace usage,
-+this logically means that instead of being able to grant ownership of
-+an individual device, we must grant ownership of a group, which may
-+contain one or more devices.
-+
-+These groups therefore become a fundamental component of VFIO and the
-+working unit we use for exposing devices and granting permissions to
-+userspace.  In addition, VFIO make efforts to ensure the integrity of
-+the group for user access.  This includes ensuring that all devices
-+within the group are controlled by VFIO (vs native host drivers)
-+before allowing a user to access any member of the group or the IOMMU
-+mappings, as well as maintaining the group viability as devices are
-+dynamically added or removed from the system.
-+
-+To access a device through VFIO, a user must open a character device
-+for the group that the device belongs to and then issue an ioctl to
-+retrieve a file descriptor for the individual device.  This ensures
-+that the user has permissions to the group (file based access to the
-+/dev entry) and allows a check point at which VFIO can deny access to
-+the device if the group is not viable (all devices within the group
-+controlled by VFIO).  A file descriptor for the IOMMU is obtain in the
-+same fashion.
-+
-+VFIO defines a standard set of APIs for access to devices and a
-+modular interface for adding new, bus-specific VFIO device drivers.
-+We call these "VFIO bus drivers".  The vfio-pci module is an example
-+of a bus driver for exposing PCI devices.  When the bus driver module
-+is loaded it enumerates all of the devices for it's bus, registering
-+each device with the vfio core along with a set of callbacks.  For
-+buses that support hotplug, the bus driver also adds itself to the
-+notification chain for such events.  The callbacks registered with
-+each device implement the VFIO device access API for that bus.
-+
-+The VFIO device API includes ioctls for describing the device, the I/O
-+regions and their read/write/mmap offsets on the device descriptor, as
-+well as mechanisms for describing and registering interrupt
-+notifications.
-+
-+The VFIO IOMMU object is accessed in a similar way; an ioctl on the
-+group provides a file descriptor for programming the IOMMU.  Like
-+devices, the IOMMU file descriptor is only accessible when a group is
-+viable.  The API for the IOMMU is effectively a userspace extension of
-+the kernel IOMMU API.  The IOMMU provides an ioctl to describe the
-+IOMMU domain as well as to setup and teardown DMA mappings.  As the
-+IOMMU API is extended to support more esoteric IOMMU implementations,
-+it's expected that the VFIO interface will also evolve.
-+
-+To facilitate this evolution, all of the VFIO interfaces are designed
-+for extensions.  Particularly, for all structures passed via ioctl, we
-+include a structure size and flags field.  We also define the ioctl
-+request to be independent of passed structure size.  This allows us to
-+later add structure fields and define flags as necessary.  It's
-+expected that each additional field will have an associated flag to
-+indicate whether the data is valid.  Additionally, we provide an
-+"info" ioctl for each file descriptor, which allows us to flag new
-+features as they're added (ex. an IOMMU domain configuration ioctl).
-+
-+The final aspect of VFIO is the notion of merging groups.  In both the
-+assignment of devices to virtual machines and the pure userspace
-+driver model, it's expect that a single user instance is likely to
-+have multiple groups in use simultaneously.  For a virtual machine,
-+this can happen simply by assigning multiple devices to a guest that
-+belong to different groups.  If these groups are all using the same
-+set of IOMMU mappings, the overhead of userspace setting up and
-+tearing down the mappings, as well as the internal IOMMU driver
-+overhead of managing those mappings can be non-trivial.  On x86, the
-+IOMMU will often map the full guest memory, allowing for transparent
-+device assignment.  Therefore any device assigned to a given guest
-+will make use of identical IOMMU mappings.  Some IOMMU implementations
-+are able to easily reduce the overhead this generates by simply using
-+the same set of page tables across multiple groups.  VFIO allows users
-+to take advantage of this option by merging groups together,
-+effectively creating a super group (NB IOMMU groups only define the
-+minimum granularity).
-+
-+A user can attempt to merge groups together by calling the merge ioctl
-+on one group (the "merger") and pass the file descriptor for the group
-+to be merged in (the "mergee").  Note that existing DMA mappings
-+cannot be atomically merged between groups, it's therefore a
-+requirement that the mergee group is not in use.  This is enforced by
-+not allowing open device or iommu file descriptors on the mergee group
-+at the time of merging.  The merger group can be actively in use at
-+the time of merging.  Likewise, to unmerge a group, none of the device
-+file descriptors for the group being removed can be in use.  The
-+remaining merged group can be actively in use.
-+
-+If the groups cannot be merged, the ioctl will fail and the user will
-+need to manage the groups independently.  Users should have no
-+expectation for group merging to be successful.  Some platforms may
-+not support it at all, others may only enable merging of sufficiently
-+similar groups.  If the ioctl succeeds, then the group file
-+descriptors are effectively fungible between the groups.  That is,
-+instead of their actions being isolated to the individual group, each
-+of them are gateways into the combined, merged group.  For instance,
-+retrieving an IOMMU file descriptor from any group returns a reference
-+to the same object, mappings to that IOMMU descriptor are visible to
-+all devices in the merged group, and device descriptors can be
-+retrieved for any device in the merged group from any one of the group
-+file descriptors.  In effect, a user can manage devices and the IOMMU
-+of a merged group using a single file descriptor (saving the other
-+merged group file descriptors away only for later unmerging) without
-+the permission complications of creating a separate "super group"
-+character device.
-+
-+VFIO Usage Example
-+-------------------------------------------------------------------------------
-+
-+Assume user wants to access PCI device 0000:06:0d.0
-+
-+$ cat /sys/bus/pci/devices/0000:06:0d.0/iommu_group
-+240
-+
-+Since this device is on the "pci" bus, the user can then find the
-+character device for interacting with the VFIO group as:
-+
-+$ ls -l /dev/vfio/pci:240
-+crw-rw---- 1 root root 252, 27 Dec 15 15:13 /dev/vfio/pci:240
-+
-+We can also examine other members of the group through sysfs:
-+
-+$ ls -l /sys/devices/virtual/vfio/pci:240/devices/
-+total 0
-+lrwxrwxrwx 1 root root 0 Dec 20 12:01 0000:06:0d.0 -> \
-+		../../../../pci0000:00/0000:00:1e.0/0000:06:0d.0
-+lrwxrwxrwx 1 root root 0 Dec 20 12:01 0000:06:0d.1 -> \
-+		../../../../pci0000:00/0000:00:1e.0/0000:06:0d.1
-+
-+This group therefore contains two devices[4].  VFIO will prevent
-+device or iommu manipulation unless all group members are attached to
-+the vfio bus driver, so we simply unbind the devices from their
-+current driver and rebind them to vfio:
-+
-+#!/bin/sh
-+for i in /sys/devices/virtual/vfio/pci:240/devices/*; do
-+	dir=$(readlink -f $i)
-+	if [ -L $dir/driver ]; then
-+		echo $(basename $i) > $dir/driver/unbind
-+	fi
-+	vendor=$(cat $dir/vendor)
-+	device=$(cat $dir/device)
-+	echo $vendor $device > /sys/bus/pci/drivers/vfio/new_id
-+	echo $(basename $i) > /sys/bus/pci/drivers/vfio/bind
-+done
-+
-+# chown user:user /dev/vfio/pci:240
-+
-+The user now has full access to all the devices and the iommu for this
-+group and can access them as follows:
-+
-+	int group, iommu, device, i;
-+	struct vfio_group_info group_info = { .argsz = sizeof(group_info) };
-+	struct vfio_iommu_info iommu_info = { .argsz = sizeof(iommu_info) };
-+	struct vfio_dma_map dma_map = { .argsz = sizeof(dma_map) };
-+	struct vfio_device_info device_info = { .argsz = sizeof(device_info) };
-+
-+	/* Open the group */
-+	group = open("/dev/vfio/pci:240", O_RDWR);
-+
-+	/* Test the group is viable and available */
-+	ioctl(group, VFIO_GROUP_GET_INFO, &group_info);
-+
-+	if (!(group_info.flags & VFIO_GROUP_FLAGS_VIABLE))
-+		/* Group is not viable */
-+
-+	if ((group_info.flags & VFIO_GROUP_FLAGS_MM_LOCKED))
-+		/* Already in use by someone else */
-+
-+	/* Get a file descriptor for the IOMMU */
-+	iommu = ioctl(group, VFIO_GROUP_GET_IOMMU_FD);
-+
-+	/* Test the IOMMU is what we expect */
-+	ioctl(iommu, VFIO_IOMMU_GET_INFO, &iommu_info);
-+
-+	/* Allocate some space and setup a DMA mapping */
-+	dma_map.vaddr = mmap(0, 1024 * 1024, PROT_READ | PROT_WRITE,
-+			     MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-+	dma_map.size = 1024 * 1024;
-+	dma_map.iova = 0; /* 1MB starting at 0x0 from device view */
-+	dma_map.flags = VFIO_DMA_MAP_FLAG_READ | VFIO_DMA_MAP_FLAG_WRITE;
-+
-+	ioctl(iommu, VFIO_IOMMU_MAP_DMA, &dma_map);
-+
-+	/* Get a file descriptor for the device */
-+	device = ioctl(group, VFIO_GROUP_GET_DEVICE_FD, "0000:06:0d.0");
-+
-+	/* Test and setup the device */
-+	ioctl(device, VFIO_DEVICE_GET_INFO, &device_info);
-+
-+	for (i = 0; i < device_info.num_regions; i++) {
-+		struct vfio_region_info reg = { .argsz = sizeof(reg) };
-+
-+		reg.index = i;
-+
-+		ioctl(device, VFIO_DEVICE_GET_REGION_INFO, &reg);
-+
-+		/* Setup mappings... read/write offsets, mmaps
-+		 * For PCI devices, config space is a region */
-+	}
-+
-+	for (i = 0; i < device_info.num_irqs; i++) {
-+		struct vfio_irq_info irq = { .argsz = sizeof(irq) };
-+
-+		irq.index = i;
-+
-+		ioctl(device, VFIO_DEVICE_GET_IRQ_INFO, &reg);
-+
-+		/* Setup IRQs... eventfds, VFIO_DEVICE_SET_IRQS */
-+	}
-+
-+	/* Gratuitous device reset and go... */
-+	ioctl(device, VFIO_DEVICE_RESET);
-+
-+VFIO User API
-+-------------------------------------------------------------------------------
-+
-+Please see include/linux/vfio.h for complete API documentation.
-+
-+VFIO bus driver API
-+-------------------------------------------------------------------------------
-+
-+Bus drivers, such as PCI, have three jobs:
-+ 1) Add/remove devices from vfio
-+ 2) Provide vfio_device_ops for device access
-+ 3) Device binding and unbinding
-+
-+When initialized, the bus driver should enumerate the devices on its
-+bus and call vfio_group_add_dev() for each device.  If the bus
-+supports hotplug, notifiers should be enabled to track devices being
-+added and removed.  vfio_group_del_dev() removes a previously added
-+device from vfio.
-+
-+extern int vfio_group_add_dev(struct device *dev,
-+                              const struct vfio_device_ops *ops);
-+extern void vfio_group_del_dev(struct device *dev);
-+
-+Adding a device registers a vfio_device_ops function pointer structure
-+for the device:
-+
-+struct vfio_device_ops {
-+	bool	(*match)(struct device *dev, char *buf);
-+	int	(*claim)(struct device *dev);
-+	int	(*open)(void *device_data);
-+	void	(*release)(void *device_data);
-+	ssize_t	(*read)(void *device_data, char __user *buf,
-+			size_t count, loff_t *ppos);
-+	ssize_t	(*write)(void *device_data, const char __user *buf,
-+			 size_t size, loff_t *ppos);
-+	long	(*ioctl)(void *device_data, unsigned int cmd,
-+			 unsigned long arg);
-+	int	(*mmap)(void *device_data, struct vm_area_struct *vma);
++struct vfio_group {
++	dev_t			devt;
++	unsigned int		groupid;
++	struct bus_type		*bus;
++	struct vfio_iommu	*iommu;
++	struct list_head	device_list;
++	struct list_head	iommu_next;
++	struct list_head	group_next;
++	struct device		*dev;
++	struct kobject		*devices_kobj;
++	int			refcnt;
++	bool			tainted;
 +};
 +
-+For buses supporting hotplug, all functions are required to be
-+implemented.  Non-hotplug buses do not need to implement claim().
++struct vfio_device {
++	struct device			*dev;
++	const struct vfio_device_ops	*ops;
++	struct vfio_group		*group;
++	struct list_head		device_next;
++	bool				attached;
++	bool				deleteme;
++	int				refcnt;
++	void				*device_data;
++};
 +
-+match() provides a device specific method for associating a struct
-+device to a user provided string.  Many drivers may simply strcmp the
-+buffer to dev_name().
++/*
++ * Helper functions called under vfio.lock
++ */
 +
-+claim() is used when a device is hot-added to a group that is already
-+in use.  This is how VFIO requests that a bus driver manually takes
-+ownership of a device.  The expected call path for this is triggered
-+from the bus add notifier.  The bus driver calls vfio_group_add_dev for
-+the newly added device, vfio-core determines this group is already in
-+use and calls claim on the bus driver.  This triggers the bus driver
-+to call it's own probe function, including calling vfio_bind_dev to
-+mark the device as controlled by vfio.  The device is then available
-+for use by the group.
++/* Return true if any devices within a group are opened */
++static bool __vfio_group_devs_inuse(struct vfio_group *group)
++{
++	struct list_head *pos;
 +
-+The remaining vfio_device_ops are similar to a simplified struct
-+file_operations except a device_data pointer is provided rather than a
-+file pointer.  The device_data is an opaque structure registered by
-+the bus driver when a device is bound to the vfio bus driver:
++	list_for_each(pos, &group->device_list) {
++		struct vfio_device *device;
 +
-+extern int vfio_bind_dev(struct device *dev, void *device_data);
-+extern void *vfio_unbind_dev(struct device *dev);
++		device = list_entry(pos, struct vfio_device, device_next);
++		if (device->refcnt)
++			return true;
++	}
++	return false;
++}
 +
-+When the device is unbound from the driver, the bus driver will call
-+vfio_unbind_dev() which will return the device_data for any bus driver
-+specific cleanup and freeing of the structure.  The vfio_unbind_dev
-+call may block if the group is currently in use.
++/*
++ * Return true if any of the groups attached to an iommu are opened.
++ * We can only tear apart merged groups when nothing is left open.
++ */
++static bool __vfio_iommu_groups_inuse(struct vfio_iommu *iommu)
++{
++	struct list_head *pos;
 +
-+-------------------------------------------------------------------------------
++	list_for_each(pos, &iommu->group_list) {
++		struct vfio_group *group;
 +
-+[1] VFIO was originally an acronym for "Virtual Function I/O" in it's
-+initial implementation by Tom Lyon while as Cisco.  We've since
-+outgrown the acronym, but it's catchy.
++		group = list_entry(pos, struct vfio_group, iommu_next);
++		if (group->refcnt)
++			return true;
++	}
++	return false;
++}
 +
-+[2] "safe" also depends upon a device being "well behaved".  It's
-+possible for multi-function devices to have backdoors between
-+functions and even for single function devices to have alternative
-+access to things like PCI config space through MMIO registers.  To
-+guard against the former we can include additional precautions in the
-+IOMMU driver to group multi-function PCI devices together
-+(iommu=group_mf).  The latter we can't prevent, but the IOMMU should
-+still provide isolation.  For PCI, SR-IOV Virtual Functions are the
-+best indicator of "well behaved", as these are designed for
-+virtualization usage models.
++/*
++ * An iommu is "in use" if it has a file descriptor open or if any of
++ * the groups assigned to the iommu have devices open.
++ */
++static bool __vfio_iommu_inuse(struct vfio_iommu *iommu)
++{
++	struct list_head *pos;
 +
-+[3] As always there are trade-offs to virtual machine device
-+assignment that are beyond the scope of VFIO.  It's expected that
-+future IOMMU technologies will reduce some, but maybe not all, of
-+these trade-offs.
++	if (iommu->refcnt)
++		return true;
 +
-+[4] In this case the device is below a PCI bridge, so transactions
-+from either function of the device are indistinguishable to the iommu:
++	list_for_each(pos, &iommu->group_list) {
++		struct vfio_group *group;
 +
-+-[0000:00]-+-1e.0-[06]--+-0d.0
-+                        \-0d.1
++		group = list_entry(pos, struct vfio_group, iommu_next);
 +
-+00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 90)
++		if (__vfio_group_devs_inuse(group))
++			return true;
++	}
++	return false;
++}
++
++static void __vfio_group_set_iommu(struct vfio_group *group,
++				   struct vfio_iommu *iommu)
++{
++	if (group->iommu)
++		list_del(&group->iommu_next);
++	if (iommu)
++		list_add(&group->iommu_next, &iommu->group_list);
++
++	group->iommu = iommu;
++}
++
++static void __vfio_iommu_detach_dev(struct vfio_iommu *iommu,
++				    struct vfio_device *device)
++{
++	if (WARN_ON(!iommu->domain && device->attached))
++		return;
++
++	if (!device->attached)
++		return;
++
++	iommu_detach_device(iommu->domain, device->dev);
++	device->attached = false;
++}
++
++static void __vfio_iommu_detach_group(struct vfio_iommu *iommu,
++				      struct vfio_group *group)
++{
++	struct list_head *pos;
++
++	list_for_each(pos, &group->device_list) {
++		struct vfio_device *device;
++
++		device = list_entry(pos, struct vfio_device, device_next);
++		__vfio_iommu_detach_dev(iommu, device);
++	}
++}
++
++static int __vfio_iommu_attach_dev(struct vfio_iommu *iommu,
++				   struct vfio_device *device)
++{
++	int ret;
++
++	if (WARN_ON(device->attached || !iommu || !iommu->domain))
++		return -EINVAL;
++
++	ret = iommu_attach_device(iommu->domain, device->dev);
++	if (!ret)
++		device->attached = true;
++
++	return ret;
++}
++
++static int __vfio_iommu_attach_group(struct vfio_iommu *iommu,
++				     struct vfio_group *group)
++{
++	struct list_head *pos;
++
++	list_for_each(pos, &group->device_list) {
++		struct vfio_device *device;
++		int ret;
++
++		device = list_entry(pos, struct vfio_device, device_next);
++		ret = __vfio_iommu_attach_dev(iommu, device);
++		if (ret) {
++			__vfio_iommu_detach_group(iommu, group);
++			return ret;
++		}
++	}
++	return 0;
++}
++
++/*
++ * The iommu is viable, ie. ready to be configured, when all the devices
++ * for all the groups attached to the iommu are bound to their vfio device
++ * drivers (ex. vfio-pci).  This sets the device_data private data pointer.
++ */
++static bool __vfio_iommu_viable(struct vfio_iommu *iommu)
++{
++	struct list_head *gpos, *dpos;
++
++	list_for_each(gpos, &iommu->group_list) {
++		struct vfio_group *group;
++		group = list_entry(gpos, struct vfio_group, iommu_next);
++
++		if (group->tainted)
++			return false;
++
++		list_for_each(dpos, &group->device_list) {
++			struct vfio_device *device;
++			device = list_entry(dpos,
++					    struct vfio_device, device_next);
++
++			if (!device->device_data)
++				return false;
++		}
++	}
++	return true;
++}
++
++static void __vfio_iommu_close(struct vfio_iommu *iommu)
++{
++	struct list_head *pos;
++
++	if (!iommu->domain)
++		return;
++
++	list_for_each(pos, &iommu->group_list) {
++		struct vfio_group *group;
++		group = list_entry(pos, struct vfio_group, iommu_next);
++
++		__vfio_iommu_detach_group(iommu, group);
++	}
++
++	vfio_iommu_unmapall(iommu);
++
++	iommu_domain_free(iommu->domain);
++	iommu->domain = NULL;
++	iommu->mm = NULL;
++}
++
++/*
++ * Open the IOMMU.  This gates all access to the iommu or device file
++ * descriptors and sets current->mm as the exclusive user.
++ */
++static int __vfio_iommu_open(struct vfio_iommu *iommu)
++{
++	struct list_head *pos;
++	int ret;
++
++	if (!__vfio_iommu_viable(iommu))
++		return -EBUSY;
++
++	if (iommu->domain)
++		return -EINVAL;
++
++	iommu->domain = iommu_domain_alloc(iommu->bus);
++	if (!iommu->domain)
++		return -ENOMEM;
++
++	list_for_each(pos, &iommu->group_list) {
++		struct vfio_group *group;
++		group = list_entry(pos, struct vfio_group, iommu_next);
++
++		ret = __vfio_iommu_attach_group(iommu, group);
++		if (ret) {
++			__vfio_iommu_close(iommu);
++			return ret;
++		}
++	}
++
++	iommu->cache = (iommu_domain_has_cap(iommu->domain,
++					     IOMMU_CAP_CACHE_COHERENCY) != 0);
++	iommu->mm = current->mm;
++
++	return 0;
++}
++
++/*
++ * Actively try to tear down the iommu and merged groups.  If there are no
++ * open iommu or device fds, we close the iommu.  If we close the iommu and
++ * there are also no open group fds, we can further dissolve the group to
++ * iommu association and free the iommu data structure.
++ */
++static int __vfio_try_dissolve_iommu(struct vfio_iommu *iommu)
++{
++
++	if (__vfio_iommu_inuse(iommu))
++		return -EBUSY;
++
++	__vfio_iommu_close(iommu);
++
++	if (!__vfio_iommu_groups_inuse(iommu)) {
++		struct list_head *pos, *ppos;
++
++		list_for_each_safe(pos, ppos, &iommu->group_list) {
++			struct vfio_group *group;
++
++			group = list_entry(pos, struct vfio_group, iommu_next);
++			__vfio_group_set_iommu(group, NULL);
++		}
++
++		kfree(iommu);
++	}
++
++	return 0;
++}
++
++static struct vfio_device *__vfio_lookup_dev(struct device *dev)
++{
++	struct list_head *gpos;
++	unsigned int groupid;
++
++	if (iommu_device_group(dev, &groupid))
++		return NULL;
++
++	list_for_each(gpos, &vfio.group_list) {
++		struct vfio_group *group;
++		struct list_head *dpos;
++
++		group = list_entry(gpos, struct vfio_group, group_next);
++
++		if (group->groupid != groupid || group->bus != dev->bus)
++			continue;
++
++		list_for_each(dpos, &group->device_list) {
++			struct vfio_device *device;
++
++			device = list_entry(dpos,
++					    struct vfio_device, device_next);
++
++			if (device->dev == dev)
++				return device;
++		}
++	}
++	return NULL;
++}
++
++static struct vfio_group *__vfio_dev_to_group(struct device *dev,
++					      unsigned int groupid)
++{
++	struct list_head *pos;
++	struct vfio_group *group;
++
++	list_for_each(pos, &vfio.group_list) {
++		group = list_entry(pos, struct vfio_group, group_next);
++		if (group->groupid == groupid && group->bus == dev->bus)
++			return group;
++	}
++
++	return NULL;
++}
++
++struct vfio_device *__vfio_group_find_device(struct vfio_group *group,
++					     struct device *dev)
++{
++	struct list_head *pos;
++	struct vfio_device *device;
++
++	list_for_each(pos, &group->device_list) {
++		device = list_entry(pos, struct vfio_device, device_next);
++		if (device->dev == dev)
++			return device;
++	}
++
++	return NULL;
++}
++
++static struct vfio_group *__vfio_create_group(struct device *dev,
++					      unsigned int groupid)
++{
++	struct vfio_group *group;
++	int ret, minor;
++
++	group = kzalloc(sizeof(*group), GFP_KERNEL);
++
++	/*
++	 * We can't recover from this.  If we can't even get memory for
++	 * the group, we can't track the device and we don't have a place
++	 * to mark the groupid tainted.  Failures below should at least
++	 * return a tainted group.
++	 */
++	BUG_ON(!group);
++
++	group->groupid = groupid;
++	group->bus = dev->bus;
++	INIT_LIST_HEAD(&group->device_list);
++
++	group->tainted = true;
++	list_add(&group->group_next, &vfio.group_list);
++
++again:
++	if (unlikely(idr_pre_get(&vfio.idr, GFP_KERNEL) == 0))
++		goto out;
++
++	ret = idr_get_new(&vfio.idr, group, &minor);
++	if (ret == -EAGAIN)
++		goto again;
++	if (ret || minor > MINORMASK) {
++		if (minor > MINORMASK)
++			idr_remove(&vfio.idr, minor);
++		goto out;
++	}
++
++	group->devt = MKDEV(MAJOR(vfio.devt), minor);
++	group->dev = device_create(vfio.class, NULL, group->devt, group,
++				   "%s:%u", dev->bus->name, groupid);
++	if (IS_ERR(group->dev))
++		goto out_device;
++
++	/* Create a place to link individual devices in sysfs */
++	group->devices_kobj = kobject_create_and_add("devices",
++						     &group->dev->kobj);
++	if (!group->devices_kobj)
++		goto out_kobj;
++
++	group->tainted = false;
++
++	return group;
++
++out_kobj:
++	device_destroy(vfio.class, group->devt);
++out_device:
++	group->dev = NULL;
++	group->devt = 0;
++	idr_remove(&vfio.idr, minor);
++out:
++	printk(KERN_WARNING "vfio: Failed to complete setup on group %u, "
++	       "marking as unusable\n", groupid);
++
++	return group;
++}
++
++static struct vfio_iommu *vfio_create_iommu(struct vfio_group *group)
++{
++	struct vfio_iommu *iommu;
++
++	iommu = kzalloc(sizeof(*iommu), GFP_KERNEL);
++	if (!iommu)
++		return ERR_PTR(-ENOMEM);
++
++	INIT_LIST_HEAD(&iommu->group_list);
++	INIT_LIST_HEAD(&iommu->dma_list);
++	mutex_init(&iommu->lock);
++	iommu->bus = group->bus;
++
++	return iommu;
++}
++
++/*
++ * All release paths simply decrement the refcnt, attempt to teardown
++ * the iommu and merged groups, and wakeup anything that might be
++ * waiting if we successfully dissolve anything.
++ */
++static int vfio_do_release(int *refcnt, struct vfio_iommu *iommu)
++{
++	bool wake;
++
++	mutex_lock(&vfio.lock);
++
++	(*refcnt)--;
++	wake = (__vfio_try_dissolve_iommu(iommu) == 0);
++
++	mutex_unlock(&vfio.lock);
++
++	if (wake)
++		wake_up(&vfio.release_q);
++
++	return 0;
++}
++
++/*
++ * Device fops - passthrough to vfio device driver w/ device_data
++ */
++static int vfio_device_release(struct inode *inode, struct file *filep)
++{
++	struct vfio_device *device = filep->private_data;
++
++	vfio_do_release(&device->refcnt, device->group->iommu);
++
++	device->ops->release(device->device_data);
++
++	return 0;
++}
++
++static long vfio_device_unl_ioctl(struct file *filep,
++				  unsigned int cmd, unsigned long arg)
++{
++	struct vfio_device *device = filep->private_data;
++
++	return device->ops->ioctl(device->device_data, cmd, arg);
++}
++
++static ssize_t vfio_device_read(struct file *filep, char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	struct vfio_device *device = filep->private_data;
++
++	return device->ops->read(device->device_data, buf, count, ppos);
++}
++
++static ssize_t vfio_device_write(struct file *filep, const char __user *buf,
++				 size_t count, loff_t *ppos)
++{
++	struct vfio_device *device = filep->private_data;
++
++	return device->ops->write(device->device_data, buf, count, ppos);
++}
++
++static int vfio_device_mmap(struct file *filep, struct vm_area_struct *vma)
++{
++	struct vfio_device *device = filep->private_data;
++
++	return device->ops->mmap(device->device_data, vma);
++}
++
++#ifdef CONFIG_COMPAT
++static long vfio_device_compat_ioctl(struct file *filep,
++				     unsigned int cmd, unsigned long arg)
++{
++	arg = (unsigned long)compat_ptr(arg);
++	return vfio_device_unl_ioctl(filep, cmd, arg);
++}
++#endif	/* CONFIG_COMPAT */
++
++const struct file_operations vfio_device_fops = {
++	.owner		= THIS_MODULE,
++	.release	= vfio_device_release,
++	.read		= vfio_device_read,
++	.write		= vfio_device_write,
++	.unlocked_ioctl	= vfio_device_unl_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= vfio_device_compat_ioctl,
++#endif
++	.mmap		= vfio_device_mmap,
++};
++
++/*
++ * Group fops
++ */
++static int vfio_group_open(struct inode *inode, struct file *filep)
++{
++	struct vfio_group *group;
++	int ret = 0;
++
++	mutex_lock(&vfio.lock);
++
++	group = idr_find(&vfio.idr, iminor(inode));
++
++	if (!group) {
++		ret = -ENODEV;
++		goto out;
++	}
++
++	filep->private_data = group;
++
++	if (!group->iommu) {
++		struct vfio_iommu *iommu;
++
++		iommu = vfio_create_iommu(group);
++		if (IS_ERR(iommu)) {
++			ret = PTR_ERR(iommu);
++			goto out;
++		}
++		__vfio_group_set_iommu(group, iommu);
++	}
++	group->refcnt++;
++
++out:
++	mutex_unlock(&vfio.lock);
++
++	return ret;
++}
++
++static int vfio_group_release(struct inode *inode, struct file *filep)
++{
++	struct vfio_group *group = filep->private_data;
++
++	return vfio_do_release(&group->refcnt, group->iommu);
++}
++
++/*
++ * Attempt to merge the group pointed to by fd into group.  The merge-ee
++ * group must not have an iommu or any devices open because we cannot
++ * maintain that context across the merge.  The merge-er group can be
++ * in use.
++ */
++static int vfio_group_merge(struct vfio_group *group, int fd)
++{
++	struct vfio_group *new;
++	struct vfio_iommu *old_iommu;
++	struct file *file;
++	int ret = 0;
++	bool opened = false;
++
++	mutex_lock(&vfio.lock);
++
++	file = fget(fd);
++	if (!file) {
++		ret = -EBADF;
++		goto out_noput;
++	}
++
++	/* Sanity check, is this really our fd? */
++	if (file->f_op != &vfio_group_fops) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	new = file->private_data;
++
++	if (!new || new == group || !new->iommu ||
++	    new->iommu->domain || new->bus != group->bus) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	/*
++	 * We need to attach all the devices to each domain separately
++	 * in order to validate that the capabilities match for both.
++	 */
++	ret = __vfio_iommu_open(new->iommu);
++	if (ret)
++		goto out;
++
++	if (!group->iommu->domain) {
++		ret = __vfio_iommu_open(group->iommu);
++		if (ret)
++			goto out;
++		opened = true;
++	}
++
++	/*
++	 * If cache coherency doesn't match we'd potentially need to
++	 * remap existing iommu mappings in the merge-er domain.
++	 * Poor return to bother trying to allow this currently.
++	 */
++	if (iommu_domain_has_cap(group->iommu->domain,
++				 IOMMU_CAP_CACHE_COHERENCY) !=
++	    iommu_domain_has_cap(new->iommu->domain,
++				 IOMMU_CAP_CACHE_COHERENCY)) {
++		__vfio_iommu_close(new->iommu);
++		if (opened)
++			__vfio_iommu_close(group->iommu);
++		ret = -EINVAL;
++		goto out;
++	}
++
++	/*
++	 * Close the iommu for the merge-ee and attach all its devices
++	 * to the merge-er iommu.
++	 */
++	__vfio_iommu_close(new->iommu);
++
++	ret = __vfio_iommu_attach_group(group->iommu, new);
++	if (ret)
++		goto out;
++
++	/* set_iommu unlinks new from the iommu, so save a pointer to it */
++	old_iommu = new->iommu;
++	__vfio_group_set_iommu(new, group->iommu);
++	kfree(old_iommu);
++
++out:
++	fput(file);
++out_noput:
++	mutex_unlock(&vfio.lock);
++	return ret;
++}
++
++/* Unmerge a group */
++static int vfio_group_unmerge(struct vfio_group *group)
++{
++	struct vfio_iommu *iommu;
++	int ret = 0;
++
++	/*
++	 * Since the merge-out group is already opened, it needs to
++	 * have an iommu struct associated with it.
++	 */
++	iommu = vfio_create_iommu(group);
++	if (IS_ERR(iommu))
++		return PTR_ERR(iommu);
++
++	mutex_lock(&vfio.lock);
++
++	if (list_is_singular(&group->iommu->group_list)) {
++		ret = -EINVAL; /* Not merged group */
++		goto out;
++	}
++
++	/* We can't merge-out a group with devices still in use. */
++	if (__vfio_group_devs_inuse(group)) {
++		ret = -EBUSY;
++		goto out;
++	}
++
++	__vfio_iommu_detach_group(group->iommu, group);
++	__vfio_group_set_iommu(group, iommu);
++
++out:
++	if (ret)
++		kfree(iommu);
++	mutex_unlock(&vfio.lock);
++	return ret;
++}
++
++/*
++ * Get a new iommu file descriptor.  This will open the iommu, setting
++ * the current->mm ownership if it's not already set.
++ */
++static int vfio_group_get_iommu_fd(struct vfio_group *group)
++{
++	int ret = 0;
++
++	mutex_lock(&vfio.lock);
++
++	if (!group->iommu->domain) {
++		ret = __vfio_iommu_open(group->iommu);
++		if (ret)
++			goto out;
++	}
++
++	ret = anon_inode_getfd("[vfio-iommu]", &vfio_iommu_fops,
++			       group->iommu, O_RDWR);
++	if (ret < 0)
++		goto out;
++
++	group->iommu->refcnt++;
++out:
++	mutex_unlock(&vfio.lock);
++	return ret;
++}
++
++/*
++ * Get a new device file descriptor.  This will open the iommu, setting
++ * the current->mm ownership if it's not already set.  It's difficult to
++ * specify the requirements for matching a user supplied buffer to a
++ * device, so we use a vfio driver callback to test for a match.  For
++ * PCI, dev_name(dev) is unique, but other drivers may require including
++ * a parent device string.
++ */
++static int vfio_group_get_device_fd(struct vfio_group *group, char *buf)
++{
++	struct vfio_iommu *iommu = group->iommu;
++	struct list_head *gpos;
++	int ret = -ENODEV;
++
++	mutex_lock(&vfio.lock);
++
++	if (!iommu->domain) {
++		ret = __vfio_iommu_open(iommu);
++		if (ret)
++			goto out;
++	}
++
++	list_for_each(gpos, &iommu->group_list) {
++		struct list_head *dpos;
++
++		group = list_entry(gpos, struct vfio_group, iommu_next);
++
++		list_for_each(dpos, &group->device_list) {
++			struct vfio_device *device;
++			struct file *file;
++
++			device = list_entry(dpos,
++					    struct vfio_device, device_next);
++
++			if (!device->ops->match(device->dev, buf))
++				continue;
++
++			ret = device->ops->open(device->device_data);
++			if (ret)
++				goto out;
++
++			/*
++			 * We can't use anon_inode_getfd(), like above
++			 * because we need to modify the f_mode flags
++			 * directly to allow more than just ioctls
++			 */
++			ret = get_unused_fd();
++			if (ret < 0) {
++				device->ops->release(device->device_data);
++				goto out;
++			}
++
++			file = anon_inode_getfile("[vfio-device]",
++						  &vfio_device_fops,
++						  device, O_RDWR);
++			if (IS_ERR(file)) {
++				put_unused_fd(ret);
++				ret = PTR_ERR(file);
++				device->ops->release(device->device_data);
++				goto out;
++			}
++
++			/*
++			 * TODO: add an anon_inode interface to do this.
++			 * Appears to be missing by lack of need rather than
++			 * explicitly prevented.  Now there's need.
++			 */
++			file->f_mode |= (FMODE_LSEEK |
++					 FMODE_PREAD |
++					 FMODE_PWRITE);
++
++			fd_install(ret, file);
++
++			device->refcnt++;
++			goto out;
++		}
++	}
++out:
++	mutex_unlock(&vfio.lock);
++	return ret;
++}
++
++static long vfio_group_unl_ioctl(struct file *filep,
++				 unsigned int cmd, unsigned long arg)
++{
++	struct vfio_group *group = filep->private_data;
++
++	if (cmd == VFIO_GROUP_GET_INFO) {
++		struct vfio_group_info info;
++		unsigned long minsz;
++
++		minsz = offsetofend(struct vfio_group_info, flags);
++
++		if (copy_from_user(&info, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (info.argsz < minsz)
++			return -EINVAL;
++
++		mutex_lock(&vfio.lock);
++		if (__vfio_iommu_viable(group->iommu))
++			info.flags |= VFIO_GROUP_FLAGS_VIABLE;
++		mutex_unlock(&vfio.lock);
++
++		if (group->iommu->mm)
++			info.flags |= VFIO_GROUP_FLAGS_MM_LOCKED;
++
++		return copy_to_user((void __user *)arg, &info, minsz);
++	}
++
++	/* Below commands are restricted once the mm is set */
++	if (group->iommu->mm && group->iommu->mm != current->mm)
++		return -EPERM;
++
++	if (cmd == VFIO_GROUP_MERGE) {
++		int fd;
++
++		if (get_user(fd, (int __user *)arg))
++			return -EFAULT;
++		if (fd < 0)
++			return -EINVAL;
++
++		return vfio_group_merge(group, fd);
++
++	} else if (cmd == VFIO_GROUP_UNMERGE) {
++
++		return vfio_group_unmerge(group);
++
++	} else if (cmd == VFIO_GROUP_GET_IOMMU_FD) {
++
++		return vfio_group_get_iommu_fd(group);
++
++	} else if (cmd == VFIO_GROUP_GET_DEVICE_FD) {
++		char *buf;
++		int ret;
++
++		buf = strndup_user((const char __user *)arg, PAGE_SIZE);
++		if (IS_ERR(buf))
++			return PTR_ERR(buf);
++
++		ret = vfio_group_get_device_fd(group, buf);
++		kfree(buf);
++		return ret;
++	}
++
++	return -ENOTTY;
++}
++
++#ifdef CONFIG_COMPAT
++static long vfio_group_compat_ioctl(struct file *filep,
++				    unsigned int cmd, unsigned long arg)
++{
++	arg = (unsigned long)compat_ptr(arg);
++	return vfio_group_unl_ioctl(filep, cmd, arg);
++}
++#endif	/* CONFIG_COMPAT */
++
++static const struct file_operations vfio_group_fops = {
++	.owner		= THIS_MODULE,
++	.open		= vfio_group_open,
++	.release	= vfio_group_release,
++	.unlocked_ioctl	= vfio_group_unl_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= vfio_group_compat_ioctl,
++#endif
++};
++
++/* iommu fd release hook */
++int vfio_release_iommu(struct vfio_iommu *iommu)
++{
++	return vfio_do_release(&iommu->refcnt, iommu);
++}
++
++/*
++ * VFIO driver API
++ */
++
++/*
++ * Add a new device to the vfio framework with associated vfio driver
++ * callbacks.  This is the entry point for vfio drivers to register devices.
++ */
++int vfio_group_add_dev(struct device *dev, const struct vfio_device_ops *ops)
++{
++	struct vfio_group *group;
++	struct vfio_device *device;
++	unsigned int groupid;
++	int ret = 0;
++
++	if (iommu_device_group(dev, &groupid))
++		return -ENODEV;
++
++	if (WARN_ON(!ops))
++		return -EINVAL;
++
++	mutex_lock(&vfio.lock);
++
++	group = __vfio_dev_to_group(dev, groupid);
++	if (!group)
++		group = __vfio_create_group(dev, groupid); /* No fail */
++
++	device = __vfio_group_find_device(group, dev);
++	if (!device) {
++		device = kzalloc(sizeof(*device), GFP_KERNEL);
++		if (WARN_ON(!device)) {
++			/*
++			 * We created the group, but can't add this device,
++			 * taint the group to prevent it being used.  If
++			 * it's already in use, we have to BUG_ON.
++			 * XXX - Kill the user process?
++			 */
++			group->tainted = true;
++			BUG_ON(group->iommu && group->iommu->domain);
++			ret = -ENOMEM;
++			goto out;
++		}
++
++		list_add(&device->device_next, &group->device_list);
++		device->dev = dev;
++		device->ops = ops;
++		device->group = group;
++
++		if (!group->devices_kobj ||
++		    sysfs_create_link(group->devices_kobj,
++				      &dev->kobj, dev_name(dev)))
++			printk(KERN_WARNING
++			       "vfio: Unable to create sysfs link to %s\n",
++			       dev_name(dev));
++
++		if (group->iommu && group->iommu->domain) {
++			printk(KERN_WARNING "Adding device %s to group %s:%u "
++			       "while group is already in use!!\n",
++			       dev_name(dev), group->bus->name, group->groupid);
++
++			mutex_unlock(&vfio.lock);
++
++			ret = ops->claim(dev);
++
++			BUG_ON(ret);
++
++			goto out_unlocked;
++		}
++
++	}
++out:
++	mutex_unlock(&vfio.lock);
++out_unlocked:
++	return ret;
++}
++EXPORT_SYMBOL_GPL(vfio_group_add_dev);
++
++/* Remove a device from the vfio framework */
++void vfio_group_del_dev(struct device *dev)
++{
++	struct vfio_group *group;
++	struct vfio_device *device;
++	unsigned int groupid;
++
++	if (iommu_device_group(dev, &groupid))
++		return;
++
++	mutex_lock(&vfio.lock);
++
++	group = __vfio_dev_to_group(dev, groupid);
++
++	if (WARN_ON(!group))
++		goto out;
++
++	device = __vfio_group_find_device(group, dev);
++
++	if (WARN_ON(!device))
++		goto out;
++
++	/*
++	 * If device is bound to a bus driver, we'll get a chance to
++	 * unbind it first.  Just mark it to be removed after unbind.
++	 */
++	if (device->device_data) {
++		device->deleteme = true;
++		goto out;
++	}
++
++	if (device->attached)
++		__vfio_iommu_detach_dev(group->iommu, device);
++
++	list_del(&device->device_next);
++
++	if (group->devices_kobj)
++		sysfs_remove_link(group->devices_kobj, dev_name(dev));
++
++	kfree(device);
++
++	/*
++	 * If this was the only device in the group, remove the group.
++	 * Note that we intentionally unmerge empty groups here if the
++	 * group fd isn't opened.
++	 */
++	if (list_empty(&group->device_list) && group->refcnt == 0) {
++		struct vfio_iommu *iommu = group->iommu;
++
++		if (iommu) {
++			__vfio_group_set_iommu(group, NULL);
++			__vfio_try_dissolve_iommu(iommu);
++		}
++
++		/*
++		 * Groups can be mostly placeholders if setup isn't
++		 * completed, remove them carefully.
++		 */
++		if (group->devices_kobj)
++			kobject_put(group->devices_kobj);
++		if (group->dev) {
++			device_destroy(vfio.class, group->devt);
++			idr_remove(&vfio.idr, MINOR(group->devt));
++		}
++		list_del(&group->group_next);
++		kfree(group);
++	}
++
++out:
++	mutex_unlock(&vfio.lock);
++}
++EXPORT_SYMBOL_GPL(vfio_group_del_dev);
++
++/*
++ * When a device is bound to a vfio device driver (ex. vfio-pci), this
++ * entry point is used to mark the device usable (viable).  The vfio
++ * device driver associates a private device_data struct with the device
++ * here, which will later be return for vfio_device_fops callbacks.
++ */
++int vfio_bind_dev(struct device *dev, void *device_data)
++{
++	struct vfio_device *device;
++	int ret;
++
++	if (WARN_ON(!device_data))
++		return -EINVAL;
++
++	mutex_lock(&vfio.lock);
++
++	device = __vfio_lookup_dev(dev);
++
++	if (WARN_ON(!device)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ret = dev_set_drvdata(dev, device);
++	if (!ret)
++		device->device_data = device_data;
++
++out:
++	mutex_unlock(&vfio.lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(vfio_bind_dev);
++
++/* A device is only removable if the iommu for the group is not in use. */
++static bool vfio_device_removeable(struct vfio_device *device)
++{
++	bool ret = true;
++
++	mutex_lock(&vfio.lock);
++
++	if (device->group->iommu && __vfio_iommu_inuse(device->group->iommu))
++		ret = false;
++
++	mutex_unlock(&vfio.lock);
++	return ret;
++}
++
++/*
++ * Notify vfio that a device is being unbound from the vfio device driver
++ * and return the device private device_data pointer.  If the group is
++ * in use, we need to block or take other measures to make it safe for
++ * the device to be removed from the iommu.
++ */
++void *vfio_unbind_dev(struct device *dev)
++{
++	struct vfio_device *device = dev_get_drvdata(dev);
++	void *device_data;
++
++	if (WARN_ON(!device))
++		return NULL;
++again:
++	if (!vfio_device_removeable(device)) {
++		/*
++		 * XXX signal for all devices in group to be removed or
++		 * resort to killing the process holding the device fds.
++		 * For now just block waiting for releases to wake us.
++		 */
++		wait_event(vfio.release_q, vfio_device_removeable(device));
++	}
++
++	mutex_lock(&vfio.lock);
++
++	/* Need to re-check that the device is still removable under lock. */
++	if (device->group->iommu && __vfio_iommu_inuse(device->group->iommu)) {
++		mutex_unlock(&vfio.lock);
++		goto again;
++	}
++
++	device_data = device->device_data;
++
++	device->device_data = NULL;
++	dev_set_drvdata(dev, NULL);
++
++	mutex_unlock(&vfio.lock);
++
++	if (device->deleteme)
++		vfio_group_del_dev(dev);
++
++	return device_data;
++}
++EXPORT_SYMBOL_GPL(vfio_unbind_dev);
++
++/*
++ * Module/class support
++ */
++static void vfio_class_release(struct kref *kref)
++{
++	class_destroy(vfio.class);
++	vfio.class = NULL;
++}
++
++static char *vfio_devnode(struct device *dev, umode_t *mode)
++{
++	return kasprintf(GFP_KERNEL, "vfio/%s", dev_name(dev));
++}
++
++static int __init vfio_init(void)
++{
++	int ret;
++
++	idr_init(&vfio.idr);
++	mutex_init(&vfio.lock);
++	INIT_LIST_HEAD(&vfio.group_list);
++	init_waitqueue_head(&vfio.release_q);
++
++	kref_init(&vfio.kref);
++	vfio.class = class_create(THIS_MODULE, "vfio");
++	if (IS_ERR(vfio.class)) {
++		ret = PTR_ERR(vfio.class);
++		goto err_class;
++	}
++
++	vfio.class->devnode = vfio_devnode;
++
++	/* FIXME - how many minors to allocate... all of them! */
++	ret = alloc_chrdev_region(&vfio.devt, 0, MINORMASK, "vfio");
++	if (ret)
++		goto err_chrdev;
++
++	cdev_init(&vfio.cdev, &vfio_group_fops);
++	ret = cdev_add(&vfio.cdev, vfio.devt, MINORMASK);
++	if (ret)
++		goto err_cdev;
++
++	pr_info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
++
++	return 0;
++
++err_cdev:
++	unregister_chrdev_region(vfio.devt, MINORMASK);
++err_chrdev:
++	kref_put(&vfio.kref, vfio_class_release);
++err_class:
++	return ret;
++}
++
++static void __exit vfio_cleanup(void)
++{
++	struct list_head *gpos, *gppos;
++
++	list_for_each_safe(gpos, gppos, &vfio.group_list) {
++		struct vfio_group *group;
++		struct list_head *dpos, *dppos;
++
++		group = list_entry(gpos, struct vfio_group, group_next);
++
++		list_for_each_safe(dpos, dppos, &group->device_list) {
++			struct vfio_device *device;
++
++			device = list_entry(dpos,
++					    struct vfio_device, device_next);
++			vfio_group_del_dev(device->dev);
++		}
++	}
++
++	idr_destroy(&vfio.idr);
++	cdev_del(&vfio.cdev);
++	unregister_chrdev_region(vfio.devt, MINORMASK);
++	kref_put(&vfio.kref, vfio_class_release);
++}
++
++module_init(vfio_init);
++module_exit(vfio_cleanup);
++
++MODULE_VERSION(DRIVER_VERSION);
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
+diff --git a/drivers/vfio/vfio_private.h b/drivers/vfio/vfio_private.h
+new file mode 100644
+index 0000000..1921fb9
+--- /dev/null
++++ b/drivers/vfio/vfio_private.h
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
++ */
++
++#include <linux/list.h>
++#include <linux/mutex.h>
++
++#ifndef VFIO_PRIVATE_H
++#define VFIO_PRIVATE_H
++
++struct vfio_iommu {
++	struct iommu_domain		*domain;
++	struct bus_type			*bus;
++	struct mutex			lock;
++	struct list_head		dma_list;
++	struct mm_struct		*mm;
++	struct list_head		group_list;
++	int				refcnt;
++	bool				cache;
++};
++
++extern const struct file_operations vfio_iommu_fops;
++
++extern int vfio_release_iommu(struct vfio_iommu *iommu);
++extern void vfio_iommu_unmapall(struct vfio_iommu *iommu);
++
++#endif /* VFIO_PRIVATE_H */
 
