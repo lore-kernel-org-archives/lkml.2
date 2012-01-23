@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab2AWRVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 12:21:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36869 "EHLO mx1.redhat.com"
+	id S1753356Ab2AWRVy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 12:21:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58044 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784Ab2AWRV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 12:21:28 -0500
+	id S1752422Ab2AWRVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 12:21:52 -0500
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2 2/5] vfio: VFIO core header
+Subject: [PATCH v2 4/5] vfio: VFIO core IOMMU mapping support
 To: chrisw@sous-sol.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
         joerg.roedel@amd.com, agraf@suse.de, benve@cisco.com,
         aafabbri@cisco.com, B08248@freescale.com, B07421@freescale.com,
         avi@redhat.com, konrad.wilk@oracle.com, kvm@vger.kernel.org,
         qemu-devel@nongnu.org, iommu@lists.linux-foundation.org,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 23 Jan 2012 10:20:54 -0700
-Message-ID: <20120123172054.26865.88890.stgit@bling.home>
+Date: Mon, 23 Jan 2012 10:21:08 -0700
+Message-ID: <20120123172107.26865.89745.stgit@bling.home>
 In-Reply-To: <20120123165620.26865.51875.stgit@bling.home>
 References: <20120123165620.26865.51875.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -26,36 +26,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This defines both the user and bus driver APIs.
+Backing for operations on the IOMMU object, including DMA
+mapping and unmapping.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- Documentation/ioctl/ioctl-number.txt |    1 
- include/linux/vfio.h                 |  395 ++++++++++++++++++++++++++++++++++
- 2 files changed, 396 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/vfio.h
+ drivers/vfio/vfio_iommu.c |  611 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 611 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/vfio/vfio_iommu.c
 
-diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
-index 2550754..79c5ef8 100644
---- a/Documentation/ioctl/ioctl-number.txt
-+++ b/Documentation/ioctl/ioctl-number.txt
-@@ -88,6 +88,7 @@ Code  Seq#(hex)	Include File		Comments
- 		and kernel/power/user.c
- '8'	all				SNP8023 advanced NIC card
- 					<mailto:mcr@solidum.com>
-+';'	64-83	linux/vfio.h
- '@'	00-0F	linux/radeonfb.h	conflict!
- '@'	00-0F	drivers/video/aty/aty128fb.c	conflict!
- 'A'	00-1F	linux/apm_bios.h	conflict!
-diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+diff --git a/drivers/vfio/vfio_iommu.c b/drivers/vfio/vfio_iommu.c
 new file mode 100644
-index 0000000..797dbe4
+index 0000000..49e6b2d
 --- /dev/null
-+++ b/include/linux/vfio.h
-@@ -0,0 +1,395 @@
++++ b/drivers/vfio/vfio_iommu.c
+@@ -0,0 +1,611 @@
 +/*
-+ * VFIO API definition
++ * VFIO: IOMMU DMA mapping support
 + *
 + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
 + *     Author: Alex Williamson <alex.williamson@redhat.com>
@@ -63,390 +51,606 @@ index 0000000..797dbe4
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ */
-+#ifndef VFIO_H
-+#define VFIO_H
-+
-+#include <linux/types.h>
-+
-+#ifdef __KERNEL__	/* Internal VFIO-core/bus driver API */
-+
-+/**
-+ * struct vfio_device_ops - VFIO bus driver device callbacks
 + *
-+ * @match: Return true if buf describes the device
-+ * @claim: Force driver to attach to device
-+ * @open: Called when userspace receives file descriptor for device
-+ * @release: Called when userspace releases file descriptor for device
-+ * @read: Perform read(2) on device file descriptor
-+ * @write: Perform write(2) on device file descriptor
-+ * @ioctl: Perform ioctl(2) on device file descriptor, supporting VFIO_DEVICE_*
-+ *         operations documented below
-+ * @mmap: Perform mmap(2) on a region of the device file descriptor
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
 + */
-+struct vfio_device_ops {
-+	bool	(*match)(struct device *dev, const char *buf);
-+	int	(*claim)(struct device *dev);
-+	int	(*open)(void *device_data);
-+	void	(*release)(void *device_data);
-+	ssize_t	(*read)(void *device_data, char __user *buf,
-+			size_t count, loff_t *ppos);
-+	ssize_t	(*write)(void *device_data, const char __user *buf,
-+			 size_t count, loff_t *size);
-+	long	(*ioctl)(void *device_data, unsigned int cmd,
-+			 unsigned long arg);
-+	int	(*mmap)(void *device_data, struct vm_area_struct *vma);
++
++#include <linux/compat.h>
++#include <linux/device.h>
++#include <linux/fs.h>
++#include <linux/iommu.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include <linux/vfio.h>
++#include <linux/workqueue.h>
++
++#include "vfio_private.h"
++
++struct vfio_dma_map_entry {
++	struct list_head	list;
++	dma_addr_t		iova;		/* Device address */
++	unsigned long		vaddr;		/* Process virtual addr */
++	long			npage;		/* Number of pages */
++	int			prot;		/* IOMMU_READ/WRITE */
 +};
-+
-+/**
-+ * vfio_group_add_dev() - Add a device to the vfio-core
-+ *
-+ * @dev: Device to add
-+ * @ops: VFIO bus driver callbacks for device
-+ *
-+ * This registration makes the VFIO core aware of the device, creates
-+ * groups objects as required and exposes chardevs under /dev/vfio.
-+ *
-+ * Return 0 on success, errno on failure.
-+ */
-+extern int vfio_group_add_dev(struct device *dev,
-+			      const struct vfio_device_ops *ops);
-+
-+/**
-+ * vfio_group_del_dev() - Remove a device from the vfio-core
-+ *
-+ * @dev: Device to remove
-+ *
-+ * Remove a device previously added to the VFIO core, removing groups
-+ * and chardevs as necessary.
-+ */
-+extern void vfio_group_del_dev(struct device *dev);
-+
-+/**
-+ * vfio_bind_dev() - Indicate device is bound to the VFIO bus driver and
-+ *                   register private data structure for ops callbacks.
-+ *
-+ * @dev: Device being bound
-+ * @device_data: VFIO bus driver private data
-+ *
-+ * This registration indicate that a device previously registered with
-+ * vfio_group_add_dev() is now available for use by the VFIO core.  When
-+ * all devices within a group are available, the group is viable and my
-+ * be used by userspace drivers.  Typically called from VFIO bus driver
-+ * probe function.
-+ *
-+ * Return 0 on success, errno on failure
-+ */
-+extern int vfio_bind_dev(struct device *dev, void *device_data);
-+
-+/**
-+ * vfio_unbind_dev() - Indicate device is unbinding from VFIO bus driver
-+ *
-+ * @dev: Device being unbound
-+ *
-+ * De-registration of the device previously registered with vfio_bind_dev()
-+ * from VFIO.  Upon completion, the device is no longer available for use by
-+ * the VFIO core.  Typically called from the VFIO bus driver remove function.
-+ * The VFIO core will attempt to release the device from users and may take
-+ * measures to free the device and/or block as necessary.
-+ *
-+ * Returns pointer to private device_data structure registered with
-+ * vfio_bind_dev().
-+ */
-+extern void *vfio_unbind_dev(struct device *dev);
-+
-+
-+/**
-+ * offsetofend(TYPE, MEMBER)
-+ *
-+ * @TYPE: The type of the structure
-+ * @MEMBER: The member within the structure to get the end offset of
-+ *
-+ * Simple helper macro for dealing with variable sized structures passed
-+ * from user space.  This allows us to easily determine if the provided
-+ * structure is sized to include various fields.
-+ */
-+#define offsetofend(TYPE, MEMBER) ({				\
-+	TYPE tmp;						\
-+	offsetof(TYPE, MEMBER) + sizeof(tmp.MEMBER); })		\
-+
-+#endif /* __KERNEL__ */
-+
-+/* Kernel & User level defines for VFIO IOCTLs. */
 +
 +/*
-+ * The IOCTL interface is designed for extensibility by embedding the
-+ * structure length (argsz) and flags into structures passed between
-+ * kernel and userspace.  We therefore use the _IO() macro for these
-+ * defines to avoid implicitly embedding a size into the ioctl request.
-+ * As structure fields are added, argsz will increase to match and flag
-+ * bits will be defined to indicate additional fields with valid data.
-+ * It's *always* the caller's responsibility to indicate the size of
-+ * the structure passed by setting argsz appropriately.
++ * This code handles mapping and unmapping of user data buffers
++ * into DMA'ble space using the IOMMU
 + */
 +
-+#define VFIO_TYPE	(';')
-+#define VFIO_BASE	100
++#define NPAGE_TO_SIZE(npage)	((size_t)(npage) << PAGE_SHIFT)
 +
-+/* --------------- IOCTLs for GROUP file descriptors --------------- */
-+
-+/**
-+ * VFIO_GROUP_GET_INFO - _IOR(VFIO_TYPE, VFIO_BASE + 0, struct vfio_group_info)
-+ *
-+ * Retrieve information about the group.  Fills in provided
-+ * struct vfio_group_info.  Caller sets argsz.
-+ */
-+struct vfio_group_info {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_GROUP_FLAGS_VIABLE		(1 << 0)
-+#define VFIO_GROUP_FLAGS_MM_LOCKED	(1 << 1)
++struct vwork {
++	struct mm_struct	*mm;
++	long			npage;
++	struct work_struct	work;
 +};
 +
-+#define VFIO_GROUP_GET_INFO		_IO(VFIO_TYPE, VFIO_BASE + 0)
++/* delayed decrement/increment for locked_vm */
++static void vfio_lock_acct_bg(struct work_struct *work)
++{
++	struct vwork *vwork = container_of(work, struct vwork, work);
++	struct mm_struct *mm;
 +
-+/**
-+ * VFIO_GROUP_MERGE - _IOW(VFIO_TYPE, VFIO_BASE + 1, __s32)
-+ *
-+ * Merge group indicated by passed file descriptor into current group.
-+ * Current group may be in use, group indicated by file descriptor
-+ * cannot be in use (no open iommu or devices).
++	mm = vwork->mm;
++	down_write(&mm->mmap_sem);
++	mm->locked_vm += vwork->npage;
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	kfree(vwork);
++}
++
++static void vfio_lock_acct(long npage)
++{
++	struct vwork *vwork;
++	struct mm_struct *mm;
++
++	if (!current->mm)
++		return; /* process exited */
++
++	if (down_write_trylock(&current->mm->mmap_sem)) {
++		current->mm->locked_vm += npage;
++		up_write(&current->mm->mmap_sem);
++		return;
++	}
++
++	/*
++	 * Couldn't get mmap_sem lock, so must setup to update
++	 * mm->locked_vm later. If locked_vm were atomic, we
++	 * wouldn't need this silliness
++	 */
++	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
++	if (!vwork)
++		return;
++	mm = get_task_mm(current);
++	if (!mm) {
++		kfree(vwork);
++		return;
++	}
++	INIT_WORK(&vwork->work, vfio_lock_acct_bg);
++	vwork->mm = mm;
++	vwork->npage = npage;
++	schedule_work(&vwork->work);
++}
++
++/*
++ * Some mappings aren't backed by a struct page, for example an mmap'd
++ * MMIO range for our own or another device.  These use a different
++ * pfn conversion and shouldn't be tracked as locked pages.
 + */
-+#define VFIO_GROUP_MERGE		_IOW(VFIO_TYPE, VFIO_BASE + 1, __s32)
++static bool is_invalid_reserved_pfn(unsigned long pfn)
++{
++	if (pfn_valid(pfn)) {
++		bool reserved;
++		struct page *tail = pfn_to_page(pfn);
++		struct page *head = compound_trans_head(tail);
++		reserved = !!(PageReserved(head));
++		if (head != tail) {
++			/*
++			 * "head" is not a dangling pointer
++			 * (compound_trans_head takes care of that)
++			 * but the hugepage may have been split
++			 * from under us (and we may not hold a
++			 * reference count on the head page so it can
++			 * be reused before we run PageReferenced), so
++			 * we've to check PageTail before returning
++			 * what we just read.
++			 */
++			smp_rmb();
++			if (PageTail(tail))
++				return reserved;
++		}
++		return PageReserved(tail);
++	}
 +
-+/**
-+ * VFIO_GROUP_UNMERGE - _IO(VFIO_TYPE, VFIO_BASE + 2)
-+ *
-+ * Remove the current group from a merged set.  The current group cannot
-+ * have any open devices.
-+ */
-+#define VFIO_GROUP_UNMERGE		_IO(VFIO_TYPE, VFIO_BASE + 2)
++	return true;
++}
 +
-+/**
-+ * VFIO_GROUP_GET_IOMMU_FD - _IO(VFIO_TYPE, VFIO_BASE + 3)
-+ *
-+ * Return a new file descriptor for the IOMMU object.  The IOMMU object
-+ * is shared among members of a merged group.
-+ */
-+#define VFIO_GROUP_GET_IOMMU_FD		_IO(VFIO_TYPE, VFIO_BASE + 3)
++static int put_pfn(unsigned long pfn, int prot)
++{
++	if (!is_invalid_reserved_pfn(pfn)) {
++		struct page *page = pfn_to_page(pfn);
++		if (prot & IOMMU_WRITE)
++			SetPageDirty(page);
++		put_page(page);
++		return 1;
++	}
++	return 0;
++}
 +
-+/**
-+ * VFIO_GROUP_GET_DEVICE_FD - _IOW(VFIO_TYPE, VFIO_BASE + 4, char)
-+ *
-+ * Return a new file descriptor for the device object described by
-+ * the provided char array.
-+ */
-+#define VFIO_GROUP_GET_DEVICE_FD	_IOW(VFIO_TYPE, VFIO_BASE + 4, char)
++/* Unmap DMA region */
++static long __vfio_dma_do_unmap(struct vfio_iommu *iommu, dma_addr_t iova,
++			     long npage, int prot)
++{
++	long i, unlocked = 0;
 +
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE) {
++		unsigned long pfn;
 +
-+/* --------------- IOCTLs for IOMMU file descriptors --------------- */
++		pfn = iommu_iova_to_phys(iommu->domain, iova) >> PAGE_SHIFT;
++		if (pfn) {
++			iommu_unmap(iommu->domain, iova, PAGE_SIZE);
++			unlocked += put_pfn(pfn, prot);
++		}
++	}
++	return unlocked;
++}
 +
-+/**
-+ * VFIO_IOMMU_GET_INFO - _IOR(VFIO_TYPE, VFIO_BASE + 5, struct vfio_iommu_info)
-+ *
-+ * Retrieve information about the IOMMU object.  Fills in provided
-+ * struct vfio_iommu_info.  Caller sets argsz.
-+ */
-+struct vfio_iommu_info {
-+	__u32	argsz;
-+	__u32	flags;
-+	__u64	iova_start;	/* IOVA base address */
-+	__u64	iova_size;	/* IOVA window size */
-+	__u64	iova_entries;	/* Number mapping entries available */
-+	__u64	iova_pgsizes;	/* Bitmap of supported page sizes */
++static void vfio_dma_unmap(struct vfio_iommu *iommu, dma_addr_t iova,
++			   long npage, int prot)
++{
++	long unlocked;
++
++	unlocked = __vfio_dma_do_unmap(iommu, iova, npage, prot);
++	vfio_lock_acct(-unlocked);
++}
++
++/* Unmap ALL DMA regions */
++void vfio_iommu_unmapall(struct vfio_iommu *iommu)
++{
++	struct list_head *pos, *tmp;
++
++	mutex_lock(&iommu->lock);
++	list_for_each_safe(pos, tmp, &iommu->dma_list) {
++		struct vfio_dma_map_entry *dma;
++
++		dma = list_entry(pos, struct vfio_dma_map_entry, list);
++		vfio_dma_unmap(iommu, dma->iova, dma->npage, dma->prot);
++		list_del(&dma->list);
++		kfree(dma);
++	}
++	mutex_unlock(&iommu->lock);
++}
++
++static int vaddr_get_pfn(unsigned long vaddr, int prot, unsigned long *pfn)
++{
++	struct page *page[1];
++	struct vm_area_struct *vma;
++	int ret = -EFAULT;
++
++	if (get_user_pages_fast(vaddr, 1, !!(prot & IOMMU_WRITE), page) == 1) {
++		*pfn = page_to_pfn(page[0]);
++		return 0;
++	}
++
++	down_read(&current->mm->mmap_sem);
++
++	vma = find_vma_intersection(current->mm, vaddr, vaddr + 1);
++
++	if (vma && vma->vm_flags & VM_PFNMAP) {
++		*pfn = ((vaddr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
++		if (is_invalid_reserved_pfn(*pfn))
++			ret = 0;
++	}
++
++	up_read(&current->mm->mmap_sem);
++
++	return ret;
++}
++
++/* Map DMA region */
++static int __vfio_dma_map(struct vfio_iommu *iommu, dma_addr_t iova,
++			  unsigned long vaddr, long npage, int prot)
++{
++	dma_addr_t start = iova;
++	long i, locked = 0;
++	int ret;
++
++	/* Verify that pages are not already mapped */
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE)
++		if (iommu_iova_to_phys(iommu->domain, iova))
++			return -EBUSY;
++
++	iova = start;
++
++	if (iommu->cache)
++		prot |= IOMMU_CACHE;
++
++	/*
++	 * XXX We break mappings into pages and use get_user_pages_fast to
++	 * pin the pages in memory.  It's been suggested that mlock might
++	 * provide a more efficient mechanism, but nothing prevents the
++	 * user from munlocking the pages, which could then allow the user
++	 * access to random host memory.  We also have no guarantee from the
++	 * IOMMU API that the iommu driver can unmap sub-pages of previous
++	 * mappings.  This means we might lose an entire range if a single
++	 * page within it is unmapped.  Single page mappings are inefficient,
++	 * but provide the most flexibility for now.
++	 */
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE, vaddr += PAGE_SIZE) {
++		unsigned long pfn = 0;
++
++		ret = vaddr_get_pfn(vaddr, prot, &pfn);
++		if (ret) {
++			__vfio_dma_do_unmap(iommu, start, i, prot);
++			return ret;
++		}
++
++		/*
++		 * Only add actual locked pages to accounting
++		 * XXX We're effectively marking a page locked for every
++		 * IOVA page even though it's possible the user could be
++		 * backing multiple IOVAs with the same vaddr.  This over-
++		 * penalizes the user process, but we currently have no
++		 * easy way to do this properly.
++		 */
++		if (!is_invalid_reserved_pfn(pfn))
++			locked++;
++
++		ret = iommu_map(iommu->domain, iova,
++				(phys_addr_t)pfn << PAGE_SHIFT,
++				PAGE_SIZE, prot);
++		if (ret) {
++			/* Back out mappings on error */
++			put_pfn(pfn, prot);
++			__vfio_dma_do_unmap(iommu, start, i, prot);
++			return ret;
++		}
++	}
++	vfio_lock_acct(locked);
++	return 0;
++}
++
++static inline bool ranges_overlap(dma_addr_t start1, size_t size1,
++				  dma_addr_t start2, size_t size2)
++{
++	if (start1 < start2)
++		return (start2 - start1 < size1);
++	else if (start2 < start1)
++		return (start1 - start2 < size2);
++	return (size1 > 0 && size2 > 0);
++}
++
++static struct vfio_dma_map_entry *vfio_find_dma(struct vfio_iommu *iommu,
++						dma_addr_t start, size_t size)
++{
++	struct list_head *pos;
++
++	list_for_each(pos, &iommu->dma_list) {
++		struct vfio_dma_map_entry *dma;
++
++		dma = list_entry(pos, struct vfio_dma_map_entry, list);
++		if (ranges_overlap(dma->iova, NPAGE_TO_SIZE(dma->npage),
++				   start, size))
++			return dma;
++	}
++	return NULL;
++}
++
++static long vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
++				    size_t size, struct vfio_dma_map_entry *dma)
++{
++	struct vfio_dma_map_entry *split;
++	long npage_lo, npage_hi;
++
++	/* Existing dma region is completely covered, unmap all */
++	if (start <= dma->iova &&
++	    start + size >= dma->iova + NPAGE_TO_SIZE(dma->npage)) {
++		vfio_dma_unmap(iommu, dma->iova, dma->npage, dma->prot);
++		list_del(&dma->list);
++		npage_lo = dma->npage;
++		kfree(dma);
++		return npage_lo;
++	}
++
++	/* Overlap low address of existing range */
++	if (start <= dma->iova) {
++		size_t overlap;
++
++		overlap = start + size - dma->iova;
++		npage_lo = overlap >> PAGE_SHIFT;
++
++		vfio_dma_unmap(iommu, dma->iova, npage_lo, dma->prot);
++		dma->iova += overlap;
++		dma->vaddr += overlap;
++		dma->npage -= npage_lo;
++		return npage_lo;
++	}
++
++	/* Overlap high address of existing range */
++	if (start + size >= dma->iova + NPAGE_TO_SIZE(dma->npage)) {
++		size_t overlap;
++
++		overlap = dma->iova + NPAGE_TO_SIZE(dma->npage) - start;
++		npage_hi = overlap >> PAGE_SHIFT;
++
++		vfio_dma_unmap(iommu, start, npage_hi, dma->prot);
++		dma->npage -= npage_hi;
++		return npage_hi;
++	}
++
++	/* Split existing */
++	npage_lo = (start - dma->iova) >> PAGE_SHIFT;
++	npage_hi = dma->npage - (size >> PAGE_SHIFT) - npage_lo;
++
++	split = kzalloc(sizeof *split, GFP_KERNEL);
++	if (!split)
++		return -ENOMEM;
++
++	vfio_dma_unmap(iommu, start, size >> PAGE_SHIFT, dma->prot);
++
++	dma->npage = npage_lo;
++
++	split->npage = npage_hi;
++	split->iova = start + size;
++	split->vaddr = dma->vaddr + NPAGE_TO_SIZE(npage_lo) + size;
++	split->prot = dma->prot;
++	list_add(&split->list, &iommu->dma_list);
++	return size >> PAGE_SHIFT;
++}
++
++static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
++			     struct vfio_dma_unmap *unmap)
++{
++	long ret = 0, npage = unmap->size >> PAGE_SHIFT;
++	struct list_head *pos, *tmp;
++	uint64_t mask;
++
++	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
++
++	if (unmap->iova & mask)
++		return -EINVAL;
++	if (unmap->size & mask)
++		return -EINVAL;
++
++	/* XXX We still break these down into PAGE_SIZE */
++	WARN_ON(mask & PAGE_MASK);
++
++	mutex_lock(&iommu->lock);
++
++	list_for_each_safe(pos, tmp, &iommu->dma_list) {
++		struct vfio_dma_map_entry *dma;
++
++		dma = list_entry(pos, struct vfio_dma_map_entry, list);
++		if (ranges_overlap(dma->iova, NPAGE_TO_SIZE(dma->npage),
++				   unmap->iova, unmap->size)) {
++			ret = vfio_remove_dma_overlap(iommu, unmap->iova,
++						      unmap->size, dma);
++			if (ret > 0)
++				npage -= ret;
++			if (ret < 0 || npage == 0)
++				break;
++		}
++	}
++	mutex_unlock(&iommu->lock);
++	return ret > 0 ? 0 : (int)ret;
++}
++
++static int vfio_dma_do_map(struct vfio_iommu *iommu, struct vfio_dma_map *map)
++{
++	struct vfio_dma_map_entry *dma, *pdma = NULL;
++	dma_addr_t iova = map->iova;
++	unsigned long locked, lock_limit, vaddr = map->vaddr;
++	size_t size = map->size;
++	int ret = 0, prot = 0;
++	uint64_t mask;
++	long npage;
++
++	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
++
++	/* READ/WRITE from device perspective */
++	if (map->flags & VFIO_DMA_MAP_FLAG_WRITE)
++		prot |= IOMMU_WRITE;
++	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
++		prot |= IOMMU_READ;
++
++	if (!prot)
++		return -EINVAL; /* No READ/WRITE? */
++
++	if (vaddr & mask)
++		return -EINVAL;
++	if (iova & mask)
++		return -EINVAL;
++	if (size & mask)
++		return -EINVAL;
++
++	/* XXX We still break these down into PAGE_SIZE */
++	WARN_ON(mask & PAGE_MASK);
++
++	/* Don't allow IOVA wrap */
++	if (iova + size && iova + size < iova)
++		return -EINVAL;
++
++	/* Don't allow virtual address wrap */
++	if (vaddr + size && vaddr + size < vaddr)
++		return -EINVAL;
++
++	npage = size >> PAGE_SHIFT;
++	if (!npage)
++		return -EINVAL;
++
++	mutex_lock(&iommu->lock);
++
++	if (vfio_find_dma(iommu, iova, size)) {
++		ret = -EBUSY;
++		goto out_lock;
++	}
++
++	/* account for locked pages */
++	locked = current->mm->locked_vm + npage;
++	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
++	if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
++		printk(KERN_WARNING "%s: RLIMIT_MEMLOCK (%ld) exceeded\n",
++			__func__, rlimit(RLIMIT_MEMLOCK));
++		ret = -ENOMEM;
++		goto out_lock;
++	}
++
++	ret = __vfio_dma_map(iommu, iova, vaddr, npage, prot);
++	if (ret)
++		goto out_lock;
++
++	/* Check if we abut a region below - nothing below 0 */
++	if (iova) {
++		dma = vfio_find_dma(iommu, iova - 1, 1);
++		if (dma && dma->prot == prot &&
++		    dma->vaddr + NPAGE_TO_SIZE(dma->npage) == vaddr) {
++
++			dma->npage += npage;
++			iova = dma->iova;
++			vaddr = dma->vaddr;
++			npage = dma->npage;
++			size = NPAGE_TO_SIZE(npage);
++
++			pdma = dma;
++		}
++	}
++
++	/* Check if we abut a region above - nothing above ~0 + 1 */
++	if (iova + size) {
++		dma = vfio_find_dma(iommu, iova + size, 1);
++		if (dma && dma->prot == prot &&
++		    dma->vaddr == vaddr + size) {
++
++			dma->npage += npage;
++			dma->iova = iova;
++			dma->vaddr = vaddr;
++
++			/*
++			 * If merged above and below, remove previously
++			 * merged entry.  New entry covers it.
++			 */
++			if (pdma) {
++				list_del(&pdma->list);
++				kfree(pdma);
++			}
++			pdma = dma;
++		}
++	}
++
++	/* Isolated, new region */
++	if (!pdma) {
++		dma = kzalloc(sizeof *dma, GFP_KERNEL);
++		if (!dma) {
++			ret = -ENOMEM;
++			vfio_dma_unmap(iommu, iova, npage, prot);
++			goto out_lock;
++		}
++
++		dma->npage = npage;
++		dma->iova = iova;
++		dma->vaddr = vaddr;
++		dma->prot = prot;
++		list_add(&dma->list, &iommu->dma_list);
++	}
++
++out_lock:
++	mutex_unlock(&iommu->lock);
++	return ret;
++}
++
++static int vfio_iommu_release(struct inode *inode, struct file *filep)
++{
++	struct vfio_iommu *iommu = filep->private_data;
++
++	vfio_release_iommu(iommu);
++	return 0;
++}
++
++static long vfio_iommu_unl_ioctl(struct file *filep,
++				 unsigned int cmd, unsigned long arg)
++{
++	struct vfio_iommu *iommu = filep->private_data;
++	unsigned long minsz;
++
++	if (cmd == VFIO_IOMMU_GET_INFO) {
++		struct vfio_iommu_info info;
++
++		minsz = offsetofend(struct vfio_iommu_info, iova_pgsizes);
++
++		if (copy_from_user(&info, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (info.argsz < minsz)
++			return -EINVAL;
++
++		info.flags = 0;
++
++		/*
++		 * XXX Need to define an interface in IOMMU API for this.
++		 * Currently only compatible with x86 VT-d/AMD-Vi which
++		 * do page table based mapping and have no constraints here.
++		 */
++		info.iova_start = 0;
++		info.iova_size = ~info.iova_start;
++		info.iova_entries = ~info.iova_start;
++		info.iova_pgsizes = iommu->domain->ops->pgsize_bitmap;
++
++		return copy_to_user((void __user *)arg, &info, minsz);
++
++	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
++		struct vfio_dma_map map;
++		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
++				VFIO_DMA_MAP_FLAG_WRITE;
++
++		minsz = offsetofend(struct vfio_dma_map, size);
++
++		if (copy_from_user(&map, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (map.argsz < minsz || map.flags & ~mask)
++			return -EINVAL;
++
++		return vfio_dma_do_map(iommu, &map);
++
++	} else if (cmd == VFIO_IOMMU_UNMAP_DMA) {
++		struct vfio_dma_unmap unmap;
++
++		minsz = offsetofend(struct vfio_dma_unmap, size);
++
++		if (copy_from_user(&unmap, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (unmap.argsz < minsz || unmap.flags)
++			return -EINVAL;
++
++		return vfio_dma_do_unmap(iommu, &unmap);
++	}
++
++	return -ENOTTY;
++}
++
++#ifdef CONFIG_COMPAT
++static long vfio_iommu_compat_ioctl(struct file *filep,
++				    unsigned int cmd, unsigned long arg)
++{
++	arg = (unsigned long)compat_ptr(arg);
++	return vfio_iommu_unl_ioctl(filep, cmd, arg);
++}
++#endif	/* CONFIG_COMPAT */
++
++const struct file_operations vfio_iommu_fops = {
++	.owner		= THIS_MODULE,
++	.release	= vfio_iommu_release,
++	.unlocked_ioctl	= vfio_iommu_unl_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= vfio_iommu_compat_ioctl,
++#endif
 +};
-+
-+#define	VFIO_IOMMU_GET_INFO		_IO(VFIO_TYPE, VFIO_BASE + 5)
-+
-+/**
-+ * VFIO_IOMMU_MAP_DMA - _IOW(VFIO_TYPE, VFIO_BASE + 6, struct vfio_dma_map)
-+ *
-+ * Map process virtual addresses to IO virtual addresses using the
-+ * provided struct vfio_dma_map.  Caller sets argsz.  READ &/ WRITE required.
-+ */
-+struct vfio_dma_map {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_DMA_MAP_FLAG_READ	(1 << 0)	/* readable from device */
-+#define VFIO_DMA_MAP_FLAG_WRITE	(1 << 1)	/* writable from device */
-+	__u64	vaddr;		/* Process virtual address */
-+	__u64	iova;		/* IO virtual address */
-+	__u64	size;		/* Size of mapping (bytes) */
-+};
-+
-+#define	VFIO_IOMMU_MAP_DMA		_IO(VFIO_TYPE, VFIO_BASE + 6)
-+
-+/**
-+ * VFIO_IOMMU_UNMAP_DMA - _IOW(VFIO_TYPE, VFIO_BASE + 7, struct vfio_dma_unmap)
-+ *
-+ * Unmap IO virtual addresses using the provided struct vfio_dma_unmap.
-+ * Caller sets argsz.
-+ */
-+struct vfio_dma_unmap {
-+	__u32	argsz;
-+	__u32	flags;
-+	__u64	iova;		/* IO virtual address */
-+	__u64	size;		/* Size of mapping (bytes) */
-+};
-+
-+#define	VFIO_IOMMU_UNMAP_DMA		_IO(VFIO_TYPE, VFIO_BASE + 7)
-+
-+
-+/* --------------- IOCTLs for DEVICE file descriptors --------------- */
-+
-+/**
-+ * VFIO_DEVICE_GET_INFO - _IOR(VFIO_TYPE, VFIO_BASE + 8,
-+ *			       struct vfio_device_info)
-+ *
-+ * Retrieve information about the device.  Fills in provided
-+ * struct vfio_device_info.  Caller sets argsz.
-+ */
-+struct vfio_device_info {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
-+	__u32	num_regions;	/* Max region index + 1 */
-+	__u32	num_irqs;	/* Max IRQ index + 1 */
-+};
-+
-+#define VFIO_DEVICE_GET_INFO		_IO(VFIO_TYPE, VFIO_BASE + 8)
-+
-+/**
-+ * VFIO_DEVICE_GET_REGION_INFO - _IOWR(VFIO_TYPE, VFIO_BASE + 9,
-+ *				       struct vfio_region_info)
-+ *
-+ * Retrieve information about a device region.  Caller provides
-+ * struct vfio_region_info with index value set.  Caller sets argsz.
-+ * Implementation of region mapping is bus driver specific.  This is
-+ * intended to describe MMIO, I/O port, as well as bus specific
-+ * regions (ex. PCI config space).  Zero sized regions may be used
-+ * to describe unimplemented regions (ex. unimplemented PCI BARs).
-+ */
-+struct vfio_region_info {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_REGION_INFO_FLAG_MMAP	(1 << 0) /* Region supports mmap */
-+#define VFIO_REGION_INFO_FLAG_RO	(1 << 1) /* Region is read-only */
-+	__u32	index;		/* Region index */
-+	__u32	resv;		/* Reserved for alignment */
-+	__u64	size;		/* Region size (bytes) */
-+	__u64	offset;		/* Region offset from start of device fd */
-+};
-+
-+#define VFIO_DEVICE_GET_REGION_INFO	_IO(VFIO_TYPE, VFIO_BASE + 9)
-+
-+/**
-+ * VFIO_DEVICE_GET_IRQ_INFO - _IOWR(VFIO_TYPE, VFIO_BASE + 10,
-+ *				    struct vfio_irq_info)
-+ *
-+ * Retrieve information about a device IRQ.  Caller provides
-+ * struct vfio_irq_info with index value set.  Caller sets argsz.
-+ * Implementation of IRQ mapping is bus driver specific.  Indexes
-+ * using multiple IRQs are primarily intended to support MSI-like
-+ * interrupt blocks.  Zero count irq blocks may be used to describe
-+ * unimplemented interrupt types.
-+ *
-+ * The EVENTFD flag indicates the interrupt index supports eventfd based
-+ * signaling.
-+ *
-+ * The MASKABLE flags indicates the index supports MASK and UNMASK
-+ * actions described below.
-+ *
-+ * AUTOMASKED indicates that after signaling, the interrupt line is
-+ * automatically masked by VFIO and the user needs to unmask the line
-+ * to receive new interrupts.  This is primarily intended to distinguish
-+ * level triggered interrupts.
-+ *
-+ * The NORESIZE flag indicates that the interrupt lines within the index
-+ * are setup as a set and new subindexes cannot be enabled without first
-+ * disabling the entire index.  This is used for interrupts like PCI MSI
-+ * and MSI-X where the driver may only use a subset of the available
-+ * indexes, but VFIO needs to enable a specific number of vectors
-+ * upfront.  In the case of MSI-X, where the user can enable MSI-X and
-+ * then add and unmask vectors, it's up to userspace to make the decision
-+ * whether to allocate the maximum supported number of vectors or tear
-+ * down setup and incrementally increase the vectors as each is enabled.
-+ */
-+struct vfio_irq_info {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_IRQ_INFO_EVENTFD		(1 << 0)
-+#define VFIO_IRQ_INFO_MASKABLE		(1 << 1)
-+#define VFIO_IRQ_INFO_AUTOMASKED	(1 << 2)
-+#define VFIO_IRQ_INFO_NORESIZE		(1 << 3)
-+	__u32	index;		/* IRQ index */
-+	__s32	count;		/* Number of IRQs within this index */
-+};
-+
-+#define VFIO_DEVICE_GET_IRQ_INFO	_IO(VFIO_TYPE, VFIO_BASE + 10)
-+
-+/**
-+ * VFIO_DEVICE_SET_IRQS - _IOW(VFIO_TYPE, VFIO_BASE + 11, struct vfio_irq_set)
-+ *
-+ * Set signaling, masking, and unmasking of interrupts.  Caller provides
-+ * struct vfio_irq_set with all fields set.  'start' and 'count' indicate
-+ * the range of subindexes being specified.
-+ *
-+ * The DATA flags specify the type of data provided.  If DATA_NONE, the
-+ * operation performs the specified action immediately on the specified
-+ * interrupt(s).  For example, to unmask AUTOMASKED interrupt [0,0]:
-+ * flags = (DATA_NONE|ACTION_UNMASK), index = 0, start = 0, count = 1.
-+ *
-+ * DATA_BOOL allows sparse support for the same on arrays of interrupts.
-+ * For example, to mask interrupts [0,1] and [0,3] (but not [0,2]):
-+ * flags = (DATA_BOOL|ACTION_MASK), index = 0, start = 1, count = 3,
-+ * data = {1,0,1}
-+ *
-+ * DATA_EVENTFD binds the specified ACTION to the provided __s32 eventfd.
-+ * A value of -1 can be used to either de-assign interrupts if already
-+ * assigned or skip un-assigned interrupts.  For example, to set an eventfd
-+ * to be trigger for interrupts [0,0] and [0,2]:
-+ * flags = (DATA_EVENTFD|ACTION_TRIGGER), index = 0, start = 0, count = 3,
-+ * data = {fd1, -1, fd2}
-+ * If index [0,1] is previously set, two count = 1 ioctls calls would be
-+ * required to set [0,0] and [0,2] without changing [0,1].
-+ *
-+ * Once a signaling mechanism is set, DATA_BOOL or DATA_NONE can be used
-+ * with ACTION_TRIGGER to perform kernel level interrupt loopback testing
-+ * from userspace (ie. simulate hardware triggering).
-+ *
-+ * Setting of an event triggering mechanism to userspace for ACTION_TRIGGER
-+ * enables the interrupt index for the device.  Individual subindex interrupts
-+ * can be disabled using the -1 value for DATA_EVENTFD or the index can be
-+ * disabled as a whole with: flags = (DATA_NONE|ACTION_TRIGGER), count = 0.
-+ *
-+ * Note that ACTION_[UN]MASK specify user->kernel signaling (irqfds) while
-+ * ACTION_TRIGGER specifies kernel->user signaling.
-+ */
-+struct vfio_irq_set {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_IRQ_SET_DATA_NONE		(1 << 0) /* Data not present */
-+#define VFIO_IRQ_SET_DATA_BOOL		(1 << 1) /* Data is bool (u8) */
-+#define VFIO_IRQ_SET_DATA_EVENTFD	(1 << 2) /* Data is eventfd (s32) */
-+#define VFIO_IRQ_SET_ACTION_MASK	(1 << 3) /* Mask interrupt */
-+#define VFIO_IRQ_SET_ACTION_UNMASK	(1 << 4) /* Unmask interrupt */
-+#define VFIO_IRQ_SET_ACTION_TRIGGER	(1 << 5) /* Trigger interrupt */
-+	__u32	index;
-+	__s32	start;
-+	__s32	count;
-+	__u8	data[];
-+};
-+
-+#define VFIO_DEVICE_SET_IRQS		_IO(VFIO_TYPE, VFIO_BASE + 11)
-+
-+#define VFIO_IRQ_SET_DATA_TYPE_MASK	(VFIO_IRQ_SET_DATA_NONE | \
-+					 VFIO_IRQ_SET_DATA_BOOL | \
-+					 VFIO_IRQ_SET_DATA_EVENTFD)
-+#define VFIO_IRQ_SET_ACTION_TYPE_MASK	(VFIO_IRQ_SET_ACTION_MASK | \
-+					 VFIO_IRQ_SET_ACTION_UNMASK | \
-+					 VFIO_IRQ_SET_ACTION_TRIGGER)
-+/**
-+ * VFIO_DEVICE_RESET - _IO(VFIO_TYPE, VFIO_BASE + 12)
-+ *
-+ * Reset a device.
-+ */
-+#define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 12)
-+
-+#endif /* VFIO_H */
 
