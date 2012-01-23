@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab2AWXvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:51:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42852 "EHLO mx2.suse.de"
+	id S1756331Ab2AWXvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:51:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42861 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755697Ab2AWXv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:51:27 -0500
+	id S1756302Ab2AWXvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:51:31 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:30 2012
-Message-Id: <20120123234030.183780271@clark.kroah.org>
+Message-Id: <20120123234030.267576866@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:40:11 -0800
+Date: Mon, 23 Jan 2012 15:40:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jim Keniston <jkenisto@us.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srinivasa D S <srinivasa@in.ibm.com>
-Subject: [85/90] kprobes: initialize before using a hlist
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        Russell King <rmk@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Matt Mackall <mpm@selenic.com>
+Subject: [86/90] proc: clear_refs: do not clear reserved pages
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,47 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit d496aab567e7e52b3e974c9192a5de6e77dce32c upstream.
+commit 85e72aa5384b1a614563ad63257ded0e91d1a620 upstream.
 
-Commit ef53d9c5e ("kprobes: improve kretprobe scalability with hashed
-locking") introduced a bug where we can potentially leak
-kretprobe_instances since we initialize a hlist head after having used
-it.
+/proc/pid/clear_refs is used to clear the Referenced and YOUNG bits for
+pages and corresponding page table entries of the task with PID pid, which
+includes any special mappings inserted into the page tables in order to
+provide things like vDSOs and user helper functions.
 
-Initialize the hlist head before using it.
+On ARM this causes a problem because the vectors page is mapped as a
+global mapping and since ec706dab ("ARM: add a vma entry for the user
+accessible vector page"), a VMA is also inserted into each task for this
+page to aid unwinding through signals and syscall restarts.  Since the
+vectors page is required for handling faults, clearing the YOUNG bit (and
+subsequently writing a faulting pte) means that we lose the vectors page
+*globally* and cannot fault it back in.  This results in a system deadlock
+on the next exception.
 
-Reported by: Jim Keniston <jkenisto@us.ibm.com>
-Acked-by: Jim Keniston <jkenisto@us.ibm.com>
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srinivasa D S <srinivasa@in.ibm.com>
+To see this problem in action, just run:
+
+	$ echo 1 > /proc/self/clear_refs
+
+on an ARM platform (as any user) and watch your system hang.  I think this
+has been the case since 2.6.37
+
+This patch avoids clearing the aforementioned bits for reserved pages,
+therefore leaving the vectors page intact on ARM.  Since reserved pages
+are not candidates for swap, this change should not have any impact on the
+usefulness of clear_refs.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reported-by: Moussa Ba <moussaba@micron.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Cc: Matt Mackall <mpm@selenic.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/kprobes.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/proc/task_mmu.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1077,6 +1077,7 @@ void __kprobes kprobe_flush_task(struct
- 		/* Early boot.  kretprobe_table_locks not yet initialized. */
- 		return;
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -516,6 +516,9 @@ static int clear_refs_pte_range(pmd_t *p
+ 		if (!page)
+ 			continue;
  
-+	INIT_HLIST_HEAD(&empty_rp);
- 	hash = hash_ptr(tk, KPROBE_HASH_BITS);
- 	head = &kretprobe_inst_table[hash];
- 	kretprobe_table_lock(hash, &flags);
-@@ -1085,7 +1086,6 @@ void __kprobes kprobe_flush_task(struct
- 			recycle_rp_inst(ri, &empty_rp);
- 	}
- 	kretprobe_table_unlock(hash, &flags);
--	INIT_HLIST_HEAD(&empty_rp);
- 	hlist_for_each_entry_safe(ri, node, tmp, &empty_rp, hlist) {
- 		hlist_del(&ri->hlist);
- 		kfree(ri);
++		if (PageReserved(page))
++			continue;
++
+ 		/* Clear accessed and referenced bits. */
+ 		ptep_test_and_clear_young(vma, addr, pte);
+ 		ClearPageReferenced(page);
 
 
