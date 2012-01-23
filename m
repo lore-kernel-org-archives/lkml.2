@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab2AWX7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:59:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42667 "EHLO mx2.suse.de"
+	id S932095Ab2AWXtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:49:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42652 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932129Ab2AWXts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:48 -0500
+	id S1754782Ab2AWXti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:38 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
-Message-Id: <20120123234028.456946324@clark.kroah.org>
+Message-Id: <20120123234028.216052731@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:51 -0800
+Date: Mon, 23 Jan 2012 15:39:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [65/90] ALSA: virtuoso: Xonar DS: fix polarity of front output
+        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [62/90] block: fail SCSI passthrough ioctls on partition devices
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +27,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit f0e48b6bd4e407459715240cd241ddb6b89bdf81 upstream.
+commit 0bfc96cb77224736dfa35c3c555d37b3646ef35e upstream.
 
-The two DACs for the front output and the surround/center/LFE/back
-outputs are wired up out of phase, so when channels are duplicated,
-their sound can cancel out each other and result in a weaker bass
-response.  To fix this, reverse the polarity of the neutron flow to
-the front output.
+Linux allows executing the SG_IO ioctl on a partition or LVM volume, and
+will pass the command to the underlying block device.  This is
+well-known, but it is also a large security problem when (via Unix
+permissions, ACLs, SELinux or a combination thereof) a program or user
+needs to be granted access only to part of the disk.
 
-Reported-any-tested-by: Daniel Hill <daniel@enemyplanet.geek.nz>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch lets partitions forward a small set of harmless ioctls;
+others are logged with printk so that we can see which ioctls are
+actually sent.  In my tests only CDROM_GET_CAPABILITY actually occurred.
+Of course it was being sent to a (partition on a) hard disk, so it would
+have failed with ENOTTY and the patch isn't changing anything in
+practice.  Still, I'm treating it specially to avoid spamming the logs.
+
+In principle, this restriction should include programs running with
+CAP_SYS_RAWIO.  If for example I let a program access /dev/sda2 and
+/dev/sdb, it still should not be able to read/write outside the
+boundaries of /dev/sda2 independent of the capabilities.  However, for
+now programs with CAP_SYS_RAWIO will still be allowed to send the
+ioctls.  Their actions will still be logged.
+
+This patch does not affect the non-libata IDE driver.  That driver
+however already tests for bd != bd->bd_contains before issuing some
+ioctl; it could be restricted further to forbid these ioctls even for
+programs running with CAP_SYS_ADMIN/CAP_SYS_RAWIO.
+
+Cc: linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: James Bottomley <JBottomley@parallels.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[ Make it also print the command name when warning - Linus ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/oxygen/xonar_wm87x6.c |    1 +
- 1 file changed, 1 insertion(+)
+ block/scsi_ioctl.c     |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/scsi/sd.c      |   11 +++++++++--
+ include/linux/blkdev.h |    1 +
+ 3 files changed, 55 insertions(+), 2 deletions(-)
 
---- a/sound/pci/oxygen/xonar_wm87x6.c
-+++ b/sound/pci/oxygen/xonar_wm87x6.c
-@@ -177,6 +177,7 @@ static void wm8776_registers_init(struct
- 	struct xonar_wm87x6 *data = chip->model_data;
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -24,6 +24,7 @@
+ #include <linux/capability.h>
+ #include <linux/completion.h>
+ #include <linux/cdrom.h>
++#include <linux/ratelimit.h>
+ #include <linux/slab.h>
+ #include <linux/times.h>
+ #include <asm/uaccess.h>
+@@ -691,9 +692,53 @@ int scsi_cmd_ioctl(struct request_queue
+ }
+ EXPORT_SYMBOL(scsi_cmd_ioctl);
  
- 	wm8776_write(chip, WM8776_RESET, 0);
-+	wm8776_write(chip, WM8776_PHASESWAP, WM8776_PH_MASK);
- 	wm8776_write(chip, WM8776_DACCTRL1, WM8776_DZCEN |
- 		     WM8776_PL_LEFT_LEFT | WM8776_PL_RIGHT_RIGHT);
- 	wm8776_write(chip, WM8776_DACMUTE, chip->dac_mute ? WM8776_DMUTE : 0);
++int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
++{
++	if (bd && bd == bd->bd_contains)
++		return 0;
++
++	/* Actually none of these is particularly useful on a partition,
++	 * but they are safe.
++	 */
++	switch (cmd) {
++	case SCSI_IOCTL_GET_IDLUN:
++	case SCSI_IOCTL_GET_BUS_NUMBER:
++	case SCSI_IOCTL_GET_PCI:
++	case SCSI_IOCTL_PROBE_HOST:
++	case SG_GET_VERSION_NUM:
++	case SG_SET_TIMEOUT:
++	case SG_GET_TIMEOUT:
++	case SG_GET_RESERVED_SIZE:
++	case SG_SET_RESERVED_SIZE:
++	case SG_EMULATED_HOST:
++		return 0;
++	case CDROM_GET_CAPABILITY:
++		/* Keep this until we remove the printk below.  udev sends it
++		 * and we do not want to spam dmesg about it.   CD-ROMs do
++		 * not have partitions, so we get here only for disks.
++		 */
++		return -ENOIOCTLCMD;
++	default:
++		break;
++	}
++
++	/* In particular, rule out all resets and host-specific ioctls.  */
++	printk_ratelimited(KERN_WARNING
++			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
++
++	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
++}
++EXPORT_SYMBOL(scsi_verify_blk_ioctl);
++
+ int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
+ 		       unsigned int cmd, void __user *arg)
+ {
++	int ret;
++
++	ret = scsi_verify_blk_ioctl(bd, cmd);
++	if (ret < 0)
++		return ret;
++
+ 	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
+ }
+ EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1073,6 +1073,10 @@ static int sd_ioctl(struct block_device
+ 	SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
+ 						disk->disk_name, cmd));
+ 
++	error = scsi_verify_blk_ioctl(bdev, cmd);
++	if (error < 0)
++		return error;
++
+ 	/*
+ 	 * If we are in the middle of error recovery, don't let anyone
+ 	 * else try and use this device.  Also, if error recovery fails, it
+@@ -1265,6 +1269,11 @@ static int sd_compat_ioctl(struct block_
+ 			   unsigned int cmd, unsigned long arg)
+ {
+ 	struct scsi_device *sdev = scsi_disk(bdev->bd_disk)->device;
++	int ret;
++
++	ret = scsi_verify_blk_ioctl(bdev, cmd);
++	if (ret < 0)
++		return ret;
+ 
+ 	/*
+ 	 * If we are in the middle of error recovery, don't let anyone
+@@ -1276,8 +1285,6 @@ static int sd_compat_ioctl(struct block_
+ 		return -ENODEV;
+ 	       
+ 	if (sdev->host->hostt->compat_ioctl) {
+-		int ret;
+-
+ 		ret = sdev->host->hostt->compat_ioctl(sdev, cmd, (void __user *)arg);
+ 
+ 		return ret;
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -670,6 +670,7 @@ extern int blk_insert_cloned_request(str
+ 				     struct request *rq);
+ extern void blk_delay_queue(struct request_queue *, unsigned long);
+ extern void blk_recount_segments(struct request_queue *, struct bio *);
++extern int scsi_verify_blk_ioctl(struct block_device *, unsigned int);
+ extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
+ 			      unsigned int, void __user *);
+ extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
 
 
