@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab2AWQTd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 11:19:33 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:33837 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752332Ab2AWQTc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 11:19:32 -0500
-Message-ID: <4F1D9644.7090707@xenotime.net>
-Date: Mon, 23 Jan 2012 09:17:56 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1753360Ab2AWQTu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 11:19:50 -0500
+Received: from mail.servus.at ([193.170.194.20]:44544 "EHLO mail.servus.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752785Ab2AWQTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 11:19:48 -0500
+Message-ID: <4F1D889C.2050706@oberhumer.com>
+Date: Mon, 23 Jan 2012 17:19:40 +0100
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Organization: oberhumer.com
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 14/14] docbook: fix sched source file names in device-drivers
- book
-References: <4F1B0BFC.2010105@xenotime.net> <1327308902.2442.256.camel@twins>
-In-Reply-To: <1327308902.2442.256.camel@twins>
+To: linux-kernel@vger.kernel.org
+CC: Andi Kleen <andi@firstfloor.org>, chris.mason@oracle.com,
+        linux-btrfs@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Richard Purdie <rpurdie@openedhand.com>
+Subject: ANN: linux-kernel-lzo-2.06.20120123 - update LZO to v2.06
+References: <1326414530-10789-1-git-send-email-andi@firstfloor.org> <4F16DFB0.2060404@oberhumer.com>
+In-Reply-To: <4F16DFB0.2060404@oberhumer.com>
+X-no-Archive: yes
+X-Oberhumer-Conspiracy: There is no conspiracy. Trust us.
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2012 12:55 AM, Peter Zijlstra wrote:
-> On Sat, 2012-01-21 at 11:03 -0800, Randy Dunlap wrote:
->> From: Randy Dunlap <rdunlap@xenotime.net>
->>
->> Fix warning since kernel scheduler functions and kernel-doc
->> notation were moved to other files.
->>
->> docproc: lnx-33-rc1/kernel/sched.c: No such file or directory
->>
->> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
->> Cc: Ingo Molnar <mingo@elte.hu>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> ---
->>  Documentation/DocBook/device-drivers.tmpl |    4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> --- lnx-33-rc1.orig/Documentation/DocBook/device-drivers.tmpl
->> +++ lnx-33-rc1/Documentation/DocBook/device-drivers.tmpl
->> @@ -50,7 +50,9 @@
->>  
->>       <sect1><title>Delaying, scheduling, and timer routines</title>
->>  !Iinclude/linux/sched.h
->> -!Ekernel/sched.c
->> +!Ekernel/sched/core.c
->> +!Ikernel/sched/cpupri.c
->> +!Ikernel/sched/fair.c
+Hi,
+
+I've prepared a small package that updates the LZO version in the Linux
+kernel to LZO v2.06.
+
+Please get it from:
+
+  http://www.oberhumer.com/opensource/lzo/download/Testing/linux-kernel-lzo-2.06.20120123.tar.gz
+
+As stated in the README, its main purpose is to allow easy benchmarking of the
+latest LZO versions - these do feature some nice speed improvements, and while
+I have done a lot of synthetic benchmarking I'm really very curious and
+appreciate feedback on "real-world" performance numbers like usage in
+btrfs and zram.
+
+Share and enjoy,
+Markus
+
+http://www.oberhumer.com/opensource/lzo/
+
+On 2012-01-18 16:05, Markus F.X.J. Oberhumer wrote:
+> On 2012-01-13 01:28, Andi Kleen wrote:
+>> Here's a slightly updated version of the BTRFS snappy interface.
+>> snappy is a faster compression algorithm that provides similar
+>> compression as LZO, but generally better performance.
 > 
-> There's more files in there, they might not include proper kerneldoc
-> comments, but shouldn't they be included anyway?
-
-Only the ones that have kernel-doc comments are listed here.
-
-> Also, what the difference between Ekernel and Ikernel?
-
-!Efilename
-is for files that contain exported symbols and it only lists the exports.
-!Ifilename
-is for files that contain kernel-doc for internal functions.
-
-It is OK to use both of them for one filename so that both exports and
-internal functions are listed in the generated output.
-
->>  !Iinclude/linux/completion.h
->>  !Ekernel/timer.c
->>       </sect1>
+> I'd like to note that the LZO version in the current Linux kernel is
+> rather outdated - it seems to be based on the 2005 release.
 > 
+> In fact the latest version LZO 2.06 does compress both slightly faster and
+> better than snappy 1.0.4 when benchmarking the Calgary and Silesia
+> compression corpus (tested with gcc 4.6 on Nehalem & Sandy Bridge).
 > 
+> Furthermore please be aware that from a pure compression point of view
+> snappy et al. are very close cousins of LZO (strictly byte-aligned LZ77)
+> that mainly differ in implementation issues like using a table to
+> number of branches - and indeed similar optimizations could be applied
+> to any version.
 > 
-
+> I'm not sure if there is an official kernel maintainer of LZO, but I'd
+> offer to assist you updating to the latest version and eliminating
+> any possible performance issues.
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
