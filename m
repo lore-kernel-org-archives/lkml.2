@@ -1,146 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab2AWLLY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 06:11:24 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:56469 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab2AWLLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 06:11:21 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6597"; a="157174915"
-Message-ID: <4F1D4052.3070701@codeaurora.org>
-Date: Mon, 23 Jan 2012 16:41:14 +0530
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1752902Ab2AWLOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 06:14:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202Ab2AWLOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 06:14:23 -0500
+Message-ID: <4F1D410C.5010105@redhat.com>
+Date: Mon, 23 Jan 2012 09:14:20 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: linux-arch@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bryanh@codeaurora.org, tsoni@codeaurora.org,
-        Daniel Walker <dwalker@fifo99.com>, dan.j.williams@intel.com,
-        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org,
-        johlstei@codeaurora.org
-Subject: Re: [PATCH v2 0/2] Add Qualcomm MSM ADM DMAEngine driver
-References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org> <1326807902.1540.116.camel@vkoul-udesk3>  <4F195E4C.6080805@codeaurora.org> <1327066287.517.4.camel@vkoul-udesk3>
-In-Reply-To: <1327066287.517.4.camel@vkoul-udesk3>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [v3.3-rc1] media:dvb-t regression bisected
+References: <CADDKRnDHvptV_gODG8XgqEkWGW0AyDfJJkP1dU2uBL6rs5yzDA@mail.gmail.com>
+In-Reply-To: <CADDKRnDHvptV_gODG8XgqEkWGW0AyDfJJkP1dU2uBL6rs5yzDA@mail.gmail.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/20/2012 7:01 PM, Vinod Koul wrote:
-> On Fri, 2012-01-20 at 18:00 +0530, Ravi Kumar V wrote:
->> On 1/17/2012 7:15 PM, Vinod Koul wrote:
->>> On Fri, 2012-01-06 at 18:17 +0530, Ravi Kumar V wrote:
->>> <sorry for delayed review, was on vacation and now traveling>
->>>>
->>>> As our ADM Scatter-gather hardware needs
->>>> -32-bit command configuration parameter
->>>>    apart from
->>>> -32-bit source address
->>>> -32-bit destination address
->>>> -16-bit length
->>>>
->>>> So,we have added new parameter in struct scatterlist to support xfer
->>>> descriptor
->>>> specific private data, and for supporting ADM Box mode DMA we added
->>>> new
->>>> API and data structure.
->>> what do you mean by "ADM Box mode"?
->>>
->>
->> ADM Box mode is a interleaved type of DMA where data from rows of equal
->> length and equal distance(bytes) between each other are transferred to
->> similar pattern of rows.
->> Each row length and distance between each row in destination pattern may
->> not be equal to source pattern.
->> Distance between beginning of any two rows are always greater than row
->> length.
->> Example:
->> If 4 rows of 16 bytes each are arranged such that distance between
->> beginning of any two rows are 32 bytes.
->> Now they can be transferred using BOX mode to destination pattern
->> arranged in 2 rows of 32 bytes each and distance between them can be any
->> lets say 128 bytes.
->>
->> Source pattern:
->> 4 data rows starts address 0th byte.
->>
->> 0-----16-bytes-data-----15
->> 16    16 bytes void     31
->> 32---------data---------47
->> 48         void         63
->> 64---------data---------79
->> 80         void         95
->> 96---------data--------111
->>
->> Transferred to destination
->> Destination pattern:
->> 2 rows
->> 0----------32-bytes-data----------31
->> 32         96 bytes void         127
->> 128-------------data-------------159
->>
-> Sounds like you should be using interleaved API
->
-> Please see this and read the patch history, which has nice details about
-> this
->
-> /**
->   * struct dma_interleaved_template - Template to convey DMAC the
-> transfer pattern
->   *       and attributes.
->   * @src_start: Bus address of source for the first chunk.
->   * @dst_start: Bus address of destination for the first chunk.
->   * @dir: Specifies the type of Source and Destination.
->   * @src_inc: If the source address increments after reading from it.
->   * @dst_inc: If the destination address increments after writing to it.
->   * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
->   *              Otherwise, source is read contiguously (icg ignored).
->   *              Ignored if src_inc is false.
->   * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
->   *              Otherwise, destination is filled contiguously (icg ignored).
->   *              Ignored if dst_inc is false.
->   * @numf: Number of frames in this template.
->   * @frame_size: Number of chunks in a frame i.e, size of sgl[].
->   * @sgl: Array of {chunk,icg} pairs that make up a frame.
->   */
-> struct dma_interleaved_template {
->          dma_addr_t src_start;
->          dma_addr_t dst_start;
->          enum dma_transfer_direction dir;
->          bool src_inc;
->          bool dst_inc;
->          bool src_sgl;
->          bool dst_sgl;
->          size_t numf;
->          size_t frame_size;
->          struct data_chunk sgl[0];
-> };
-> using the interleaved API:
->          struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->                  struct dma_chan *chan, struct dma_interleaved_template *xt,
->                  unsigned long flags);
->
->
+Em 22-01-2012 13:29, Jörg Otte escreveu:
+> with v3.3-rc1 I can not watch dvb-t. I get the following
+> errors from the media player (Kaffeine,vlc):
+> 
+> kaffeine(1801): DvbDevice::frontendEvent: tuning failed
+> vlc: [0xa278d78] main stream error: cannot pre fill buffer
+> 
+> I have a CinergyT2 usb-stick.
+> 
+> I was able to bisect the problem to:
+> commit 7830bbaff9f5f9cefcdc9acfb1783b230cc69fac
+> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Date:   Mon Dec 26 15:41:01 2011 -0300
+> 
+> [media] cinergyT2-fe: convert set_fontend to use DVBv5 parameters
 
-If some changes are made in interleave API then it can support our BOX 
-mode. Here in interleaved template he is assuming destination pattern as 
-can be contiguous or same as source pattern, but in our case destination 
-pattern is different from source pattern.
-So if a new parameter destination data chunk is added in "struct 
-dma_interleaved_template" structure then it can support different 
-destination pattern.
-Also it will good if you can provide another parameter for passing 
-private data to dma driver.
+Could you please try this patch?
 
-Please can you review my other patches also where we replied to some of 
-your questions about passing private data for SG mode.
+[PATCH] cinergyT2-fe: Fix bandwdith settings
 
-Thanks
-Ravi Kumar
+Changeset 7830bbaff9f mangled the bandwidth field for CinergyT2.
+Properly fill it.
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/dvb/dvb-usb/cinergyT2-fe.c b/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
+index 8a57ed8..1efc028 100644
+--- a/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
++++ b/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
+@@ -276,14 +276,15 @@ static int cinergyt2_fe_set_frontend(struct dvb_frontend *fe)
+ 	param.flags = 0;
+ 
+ 	switch (fep->bandwidth_hz) {
++	default:
+ 	case 8000000:
+-		param.bandwidth = 0;
++		param.bandwidth = 8;
+ 		break;
+ 	case 7000000:
+-		param.bandwidth = 1;
++		param.bandwidth = 7;
+ 		break;
+ 	case 6000000:
+-		param.bandwidth = 2;
++		param.bandwidth = 6;
+ 		break;
+ 	}
+ 
