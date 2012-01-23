@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab2AWD3E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 22:29:04 -0500
-Received: from tundra.namei.org ([65.99.196.166]:41764 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544Ab2AWD3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 22:29:02 -0500
-Date: Mon, 23 Jan 2012 14:28:50 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        David Howells <dhowells@redhat.com>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT] More security subsystem fixes
-In-Reply-To: <201201192321.AIB12409.LOJQOOMtVSFFFH@I-love.SAKURA.ne.jp>
-Message-ID: <alpine.LRH.2.00.1201231428120.22633@tundra.namei.org>
-References: <alpine.LRH.2.00.1201191631040.31730@tundra.namei.org> <201201190620.q0J6KMvA047997@www262.sakura.ne.jp> <201201192321.AIB12409.LOJQOOMtVSFFFH@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752749Ab2AWDjb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 22:39:31 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:57922 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab2AWDja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jan 2012 22:39:30 -0500
+X-AuditID: b753bd60-96e5dba00000359c-95-4f1cd66fa5f0
+X-AuditID: b753bd60-96e5dba00000359c-95-4f1cd66fa5f0
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [PATCH 0/3] xfs: change available ranges in quota check
+To: Ben Myers <bpm@sgi.com>, Alex Elder <aelder@sgi.com>,
+        Christoph Hellwig <hch@lst.de>
+Cc: xfs-masters@oss.sgi.com, xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Date: Mon, 23 Jan 2012 12:45:14 +0900
+Message-ID: <20120123034513.3339.97432.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jan 2012, Tetsuo Handa wrote:
+Hi,
 
-> mpi_limb_t
-> mpihelp_divrem(mpi_ptr_t qp, mpi_size_t qextra_limbs,
->                mpi_ptr_t np, mpi_size_t nsize, mpi_ptr_t dp, mpi_size_t dsize)
-> {
->         mpi_limb_t most_significant_q_limb = 0;
-> 
->         switch (dsize) {
->         case 0:
->                 /* We are asked to divide by zero, so go ahead and do it!  (To make
->                    the compiler not remove this statement, return the value.)  */
->                 return 1 / dsize;
-> 
-> What's this? Division by 0 in the kernel is no good.
+This patch series changes available ranges of softlimit and
+hardlimit in quota check, as follows.
 
-David,
+(1) Consider new reservation for quota check
+    The disk block reservation checks if (current usage + new
+    reservation) reach the quota limit although the inode reservation
+    does not use the new reservation for quota check. It should
+    consider it, as well. This is mandatory for (2).
 
-Do you know if this is triggerable from userland?
+(2) Change available ranges of softlimit and hardlimit in quota check
+    Currently xfs quota allows us to use disk blocks and inodes
+    up to lower than quota limits. They should be used up to
+    not greater than the limits.
+
+Thanks,
+
+---
+
+Mitsuo Hayasaka (3):
+      xfs: cleanup quota check on disk blocks and inodes reservations
+      xfs: change available ranges of softlimit and hardlimit in quota check
+      xfs: consider new reservation for quota check on inode reservation
 
 
-- James
+ fs/xfs/xfs_dquot.c       |   24 ++++++++++++------------
+ fs/xfs/xfs_log_recover.c |    6 +++---
+ fs/xfs/xfs_qm_syscalls.c |    4 ++--
+ fs/xfs/xfs_trans_dquot.c |   15 +++++++--------
+ 4 files changed, 24 insertions(+), 25 deletions(-)
+
 -- 
-James Morris
-<jmorris@namei.org>
+Mitsuo Hayasaka (mitsuo.hayasaka.hu@hitachi.com)
