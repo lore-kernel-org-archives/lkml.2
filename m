@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab2AWKhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 05:37:39 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42491 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753126Ab2AWKhi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 05:37:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327311925.2525.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <1327179463-13980-1-git-send-email-netdev@pradeepdalvi.com>
-	<1327311925.2525.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Date: Mon, 23 Jan 2012 16:07:36 +0530
-Message-ID: <CA+Dx6HbqAhjS6TNy=t+jvrwrmpTuQ3c=Wq0UnMzFRr9Q+JKpKQ@mail.gmail.com>
-Subject: Re: [PATCH] netdev/ethernet: dev_alloc_skb to netdev_alloc_skb
-From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753259Ab2AWKkt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 05:40:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990Ab2AWKks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 05:40:48 -0500
+From: Niels de Vos <ndevos@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Niels de Vos <ndevos@redhat.com>,
+        "Bryn M. Reeves" <bmr@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: [PATCH v2] fs: Invalidate the cache for a parent block-device if fsync() is called for a partition
+Date: Mon, 23 Jan 2012 10:38:29 +0000
+Message-Id: <1327315109-7740-1-git-send-email-ndevos@redhat.com>
+In-Reply-To: <4F19356E.3020708@redhat.com>
+References: <4F19356E.3020708@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 3:15 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le dimanche 22 janvier 2012 à 02:27 +0530, Pradeep A. Dalvi a écrit :
->> Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
->>
->
-> ...
->
->
->> diff --git a/drivers/net/ethernet/3com/3c515.c b/drivers/net/ethernet/3com/3c515.c
->> index f67a5d3..68fd765 100644
->> --- a/drivers/net/ethernet/3com/3c515.c
->> +++ b/drivers/net/ethernet/3com/3c515.c
->> @@ -826,7 +826,7 @@ static int corkscrew_open(struct net_device *dev)
->>                               vp->rx_ring[i].next = 0;
->>                       vp->rx_ring[i].status = 0;      /* Clear complete bit. */
->>                       vp->rx_ring[i].length = PKT_BUF_SZ | 0x80000000;
->> -                     skb = dev_alloc_skb(PKT_BUF_SZ);
->> +                     skb = netdev_alloc_skb(dev, PKT_BUF_SZ);
->>                       vp->rx_skbuff[i] = skb;
->>                       if (skb == NULL)
->>                               break;  /* Bad news!  */
->
->
-> One of the difference between netdev_alloc_skb() and dev_alloc_skb() is
-> the former initializes skb->dev.
->
-> So you should remove the extra "skb->dev = dev;" lines that sometimes
-> are after the dev_alloc_skb() calls.
->
-> [ They were redundant anyway because eth_type_trans() also sets skb->dev
-> ]
+Executing an fsync() on a file-descriptor of a partition flushes the
+caches for that partition by calling blkdev_issue_flush(). However, it
+seems that reading data through the parent device will still return the
+old cached data.
 
-Thanks! Shall take extra skb->dev = dev into consideration.
+The cache for the block-device is not synced if the block-device is kept
+open (due to a mounted partition, for example). Only when all users for
+the disk have exited, the cache for the disk is made consistent again.
 
-Eric, is this ok to assume that the memory address given to
-dma_map_single & received from dma_unmap_single would remain same
-across all platforms? Thanks in advance!
+Calling invalidate_bdev() on the parent block-device in case
+blkdev_fsync() was called for a partition, fixes this.
+
+The problem can be worked around by forcing the caches to be flushed
+with either
+	# blockdev --flushbufs ${dev_disk}
+or
+	# echo 3 > /proc/sys/vm/drop_caches
+
+CC: Bryn M. Reeves <bmr@redhat.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Niels de Vos <ndevos@redhat.com>
+
+---
+v2:
+- Do not call invalidate_bdev() from blkdev_issue_flush() and prevent
+  performance degration with journalled filesystems.
+
+  Suggested was to call invalidate_bdev() in fsync_bdev(), but this is
+  not in the call-path of mkfs.ext3 and similar tools. Hence the issue
+  persists.
+
+- Correct phrasing a little, changing ioctl-BLKFLSBUF is not required.
+
+- This issue also occurs when doing an ioctl-BLKFLSBUF on a partition.
+  Reading the whole disk will still return cached data. If this is an
+  issue, it will need a seperate patch.
+---
+ fs/block_dev.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 0e575d1..433c4de 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -424,6 +424,10 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
+ 	if (error == -EOPNOTSUPP)
+ 		error = 0;
+ 
++	/* invalidate parent block_device */
++	if (!error && bdev != bdev->bd_contains)
++		invalidate_bdev(bdev->bd_contains);
++
+ 	return error;
+ }
+ EXPORT_SYMBOL(blkdev_fsync);
+-- 
+1.7.6.5
+
