@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab2AWSwA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 13:52:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47760 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab2AWSv6 (ORCPT
+	id S1753826Ab2AWSyD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 13:54:03 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:57391 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab2AWSyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 13:51:58 -0500
-Date: Mon, 23 Jan 2012 10:51:53 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/17] blkcg: shoot down blkio_groups on elevator switch
-Message-ID: <20120123185153.GJ12652@google.com>
-References: <1327202725-3383-9-git-send-email-tj@kernel.org>
- <20120123152055.GD25986@redhat.com>
- <20120123153913.GB12652@google.com>
- <20120123155216.GF25986@redhat.com>
- <20120123155745.GD12652@google.com>
- <20120123161042.GG25986@redhat.com>
- <20120123161619.GE12652@google.com>
- <20120123162553.GI25986@redhat.com>
- <20120123171049.GH12652@google.com>
- <20120123183207.GL25986@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120123183207.GL25986@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 23 Jan 2012 13:54:01 -0500
+Date: Mon, 23 Jan 2012 13:53:50 -0500 (EST)
+Message-Id: <20120123.135350.756110788533975068.davem@davemloft.net>
+To: joe@perches.com
+Cc: netdev@pradeepdalvi.com, netdev@vger.kernel.org, hch@lst.de,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH/RESEND] drivers/net/ethernet: dev_alloc_skb to
+ netdev_alloc_skb
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1327344034.6317.3.camel@joe2Laptop>
+References: <1327343283-4830-1-git-send-email-netdev@pradeepdalvi.com>
+	<1327344034.6317.3.camel@joe2Laptop>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Jan 2012 10:53:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 01:32:07PM -0500, Vivek Goyal wrote:
-> This is not just specific to blk-throttle. If in future throttling policy
-> is removable like elevator, then it will be fine to reset the throttling
-> related configuration upon removal of throttling policy. But resetting
-> throttling configuration without policy going anywhere does not sound good.
+From: Joe Perches <joe@perches.com>
+Date: Mon, 23 Jan 2012 10:40:34 -0800
 
-Yeah, that is a compromise.  As long as those configurations are
-per-queue, which is the way it's gonna be after the clean up, I don't
-think it's a big deal tho.  We'll be saying "if you make changes to
-the set of blkcg policies applied to a device, all blkcg
-configurations regarding the device will be reset" instead of "if any
-change to blkcg policies happen system-wide, all blkcg configurations
-will be reset", and the former doesn't sound crazy to me.  Anyways,
-let's see how complex doing the finer grained thing gets.
+> Perhaps you should break this large patch
+> into multiple separate patches.
 
--- 
-tejun
+Agreed, this patch is way too large especially for what is obviously
+turning out to be a very non-trivial transformation in some cases
+and also new patch submitters should generally avoid large patches
+like this.
