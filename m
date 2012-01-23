@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab2AWRaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 12:30:20 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:41031
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751779Ab2AWRaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 12:30:19 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-ntfs-dev@lists.sourceforge.net, anton@tuxera.com
-Cc: standby24x7@gmail.com, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH 2/2] [trivial] ntfs: Fix typo in mft.c
-Date: Tue, 24 Jan 2012 02:29:36 +0900
-Message-Id: <1327339776-3560-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1753368Ab2AWRcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 12:32:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49828 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab2AWRcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 12:32:08 -0500
+Date: Mon, 23 Jan 2012 09:31:00 -0800
+From: Greg KH <gregkh@suse.de>
+To: Dima Zavin <dima@android.com>
+Cc: Kashyap Gada <gada.kashyap@gmail.com>, rebecca@android.com,
+        rschultz@google.com, jgennis@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] Staging: android: Add KERN_ facility level in printk
+ () in pmem.c
+Message-ID: <20120123173100.GA26943@suse.de>
+References: <1327116249-18274-1-git-send-email-gada.kashyap@gmail.com>
+ <CAPz4a6AUAMxcMkVkgc9UJ1tok36jNE5hZzJc_9n5EJqRQCcz2w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPz4a6AUAMxcMkVkgc9UJ1tok36jNE5hZzJc_9n5EJqRQCcz2w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct two spelling errors "dealocate" to "deallocate"
-in fs/ntfs/mft.c
----
- fs/ntfs/mft.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Mon, Jan 23, 2012 at 09:22:27AM -0800, Dima Zavin wrote:
+> We really should just get rid of pmem.c altogether. We will remove it
+> from our android common tree too. We don't actually use it anymore in
+> any of our products. There are some legacy users of it, like Qualcomm,
+> but I'm sure they have a bunch of patches on top of it and thus are
+> maintaining it separately anyway.
 
-diff --git a/fs/ntfs/mft.c b/fs/ntfs/mft.c
-index 382857f..862f7ff 100644
---- a/fs/ntfs/mft.c
-+++ b/fs/ntfs/mft.c
-@@ -1367,7 +1367,7 @@ static int ntfs_mft_bitmap_extend_allocation_nolock(ntfs_volume *vol)
- 			ntfs_error(vol->sb, "Failed to merge runlists for mft "
- 					"bitmap.");
- 			if (ntfs_cluster_free_from_rl(vol, rl2)) {
--				ntfs_error(vol->sb, "Failed to dealocate "
-+				ntfs_error(vol->sb, "Failed to deallocate "
- 						"allocated cluster.%s", es);
- 				NVolSetErrors(vol);
- 			}
-@@ -1805,7 +1805,7 @@ static int ntfs_mft_data_extend_allocation_nolock(ntfs_volume *vol)
- 		ntfs_error(vol->sb, "Failed to merge runlists for mft data "
- 				"attribute.");
- 		if (ntfs_cluster_free_from_rl(vol, rl2)) {
--			ntfs_error(vol->sb, "Failed to dealocate clusters "
-+			ntfs_error(vol->sb, "Failed to deallocate clusters "
- 					"from the mft data attribute.%s", es);
- 			NVolSetErrors(vol);
- 		}
--- 
-1.7.6.5
+Ok, I'll be glad to drop it if you all don't use it anymore and it's not
+needed.  That makes life a lot easier for me :)
 
+thanks,
+
+greg k-h
