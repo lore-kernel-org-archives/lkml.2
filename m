@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2AWXqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:46:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42025 "EHLO mx2.suse.de"
+	id S1755087Ab2AWXp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:45:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42016 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755049Ab2AWXqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:46:02 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:01 2012
-Message-Id: <20120123234201.776571387@clark.kroah.org>
+	id S1754743Ab2AWXpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:45:55 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:02 2012
+Message-Id: <20120123234202.444992101@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:40:47 -0800
+Date: Mon, 23 Jan 2012 15:40:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [01/27] ext4: fix undefined behavior in ext4_fill_flex_info()
+        alan@lxorguk.ukuu.org.uk, Ian Campbell <ian.campbell@citrix.com>,
+        Haogang Chen <haogangchen@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [09/27] xen/xenbus: Reject replies with payload > XENSTORE_PAYLOAD_MAX.
 In-Reply-To: <20120123234224.GA19510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,71 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-commit d50f2ab6f050311dbf7b8f5501b25f0bf64a439b upstream.
+commit 9e7860cee18241633eddb36a4c34c7b61d8cecbc upstream.
 
-Commit 503358ae01b70ce6909d19dd01287093f6b6271c ("ext4: avoid divide by
-zero when trying to mount a corrupted file system") fixes CVE-2009-4307
-by performing a sanity check on s_log_groups_per_flex, since it can be
-set to a bogus value by an attacker.
+Haogang Chen found out that:
 
-	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
-	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+ There is a potential integer overflow in process_msg() that could result
+ in cross-domain attack.
 
-	if (groups_per_flex < 2) { ... }
+ 	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
 
-This patch fixes two potential issues in the previous commit.
+ When a malicious guest passes 0xffffffff in msg->hdr.len, the subsequent
+ call to xb_read() would write to a zero-length buffer.
 
-1) The sanity check might only work on architectures like PowerPC.
-On x86, 5 bits are used for the shifting amount.  That means, given a
-large s_log_groups_per_flex value like 36, groups_per_flex = 1 << 36
-is essentially 1 << 4 = 16, rather than 0.  This will bypass the check,
-leaving s_log_groups_per_flex and groups_per_flex inconsistent.
+ The other end of this connection is always the xenstore backend daemon
+ so there is no guest (malicious or otherwise) which can do this. The
+ xenstore daemon is a trusted component in the system.
 
-2) The sanity check relies on undefined behavior, i.e., oversized shift.
-A standard-confirming C compiler could rewrite the check in unexpected
-ways.  Consider the following equivalent form, assuming groups_per_flex
-is unsigned for simplicity.
+ However this seem like a reasonable robustness improvement so we should
+ have it.
 
-	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
-	if (groups_per_flex == 0 || groups_per_flex == 1) {
+And Ian when read the API docs found that:
+        The payload length (len field of the header) is limited to 4096
+        (XENSTORE_PAYLOAD_MAX) in both directions.  If a client exceeds the
+        limit, its xenstored connection will be immediately killed by
+        xenstored, which is usually catastrophic from the client's point of
+        view.  Clients (particularly domains, which cannot just reconnect)
+        should avoid this.
 
-We compile the code snippet using Clang 3.0 and GCC 4.6.  Clang will
-completely optimize away the check groups_per_flex == 0, leaving the
-patched code as vulnerable as the original.  GCC keeps the check, but
-there is no guarantee that future versions will do the same.
+so this patch checks against that instead.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+This also avoids a potential integer overflow pointed out by Haogang Chen.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Haogang Chen <haogangchen@gmail.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/super.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/xen/xenbus/xenbus_xs.c     |    6 ++++++
+ include/xen/interface/io/xs_wire.h |    3 +++
+ 2 files changed, 9 insertions(+)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1705,17 +1705,16 @@ static int ext4_fill_flex_info(struct su
- 	struct ext4_group_desc *gdp = NULL;
- 	ext4_group_t flex_group_count;
- 	ext4_group_t flex_group;
--	int groups_per_flex = 0;
-+	unsigned int groups_per_flex = 0;
- 	size_t size;
- 	int i;
- 
- 	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
--	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
--
--	if (groups_per_flex < 2) {
-+	if (sbi->s_log_groups_per_flex < 1 || sbi->s_log_groups_per_flex > 31) {
- 		sbi->s_log_groups_per_flex = 0;
- 		return 1;
+--- a/drivers/xen/xenbus/xenbus_xs.c
++++ b/drivers/xen/xenbus/xenbus_xs.c
+@@ -766,6 +766,12 @@ static int process_msg(void)
+ 		goto out;
  	}
-+	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
  
- 	/* We allocate both existing and potentially added groups */
- 	flex_group_count = ((sbi->s_groups_count + groups_per_flex - 1) +
++	if (msg->hdr.len > XENSTORE_PAYLOAD_MAX) {
++		kfree(msg);
++		err = -EINVAL;
++		goto out;
++	}
++
+ 	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
+ 	if (body == NULL) {
+ 		kfree(msg);
+--- a/include/xen/interface/io/xs_wire.h
++++ b/include/xen/interface/io/xs_wire.h
+@@ -84,4 +84,7 @@ struct xenstore_domain_interface {
+     XENSTORE_RING_IDX rsp_cons, rsp_prod;
+ };
+ 
++/* Violating this is very bad.  See docs/misc/xenstore.txt. */
++#define XENSTORE_PAYLOAD_MAX 4096
++
+ #endif /* _XS_WIRE_H */
 
 
