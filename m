@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab2AWQOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 11:14:24 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:44352 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab2AWQOW convert rfc822-to-8bit (ORCPT
+	id S1753303Ab2AWQPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 11:15:01 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:49369 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750969Ab2AWQO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 11:14:22 -0500
+	Mon, 23 Jan 2012 11:14:59 -0500
+Date: Mon, 23 Jan 2012 11:14:58 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Simon Glass <sjg@chromium.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot
+ time
+In-Reply-To: <CAPnjgZ0-VdAzudGFopBd+5j4HhOp10C=x0kPuJEZyaYSzwjBAA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1201231104410.1372-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1327139539-14301-7-git-send-email-yinghai@kernel.org>
-References: <1327139539-14301-1-git-send-email-yinghai@kernel.org> <1327139539-14301-7-git-send-email-yinghai@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 23 Jan 2012 08:13:59 -0800
-X-Google-Sender-Auth: Hhb3f0oyBCm489p1medOpVWrpO8
-Message-ID: <CA+55aFzP4xEbcNmZ+MS0SQ3LrULzSq+dBiT_X9U-bPpR-Ukgrw@mail.gmail.com>
-Subject: Re: [PATCH 6/7] pciehp: Add Disable/enable link functions
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai.lu@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 1:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> +
-> +       retval = pciehp_readw(ctrl, PCI_EXP_LNKCTL, &lnk_ctrl);
-> +       if (retval) {
-> +               ctrl_err(ctrl, "Cannot read LNKCTRL register\n");
-> +               return retval;
-> +       }
+On Fri, 20 Jan 2012, Simon Glass wrote:
 
-Is there really any point at all in checking the return value of that
-readw() function?
+> First, backing up a bit, there are at least two ways to solve this.
+> One is to have the drivers only call usb_add_hcd() from a work queue
+> or similar - i.e. not as part of their initcall execution. The other
+> is what I have done here.
+> 
+> Before I go much further I would like to know which is
+> best/preferable. Because in answer to your questions I'm not sure
+> drivers have a way of dealing with failure of delayed init. It would
+> need notification back to the driver at least.
 
-Nobody actually ever sets it. We should stop even bothering to pretend
-to care. There is no return value in real life.
+I thought about this a little more.  Maybe it's okay not to unbind the 
+driver when the async initialization fails.  After all, it's not like 
+any other driver is going to want to manage that hardware.
 
-If the device doesn't exist or the read fails, you will never ever get
-an error *anyway*. You'll likely get 0xffff, and possibly a machine
-check exception. And that is unlikely to ever change - even if the
-hardware were to do it, it's insane to do error checking on an
-individual IO level. It causes more problems than it could possibly
-ever solve - error checking has to be done at a different level than
-on some random individual access.
+But that still leaves problems.  Unregistration should work properly
+even when async init fails.  The easiest solution seems to be to clear
+hcd->self.root_hub whenever async initialization fails, and then in
+usb_remove_hcd, return immediately if hcd->self.root_hub isn't set.  
+Doing things this way, you avoid the need to modify all those
+controller drivers.
 
-We should make the return type of pci_read_config_word() be 'void',
-instead of having code like this that looks like it is careful, but in
-actual fact in reality is just totally pointless.
+That's not all.  You have a race between unbinding and async
+initialization.  Probably you will need to make the work routine lock
+the hcd->self.controller device, for mutual exclusion with unbinding.  
+In addition, usb_remove_hcd should try to cancel the work routine, in
+case it hasn't run yet.  And finally, for the case where both things
+end up running concurrently, the work routine should check whether
+unbinding has already started and fail immediately if it has.
 
-                          Linus
+Alan Stern
+
