@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab2AWTdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 14:33:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36268 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647Ab2AWTdk (ORCPT
+	id S1753963Ab2AWTet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 14:34:49 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61593 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab2AWTer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 14:33:40 -0500
-Date: Mon, 23 Jan 2012 11:33:35 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org,
-        Lennart Poettering <mzxreary@0pointer.de>
-Subject: Re: [PATCH 08/17] blkcg: shoot down blkio_groups on elevator switch
-Message-ID: <20120123193335.GK12652@google.com>
-References: <20120123152055.GD25986@redhat.com>
- <20120123153913.GB12652@google.com>
- <20120123155216.GF25986@redhat.com>
- <20120123155745.GD12652@google.com>
- <20120123161042.GG25986@redhat.com>
- <20120123161619.GE12652@google.com>
- <20120123162553.GI25986@redhat.com>
- <20120123171049.GH12652@google.com>
- <20120123182745.GK25986@redhat.com>
- <20120123184336.GI12652@google.com>
+	Mon, 23 Jan 2012 14:34:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120123184336.GI12652@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFyok04YrmEYXLbAE2vB_944+aEJZhd5tzu6U2k0CLaN5A@mail.gmail.com>
+References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
+ <1327139539-14301-2-git-send-email-yinghai@kernel.org> <CA+55aFz7B5ebEGKKJmvuWY+2O-6qarUj40CHASu_4EQ0KDgi_Q@mail.gmail.com>
+ <CAE9FiQWbmO+FFsE06eQ=-PVNtdaTG3EsqXNXdUCxb9YxtPS8Cw@mail.gmail.com> <CA+55aFyok04YrmEYXLbAE2vB_944+aEJZhd5tzu6U2k0CLaN5A@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 Jan 2012 11:34:25 -0800
+X-Google-Sender-Auth: pXVR55yfR5xK8GOVcZ8vuYxZeT4
+Message-ID: <CA+55aFwEbbq0yuN4mAtfDSbOE86mAWsBBz+pgBzn8_QHVk+B3g@mail.gmail.com>
+Subject: Re: [PATCH 1/7] PCI: Make sriov work with hotplug remove
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 10:43:36AM -0800, Tejun Heo wrote:
-> Yeah, this is much more arguable.  I don't think it would be too
-> complex to keep per-policy granularity even w/ unified blkg managed by
-> blkcg core (we'll just need to point to separately allocated
-> per-policy data from the unified blkg and clear them selectively).
-> I'm just not convinced of its necessity.  With initial config out of
-> the way, elvs and blkcg policies don't get molested all that often.
-> 
-> I'll see how complex it actually gets.  If it isn't too much
-> complexity, yeah, why not...
+On Mon, Jan 23, 2012 at 10:45 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Why isn't this magically true in this case? If some *other* random
+> entry than the one that is being iterated over can magically be
+> removed, then the whole thing is just pure and utter crap, and no
+> amount of list maintenance can ever fix it.
+>
+> So explain.
 
-Hmmm... while this isn't terribly complex, it involves considerable
-amount of churn as core layer doesn't currently know what policies are
-bound to which queues how - we'll have to add some part of that before
-shootdown change, use it there, and then later replace it with proper
-per-queue thing.  The conversion is already painful enough without
-adding another chunk to juggle around.  Given that clearing all on pol
-change isn't too crazy, how about the following?
+Ahh. I finally understand what's going on. The virtual device attached
+to a physical device can go away, and it's on the same damn list.
 
-* For now, clear unconditionally on pol/elv change.
+That's broken. Virtual devices set up by a physical device should be
+*children* of the physical device, not "siblings". But that's
+apparently not what the broken virtual PCI layer does.
 
-* But structure things such that policy specific data are allocated
-  separately and on pol/elv change only those policy specific part is
-  flushed.
+So I think that there are two possible solutions:
 
-* Later, if deemed necessary, make the clearing of pol-specific part
-  selective.
+ (a) fix the virtual devices that are attached to physical devices to
+really be children of the physical device, with the physical device as
+a "bridge" to that virtual bus.
 
--- 
-tejun
+I think this is the correct solution from any sane standpoint (now the
+topology of the device tree actually matches the logical
+relationship), which is why I think this is the RightThing(tm) to do.
+And it should automatically fix this insane issue where removing a
+device from a bus can remove *multiple* devices from the same list.
+
+ (b) if that isn't an option, and the virtual devices make a mess, at
+least don't make the code uglier, just do something like:
+
+    while (!list_empty(&bus->devices)) {
+        struct pci_dev *dev = list_first_entry(struct pci_dev, bus_list);
+
+        pci_stop_bus_device(dev);
+    }
+
+which at least isn't butt ugly. Add a large comment about how
+pci_stop_bus_device() can remove multiple devices due to the virtual
+devices having been done badly.
+
+Who is in charge of the whole 'is_virtfn' mess? How realistic is it to
+fix that crud?
+
+                     Linus
