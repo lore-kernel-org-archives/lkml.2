@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab2AWPHt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 10:07:49 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:44085 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687Ab2AWPHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 10:07:48 -0500
-Message-ID: <1327331183.10335.26.camel@groo>
-Subject: Re: Linux 3.3-1 out - merge window closed
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: ext Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        ext Linus Walleij <linus.walleij@linaro.org>,
-        "peter_henn@gmx.de" <peter_henn@gmx.de>,
-        "sjur.brandeland@stericsson.com" <sjur.brandeland@stericsson.com>,
-        "govindraj.ti@gmail.com" <govindraj.ti@gmail.com>,
-        "pawel.szyszuk@stericsson.com" <pawel.szyszuk@stericsson.com>,
-        Sebastian Reichel <sre@debian.org>, artem.bityutskiy@linux.intel.com,
-        Andras Domokos <andras.domokos@nokia.com>,
-        ext Shubhrajyoti <shubhrajyoti@ti.com>,
-        ext Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 23 Jan 2012 17:06:23 +0200
-In-Reply-To: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
-References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Nokia-AV: Clean
+	id S1753296Ab2AWPID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 10:08:03 -0500
+Received: from tservice.ru ([195.178.208.66]:43682 "EHLO tservice.net.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752899Ab2AWPIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 10:08:01 -0500
+Date: Mon, 23 Jan 2012 18:07:53 +0300
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, neilb@suse.de
+Subject: Re: [PATCH] W1: OMAP HDQ1W: use 32-bit register accesses
+Message-ID: <20120123150753.GA21395@ioremap.net>
+References: <alpine.DEB.2.00.1201221319270.26641@utopia.booyaka.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1201221319270.26641@utopia.booyaka.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Paul
 
-On Thu, 2012-01-19 at 15:58 -0800, ext Linus Torvalds wrote:
-> So the subject says it all. It's been two weeks(+a day), and 3.3-rc1 is now out.
+Patchset looks good, feel free to add my ack
+
+On Sun, Jan 22, 2012 at 01:26:23PM -0700, Paul Walmsley (paul@pwsan.com) wrote:
 > 
-> There are a couple of trees I haven't merged on purpose, and there may
-> be a few trees I overlooked by mistake. The "on purpose" ones were
-> things that looked unfamiliar and I felt I didn't have the bandwidth
-> to check. The "mistake" ones would just be things I missed due to
-> being busy.
+> HDQ/1-wire registers are 32 bits long, even if the register contents
+> fit into 8 bits, so accesses must be 32-bit aligned.  Evidently the
+> OMAP2/3 interconnects allowed the driver to get away with 8 bit accesses,
+> but the OMAP4 puts a stop to that:
 > 
+> [    1.488800] Driver for 1-wire Dallas network protocol.
+> [    1.495025] Bad mode in data abort handler detected
+> [    1.500122] Internal error: Oops - bad mode: 0 [#1] SMP
+> [    1.505615] Modules linked in:
+> [    1.508819] CPU: 0    Not tainted  (3.3.0-rc1-00008-g45030e9 #992)
+> [    1.515289] PC is at 0xffff0018
+> [    1.518615] LR is at omap_hdq_probe+0xd4/0x2cc
+> 
+> The OMAP4430 ES2 Rev X TRM does warn about this restriction in section 
+> 23.2.6.2 "HDQ/1-Wire Registers".
+> 
+> Fixes the crash on OMAP4430 ES2 Pandaboard.  Tested also on OMAP34xx and 
+> OMAP2420; it seems to work fine on those chips, although due to the lack 
+> of boards with HDQ/1-wire devices here, a more indepth test was not 
+> possible.
+> 
+> ---
+> Intended for the v3.4 merge window.
+> 
+>  drivers/w1/masters/omap_hdq.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/w1/masters/omap_hdq.c b/drivers/w1/masters/omap_hdq.c
+> index 63e3eda..291897c 100644
+> --- a/drivers/w1/masters/omap_hdq.c
+> +++ b/drivers/w1/masters/omap_hdq.c
+> @@ -100,20 +100,20 @@ static struct w1_bus_master omap_w1_master = {
+>  /* HDQ register I/O routines */
+>  static inline u8 hdq_reg_in(struct hdq_data *hdq_data, u32 offset)
+>  {
+> -	return __raw_readb(hdq_data->hdq_base + offset);
+> +	return __raw_readl(hdq_data->hdq_base + offset);
+>  }
+>  
+>  static inline void hdq_reg_out(struct hdq_data *hdq_data, u32 offset, u8 val)
+>  {
+> -	__raw_writeb(val, hdq_data->hdq_base + offset);
+> +	__raw_writel(val, hdq_data->hdq_base + offset);
+>  }
+>  
+>  static inline u8 hdq_reg_merge(struct hdq_data *hdq_data, u32 offset,
+>  			u8 val, u8 mask)
+>  {
+> -	u8 new_val = (__raw_readb(hdq_data->hdq_base + offset) & ~mask)
+> +	u8 new_val = (__raw_readl(hdq_data->hdq_base + offset) & ~mask)
+>  			| (val & mask);
+> -	__raw_writeb(new_val, hdq_data->hdq_base + offset);
+> +	__raw_writel(new_val, hdq_data->hdq_base + offset);
+>  
+>  	return new_val;
+>  }
+> -- 
+> 1.7.8.3
 
-Is the HSI framework pull on the "on purpose" list ?
-
-https://lkml.org/lkml/2012/1/13/116
-
-Several people have shown interest for this to be integrated in the
-kernel to help development.The framework is already in use in Nokia
-products like N9.
-
-Br,
-Carlos Chinea
-
+-- 
+	Evgeniy Polyakov
