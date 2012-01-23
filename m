@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab2AXAHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:07:33 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:49664 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670Ab2AXAH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:07:29 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Jim Cromie <jim.cromie@gmail.com>
-Subject: [RFC][PATCH 2/3] clocksource: scx200_hrt: Convert scx200 to use clocksource_register_hz
-Date: Mon, 23 Jan 2012 16:05:49 -0800
-Message-Id: <1327363550-19952-3-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
-References: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012400-5518-0000-0000-000001BF275F
+	id S1755632Ab2AXAHw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:07:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42296 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755376Ab2AWXrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:47:12 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:24 2012
+Message-Id: <20120123234024.664941813@clark.kroah.org>
+User-Agent: quilt/0.50-11.1
+Date: Mon, 23 Jan 2012 15:39:06 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [20/90] PCI: msi: Disable msi interrupts when we initialize a pci device
+In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converts the scx200 clocksource to using clocksource_register_hz.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-This wasn't a straight conversion, so would like some extra review
-by the maintainers.
+------------------
 
-CC: Jim Cromie <jim.cromie@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+
+commit a776c491ca5e38c26d9f66923ff574d041e747f4 upstream.
+
+I traced a nasty kexec on panic boot failure to the fact that we had
+screaming msi interrupts and we were not disabling the msi messages at
+kernel startup.  The booting kernel had not enabled those interupts so
+was not prepared to handle them.
+
+I can see no reason why we would ever want to leave the msi interrupts
+enabled at boot if something else has enabled those interrupts.  The pci
+spec specifies that msi interrupts should be off by default.  Drivers
+are expected to enable the msi interrupts if they want to use them.  Our
+interrupt handling code reprograms the interrupt handlers at boot and
+will not be be able to do anything useful with an unexpected interrupt.
+
+This patch applies cleanly all of the way back to 2.6.32 where I noticed
+the problem.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/clocksource/scx200_hrt.c |   19 ++++++-------------
- 1 files changed, 6 insertions(+), 13 deletions(-)
+ drivers/pci/msi.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/clocksource/scx200_hrt.c b/drivers/clocksource/scx200_hrt.c
-index 27f4d96..24f884c 100644
---- a/drivers/clocksource/scx200_hrt.c
-+++ b/drivers/clocksource/scx200_hrt.c
-@@ -49,9 +49,6 @@ static cycle_t read_hrt(struct clocksource *cs)
- 	return (cycle_t) inl(scx200_cb_base + SCx200_TIMER_OFFSET);
- }
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -869,5 +869,15 @@ EXPORT_SYMBOL(pci_msi_enabled);
  
--#define HRT_SHIFT_1	22
--#define HRT_SHIFT_27	26
--
- static struct clocksource cs_hrt = {
- 	.name		= "scx200_hrt",
- 	.rating		= 250,
-@@ -63,6 +60,7 @@ static struct clocksource cs_hrt = {
- 
- static int __init init_hrt_clocksource(void)
+ void pci_msi_init_pci_dev(struct pci_dev *dev)
  {
-+	u32 freq;
- 	/* Make sure scx200 has initialized the configuration block */
- 	if (!scx200_cb_present())
- 		return -ENODEV;
-@@ -79,19 +77,14 @@ static int __init init_hrt_clocksource(void)
- 	outb(HR_TMEN | (mhz27 ? HR_TMCLKSEL : 0),
- 	     scx200_cb_base + SCx200_TMCNFG_OFFSET);
- 
--	if (mhz27) {
--		cs_hrt.shift = HRT_SHIFT_27;
--		cs_hrt.mult = clocksource_hz2mult((HRT_FREQ + ppm) * 27,
--						  cs_hrt.shift);
--	} else {
--		cs_hrt.shift = HRT_SHIFT_1;
--		cs_hrt.mult = clocksource_hz2mult(HRT_FREQ + ppm,
--						  cs_hrt.shift);
--	}
-+	freq = (HRT_FREQ + ppm);
-+	if (mhz27)
-+		freq *= 27;
++	int pos;
+ 	INIT_LIST_HEAD(&dev->msi_list);
 +
- 	printk(KERN_INFO "enabling scx200 high-res timer (%s MHz +%d ppm)\n",
- 		mhz27 ? "27":"1", ppm);
- 
--	return clocksource_register(&cs_hrt);
-+	return clocksource_register_hz(&cs_hrt, freq);
++	/* Disable the msi hardware to avoid screaming interrupts
++	 * during boot.  This is the power on reset default so
++	 * usually this should be a noop.
++	 */
++	pos = pci_find_capability(dev, PCI_CAP_ID_MSI);
++	if (pos)
++		msi_set_enable(dev, pos, 0);
++	msix_set_enable(dev, 0);
  }
- 
- module_init(init_hrt_clocksource);
--- 
-1.7.3.2.146.gca209
+
 
