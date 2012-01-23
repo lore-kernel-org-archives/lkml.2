@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab2AWXtO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42581 "EHLO mx2.suse.de"
+	id S932076Ab2AWXtg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:49:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42637 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755925Ab2AWXtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:08 -0500
+	id S1756152Ab2AWXta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:30 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
-Message-Id: <20120123234025.082699912@clark.kroah.org>
+Message-Id: <20120123234025.586103450@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:11 -0800
+Date: Mon, 23 Jan 2012 15:39:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [25/90] SCSI: mpt2sas : Fix for memory allocation error for large host credits
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [31/90] mac80211: fix rx->key NULL pointer dereference in promiscuous mode
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,172 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "nagalakshmi.nandigama@lsi.com" <nagalakshmi.nandigama@lsi.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit aff132d95ffe14eca96cab90597cdd010b457af7 upstream.
+commit 1140afa862842ac3e56678693050760edc4ecde9 upstream.
 
-The amount of memory required for tracking chain buffers is rather
-large, and when the host credit count is big, memory allocation
-failure occurs inside __get_free_pages.
+Since:
 
-The fix is to limit the number of chains to 100,000.  In addition,
-the number of host credits is limited to 30,000 IOs. However this
-limitation can be overridden this using the command line option
-max_queue_depth.  The algorithm for calculating the
-reply_post_queue_depth is changed so that it is equal to
-(reply_free_queue_depth + 16), previously it was (reply_free_queue_depth * 2).
+commit 816c04fe7ef01dd9649f5ccfe796474db8708be5
+Author: Christian Lamparter <chunkeey@googlemail.com>
+Date:   Sat Apr 30 15:24:30 2011 +0200
 
-Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+    mac80211: consolidate MIC failure report handling
+
+is possible to that we dereference rx->key == NULL when driver set
+RX_FLAG_MMIC_STRIPPED and not RX_FLAG_IV_STRIPPED and we are in
+promiscuous mode. This happen with rt73usb and rt61pci at least.
+
+Before the commit we always check rx->key against NULL, so I assume
+fix should be done in mac80211 (also mic_fail path has similar check).
+
+References:
+https://bugzilla.redhat.com/show_bug.cgi?id=769766
+http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2012-January/004395.html
+
+Reported-by: Stuart D Gathman <stuart@gathman.org>
+Reported-by: Kai Wohlfahrt <kai.scorpio@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c  |   83 +++++++++++------------------------
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    4 -
- 2 files changed, 29 insertions(+), 58 deletions(-)
+ net/mac80211/wpa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -66,6 +66,8 @@ static MPT_CALLBACK	mpt_callbacks[MPT_MA
+--- a/net/mac80211/wpa.c
++++ b/net/mac80211/wpa.c
+@@ -109,7 +109,7 @@ ieee80211_rx_h_michael_mic_verify(struct
+ 		if (status->flag & RX_FLAG_MMIC_ERROR)
+ 			goto mic_fail;
  
- #define FAULT_POLLING_INTERVAL 1000 /* in milliseconds */
+-		if (!(status->flag & RX_FLAG_IV_STRIPPED))
++		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key)
+ 			goto update_iv;
  
-+#define MAX_HBA_QUEUE_DEPTH	30000
-+#define MAX_CHAIN_DEPTH		100000
- static int max_queue_depth = -1;
- module_param(max_queue_depth, int, 0);
- MODULE_PARM_DESC(max_queue_depth, " max controller queue depth ");
-@@ -2098,8 +2100,6 @@ _base_release_memory_pools(struct MPT2SA
- 		}
- 		if (ioc->chain_dma_pool)
- 			pci_pool_destroy(ioc->chain_dma_pool);
--	}
--	if (ioc->chain_lookup) {
- 		free_pages((ulong)ioc->chain_lookup, ioc->chain_pages);
- 		ioc->chain_lookup = NULL;
- 	}
-@@ -2117,9 +2117,7 @@ static int
- _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
- {
- 	struct mpt2sas_facts *facts;
--	u32 queue_size, queue_diff;
- 	u16 max_sge_elements;
--	u16 num_of_reply_frames;
- 	u16 chains_needed_per_io;
- 	u32 sz, total_sz;
- 	u32 retry_sz;
-@@ -2146,7 +2144,8 @@ _base_allocate_memory_pools(struct MPT2S
- 		max_request_credit = (max_queue_depth < facts->RequestCredit)
- 		    ? max_queue_depth : facts->RequestCredit;
- 	else
--		max_request_credit = facts->RequestCredit;
-+		max_request_credit = min_t(u16, facts->RequestCredit,
-+		    MAX_HBA_QUEUE_DEPTH);
- 
- 	ioc->hba_queue_depth = max_request_credit;
- 	ioc->hi_priority_depth = facts->HighPriorityCredit;
-@@ -2187,50 +2186,25 @@ _base_allocate_memory_pools(struct MPT2S
- 	}
- 	ioc->chains_needed_per_io = chains_needed_per_io;
- 
--	/* reply free queue sizing - taking into account for events */
--	num_of_reply_frames = ioc->hba_queue_depth + 32;
--
--	/* number of replies frames can't be a multiple of 16 */
--	/* decrease number of reply frames by 1 */
--	if (!(num_of_reply_frames % 16))
--		num_of_reply_frames--;
--
--	/* calculate number of reply free queue entries
--	 *  (must be multiple of 16)
--	 */
--
--	/* (we know reply_free_queue_depth is not a multiple of 16) */
--	queue_size = num_of_reply_frames;
--	queue_size += 16 - (queue_size % 16);
--	ioc->reply_free_queue_depth = queue_size;
--
--	/* reply descriptor post queue sizing */
--	/* this size should be the number of request frames + number of reply
--	 * frames
--	 */
-+	/* reply free queue sizing - taking into account for 64 FW events */
-+	ioc->reply_free_queue_depth = ioc->hba_queue_depth + 64;
- 
--	queue_size = ioc->hba_queue_depth + num_of_reply_frames + 1;
--	/* round up to 16 byte boundary */
--	if (queue_size % 16)
--		queue_size += 16 - (queue_size % 16);
--
--	/* check against IOC maximum reply post queue depth */
--	if (queue_size > facts->MaxReplyDescriptorPostQueueDepth) {
--		queue_diff = queue_size -
--		    facts->MaxReplyDescriptorPostQueueDepth;
--
--		/* round queue_diff up to multiple of 16 */
--		if (queue_diff % 16)
--			queue_diff += 16 - (queue_diff % 16);
--
--		/* adjust hba_queue_depth, reply_free_queue_depth,
--		 * and queue_size
--		 */
--		ioc->hba_queue_depth -= (queue_diff / 2);
--		ioc->reply_free_queue_depth -= (queue_diff / 2);
--		queue_size = facts->MaxReplyDescriptorPostQueueDepth;
-+	/* align the reply post queue on the next 16 count boundary */
-+	if (!ioc->reply_free_queue_depth % 16)
-+		ioc->reply_post_queue_depth = ioc->reply_free_queue_depth + 16;
-+	else
-+		ioc->reply_post_queue_depth = ioc->reply_free_queue_depth +
-+				32 - (ioc->reply_free_queue_depth % 16);
-+	if (ioc->reply_post_queue_depth >
-+	    facts->MaxReplyDescriptorPostQueueDepth) {
-+		ioc->reply_post_queue_depth = min_t(u16,
-+		    (facts->MaxReplyDescriptorPostQueueDepth -
-+		    (facts->MaxReplyDescriptorPostQueueDepth % 16)),
-+		    (ioc->hba_queue_depth - (ioc->hba_queue_depth % 16)));
-+		ioc->reply_free_queue_depth = ioc->reply_post_queue_depth - 16;
-+		ioc->hba_queue_depth = ioc->reply_free_queue_depth - 64;
- 	}
--	ioc->reply_post_queue_depth = queue_size;
-+
- 
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "scatter gather: "
- 	    "sge_in_main_msg(%d), sge_per_chain(%d), sge_per_io(%d), "
-@@ -2316,15 +2290,12 @@ _base_allocate_memory_pools(struct MPT2S
- 	    "depth(%d)\n", ioc->name, ioc->request,
- 	    ioc->scsiio_depth));
- 
--	/* loop till the allocation succeeds */
--	do {
--		sz = ioc->chain_depth * sizeof(struct chain_tracker);
--		ioc->chain_pages = get_order(sz);
--		ioc->chain_lookup = (struct chain_tracker *)__get_free_pages(
--		    GFP_KERNEL, ioc->chain_pages);
--		if (ioc->chain_lookup == NULL)
--			ioc->chain_depth -= 100;
--	} while (ioc->chain_lookup == NULL);
-+	ioc->chain_depth = min_t(u32, ioc->chain_depth, MAX_CHAIN_DEPTH);
-+	sz = ioc->chain_depth * sizeof(struct chain_tracker);
-+	ioc->chain_pages = get_order(sz);
-+
-+	ioc->chain_lookup = (struct chain_tracker *)__get_free_pages(
-+	    GFP_KERNEL, ioc->chain_pages);
- 	ioc->chain_dma_pool = pci_pool_create("chain pool", ioc->pdev,
- 	    ioc->request_sz, 16, 0);
- 	if (!ioc->chain_dma_pool) {
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -974,8 +974,8 @@ _scsih_get_chain_buffer_tracker(struct M
- 	spin_lock_irqsave(&ioc->scsi_lookup_lock, flags);
- 	if (list_empty(&ioc->free_chain_list)) {
- 		spin_unlock_irqrestore(&ioc->scsi_lookup_lock, flags);
--		printk(MPT2SAS_WARN_FMT "chain buffers not available\n",
--		    ioc->name);
-+		dfailprintk(ioc, printk(MPT2SAS_WARN_FMT "chain buffers not "
-+			"available\n", ioc->name));
- 		return NULL;
- 	}
- 	chain_req = list_entry(ioc->free_chain_list.next,
+ 		return RX_CONTINUE;
 
 
