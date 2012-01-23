@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab2AWXuJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:50:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42687 "EHLO mx2.suse.de"
+	id S1756255Ab2AWX55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:57:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42709 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755519Ab2AWXuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:50:02 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
-Message-Id: <20120123234028.781625707@clark.kroah.org>
+	id S1756165Ab2AWXuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:50:08 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:29 2012
+Message-Id: <20120123234028.947036492@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:55 -0800
+Date: Mon, 23 Jan 2012 15:39:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Kurt Garloff <kurt@garloff.de>,
         Len Brown <len.brown@intel.com>
-Subject: [69/90] ACPI: Store SRAT table revision
+Subject: [71/90] ACPI, ia64: Use SRAT table rev to use 8bit or 16/32bit PXM fields (ia64)
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,60 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kurt Garloff <kurt@garloff.de>
 
-commit 8df0eb7c9d96f9e82f233ee8b74e0f0c8471f868 upstream.
+commit 9f10f6a520deb3639fac78d81151a3ade88b4e7f upstream.
 
 In SRAT v1, we had 8bit proximity domain (PXM) fields; SRAT v2 provides
 32bits for these. The new fields were reserved before.
 According to the ACPI spec, the OS must disregrard reserved fields.
-In order to know whether or not, we must know what version the SRAT
-table has.
 
-This patch stores the SRAT table revision for later consumption
-by arch specific __init functions.
+ia64 did handle the PXM fields almost consistently, but depending on
+sgi's sn2 platform. This patch leaves the sn2 logic in, but does also
+use 16/32 bits for PXM if the SRAT has rev 2 or higher.
+
+The patch also adds __init to the two pxm accessor functions, as they
+access __initdata now and are called from an __init function only anyway.
+
+Note that the code only uses 16 bits for the PXM field in the processor
+proximity field; the patch does not address this as 16 bits are more than
+enough.
 
 Signed-off-by: Kurt Garloff <kurt@garloff.de>
 Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/numa.c      |    6 ++++++
- include/acpi/acpi_numa.h |    1 +
- 2 files changed, 7 insertions(+)
+ arch/ia64/kernel/acpi.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/acpi/numa.c
-+++ b/drivers/acpi/numa.c
-@@ -45,6 +45,8 @@ static int pxm_to_node_map[MAX_PXM_DOMAI
- static int node_to_pxm_map[MAX_NUMNODES]
- 			= { [0 ... MAX_NUMNODES - 1] = PXM_INVAL };
+--- a/arch/ia64/kernel/acpi.c
++++ b/arch/ia64/kernel/acpi.c
+@@ -429,22 +429,24 @@ static u32 __devinitdata pxm_flag[PXM_FL
+ static struct acpi_table_slit __initdata *slit_table;
+ cpumask_t early_cpu_possible_map = CPU_MASK_NONE;
  
-+unsigned char acpi_srat_revision __initdata;
-+
- int pxm_to_node(int pxm)
+-static int get_processor_proximity_domain(struct acpi_srat_cpu_affinity *pa)
++static int __init
++get_processor_proximity_domain(struct acpi_srat_cpu_affinity *pa)
  {
- 	if (pxm < 0)
-@@ -255,9 +257,13 @@ acpi_parse_memory_affinity(struct acpi_s
+ 	int pxm;
  
- static int __init acpi_parse_srat(struct acpi_table_header *table)
+ 	pxm = pa->proximity_domain_lo;
+-	if (ia64_platform_is("sn2"))
++	if (ia64_platform_is("sn2") || acpi_srat_revision >= 2)
+ 		pxm += pa->proximity_domain_hi[0] << 8;
+ 	return pxm;
+ }
+ 
+-static int get_memory_proximity_domain(struct acpi_srat_mem_affinity *ma)
++static int __init
++get_memory_proximity_domain(struct acpi_srat_mem_affinity *ma)
  {
-+	struct acpi_table_srat *srat;
- 	if (!table)
- 		return -EINVAL;
+ 	int pxm;
  
-+	srat = (struct acpi_table_srat *)table;
-+	acpi_srat_revision = srat->header.revision;
-+
- 	/* Real work done in acpi_table_parse_srat below. */
+ 	pxm = ma->proximity_domain;
+-	if (!ia64_platform_is("sn2"))
++	if (!ia64_platform_is("sn2") && acpi_srat_revision <= 1)
+ 		pxm &= 0xff;
  
- 	return 0;
---- a/include/acpi/acpi_numa.h
-+++ b/include/acpi/acpi_numa.h
-@@ -15,6 +15,7 @@ extern int pxm_to_node(int);
- extern int node_to_pxm(int);
- extern void __acpi_map_pxm_to_node(int, int);
- extern int acpi_map_pxm_to_node(int);
-+extern unsigned char acpi_srat_revision;
- 
- #endif				/* CONFIG_ACPI_NUMA */
- #endif				/* __ACP_NUMA_H */
+ 	return pxm;
 
 
