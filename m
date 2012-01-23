@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab2AWREX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 12:04:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34996 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab2AWREV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 12:04:21 -0500
-Date: Mon, 23 Jan 2012 17:56:44 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Chris Evans <scarybeasts@gmail.com>
-Cc: Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
-	[RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-Message-ID: <20120123165644.GB13197@redhat.com>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com> <20120118170006.GA16835@redhat.com> <20120118171210.GB16835@redhat.com> <CAMnK33VcHEP4sMkzk09VEZL=h2eUqvHHF99jmF0qzDj_6SzVOw@mail.gmail.com>
+	id S1753423Ab2AWRFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 12:05:04 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33937 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab2AWRFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 12:05:03 -0500
+Date: Mon, 23 Jan 2012 17:04:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Sekhar Nori <nsekhar@ti.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [RESEND PATCH] arm:davinci: prepare to move aemif driver to
+	drivers/mfd
+Message-ID: <20120123170436.GZ1068@n2100.arm.linux.org.uk>
+References: <1327331552-9913-1-git-send-email-prakash.pm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMnK33VcHEP4sMkzk09VEZL=h2eUqvHHF99jmF0qzDj_6SzVOw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1327331552-9913-1-git-send-email-prakash.pm@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18, Chris Evans wrote:
->
-> Thanks, Oleg. Seems like this would be a nice change to have. As we
-> can see, people do use ptrace() as a security technology.
+On Mon, Jan 23, 2012 at 08:42:32PM +0530, Manjunathappa, Prakash wrote:
+> Adding: MFD maintainer and mailing list.
+> 
+>  arch/arm/mach-davinci/aemif.c              |    2 +-
+>  arch/arm/mach-davinci/board-da830-evm.c    |    2 +-
+>  arch/arm/mach-davinci/board-da850-evm.c    |    2 +-
+>  arch/arm/mach-davinci/include/mach/aemif.h |   36 ----------------------------
+>  drivers/mtd/nand/davinci_nand.c            |    2 +-
+>  include/linux/mfd/davinci_aemif.h          |   36 ++++++++++++++++++++++++++++
+>  6 files changed, 40 insertions(+), 40 deletions(-)
+>  delete mode 100644 arch/arm/mach-davinci/include/mach/aemif.h
+>  create mode 100644 include/linux/mfd/davinci_aemif.h
 
-OK, I'll send it.
+As Linus has requested on many occasions, and it's a damned good
+idea, use -M when generating diffstat - and its also a *really* good
+idea to use -M if you're submitting patches which rename files for
+review as well.
 
-> With this in place, you can also (where possible) set up the tracee
-> with PR_SET_PDEATHSIG==SIGKILL. And then, you have defences again
-> either of the tracer or tracee dying from a stray SIGKILL.
-
-This can only help if the tracer is the natural parent, is it enough?
-
-Indan suggested PTRACE_O_SIGKILL_ON_DEATH, perhaps it makes sense.
-
-Oleg.
-
+Obviously arch/arm/mach-davinci/include/mach/aemif.h was moved to
+include/linux/mfd/davinci_aemif.h, but were there any changes to its
+contents?  Without -M, there only way of knowing is to compare each
+file line by line.  With -M, it'll tell us that it was renamed and
+produce a diff between the old and new location.
