@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab2AWXMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:12:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46299 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754846Ab2AWXKP (ORCPT
+	id S1754822Ab2AWXKI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:10:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54228 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab2AWXKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:10:15 -0500
+	Mon, 23 Jan 2012 18:10:00 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tejun@google.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/16] blkcg: move rcu_read_lock() outside of blkio_group get functions
-Date: Mon, 23 Jan 2012 15:09:45 -0800
-Message-Id: <1327360193-24679-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 01/16] blkcg: make CONFIG_BLK_CGROUP bool
+Date: Mon, 23 Jan 2012 15:09:38 -0800
+Message-Id: <1327360193-24679-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1327360193-24679-1-git-send-email-tj@kernel.org>
 References: <1327360193-24679-1-git-send-email-tj@kernel.org>
@@ -23,171 +23,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tejun Heo <tejun@google.com>
 
-rcu_read_lock() in throtl_get_tb() and cfq_get_cfqg() holds onto
-@blkcg while looking up blkg.  For API cleanup, the next patch will
-make the caller responsible for determining @blkcg to look blkg from
-and let them specify it as a parameter.  Move rcu read locking out to
-the callers to prepare for the change.
+Block cgroup core can be built as module; however, it isn't too useful
+as blk-throttle can only be built-in and cfq-iosched is usually the
+default built-in scheduler.  Scheduled blkcg cleanup requires calling
+into blkcg from block core.  To simplify that, disallow building blkcg
+as module by making CONFIG_BLK_CGROUP bool.
 
--v2: Originally this patch was described as a fix for RCU read locking
-     bug around @blkg, which Vivek pointed out to be incorrect.  It
-     was from misunderstanding the role of rcu locking as protecting
-     @blkg not @blkcg.  Patch description updated.
+If building blkcg core as module really matters, which I doubt, we can
+revisit it after blkcg API cleanup.
+
+-v2: Vivek pointed out that IOSCHED_CFQ was incorrectly updated to
+     depend on BLK_CGROUP.  Fixed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-throttle.c |   18 ++++++------------
- block/cfq-iosched.c  |   11 +++++------
- 2 files changed, 11 insertions(+), 18 deletions(-)
+ block/Kconfig.iosched |    4 ----
+ block/blk-cgroup.c    |   17 -----------------
+ block/blk-cgroup.h    |   10 ++--------
+ init/Kconfig          |    2 +-
+ 4 files changed, 3 insertions(+), 30 deletions(-)
 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 3699ab4..9beaac7 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -313,25 +313,23 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	if (unlikely(blk_queue_bypass(q)))
- 		return NULL;
+diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+index 3199b76..421bef9 100644
+--- a/block/Kconfig.iosched
++++ b/block/Kconfig.iosched
+@@ -23,8 +23,6 @@ config IOSCHED_DEADLINE
  
--	rcu_read_lock();
- 	blkcg = task_blkio_cgroup(current);
- 	tg = throtl_find_tg(td, blkcg);
--	if (tg) {
--		rcu_read_unlock();
-+	if (tg)
- 		return tg;
--	}
+ config IOSCHED_CFQ
+ 	tristate "CFQ I/O scheduler"
+-	# If BLK_CGROUP is a module, CFQ has to be built as module.
+-	depends on (BLK_CGROUP=m && m) || !BLK_CGROUP || BLK_CGROUP=y
+ 	default y
+ 	---help---
+ 	  The CFQ I/O scheduler tries to distribute bandwidth equally
+@@ -34,8 +32,6 @@ config IOSCHED_CFQ
  
- 	/*
- 	 * Need to allocate a group. Allocation of group also needs allocation
- 	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
- 	 * we need to drop rcu lock and queue_lock before we call alloc.
- 	 */
--	rcu_read_unlock();
- 	spin_unlock_irq(q->queue_lock);
-+	rcu_read_unlock();
+ 	  This is the default I/O scheduler.
  
- 	tg = throtl_alloc_tg(td);
- 
- 	/* Group allocated and queue is still alive. take the lock */
-+	rcu_read_lock();
- 	spin_lock_irq(q->queue_lock);
- 
- 	/* Make sure @q is still alive */
-@@ -343,7 +341,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	/*
- 	 * Initialize the new group. After sleeping, read the blkcg again.
- 	 */
--	rcu_read_lock();
- 	blkcg = task_blkio_cgroup(current);
- 
- 	/*
-@@ -354,7 +351,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 
- 	if (__tg) {
- 		kfree(tg);
--		rcu_read_unlock();
- 		return __tg;
- 	}
- 
-@@ -365,7 +361,6 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	}
- 
- 	throtl_init_add_tg_lists(td, tg, blkcg);
--	rcu_read_unlock();
- 	return tg;
- }
- 
-@@ -1150,7 +1145,6 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 	 * basic fields like stats and io rates. If a group has no rules,
- 	 * just update the dispatch stats in lockless manner and return.
- 	 */
+-	  Note: If BLK_CGROUP=m, then CFQ can be built only as module.
 -
- 	rcu_read_lock();
- 	blkcg = task_blkio_cgroup(current);
- 	tg = throtl_find_tg(td, blkcg);
-@@ -1160,11 +1154,9 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 		if (tg_no_rule_group(tg, rw)) {
- 			blkiocg_update_dispatch_stats(&tg->blkg, bio->bi_size,
- 					rw, rw_is_sync(bio->bi_rw));
--			rcu_read_unlock();
--			goto out;
-+			goto out_unlock_rcu;
- 		}
- 	}
--	rcu_read_unlock();
- 
- 	/*
- 	 * Either group has not been allocated yet or it is not an unlimited
-@@ -1222,6 +1214,8 @@ queue_bio:
- 
- out_unlock:
- 	spin_unlock_irq(q->queue_lock);
-+out_unlock_rcu:
-+	rcu_read_unlock();
- out:
- 	return throttled;
+ config CFQ_GROUP_IOSCHED
+ 	bool "CFQ Group Scheduling support"
+ 	depends on IOSCHED_CFQ && BLK_CGROUP
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index fa8f263..7bfc574 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -50,10 +50,7 @@ struct cgroup_subsys blkio_subsys = {
+ 	.attach = blkiocg_attach,
+ 	.destroy = blkiocg_destroy,
+ 	.populate = blkiocg_populate,
+-#ifdef CONFIG_BLK_CGROUP
+-	/* note: blkio_subsys_id is otherwise defined in blk-cgroup.h */
+ 	.subsys_id = blkio_subsys_id,
+-#endif
+ 	.use_id = 1,
+ 	.module = THIS_MODULE,
+ };
+@@ -1679,17 +1676,3 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ 	spin_unlock(&blkio_list_lock);
  }
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 37831d8..c3f2348 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1128,13 +1128,10 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
- 	struct cfq_group *cfqg = NULL, *__cfqg = NULL;
- 	struct request_queue *q = cfqd->queue;
+ EXPORT_SYMBOL_GPL(blkio_policy_unregister);
+-
+-static int __init init_cgroup_blkio(void)
+-{
+-	return cgroup_load_subsys(&blkio_subsys);
+-}
+-
+-static void __exit exit_cgroup_blkio(void)
+-{
+-	cgroup_unload_subsys(&blkio_subsys);
+-}
+-
+-module_init(init_cgroup_blkio);
+-module_exit(exit_cgroup_blkio);
+-MODULE_LICENSE("GPL");
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 6f3ace7..3551687 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -24,13 +24,7 @@ enum blkio_policy_id {
+ /* Max limits for throttle policy */
+ #define THROTL_IOPS_MAX		UINT_MAX
  
--	rcu_read_lock();
- 	blkcg = task_blkio_cgroup(current);
- 	cfqg = cfq_find_cfqg(cfqd, blkcg);
--	if (cfqg) {
--		rcu_read_unlock();
-+	if (cfqg)
- 		return cfqg;
--	}
+-#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+-
+-#ifndef CONFIG_BLK_CGROUP
+-/* When blk-cgroup is a module, its subsys_id isn't a compile-time constant */
+-extern struct cgroup_subsys blkio_subsys;
+-#define blkio_subsys_id blkio_subsys.subsys_id
+-#endif
++#ifdef CONFIG_BLK_CGROUP
  
- 	/*
- 	 * Need to allocate a group. Allocation of group also needs allocation
-@@ -1164,7 +1161,6 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
+ enum stat_type {
+ 	/* Total time spent (in ns) between request dispatch to the driver and
+@@ -303,7 +297,7 @@ static inline void blkiocg_update_idle_time_stats(struct blkio_group *blkg) {}
+ static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg) {}
+ #endif
  
- 	if (__cfqg) {
- 		kfree(cfqg);
--		rcu_read_unlock();
- 		return __cfqg;
- 	}
+-#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
++#ifdef CONFIG_BLK_CGROUP
+ extern struct blkio_cgroup blkio_root_cgroup;
+ extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
+ extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..da9222d 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -766,7 +766,7 @@ config RT_GROUP_SCHED
+ endif #CGROUP_SCHED
  
-@@ -1172,7 +1168,6 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
- 		cfqg = &cfqd->root_group;
- 
- 	cfq_init_add_cfqg_lists(cfqd, cfqg, blkcg);
--	rcu_read_unlock();
- 	return cfqg;
- }
- 
-@@ -2878,6 +2873,8 @@ cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
- 	struct cfq_group *cfqg;
- 
- retry:
-+	rcu_read_lock();
-+
- 	cfqg = cfq_get_cfqg(cfqd);
- 	cic = cfq_cic_lookup(cfqd, ioc);
- 	/* cic always exists here */
-@@ -2893,6 +2890,7 @@ retry:
- 			cfqq = new_cfqq;
- 			new_cfqq = NULL;
- 		} else if (gfp_mask & __GFP_WAIT) {
-+			rcu_read_unlock();
- 			spin_unlock_irq(cfqd->queue->queue_lock);
- 			new_cfqq = kmem_cache_alloc_node(cfq_pool,
- 					gfp_mask | __GFP_ZERO,
-@@ -2918,6 +2916,7 @@ retry:
- 	if (new_cfqq)
- 		kmem_cache_free(cfq_pool, new_cfqq);
- 
-+	rcu_read_unlock();
- 	return cfqq;
- }
- 
+ config BLK_CGROUP
+-	tristate "Block IO controller"
++	bool "Block IO controller"
+ 	depends on BLOCK
+ 	default n
+ 	---help---
 -- 
 1.7.7.3
 
