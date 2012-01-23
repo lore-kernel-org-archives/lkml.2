@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811Ab2AWFii (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 00:38:38 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57429 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab2AWFih (ORCPT
+	id S1752113Ab2AWFtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 00:49:32 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:54396 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab2AWFta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 00:38:37 -0500
-Message-ID: <1327297111.4129.27.camel@work-vm>
-Subject: Lapic vector priorites
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Clark Williams <williams@redhat.com>, Nivedita Singhvi <niv@us.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>, vosburgh@us.ibm.com
-Date: Sun, 22 Jan 2012 21:38:31 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	Mon, 23 Jan 2012 00:49:30 -0500
+Message-ID: <4F1CF4DE.5090207@linux.vnet.ibm.com>
+Date: Mon, 23 Jan 2012 11:19:18 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+CC: rjw@sisk.pl, linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3.3-rc1] PM / Sleep: Fix read_unlock_usermodehelper()
+ call.
+References: <201201230449.q0N4npAa029457@www262.sakura.ne.jp>
+In-Reply-To: <201201230449.q0N4npAa029457@www262.sakura.ne.jp>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012305-4242-0000-0000-00000095F826
+x-cbid: 12012220-3568-0000-0000-0000011BF5FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-	I got a question this weekend about irq priorities where it was looking
-like the hrtimer_interrupt was bring delayed under heavy load spikes.
-The issue hasn't been conclusively determined, but this reminded me of
-the old issue that cropped up occasionally with 2.4 (maybe with
-clustered apic addressing?) where we got lost-ticks that were caused by
-irq storms, due to the timer interrupt being lower priority then the
-scsi controller.
+On 01/23/2012 10:19 AM, Tetsuo Handa wrote:
 
-I'm really not that familiar with the lapic code, but reading over some
-of the documentation I could find through searches, and then looking at
-the lapic vector layout in the kernel, I'm now a little curious.
-
->From what I've read the irq priority is set by the vector, where 0x0 is
-the highest and 0xFF is the lowest.
-
-In irq_vectors.h I see:
-#define NMI_VECTOR			0x02
-#define MCE_VECTOR			0x12
-
-So really critical stuff being very low. Makes sense. Then:
-
-#define FIRST_EXTERNAL_VECTOR		0x20
-
-Then a gap. Then:
-
-#define IRQ0_VECTOR		((FIRST_EXTERNAL_VECTOR + 16) & ~15)
-...
-#define IRQ15_VECTOR			(IRQ0_VECTOR + 15)
-
-Ok, so IRQ0 is at vector 0x30 and IRQ15 is at 0x3f
-
-Then there's other cpu specific bits way up at 0xf3-0xff.
-
-And then I see:
-/*
- * Local APIC timer IRQ vector is on a different priority level,
- * to work around the 'lost local interrupt if more than 2 IRQ
- * sources per level' errata.
- */
-#define LOCAL_TIMER_VECTOR		0xef
+> Commit b298d289
+>  "PM / Sleep: Fix freezer failures due to racy usermodehelper_is_disabled()"
+> added read_unlock_usermodehelper() but read_unlock_usermodehelper() is called
+> without read_lock_usermodehelper() when kmalloc() failed.
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> -----
 
 
-So, from this it seems that the lapic timer is going to be a lower
-priority then most of the irq space (or atleast irqs 0-15) . Making it
-possible to see timer latencies from irq storms.  Is that right?  Or do
-all the irqs really come in via:
-#define IRQ_WORK_VECTOR			0xf6
+Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
+Thanks for catching this!
+Regards,
+Srivatsa S. Bhat
 
-I realize from the comment that the lapic needs to be on its own range
-to avoid the errata, but could that range be 0x2X (moving whatever goes
-in the 0x2X range elsewhere)?  I did a brief test setting the lapic to
-0x2f and my simple test machine booted, so it seems this might be
-possible.
-
-I realize from all the bug reports over the last number of years how
-fragile the lapic code is (or more accurately how poor and quirky the
-hardware is), but it seemed like having timer irqs be behind other
-devices would be a possible latency source that would likely have -rt
-effects (I looked, but I don't see anything in the -rt patch set playing
-with irq vectors - maybe this issue is avoided in other ways?).
-
-Am I just misunderstanding all of this?
-
-thanks
--john
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 26ab358..6c9387d 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -525,8 +525,7 @@ static int _request_firmware(const struct firmware **firmware_p,
+>  	if (!firmware) {
+>  		dev_err(device, "%s: kmalloc(struct firmware) failed\n",
+>  			__func__);
+> -		retval = -ENOMEM;
+> -		goto out;
+> +		return -ENOMEM;
+>  	}
+> 
+>  	if (fw_get_builtin_firmware(firmware, name)) {
+> 
 
