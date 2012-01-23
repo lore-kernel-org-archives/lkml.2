@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab2AWXtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42652 "EHLO mx2.suse.de"
+	id S932090Ab2AWX7n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:59:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42642 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754782Ab2AWXti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:38 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
-Message-Id: <20120123234028.216052731@clark.kroah.org>
+	id S1756129Ab2AWXte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:34 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:24 2012
+Message-Id: <20120123234024.834299686@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:48 -0800
+Date: Mon, 23 Jan 2012 15:39:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [62/90] block: fail SCSI passthrough ioctls on partition devices
+        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [22/90] x86/PCI: amd: factor out MMCONFIG discovery
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,156 +26,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 0bfc96cb77224736dfa35c3c555d37b3646ef35e upstream.
+commit 24d25dbfa63c376323096660bfa9ad45a08870ce upstream.
 
-Linux allows executing the SG_IO ioctl on a partition or LVM volume, and
-will pass the command to the underlying block device.  This is
-well-known, but it is also a large security problem when (via Unix
-permissions, ACLs, SELinux or a combination thereof) a program or user
-needs to be granted access only to part of the disk.
+This factors out the AMD native MMCONFIG discovery so we can use it
+outside amd_bus.c.
 
-This patch lets partitions forward a small set of harmless ioctls;
-others are logged with printk so that we can see which ioctls are
-actually sent.  In my tests only CDROM_GET_CAPABILITY actually occurred.
-Of course it was being sent to a (partition on a) hard disk, so it would
-have failed with ENOTTY and the patch isn't changing anything in
-practice.  Still, I'm treating it specially to avoid spamming the logs.
+amd_bus.c reads AMD MSRs so it can remove the MMCONFIG area from the
+PCI resources.  We may also need the MMCONFIG information to work
+around BIOS defects in the ACPI MCFG table.
 
-In principle, this restriction should include programs running with
-CAP_SYS_RAWIO.  If for example I let a program access /dev/sda2 and
-/dev/sdb, it still should not be able to read/write outside the
-boundaries of /dev/sda2 independent of the capabilities.  However, for
-now programs with CAP_SYS_RAWIO will still be allowed to send the
-ioctls.  Their actions will still be logged.
-
-This patch does not affect the non-libata IDE driver.  That driver
-however already tests for bd != bd->bd_contains before issuing some
-ioctl; it could be restricted further to forbid these ioctls even for
-programs running with CAP_SYS_ADMIN/CAP_SYS_RAWIO.
-
-Cc: linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[ Make it also print the command name when warning - Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/scsi_ioctl.c     |   45 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/scsi/sd.c      |   11 +++++++++--
- include/linux/blkdev.h |    1 +
- 3 files changed, 55 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/amd_nb.h |    2 ++
+ arch/x86/kernel/amd_nb.c      |   31 +++++++++++++++++++++++++++++++
+ arch/x86/pci/amd_bus.c        |   42 +++++++++++-------------------------------
+ 3 files changed, 44 insertions(+), 31 deletions(-)
 
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -24,6 +24,7 @@
- #include <linux/capability.h>
- #include <linux/completion.h>
- #include <linux/cdrom.h>
-+#include <linux/ratelimit.h>
- #include <linux/slab.h>
- #include <linux/times.h>
- #include <asm/uaccess.h>
-@@ -691,9 +692,53 @@ int scsi_cmd_ioctl(struct request_queue
- }
- EXPORT_SYMBOL(scsi_cmd_ioctl);
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -1,6 +1,7 @@
+ #ifndef _ASM_X86_AMD_NB_H
+ #define _ASM_X86_AMD_NB_H
  
-+int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
++#include <linux/ioport.h>
+ #include <linux/pci.h>
+ 
+ struct amd_nb_bus_dev_range {
+@@ -13,6 +14,7 @@ extern const struct pci_device_id amd_nb
+ extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
+ 
+ extern bool early_is_amd_nb(u32 value);
++extern struct resource *amd_get_mmconfig_range(struct resource *res);
+ extern int amd_cache_northbridges(void);
+ extern void amd_flush_garts(void);
+ extern int amd_numa_init(void);
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -119,6 +119,37 @@ bool __init early_is_amd_nb(u32 device)
+ 	return false;
+ }
+ 
++struct resource *amd_get_mmconfig_range(struct resource *res)
 +{
-+	if (bd && bd == bd->bd_contains)
-+		return 0;
++	u32 address;
++	u64 base, msr;
++	unsigned segn_busn_bits;
 +
-+	/* Actually none of these is particularly useful on a partition,
-+	 * but they are safe.
-+	 */
-+	switch (cmd) {
-+	case SCSI_IOCTL_GET_IDLUN:
-+	case SCSI_IOCTL_GET_BUS_NUMBER:
-+	case SCSI_IOCTL_GET_PCI:
-+	case SCSI_IOCTL_PROBE_HOST:
-+	case SG_GET_VERSION_NUM:
-+	case SG_SET_TIMEOUT:
-+	case SG_GET_TIMEOUT:
-+	case SG_GET_RESERVED_SIZE:
-+	case SG_SET_RESERVED_SIZE:
-+	case SG_EMULATED_HOST:
-+		return 0;
-+	case CDROM_GET_CAPABILITY:
-+		/* Keep this until we remove the printk below.  udev sends it
-+		 * and we do not want to spam dmesg about it.   CD-ROMs do
-+		 * not have partitions, so we get here only for disks.
-+		 */
-+		return -ENOIOCTLCMD;
-+	default:
-+		break;
-+	}
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
++		return NULL;
 +
-+	/* In particular, rule out all resets and host-specific ioctls.  */
-+	printk_ratelimited(KERN_WARNING
-+			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
++	/* assume all cpus from fam10h have mmconfig */
++        if (boot_cpu_data.x86 < 0x10)
++		return NULL;
 +
-+	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
++	address = MSR_FAM10H_MMIO_CONF_BASE;
++	rdmsrl(address, msr);
++
++	/* mmconfig is not enabled */
++	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
++		return NULL;
++
++	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
++
++	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
++			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
++
++	res->flags = IORESOURCE_MEM;
++	res->start = base;
++	res->end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
++	return res;
 +}
-+EXPORT_SYMBOL(scsi_verify_blk_ioctl);
 +
- int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
- 		       unsigned int cmd, void __user *arg)
+ int amd_get_subcaches(int cpu)
  {
-+	int ret;
-+
-+	ret = scsi_verify_blk_ioctl(bd, cmd);
-+	if (ret < 0)
-+		return ret;
-+
- 	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
- }
- EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1073,6 +1073,10 @@ static int sd_ioctl(struct block_device
- 	SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
- 						disk->disk_name, cmd));
+ 	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
+--- a/arch/x86/pci/amd_bus.c
++++ b/arch/x86/pci/amd_bus.c
+@@ -30,34 +30,6 @@ static struct pci_hostbridge_probe pci_p
+ 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
+ };
  
-+	error = scsi_verify_blk_ioctl(bdev, cmd);
-+	if (error < 0)
-+		return error;
-+
- 	/*
- 	 * If we are in the middle of error recovery, don't let anyone
- 	 * else try and use this device.  Also, if error recovery fails, it
-@@ -1265,6 +1269,11 @@ static int sd_compat_ioctl(struct block_
- 			   unsigned int cmd, unsigned long arg)
- {
- 	struct scsi_device *sdev = scsi_disk(bdev->bd_disk)->device;
-+	int ret;
-+
-+	ret = scsi_verify_blk_ioctl(bdev, cmd);
-+	if (ret < 0)
-+		return ret;
- 
- 	/*
- 	 * If we are in the middle of error recovery, don't let anyone
-@@ -1276,8 +1285,6 @@ static int sd_compat_ioctl(struct block_
- 		return -ENODEV;
- 	       
- 	if (sdev->host->hostt->compat_ioctl) {
--		int ret;
+-static u64 __initdata fam10h_mmconf_start;
+-static u64 __initdata fam10h_mmconf_end;
+-static void __init get_pci_mmcfg_amd_fam10h_range(void)
+-{
+-	u32 address;
+-	u64 base, msr;
+-	unsigned segn_busn_bits;
 -
- 		ret = sdev->host->hostt->compat_ioctl(sdev, cmd, (void __user *)arg);
+-	/* assume all cpus from fam10h have mmconf */
+-        if (boot_cpu_data.x86 < 0x10)
+-		return;
+-
+-	address = MSR_FAM10H_MMIO_CONF_BASE;
+-	rdmsrl(address, msr);
+-
+-	/* mmconfig is not enable */
+-	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
+-		return;
+-
+-	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
+-
+-	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
+-			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
+-
+-	fam10h_mmconf_start = base;
+-	fam10h_mmconf_end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
+-}
+-
+ #define RANGE_NUM 16
  
- 		return ret;
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -670,6 +670,7 @@ extern int blk_insert_cloned_request(str
- 				     struct request *rq);
- extern void blk_delay_queue(struct request_queue *, unsigned long);
- extern void blk_recount_segments(struct request_queue *, struct bio *);
-+extern int scsi_verify_blk_ioctl(struct block_device *, unsigned int);
- extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
- 			      unsigned int, void __user *);
- extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+ /**
+@@ -85,6 +57,9 @@ static int __init early_fill_mp_bus_info
+ 	u64 val;
+ 	u32 address;
+ 	bool found;
++	struct resource fam10h_mmconf_res, *fam10h_mmconf;
++	u64 fam10h_mmconf_start;
++	u64 fam10h_mmconf_end;
+ 
+ 	if (!early_pci_allowed())
+ 		return -1;
+@@ -211,12 +186,17 @@ static int __init early_fill_mp_bus_info
+ 		subtract_range(range, RANGE_NUM, 0, end);
+ 
+ 	/* get mmconfig */
+-	get_pci_mmcfg_amd_fam10h_range();
++	fam10h_mmconf = amd_get_mmconfig_range(&fam10h_mmconf_res);
+ 	/* need to take out mmconf range */
+-	if (fam10h_mmconf_end) {
+-		printk(KERN_DEBUG "Fam 10h mmconf [%llx, %llx]\n", fam10h_mmconf_start, fam10h_mmconf_end);
++	if (fam10h_mmconf) {
++		printk(KERN_DEBUG "Fam 10h mmconf %pR\n", fam10h_mmconf);
++		fam10h_mmconf_start = fam10h_mmconf->start;
++		fam10h_mmconf_end = fam10h_mmconf->end;
+ 		subtract_range(range, RANGE_NUM, fam10h_mmconf_start,
+ 				 fam10h_mmconf_end + 1);
++	} else {
++		fam10h_mmconf_start = 0;
++		fam10h_mmconf_end = 0;
+ 	}
+ 
+ 	/* mmio resource */
 
 
