@@ -1,154 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab2AWNCY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 08:02:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56624 "EHLO mx2.suse.de"
+	id S1752614Ab2AWNLE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 08:11:04 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:37412 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852Ab2AWNCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 08:02:23 -0500
-Date: Mon, 23 Jan 2012 14:02:21 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: memcg: fix over reclaiming mem cgroup
-Message-ID: <20120123130221.GA15113@tiehlicka.suse.cz>
-References: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751086Ab2AWNLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 08:11:02 -0500
+Date: Tue, 24 Jan 2012 00:10:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20120124001043.d2e874ed0a10260485c3ff74@canb.auug.org.au>
+In-Reply-To: <20120123104722.GA9681@sirena.org.uk>
+References: <20120123121422.f3e41d97bae580544abfab63@canb.auug.org.au>
+	<20120123104722.GA9681@sirena.org.uk>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__24_Jan_2012_00_10_43_+1100_9f6wTEfIfVFfc16q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 21-01-12 22:49:23, Hillf Danton wrote:
-> In soft limit reclaim, overreclaim occurs when pages are reclaimed from mem
-> group that is under its soft limit, or when more pages are reclaimd than the
-> exceeding amount, then performance of reclaimee goes down accordingly.
+--Signature=_Tue__24_Jan_2012_00_10_43_+1100_9f6wTEfIfVFfc16q
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-First of all soft reclaim is more a help for the global memory pressure
-balancing rather than any guarantee about how much we reclaim for the
-group.
-We need to do more changes in order to make it a guarantee.
-For example you implementation will cause severe problems when all
-cgroups are soft unlimited (default conf.) or when nobody is above the
-limit but the total consumption triggers the global reclaim. Therefore
-nobody is in excess and you would skip all groups and only bang on the
-root memcg.
+Hi Mark,
 
-Ying Han has a patch which basically skips all cgroups which are under
-its limit until we reach a certain reclaim priority but even for this we
-need some additional changes - e.g. reverse the current default setting
-of the soft limit.
+On Mon, 23 Jan 2012 10:47:22 +0000 Mark Brown <broonie@opensource.wolfsonmi=
+cro.com> wrote:
+>
+> On Mon, Jan 23, 2012 at 12:14:22PM +1100, Stephen Rothwell wrote:
+>=20
+> > Caused by commit 899896379670 ("ASoC: sgtl5000: Convert to table based
+> > DAPM and control init").  Please at least build this stuff :-(
+>=20
+> Mainline doesn't build (and wouldn't usefully run) for any of my
+> interesting configs right now which does tend to push testing of -next
+> down the priority list.  Hopefully the fixes will make it into mainline
+> at some point soon.
 
-Anyway, I like the nr_to_reclaim reduction idea because we have to do
-this in some way because the global reclaim starts with ULONG
-nr_to_scan.
+The above remark was aimed past you at the developer involved (who has
+already responded).  People should not be feeding you untested patches.
 
-> A helper function is added to compute the number of pages that exceed the soft
-> limit of given mem cgroup, then the excess pages are used when every reclaimee
-> is reclaimed to avoid overreclaim.
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/mm/memcontrol.c	Tue Jan 17 20:41:36 2012
-> +++ b/mm/memcontrol.c	Sat Jan 21 21:18:46 2012
-> @@ -1662,6 +1662,21 @@ static int mem_cgroup_soft_reclaim(struc
->  	return total;
->  }
-> 
-> +unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg)
-> +{
-> +	unsigned long pages;
-> +
-> +	if (mem_cgroup_disabled())
-> +		return 0;
-> +	if (!memcg)
-> +		return 0;
-> +	if (mem_cgroup_is_root(memcg))
-> +		return 0;
-> +
-> +	pages = res_counter_soft_limit_excess(&memcg->res) >> PAGE_SHIFT;
-> +	return pages;
-> +}
-> +
->  /*
->   * Check OOM-Killer is already running under our hierarchy.
->   * If someone is running, return false.
-> --- a/mm/vmscan.c	Sat Jan 14 14:02:20 2012
-> +++ b/mm/vmscan.c	Sat Jan 21 21:30:06 2012
-> @@ -2150,8 +2150,34 @@ static void shrink_zone(int priority, st
->  			.mem_cgroup = memcg,
->  			.zone = zone,
->  		};
-> +		unsigned long old;
-> +		bool clobbered = false;
-> +
-> +		if (memcg != NULL) {
-> +			unsigned long excess;
-> +
-> +			excess = mem_cgroup_excess_pages(memcg);
-> +			/*
-> +			 * No bother reclaiming pages from mem cgroup that
-> +			 * is under soft limit
-> +			 */
-> +			if (!excess)
-> +				goto next;
-> +			/*
-> +			 * And reclaim no more pages than excess
-> +			 */
-> +			if (excess < sc->nr_to_reclaim) {
-> +				old = sc->nr_to_reclaim;
-> +				sc->nr_to_reclaim = excess;
-> +				clobbered = true;
-> +			}
-> +		}
-> 
->  		shrink_mem_cgroup_zone(priority, &mz, sc);
-> +
-> +		if (clobbered)
-> +			sc->nr_to_reclaim = old;
-> +next:
->  		/*
->  		 * Limit reclaim has historically picked one memcg and
->  		 * scanned it with decreasing priority levels until
-> --- a/include/linux/memcontrol.h	Thu Jan 19 22:03:14 2012
-> +++ b/include/linux/memcontrol.h	Sat Jan 21 21:35:50 2012
-> @@ -161,6 +161,7 @@ unsigned long mem_cgroup_soft_limit_recl
->  						gfp_t gfp_mask,
->  						unsigned long *total_scanned);
->  u64 mem_cgroup_get_limit(struct mem_cgroup *memcg);
-> +unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg);
-> 
->  void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> @@ -376,6 +377,11 @@ unsigned long mem_cgroup_soft_limit_recl
-> 
->  static inline
->  u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline unsigned long mem_cgroup_excess_pages(struct mem_cgroup *memcg)
->  {
->  	return 0;
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+--Signature=_Tue__24_Jan_2012_00_10_43_+1100_9f6wTEfIfVFfc16q
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPHVxTAAoJEECxmPOUX5FEVmYQAJIHcQyboonO2vQXjkXZpXeP
+kBI0qBelabkoZH6uhG6z5eyk8X/drUj13JJ1L8F9vA/Yur2i7+agNa3QJ1EadKXJ
+5Bw6XOIKfEhGXn/SdsmzJFBotyyQKeh+PzCebw8uVo41JJUDKQFRlqk+khG+A8OS
+oc7b47s6Cwtua19FZ2a3uQpSTAgkEtBUFjBua0aCR1XhyMD5s6UfoN0gHJ/A2AoW
+Sd7rTJrAL1IAfshMtA/ZffjKd6AcrzpNsH3zDLWN3FTs4FhnnlWgqKN7xhFcf1Cr
+zHx2RGaiE9fuOTWjAMPjuQscGUkbn0P7qG0SrLYoa1qGzewCqRqoXyQ5CH3VOhyh
+Ro3ovx95wMVYPgaI8ocI9hx/Av3yig+q4tQo0400yC19KlVkF0Rdc6VSJd3j1O1w
+netROI09cCC9spgYCiX/q3tneXXkRi0/9ZvVrr02TH1K8LHB8zzFwIkQ0TjnyLM5
+UJetg8lzrUS8gH5XwnhYh+nuNdjjxcEhMtfq9MCmIsIhweuqtjnRj03uretH45EY
+qfnmsHx4SZ1yvx6zd9E/K7tPZViCX83YPgxF8tkhHX2rnK5XzjFucqwiBDLsdv/X
+00GBcqn27CUjLy1PDuRL5EAKKhpQjOCZm9zSmbka/iMPwHb7e3MA/fXyVEo9UhWj
+zSkltNni1gLYHffNk76p
+=wdkU
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__24_Jan_2012_00_10_43_+1100_9f6wTEfIfVFfc16q--
