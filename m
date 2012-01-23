@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab2AWXvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:51:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42861 "EHLO mx2.suse.de"
+	id S932405Ab2AWXw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:52:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42871 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756302Ab2AWXvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:51:31 -0500
+	id S1755853Ab2AWXve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:51:34 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:30 2012
-Message-Id: <20120123234030.267576866@clark.kroah.org>
+Message-Id: <20120123234030.351967279@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:40:12 -0800
+Date: Mon, 23 Jan 2012 15:40:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        Russell King <rmk@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
-        Matt Mackall <mpm@selenic.com>
-Subject: [86/90] proc: clear_refs: do not clear reserved pages
+        alan@lxorguk.ukuu.org.uk, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [87/90] mm: fix NULL ptr dereference in __count_immobile_pages
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,62 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 85e72aa5384b1a614563ad63257ded0e91d1a620 upstream.
+commit 687875fb7de4a95223af20ee024282fa9099f860 upstream.
 
-/proc/pid/clear_refs is used to clear the Referenced and YOUNG bits for
-pages and corresponding page table entries of the task with PID pid, which
-includes any special mappings inserted into the page tables in order to
-provide things like vDSOs and user helper functions.
+Fix the following NULL ptr dereference caused by
 
-On ARM this causes a problem because the vectors page is mapped as a
-global mapping and since ec706dab ("ARM: add a vma entry for the user
-accessible vector page"), a VMA is also inserted into each task for this
-page to aid unwinding through signals and syscall restarts.  Since the
-vectors page is required for handling faults, clearing the YOUNG bit (and
-subsequently writing a faulting pte) means that we lose the vectors page
-*globally* and cannot fault it back in.  This results in a system deadlock
-on the next exception.
+  cat /sys/devices/system/memory/memory0/removable
 
-To see this problem in action, just run:
+Pid: 13979, comm: sed Not tainted 3.0.13-0.5-default #1 IBM BladeCenter LS21 -[7971PAM]-/Server Blade
+RIP: __count_immobile_pages+0x4/0x100
+Process sed (pid: 13979, threadinfo ffff880221c36000, task ffff88022e788480)
+Call Trace:
+  is_pageblock_removable_nolock+0x34/0x40
+  is_mem_section_removable+0x74/0xf0
+  show_mem_removable+0x41/0x70
+  sysfs_read_file+0xfe/0x1c0
+  vfs_read+0xc7/0x130
+  sys_read+0x53/0xa0
+  system_call_fastpath+0x16/0x1b
 
-	$ echo 1 > /proc/self/clear_refs
+We are crashing because we are trying to dereference NULL zone which
+came from pfn=0 (struct page ffffea0000000000). According to the boot
+log this page is marked reserved:
+e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
 
-on an ARM platform (as any user) and watch your system hang.  I think this
-has been the case since 2.6.37
+and early_node_map confirms that:
+early_node_map[3] active PFN ranges
+    1: 0x00000010 -> 0x0000009c
+    1: 0x00000100 -> 0x000bffa3
+    1: 0x00100000 -> 0x00240000
 
-This patch avoids clearing the aforementioned bits for reserved pages,
-therefore leaving the vectors page intact on ARM.  Since reserved pages
-are not candidates for swap, this change should not have any impact on the
-usefulness of clear_refs.
+The problem is that memory_present works in PAGE_SECTION_MASK aligned
+blocks so the reserved range sneaks into the the section as well.  This
+also means that free_area_init_node will not take care of those reserved
+pages and they stay uninitialized.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Reported-by: Moussa Ba <moussaba@micron.com>
-Acked-by: Hugh Dickins <hughd@google.com>
+When we try to read the removable status we walk through all available
+sections and hope that the zone is valid for all pages in the section.
+But this is not true in this case as the zone and nid are not initialized.
+
+We have only one node in this particular case and it is marked as node=1
+(rather than 0) and that made the problem visible because page_to_nid will
+return 0 and there are no zones on the node.
+
+Let's check that the zone is valid and that the given pfn falls into its
+boundaries and mark the section not removable.  This might cause some
+false positives, probably, but we do not have any sane way to find out
+whether the page is reserved by the platform or it is just not used for
+whatever other reasons.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: David Rientjes <rientjes@google.com>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Cc: Matt Mackall <mpm@selenic.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/task_mmu.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/page_alloc.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -516,6 +516,9 @@ static int clear_refs_pte_range(pmd_t *p
- 		if (!page)
- 			continue;
- 
-+		if (PageReserved(page))
-+			continue;
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5565,6 +5565,17 @@ __count_immobile_pages(struct zone *zone
+ bool is_pageblock_removable_nolock(struct page *page)
+ {
+ 	struct zone *zone = page_zone(page);
++	unsigned long pfn = page_to_pfn(page);
 +
- 		/* Clear accessed and referenced bits. */
- 		ptep_test_and_clear_young(vma, addr, pte);
- 		ClearPageReferenced(page);
++	/*
++	 * We have to be careful here because we are iterating over memory
++	 * sections which are not zone aware so we might end up outside of
++	 * the zone but still within the section.
++	 */
++	if (!zone || zone->zone_start_pfn > pfn ||
++			zone->zone_start_pfn + zone->spanned_pages <= pfn)
++		return false;
++
+ 	return __count_immobile_pages(zone, page, 0);
+ }
+ 
 
 
