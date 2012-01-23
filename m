@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2AWXqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:46:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42144 "EHLO mx2.suse.de"
+	id S1755337Ab2AWXqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:46:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42139 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755309Ab2AWXqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:46:48 -0500
+	id S1755309Ab2AWXqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:46:43 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:24 2012
-Message-Id: <20120123234024.090646620@clark.kroah.org>
+Message-Id: <20120123234024.005840373@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:38:59 -0800
+Date: Mon, 23 Jan 2012 15:38:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Lukas Razik <linux@razik.name>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [13/90] NFS: Retry mounting NFSROOT
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [12/90] radeon: Fix disabling PCI bus mastering on big endian hosts.
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,92 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Michel Dänzer <michel.daenzer@amd.com>
 
-commit 43717c7daebf10b43f12e68512484b3095bb1ba5 upstream.
+commit 3df96909b75835d487a9178761622b0cbd7310d4 upstream.
 
-Lukas Razik <linux@razik.name> reports that on his SPARC system,
-booting with an NFS root file system stopped working after commit
-56463e50 "NFS: Use super.c for NFSROOT mount option parsing."
+It would previously write basically random bits to PCI configuration space...
+Not very surprising that the GPU tended to stop responding completely. The
+resulting MCE even froze the whole machine sometimes.
 
-We found that the network switch to which Lukas' client was attached
-was delaying access to the LAN after the client's NIC driver reported
-that its link was up.  The delay was longer than the timeouts used in
-the NFS client during mounting.
+Now resetting the GPU after a lockup has at least a fighting chance of
+succeeding.
 
-NFSROOT worked for Lukas before commit 56463e50 because in those
-kernels, the client's first operation was an rpcbind request to
-determine which port the NFS server was listening on.  When that
-request failed after a long timeout, the client simply selected the
-default NFS port (2049).  By that time the switch was allowing access
-to the LAN, and the mount succeeded.
-
-Neither of these client behaviors is desirable, so reverting 56463e50
-is really not a choice.  Instead, introduce a mechanism that retries
-the NFSROOT mount request several times.  This is the same tactic that
-normal user space NFS mounts employ to overcome server and network
-delays.
-
-Signed-off-by: Lukas Razik <linux@razik.name>
-[ cel: match kernel coding style, add proper patch description ]
-[ cel: add exponential back-off ]
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Tested-by: Lukas Razik <linux@razik.name>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- init/do_mounts.c |   35 +++++++++++++++++++++++++++++++----
- 1 file changed, 31 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/r100.c  |    5 +++--
+ drivers/gpu/drm/radeon/rs600.c |    4 ++--
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -360,15 +360,42 @@ out:
- }
-  
- #ifdef CONFIG_ROOT_NFS
-+
-+#define NFSROOT_TIMEOUT_MIN	5
-+#define NFSROOT_TIMEOUT_MAX	30
-+#define NFSROOT_RETRY_MAX	5
-+
- static int __init mount_nfs_root(void)
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -2069,6 +2069,7 @@ bool r100_gpu_is_lockup(struct radeon_de
+ void r100_bm_disable(struct radeon_device *rdev)
  {
- 	char *root_dev, *root_data;
-+	unsigned int timeout;
-+	int try, err;
+ 	u32 tmp;
++	u16 tmp16;
  
--	if (nfs_root_data(&root_dev, &root_data) != 0)
--		return 0;
--	if (do_mount_root(root_dev, "nfs", root_mountflags, root_data) != 0)
-+	err = nfs_root_data(&root_dev, &root_data);
-+	if (err != 0)
- 		return 0;
--	return 1;
-+
-+	/*
-+	 * The server or network may not be ready, so try several
-+	 * times.  Stop after a few tries in case the client wants
-+	 * to fall back to other boot methods.
-+	 */
-+	timeout = NFSROOT_TIMEOUT_MIN;
-+	for (try = 1; ; try++) {
-+		err = do_mount_root(root_dev, "nfs",
-+					root_mountflags, root_data);
-+		if (err == 0)
-+			return 1;
-+		if (try > NFSROOT_RETRY_MAX)
-+			break;
-+
-+		/* Wait, in case the server refused us immediately */
-+		ssleep(timeout);
-+		timeout <<= 1;
-+		if (timeout > NFSROOT_TIMEOUT_MAX)
-+			timeout = NFSROOT_TIMEOUT_MAX;
-+	}
-+	return 0;
+ 	/* disable bus mastering */
+ 	tmp = RREG32(R_000030_BUS_CNTL);
+@@ -2079,8 +2080,8 @@ void r100_bm_disable(struct radeon_devic
+ 	WREG32(R_000030_BUS_CNTL, (tmp & 0xFFFFFFFF) | 0x00000040);
+ 	tmp = RREG32(RADEON_BUS_CNTL);
+ 	mdelay(1);
+-	pci_read_config_word(rdev->pdev, 0x4, (u16*)&tmp);
+-	pci_write_config_word(rdev->pdev, 0x4, tmp & 0xFFFB);
++	pci_read_config_word(rdev->pdev, 0x4, &tmp16);
++	pci_write_config_word(rdev->pdev, 0x4, tmp16 & 0xFFFB);
+ 	mdelay(1);
  }
- #endif
  
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -324,10 +324,10 @@ void rs600_hpd_fini(struct radeon_device
+ 
+ void rs600_bm_disable(struct radeon_device *rdev)
+ {
+-	u32 tmp;
++	u16 tmp;
+ 
+ 	/* disable bus mastering */
+-	pci_read_config_word(rdev->pdev, 0x4, (u16*)&tmp);
++	pci_read_config_word(rdev->pdev, 0x4, &tmp);
+ 	pci_write_config_word(rdev->pdev, 0x4, tmp & 0xFFFB);
+ 	mdelay(1);
+ }
 
 
