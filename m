@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab2AWVJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 16:09:58 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64836 "EHLO
+	id S1754336Ab2AWVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 16:08:09 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58444 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab2AWVIL (ORCPT
+	with ESMTP id S1753912Ab2AWVIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 16:08:11 -0500
+	Mon, 23 Jan 2012 16:08:06 -0500
 MIME-Version: 1.0
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
         benh@kernel.crashing.org, Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [RFCv2 09/14] irqdomain: remove NO_IRQ from irq domain code
-Date: Mon, 23 Jan 2012 14:07:45 -0700
-Message-Id: <1327352870-14687-10-git-send-email-grant.likely@secretlab.ca>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Michal Simek <monstr@monstr.eu>
+Subject: [RFCv2 04/14] irq_domain: convert microblaze from irq_host to irq_domain
+Date: Mon, 23 Jan 2012 14:07:40 -0700
+Message-Id: <1327352870-14687-5-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
 References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
@@ -23,171 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zero always means no irq when using irq domains.  Get rid of the NO_IRQ
-references.
+Trivial change, microblaze doesn't use irq remapping yet.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michal Simek <monstr@monstr.eu>
 ---
- kernel/irq/irqdomain.c |   38 +++++++++++++++++++-------------------
- 1 files changed, 19 insertions(+), 19 deletions(-)
+ arch/microblaze/include/asm/irq.h |    4 ++--
+ arch/microblaze/kernel/irq.c      |    2 +-
+ arch/microblaze/kernel/setup.c    |    2 --
+ 3 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index b59482a..103072b 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -103,7 +103,7 @@ struct irq_domain *irq_alloc_host(struct device_node *of_node,
- 	case IRQ_DOMAIN_MAP_LINEAR:
- 		rmap = (unsigned int *)(host + 1);
- 		for (i = 0; i < revmap_arg; i++)
--			rmap[i] = NO_IRQ;
-+			rmap[i] = 0;
- 		host->revmap_data.linear.size = revmap_arg;
- 		host->revmap_data.linear.revmap = rmap;
- 		break;
-@@ -213,16 +213,16 @@ unsigned int irq_create_direct_mapping(struct irq_domain *host)
- 	WARN_ON(host->revmap_type != IRQ_DOMAIN_MAP_NOMAP);
- 
- 	virq = irq_alloc_desc(0);
--	if (virq == NO_IRQ) {
-+	if (!virq) {
- 		pr_debug("irq: create_direct virq allocation failed\n");
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	pr_debug("irq: create_direct obtained virq %d\n", virq);
- 
- 	if (irq_setup_virq(host, virq, virq)) {
- 		irq_free_desc(virq);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	return virq;
-@@ -252,13 +252,13 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		printk(KERN_WARNING "irq_create_mapping called for"
- 		       " NULL host, hwirq=%lx\n", hwirq);
- 		WARN_ON(1);
--		return NO_IRQ;
-+		return 0;
- 	}
- 	pr_debug("irq: -> using host @%p\n", host);
- 
- 	/* Check if mapping already exists */
- 	virq = irq_find_mapping(host, hwirq);
--	if (virq != NO_IRQ) {
-+	if (virq) {
- 		pr_debug("irq: -> existing mapping on virq %d\n", virq);
- 		return virq;
- 	}
-@@ -268,7 +268,7 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		/* Handle legacy */
- 		virq = (unsigned int)hwirq;
- 		if (virq == 0 || virq >= NUM_ISA_INTERRUPTS)
--			return NO_IRQ;
-+			return 0;
- 		return virq;
- 	} else {
- 		/* Allocate a virtual interrupt number */
-@@ -276,16 +276,16 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		virq = irq_alloc_desc_from(hint, 0);
- 		if (!virq)
- 			virq = irq_alloc_desc(0);
--		if (virq == NO_IRQ) {
-+		if (!virq) {
- 			pr_debug("irq: -> virq allocation failed\n");
--			return NO_IRQ;
-+			return 0;
- 		}
- 	}
- 
- 	if (irq_setup_virq(host, virq, hwirq)) {
- 		if (host->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
- 			irq_free_desc(virq);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	pr_debug("irq: irq %lu on host %s mapped to virtual irq %u\n",
-@@ -310,7 +310,7 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 	if (host == NULL) {
- 		printk(KERN_WARNING "irq: no irq host found for %s !\n",
- 		       controller->full_name);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	/* If host has no translation, then we assume interrupt line */
-@@ -319,12 +319,12 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 	else {
- 		if (host->ops->xlate(host, controller, intspec, intsize,
- 				     &hwirq, &type))
--			return NO_IRQ;
-+			return 0;
- 	}
- 
- 	/* Create mapping */
- 	virq = irq_create_mapping(host, hwirq);
--	if (virq == NO_IRQ)
-+	if (!virq)
- 		return virq;
- 
- 	/* Set type if specified and different than the current one */
-@@ -345,7 +345,7 @@ void irq_dispose_mapping(unsigned int virq)
- 	struct irq_domain *host;
- 	irq_hw_number_t hwirq;
- 
--	if (virq == NO_IRQ || !irq_data)
-+	if (!virq || !irq_data)
- 		return;
- 
- 	host = irq_data->domain;
-@@ -374,7 +374,7 @@ void irq_dispose_mapping(unsigned int virq)
- 	switch(host->revmap_type) {
- 	case IRQ_DOMAIN_MAP_LINEAR:
- 		if (hwirq < host->revmap_data.linear.size)
--			host->revmap_data.linear.revmap[hwirq] = NO_IRQ;
-+			host->revmap_data.linear.revmap[hwirq] = 0;
- 		break;
- 	case IRQ_DOMAIN_MAP_TREE:
- 		mutex_lock(&revmap_trees_mutex);
-@@ -409,7 +409,7 @@ unsigned int irq_find_mapping(struct irq_domain *host,
- 	if (host == NULL)
- 		host = irq_default_host;
- 	if (host == NULL)
--		return NO_IRQ;
-+		return 0;
- 
- 	/* legacy -> bail early */
- 	if (host->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
-@@ -427,7 +427,7 @@ unsigned int irq_find_mapping(struct irq_domain *host,
- 		if (i >= irq_virq_count)
- 			i = NUM_ISA_INTERRUPTS;
- 	} while(i != hint);
--	return NO_IRQ;
-+	return 0;
+diff --git a/arch/microblaze/include/asm/irq.h b/arch/microblaze/include/asm/irq.h
+index a175132..7798ad1 100644
+--- a/arch/microblaze/include/asm/irq.h
++++ b/arch/microblaze/include/asm/irq.h
+@@ -39,7 +39,7 @@ static inline void irq_dispose_mapping(unsigned int virq)
+ 	return;
  }
- EXPORT_SYMBOL_GPL(irq_find_mapping);
  
-@@ -480,7 +480,7 @@ void irq_radix_revmap_insert(struct irq_domain *host, unsigned int virq,
- 	if (WARN_ON(host->revmap_type != IRQ_DOMAIN_MAP_TREE))
- 		return;
+-struct irq_host;
++struct irq_domain;
  
--	if (virq != NO_IRQ) {
-+	if (virq) {
- 		mutex_lock(&revmap_trees_mutex);
- 		radix_tree_insert(&host->revmap_data.tree, hwirq, irq_data);
- 		mutex_unlock(&revmap_trees_mutex);
-@@ -514,7 +514,7 @@ unsigned int irq_linear_revmap(struct irq_domain *host,
- 		return irq_find_mapping(host, hwirq);
+ /**
+  * irq_create_mapping - Map a hardware interrupt into linux virq space
+@@ -51,7 +51,7 @@ struct irq_host;
+  * If the sense/trigger is to be specified, set_irq_type() should be called
+  * on the number returned from that call.
+  */
+-extern unsigned int irq_create_mapping(struct irq_host *host,
++extern unsigned int irq_create_mapping(struct irq_domain *host,
+ 					irq_hw_number_t hwirq);
  
- 	/* Fill up revmap with slow path if no mapping found */
--	if (unlikely(revmap[hwirq] == NO_IRQ))
-+	if (unlikely(!revmap[hwirq]))
- 		revmap[hwirq] = irq_find_mapping(host, hwirq);
+ #endif /* _ASM_MICROBLAZE_IRQ_H */
+diff --git a/arch/microblaze/kernel/irq.c b/arch/microblaze/kernel/irq.c
+index bbebcae..3f613df 100644
+--- a/arch/microblaze/kernel/irq.c
++++ b/arch/microblaze/kernel/irq.c
+@@ -51,7 +51,7 @@ next_irq:
  
- 	return revmap[hwirq];
+ /* MS: There is no any advance mapping mechanism. We are using simple 32bit
+   intc without any cascades or any connection that's why mapping is 1:1 */
+-unsigned int irq_create_mapping(struct irq_host *host, irq_hw_number_t hwirq)
++unsigned int irq_create_mapping(struct irq_domain *host, irq_hw_number_t hwirq)
+ {
+ 	return hwirq + IRQ_OFFSET;
+ }
+diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
+index d4fc1a9..208cd04 100644
+--- a/arch/microblaze/kernel/setup.c
++++ b/arch/microblaze/kernel/setup.c
+@@ -52,8 +52,6 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	unflatten_device_tree();
+ 
+-	/* NOTE I think that this function is not necessary to call */
+-	/* irq_early_init(); */
+ 	setup_cpuinfo();
+ 
+ 	microblaze_cache_init();
 -- 
 1.7.5.4
 
