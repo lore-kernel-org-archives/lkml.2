@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab2AWXvW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:51:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42821 "EHLO mx2.suse.de"
+	id S1756292Ab2AWXvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:51:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42881 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932336Ab2AWXvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:51:10 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
-Message-Id: <20120123234027.974035244@clark.kroah.org>
+	id S1756302Ab2AWXvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:51:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:30 2012
+Message-Id: <20120123234030.523117274@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:45 -0800
+Date: Mon, 23 Jan 2012 15:40:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>
-Subject: [59/90] HID: multitouch: add support for 3M 32"
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [89/90] iwlegacy: 3945: fix hw passive scan on radar channels
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit c4fad877cd0efb51d8180ae2eaa791c99c92051c upstream.
+commit 68acc4afb040d98ddfd2cae0de09e2f4e1ee127f upstream.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Acked-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Patch fix firmware error on "iw dev wlan0 scan passive" for
+hardware scanning (with disable_hw_scan=0 module parameter).
+
+ iwl3945 0000:03:00.0: Microcode SW error detected. Restarting 0x82000008.
+ iwl3945 0000:03:00.0: Loaded firmware version: 15.32.2.9
+ iwl3945 0000:03:00.0: Start IWL Error Log Dump:
+ iwl3945 0000:03:00.0: Status: 0x0002A2E4, count: 1
+ iwl3945 0000:03:00.0: Desc       Time       asrtPC blink2 ilink1  nmiPC   Line
+ iwl3945 0000:03:00.0: SYSASSERT     (0x5) 0041263900 0x13756 0x0031C 0x00000 764
+ iwl3945 0000:03:00.0: Error Reply type 0x000002FC cmd C_SCAN (0x80) seq 0x443E ser 0x00340000
+ iwl3945 0000:03:00.0: Command C_SCAN failed: FW Error
+ iwl3945 0000:03:00.0: Can't stop Rx DMA.
+
+We have disable ability to change passive scanning to active on
+particular channel when traffic is detected on that channel. Otherwise
+firmware will report error, when we try to do passive scan on radar
+channels.
+
+Reported-and-debugged-by: Pedro Francisco <pedrogfrancisco@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-ids.h        |    1 +
- drivers/hid/hid-multitouch.c |    3 +++
- 2 files changed, 4 insertions(+)
+ drivers/net/wireless/iwlegacy/iwl3945-base.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -21,6 +21,7 @@
- #define USB_VENDOR_ID_3M		0x0596
- #define USB_DEVICE_ID_3M1968		0x0500
- #define USB_DEVICE_ID_3M2256		0x0502
-+#define USB_DEVICE_ID_3M3266		0x0506
+--- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
++++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
+@@ -2910,14 +2910,13 @@ int iwl3945_request_scan(struct iwl_priv
+ 		IWL_WARN(priv, "Invalid scan band\n");
+ 		return -EIO;
+ 	}
+-
+ 	/*
+-	 * If active scaning is requested but a certain channel
+-	 * is marked passive, we can do active scanning if we
+-	 * detect transmissions.
++	 * If active scaning is requested but a certain channel is marked
++	 * passive, we can do active scanning if we detect transmissions. For
++	 * passive only scanning disable switching to active on any channel.
+ 	 */
+ 	scan->good_CRC_th = is_active ? IWL_GOOD_CRC_TH_DEFAULT :
+-					IWL_GOOD_CRC_TH_DISABLED;
++					IWL_GOOD_CRC_TH_NEVER;
  
- #define USB_VENDOR_ID_A4TECH		0x09da
- #define USB_DEVICE_ID_A4TECH_WCP32PU	0x0006
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -593,6 +593,9 @@ static const struct hid_device_id mt_dev
- 	{ .driver_data = MT_CLS_3M,
- 		HID_USB_DEVICE(USB_VENDOR_ID_3M,
- 			USB_DEVICE_ID_3M2256) },
-+	{ .driver_data = MT_CLS_3M,
-+		HID_USB_DEVICE(USB_VENDOR_ID_3M,
-+			USB_DEVICE_ID_3M3266) },
- 
- 	/* ActionStar panels */
- 	{ .driver_data = MT_CLS_DEFAULT,
+ 	if (!priv->is_internal_short_scan) {
+ 		scan->tx_cmd.len = cpu_to_le16(
 
 
