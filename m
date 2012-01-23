@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab2AWM4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 07:56:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45831 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab2AWM4j convert rfc822-to-8bit (ORCPT
+	id S1752697Ab2AWM5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 07:57:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62044 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263Ab2AWM5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 07:56:39 -0500
-Message-ID: <1327323393.2446.9.camel@twins>
-Subject: Re: [PATCH] sched/stats: Keep legacy array expiration field to zero.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
-Date: Mon, 23 Jan 2012 13:56:33 +0100
-In-Reply-To: <1326991042.6107.4.camel@localhost.localdomain>
-References: <1326991042.6107.4.camel@localhost.localdomain>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 23 Jan 2012 07:57:08 -0500
+Date: Mon, 23 Jan 2012 14:56:55 +0200
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2012-01-03
+Message-ID: <20120123125655.GA20973@x220.ger.corp.intel.com>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120103033320.GG1472@joana>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120103033320.GG1472@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-19 at 22:37 +0600, Rakib Mullick wrote:
-> A patch (https://lkml.org/lkml/2012/1/12/224) was sent previously to
-> update scheduler stat documentation to address array expiration
-> field's use. Then Ingo suggest that, we should also make sure that
-> we're exporting a value of zero. So, this patch does those
-> accordingly.
+Hi John,
 
-
-This is not a valid changelog
+On Tue, Jan 03, 2012, Gustavo Padovan wrote:
+> A couple of fixes for the 3.3 release. The majority of the fixes are related
+> to the change from tasklets to workqueue in the Bluetooth Core. The rest are
+> important fixes over the tree. Exception is "Bluetooth: Rename extfeatures¨,
+> as the name says it is just a rename and no harm, but it is a preparation for
+> a following fix.
 > 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-> ---
+> Please pull, or let me know any concerns you have!
 > 
-> diff --git a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
-> index 1cd5d51..8259b34 100644
-> --- a/Documentation/scheduler/sched-stats.txt
-> +++ b/Documentation/scheduler/sched-stats.txt
-> @@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
->       1) # of times sched_yield() was called
->  
->  Next three are schedule() statistics:
-> -     2) # of times we switched to the expired queue and reused it
-> +     2) This field is a legacy array expiration count field used in the O(1)
-> +	scheduler. We kept it for ABI compatibility, but it is always set to zero.
->       3) # of times schedule() was called
->       4) # of times schedule() left the processor idle
->  
-> diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
-> index 2a581ba..903ffa9e 100644
-> --- a/kernel/sched/stats.c
-> +++ b/kernel/sched/stats.c
-> @@ -32,9 +32,9 @@ static int show_schedstat(struct seq_file *seq, void *v)
->  
->  		/* runqueue-specific stats */
->  		seq_printf(seq,
-> -		    "cpu%d %u %u %u %u %u %u %llu %llu %lu",
-> +		    "cpu%d %u 0 %u %u %u %u %llu %llu %lu",
->  		    cpu, rq->yld_count,
-> -		    rq->sched_switch, rq->sched_count, rq->sched_goidle,
-> +		    rq->sched_count, rq->sched_goidle,
->  		    rq->ttwu_count, rq->ttwu_local,
->  		    rq->rq_cpu_time,
->  		    rq->rq_sched_info.run_delay, rq->rq_sched_info.pcount);
+> 	Gustavo
 > 
+> --
+> The following changes since commit dc0d633e35643662f27a0b1c531da3cd6b204b9c:
 > 
+>   Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-next (2012-01-02 16:43:54 -0500)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-next master
+> 
+> Andre Guedes (5):
+>       Bluetooth: Rename extfeatures
+>       Bluetooth: Fix hci_cc_read_local_ext_features()
+>       Bluetooth: Fix adv_work delay
+>       Bluetooth: Queue adv_work on system workqueue
+>       Bluetooth: Fix mgmt_stop_discovery_failed()
+> 
+> Andrei Emeltchenko (1):
+>       Bluetooth: Correct packet len calculation
+> 
+> Gustavo F. Padovan (8):
+>       Bluetooth: Fix bacpy in l2cap_core.c
+>       Bluetooth: Fix context in rfcomm_sock_lock
+>       Bluetooth: Fix context in RFCOMM tty
+>       Bluetooth: Remove *_bh locks from SCO
+>       Bluetooth: Remove local_bh_disable() from hci_sock.c
+>       Bluetooth: Remove *_bh from socket list lock.
+>       Bluetooth: Don't use *_bh locks anymore
+>       Bluetooth: Keep chan->state and sk->sk_state in sync
+> 
+>  include/net/bluetooth/hci_core.h |    4 ++--
+>  net/bluetooth/af_bluetooth.c     |    8 ++++----
+>  net/bluetooth/hci_event.c        |   22 +++++++++++++---------
+>  net/bluetooth/hci_sock.c         |    2 --
+>  net/bluetooth/l2cap_core.c       |   26 +++++++++++++-------------
+>  net/bluetooth/l2cap_sock.c       |    2 ++
+>  net/bluetooth/mgmt.c             |    4 ++--
+>  net/bluetooth/rfcomm/sock.c      |   12 ++++++------
+>  net/bluetooth/rfcomm/tty.c       |   22 +++++++++++-----------
+>  net/bluetooth/sco.c              |    8 ++++----
+>  10 files changed, 57 insertions(+), 53 deletions(-)
+> --
 
-This leaves sched_switch completely unused:
+Are you planing to pull this? I've been waiting for that before making
+any new pull requests from my (temporary) bluetooth-next tree[1]. If
+that's not gonna happen I'll go ahead rebase my tree against latest
+wireless-next (including these patches and all other ones that Marcel
+has acked since Gustavo started his break), and make a new pull request
+to you in the near future.
 
-# git grep -e "\<sched_switch\>"  kernel/sched/
-kernel/sched/debug.c:   P(sched_switch);                                                                                                                                                   
-kernel/sched/sched.h:   unsigned int sched_switch;                                                                                                                                         
-kernel/sched/stats.c:               rq->sched_switch, rq->sched_count, rq->sched_goidle, 
+Johan
 
-Best kill that too
-                     
+[1] http://git.kernel.org/?p=linux/kernel/git/jh/bluetooth-next.git;a=summary
