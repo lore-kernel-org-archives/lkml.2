@@ -1,52 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab2AWCDW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 21:03:22 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:39320 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab2AWCDU (ORCPT
+	id S1752647Ab2AWCE2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 21:04:28 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64569 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab2AWCE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 21:03:20 -0500
-Date: Mon, 23 Jan 2012 13:03:12 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henning Heinold <heinold@inf.fu-berlin.de>,
-        Varun Wadekar <vwadekar@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>
-Subject: Re: linux-next: manual merge of the crypto tree with the tegra tree
-Message-ID: <20120123020312.GA31912@gondor.apana.org.au>
-References: <20120123120933.6d4c9cc7050fce2e9fbc9d3a@canb.auug.org.au>
+	Sun, 22 Jan 2012 21:04:27 -0500
+Date: Sun, 22 Jan 2012 21:04:21 -0500
+From: Tracey Dent <tdent48227@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: swetland@google.com, greg@kroah.com, greg@suse.de
+Subject: [PATCH][GIT PULL] Minor Cleanups
+Message-ID: <20120123020421.GA9455@tj-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120123120933.6d4c9cc7050fce2e9fbc9d3a@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 12:09:33PM +1100, Stephen Rothwell wrote:
-> Hi Herbert,
-> 
-> Today's linux-next merge of the crypto tree got a conflict in
-> arch/arm/mach-tegra/fuse.c between commit b2609c7c7237 ("ARM: tegra:
-> fuse: add functions to access chip revision") from the tegra tree and
-> commit e87e06cd8cc0 ("arm: tegra: export tegra_chip_uid") from the crypto
-> tree.
-> 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+Greg can you pull these changes into your tree. They are trival fixes, 
+nothing major as you can see below.
 
-Thanks!
+Please pull from:
+  git://github.com/Tdent48227/linux.git next
 
-> By the way, adding the EXPORT_SYMBOL() really now only needs export.h not
-> module.h (assuming that the crypto tree has a recent enough base).
+thanks,
 
-OK noted.
+tracey 
+----------------------------------------------------------------
+Tracey Dent (3):
+      drivers/staging/android/ashmem.c: Cleanups
+      drivers/staging/android/pmem.c: Cleanups
+      drivers/staging/android/timed_gpio.c: Stlye fixes
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+ drivers/staging/android/ashmem.c     |    4 ++--
+ drivers/staging/android/pmem.c       |   10 +++++-----
+ drivers/staging/android/timed_gpio.c |    6 +++---
+ 3 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+index 99052bf..9f1f27e 100644
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -315,7 +315,7 @@ static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
+ 	get_file(asma->file);
+ 
+ 	/*
+-	 * XXX - Reworked to use shmem_zero_setup() instead of 
++	 * XXX - Reworked to use shmem_zero_setup() instead of
+ 	 * shmem_set_file while we're in staging. -jstultz
+ 	 */
+ 	if (vma->vm_flags & VM_SHARED) {
+@@ -680,7 +680,7 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	return ret;
+ }
+ 
+-static struct file_operations ashmem_fops = {
++static const struct file_operations ashmem_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = ashmem_open,
+ 	.release = ashmem_release,
+diff --git a/drivers/staging/android/pmem.c b/drivers/staging/android/pmem.c
+index 7d97032..b57cdce 100644
+--- a/drivers/staging/android/pmem.c
++++ b/drivers/staging/android/pmem.c
+@@ -92,7 +92,7 @@ struct pmem_region_node {
+ 
+ #define PMEM_DEBUG_MSGS 0
+ #if PMEM_DEBUG_MSGS
+-#define DLOG(fmt,args...) \
++#define DLOG(fmt, args...) \
+ 	do { printk(KERN_INFO "[%s:%s:%d] "fmt, __FILE__, __func__, __LINE__, \
+ 		    ##args); } \
+ 	while (0)
+@@ -708,9 +708,9 @@ int get_pmem_addr(struct file *file, unsigned long *start,
+ 	struct pmem_data *data;
+ 	int id;
+ 
+-	if (!is_pmem_file(file) || !has_allocation(file)) {
++	if (!is_pmem_file(file) || !has_allocation(file))
+ 		return -1;
+-	}
++
+ 
+ 	data = (struct pmem_data *)file->private_data;
+ 	if (data->index == -1) {
+@@ -789,9 +789,9 @@ void flush_pmem_file(struct file *file, unsigned long offset, unsigned long len)
+ 	struct list_head *elt;
+ 	void *flush_start, *flush_end;
+ 
+-	if (!is_pmem_file(file) || !has_allocation(file)) {
++	if (!is_pmem_file(file) || !has_allocation(file))
+ 		return;
+-	}
++
+ 
+ 	id = get_id(file);
+ 	data = (struct pmem_data *)file->private_data;
+diff --git a/drivers/staging/android/timed_gpio.c b/drivers/staging/android/timed_gpio.c
+index a64481c..bc723ef 100644
+--- a/drivers/staging/android/timed_gpio.c
++++ b/drivers/staging/android/timed_gpio.c
+@@ -29,9 +29,9 @@ struct timed_gpio_data {
+ 	struct timed_output_dev dev;
+ 	struct hrtimer timer;
+ 	spinlock_t lock;
+-	unsigned 	gpio;
+-	int 		max_timeout;
+-	u8 		active_low;
++	unsigned gpio;
++	int max_timeout;
++	u8 active_low;
+ };
+ 
+ static enum hrtimer_restart gpio_timer_func(struct hrtimer *timer)
