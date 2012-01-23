@@ -1,144 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab2AWSEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 13:04:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13985 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752749Ab2AWSEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 13:04:46 -0500
-Message-ID: <4F1DA12E.7070906@redhat.com>
-Date: Mon, 23 Jan 2012 16:04:30 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753220Ab2AWSJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 13:09:09 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:58073 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab2AWSJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 13:09:08 -0500
+Date: Mon, 23 Jan 2012 13:06:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, bp@amd64.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        lenb@kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: WARN... Device 'cpu1' does not have a release() function, it is
+ broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
+Message-ID: <20120123180601.GA24553@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        V4L Mailing List <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] v4l2: handle multiplication overflow
-References: <4EF2FBA2.5070802@freemail.hu>
-In-Reply-To: <4EF2FBA2.5070802@freemail.hu>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F1DA214.00D3,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 22-12-2011 07:42, Németh Márton escreveu:
-> From: Márton Németh <nm127@freemail.hu>
-> 
-> When a V4L2 ioctl is executed the memory provided by the caller in user space
-> is copied to the kernel space in video_usercopy() function. To find out
-> how many bytes has to be copied the check_array_args() helper function is used.
-> 
-> This patch adds a check for multiplication overflow. Without this check the
-> multiplication may overflow resulting array_size to be zero. This means that
-> later on uninitialized value can trigger NULL pointer exception.
-> 
-> The overflow happens because ctrls->count is an __u32 multiplied by a constant
-> coming from sizeof() operator. Multiplication result of two 32bit value may
-> be a 64bit value, thus overflow can happen. Similarly buf->length is an __u32
-> multiplied by a constant coming from sizeof() operator.
-> 
-> The chosen error value is -ENOMEM because we are just about to allocate
-> kernel memory to copy data from userspace. We cannot even store the required
-> number of bytes in the variable of size_t type.
-> 
-> To trigger the error from user space use the v4l-test 0.19 [1] or essentially
-> the following code fragment:
-> 
-> 	struct v4l2_ext_controls controls;
-> 	memset(&controls, 0, sizeof(controls));
-> 	controls.ctrl_class = V4L2_CTRL_CLASS_USER;
-> 	controls.count = 0x40000000;
-> 	controls.controls = NULL;
-> 	ret = ioctl(f, VIDIOC_G_EXT_CTRLS, &controls);
-> 
-> 
-> References:
-> [1] v4l-test: Test environment for Video For Linux Two (V4L2) API
->     http://v4l-test.sourceforge.net/
-> 
-> Signed-off-by: Márton Németh <nm127@freemail.hu>
-> ---
-> 
-> I'm a little bit in doubt whether this is the correct way to check for the
-> multiplication overflow. In case of x86 architecture the MUL insruction [2]
-> can be used to multiply EAX with an other 32bit register, and the 64bit result
-> is placed to EDX:EAX. In case of EDX != 0 the carry and overflow flags are set.
-> 
-> This means that executing the MUL instruction on x86 already provides information
-> whether the result fits to 32bit or not. I might use __u64 as a result of the
-> multiplication and check whether the upper 32bit is still zero but the optimal
-> would be to check for the carry or the overflow flag.
-> 
-> Still, there could be a special case when the constant from sizeof() operator is
-> a power of 2, in this case the compiler might optimize the multiplication using
-> a shift left. In this case something else is needed.
-> 
-> I couldn't really find information about the number of bits for size_t on
-> different architectures. If size_t happens to be at least 64bit on some architecture
-> then this overflow will not happen at all and the array_size will contain the
-> correct value.
-> 
-> What do you think?
+When I bring a CPU down in a guest (which should be the same as bringing a
+CPU down using the ACPI framework), I get this:
 
-Hi Németh,
+[   14.484206] SMP alternatives: switching to UP code
+[   14.514287] ------------[ cut here ]------------
+[   14.514318] WARNING: at /home/konrad/linux-linus/drivers/base/core.c:194 device_release+0x82/0x90()
+[   14.514354] Device 'cpu1' does not have a release() function, it is broken and must be fixed.
+[   14.514386] Modules linked in: radeon fbcon tileblit font ttm bitblit softcursor drm_kms_helper xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea xen_kbdfront xenfs xen_privcmd
+[   14.514557] Pid: 22, comm: xenwatch Not tainted 3.3.0-rc1 #1
+[   14.514586] Call Trace:
+[   14.515094]  [<ffffffff810897fa>] warn_slowpath_common+0x7a/0xb0
+[   14.515094]  [<ffffffff810898d1>] warn_slowpath_fmt+0x41/0x50
+[   14.515094]  [<ffffffff813dea02>] device_release+0x82/0x90
+[   14.515094]  [<ffffffff812dfb85>] kobject_release+0x45/0x90
+[   14.515094]  [<ffffffff812dfa4c>] kobject_put+0x2c/0x60
+[   14.515094]  [<ffffffff813de6a2>] put_device+0x12/0x20
+[   14.515094]  [<ffffffff813df409>] device_unregister+0x19/0x20
+[   14.515094]  [<ffffffff813e4edf>] unregister_cpu+0x4f/0x80
+[   14.515094]  [<ffffffff81052c7c>] arch_unregister_cpu+0x1c/0x20
+[   14.515094]  [<ffffffff8137f787>] handle_vcpu_hotplug_event+0xc7/0xd0
+[   14.515094]  [<ffffffff8137b900>] xenwatch_thread+0xb0/0x180
+[   14.515094]  [<ffffffff810ad3f0>] ? wake_up_bit+0x40/0x40
+[   14.515094]  [<ffffffff8137b850>] ? split+0xf0/0xf0
+[   14.515094]  [<ffffffff810acd16>] kthread+0x96/0xa0
+[   14.515094]  [<ffffffff816151e4>] kernel_thread_helper+0x4/0x10
+[   14.515094]  [<ffffffff8160cc80>] ? retint_restore_args+0x5/0x6
+[   14.515094]  [<ffffffff816151e0>] ? gs_change+0x13/0x13
+[   14.515094] ---[ end trace 8f70af51a2e2611f ]---
 
-IMO, the check should, instead, use a max hard limit for the array size.
-There's no sense on allowing very large arrays there.
+Looking at "commit e032d80774315869aa2285b217fdbbfed86c0b49
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Mon Jan 16 14:40:28 2012 -0800
 
-I think that this patch become obsoleted by this one, already merged:
+    mce: fix warning messages about static struct mce_device
+"
 
+it looks like the corret fix is to make the 'cpu_devices' in
+arch/x86/kernel/topology.c to be changed to be more dynamic
+(or perhaps have an empty release function)?
 
-commit 6c06108be53ca5e94d8b0e93883d534dd9079646
-Author: Dan Carpenter <dan.carpenter@oracle.com>
-Date:   Thu Jan 5 02:27:57 2012 -0300
+Is anybody else hitting this with ACPI CPU hot-unplug? Or do I have
+the privilige of being the first? Oh, I hadn't done a full bisection
+but v3.2 does not have this.
 
-    [media] V4L/DVB: v4l2-ioctl: integer overflow in video_usercopy()
-    
-    If ctrls->count is too high the multiplication could overflow and
-    array_size would be lower than expected.  Mauro and Hans Verkuil
-    suggested that we cap it at 1024.  That comes from the maximum
-    number of controls with lots of room for expantion.
-    
-    $ grep V4L2_CID include/linux/videodev2.h | wc -l
-    211
-    
-    Cc: stable <stable@vger.kernel.org>
-    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
-index e1da8fc..639abee 100644
---- a/drivers/media/video/v4l2-ioctl.c
-+++ b/drivers/media/video/v4l2-ioctl.c
-@@ -2226,6 +2226,10 @@ static int check_array_args(unsigned int cmd, void *parg, size_t *array_size,
- 		struct v4l2_ext_controls *ctrls = parg;
- 
- 		if (ctrls->count != 0) {
-+			if (ctrls->count > V4L2_CID_MAX_CTRLS) {
-+				ret = -EINVAL;
-+				break;
-+			}
- 			*user_ptr = (void __user *)ctrls->controls;
- 			*kernel_ptr = (void *)&ctrls->controls;
- 			*array_size = sizeof(struct v4l2_ext_control)
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index 6bfaa76..b2e1331 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -1132,6 +1132,7 @@ struct v4l2_querymenu {
- #define V4L2_CTRL_FLAG_NEXT_CTRL	0x80000000
- 
- /*  User-class control IDs defined by V4L2 */
-+#define V4L2_CID_MAX_CTRLS		1024
- #define V4L2_CID_BASE			(V4L2_CTRL_CLASS_USER | 0x900)
- #define V4L2_CID_USER_BASE 		V4L2_CID_BASE
- /*  IDs reserved for driver specific controls */
-
-
-Regards,
-Mauro
+The guest config is quite simple:
+extra="console=hvc0 debug earlyprintk=xen memblock=debug"
+kernel="/mnt/lab/bootstrap-x86_64/vmlinuz"
+ramdisk="/mnt/lab/bootstrap-x86_64/initramfs.cpio.gz"
+memory=1024
+maxmem=2048
+vcpus=2
+name="bootstrap-x86_64"
+on_crash="preserve"
+vfb = [ 'vnc=1, vnclisten=0.0.0.0,vncunused=1']
