@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab2AWOAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 09:00:05 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50560 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752431Ab2AWN7i (ORCPT
+	id S1752691Ab2AWOED (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 09:04:03 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58560 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab2AWOEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 08:59:38 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/3] ASoC: Convert the WM5100 revision A updates to a regmap patch
-Date: Mon, 23 Jan 2012 13:59:32 +0000
-Message-Id: <1327327172-8411-3-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1327327172-8411-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1327327172-8411-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 23 Jan 2012 09:04:02 -0500
+X-SpamScore: -14
+X-BigFish: VPS-14(zz4015Lzz1202hzz15d4Rz2dhc1bhc31hc1ah668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LY98EI-01-5QC-02
+X-M-MSG: 
+Date: Mon, 23 Jan 2012 15:03:55 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: OMAP and MSM IOMMU driver misbehavior
+Message-ID: <20120123140355.GA19255@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- sound/soc/codecs/wm5100.c |   46 ++++++++++++++++----------------------------
- 1 files changed, 17 insertions(+), 29 deletions(-)
+Hi,
 
-diff --git a/sound/soc/codecs/wm5100.c b/sound/soc/codecs/wm5100.c
-index e99fadc..f916043 100644
---- a/sound/soc/codecs/wm5100.c
-+++ b/sound/soc/codecs/wm5100.c
-@@ -1388,10 +1388,7 @@ static const struct snd_soc_dapm_route wm5100_dapm_routes[] = {
- 	{ "PWM2", NULL, "PWM2 Driver" },
- };
- 
--static struct {
--	int reg;
--	int val;
--} wm5100_reva_patches[] = {
-+static const __devinitdata struct reg_default wm5100_reva_patches[] = {
- 	{ WM5100_AUDIO_IF_1_10, 0 },
- 	{ WM5100_AUDIO_IF_1_11, 1 },
- 	{ WM5100_AUDIO_IF_1_12, 2 },
-@@ -1454,31 +1451,6 @@ static int wm5100_set_bias_level(struct snd_soc_codec *codec,
- 			}
- 
- 			regcache_cache_only(wm5100->regmap, false);
--
--			switch (wm5100->rev) {
--			case 0:
--				regcache_cache_bypass(wm5100->regmap, true);
--				snd_soc_write(codec, 0x11, 0x3);
--				snd_soc_write(codec, 0x203, 0xc);
--				snd_soc_write(codec, 0x206, 0);
--				snd_soc_write(codec, 0x207, 0xf0);
--				snd_soc_write(codec, 0x208, 0x3c);
--				snd_soc_write(codec, 0x209, 0);
--				snd_soc_write(codec, 0x211, 0x20d8);
--				snd_soc_write(codec, 0x11, 0);
--
--				for (i = 0;
--				     i < ARRAY_SIZE(wm5100_reva_patches);
--				     i++)
--					snd_soc_write(codec,
--						      wm5100_reva_patches[i].reg,
--						      wm5100_reva_patches[i].val);
--				regcache_cache_bypass(wm5100->regmap, false);
--				break;
--			default:
--				break;
--			}
--
- 			regcache_sync(wm5100->regmap);
- 		}
- 		break;
-@@ -2838,6 +2810,22 @@ static __devinit int wm5100_i2c_probe(struct i2c_client *i2c,
- 		goto err_reset;
- 	}
- 
-+	switch (wm5100->rev) {
-+	case 0:
-+		ret = regmap_register_patch(wm5100->regmap,
-+					    wm5100_reva_patches,
-+					    ARRAY_SIZE(wm5100_reva_patches));
-+		if (ret != 0) {
-+			dev_err(&i2c->dev, "Failed to register patches: %d\n",
-+				ret);
-+			goto err_reset;
-+		}
-+		break;
-+	default:
-+		break;
-+	}
-+
-+
- 	wm5100_init_gpio(i2c);
- 
- 	for (i = 0; i < ARRAY_SIZE(wm5100->pdata.gpio_defaults); i++) {
+while reviewing another IOMMU driver again I came across a problem in
+the IOMMU drivers for OMAP and MSM platforms. In both drivers the
+'domain_destroy with devices attached' case isn't handled correctly.
+
+OMAP driver seems not to track the devices attached to a domain at all.
+So when a domain is destroyed it can happen that the hardware still
+references old (and already freed) page-table pointers.
+
+MSM tracks devices in a domain, but does not automatically remove the
+devices from a domain that is about to be destroyed.
+
+Please tell me when I mis-read the code, otherwise please fix this in
+your drivers so that we can get consistent behavior for IOMMU-API
+users :-)
+
+Thanks,
+
+	Joerg
+
 -- 
-1.7.7.3
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
