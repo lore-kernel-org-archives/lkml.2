@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab2AWVIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 16:08:17 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58444 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754381Ab2AWVIN (ORCPT
+	id S1754428Ab2AWVIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 16:08:15 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54281 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab2AWVIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 16:08:13 -0500
+	Mon, 23 Jan 2012 16:08:05 -0500
 MIME-Version: 1.0
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
         benh@kernel.crashing.org, Rob Herring <rob.herring@calxeda.com>
 Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [RFCv2 13/14] irq_domain: Remove 'new' irq_domain in favour of the ppc one
-Date: Mon, 23 Jan 2012 14:07:49 -0700
-Message-Id: <1327352870-14687-14-git-send-email-grant.likely@secretlab.ca>
+Subject: [RFCv2 03/14] irq_domain: Make irq_domain structure match powerpc's irq_host
+Date: Mon, 23 Jan 2012 14:07:39 -0700
+Message-Id: <1327352870-14687-4-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
 References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
@@ -23,660 +23,245 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the simplistic implementation of irq_domains and enables
-the powerpc infrastructure for all irq_domain users.  The powerpc
-infrastructure includes support for complex mappings between Linux and
-hardware irq numbers, and can manage allocation of irq_descs.
+Part of the series to unify the irq remapping mechanisms in the
+kernel.  A follow up patch will copy the powerpc implementation into
+kernel/irq/irqdomain.c, which will be a lot easier if the structures
+are identical.
 
-This patch also converts the few users of irq_domain_add()/irq_domain_del()
-to call irq_domain_add_legacy() instead.
-
-v2: Fix removal of irq_alloc_descs() call in gic driver
+Where they differ, I've chose to use the powerpc names since there is
+a lot more code using those names.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/arm/common/gic.c               |   85 ++++++++-----------
- arch/arm/common/vic.c               |   16 +---
- arch/arm/include/asm/hardware/gic.h |    4 +-
- arch/arm/include/asm/hardware/vic.h |    2 +
- arch/arm/mach-exynos/common.c       |    2 +-
- arch/arm/mach-versatile/core.c      |    5 +-
- drivers/mfd/twl-core.c              |   12 +--
- include/linux/irqdomain.h           |   45 +---------
- kernel/irq/irqdomain.c              |  159 +++--------------------------------
- 9 files changed, 69 insertions(+), 261 deletions(-)
+ arch/arm/common/gic.c     |   14 ++++----
+ include/linux/irqdomain.h |   84 ++++++++++++++++++++++++++++++++++-----------
+ kernel/irq/irqdomain.c    |   14 ++++----
+ 3 files changed, 78 insertions(+), 34 deletions(-)
 
 diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index 156bc03..44bf4e7 100644
+index b2dc2dd..156bc03 100644
 --- a/arch/arm/common/gic.c
 +++ b/arch/arm/common/gic.c
-@@ -50,7 +50,6 @@ union gic_base {
- };
- 
- struct gic_chip_data {
--	unsigned int irq_offset;
- 	union gic_base dist_base;
- 	union gic_base cpu_base;
- #ifdef CONFIG_CPU_PM
-@@ -60,9 +59,7 @@ struct gic_chip_data {
- 	u32 __percpu *saved_ppi_enable;
- 	u32 __percpu *saved_ppi_conf;
- #endif
--#ifdef CONFIG_IRQ_DOMAIN
--	struct irq_domain domain;
--#endif
-+	struct irq_domain *domain;
- 	unsigned int gic_irqs;
- #ifdef CONFIG_GIC_NON_BANKED
- 	void __iomem *(*get_base)(union gic_base *);
-@@ -281,7 +278,7 @@ asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
- 		irqnr = irqstat & ~0x1c00;
- 
- 		if (likely(irqnr > 15 && irqnr < 1021)) {
--			irqnr = irq_domain_to_irq(&gic->domain, irqnr);
-+			irqnr = irq_find_mapping(gic->domain, irqnr);
- 			handle_IRQ(irqnr, regs);
- 			continue;
- 		}
-@@ -313,8 +310,8 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
- 	if (gic_irq == 1023)
- 		goto out;
- 
--	cascade_irq = irq_domain_to_irq(&chip_data->domain, gic_irq);
--	if (unlikely(gic_irq < 32 || gic_irq > 1020 || cascade_irq >= NR_IRQS))
-+	cascade_irq = irq_find_mapping(chip_data->domain, gic_irq);
-+	if (unlikely(gic_irq < 32 || gic_irq > 1020))
- 		do_bad_IRQ(cascade_irq, desc);
- 	else
- 		generic_handle_irq(cascade_irq);
-@@ -347,10 +344,9 @@ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
- 
- static void __init gic_dist_init(struct gic_chip_data *gic)
- {
--	unsigned int i, irq;
-+	unsigned int i;
- 	u32 cpumask;
- 	unsigned int gic_irqs = gic->gic_irqs;
--	struct irq_domain *domain = &gic->domain;
- 	void __iomem *base = gic_data_dist_base(gic);
- 	u32 cpu = 0;
- 
-@@ -389,23 +385,6 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
- 	for (i = 32; i < gic_irqs; i += 32)
- 		writel_relaxed(0xffffffff, base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
- 
--	/*
--	 * Setup the Linux IRQ subsystem.
--	 */
--	irq_domain_for_each_irq(domain, i, irq) {
--		if (i < 32) {
--			irq_set_percpu_devid(irq);
--			irq_set_chip_and_handler(irq, &gic_chip,
--						 handle_percpu_devid_irq);
--			set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
--		} else {
--			irq_set_chip_and_handler(irq, &gic_chip,
--						 handle_fasteoi_irq);
--			set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
--		}
--		irq_set_chip_data(irq, gic);
--	}
--
- 	writel_relaxed(1, base + GIC_DIST_CTRL);
- }
- 
-@@ -621,7 +600,23 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
- }
+@@ -622,10 +622,10 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
  #endif
  
--#ifdef CONFIG_OF
-+static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
-+				irq_hw_number_t hw)
-+{
-+	if (hw < 32) {
-+		irq_set_percpu_devid(irq);
-+		irq_set_chip_and_handler(irq, &gic_chip,
-+					 handle_percpu_devid_irq);
-+		set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
-+	} else {
-+		irq_set_chip_and_handler(irq, &gic_chip,
-+					 handle_fasteoi_irq);
-+		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-+	}
-+	irq_set_chip_data(irq, d->host_data);
-+	return 0;
-+}
-+
- static int gic_irq_domain_xlate(struct irq_domain *d,
- 				struct device_node *controller,
- 				const u32 *intspec, unsigned int intsize,
-@@ -642,26 +637,23 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
- 	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
- 	return 0;
- }
--#endif
- 
- struct irq_domain_ops gic_irq_domain_ops = {
--#ifdef CONFIG_OF
-+	.map = gic_irq_domain_map,
- 	.xlate = gic_irq_domain_xlate,
--#endif
- };
- 
- void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 			   void __iomem *dist_base, void __iomem *cpu_base,
--			   u32 percpu_offset)
-+			   u32 percpu_offset, struct device_node *node)
- {
-+	irq_hw_number_t hwirq_base;
- 	struct gic_chip_data *gic;
--	struct irq_domain *domain;
--	int gic_irqs;
-+	int gic_irqs, irq_base;
- 
- 	BUG_ON(gic_nr >= MAX_GIC_NR);
- 
- 	gic = &gic_data[gic_nr];
--	domain = &gic->domain;
- #ifdef CONFIG_GIC_NON_BANKED
- 	if (percpu_offset) { /* Frankein-GIC without banked registers... */
- 		unsigned int cpu;
-@@ -697,10 +689,10 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 	 * For primary GICs, skip over SGIs.
- 	 * For secondary GICs, skip over PPIs, too.
- 	 */
--	domain->hwirq_base = 32;
-+	hwirq_base = 32;
- 	if (gic_nr == 0) {
- 		if ((irq_start & 31) > 0) {
--			domain->hwirq_base = 16;
-+			hwirq_base = 16;
- 			if (irq_start != -1)
- 				irq_start = (irq_start & ~31) + 16;
- 		}
-@@ -716,17 +708,17 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 		gic_irqs = 1020;
- 	gic->gic_irqs = gic_irqs;
- 
--	domain->nr_irq = gic_irqs - domain->hwirq_base;
--	domain->irq_base = irq_alloc_descs(irq_start, 16, domain->nr_irq,
--					   numa_node_id());
--	if (IS_ERR_VALUE(domain->irq_base)) {
-+	irq_base = irq_alloc_descs(irq_start, 16, gic_irqs - hwirq_base,
-+				   numa_node_id());
-+	if (IS_ERR_VALUE(irq_base)) {
- 		WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
- 		     irq_start);
--		domain->irq_base = irq_start;
-+		irq_base = irq_start;
- 	}
--	domain->host_data = gic;
--	domain->ops = &gic_irq_domain_ops;
--	irq_domain_add(domain);
-+	gic->domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
-+				    hwirq_base, &gic_irq_domain_ops, gic);
-+	if (WARN_ON(!gic->domain))
-+		return;
- 
- 	gic_chip.flags |= gic_arch_extn.flags;
- 	gic_dist_init(gic);
-@@ -771,7 +763,6 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
- 	void __iomem *dist_base;
- 	u32 percpu_offset;
- 	int irq;
--	struct irq_domain *domain = &gic_data[gic_cnt].domain;
- 
- 	if (WARN_ON(!node))
- 		return -ENODEV;
-@@ -785,9 +776,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
- 	if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
- 		percpu_offset = 0;
- 
--	domain->of_node = of_node_get(node);
--
--	gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset);
-+	gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
- 
- 	if (parent) {
- 		irq = irq_of_parse_and_map(node, 0);
-diff --git a/arch/arm/common/vic.c b/arch/arm/common/vic.c
-index dcb004a..7a66311 100644
---- a/arch/arm/common/vic.c
-+++ b/arch/arm/common/vic.c
-@@ -56,7 +56,7 @@ struct vic_device {
- 	u32		int_enable;
- 	u32		soft_int;
- 	u32		protect;
--	struct irq_domain domain;
-+	struct irq_domain *domain;
- };
- 
- /* we cannot allocate memory when VICs are initially registered */
-@@ -192,14 +192,8 @@ static void __init vic_register(void __iomem *base, unsigned int irq,
- 	v->resume_sources = resume_sources;
- 	v->irq = irq;
- 	vic_id++;
--
--	v->domain.irq_base = irq;
--	v->domain.nr_irq = 32;
--#ifdef CONFIG_OF_IRQ
--	v->domain.of_node = of_node_get(node);
--#endif /* CONFIG_OF */
--	v->domain.ops = &irq_domain_simple_ops;
--	irq_domain_add(&v->domain);
-+	v->domain = irq_domain_add_legacy(node, 32, irq, 0,
-+					  &irq_domain_simple_ops, v);
- }
- 
- static void vic_ack_irq(struct irq_data *d)
-@@ -348,7 +342,7 @@ static void __init vic_init_st(void __iomem *base, unsigned int irq_start,
- 	vic_register(base, irq_start, 0, node);
- }
- 
--static void __init __vic_init(void __iomem *base, unsigned int irq_start,
-+void __init __vic_init(void __iomem *base, unsigned int irq_start,
- 			      u32 vic_sources, u32 resume_sources,
- 			      struct device_node *node)
- {
-@@ -444,7 +438,7 @@ static int handle_one_vic(struct vic_device *vic, struct pt_regs *regs)
- 	stat = readl_relaxed(vic->base + VIC_IRQ_STATUS);
- 	while (stat) {
- 		irq = ffs(stat) - 1;
--		handle_IRQ(irq_domain_to_irq(&vic->domain, irq), regs);
-+		handle_IRQ(irq_find_mapping(vic->domain, irq), regs);
- 		stat &= ~(1 << irq);
- 		handled = 1;
- 	}
-diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
-index 4bdfe00..4b1ce6c 100644
---- a/arch/arm/include/asm/hardware/gic.h
-+++ b/arch/arm/include/asm/hardware/gic.h
-@@ -39,7 +39,7 @@ struct device_node;
- extern struct irq_chip gic_arch_extn;
- 
- void gic_init_bases(unsigned int, int, void __iomem *, void __iomem *,
--		    u32 offset);
-+		    u32 offset, struct device_node *);
- int gic_of_init(struct device_node *node, struct device_node *parent);
- void gic_secondary_init(unsigned int);
- void gic_handle_irq(struct pt_regs *regs);
-@@ -49,7 +49,7 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
- static inline void gic_init(unsigned int nr, int start,
- 			    void __iomem *dist , void __iomem *cpu)
- {
--	gic_init_bases(nr, start, dist, cpu, 0);
-+	gic_init_bases(nr, start, dist, cpu, 0, NULL);
- }
- 
- #endif
-diff --git a/arch/arm/include/asm/hardware/vic.h b/arch/arm/include/asm/hardware/vic.h
-index f42ebd6..e14af1a 100644
---- a/arch/arm/include/asm/hardware/vic.h
-+++ b/arch/arm/include/asm/hardware/vic.h
-@@ -47,6 +47,8 @@
- struct device_node;
- struct pt_regs;
- 
-+void __vic_init(void __iomem *base, unsigned int irq_start, u32 vic_sources,
-+		u32 resume_sources, struct device_node *node);
- void vic_init(void __iomem *base, unsigned int irq_start, u32 vic_sources, u32 resume_sources);
- int vic_of_init(struct device_node *node, struct device_node *parent);
- void vic_handle_irq(struct pt_regs *regs);
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index c59e188..6de298c 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -402,7 +402,7 @@ void __init exynos4_init_irq(void)
- 	gic_bank_offset = soc_is_exynos4412() ? 0x4000 : 0x8000;
- 
- 	if (!of_have_populated_dt())
--		gic_init_bases(0, IRQ_PPI(0), S5P_VA_GIC_DIST, S5P_VA_GIC_CPU, gic_bank_offset);
-+		gic_init_bases(0, IRQ_PPI(0), S5P_VA_GIC_DIST, S5P_VA_GIC_CPU, gic_bank_offset, NULL);
  #ifdef CONFIG_OF
- 	else
- 		of_irq_init(exynos4_dt_irq_match);
-diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
-index 02b7b93..e924f15 100644
---- a/arch/arm/mach-versatile/core.c
-+++ b/arch/arm/mach-versatile/core.c
-@@ -98,8 +98,9 @@ static const struct of_device_id sic_of_match[] __initconst = {
- 
- void __init versatile_init_irq(void)
+-static int gic_irq_domain_dt_translate(struct irq_domain *d,
+-				       struct device_node *controller,
+-				       const u32 *intspec, unsigned int intsize,
+-				       unsigned long *out_hwirq, unsigned int *out_type)
++static int gic_irq_domain_xlate(struct irq_domain *d,
++				struct device_node *controller,
++				const u32 *intspec, unsigned int intsize,
++				unsigned long *out_hwirq, unsigned int *out_type)
  {
--	vic_init(VA_VIC_BASE, IRQ_VIC_START, ~0, 0);
--	irq_domain_generate_simple(vic_of_match, VERSATILE_VIC_BASE, IRQ_VIC_START);
-+	__vic_init(VA_VIC_BASE, IRQ_VIC_START, ~0, 0,
-+			of_find_matching_node_by_address(NULL, vic_of_match,
-+							 VERSATILE_VIC_BASE));
+ 	if (d->of_node != controller)
+ 		return -EINVAL;
+@@ -644,9 +644,9 @@ static int gic_irq_domain_dt_translate(struct irq_domain *d,
+ }
+ #endif
  
- 	writel(~0, VA_SIC_BASE + SIC_IRQ_ENABLE_CLEAR);
+-const struct irq_domain_ops gic_irq_domain_ops = {
++struct irq_domain_ops gic_irq_domain_ops = {
+ #ifdef CONFIG_OF
+-	.dt_translate = gic_irq_domain_dt_translate,
++	.xlate = gic_irq_domain_xlate,
+ #endif
+ };
  
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index e04e04dd..aab236f 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -263,8 +263,6 @@ struct twl_client {
+@@ -724,7 +724,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 		     irq_start);
+ 		domain->irq_base = irq_start;
+ 	}
+-	domain->priv = gic;
++	domain->host_data = gic;
+ 	domain->ops = &gic_irq_domain_ops;
+ 	irq_domain_add(domain);
  
- static struct twl_client twl_modules[TWL_NUM_SLAVES];
- 
--static struct irq_domain domain;
--
- /* mapping the module id to slave id and base address */
- struct twl_mapping {
- 	unsigned char sid;	/* Slave ID */
-@@ -1225,14 +1223,8 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 
- 	pdata->irq_base = status;
- 	pdata->irq_end = pdata->irq_base + nr_irqs;
--
--	domain.irq_base = pdata->irq_base;
--	domain.nr_irq = nr_irqs;
--#ifdef CONFIG_OF_IRQ
--	domain.of_node = of_node_get(node);
--	domain.ops = &irq_domain_simple_ops;
--#endif
--	irq_domain_add(&domain);
-+	irq_domain_add_legacy(node, nr_irqs, pdata->irq_base, 0,
-+			      &irq_domain_simple_ops);
- 
- 	if (i2c_check_functionality(client->adapter, I2C_FUNC_I2C) == 0) {
- 		dev_dbg(&client->dev, "can't talk I2C?\n");
 diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index 7fef39e..624e9ac 100644
+index bd4272b..35b9ff3 100644
 --- a/include/linux/irqdomain.h
 +++ b/include/linux/irqdomain.h
-@@ -55,9 +55,6 @@ typedef unsigned long irq_hw_number_t;
-  * @map: Create or update a mapping between a virtual irq number and a hw
-  *       irq number. This is called only once for a given mapping.
-  * @unmap: Dispose of such a mapping
-- * @to_irq: (optional) given a local hardware irq number, return the linux
-- *          irq number.  If to_irq is not implemented, then the irq_domain
-- *          will use this translation: irq = (domain->irq_base + hwirq)
-  * @xlate: Given a device tree node and interrupt specifier, decode
-  *         the hardware irq number and linux irq type value.
+@@ -9,61 +9,105 @@
+  * representation into a hardware irq number that can be mapped back to a
+  * Linux irq number without any extra platform support code.
   *
-@@ -70,7 +67,6 @@ struct irq_domain_ops {
- 	int (*match)(struct irq_domain *d, struct device_node *node);
- 	int (*map)(struct irq_domain *d, unsigned int virq, irq_hw_number_t hw);
- 	void (*unmap)(struct irq_domain *d, unsigned int virq);
--	unsigned int (*to_irq)(struct irq_domain *d, unsigned long hwirq);
- 	int (*xlate)(struct irq_domain *d, struct device_node *node,
- 		     const u32 *intspec, unsigned int intsize,
- 		     unsigned long *out_hwirq, unsigned int *out_type);
-@@ -114,16 +110,11 @@ struct irq_domain {
- 	void *host_data;
- 	irq_hw_number_t inval_irq;
+- * irq_domain is expected to be embedded in an interrupt controller's private
+- * data structure.
++ * Interrupt controller "domain" data structure. This could be defined as a
++ * irq domain controller. That is, it handles the mapping between hardware
++ * and virtual interrupt numbers for a given interrupt domain. The domain
++ * structure is generally created by the PIC code for a given PIC instance
++ * (though a domain can cover more than one PIC if they have a flat number
++ * model). It's the domain callbacks that are responsible for setting the
++ * irq_chip on a given irq_desc after it's been mapped.
+  */
++
+ #ifndef _LINUX_IRQDOMAIN_H
+ #define _LINUX_IRQDOMAIN_H
  
--	unsigned int irq_base;
--	unsigned int nr_irq;
--	unsigned int hwirq_base;
+-#include <linux/irq.h>
+-#include <linux/mod_devicetable.h>
++#include <linux/types.h>
++#include <linux/radix-tree.h>
+ 
+-#ifdef CONFIG_IRQ_DOMAIN
+ struct device_node;
+ struct irq_domain;
++struct of_device_id;
++
++/* This type is the placeholder for a hardware interrupt number. It has to
++ * be big enough to enclose whatever representation is used by a given
++ * platform.
++ */
++typedef unsigned long irq_hw_number_t;
+ 
+ /**
+  * struct irq_domain_ops - Methods for irq_domain objects
++ * @match: Match an interrupt controller device node to a host, returns
++ *         1 on a match
++ * @map: Create or update a mapping between a virtual irq number and a hw
++ *       irq number. This is called only once for a given mapping.
++ * @unmap: Dispose of such a mapping
+  * @to_irq: (optional) given a local hardware irq number, return the linux
+  *          irq number.  If to_irq is not implemented, then the irq_domain
+  *          will use this translation: irq = (domain->irq_base + hwirq)
+- * @dt_translate: Given a device tree node and interrupt specifier, decode
+- *                the hardware irq number and linux irq type value.
++ * @xlate: Given a device tree node and interrupt specifier, decode
++ *         the hardware irq number and linux irq type value.
++ *
++ * Functions below are provided by the driver and called whenever a new mapping
++ * is created or an old mapping is disposed. The driver can then proceed to
++ * whatever internal data structures management is required. It also needs
++ * to setup the irq_desc when returning from map().
+  */
+ struct irq_domain_ops {
++	int (*match)(struct irq_domain *d, struct device_node *node);
++	int (*map)(struct irq_domain *d, unsigned int virq, irq_hw_number_t hw);
++	void (*unmap)(struct irq_domain *d, unsigned int virq);
+ 	unsigned int (*to_irq)(struct irq_domain *d, unsigned long hwirq);
 -
- 	/* Optional device node pointer */
+-#ifdef CONFIG_OF
+-	int (*dt_translate)(struct irq_domain *d, struct device_node *node,
+-			    const u32 *intspec, unsigned int intsize,
+-			    unsigned long *out_hwirq, unsigned int *out_type);
+-#endif /* CONFIG_OF */
++	int (*xlate)(struct irq_domain *d, struct device_node *node,
++		     const u32 *intspec, unsigned int intsize,
++		     unsigned long *out_hwirq, unsigned int *out_type);
+ };
+ 
+ /**
+  * struct irq_domain - Hardware interrupt number translation object
+- * @list: Element in global irq_domain list.
++ * @link: Element in global irq_domain list.
++ * @revmap_type: Method used for reverse mapping hwirq numbers to linux irq. This
++ *               will be one of the IRQ_DOMAIN_MAP_* values.
++ * @revmap_data: Revmap method specific data.
++ * @ops: pointer to irq_domain methods
++ * @host_data: private data pointer for use by owner.  Not touched by irq_domain
++ *             core code.
+  * @irq_base: Start of irq_desc range assigned to the irq_domain.  The creator
+  *            of the irq_domain is responsible for allocating the array of
+  *            irq_desc structures.
+  * @nr_irq: Number of irqs managed by the irq domain
+  * @hwirq_base: Starting number for hwirqs managed by the irq domain
+- * @ops: pointer to irq_domain methods
+- * @priv: private data pointer for use by owner.  Not touched by irq_domain
+- *        core code.
+  * @of_node: (optional) Pointer to device tree nodes associated with the
+  *           irq_domain.  Used when decoding device tree interrupt specifiers.
+  */
+ struct irq_domain {
+-	struct list_head list;
++	struct list_head link;
++
++	/* type of reverse mapping_technique */
++	unsigned int revmap_type;
++#define IRQ_DOMAIN_MAP_LEGACY 0 /* legacy 8259, gets irqs 1..15 */
++#define IRQ_DOMAIN_MAP_NOMAP 1 /* no fast reverse mapping */
++#define IRQ_DOMAIN_MAP_LINEAR 2 /* linear map of interrupts */
++#define IRQ_DOMAIN_MAP_TREE 3 /* radix tree */
++	union {
++		struct {
++			unsigned int size;
++			unsigned int *revmap;
++		} linear;
++		struct radix_tree_root tree;
++	} revmap_data;
++	struct irq_domain_ops *ops;
++	void *host_data;
++	irq_hw_number_t inval_irq;
++
+ 	unsigned int irq_base;
+ 	unsigned int nr_irq;
+ 	unsigned int hwirq_base;
+-	const struct irq_domain_ops *ops;
+-	void *priv;
++
++	/* Optional device node pointer */
  	struct device_node *of_node;
  };
  
- #ifdef CONFIG_IRQ_DOMAIN
--#ifdef CONFIG_PPC
- struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
- 					 unsigned int size,
- 					 unsigned int first_irq,
-@@ -153,6 +144,10 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
- 	return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS, 0, 0, ops,
- 				     host_data);
- }
-+extern struct irq_domain *irq_find_host(struct device_node *node);
-+extern void irq_set_default_host(struct irq_domain *host);
-+extern void irq_set_virq_count(unsigned int count);
-+
- 
- extern unsigned int irq_create_mapping(struct irq_domain *host,
- 				       irq_hw_number_t hwirq);
-@@ -167,38 +162,7 @@ extern unsigned int irq_radix_revmap_lookup(struct irq_domain *host,
- extern unsigned int irq_linear_revmap(struct irq_domain *host,
- 				      irq_hw_number_t hwirq);
- 
--#else /* CONFIG_PPC */
--
--/**
-- * irq_domain_to_irq() - Translate from a hardware irq to a linux irq number
-- *
-- * Returns the linux irq number associated with a hardware irq.  By default,
-- * the mapping is irq == domain->irq_base + hwirq, but this mapping can
-- * be overridden if the irq_domain implements a .to_irq() hook.
-- */
--static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
--					     unsigned long hwirq)
--{
--	if (d->ops->to_irq)
--		return d->ops->to_irq(d, hwirq);
--	if (WARN_ON(hwirq < d->hwirq_base))
--		return 0;
--	return d->irq_base + hwirq - d->hwirq_base;
--}
--
--#define irq_domain_for_each_hwirq(d, hw) \
--	for (hw = d->hwirq_base; hw < d->hwirq_base + d->nr_irq; hw++)
--
--#define irq_domain_for_each_irq(d, hw, irq) \
--	for (hw = d->hwirq_base, irq = irq_domain_to_irq(d, hw); \
--	     hw < d->hwirq_base + d->nr_irq; \
--	     hw++, irq = irq_domain_to_irq(d, hw))
--
--extern void irq_domain_add(struct irq_domain *domain);
--extern void irq_domain_del(struct irq_domain *domain);
--
- extern struct irq_domain_ops irq_domain_simple_ops;
--
- #if defined(CONFIG_OF_IRQ)
- extern void irq_domain_add_simple(struct device_node *controller, int irq_base);
- extern void irq_domain_generate_simple(const struct of_device_id *match,
-@@ -207,7 +171,6 @@ extern void irq_domain_generate_simple(const struct of_device_id *match,
- static inline void irq_domain_generate_simple(const struct of_device_id *match,
- 					u64 phys_base, unsigned int irq_start) { }
- #endif /* !CONFIG_OF_IRQ */
--#endif /* !CONFIG_PPC */
- #endif /* CONFIG_IRQ_DOMAIN */
- 
- #endif /* _LINUX_IRQDOMAIN_H */
++#ifdef CONFIG_IRQ_DOMAIN
+ /**
+  * irq_domain_to_irq() - Translate from a hardware irq to a linux irq number
+  *
 diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 234bda2..10aca32 100644
+index cc2cd43..509adb8 100644
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -17,7 +17,6 @@
- static LIST_HEAD(irq_domain_list);
- static DEFINE_MUTEX(irq_domain_mutex);
+@@ -43,7 +43,7 @@ void irq_domain_add(struct irq_domain *domain)
+ 	}
  
--#ifdef CONFIG_PPC
- static DEFINE_MUTEX(revmap_trees_mutex);
- static unsigned int irq_virq_count = NR_IRQS;
- static struct irq_domain *irq_default_domain;
-@@ -685,124 +684,11 @@ static int __init irq_debugfs_init(void)
- __initcall(irq_debugfs_init);
- #endif /* CONFIG_VIRQ_DEBUG */
- 
--#else /* CONFIG_PPC */
--
--/**
-- * irq_domain_add() - Register an irq_domain
-- * @domain: ptr to initialized irq_domain structure
-- *
-- * Registers an irq_domain structure.  The irq_domain must at a minimum be
-- * initialized with an ops structure pointer, and either a ->to_irq hook or
-- * a valid irq_base value.  Everything else is optional.
-- */
--void irq_domain_add(struct irq_domain *domain)
--{
--	struct irq_data *d;
--	int hwirq, irq;
--
--	/*
--	 * This assumes that the irq_domain owner has already allocated
--	 * the irq_descs.  This block will be removed when support for dynamic
--	 * allocation of irq_descs is added to irq_domain.
--	 */
--	irq_domain_for_each_irq(domain, hwirq, irq) {
--		d = irq_get_irq_data(irq);
--		if (!d) {
--			WARN(1, "error: assigning domain to non existant irq_desc");
--			return;
--		}
--		if (d->domain) {
--			/* things are broken; just report, don't clean up */
--			WARN(1, "error: irq_desc already assigned to a domain");
--			return;
--		}
--		d->domain = domain;
--		d->hwirq = hwirq;
--	}
--
--	mutex_lock(&irq_domain_mutex);
--	list_add(&domain->link, &irq_domain_list);
--	mutex_unlock(&irq_domain_mutex);
--}
--
--/**
-- * irq_domain_del() - Unregister an irq_domain
-- * @domain: ptr to registered irq_domain.
-- */
--void irq_domain_del(struct irq_domain *domain)
--{
--	struct irq_data *d;
--	int hwirq, irq;
--
--	mutex_lock(&irq_domain_mutex);
--	list_del(&domain->link);
--	mutex_unlock(&irq_domain_mutex);
--
--	/* Clear the irq_domain assignments */
--	irq_domain_for_each_irq(domain, hwirq, irq) {
--		d = irq_get_irq_data(irq);
--		d->domain = NULL;
--	}
--}
--
--#if defined(CONFIG_OF_IRQ)
--/**
-- * irq_create_of_mapping() - Map a linux irq number from a DT interrupt spec
-- *
-- * Used by the device tree interrupt mapping code to translate a device tree
-- * interrupt specifier to a valid linux irq number.  Returns either a valid
-- * linux IRQ number or 0.
-- *
-- * When the caller no longer need the irq number returned by this function it
-- * should arrange to call irq_dispose_mapping().
-- */
--unsigned int irq_create_of_mapping(struct device_node *controller,
--				   const u32 *intspec, unsigned int intsize)
-+int irq_domain_simple_map(struct irq_domain *d, unsigned int irq,
-+			  irq_hw_number_t hwirq)
- {
--	struct irq_domain *domain;
--	unsigned long hwirq;
--	unsigned int irq, type;
--	int rc = -EINVAL;
--
--	/* Find a domain which can translate the irq spec */
--	mutex_lock(&irq_domain_mutex);
--	list_for_each_entry(domain, &irq_domain_list, link) {
--		if (!domain->ops->xlate)
--			continue;
--		rc = domain->ops->xlate(domain, controller,
--					intspec, intsize, &hwirq, &type);
--		if (rc == 0)
--			break;
--	}
--	mutex_unlock(&irq_domain_mutex);
--
--	if (rc != 0)
--		return 0;
--
--	irq = irq_domain_to_irq(domain, hwirq);
--	if (type != IRQ_TYPE_NONE)
--		irq_set_irq_type(irq, type);
--	pr_debug("%s: mapped hwirq=%i to irq=%i, flags=%x\n",
--		 controller->full_name, (int)hwirq, irq, type);
--	return irq;
--}
--EXPORT_SYMBOL_GPL(irq_create_of_mapping);
--
--/**
-- * irq_dispose_mapping() - Discard a mapping created by irq_create_of_mapping()
-- * @irq: linux irq number to be discarded
-- *
-- * Calling this function indicates the caller no longer needs a reference to
-- * the linux irq number returned by a prior call to irq_create_of_mapping().
-- */
--void irq_dispose_mapping(unsigned int irq)
--{
--	/*
--	 * nothing yet; will be filled when support for dynamic allocation of
--	 * irq_descs is added to irq_domain
--	 */
-+	return 0;
+ 	mutex_lock(&irq_domain_mutex);
+-	list_add(&domain->list, &irq_domain_list);
++	list_add(&domain->link, &irq_domain_list);
+ 	mutex_unlock(&irq_domain_mutex);
  }
--EXPORT_SYMBOL_GPL(irq_dispose_mapping);
  
- int irq_domain_simple_xlate(struct irq_domain *d,
+@@ -57,7 +57,7 @@ void irq_domain_del(struct irq_domain *domain)
+ 	int hwirq, irq;
+ 
+ 	mutex_lock(&irq_domain_mutex);
+-	list_del(&domain->list);
++	list_del(&domain->link);
+ 	mutex_unlock(&irq_domain_mutex);
+ 
+ 	/* Clear the irq_domain assignments */
+@@ -88,10 +88,10 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
+ 
+ 	/* Find a domain which can translate the irq spec */
+ 	mutex_lock(&irq_domain_mutex);
+-	list_for_each_entry(domain, &irq_domain_list, list) {
+-		if (!domain->ops->dt_translate)
++	list_for_each_entry(domain, &irq_domain_list, link) {
++		if (!domain->ops->xlate)
+ 			continue;
+-		rc = domain->ops->dt_translate(domain, controller,
++		rc = domain->ops->xlate(domain, controller,
+ 					intspec, intsize, &hwirq, &type);
+ 		if (rc == 0)
+ 			break;
+@@ -126,7 +126,7 @@ void irq_dispose_mapping(unsigned int irq)
+ }
+ EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+ 
+-int irq_domain_simple_dt_translate(struct irq_domain *d,
++int irq_domain_simple_xlate(struct irq_domain *d,
  			    struct device_node *controller,
-@@ -813,10 +699,6 @@ int irq_domain_simple_xlate(struct irq_domain *d,
- 		return -EINVAL;
- 	if (intsize < 1)
- 		return -EINVAL;
--	if (d->nr_irq && ((intspec[0] < d->hwirq_base) ||
--	    (intspec[0] >= d->hwirq_base + d->nr_irq)))
--		return -EINVAL;
--
- 	*out_hwirq = intspec[0];
- 	*out_type = IRQ_TYPE_NONE;
- 	if (intsize > 1)
-@@ -824,23 +706,17 @@ int irq_domain_simple_xlate(struct irq_domain *d,
- 	return 0;
- }
+ 			    const u32 *intspec, unsigned int intsize,
+ 			    unsigned long *out_hwirq, unsigned int *out_type)
+@@ -181,7 +181,7 @@ EXPORT_SYMBOL_GPL(irq_domain_generate_simple);
  
--/**
-- * irq_domain_create_simple() - Set up a 'simple' translation range
-- */
-+struct irq_domain_ops irq_domain_simple_ops = {
-+	.map = irq_domain_simple_map,
+ struct irq_domain_ops irq_domain_simple_ops = {
+ #ifdef CONFIG_OF_IRQ
+-	.dt_translate = irq_domain_simple_dt_translate,
 +	.xlate = irq_domain_simple_xlate,
-+};
-+EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
-+
-+#ifdef CONFIG_OF_IRQ
- void irq_domain_add_simple(struct device_node *controller, int irq_base)
- {
--	struct irq_domain *domain;
--
--	domain = kzalloc(sizeof(*domain), GFP_KERNEL);
--	if (!domain) {
--		WARN_ON(1);
--		return;
--	}
--
--	domain->irq_base = irq_base;
--	domain->of_node = of_node_get(controller);
--	domain->ops = &irq_domain_simple_ops;
--	irq_domain_add(domain);
-+	irq_domain_add_legacy(controller, 32, irq_base, 0,
-+			      &irq_domain_simple_ops, NULL);
- }
- EXPORT_SYMBOL_GPL(irq_domain_add_simple);
- 
-@@ -855,13 +731,4 @@ void irq_domain_generate_simple(const struct of_device_id *match,
- 		irq_domain_add_simple(node, irq_start);
- }
- EXPORT_SYMBOL_GPL(irq_domain_generate_simple);
--#endif /* CONFIG_OF_IRQ */
--
--struct irq_domain_ops irq_domain_simple_ops = {
--#ifdef CONFIG_OF_IRQ
--	.xlate = irq_domain_simple_xlate,
--#endif /* CONFIG_OF_IRQ */
--};
--EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
--
--#endif /* !CONFIG_PPC */
-+#endif
+ #endif /* CONFIG_OF_IRQ */
+ };
+ EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
 -- 
 1.7.5.4
 
