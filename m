@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2AXADX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:03:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42476 "EHLO mx2.suse.de"
+	id S1755900Ab2AXADv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:03:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42450 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755708Ab2AWXsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:48:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:26 2012
-Message-Id: <20120123234026.156646688@clark.kroah.org>
+	id S1755660Ab2AWXsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:48:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
+Message-Id: <20120123234025.912948874@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:24 -0800
+Date: Mon, 23 Jan 2012 15:39:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Girish K S <girish.shivananjappa@linaro.org>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        Philip Rakity <prakity@marvell.com>, Chris Ball <cjb@laptop.org>
-Subject: [38/90] mmc: core: Fix voltage select in DDR mode
+        alan@lxorguk.ukuu.org.uk,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [35/90] UBI: fix debugging messages
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Girish K S <girish.shivananjappa@linaro.org>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 913047e9e5787a90696533a9f109552b7694ecc9 upstream.
+commit 72f0d453d81d35087b1d3ad7c8285628c2be6e1d upstream.
 
-This patch fixes the wrong comparison before setting the interface
-voltage in DDR mode.
+Patch ab50ff684707031ed4bad2fdd313208ae392e5bb broke UBI debugging messages:
+before that commit when UBI debugging was enabled, users saw few useful
+debugging messages after attaching an MTD device. However, that patch turned
+'dbg_msg()' into 'pr_debug()', so to enable the debugging messages users have
+to enable them first via /sys/kernel/debug/dynamic_debug/control, which is
+very impractical.
 
-The assignment to the variable ddr before comaprison is either
-ddr = MMC_1_2V_DDR_MODE; or ddr == MMC_1_8V_DDR_MODE. But the comparison
-is done with the extended csd value if ddr == EXT_CSD_CARD_TYPE_DDR_1_2V.
+This commit makes 'dbg_msg()' to use 'printk()' instead of 'pr_debug()', just
+as it was before the breakage.
 
-Signed-off-by: Girish K S <girish.shivananjappa@linaro.org>
-Acked-by: Subhash Jadavani <subhashj@codeaurora.org>
-Acked-by: Philip Rakity <prakity@marvell.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/core/mmc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mtd/ubi/debug.h |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -830,7 +830,7 @@ static int mmc_init_card(struct mmc_host
- 			 *
- 			 * WARNING: eMMC rules are NOT the same as SD DDR
- 			 */
--			if (ddr == EXT_CSD_CARD_TYPE_DDR_1_2V) {
-+			if (ddr == MMC_1_2V_DDR_MODE) {
- 				err = mmc_set_signal_voltage(host,
- 					MMC_SIGNAL_VOLTAGE_120, 0);
- 				if (err)
+--- a/drivers/mtd/ubi/debug.h
++++ b/drivers/mtd/ubi/debug.h
+@@ -51,7 +51,10 @@ struct ubi_mkvol_req;
+ 	pr_debug("UBI DBG " type ": " fmt "\n", ##__VA_ARGS__)
+ 
+ /* Just a debugging messages not related to any specific UBI subsystem */
+-#define dbg_msg(fmt, ...) ubi_dbg_msg("msg", fmt, ##__VA_ARGS__)
++#define dbg_msg(fmt, ...)                                    \
++	printk(KERN_DEBUG "UBI DBG (pid %d): %s: " fmt "\n", \
++	       current->pid, __func__, ##__VA_ARGS__)
++
+ /* General debugging messages */
+ #define dbg_gen(fmt, ...) ubi_dbg_msg("gen", fmt, ##__VA_ARGS__)
+ /* Messages from the eraseblock association sub-system */
 
 
