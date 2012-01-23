@@ -1,205 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2AWS1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 13:27:13 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27829 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab2AWS1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 13:27:10 -0500
-Date: Mon, 23 Jan 2012 13:24:43 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Tina Yang <tina.yang@oracle.com>, davem@davemloft.net
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gurudas.pai@oracle.com" <gurudas.pai@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH] add netconsole support for xen-netfront
-Message-ID: <20120123182443.GA22963@phenom.dumpdata.com>
-References: <1326271956-25565-1-git-send-email-zhenzhong.duan@oracle.com>
- <20120112141745.GA7685@phenom.dumpdata.com>
- <1326452769.17210.331.camel@zakaz.uk.xensource.com>
- <4F15EB3E.3060700@oracle.com>
- <20120117215100.GA25367@phenom.dumpdata.com>
- <4F160113.1030503@oracle.com>
- <1326877176.29475.37.camel@dagon.hellion.org.uk>
- <4F173467.90106@oracle.com>
+	id S1753544Ab2AWS1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 13:27:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753473Ab2AWS1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 13:27:53 -0500
+Date: Mon, 23 Jan 2012 13:27:45 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <mzxreary@0pointer.de>
+Subject: Re: [PATCH 08/17] blkcg: shoot down blkio_groups on elevator switch
+Message-ID: <20120123182745.GK25986@redhat.com>
+References: <1327202725-3383-1-git-send-email-tj@kernel.org>
+ <1327202725-3383-9-git-send-email-tj@kernel.org>
+ <20120123152055.GD25986@redhat.com>
+ <20120123153913.GB12652@google.com>
+ <20120123155216.GF25986@redhat.com>
+ <20120123155745.GD12652@google.com>
+ <20120123161042.GG25986@redhat.com>
+ <20120123161619.GE12652@google.com>
+ <20120123162553.GI25986@redhat.com>
+ <20120123171049.GH12652@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F173467.90106@oracle.com>
+In-Reply-To: <20120123171049.GH12652@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4F1DA679.0071,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 18, 2012 at 01:06:47PM -0800, Tina Yang wrote:
-> On 1/18/2012 12:59 AM, Ian Campbell wrote:
-> >On Tue, 2012-01-17 at 23:15 +0000, Tina Yang wrote:
-> >>On 1/17/2012 1:51 PM, Konrad Rzeszutek Wilk wrote:
-> >>>On Tue, Jan 17, 2012 at 01:42:22PM -0800, Tina Yang wrote:
-> >>>>On 1/13/2012 3:06 AM, Ian Campbell wrote:
-> >>>>Although netdump is now obsolete, I think it's always a good practice
-> >>>>to preserve caller's irq status as we had a very bad experience
-> >>>>chasing a similar problem caused by such a irq change in RDS
-> >>>Did you find the culprit of it? Was there a patch for that in the
-> >>>upstream kernel?
-> >>Yes.  It has nothing to do with net drivers but same cause
-> >>elsewhere in the kernel.
-> >I didn't think start_xmit could be called with interrupts disabled or
-> >from interrupt context but perhaps I am wrong about that or perhaps
-> >netconsole changes things?
-> Netdump does call it with interrupt disabled and hang because of
-> it in 2.6.9 as I remember it.  And you are right, netconsole has
-> undergone changes from time to time, which also can change
-> this specification.
+On Mon, Jan 23, 2012 at 09:10:49AM -0800, Tejun Heo wrote:
+> On Mon, Jan 23, 2012 at 11:25:53AM -0500, Vivek Goyal wrote:
+> > It does not have to be a regular switch. Even one switch during boot
+> > can create issues. 
+> > 
+> > In RHEL we have the set of scripts which can do system tuning like based
+> > on user chosen profile (tuned). These scripts do various things including
+> > changing elevator. Once you have chosen the profile, it gets applied
+> > automatically over every boot (through init scripts).
 > >
-> >Right, Documentation/networking/netdevices.txt states that start_xmit
-> >can be called with interrupts disabled by netconsole and therefore using
-> >the irqsave/restore locking in this function is, AFAICT, correct.
+> > Now assume that after a reboot libvirtd is running and resuming various
+> > suspended virtual machines or starting new one and in parallel this
+> > profile is being applied. There is no way to avoid races as systemd allows
+> > parallel execution of services. The only way left will be strong
+> > serialization and that is no cgroup operation is taking place in the
+> > system while some init script is chaning the elevator (no new cgroup
+> > creatoin, no cgroup deletions and no rule settings by any daemon),
+> > otherwise changes might be lost. In practice how would I program 
+> > various init scripts for this?
+> 
+> Why can't systemd order elevator switch before other actions?
 
-Ok, so let me update the git commit description to include this.
+Because systemd does not know. For systemd it is just launching services
+and what services are doing is not known to systemd.
 
-I am listed as the maintainer but I would have thought that it should
-go through David?
+I think systemd does have some facilities so that services can express
+dependency on other services and dependent service blocks on completion
+of service it is depenent on. So may be in this case any service dealing
+with cgroups shall have to be dependent on this service which tunes
+the system and changes elevator.
 
-David, should it go through you or should I stick it in my tree? Here
-is the patch with a better git description.
+CCing lennart for more info on systemd.
 
->From 1c265b7946f222ab6a5aac5245a0ab84618772c8 Mon Sep 17 00:00:00 2001
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Date: Thu, 12 Jan 2012 10:18:29 +0800
-Subject: [PATCH] xen/netfront: add netconsole support.
+>  It's
+> not really about switching elevators but about having set of applied
+> policies set before configuring them.
+> 
+> It is natural to require the target of configuration to be set up
+> before configuring it, right?  You can't set attributes on eth0 or sda
+> when those don't exist.  This isn't very different.  You need to have
+> set of policies and their parameters defined before going ahead with
+> their configurations and there naturally is ordering between the two
+> steps - e.g. it doesn't make any sense and is actually misleading to
+> allow configuration of propio when the elevator in choice doesn't
+> provide it.
+> 
+> Of course, details of such ordering requirement including granularity
+> have to be decided and we can decide that keeping things at per-policy
+> granularity is important enough to justify extra complexity, which I
+> don't think is the case here.
+> 
+> There are two separate points here.
+> 
+> 1. Regardless of persistency granularity, which policies are enabled
+>    for a device must be determined before configuring the policies.
+>    The policy_node stuff worked around this by keeping per-policy
+>    configurations in the core separately violating proper layering and
+>    any usual conventions.  It's like keeping ata_N_conf or eth_N_conf
+>    in kernel for devices which may appear in the future.  It's silly
+>    at best.
 
-add polling interface to xen-netfront device to support netconsole
+Agreed. I understand now that keeping configuration around in kernel for
+non-existent devices is not a good idea. So ripping the rules upon 
+device tear down makes sense.
 
-This patch also alters the spin_lock usage to use irqsave variant.
-Documentation/networking/netdevices.txt states that start_xmit
-can be called with interrupts disabled by netconsole and therefore using
-the irqsave/restore locking in this function is looks correct.
+> 
+> 2. The granularity of configuration reset is a separate issue and it
+>    might make sense to do it fine-grained if that is important enough,
+>    but given how elv/pol changes are used, I am very skeptical this is
+>    necessary.
+> 
+> No matter what we do for #2, #1 requires ordering between policy
+> selection and configuration.  You're saying that #2, combined with the
+> fact that blk-throtl can't be built as module or disabled on runtime,
+> allows side-stepping the issue for at least blk-throtl.  That doesn't
+> sound like a good idea to me.  People are working on different
+> elevators implementing different cgroup strategies.  There is no sane
+> way around requiring "choosing of policies" to happen before
+> "configuration of chosen policies".
 
-Signed-off-by: Tina.Yang <tina.yang@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Signed-off-by: Zhenzhong.Duan <zhenzhong.duan@oracle.com>
-Tested-by: gurudas.pai <gurudas.pai@oracle.com>
-[v1: Copy-n-pasted Ian Campbell comments]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/net/xen-netfront.c |   57 ++++++++++++++++++++++++++-----------------
- 1 files changed, 34 insertions(+), 23 deletions(-)
+I agree on #1 and that is choosing policy before configuring it.
 
-diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index d29365a..5a4b5df 100644
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -478,6 +478,7 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	int frags = skb_shinfo(skb)->nr_frags;
- 	unsigned int offset = offset_in_page(data);
- 	unsigned int len = skb_headlen(skb);
-+	unsigned long flags;
- 
- 	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
- 	if (unlikely(frags > MAX_SKB_FRAGS + 1)) {
-@@ -487,12 +488,12 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		goto drop;
- 	}
- 
--	spin_lock_irq(&np->tx_lock);
-+	spin_lock_irqsave(&np->tx_lock, flags);
- 
- 	if (unlikely(!netif_carrier_ok(dev) ||
- 		     (frags > 1 && !xennet_can_sg(dev)) ||
- 		     netif_needs_gso(skb, netif_skb_features(skb)))) {
--		spin_unlock_irq(&np->tx_lock);
-+		spin_unlock_irqrestore(&np->tx_lock, flags);
- 		goto drop;
- 	}
- 
-@@ -561,7 +562,7 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	if (!netfront_tx_slot_available(np))
- 		netif_stop_queue(dev);
- 
--	spin_unlock_irq(&np->tx_lock);
-+	spin_unlock_irqrestore(&np->tx_lock, flags);
- 
- 	return NETDEV_TX_OK;
- 
-@@ -1176,6 +1177,33 @@ static int xennet_set_features(struct net_device *dev, u32 features)
- 	return 0;
- }
- 
-+static irqreturn_t xennet_interrupt(int irq, void *dev_id)
-+{
-+	struct net_device *dev = dev_id;
-+	struct netfront_info *np = netdev_priv(dev);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&np->tx_lock, flags);
-+
-+	if (likely(netif_carrier_ok(dev))) {
-+		xennet_tx_buf_gc(dev);
-+		/* Under tx_lock: protects access to rx shared-ring indexes. */
-+		if (RING_HAS_UNCONSUMED_RESPONSES(&np->rx))
-+			napi_schedule(&np->napi);
-+	}
-+
-+	spin_unlock_irqrestore(&np->tx_lock, flags);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+static void xennet_poll_controller(struct net_device *dev)
-+{
-+	xennet_interrupt(0, dev);
-+}
-+#endif
-+
- static const struct net_device_ops xennet_netdev_ops = {
- 	.ndo_open            = xennet_open,
- 	.ndo_uninit          = xennet_uninit,
-@@ -1186,6 +1214,9 @@ static const struct net_device_ops xennet_netdev_ops = {
- 	.ndo_validate_addr   = eth_validate_addr,
- 	.ndo_fix_features    = xennet_fix_features,
- 	.ndo_set_features    = xennet_set_features,
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_poll_controller = xennet_poll_controller,
-+#endif
- };
- 
- static struct net_device * __devinit xennet_create_dev(struct xenbus_device *dev)
-@@ -1388,26 +1419,6 @@ static int xen_net_read_mac(struct xenbus_device *dev, u8 mac[])
- 	return 0;
- }
- 
--static irqreturn_t xennet_interrupt(int irq, void *dev_id)
--{
--	struct net_device *dev = dev_id;
--	struct netfront_info *np = netdev_priv(dev);
--	unsigned long flags;
--
--	spin_lock_irqsave(&np->tx_lock, flags);
--
--	if (likely(netif_carrier_ok(dev))) {
--		xennet_tx_buf_gc(dev);
--		/* Under tx_lock: protects access to rx shared-ring indexes. */
--		if (RING_HAS_UNCONSUMED_RESPONSES(&np->rx))
--			napi_schedule(&np->napi);
--	}
--
--	spin_unlock_irqrestore(&np->tx_lock, flags);
--
--	return IRQ_HANDLED;
--}
--
- static int setup_netfront(struct xenbus_device *dev, struct netfront_info *info)
- {
- 	struct xen_netif_tx_sring *txs;
--- 
-1.7.7.5
+I am concerned about silently removing the configuration of policy A
+while some unrelated policy B is going away and user space is asked
+to handle it.
 
+It is equivalent of saying that changing IO scheduler also resets all
+the request queue tunables to default and now user space script is
+supposed to set them back to user configured value. Or write a user space
+script which first saves all the request queue tunables, changes the elevator
+and then restores it back.
+
+Thanks
+Vivek
