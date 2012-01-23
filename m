@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab2AWTXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 14:23:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49958 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab2AWTXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 14:23:22 -0500
-Date: Mon, 23 Jan 2012 14:23:20 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Niels de Vos <ndevos@redhat.com>
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Bryn M. Reeves" <bmr@redhat.com>
-Subject: Re: [PATCH v2] fs: Invalidate the cache for a parent block-device
- if fsync() is called for a partition
-In-Reply-To: <1327315109-7740-1-git-send-email-ndevos@redhat.com>
-Message-ID: <Pine.LNX.4.64.1201231422470.1760@hs20-bc2-1.build.redhat.com>
-References: <4F19356E.3020708@redhat.com> <1327315109-7740-1-git-send-email-ndevos@redhat.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753855Ab2AWTYI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 14:24:08 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:57621 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab2AWTYG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 14:24:06 -0500
+Date: Mon, 23 Jan 2012 14:23:55 -0500 (EST)
+Message-Id: <20120123.142355.405932925189446350.davem@davemloft.net>
+To: netdev@pradeepdalvi.com
+Cc: joe@perches.com, netdev@vger.kernel.org, hch@lst.de,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH/RESEND] drivers/net/ethernet: dev_alloc_skb to
+ netdev_alloc_skb
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+Dx6HYga9HkwzZNCXc7-q7JvV5PJ2w-QqT4p1zb+upWfn3+Ag@mail.gmail.com>
+References: <1327344034.6317.3.camel@joe2Laptop>
+	<20120123.135350.756110788533975068.davem@davemloft.net>
+	<CA+Dx6HYga9HkwzZNCXc7-q7JvV5PJ2w-QqT4p1zb+upWfn3+Ag@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 23 Jan 2012 11:23:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jan 2012, Niels de Vos wrote:
+From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
+Date: Tue, 24 Jan 2012 00:43:10 +0530
 
-> Executing an fsync() on a file-descriptor of a partition flushes the
-> caches for that partition by calling blkdev_issue_flush(). However, it
-> seems that reading data through the parent device will still return the
-> old cached data.
+> On Tue, Jan 24, 2012 at 12:23 AM, David Miller <davem@davemloft.net> wrote:
+>> From: Joe Perches <joe@perches.com>
+>> Date: Mon, 23 Jan 2012 10:40:34 -0800
+>>
+>>> Perhaps you should break this large patch
+>>> into multiple separate patches.
+>>
+>> Agreed, this patch is way too large especially for what is obviously
+>> turning out to be a very non-trivial transformation in some cases
+>> and also new patch submitters should generally avoid large patches
+>> like this.
 > 
-> The cache for the block-device is not synced if the block-device is kept
-> open (due to a mounted partition, for example). Only when all users for
-> the disk have exited, the cache for the disk is made consistent again.
-> 
-> Calling invalidate_bdev() on the parent block-device in case
-> blkdev_fsync() was called for a partition, fixes this.
-> 
-> The problem can be worked around by forcing the caches to be flushed
-> with either
-> 	# blockdev --flushbufs ${dev_disk}
-> or
-> 	# echo 3 > /proc/sys/vm/drop_caches
-> 
-> CC: Bryn M. Reeves <bmr@redhat.com>
-> CC: Mikulas Patocka <mpatocka@redhat.com>
-> Signed-off-by: Niels de Vos <ndevos@redhat.com>
-> 
+> Acked! Will try to separate out trivial & non-trivial changes.
+> Although, still trivial changes would be big enough. And at the same
+> time, splitting changes into 118 patches might turn out to be
+> cumbersome for review.
 
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
-
-> ---
-> v2:
-> - Do not call invalidate_bdev() from blkdev_issue_flush() and prevent
->   performance degration with journalled filesystems.
-> 
->   Suggested was to call invalidate_bdev() in fsync_bdev(), but this is
->   not in the call-path of mkfs.ext3 and similar tools. Hence the issue
->   persists.
-> 
-> - Correct phrasing a little, changing ioctl-BLKFLSBUF is not required.
-> 
-> - This issue also occurs when doing an ioctl-BLKFLSBUF on a partition.
->   Reading the whole disk will still return cached data. If this is an
->   issue, it will need a seperate patch.
-> ---
->  fs/block_dev.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index 0e575d1..433c4de 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -424,6 +424,10 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
->  	if (error == -EOPNOTSUPP)
->  		error = 0;
->  
-> +	/* invalidate parent block_device */
-> +	if (!error && bdev != bdev->bd_contains)
-> +		invalidate_bdev(bdev->bd_contains);
-> +
->  	return error;
->  }
->  EXPORT_SYMBOL(blkdev_fsync);
-> -- 
-> 1.7.6.5
-> 
+We didn't say to create 118 patches, we're talking about on the
+order of 4 or 5 patches.
