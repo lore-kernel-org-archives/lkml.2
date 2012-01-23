@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab2AWNSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 08:18:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63734 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab2AWNSH (ORCPT
+	id S1752749Ab2AWNWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 08:22:43 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61291 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752356Ab2AWNWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 08:18:07 -0500
-Date: Mon, 23 Jan 2012 06:18:08 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Brian Swetland <swetland@google.com>
-Subject: Re: Linux 3.3-1 out - merge window closed
-Message-ID: <20120123131808.GC23571@ponder.secretlab.ca>
-References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
- <CADMYwHxhyExw8jzAVT6PEdfXT-vCSLxg_eGbbqCwRNh0q3Q6eQ@mail.gmail.com>
+	Mon, 23 Jan 2012 08:22:42 -0500
+Date: Mon, 23 Jan 2012 15:22:33 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Zhao Jin <cronozhj@gmail.com>
+cc: cl@linux-foundation.org, mpm@selenic.com, rientjes@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2][RESEND] slab: avoid unnecessary touching of a partial
+ slab
+In-Reply-To: <1314376095-14991-1-git-send-email-cronozhj@gmail.com>
+Message-ID: <alpine.LFD.2.02.1201231521340.11844@tux.localdomain>
+References: <1314376095-14991-1-git-send-email-cronozhj@gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CADMYwHxhyExw8jzAVT6PEdfXT-vCSLxg_eGbbqCwRNh0q3Q6eQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2000391229-1327324958=:11844"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 11:17:46AM +0200, Ohad Ben-Cohen wrote:
-> Hi Linus,
-> 
-> On Fri, Jan 20, 2012 at 1:58 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > There are a couple of trees I haven't merged on purpose, and there may
-> > be a few trees I overlooked by mistake. The "on purpose" ones were
-> > things that looked unfamiliar and I felt I didn't have the bandwidth
-> > to check. The "mistake" ones would just be things I missed due to
-> > being busy.
-> 
-> I guess that the remoteproc/rpmsg tree belongs to the "on purpose" department :)
-> 
-> > So if you felt that your pull request was overlooked by mistake (or
-> > intentionally, but really not so scary that you think I should have a
-> > really easy time checking it), you have a couple of days to marshal
-> > your arguments for why I should pull it after all.
-> 
-> I realize there's a slim chance to get it merged at this point, but I
-> do think that both remoteproc and rpmsg are not so scary:
-> 
-> * The code is completely self contained, and the only few external
-> places it changes amount to grabbing a new virtio id (which is
-> Acked-by Rusty) and some OMAP init platform code (which is Acked-by
-> Tony). People who aren't explicitly using it won't notice it's there;
-> even its Kconfig entries get selected automatically when relevant
-> (i.e. only on OMAP4 at this point) and would never show up otherwise.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi Linus,
+--8323328-2000391229-1327324958=:11844
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-I'd also like to see this merged.  Rather than going off and inventing
-something completely new, Ohad has built on the existing virtio
-infrastructure to implement IPC between CPUs and DSPs running
-different operating environments.  This is a strong step in the
-RightDirection(tm) in my opinion and such behaviour should be
-encouraged.  :-)
+[ Replying to an old patch that I seem to have missed. ]
 
-g.
+On Sat, 27 Aug 2011, Zhao Jin wrote:
+> In cache_alloc_refill(), after refilling from a partial slab, if the
+> slab remains partial, it would be deleted from and then added again to
+> the partial list. As the slab is the first element in the list before
+> deletion, such behavior has no effect. This patch avoids touching the
+> slab in this case.
+>
+> Signed-off-by: Zhao Jin <cronozhj@gmail.com>
 
+Looks good to me, Christoph, David?
+
+> ---
+> mm/slab.c |    7 +++----
+> 1 files changed, 3 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 82e0a0e..2d7a0f4 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -3121,11 +3121,10 @@ retry:
+> 		check_slabp(cachep, slabp);
+>
+> 		/* move slabp to correct slabp list: */
+> -		list_del(&slabp->list);
+> 		if (slabp->free == BUFCTL_END)
+> -			list_add(&slabp->list, &l3->slabs_full);
+> -		else
+> -			list_add(&slabp->list, &l3->slabs_partial);
+> +			list_move(entry, &l3->slabs_full);
+> +		else if (entry != l3->slabs_partial.next)
+> +			list_move(entry, &l3->slabs_partial);
+> 	}
+>
+> must_grow:
+> -- 
+> 1.7.4.1
+>
+>
+--8323328-2000391229-1327324958=:11844--
