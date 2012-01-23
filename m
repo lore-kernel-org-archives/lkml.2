@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab2AXAHw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:07:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42296 "EHLO mx2.suse.de"
+	id S1755474Ab2AXAI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:08:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42282 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755376Ab2AWXrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:47:12 -0500
+	id S1755176Ab2AWXrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:47:05 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:24 2012
-Message-Id: <20120123234024.664941813@clark.kroah.org>
+Message-Id: <20120123234024.498086411@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:06 -0800
+Date: Mon, 23 Jan 2012 15:39:04 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [20/90] PCI: msi: Disable msi interrupts when we initialize a pci device
+        alan@lxorguk.ukuu.org.uk,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [18/90] UBI: fix use-after-free on error path
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit a776c491ca5e38c26d9f66923ff574d041e747f4 upstream.
+commit e57e0d8e818512047fe379157c3f77f1b9fabffb upstream.
 
-I traced a nasty kexec on panic boot failure to the fact that we had
-screaming msi interrupts and we were not disabling the msi messages at
-kernel startup.  The booting kernel had not enabled those interupts so
-was not prepared to handle them.
+When we fail to erase a PEB, we free the corresponding erase entry object,
+but then re-schedule this object if the error code was something like -EAGAIN.
+Obviously, it is a bug to use the object after we have freed it.
 
-I can see no reason why we would ever want to leave the msi interrupts
-enabled at boot if something else has enabled those interrupts.  The pci
-spec specifies that msi interrupts should be off by default.  Drivers
-are expected to enable the msi interrupts if they want to use them.  Our
-interrupt handling code reprograms the interrupt handlers at boot and
-will not be be able to do anything useful with an unexpected interrupt.
-
-This patch applies cleanly all of the way back to 2.6.32 where I noticed
-the problem.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: Emese Revfy <re.emese@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/msi.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/mtd/ubi/wl.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -869,5 +869,15 @@ EXPORT_SYMBOL(pci_msi_enabled);
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -1049,7 +1049,6 @@ static int erase_worker(struct ubi_devic
  
- void pci_msi_init_pci_dev(struct pci_dev *dev)
- {
-+	int pos;
- 	INIT_LIST_HEAD(&dev->msi_list);
+ 	ubi_err("failed to erase PEB %d, error %d", pnum, err);
+ 	kfree(wl_wrk);
+-	kmem_cache_free(ubi_wl_entry_slab, e);
+ 
+ 	if (err == -EINTR || err == -ENOMEM || err == -EAGAIN ||
+ 	    err == -EBUSY) {
+@@ -1062,14 +1061,16 @@ static int erase_worker(struct ubi_devic
+ 			goto out_ro;
+ 		}
+ 		return err;
+-	} else if (err != -EIO) {
++	}
 +
-+	/* Disable the msi hardware to avoid screaming interrupts
-+	 * during boot.  This is the power on reset default so
-+	 * usually this should be a noop.
-+	 */
-+	pos = pci_find_capability(dev, PCI_CAP_ID_MSI);
-+	if (pos)
-+		msi_set_enable(dev, pos, 0);
-+	msix_set_enable(dev, 0);
- }
++	kmem_cache_free(ubi_wl_entry_slab, e);
++	if (err != -EIO)
+ 		/*
+ 		 * If this is not %-EIO, we have no idea what to do. Scheduling
+ 		 * this physical eraseblock for erasure again would cause
+ 		 * errors again and again. Well, lets switch to R/O mode.
+ 		 */
+ 		goto out_ro;
+-	}
+ 
+ 	/* It is %-EIO, the PEB went bad */
+ 
 
 
