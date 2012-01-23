@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab2AWLxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 06:53:47 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64385 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab2AWLxq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 06:53:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120123112022.GB1707@cmpxchg.org>
-References: <CAJd=RBC8dCGgqXqP+yjW2+pVoSeFXwXfjx8DLHhMuY8goOadZw@mail.gmail.com>
-	<CAJd=RBBqp3bMGwFc14BJ7+=KsfO0gLnrnXwbRdLDYOJDdvbptA@mail.gmail.com>
-	<20120123112022.GB1707@cmpxchg.org>
-Date: Mon, 23 Jan 2012 19:53:45 +0800
-Message-ID: <CAJd=RBDEGDZkCTC_rwE9jWRBJuWDdncoQ55fip9TYukqqUFoNw@mail.gmail.com>
-Subject: Re: [PATCH] mm: vmscan: ensure reclaiming pages on the lru lists of zone
-From: Hillf Danton <dhillf@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753220Ab2AWLy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 06:54:27 -0500
+Received: from mga14.intel.com ([143.182.124.37]:40314 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752380Ab2AWLy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 06:54:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="59093009"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH] kbuild: disable -Wmissing-field-initializers for W=1
+Date: Mon, 23 Jan 2012 05:54:10 +0200
+Message-Id: <1327290850-5405-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 7:20 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Mon, Jan 23, 2012 at 12:47:34AM +0800, Hillf Danton wrote:
->> Hi all
->>
->> For easy review, it is re-prepared based on 3.3-rc1.
->>
->> Thanks
->> Hillf
->>
->> ===cut please===
->> From: Hillf Danton <dhillf@gmail.com>
->> Subject: [PATCH] mm: vmscan: ensure reclaiming pages on the lru lists of zone
->>
->> While iterating over memory cgroup hierarchy, pages are reclaimed from each
->> mem cgroup, and reclaim terminates after a full round-trip. It is possible
->> that no pages on the lru lists of given zone are reclaimed, as termination
->> is checked after the reclaiming function.
->>
->> Mem cgroup iteration is rearranged a bit to make sure that pages are reclaimed
->> from both mem cgroups and zone.
->
-> It's not only possible, it's guaranteed: with the memory controller
-> enabled, the global per-zone lru lists are empty.
->
-> Pages used to be linked on the global per-zone AND the memcg per-zone
-> lru lists.  Nowadays, they only sit on the memcg per-zone lists, which
-> is why global reclaim does a hierarchy walk.
->
+-Wmissing-field-initializers is too noisy to be useful on W=1. Let's
+move it to W=2.
 
-Thanks for getting me up to date 8-)
-Hillf
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ scripts/Makefile.build |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index d2b366c..1535a2f 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -62,7 +62,7 @@ endif
+ ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
+ warning-  := $(empty)
+ 
+-warning-1 := -Wextra -Wunused -Wno-unused-parameter
++warning-1 := -Wextra -Wunused -Wno-unused-parameter -Wno-missing-field-initializers
+ warning-1 += -Wmissing-declarations
+ warning-1 += -Wmissing-format-attribute
+ warning-1 += -Wmissing-prototypes
+@@ -75,6 +75,7 @@ warning-2 += -Wcast-align
+ warning-2 += -Wdisabled-optimization
+ warning-2 += -Wnested-externs
+ warning-2 += -Wshadow
++warning-2 += -Wmissing-field-initializers
+ warning-2 += $(call cc-option, -Wlogical-op)
+ 
+ warning-3 := -Wbad-function-cast
+-- 
+1.7.8.3
+
