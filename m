@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2AWSuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 13:50:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54548 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753801Ab2AWSt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 13:49:58 -0500
-Message-ID: <4F1DAB99.4060008@zytor.com>
-Date: Mon, 23 Jan 2012 10:48:57 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753804Ab2AWSwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 13:52:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47760 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab2AWSv6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 13:51:58 -0500
+Date: Mon, 23 Jan 2012 10:51:53 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/17] blkcg: shoot down blkio_groups on elevator switch
+Message-ID: <20120123185153.GJ12652@google.com>
+References: <1327202725-3383-9-git-send-email-tj@kernel.org>
+ <20120123152055.GD25986@redhat.com>
+ <20120123153913.GB12652@google.com>
+ <20120123155216.GF25986@redhat.com>
+ <20120123155745.GD12652@google.com>
+ <20120123161042.GG25986@redhat.com>
+ <20120123161619.GE12652@google.com>
+ <20120123162553.GI25986@redhat.com>
+ <20120123171049.GH12652@google.com>
+ <20120123183207.GL25986@redhat.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
-References: <20120123142036.025893883@openvz.org> <20120123142436.258631438@openvz.org>
-In-Reply-To: <20120123142436.258631438@openvz.org>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120123183207.GL25986@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2012 06:20 AM, Cyrill Gorcunov wrote:
-> +
-> +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
-> +
-> +static long kptr_obfuscate(long v, int type)
-> +{
-> +	return (v + cookies[type][0]) ^ cookies[type][1];
-> +}
-> +
+On Mon, Jan 23, 2012 at 01:32:07PM -0500, Vivek Goyal wrote:
+> This is not just specific to blk-throttle. If in future throttling policy
+> is removable like elevator, then it will be fine to reset the throttling
+> related configuration upon removal of throttling policy. But resetting
+> throttling configuration without policy going anywhere does not sound good.
 
-Arf... when I said to use xor I meant instead of the add, not instead of
-the multiply, so:
-
-	return (v ^ cookies[type][0]) * cookies[type][1];
-
-Otherwise you have absolutely no source of diffusion at all (symmetric
-cryptography is about combinations of diffusion -- spreading the content
--- and confusion -- scrambling individual bits of content.)
-
-+	for (i = 0; i < KCMP_TYPES; i++) {
-+		for (j = 0; j < 2; j++) {
-+			get_random_bytes(&cookies[i][j],
-+					 sizeof(cookies[i][j]));
-+			cookies[i][j] |= (~(~0UL >>  1) | 1);
-+		}
-+	}
-
-Only cookies[1] -- being used as a multiplicative constant -- needs the OR.
-
-	-hpa
+Yeah, that is a compromise.  As long as those configurations are
+per-queue, which is the way it's gonna be after the clean up, I don't
+think it's a big deal tho.  We'll be saying "if you make changes to
+the set of blkcg policies applied to a device, all blkcg
+configurations regarding the device will be reset" instead of "if any
+change to blkcg policies happen system-wide, all blkcg configurations
+will be reset", and the former doesn't sound crazy to me.  Anyways,
+let's see how complex doing the finer grained thing gets.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+tejun
