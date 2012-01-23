@@ -1,229 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab2AWPzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 10:55:50 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62993 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab2AWPzt (ORCPT
+	id S1753282Ab2AWP5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 10:57:52 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58496 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab2AWP5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 10:55:49 -0500
-Date: Mon, 23 Jan 2012 19:55:43 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [patch 4/4] c/r: prctl: Extend PR_SET_MM to set up more
- mm_struct entries
-Message-ID: <20120123155543.GG1907@moon>
-References: <20120123142036.025893883@openvz.org>
- <20120123142436.431548686@openvz.org>
+	Mon, 23 Jan 2012 10:57:50 -0500
+Date: Mon, 23 Jan 2012 07:57:45 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/17] blkcg: shoot down blkio_groups on elevator switch
+Message-ID: <20120123155745.GD12652@google.com>
+References: <1327202725-3383-1-git-send-email-tj@kernel.org>
+ <1327202725-3383-9-git-send-email-tj@kernel.org>
+ <20120123152055.GD25986@redhat.com>
+ <20120123153913.GB12652@google.com>
+ <20120123155216.GF25986@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120123142436.431548686@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120123155216.GF25986@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 06:20:40PM +0400, Cyrill Gorcunov wrote:
-> After restore we would like the 'ps' command show the command
-> line and evironment exactly the same it was at checkpoint time.
+On Mon, Jan 23, 2012 at 10:52:16AM -0500, Vivek Goyal wrote:
+> Atleast throttling rules should not disappear over elevator switch. They
+> are per device and not per IO scheduler. Think of losing nr_requests
+> settings just because elevator switch happened.
 > 
-> So this additional PR_SET_MM_ allow us to do so. Note that
-> these members of mm_struct is rather used for output in
-> procfs, except auxv vector which is used by ld.so mostly.
-> 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Vagin <avagin@openvz.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Vasiliy Kulikov <segoon@openwall.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
+> Elevator switch can be low frequency but how would a user space know
+> that elevator switch failed that's why we lost our rules and now lets
+> put the rules back.
 
-This one is with typo fixed.
+It's simple - store all the policy rules before switching elevators
+and restore them afterwards regardless of success / failure.
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: c/r: prctl: Extend PR_SET_MM to set up more mm_struct entries
+> I am not sure how would we justify this that because of ease of programming
+> in kernel, now user space is supposed to make sure that any programmed
+> rules are still there and reprogram the cgroup if rules are gone for
+> some reason.
 
-After restore we would like the 'ps' command show the command
-line and evironment exactly the same it was at checkpoint time.
+Sanity in trade off?
 
-So this additional PR_SET_MM_ allow us to do so. Note that
-these members of mm_struct is rather used for output in
-procfs, except auxv vector which is used by ld.so mostly.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- include/linux/prctl.h |    5 +++
- kernel/sys.c          |   73 +++++++++++++++++++++++++++++++-------------------
- 2 files changed, 51 insertions(+), 27 deletions(-)
-
-Index: linux-2.6.git/include/linux/prctl.h
-===================================================================
---- linux-2.6.git.orig/include/linux/prctl.h
-+++ linux-2.6.git/include/linux/prctl.h
-@@ -113,5 +113,10 @@
- # define PR_SET_MM_START_STACK		5
- # define PR_SET_MM_START_BRK		6
- # define PR_SET_MM_BRK			7
-+# define PR_SET_MM_ARG_START		8
-+# define PR_SET_MM_ARG_END		9
-+# define PR_SET_MM_ENV_START		10
-+# define PR_SET_MM_ENV_END		11
-+# define PR_SET_MM_AUXV			12
- 
- #endif /* _LINUX_PRCTL_H */
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1693,17 +1693,25 @@ SYSCALL_DEFINE1(umask, int, mask)
- }
- 
- #ifdef CONFIG_CHECKPOINT_RESTORE
-+static bool vma_flags_mismatch(struct vm_area_struct *vma,
-+			       unsigned long required,
-+			       unsigned long banned)
-+{
-+	return (vma->vm_flags & required) != required ||
-+		(vma->vm_flags & banned);
-+}
-+
- static int prctl_set_mm(int opt, unsigned long addr,
- 			unsigned long arg4, unsigned long arg5)
- {
- 	unsigned long rlim = rlimit(RLIMIT_DATA);
--	unsigned long vm_req_flags;
--	unsigned long vm_bad_flags;
- 	struct vm_area_struct *vma;
- 	int error = 0;
- 	struct mm_struct *mm = current->mm;
- 
--	if (arg4 | arg5)
-+	if (arg4 && opt != PR_SET_MM_AUXV)
-+		return -EINVAL;
-+	else if (arg4 | arg5)
- 		return -EINVAL;
- 
- 	if (!capable(CAP_SYS_ADMIN))
-@@ -1715,7 +1723,9 @@ static int prctl_set_mm(int opt, unsigne
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, addr);
- 
--	if (opt != PR_SET_MM_START_BRK && opt != PR_SET_MM_BRK) {
-+	if (opt != PR_SET_MM_START_BRK &&
-+	    opt != PR_SET_MM_BRK &&
-+	    opt != PR_SET_MM_AUXV) {
- 		/* It must be existing VMA */
- 		if (!vma || vma->vm_start > addr)
- 			goto out;
-@@ -1725,11 +1735,8 @@ static int prctl_set_mm(int opt, unsigne
- 	switch (opt) {
- 	case PR_SET_MM_START_CODE:
- 	case PR_SET_MM_END_CODE:
--		vm_req_flags = VM_READ | VM_EXEC;
--		vm_bad_flags = VM_WRITE | VM_MAYSHARE;
--
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
--		    (vma->vm_flags & vm_bad_flags))
-+		if (vma_flags_mismatch(vma, VM_READ | VM_EXEC,
-+				       VM_WRITE | VM_MAYSHARE))
- 			goto out;
- 
- 		if (opt == PR_SET_MM_START_CODE)
-@@ -1740,11 +1747,8 @@ static int prctl_set_mm(int opt, unsigne
- 
- 	case PR_SET_MM_START_DATA:
- 	case PR_SET_MM_END_DATA:
--		vm_req_flags = VM_READ | VM_WRITE;
--		vm_bad_flags = VM_EXEC | VM_MAYSHARE;
--
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
--		    (vma->vm_flags & vm_bad_flags))
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE,
-+				       VM_EXEC | VM_MAYSHARE))
- 			goto out;
- 
- 		if (opt == PR_SET_MM_START_DATA)
-@@ -1753,19 +1757,6 @@ static int prctl_set_mm(int opt, unsigne
- 			mm->end_data = addr;
- 		break;
- 
--	case PR_SET_MM_START_STACK:
--
--#ifdef CONFIG_STACK_GROWSUP
--		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSUP;
--#else
--		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSDOWN;
--#endif
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags)
--			goto out;
--
--		mm->start_stack = addr;
--		break;
--
- 	case PR_SET_MM_START_BRK:
- 		if (addr <= mm->end_data)
- 			goto out;
-@@ -1790,6 +1781,34 @@ static int prctl_set_mm(int opt, unsigne
- 		mm->brk = addr;
- 		break;
- 
-+	case PR_SET_MM_START_STACK:
-+	case PR_SET_MM_ARG_START:
-+	case PR_SET_MM_ARG_END:
-+	case PR_SET_MM_ENV_START:
-+	case PR_SET_MM_ENV_END:
-+#ifdef CONFIG_STACK_GROWSUP
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSUP, 0))
-+#else
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSDOWN, 0))
-+#endif
-+			goto out;
-+		if (opt == PR_SET_MM_START_STACK)
-+			mm->start_stack = addr;
-+		else if (opt == PR_SET_MM_ARG_START)
-+			mm->arg_start = addr;
-+		else if (opt == PR_SET_MM_ARG_END)
-+			mm->arg_end = addr;
-+		else if (opt == PR_SET_MM_ENV_START)
-+			mm->env_start = addr;
-+		else if (opt == PR_SET_MM_ENV_END)
-+			mm->env_end = addr;
-+		break;
-+
-+	case PR_SET_MM_AUXV:
-+		if (arg4 > sizeof(mm->saved_auxv))
-+			goto out;
-+		error = copy_from_user(mm->saved_auxv, (const void __user *)addr, arg4);
-+		break;
- 	default:
- 		error = -EINVAL;
- 		goto out;
+-- 
+tejun
