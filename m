@@ -1,87 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab2AWXnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:43:40 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36397 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753688Ab2AWXn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:43:29 -0500
-X-Sasl-enc: UwgeTsZ0oA4QMJBuJm/1PMlGo6wZG+34E6VstXYNArlz 1327362208
-Date: Mon, 23 Jan 2012 15:42:24 -0800
+	id S1754074Ab2AWXpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:45:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41917 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654Ab2AWXpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:45:05 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:02 2012
+Message-Id: <20120123234202.609402713@clark.kroah.org>
+User-Agent: quilt/0.50-11.1
+Date: Mon, 23 Jan 2012 15:40:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [00/27] 2.6.32.55-longterm review
-Message-ID: <20120123234224.GA19510@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        alan@lxorguk.ukuu.org.uk, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [11/27] PNP: work around Dell 1536/1546 BIOS MMCONFIG bug that breaks USB
+In-Reply-To: <20120123234224.GA19510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.@rel@ release.
-There are 27 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wednesday, January 25, 2012, 20:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.55-rc1.gz
-and the diffstat can be found below.
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-thanks,
+commit eb31aae8cb5eb54e234ed2d857ddac868195d911 upstream.
 
-greg k-h
+Some Dell BIOSes have MCFG tables that don't report the entire
+MMCONFIG area claimed by the chipset.  If we move PCI devices into
+that claimed-but-unreported area, they don't work.
+
+This quirk reads the AMD MMCONFIG MSRs and adds PNP0C01 resources as
+needed to cover the entire area.
+
+Example problem scenario:
+
+  BIOS-e820: 00000000cfec5400 - 00000000d4000000 (reserved)
+  Fam 10h mmconf [d0000000, dfffffff]
+  PCI: MMCONFIG for domain 0000 [bus 00-3f] at [mem 0xd0000000-0xd3ffffff] (base 0xd0000000)
+  pnp 00:0c: [mem 0xd0000000-0xd3ffffff]
+  pci 0000:00:12.0: reg 10: [mem 0xffb00000-0xffb00fff]
+  pci 0000:00:12.0: no compatible bridge window for [mem 0xffb00000-0xffb00fff]
+  pci 0000:00:12.0: BAR 0: assigned [mem 0xd4000000-0xd40000ff]
+
+Reported-by: Lisa Salimbas <lisa.salimbas@canonical.com>
+Reported-by: <thuban@singularity.fr>
+Tested-by: dann frazier <dann.frazier@canonical.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=31602
+References: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/647043
+References: https://bugzilla.redhat.com/show_bug.cgi?id=770308
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/pnp/quirks.c |   42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+
+--- a/drivers/pnp/quirks.c
++++ b/drivers/pnp/quirks.c
+@@ -300,6 +300,45 @@ static void quirk_system_pci_resources(s
+ 	}
+ }
+ 
++#ifdef CONFIG_AMD_NB
++
++#include <asm/amd_nb.h>
++
++static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
++{
++	resource_size_t start, end;
++	struct pnp_resource *pnp_res;
++	struct resource *res;
++	struct resource mmconfig_res, *mmconfig;
++
++	mmconfig = amd_get_mmconfig_range(&mmconfig_res);
++	if (!mmconfig)
++		return;
++
++	list_for_each_entry(pnp_res, &dev->resources, list) {
++		res = &pnp_res->res;
++		if (res->end < mmconfig->start || res->start > mmconfig->end ||
++		    (res->start == mmconfig->start && res->end == mmconfig->end))
++			continue;
++
++		dev_info(&dev->dev, FW_BUG
++			 "%pR covers only part of AMD MMCONFIG area %pR; adding more reservations\n",
++			 res, mmconfig);
++		if (mmconfig->start < res->start) {
++			start = mmconfig->start;
++			end = res->start - 1;
++			pnp_add_mem_resource(dev, start, end, 0);
++		}
++		if (mmconfig->end > res->end) {
++			start = res->end + 1;
++			end = mmconfig->end;
++			pnp_add_mem_resource(dev, start, end, 0);
++		}
++		break;
++	}
++}
++#endif
++
+ /*
+  *  PnP Quirks
+  *  Cards or devices that need some tweaking due to incomplete resource info
+@@ -327,6 +366,9 @@ static struct pnp_fixup pnp_fixups[] = {
+ 	/* PnP resources that might overlap PCI BARs */
+ 	{"PNP0c01", quirk_system_pci_resources},
+ 	{"PNP0c02", quirk_system_pci_resources},
++#ifdef CONFIG_AMD_NB
++	{"PNP0c01", quirk_amd_mmconfig_area},
++#endif
+ 	{""}
+ };
+ 
 
 
- Makefile                            |    2 +-
- arch/score/kernel/entry.S           |    2 +-
- arch/x86/mm/mmap.c                  |    4 +-
- block/scsi_ioctl.c                  |    7 +++++
- drivers/block/cciss.c               |    6 ++--
- drivers/block/ub.c                  |    3 +-
- drivers/block/virtio_blk.c          |    4 +-
- drivers/cdrom/cdrom.c               |    3 +-
- drivers/hid/hid-core.c              |    2 +-
- drivers/i2c/busses/i2c-ali1535.c    |   11 +++++---
- drivers/i2c/busses/i2c-nforce2.c    |    2 +-
- drivers/i2c/busses/i2c-sis5595.c    |    4 +-
- drivers/i2c/busses/i2c-sis630.c     |    6 ++++-
- drivers/i2c/busses/i2c-viapro.c     |    7 ++++-
- drivers/ide/ide-floppy_ioctl.c      |    3 +-
- drivers/media/video/v4l2-ioctl.c    |    6 ++++
- drivers/mtd/ubi/cdev.c              |    3 ++
- drivers/mtd/ubi/wl.c                |    7 +++--
- drivers/pci/msi.c                   |   10 ++++++++
- drivers/pnp/quirks.c                |   42 +++++++++++++++++++++++++++++++++
- drivers/scsi/sd.c                   |    2 +-
- drivers/scsi/sym53c8xx_2/sym_glue.c |    4 +++
- drivers/usb/class/cdc-wdm.c         |    4 +-
- drivers/xen/xenbus/xenbus_xs.c      |    6 ++++
- fs/ext4/super.c                     |    7 ++---
- fs/nfsd/export.c                    |    2 +-
- fs/proc/uptime.c                    |    9 +++++-
- include/linux/blkdev.h              |    2 +
- include/linux/kernel.h              |   44 +++++++++++++++++++++++++++++++++++
- include/linux/pci_regs.h            |    2 +-
- include/linux/sunrpc/svcsock.h      |    2 +-
- include/linux/videodev2.h           |    1 +
- include/xen/interface/io/xs_wire.h  |    3 ++
- kernel/kprobes.c                    |    2 +-
- net/sunrpc/svc.c                    |   10 +++----
- net/sunrpc/svc_xprt.c               |   11 ++++++++-
- security/integrity/ima/ima_api.c    |    4 +-
- security/integrity/ima/ima_queue.c  |    1 +
- sound/pci/hda/hda_local.h           |    7 ++++-
- sound/pci/hda/hda_proc.c            |    2 +
- sound/pci/hda/patch_sigmatel.c      |    2 +-
- sound/pci/ice1712/amp.c             |    7 ++++-
- sound/usb/usx2y/usb_stream.c        |    6 +---
- 43 files changed, 215 insertions(+), 59 deletions(-)
