@@ -1,137 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab2AWSDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 13:03:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6035 "EHLO mx1.redhat.com"
+	id S1753356Ab2AWSEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 13:04:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13985 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab2AWSDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 13:03:34 -0500
-Subject: Re: [PATCH 2/3] ACPI, APEI: Add RAM mapping support to ACPI
-From: Myron Stowe <mstowe@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, rjw@sisk.pl, ying.huang@intel.com,
-        trenn@suse.de, linux-kernel@vger.kernel.org
-In-Reply-To: <CAErSpo5KDxkcMn3OrvujeSHhzF7PjG0hsYqMXe1HmpPJaLHvDg@mail.gmail.com>
-References: <20120121021318.14723.45698.stgit@amt.stowe>
-	 <20120121021330.14723.72537.stgit@amt.stowe>
-	 <CAErSpo5KDxkcMn3OrvujeSHhzF7PjG0hsYqMXe1HmpPJaLHvDg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Jan 2012 11:03:25 -0700
-Message-ID: <1327341805.2390.87.camel@zim.stowe>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752749Ab2AWSEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 13:04:46 -0500
+Message-ID: <4F1DA12E.7070906@redhat.com>
+Date: Mon, 23 Jan 2012 16:04:30 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        V4L Mailing List <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] v4l2: handle multiplication overflow
+References: <4EF2FBA2.5070802@freemail.hu>
+In-Reply-To: <4EF2FBA2.5070802@freemail.hu>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-01-21 at 08:04 -0700, Bjorn Helgaas wrote:
-> On Fri, Jan 20, 2012 at 7:13 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
-> > From: Myron Stowe <mstowe@redhat.com>
-> >
-> > This patch adds support for RAM to ACPI's mapping capabilities in order
-> > to support APEI error injection (EINJ) actions.
-> >
-> > This patch re-factors similar functionality introduced in commit
-> > 76da3fb3575, bringing it into osl.c in preparation for removing
-> > ./drivers/acpi/atomicio.[ch].
-> >
-> > Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-> > ---
-> >
-> >  drivers/acpi/osl.c |   36 ++++++++++++++++++++++++++++++++++--
-> >  1 files changed, 34 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> > index f363a55..8ee64ea 100644
-> > --- a/drivers/acpi/osl.c
-> > +++ b/drivers/acpi/osl.c
-> > @@ -31,6 +31,7 @@
-> >  #include <linux/kernel.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/mm.h>
-> > +#include <linux/highmem.h>
-> >  #include <linux/pci.h>
-> >  #include <linux/interrupt.h>
-> >  #include <linux/kmod.h>
-> > @@ -321,6 +322,37 @@ acpi_map_lookup_virt(void __iomem *virt, acpi_size size)
-> >        return NULL;
-> >  }
-> >
-> > +#ifndef CONFIG_IA64
-> > +#define should_use_kmap(pfn)   page_is_ram(pfn)
-> > +#else
-> > +/* ioremap will take care of cache attributes */
-> > +#define should_use_kmap(pfn)   0
-> > +#endif
-> > +
-> > +static void __iomem *acpi_map(acpi_physical_address pg_off, unsigned long pg_sz)
-> > +{
-> > +       unsigned long pfn;
-> > +
-> > +       pfn = pg_off >> PAGE_SHIFT;
-> > +       if (should_use_kmap(pfn)) {
-> > +               if (pg_sz > PAGE_SIZE)
-> > +                       return NULL;
-> > +               return (void __iomem __force *)kmap(pfn_to_page(pfn));
-> > +       } else
-> > +               return acpi_os_ioremap(pg_off, pg_sz);
+Em 22-12-2011 07:42, Németh Márton escreveu:
+> From: Márton Németh <nm127@freemail.hu>
 > 
-> This implies that ioremap() works differently on ia64 than on x86.
-> Apparently one can ioremap() RAM on x86, but not on ia64.  Why is this
-> different?  Shouldn't we instead fix ioremap() on ia64 so it works the
-> same as on x86?
+> When a V4L2 ioctl is executed the memory provided by the caller in user space
+> is copied to the kernel space in video_usercopy() function. To find out
+> how many bytes has to be copied the check_array_args() helper function is used.
 > 
-> I looked at the ia64 ioremap(), and I can't see the reason it fails
-> for RAM.  Huang, do you remember the details from 76da3fb3575?
+> This patch adds a check for multiplication overflow. Without this check the
+> multiplication may overflow resulting array_size to be zero. This means that
+> later on uninitialized value can trigger NULL pointer exception.
 > 
-> > +}
-> > +
-> > +static void acpi_unmap(acpi_physical_address pg_off, void __iomem *vaddr)
-> > +{
-> > +       unsigned long pfn;
-> > +
-> > +       pfn = pg_off >> PAGE_SHIFT;
-> > +       if (page_is_ram(pfn))
-> > +               kunmap(pfn_to_page(pfn));
-> > +       else
-> > +               iounmap(vaddr);
+> The overflow happens because ctrls->count is an __u32 multiplied by a constant
+> coming from sizeof() operator. Multiplication result of two 32bit value may
+> be a 64bit value, thus overflow can happen. Similarly buf->length is an __u32
+> multiplied by a constant coming from sizeof() operator.
 > 
-> I hope we can resolve the ioremap() question so we don't need this
-> patch at all.  But if we do need this, I don't like the asymmetry here
-> -- on x86 RAM, I think we use ioremap() and kunmap(), which seems
-> wrong.  We should be able to use ioremap() and iounmap().
+> The chosen error value is -ENOMEM because we are just about to allocate
+> kernel memory to copy data from userspace. We cannot even store the required
+> number of bytes in the variable of size_t type.
+> 
+> To trigger the error from user space use the v4l-test 0.19 [1] or essentially
+> the following code fragment:
+> 
+> 	struct v4l2_ext_controls controls;
+> 	memset(&controls, 0, sizeof(controls));
+> 	controls.ctrl_class = V4L2_CTRL_CLASS_USER;
+> 	controls.count = 0x40000000;
+> 	controls.controls = NULL;
+> 	ret = ioctl(f, VIDIOC_G_EXT_CTRLS, &controls);
+> 
+> 
+> References:
+> [1] v4l-test: Test environment for Video For Linux Two (V4L2) API
+>     http://v4l-test.sourceforge.net/
+> 
+> Signed-off-by: Márton Németh <nm127@freemail.hu>
+> ---
+> 
+> I'm a little bit in doubt whether this is the correct way to check for the
+> multiplication overflow. In case of x86 architecture the MUL insruction [2]
+> can be used to multiply EAX with an other 32bit register, and the 64bit result
+> is placed to EDX:EAX. In case of EDX != 0 the carry and overflow flags are set.
+> 
+> This means that executing the MUL instruction on x86 already provides information
+> whether the result fits to 32bit or not. I might use __u64 as a result of the
+> multiplication and check whether the upper 32bit is still zero but the optimal
+> would be to check for the carry or the overflow flag.
+> 
+> Still, there could be a special case when the constant from sizeof() operator is
+> a power of 2, in this case the compiler might optimize the multiplication using
+> a shift left. In this case something else is needed.
+> 
+> I couldn't really find information about the number of bits for size_t on
+> different architectures. If size_t happens to be at least 64bit on some architecture
+> then this overflow will not happen at all and the array_size will contain the
+> correct value.
+> 
+> What do you think?
 
-Huang:
+Hi Németh,
 
-There seems to be a lot of people wondering about this - could you
-respond please.
+IMO, the check should, instead, use a max hard limit for the array size.
+There's no sense on allowing very large arrays there.
 
-Myron
-> 
-> > +}
-> > +
-> >  void __iomem *__init_refok
-> >  acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
-> >  {
-> > @@ -353,7 +385,7 @@ acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
-> >
-> >        pg_off = round_down(phys, PAGE_SIZE);
-> >        pg_sz = round_up(phys + size, PAGE_SIZE) - pg_off;
-> > -       virt = acpi_os_ioremap(pg_off, pg_sz);
-> > +       virt = acpi_map(pg_off, pg_sz);
-> >        if (!virt) {
-> >                mutex_unlock(&acpi_ioremap_lock);
-> >                kfree(map);
-> > @@ -384,7 +416,7 @@ static void acpi_os_map_cleanup(struct acpi_ioremap *map)
-> >  {
-> >        if (!map->refcount) {
-> >                synchronize_rcu();
-> > -               iounmap(map->virt);
-> > +               acpi_unmap(map->phys, map->virt);
-> >                kfree(map);
-> >        }
-> >  }
-> >
+I think that this patch become obsoleted by this one, already merged:
 
 
+commit 6c06108be53ca5e94d8b0e93883d534dd9079646
+Author: Dan Carpenter <dan.carpenter@oracle.com>
+Date:   Thu Jan 5 02:27:57 2012 -0300
+
+    [media] V4L/DVB: v4l2-ioctl: integer overflow in video_usercopy()
+    
+    If ctrls->count is too high the multiplication could overflow and
+    array_size would be lower than expected.  Mauro and Hans Verkuil
+    suggested that we cap it at 1024.  That comes from the maximum
+    number of controls with lots of room for expantion.
+    
+    $ grep V4L2_CID include/linux/videodev2.h | wc -l
+    211
+    
+    Cc: stable <stable@vger.kernel.org>
+    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
+index e1da8fc..639abee 100644
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -2226,6 +2226,10 @@ static int check_array_args(unsigned int cmd, void *parg, size_t *array_size,
+ 		struct v4l2_ext_controls *ctrls = parg;
+ 
+ 		if (ctrls->count != 0) {
++			if (ctrls->count > V4L2_CID_MAX_CTRLS) {
++				ret = -EINVAL;
++				break;
++			}
+ 			*user_ptr = (void __user *)ctrls->controls;
+ 			*kernel_ptr = (void *)&ctrls->controls;
+ 			*array_size = sizeof(struct v4l2_ext_control)
+diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+index 6bfaa76..b2e1331 100644
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -1132,6 +1132,7 @@ struct v4l2_querymenu {
+ #define V4L2_CTRL_FLAG_NEXT_CTRL	0x80000000
+ 
+ /*  User-class control IDs defined by V4L2 */
++#define V4L2_CID_MAX_CTRLS		1024
+ #define V4L2_CID_BASE			(V4L2_CTRL_CLASS_USER | 0x900)
+ #define V4L2_CID_USER_BASE 		V4L2_CID_BASE
+ /*  IDs reserved for driver specific controls */
+
+
+Regards,
+Mauro
