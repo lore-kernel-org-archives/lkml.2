@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab2AWQ52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 11:57:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41010 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab2AWQ5Y (ORCPT
+	id S1753477Ab2AWQ5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 11:57:34 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:43508 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab2AWQ5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 11:57:24 -0500
-Date: Mon, 23 Jan 2012 10:57:15 -0600
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, john.johansen@canonical.com,
-        dustin.kirkland@gazzang.com, Cong Wang <xiyou.wangcong@gmail.com>,
-        Li Wang <liwang@nudt.edu.cn>
-Subject: Re: eCryptfs: Truncate path improvements
-Message-ID: <20120123165714.GA20665@boyd>
-References: <1327098907-28963-1-git-send-email-tyhicks@canonical.com>
- <CA+55aFzpM-c9FWdC8+7sV0GOXqvFNvxPsrV42rvXJHXnKsDoZg@mail.gmail.com>
+	Mon, 23 Jan 2012 11:57:32 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzpM-c9FWdC8+7sV0GOXqvFNvxPsrV42rvXJHXnKsDoZg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
+ <CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
+ <20120121082857.GC32134@elte.hu> <CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+ <20120121165830.GA9216@elte.hu> <CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 Jan 2012 08:57:10 -0800
+X-Google-Sender-Auth: NFuARXcq07VvIj-W1a4JnD75H4g
+Message-ID: <CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
+To: Hitoshi Mitake <h.mitake@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        linux-kernel@vger.kernel.org, linux-nvme@infradead.org,
+        hpa@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 23, 2012 at 8:05 AM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>
+> I wrote the patch which adds the new file include/asm-generic/io-nonatomic.h.
+> io-nonatomic.h provides non-atomic version readq()/writeq().
 
---UugvWAfsgieZRqgk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I do wonder if we should do "little-endian" and "big-endian" variations?
 
-On 2012-01-23 08:49:40, Linus Torvalds wrote:
-> On Fri, Jan 20, 2012 at 2:35 PM, Tyler Hicks <tyhicks@canonical.com> wrot=
-e:
-> > As Linus pointed out[1], eCryptfs needs more checks around its truncate=
- path.
-> > The first patch in this series makes it possible for an eCryptfs trunca=
-te
-> > operation to be gracefully interrupted by a fatal signal. The second ad=
-ds
-> > checks for eCryptfs inode changes in setattr. The third is simply remov=
-al of
-> > an old, unused function.
->=20
-> Tyler, should I take these patches directly? Or are these just for
-> review and I should wait for a pull request?
+Quoting Willy:
 
-Just for review, as I'll send a pull request.
+  "For this particular hardware, it's defined to work if you read the
+low order bits first"
 
-I'll try to be more clear about that in the future.
+so I think we need make that explicit, and make two include files:
 
-Tyler
+   include/asm-generic/io-64b-lo-hi.h
+   include/asm-generic/io-64b-hi-lo.h
 
---UugvWAfsgieZRqgk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+or something like that. And thus indirectly document these kinds of
+requirements.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Hmm?
 
-iQIcBAEBCgAGBQJPHZFqAAoJENaSAD2qAscKU7oP/iAxoxIUAb7NbmrxwRv0Ma01
-C9I/I0u6reXXtv1APTshUmbwjCqXKBmHOolR3gkXud8i4EvTbL7RHn5mF0/IGnNg
-m+FCi++kVd9IIu2KkfqC2pvmrFlKrXs/PXe2DL1cbrqLmF/6Pn8s/phuNASo4UIK
-nqNBwz67b+MNfuZIdQ1of0WEtCxg4EnF0gjHTDDdeAbV0sBZMLbyD1V0Vq5nsO+V
-DngVKOxDzM4N4Mh97e1PSzwjVmSedSsVmVXd0GYkEsXDkaLI084NTvn16WClFW6G
-7q4XWjxqnsmkI5aL4uz381B8NX2hWy6llim01p5LzYl0I9EMY4y9F9g4ZMqBAF8F
-tBNCNoJBvq9C0THPIUY+3820icJggrsdMq4AuU8BEn/P6mSChsIdC7s5AKo4Uk5M
-PPGopgtNPp/NkJz/CTDBJTBlyKHpTjw5s/QMgcv1/zevR0LnqdTIOoB4BOgZ7+2g
-Sm/4ViCG3EwARjfgQz3ZiiAA87AHrW/EncBq3LTqyDv1MfgOq57G1GhEX5+dmHT2
-AcYQr4wiqEqcHaW9+959zMWHNUNv/SGKgObh5ogoagUiWU2xiZLcL/KRru9HqER0
-dDIJqAjSh8uGT1F03xIWNYk18dXjwGNffEUBnI+bHI79uEmMPWg/GSxkhDa4Uz4m
-4Giq1Mnmpij9m1xeEuHb
-=TWEd
------END PGP SIGNATURE-----
-
---UugvWAfsgieZRqgk--
+                Linus
