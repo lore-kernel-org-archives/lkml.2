@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2AWXpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:45:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41958 "EHLO mx2.suse.de"
+	id S1754995Ab2AWXpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:45:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41987 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754684Ab2AWXp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:45:28 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:03 2012
-Message-Id: <20120123234203.205581752@clark.kroah.org>
+	id S1754435Ab2AWXpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:45:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:02 2012
+Message-Id: <20120123234202.122639723@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:41:04 -0800
+Date: Mon, 23 Jan 2012 15:40:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [18/27] nfsd: Fix oops when parsing a 0 length export
+        alan@lxorguk.ukuu.org.uk, Chase Douglas <chase.douglas@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [05/27] HID: bump maximum global item tag report size to 96 bytes
 In-Reply-To: <20120123234224.GA19510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,80 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Chase Douglas <chase.douglas@canonical.com>
 
-commit b2ea70afade7080360ac55c4e64ff7a5fafdb67b upstream.
+commit e46e927b9b7e8d95526e69322855243882b7e1a3 upstream.
 
-expkey_parse() oopses when handling a 0 length export. This is easily
-triggerable from usermode by writing 0 bytes into
-'/proc/[proc id]/net/rpc/nfsd.fh/channel'.
+This allows the latest N-Trig devices to function properly.
 
-Below is the log:
+BugLink: https://bugs.launchpad.net/bugs/724831
 
-[ 1402.286893] BUG: unable to handle kernel paging request at ffff880077c49fff
-[ 1402.287632] IP: [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632] PGD 2206063 PUD 1fdfd067 PMD 1ffbc067 PTE 8000000077c49160
-[ 1402.287632] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1402.287632] CPU 1
-[ 1402.287632] Pid: 20198, comm: trinity Not tainted 3.2.0-rc2-sasha-00058-gc65cd37 #6
-[ 1402.287632] RIP: 0010:[<ffffffff812b4b99>]  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632] RSP: 0018:ffff880077f0fd68  EFLAGS: 00010292
-[ 1402.287632] RAX: ffff880077c49fff RBX: 00000000ffffffea RCX: 0000000001043400
-[ 1402.287632] RDX: 0000000000000000 RSI: ffff880077c4a000 RDI: ffffffff82283de0
-[ 1402.287632] RBP: ffff880077f0fe18 R08: 0000000000000001 R09: ffff880000000000
-[ 1402.287632] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880077c4a000
-[ 1402.287632] R13: ffffffff82283de0 R14: 0000000001043400 R15: ffffffff82283de0
-[ 1402.287632] FS:  00007f25fec3f700(0000) GS:ffff88007d400000(0000) knlGS:0000000000000000
-[ 1402.287632] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1402.287632] CR2: ffff880077c49fff CR3: 0000000077e1d000 CR4: 00000000000406e0
-[ 1402.287632] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1402.287632] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1402.287632] Process trinity (pid: 20198, threadinfo ffff880077f0e000, task ffff880077db17b0)
-[ 1402.287632] Stack:
-[ 1402.287632]  ffff880077db17b0 ffff880077c4a000 ffff880077f0fdb8 ffffffff810b411e
-[ 1402.287632]  ffff880000000000 ffff880077db17b0 ffff880077c4a000 ffffffff82283de0
-[ 1402.287632]  0000000001043400 ffffffff82283de0 ffff880077f0fde8 ffffffff81111f63
-[ 1402.287632] Call Trace:
-[ 1402.287632]  [<ffffffff810b411e>] ? lock_release+0x1af/0x1bc
-[ 1402.287632]  [<ffffffff81111f63>] ? might_fault+0x97/0x9e
-[ 1402.287632]  [<ffffffff81111f1a>] ? might_fault+0x4e/0x9e
-[ 1402.287632]  [<ffffffff81a8bcf2>] cache_do_downcall+0x3e/0x4f
-[ 1402.287632]  [<ffffffff81a8c950>] cache_write.clone.16+0xbb/0x130
-[ 1402.287632]  [<ffffffff81a8c9df>] ? cache_write_pipefs+0x1a/0x1a
-[ 1402.287632]  [<ffffffff81a8c9f8>] cache_write_procfs+0x19/0x1b
-[ 1402.287632]  [<ffffffff8118dc54>] proc_reg_write+0x8e/0xad
-[ 1402.287632]  [<ffffffff8113fe81>] vfs_write+0xaa/0xfd
-[ 1402.287632]  [<ffffffff8114142d>] ? fget_light+0x35/0x9e
-[ 1402.287632]  [<ffffffff8113ff8b>] sys_write+0x48/0x6f
-[ 1402.287632]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
-[ 1402.287632] Code: c0 c9 c3 55 48 63 d2 48 89 e5 48 8d 44 32 ff 41 57 41 56 41 55 41 54 53 bb ea ff ff ff 48 81 ec 88 00 00 00 48 89 b5 58 ff ff ff
-[ 1402.287632]  38 0a 0f 85 89 02 00 00 c6 00 00 48 8b 3d 44 4a e5 01 48 85
-[ 1402.287632] RIP  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632]  RSP <ffff880077f0fd68>
-[ 1402.287632] CR2: ffff880077c49fff
-[ 1402.287632] ---[ end trace 368ef53ff773a5e3 ]---
-
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/export.c |    2 +-
+ drivers/hid/hid-core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -106,7 +106,7 @@ static int expkey_parse(struct cache_det
- 	struct svc_expkey key;
- 	struct svc_expkey *ek = NULL;
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -350,7 +350,7 @@ static int hid_parser_global(struct hid_
  
--	if (mesg[mlen-1] != '\n')
-+	if (mlen < 1 || mesg[mlen-1] != '\n')
- 		return -EINVAL;
- 	mesg[mlen-1] = 0;
- 
+ 	case HID_GLOBAL_ITEM_TAG_REPORT_SIZE:
+ 		parser->global.report_size = item_udata(item);
+-		if (parser->global.report_size > 32) {
++		if (parser->global.report_size > 96) {
+ 			dbg_hid("invalid report_size %d\n",
+ 					parser->global.report_size);
+ 			return -1;
 
 
