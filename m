@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2AWTdE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 14:33:04 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59468 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753647Ab2AWTdC (ORCPT
+	id S1753978Ab2AWTdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 14:33:11 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35001 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab2AWTdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 14:33:02 -0500
-Date: Mon, 23 Jan 2012 19:33:00 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Karol Lewandowski <lmctlx@gmail.com>
-Cc: Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-kernel@vger.kernel.org, rpurdie@rpsys.net,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        kgene.kim@samsung.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, dg77.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH v2 2/2] regulator: add device tree support for max8997
-Message-ID: <20120123193259.GC26409@opensource.wolfsonmicro.com>
-References: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
- <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
- <4F1D9DDE.2070106@samsung.com>
- <20120123182056.GA26409@opensource.wolfsonmicro.com>
- <4F1DB34C.4030103@gmail.com>
+	Mon, 23 Jan 2012 14:33:07 -0500
+Date: Mon, 23 Jan 2012 23:33:01 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+ entry v8
+Message-ID: <20120123193301.GI1907@moon>
+References: <20120123142036.025893883@openvz.org>
+ <20120123142436.181674896@openvz.org>
+ <CAGXu5j+JrntZcr1sZ1sHXmOTT5jCuMp5HUQnucHqEgF+LXX5VA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4F1DB34C.4030103@gmail.com>
-X-Cookie: You dialed 5483.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5j+JrntZcr1sZ1sHXmOTT5jCuMp5HUQnucHqEgF+LXX5VA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 08:21:48PM +0100, Karol Lewandowski wrote:
-> On 01/23/2012 07:20 PM, Mark Brown wrote:
+On Mon, Jan 23, 2012 at 10:54:53AM -0800, Kees Cook wrote:
+> On Mon, Jan 23, 2012 at 6:20 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> > When we do checkpoint of a task we need to know the list of children
+> > the task, has but there is no easy and fast way to generate reverse
+> > parent->children chain from arbitrary <pid> (while a parent pid is
+> > provided in "PPid" field of /proc/<pid>/status).
+> > [...]
+> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> > Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Pavel Emelyanov <xemul@parallels.com>
+> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Reviewed-by: Kees Cook <keescook@chromium.org>
+> 
+> > +static int children_seq_show(struct seq_file *seq, void *v)
+> > +{
+> > +       struct inode *inode = seq->private;
+> > +       pid_t pid;
+> > +
+> > +       pid = pid_nr_ns(v, inode->i_sb->s_fs_info);
+> > +       return seq_printf(seq, " %d", pid);
+> > +}
+> 
+> Does this mean the file contents always starts with a space? I think
+> I'd prefer a trailing space than a leading one. Better yet, neither.
+> :)
+> 
 
-> >Documentation/SubmittingPatches please...
+Yeah, it there children, they will be in say " 1 2 3 4\n" format.
+To drop this space completely i'll have to add more code, which I
+actually trying to escape. Can we live with it? ;)
 
-> I should have stated explicitly that purpose of this patch (I should
-> have called it sniplet) was to show my point only.
-
-> IMHO it's still up to debate how above problem should be solved.
-
-It looks like a reasonable solution to me, and it wouldn't conflict with
-any better solution that does come along.
-
-> I'm not entirely sure that we really need things like e.g. "EN32KHz
-> AP" in DT (nor in platform data, for that matter).  I would like to
-> see Thomas' opinion first.
-
-The 32kHz crystals are a bit of an odd case, really those should be
-handled by the clock API but obviously that's stalled and has been for
-quite some time.
+	Cyrill
