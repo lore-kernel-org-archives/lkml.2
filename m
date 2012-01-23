@@ -1,117 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab2AWRs0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 12:48:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab2AWRsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 12:48:25 -0500
-Subject: Re: [PATCH 2/3] ACPI, APEI: Add RAM mapping support to ACPI
-From: Myron Stowe <mstowe@redhat.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Myron Stowe <myron.stowe@redhat.com>,
-        lenb@kernel.org, linux-acpi@vger.kernel.org, rjw@sisk.pl,
-        ying.huang@intel.com, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org
-In-Reply-To: <201201231651.23270.trenn@suse.de>
-References: <201201231651.23270.trenn@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Jan 2012 10:48:12 -0700
-Message-ID: <1327340892.2390.84.camel@zim.stowe>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752878Ab2AWRu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 12:50:26 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:26373 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab2AWRuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 12:50:24 -0500
+Date: Mon, 23 Jan 2012 18:50:22 +0100
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH v2 2/2] regulator: add device tree support for max8997
+In-reply-to: <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com,
+        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, dg77.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        =?UTF-8?B?IidcIuuwleqyveuvvA==?=
+	 =?UTF-8?B?L01vYmlsZSBTL1cgUGxhdGZvcm0gTGFiKERNQ+yXsCkvRTUo7LGF7J6EKS/sgrw=?=
+	 =?UTF-8?B?7ISx7KCE7J6QXCInIg==?= <kyungmin.park@samsung.com>
+Message-id: <4F1D9DDE.2070106@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
+References: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
+ <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-23 at 16:51 +0100, Thomas Renninger wrote:
-> Hi,
-> 
-> Please ignore my previous mail, my mailer wrongly formatted
-> it with html tags and it got filtered out from the lists.
-> 
-> Firstly: This has to get in quickly if it shouldn't miss
-> 3.3 (again). Tiny adjustings (I don't see any, beside the
-> issue Bjorn brought up) can still be done later, but I
-> guess this rather big one gets rejected by Linus after
-> the merge window closed.
+On 12.01.2012 08:35, Thomas Abraham wrote:
 
-Yes, I believe the obsolescence of atomicio.c from having taken the
-conversion patch (patch 3/4 of the series) was inadvertent.  As such I
-was trying to help by producing a series that addresses the two recent
-additions to atomicio.c that needed ported over to osl.c so that we
-would not loose such functionality with atomicio's obsolence as fast as
-possible.  Linus may not allow such now that the 3.3 merge window is
-closed but I think we all are thinking we should at least attempt to get
-the regressions resolved immediately if possible.
-> 
-> Here again:
-> 
-> On Saturday, January 21, 2012 09:38:27 PM Bjorn Helgaas wrote:
-> > +cc Tony, linux-ia64
-> > 
-> ...
-> > >>  {
-> > >> @@ -353,7 +385,7 @@ acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
-> > >>
-> > >>        pg_off = round_down(phys, PAGE_SIZE);
-> > >>        pg_sz = round_up(phys + size, PAGE_SIZE) - pg_off;
-> > >> -       virt = acpi_os_ioremap(pg_off, pg_sz);
-> > >> +       virt = acpi_map(pg_off, pg_sz);
-> Ok, that worked before, also on IA64.
-> That means that typically/normally/always io mem is tried to be mapped.
-> 
-> It's due to the new APEI infrastructure/features that ram could
-> get mapped via acpi_os_map_memory.
-> 
-> Is there any Itanium out there implementing any APEI table?
-> Will there ever be one?
-> Even if, isn't it a BIOS bug if such stuff is declared in ram and not
-> in reserved memory (also on X86)?
-> Especially on an Enterprise Itanium platform,
-> I guess the vendor should or better has to fix it up.
-> 
-> I'd do:
-> can_use_ioremap(pfn) instead of should_use_kmap(pfn)
-> and let it return false in ram + ia64 case, something like:
-> #ifdef IA64
-> #define can_use_ioremap(pfn)   !page_is_ram(pfn)
-> #endif
-> 
-> Pass the error upwards and APEI should get disabled on IA64,
-> if any ACPI code tries to ioremap real memory early (when
-> the APEI table parsing happens).
-> A nice FW_BUG message could be added as well (also on X86?).
-> 
-> Don't forget to use:
-> iounmap(vaddr);
-> only in acpi_unmap() then.
+Hi!
 
-I must admit, while I understand the reason and concept related to
-handling RAM for APEI, I do not understand memory management well enough
-understand the details of the original implementation.  I was just
-trying to cross-port the functionality over.  In doing such, I too, was
-concerned as to the asymmetric nature of the paths (mapping vs.
-unmapping) with respect to x86 as it just *felt* wrong.
+> Add device tree based discovery support for max8997.
 
-Len - please let me know if you want me to adjust the patch with Thomas'
-suggestions.
+> +static int max8997_pmic_dt_parse_pdata(struct max8997_dev *iodev,
+> +					struct max8997_platform_data *pdata)
+> +{
+...
+> +	pdata->regulators = rdata;
+> +	for_each_child_of_node(regulators_np, reg_np) {
+> +		for (i = 0; i<  ARRAY_SIZE(regulators); i++)
+> +			if (!of_node_cmp(reg_np->name, regulators[i].name))
+> +				break;
 
-> 
-> FWIW I even grepped for APEI tables on the most recent IA
-> machine we have -> no APEI tables.
-> 
-> If the rest is functionally the same as the patch series
-> you've send some months ago, feel free to add:
-> 
-> Reviewed-by: Thomas Renninger <trenn@suse.de>
-> 
-> I had a rather close look at those patches.
+If I read your patch correctly it would impossible to configure 
+following outputs when pmic is instantiated from DT:
 
-Thanks Thomas - yes, the removal patch - 3/3 - is the same.
+     enum max8998_regulators {
+     ...
+  1    MAX8997_EN32KHZ_AP,
+  2    MAX8997_EN32KHZ_CP,
+  3    MAX8997_CHARGER_CV,
+  4    MAX8997_CHARGER_TOPOFF, /* MBCCTRL5 */
 
-Myron
-> 
->    Thomas
+This is due to use of embedded spaces in regulator names (which are used 
+in comparision).
 
+This can be fixed with trivial patch[1].
+
+What bothers me more, are following regulators:
+
+       MAX8997_EN32KHZ_AP,
+       MAX8997_EN32KHZ_CP,
+       MAX8997_ENVICHG,
+       MAX8997_ESAFEOUT1,
+       MAX8997_ESAFEOUT2,
+
+Aren't these fixed? i.e. - is it really needed to configure these either 
+by platform data or DT at all?
+
+
+[1]
+
+ From 5cfba526210bc596c7d14e33fea93648baa0a227 Mon Sep 17 00:00:00 2001
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Date: Mon, 23 Jan 2012 17:20:25 +0100
+Subject: [PATCH] max8997: Avoid spaces in regulator names
+
+max8997-pmic instantiated from device tree uses names,
+not numerical ids to distinguish between outputs.
+
+Use names without spaces to make it possible to specify
+parameters for said regulators in DTS.
+
+Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+  drivers/regulator/max8997.c |    8 ++++----
+  1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index 053d0b7..4b572eb 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -910,13 +910,13 @@ static struct regulator_desc regulators[] = {
+         },
+         regulator_desc_buck(7),
+         {
+-               .name   = "EN32KHz AP",
++               .name   = "EN32KHz_AP",
+                 .id     = MAX8997_EN32KHZ_AP,
+                 .ops    = &max8997_fixedvolt_ops,
+                 .type   = REGULATOR_VOLTAGE,
+                 .owner  = THIS_MODULE,
+         }, {
+-               .name   = "EN32KHz CP",
++               .name   = "EN32KHz_CP",
+                 .id     = MAX8997_EN32KHZ_CP,
+                 .ops    = &max8997_fixedvolt_ops,
+                 .type   = REGULATOR_VOLTAGE,
+@@ -940,7 +940,7 @@ static struct regulator_desc regulators[] = {
+                 .type   = REGULATOR_VOLTAGE,
+                 .owner   = THIS_MODULE,
+         }, {
+-               .name   = "CHARGER CV",
++               .name   = "CHARGER_CV",
+                 .id     = MAX8997_CHARGER_CV,
+                 .ops    = &max8997_fixedstate_ops,
+                 .type   = REGULATOR_VOLTAGE,
+@@ -952,7 +952,7 @@ static struct regulator_desc regulators[] = {
+                 .type   = REGULATOR_CURRENT,
+                 .owner   = THIS_MODULE,
+         }, {
+-               .name   = "CHARGER TOPOFF",
++               .name   = "CHARGER_TOPOFF",
+                 .id     = MAX8997_CHARGER_TOPOFF,
+                 .ops    = &max8997_charger_fixedstate_ops,
+                 .type   = REGULATOR_CURRENT,
+-- 
+1.7.8.3
 
