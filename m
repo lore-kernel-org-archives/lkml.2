@@ -1,99 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab2AWO1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 09:27:11 -0500
-Received: from 8bytes.org ([88.198.83.132]:46011 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab2AWO1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 09:27:08 -0500
-Date: Mon, 23 Jan 2012 15:27:06 +0100
-From: "'Joerg Roedel'" <joro@8bytes.org>
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>
-Subject: Re: [PATCH v8 2/2] iommu/exynos: Add iommu driver for Exynos
-	Platforms
-Message-ID: <20120123142706.GA6269@8bytes.org>
-References: <001001ccc625$0afa7ee0$20ef7ca0$%cho@samsung.com>
+	id S1752974Ab2AWO2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 09:28:06 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:53591 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab2AWO2E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 09:28:04 -0500
+Message-ID: <4F1D6E44.6070509@linux.vnet.ibm.com>
+Date: Mon, 23 Jan 2012 08:27:16 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <001001ccc625$0afa7ee0$20ef7ca0$%cho@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>, Konrad Wilk <konrad.wilk@oracle.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] staging: zsmalloc: memory allocator for compressed
+ pages
+References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120120140344.2fb399e4.akpm@linux-foundation.org>
+In-Reply-To: <20120120140344.2fb399e4.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012314-7408-0000-0000-000002187ECF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hey Andrew,
 
-please also get and inclue Acks from the Exynos maintainer for the next
-post.
-Since I have a compiling config for exynos now I will merge the patches
-when you have the Acks and addressed or explained the issues I pointed
-out below.
+Thanks for the feedback.
 
-On Thu, Dec 29, 2011 at 09:26:08PM +0900, KyongHo Cho wrote:
-> +static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
-> +{
-> +	struct exynos_iommu_domain *priv = domain->priv;
-> +	struct list_head *pos, *n;
-> +	unsigned long flags;
-> +	int i;
-> +
-> +	WARN_ON(!list_empty(&priv->clients));
+On 01/20/2012 04:03 PM, Andrew Morton wrote:
+> On Mon,  9 Jan 2012 16:51:55 -0600
+> Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> 
+> The changelog doesn't really describe why the code was written and
+> provides no reason for anyone to merge it. <snip>  This is the most important
+> part of the patch description and you completely omitted it!
 
-This isn't really a problem. We allow destroying a domain with devices
-attached. So this WARN_ON is not necessary.
+Sorry about that.  The purpose is to replace the xvmalloc allocator
+that both zcache and zram use that suffers from the high fragmentation
+described.  I 'll be sure to add this to the cover letter.
 
-> +static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
-> +			 phys_addr_t paddr, size_t size, int prot)
-> +{
-> +	struct exynos_iommu_domain *priv = domain->priv;
-> +	unsigned long *entry;
-> +	unsigned long flags;
-> +	int ret = -ENOMEM;
-> +
-> +	BUG_ON(priv->pgtable == NULL);
-> +
-> +	spin_lock_irqsave(&priv->pgtablelock, flags);
-> +
-> +	entry = section_entry(priv->pgtable, iova);
-> +
-> +	if (size >= SECT_SIZE) {
-> +		ret = lv1set_section(entry, paddr, size >> SECT_ORDER,
-> +					&priv->lv2entcnt[lv1ent_offset(iova)]);
+I was thinking it would go to lib after staging.
 
-This looks like you are partially re-implementing behavior of generic
-code because you are mapping multiple sections at once. The generic map
-code already splits up the address range correctly, so no need to do
-this in the driver (unless there is some benefit in the hardware, like
-an IOTLB entry that can cover multiple sections or something similar).
-
-> +static size_t exynos_iommu_unmap(struct iommu_domain *domain,
-> +					       unsigned long iova, size_t size)
-> +{
-> +	struct exynos_iommu_domain *priv = domain->priv;
-> +	struct iommu_client *client;
-> +	unsigned long flags;
-> +
-> +	BUG_ON(priv->pgtable == NULL);
-> +
-> +	spin_lock_irqsave(&priv->pgtablelock, flags);
-> +
-> +	while (size != 0) {
-> +		int i, nent, order;
-> +		unsigned long *pent, *sent;
-
-Same with this while-loop. This looks like it re-implements behavior
-from the generic code.
-
-Regards,
-
-	Joerg
+Thanks,
+--
+Seth
 
