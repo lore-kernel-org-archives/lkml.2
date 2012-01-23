@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab2AWXpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:45:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42008 "EHLO mx2.suse.de"
+	id S1755121Ab2AWXqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:46:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42019 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755039Ab2AWXpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:45:51 -0500
+	id S1755089Ab2AWXp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:45:58 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:02 2012
-Message-Id: <20120123234202.366803070@clark.kroah.org>
+Message-Id: <20120123234202.527163781@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:40:54 -0800
+Date: Mon, 23 Jan 2012 15:40:56 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [08/27] PCI: msi: Disable msi interrupts when we initialize a pci device
+        alan@lxorguk.ukuu.org.uk, Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [10/27] ima: free duplicate measurement memory
 In-Reply-To: <20120123234224.GA19510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Roberto Sassu <roberto.sassu@polito.it>
 
-commit a776c491ca5e38c26d9f66923ff574d041e747f4 upstream.
+commit 45fae7493970d7c45626ccd96d4a74f5f1eea5a9 upstream.
 
-I traced a nasty kexec on panic boot failure to the fact that we had
-screaming msi interrupts and we were not disabling the msi messages at
-kernel startup.  The booting kernel had not enabled those interupts so
-was not prepared to handle them.
+Info about new measurements are cached in the iint for performance.  When
+the inode is flushed from cache, the associated iint is flushed as well.
+Subsequent access to the inode will cause the inode to be re-measured and
+will attempt to add a duplicate entry to the measurement list.
 
-I can see no reason why we would ever want to leave the msi interrupts
-enabled at boot if something else has enabled those interrupts.  The pci
-spec specifies that msi interrupts should be off by default.  Drivers
-are expected to enable the msi interrupts if they want to use them.  Our
-interrupt handling code reprograms the interrupt handlers at boot and
-will not be be able to do anything useful with an unexpected interrupt.
+This patch frees the duplicate measurement memory, fixing a memory leak.
 
-This patch applies cleanly all of the way back to 2.6.32 where I noticed
-the problem.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/msi.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ security/integrity/ima/ima_api.c   |    4 ++--
+ security/integrity/ima/ima_queue.c |    1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -863,5 +863,15 @@ EXPORT_SYMBOL(pci_msi_enabled);
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -183,8 +183,8 @@ void ima_store_measurement(struct ima_ii
+ 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
  
- void pci_msi_init_pci_dev(struct pci_dev *dev)
- {
-+	int pos;
- 	INIT_LIST_HEAD(&dev->msi_list);
-+
-+	/* Disable the msi hardware to avoid screaming interrupts
-+	 * during boot.  This is the power on reset default so
-+	 * usually this should be a noop.
-+	 */
-+	pos = pci_find_capability(dev, PCI_CAP_ID_MSI);
-+	if (pos)
-+		msi_set_enable(dev, pos, 0);
-+	msix_set_enable(dev, 0);
+ 	result = ima_store_template(entry, violation, inode);
+-	if (!result)
++	if (!result || result == -EEXIST)
+ 		iint->flags |= IMA_MEASURED;
+-	else
++	if (result < 0)
+ 		kfree(entry);
  }
+--- a/security/integrity/ima/ima_queue.c
++++ b/security/integrity/ima/ima_queue.c
+@@ -113,6 +113,7 @@ int ima_add_template_entry(struct ima_te
+ 		memcpy(digest, entry->digest, sizeof digest);
+ 		if (ima_lookup_digest_entry(digest)) {
+ 			audit_cause = "hash_exists";
++			result = -EEXIST;
+ 			goto out;
+ 		}
+ 	}
 
 
