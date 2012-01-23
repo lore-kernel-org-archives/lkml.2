@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab2AWXtu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42663 "EHLO mx2.suse.de"
+	id S1755978Ab2AWXsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:48:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42551 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096Ab2AWXtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:45 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
-Message-Id: <20120123234028.372681262@clark.kroah.org>
+	id S1755948Ab2AWXsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:48:50 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:27 2012
+Message-Id: <20120123234027.027140487@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:50 -0800
+Date: Mon, 23 Jan 2012 15:39:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [64/90] proc: clean up and fix /proc/<pid>/mem handling
+        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>
+Subject: [48/90] fsnotify: dont BUG in fsnotify_destroy_mark()
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,266 +24,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit e268337dfe26dfc7efd422a804dbb27977a3cccc upstream.
+commit fed474857efbed79cd390d0aee224231ca718f63 upstream.
 
-Jüri Aedla reported that the /proc/<pid>/mem handling really isn't very
-robust, and it also doesn't match the permission checking of any of the
-other related files.
+Removing the parent of a watched file results in "kernel BUG at
+fs/notify/mark.c:139".
 
-This changes it to do the permission checks at open time, and instead of
-tracking the process, it tracks the VM at the time of the open.  That
-simplifies the code a lot, but does mean that if you hold the file
-descriptor open over an execve(), you'll continue to read from the _old_
-VM.
+To reproduce
 
-That is different from our previous behavior, but much simpler.  If
-somebody actually finds a load where this matters, we'll need to revert
-this commit.
+  add "-w /tmp/audit/dir/watched_file" to audit.rules
+  rm -rf /tmp/audit/dir
 
-I suspect that nobody will ever notice - because the process mapping
-addresses will also have changed as part of the execve.  So you cannot
-actually usefully access the fd across a VM change simply because all
-the offsets for IO would have changed too.
+This is caused by fsnotify_destroy_mark() being called without an
+extra reference taken by the caller.
 
-Reported-by: Jüri Aedla <asd@ut.ee>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Reported by Francesco Cosoleto here:
+
+  https://bugzilla.novell.com/show_bug.cgi?id=689860
+
+Fix by removing the BUG_ON and adding a comment about not accessing mark after
+the iput.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/base.c |  145 +++++++++++++++------------------------------------------
- 1 file changed, 39 insertions(+), 106 deletions(-)
+ fs/notify/mark.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -194,65 +194,7 @@ static int proc_root_link(struct inode *
- 	return result;
- }
+--- a/fs/notify/mark.c
++++ b/fs/notify/mark.c
+@@ -135,9 +135,6 @@ void fsnotify_destroy_mark(struct fsnoti
  
--static struct mm_struct *__check_mem_permission(struct task_struct *task)
--{
--	struct mm_struct *mm;
--
--	mm = get_task_mm(task);
--	if (!mm)
--		return ERR_PTR(-EINVAL);
--
--	/*
--	 * A task can always look at itself, in case it chooses
--	 * to use system calls instead of load instructions.
--	 */
--	if (task == current)
--		return mm;
--
--	/*
--	 * If current is actively ptrace'ing, and would also be
--	 * permitted to freshly attach with ptrace now, permit it.
--	 */
--	if (task_is_stopped_or_traced(task)) {
--		int match;
--		rcu_read_lock();
--		match = (tracehook_tracer_task(task) == current);
--		rcu_read_unlock();
--		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
--			return mm;
--	}
--
--	/*
--	 * No one else is allowed.
--	 */
--	mmput(mm);
--	return ERR_PTR(-EPERM);
--}
--
--/*
-- * If current may access user memory in @task return a reference to the
-- * corresponding mm, otherwise ERR_PTR.
-- */
--static struct mm_struct *check_mem_permission(struct task_struct *task)
--{
--	struct mm_struct *mm;
--	int err;
--
--	/*
--	 * Avoid racing if task exec's as we might get a new mm but validate
--	 * against old credentials.
--	 */
--	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
--	if (err)
--		return ERR_PTR(err);
--
--	mm = __check_mem_permission(task);
--	mutex_unlock(&task->signal->cred_guard_mutex);
--
--	return mm;
--}
--
--struct mm_struct *mm_for_maps(struct task_struct *task)
-+static struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
- {
- 	struct mm_struct *mm;
- 	int err;
-@@ -263,7 +205,7 @@ struct mm_struct *mm_for_maps(struct tas
+ 	mark->flags &= ~FSNOTIFY_MARK_FLAG_ALIVE;
  
- 	mm = get_task_mm(task);
- 	if (mm && mm != current->mm &&
--			!ptrace_may_access(task, PTRACE_MODE_READ)) {
-+			!ptrace_may_access(task, mode)) {
- 		mmput(mm);
- 		mm = ERR_PTR(-EACCES);
- 	}
-@@ -272,6 +214,11 @@ struct mm_struct *mm_for_maps(struct tas
- 	return mm;
- }
+-	/* 1 from caller and 1 for being on i_list/g_list */
+-	BUG_ON(atomic_read(&mark->refcnt) < 2);
+-
+ 	spin_lock(&group->mark_lock);
  
-+struct mm_struct *mm_for_maps(struct task_struct *task)
-+{
-+	return mm_access(task, PTRACE_MODE_READ);
-+}
+ 	if (mark->flags & FSNOTIFY_MARK_FLAG_INODE) {
+@@ -182,6 +179,11 @@ void fsnotify_destroy_mark(struct fsnoti
+ 		iput(inode);
+ 
+ 	/*
++	 * We don't necessarily have a ref on mark from caller so the above iput
++	 * may have already destroyed it.  Don't touch from now on.
++	 */
 +
- static int proc_pid_cmdline(struct task_struct *task, char * buffer)
- {
- 	int res = 0;
-@@ -816,38 +763,39 @@ static const struct file_operations proc
- 
- static int mem_open(struct inode* inode, struct file* file)
- {
--	file->private_data = (void*)((long)current->self_exec_id);
-+	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
-+	struct mm_struct *mm;
-+
-+	if (!task)
-+		return -ESRCH;
-+
-+	mm = mm_access(task, PTRACE_MODE_ATTACH);
-+	put_task_struct(task);
-+
-+	if (IS_ERR(mm))
-+		return PTR_ERR(mm);
-+
- 	/* OK to pass negative loff_t, we can catch out-of-range */
- 	file->f_mode |= FMODE_UNSIGNED_OFFSET;
-+	file->private_data = mm;
-+
- 	return 0;
- }
- 
- static ssize_t mem_read(struct file * file, char __user * buf,
- 			size_t count, loff_t *ppos)
- {
--	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
-+	int ret;
- 	char *page;
- 	unsigned long src = *ppos;
--	int ret = -ESRCH;
--	struct mm_struct *mm;
-+	struct mm_struct *mm = file->private_data;
- 
--	if (!task)
--		goto out_no_task;
-+	if (!mm)
-+		return 0;
- 
--	ret = -ENOMEM;
- 	page = (char *)__get_free_page(GFP_TEMPORARY);
- 	if (!page)
--		goto out;
--
--	mm = check_mem_permission(task);
--	ret = PTR_ERR(mm);
--	if (IS_ERR(mm))
--		goto out_free;
--
--	ret = -EIO;
-- 
--	if (file->private_data != (void*)((long)current->self_exec_id))
--		goto out_put;
-+		return -ENOMEM;
- 
- 	ret = 0;
-  
-@@ -874,13 +822,7 @@ static ssize_t mem_read(struct file * fi
- 	}
- 	*ppos = src;
- 
--out_put:
--	mmput(mm);
--out_free:
- 	free_page((unsigned long) page);
--out:
--	put_task_struct(task);
--out_no_task:
- 	return ret;
- }
- 
-@@ -889,27 +831,15 @@ static ssize_t mem_write(struct file * f
- {
- 	int copied;
- 	char *page;
--	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
- 	unsigned long dst = *ppos;
--	struct mm_struct *mm;
-+	struct mm_struct *mm = file->private_data;
- 
--	copied = -ESRCH;
--	if (!task)
--		goto out_no_task;
-+	if (!mm)
-+		return 0;
- 
--	copied = -ENOMEM;
- 	page = (char *)__get_free_page(GFP_TEMPORARY);
- 	if (!page)
--		goto out_task;
--
--	mm = check_mem_permission(task);
--	copied = PTR_ERR(mm);
--	if (IS_ERR(mm))
--		goto out_free;
--
--	copied = -EIO;
--	if (file->private_data != (void *)((long)current->self_exec_id))
--		goto out_mm;
-+		return -ENOMEM;
- 
- 	copied = 0;
- 	while (count > 0) {
-@@ -933,13 +863,7 @@ static ssize_t mem_write(struct file * f
- 	}
- 	*ppos = dst;
- 
--out_mm:
--	mmput(mm);
--out_free:
- 	free_page((unsigned long) page);
--out_task:
--	put_task_struct(task);
--out_no_task:
- 	return copied;
- }
- 
-@@ -959,11 +883,20 @@ loff_t mem_lseek(struct file *file, loff
- 	return file->f_pos;
- }
- 
-+static int mem_release(struct inode *inode, struct file *file)
-+{
-+	struct mm_struct *mm = file->private_data;
-+
-+	mmput(mm);
-+	return 0;
-+}
-+
- static const struct file_operations proc_mem_operations = {
- 	.llseek		= mem_lseek,
- 	.read		= mem_read,
- 	.write		= mem_write,
- 	.open		= mem_open,
-+	.release	= mem_release,
- };
- 
- static ssize_t environ_read(struct file *file, char __user *buf,
++	/*
+ 	 * it's possible that this group tried to destroy itself, but this
+ 	 * this mark was simultaneously being freed by inode.  If that's the
+ 	 * case, we finish freeing the group here.
 
 
