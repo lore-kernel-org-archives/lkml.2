@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab2AXABF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:01:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42577 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756027Ab2AWXtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756028Ab2AWXtE (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 23 Jan 2012 18:49:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
-Message-Id: <20120123234024.998815521@clark.kroah.org>
+Received: from cantor2.suse.de ([195.135.220.15]:42563 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755948Ab2AWXs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:48:58 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:27 2012
+Message-Id: <20120123234027.211952075@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:10 -0800
+Date: Mon, 23 Jan 2012 15:39:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [24/90] SCSI: mpt2sas: Release spinlock for the raid device list before blocking it
+        alan@lxorguk.ukuu.org.uk, David Daney <david.daney@cavium.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [50/90] recordmcount: Fix handling of elf64 big-endian objects.
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "nagalakshmi.nandigama@lsi.com" <nagalakshmi.nandigama@lsi.com>
+From: David Daney <david.daney@cavium.com>
 
-commit 30c43282f3d347f47f9e05199d2b14f56f3f2837 upstream.
+commit 2e885057b7f75035f0b85e02f737891482815a81 upstream.
 
-Added code to release the spinlock that is used to protect the
-raid device list before calling a function that can block. The
-blocking was causing a reschedule, and subsequently it is tried
-to acquire the same lock, resulting in a panic (NMI Watchdog
-detecting a CPU lockup).
+In ELF64, the sh_flags field is 64-bits wide.  recordmcount was
+erroneously treating it as a 32-bit wide field.  For little endian
+objects this works because the flags of interest (SHF_EXECINSTR)
+reside in the lower 32 bits of the word, and you get the same result
+with either a 32-bit or 64-bit read.  Big endian objects on the
+other hand do not work at all with this error.
 
-Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+The fix:  Correctly treat sh_flags as 64-bits wide in elf64 objects.
+
+The symptom I observed was that my
+__start_mcount_loc..__stop_mcount_loc was empty even though ftrace
+function tracing was enabled.
+
+Link: http://lkml.kernel.org/r/1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ scripts/recordmcount.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -6425,6 +6425,7 @@ _scsih_mark_responding_raid_device(struc
- 			} else
- 				sas_target_priv_data = NULL;
- 			raid_device->responding = 1;
-+			spin_unlock_irqrestore(&ioc->raid_device_lock, flags);
- 			starget_printk(KERN_INFO, raid_device->starget,
- 			    "handle(0x%04x), wwid(0x%016llx)\n", handle,
- 			    (unsigned long long)raid_device->wwid);
-@@ -6435,16 +6436,16 @@ _scsih_mark_responding_raid_device(struc
- 			 */
- 			_scsih_init_warpdrive_properties(ioc, raid_device);
- 			if (raid_device->handle == handle)
--				goto out;
-+				return;
- 			printk(KERN_INFO "\thandle changed from(0x%04x)!!!\n",
- 			    raid_device->handle);
- 			raid_device->handle = handle;
- 			if (sas_target_priv_data)
- 				sas_target_priv_data->handle = handle;
--			goto out;
-+			return;
- 		}
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -462,7 +462,7 @@ __has_rel_mcount(Elf_Shdr const *const r
+ 		succeed_file();
  	}
-- out:
-+
- 	spin_unlock_irqrestore(&ioc->raid_device_lock, flags);
+ 	if (w(txthdr->sh_type) != SHT_PROGBITS ||
+-	    !(w(txthdr->sh_flags) & SHF_EXECINSTR))
++	    !(_w(txthdr->sh_flags) & SHF_EXECINSTR))
+ 		return NULL;
+ 	return txtname;
  }
- 
 
 
