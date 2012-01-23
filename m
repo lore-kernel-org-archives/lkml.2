@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab2AWXvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:51:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42827 "EHLO mx2.suse.de"
+	id S1756357Ab2AWXyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:54:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42836 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932210Ab2AWXvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:51:13 -0500
+	id S932351Ab2AWXvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:51:17 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
-Message-Id: <20120123234028.057677900@clark.kroah.org>
+Message-Id: <20120123234028.142173454@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:46 -0800
+Date: Mon, 23 Jan 2012 15:39:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Michael Abbott <michael.abbott@diamond.ac.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [60/90] [S390] fix cputime overflow in uptime_proc_show
+        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [61/90] block: add and use scsi_blk_cmd_ioctl
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +27,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit c3e0ef9a298e028a82ada28101ccd5cf64d209ee upstream.
+commit 577ebb374c78314ac4617242f509e2f5e7156649 upstream.
 
-For 32-bit architectures using standard jiffies the idletime calculation
-in uptime_proc_show will quickly overflow. It takes (2^32 / HZ) seconds
-of idle-time, or e.g. 12.45 days with no load on a quad-core with HZ=1000.
-Switch to 64-bit calculations.
+Introduce a wrapper around scsi_cmd_ioctl that takes a block device.
 
-Cc: Michael Abbott <michael.abbott@diamond.ac.uk>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+The function will then be enhanced to detect partition block devices
+and, in that case, subject the ioctls to whitelisting.
+
+Cc: linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: James Bottomley <JBottomley@parallels.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/uptime.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ block/scsi_ioctl.c             |    7 +++++++
+ drivers/block/cciss.c          |    6 +++---
+ drivers/block/ub.c             |    3 +--
+ drivers/block/virtio_blk.c     |    4 ++--
+ drivers/cdrom/cdrom.c          |    3 +--
+ drivers/ide/ide-floppy_ioctl.c |    3 +--
+ drivers/scsi/sd.c              |    2 +-
+ include/linux/blkdev.h         |    2 ++
+ 8 files changed, 18 insertions(+), 12 deletions(-)
 
---- a/fs/proc/uptime.c
-+++ b/fs/proc/uptime.c
-@@ -11,15 +11,20 @@ static int uptime_proc_show(struct seq_f
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -691,6 +691,13 @@ int scsi_cmd_ioctl(struct request_queue
+ }
+ EXPORT_SYMBOL(scsi_cmd_ioctl);
+ 
++int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
++		       unsigned int cmd, void __user *arg)
++{
++	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
++}
++EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
++
+ static int __init blk_scsi_ioctl_init(void)
  {
- 	struct timespec uptime;
- 	struct timespec idle;
-+	cputime64_t idletime;
-+	u64 nsec;
-+	u32 rem;
- 	int i;
--	cputime_t idletime = cputime_zero;
+ 	blk_set_cmd_filter_defaults(&blk_default_cmd_filter);
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1716,7 +1716,7 @@ static int cciss_ioctl(struct block_devi
+ 	case CCISS_BIG_PASSTHRU:
+ 		return cciss_bigpassthru(h, argp);
  
-+	idletime = 0;
- 	for_each_possible_cpu(i)
- 		idletime = cputime64_add(idletime, kstat_cpu(i).cpustat.idle);
+-	/* scsi_cmd_ioctl handles these, below, though some are not */
++	/* scsi_cmd_blk_ioctl handles these, below, though some are not */
+ 	/* very meaningful for cciss.  SG_IO is the main one people want. */
  
- 	do_posix_clock_monotonic_gettime(&uptime);
- 	monotonic_to_bootbased(&uptime);
--	cputime_to_timespec(idletime, &idle);
-+	nsec = cputime64_to_jiffies64(idletime) * TICK_NSEC;
-+	idle.tv_sec = div_u64_rem(nsec, NSEC_PER_SEC, &rem);
-+	idle.tv_nsec = rem;
- 	seq_printf(m, "%lu.%02lu %lu.%02lu\n",
- 			(unsigned long) uptime.tv_sec,
- 			(uptime.tv_nsec / (NSEC_PER_SEC / 100)),
+ 	case SG_GET_VERSION_NUM:
+@@ -1727,9 +1727,9 @@ static int cciss_ioctl(struct block_devi
+ 	case SG_EMULATED_HOST:
+ 	case SG_IO:
+ 	case SCSI_IOCTL_SEND_COMMAND:
+-		return scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
++		return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 
+-	/* scsi_cmd_ioctl would normally handle these, below, but */
++	/* scsi_cmd_blk_ioctl would normally handle these, below, but */
+ 	/* they aren't a good fit for cciss, as CD-ROMs are */
+ 	/* not supported, and we don't have any bus/target/lun */
+ 	/* which we present to the kernel. */
+--- a/drivers/block/ub.c
++++ b/drivers/block/ub.c
+@@ -1744,12 +1744,11 @@ static int ub_bd_release(struct gendisk
+ static int ub_bd_ioctl(struct block_device *bdev, fmode_t mode,
+     unsigned int cmd, unsigned long arg)
+ {
+-	struct gendisk *disk = bdev->bd_disk;
+ 	void __user *usermem = (void __user *) arg;
+ 	int ret;
+ 
+ 	mutex_lock(&ub_mutex);
+-	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, usermem);
++	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, usermem);
+ 	mutex_unlock(&ub_mutex);
+ 
+ 	return ret;
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -236,8 +236,8 @@ static int virtblk_ioctl(struct block_de
+ 	if (!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_SCSI))
+ 		return -ENOTTY;
+ 
+-	return scsi_cmd_ioctl(disk->queue, disk, mode, cmd,
+-			      (void __user *)data);
++	return scsi_cmd_blk_ioctl(bdev, mode, cmd,
++				  (void __user *)data);
+ }
+ 
+ /* We provide getgeo only to please some old bootloader/partitioning tools */
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2741,12 +2741,11 @@ int cdrom_ioctl(struct cdrom_device_info
+ {
+ 	void __user *argp = (void __user *)arg;
+ 	int ret;
+-	struct gendisk *disk = bdev->bd_disk;
+ 
+ 	/*
+ 	 * Try the generic SCSI command ioctl's first.
+ 	 */
+-	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
++	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 	if (ret != -ENOTTY)
+ 		return ret;
+ 
+--- a/drivers/ide/ide-floppy_ioctl.c
++++ b/drivers/ide/ide-floppy_ioctl.c
+@@ -292,8 +292,7 @@ int ide_floppy_ioctl(ide_drive_t *drive,
+ 	 * and CDROM_SEND_PACKET (legacy) ioctls
+ 	 */
+ 	if (cmd != CDROM_SEND_PACKET && cmd != SCSI_IOCTL_SEND_COMMAND)
+-		err = scsi_cmd_ioctl(bdev->bd_disk->queue, bdev->bd_disk,
+-				mode, cmd, argp);
++		err = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 
+ 	if (err == -ENOTTY)
+ 		err = generic_ide_ioctl(drive, bdev, cmd, arg);
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1095,7 +1095,7 @@ static int sd_ioctl(struct block_device
+ 			error = scsi_ioctl(sdp, cmd, p);
+ 			break;
+ 		default:
+-			error = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, p);
++			error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
+ 			if (error != -ENOTTY)
+ 				break;
+ 			error = scsi_ioctl(sdp, cmd, p);
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -670,6 +670,8 @@ extern int blk_insert_cloned_request(str
+ 				     struct request *rq);
+ extern void blk_delay_queue(struct request_queue *, unsigned long);
+ extern void blk_recount_segments(struct request_queue *, struct bio *);
++extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
++			      unsigned int, void __user *);
+ extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+ 			  unsigned int, void __user *);
+ extern int sg_scsi_ioctl(struct request_queue *, struct gendisk *, fmode_t,
 
 
