@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276Ab2AWXux (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:50:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42789 "EHLO mx2.suse.de"
+	id S932317Ab2AWXvF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:51:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42803 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932210Ab2AWXut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:50:49 -0500
+	id S932210Ab2AWXvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:51:00 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:27 2012
-Message-Id: <20120123234027.555209334@clark.kroah.org>
+Message-Id: <20120123234027.725689343@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:40 -0800
+Date: Mon, 23 Jan 2012 15:39:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nick Bowler <nbowler@elliptictech.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [54/90] ah: Read nexthdr value before overwriting it in ahash input callback.
+        alan@lxorguk.ukuu.org.uk,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [56/90] HID: multitouch: cleanup with eGalax PID definitions
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +26,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nick Bowler <nbowler@elliptictech.com>
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 
-commit b7ea81a58adc123a4e980cb0eff9eb5c144b5dc7 upstream.
+commit e36f690b37945e0a9bb1554e1546eeec93f7d1f6 upstream.
 
-The AH4/6 ahash input callbacks read out the nexthdr field from the AH
-header *after* they overwrite that header.  This is obviously not going
-to end well.  Fix it up.
+This is just a renaming of USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH{N}
+to USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_{PID} to handle more eGalax
+devices.
 
-Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/ah4.c |    4 ++--
- net/ipv6/ah6.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/hid/hid-core.c       |   12 ++++++------
+ drivers/hid/hid-ids.h        |   12 ++++++------
+ drivers/hid/hid-multitouch.c |   24 ++++++++++++------------
+ 3 files changed, 24 insertions(+), 24 deletions(-)
 
---- a/net/ipv4/ah4.c
-+++ b/net/ipv4/ah4.c
-@@ -262,12 +262,12 @@ static void ah_input_done(struct crypto_
- 	if (err)
- 		goto out;
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1382,12 +1382,12 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DRAGONRISE, 0x0006) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DRAGONRISE, 0x0011) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2515) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_EMS, USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -230,12 +230,12 @@
  
-+	err = ah->nexthdr;
-+
- 	skb->network_header += ah_hlen;
- 	memcpy(skb_network_header(skb), work_iph, ihl);
- 	__skb_pull(skb, ah_hlen + ihl);
- 	skb_set_transport_header(skb, -ihl);
--
--	err = ah->nexthdr;
- out:
- 	kfree(AH_SKB_CB(skb)->tmp);
- 	xfrm_input_resume(skb, err);
---- a/net/ipv6/ah6.c
-+++ b/net/ipv6/ah6.c
-@@ -464,12 +464,12 @@ static void ah6_input_done(struct crypto
- 	if (err)
- 		goto out;
+ #define USB_VENDOR_ID_DWAV		0x0eef
+ #define USB_DEVICE_ID_EGALAX_TOUCHCONTROLLER	0x0001
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH	0x480d
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1	0x720c
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2	0x72a1
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3	0x480e
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4	0x726b
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5	0xa001
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D	0x480d
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E	0x480e
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C	0x720c
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B	0x726b
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1	0x72a1
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001	0xa001
  
-+	err = ah->nexthdr;
-+
- 	skb->network_header += ah_hlen;
- 	memcpy(skb_network_header(skb), work_iph, hdr_len);
- 	__skb_pull(skb, ah_hlen + hdr_len);
- 	skb_set_transport_header(skb, -hdr_len);
--
--	err = ah->nexthdr;
- out:
- 	kfree(AH_SKB_CB(skb)->tmp);
- 	xfrm_input_resume(skb, err);
+ #define USB_VENDOR_ID_ELECOM		0x056e
+ #define USB_DEVICE_ID_ELECOM_BM084	0x0061
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -629,26 +629,26 @@ static const struct hid_device_id mt_dev
+ 			USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
+ 
+ 	/* eGalax devices (resistive) */
+-	{  .driver_data = MT_CLS_EGALAX,
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH) },
+-	{  .driver_data = MT_CLS_EGALAX,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D) },
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E) },
+ 
+ 	/* eGalax devices (capacitive) */
+-	{  .driver_data = MT_CLS_EGALAX,
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
+-	{  .driver_data = MT_CLS_EGALAX,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C) },
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
+-	{  .driver_data = MT_CLS_EGALAX,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
+-	{  .driver_data = MT_CLS_EGALAX,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5) },
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
+ 
+ 	/* Elo TouchSystems IntelliTouch Plus panel */
+ 	{ .driver_data = MT_CLS_DUAL_NSMU_CONTACTID,
 
 
