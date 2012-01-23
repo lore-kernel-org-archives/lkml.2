@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab2AWJqe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 04:46:34 -0500
-Received: from pasky.or.cz ([84.242.80.195]:57890 "EHLO machine.or.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752227Ab2AWJqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 04:46:33 -0500
-Date: Mon, 23 Jan 2012 10:46:30 +0100
-From: Petr Baudis <pasky@ucw.cz>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jonathan Nieder <jrnieder@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: hda-intel: azx_get_response timeout, switching to polling mode:
- last cmd=0x01db0000
-Message-ID: <20120123094629.GO30898@machine.or.cz>
-References: <20111229025953.15211.24880.reportbug@machine.or.cz>
- <20111229062105.GB28780@elie.Belkin>
- <20120121091602.GF30898@machine.or.cz>
- <s5hhazm6alb.wl%tiwai@suse.de>
+	id S1752895Ab2AWJsV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 04:48:21 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50515 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab2AWJsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 04:48:20 -0500
+Date: Mon, 23 Jan 2012 09:47:59 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v3 0/6] ARM: Remove the __ARCH_WANT_INTERRUPTS_ON_CTXSW
+	definition
+Message-ID: <20120123094759.GU1068@n2100.arm.linux.org.uk>
+References: <1327081352-13178-1-git-send-email-catalin.marinas@arm.com> <1327310131.2446.1.camel@twins> <20120123092624.GA11983@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5hhazm6alb.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120123092624.GA11983@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 10:18:24AM +0100, Takashi Iwai wrote:
-> Thanks.  Switching to the polling mode is really harmless.
-> So, basically you can ignore these messages.  I can change it only as a
-> debug message.
+On Mon, Jan 23, 2012 at 09:26:24AM +0000, Catalin Marinas wrote:
+> On Mon, Jan 23, 2012 at 09:15:31AM +0000, Peter Zijlstra wrote:
+> > On Fri, 2012-01-20 at 17:42 +0000, Catalin Marinas wrote:
+> > > This is version 3 of the set of patches removing
+> > > __ARCH_WANT_INTERRUPTS_ON_CTXSW on ARM. The series was rebased on top of
+> > > 3.3-rc1 and fixed the conflicts with the kernel/sched/ changes and the
+> > > ARM LPAE patches. There are no functional changes from v2. I plan to
+> > > push this to -next and get it ready for 3.4-rc1.
+> > > 
+> > > Question for Peter/Ingo - how do we merge the first patch that
+> > > introduces finish_arch_post_lock_switch? Do you pick it up or I can
+> > > merge it via rmk (with your ack)?
+> > 
+> > I'm fine either way, I'll probably ask Ingo to pull your tree so that I
+> > can stack some other patches on top.
 > 
-> OTOH, if the switching to single_cmd mode happens, this is a serious
-> problem.  But, as far as I see in alsa-info.sh output, it didn't
-> happen.
+> In which case I would need Russell's acked-by.
 
-Ok, then the bug is in handling of polling mode in this particular chip.
-After such switch to polling mode, applications will get stuck on
-releasing the soundcard. Another symptom I forgot to describe is that
-the last ~100ms of output will keep repeating when I pause/stop
-playback, one has to mute the volume to get rid of this. Again, this
-starts happenning only sometimes after the switch to polling mode,
-but then keeps happenning fairly consistently.
-
--- 
-				Petr "Pasky" Baudis
-	The goal of Computer Science is to build something that will
-	last at least until we've finished building it.
+That depends on knowing what CPU architectures this has been tested on,
+and whether anyone external has tested it.  It's definitely a change
+which needs some tested-by tags on it.
