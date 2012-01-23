@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab2AWSYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 13:24:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:25655 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab2AWSYH convert rfc822-to-8bit (ORCPT
+	id S1753479Ab2AWSYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 13:24:43 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55971 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab2AWSYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 13:24:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="115304086"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Thomas Renninger <trenn@suse.de>, Bjorn Helgaas <bhelgaas@google.com>
-CC: Myron Stowe <myron.stowe@redhat.com>, "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "Huang, Ying" <ying.huang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>
-Subject: RE: [PATCH 2/3] ACPI, APEI: Add RAM mapping support to ACPI
-Thread-Topic: [PATCH 2/3] ACPI, APEI: Add RAM mapping support to ACPI
-Thread-Index: AQHM2eba+IAjO9rYxEyhrzuLyeBxnpYaQ+kA
-Date: Mon, 23 Jan 2012 18:23:56 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F0282EE@ORSMSX104.amr.corp.intel.com>
-References: <201201231651.23270.trenn@suse.de>
-In-Reply-To: <201201231651.23270.trenn@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Jan 2012 13:24:41 -0500
 MIME-Version: 1.0
+X-Originating-IP: [89.139.53.79]
+In-Reply-To: <20120123140355.GA19255@amd.com>
+References: <20120123140355.GA19255@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 23 Jan 2012 20:24:20 +0200
+Message-ID: <CAK=WgbZGY9Sxw1BhZ4SpEgf=2MdxcpGTCY5f5jM9YM950YS+bA@mail.gmail.com>
+Subject: Re: OMAP and MSM IOMMU driver misbehavior
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Is there any Itanium out there implementing any APEI table?
-> Will there ever be one?
+Hi Joerg,
 
-With respect to the EINJ table - the answer is definitely no.
-Itanium has a PAL mechanism for injecting errors, so there is
-no need to implement EINJ.
+On Mon, Jan 23, 2012 at 4:03 PM, Joerg Roedel <joerg.roedel@amd.com> wrote:
+> Please tell me when I mis-read the code, otherwise please fix this in
+> your drivers so that we can get consistent behavior for IOMMU-API
+> users :-)
 
--Tony
+I'm a bit tied up with some schedule I have to meet this week, but
+I'll definitely take a look and make sure it is fixed.
+
+Somehow I trust you didn't mis-read anything :)
+
+Thanks for reporting this,
+Ohad.
