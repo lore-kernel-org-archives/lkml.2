@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab2AWXzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:55:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42799 "EHLO mx2.suse.de"
+	id S1756524Ab2AWXzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:55:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42781 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932280Ab2AWXu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:50:56 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:27 2012
-Message-Id: <20120123234027.640810673@clark.kroah.org>
+	id S932243Ab2AWXuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:50:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:29 2012
+Message-Id: <20120123234029.849158858@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:41 -0800
+Date: Mon, 23 Jan 2012 15:40:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Bagwell <chris@cnpbagwell.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [55/90] HID: hid-multitouch - add another eGalax id
+        alan@lxorguk.ukuu.org.uk, Boaz Harrosh <bharrosh@panasas.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [81/90] pnfs-obj: Must return layout on IO error
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Bagwell <chris@cnpbagwell.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 1fd8f047490dd0ec4e4db710fcbc1bd4798d944c upstream.
+commit fe0fe83585f88346557868a803a479dfaaa0688a upstream.
 
-This allows ASUS Eee Slate touchscreens to work.
+As mandated by the standard. In case of an IO error, a pNFS
+objects layout driver must return it's layout. This is because
+all device errors are reported to the server as part of the
+layout return buffer.
 
-Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+This is implemented the same way PNFS_LAYOUTRET_ON_SETATTR
+is done, through a bit flag on the pnfs_layoutdriver_type->flags
+member. The flag is set by the layout driver that wants a
+layout_return preformed at pnfs_ld_{write,read}_done in case
+of an error.
+(Though I have not defined a wrapper like pnfs_ld_layoutret_on_setattr
+ because this code is never called outside of pnfs.c and pnfs IO
+ paths)
+
+Without this patch 3.[0-2] Kernels leak memory and have an annoying
+WARN_ON after every IO error utilizing the pnfs-obj driver.
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-core.c       |    1 +
- drivers/hid/hid-ids.h        |    1 +
- drivers/hid/hid-multitouch.c |    3 +++
- 3 files changed, 5 insertions(+)
+ fs/nfs/objlayout/objio_osd.c |    3 ++-
+ fs/nfs/pnfs.c                |   12 ++++++++++++
+ fs/nfs/pnfs.h                |    1 +
+ 3 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1387,6 +1387,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2515) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_EMS, USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -235,6 +235,7 @@
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2	0x72a1
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3	0x480e
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4	0x726b
-+#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5	0xa001
+--- a/fs/nfs/objlayout/objio_osd.c
++++ b/fs/nfs/objlayout/objio_osd.c
+@@ -1006,7 +1006,8 @@ static bool objio_pg_test(struct nfs_pag
+ static struct pnfs_layoutdriver_type objlayout_type = {
+ 	.id = LAYOUT_OSD2_OBJECTS,
+ 	.name = "LAYOUT_OSD2_OBJECTS",
+-	.flags                   = PNFS_LAYOUTRET_ON_SETATTR,
++	.flags                   = PNFS_LAYOUTRET_ON_SETATTR |
++				   PNFS_LAYOUTRET_ON_ERROR,
  
- #define USB_VENDOR_ID_ELECOM		0x056e
- #define USB_DEVICE_ID_ELECOM_BM084	0x0061
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -646,6 +646,9 @@ static const struct hid_device_id mt_dev
- 	{  .driver_data = MT_CLS_EGALAX,
- 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
-+	{  .driver_data = MT_CLS_EGALAX,
-+		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5) },
+ 	.alloc_layout_hdr        = objlayout_alloc_layout_hdr,
+ 	.free_layout_hdr         = objlayout_free_layout_hdr,
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -1119,6 +1119,14 @@ pnfs_ld_write_done(struct nfs_write_data
+ 		data->mds_ops->rpc_release(data);
+ 		return 0;
+ 	}
++	if (NFS_SERVER(data->inode)->pnfs_curr_ld->flags &
++					PNFS_LAYOUTRET_ON_ERROR) {
++		/* Don't lo_commit on error, Server will needs to
++		 * preform a file recovery.
++		 */
++		clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(data->inode)->flags);
++		pnfs_return_layout(data->inode);
++	}
  
- 	/* Elo TouchSystems IntelliTouch Plus panel */
- 	{ .driver_data = MT_CLS_DUAL_NSMU_CONTACTID,
+ 	dprintk("%s: pnfs_error=%d, retry via MDS\n", __func__,
+ 		data->pnfs_error);
+@@ -1167,6 +1175,10 @@ pnfs_ld_read_done(struct nfs_read_data *
+ 		return 0;
+ 	}
+ 
++	if (NFS_SERVER(data->inode)->pnfs_curr_ld->flags &
++						PNFS_LAYOUTRET_ON_ERROR)
++		pnfs_return_layout(data->inode);
++
+ 	dprintk("%s: pnfs_error=%d, retry via MDS\n", __func__,
+ 		data->pnfs_error);
+ 	status = nfs_initiate_read(data, NFS_CLIENT(data->inode),
+--- a/fs/nfs/pnfs.h
++++ b/fs/nfs/pnfs.h
+@@ -68,6 +68,7 @@ enum {
+ enum layoutdriver_policy_flags {
+ 	/* Should the pNFS client commit and return the layout upon a setattr */
+ 	PNFS_LAYOUTRET_ON_SETATTR	= 1 << 0,
++	PNFS_LAYOUTRET_ON_ERROR		= 1 << 1,
+ };
+ 
+ struct nfs4_deviceid_node;
 
 
