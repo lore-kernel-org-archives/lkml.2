@@ -1,161 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab2AWXIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:08:15 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:32215 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab2AWXHU (ORCPT
+	id S1754763Ab2AWXI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:08:59 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17755 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab2AWXI5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:07:20 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 4/4] PCI: Seperate child bus scanning to two passes overall
-Date: Mon, 23 Jan 2012 15:06:58 -0800
-Message-Id: <1327360018-10929-5-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1327360018-10929-1-git-send-email-yinghai@kernel.org>
-References: <1327360018-10929-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F1DE822.004A,ss=1,re=0.000,fgs=0
+	Mon, 23 Jan 2012 18:08:57 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 23 Jan 2012 15:08:33 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "Shawn Guo (shawn.guo@linaro.org)" <shawn.guo@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 23 Jan 2012 15:08:31 -0800
+Subject: RE: Pinmux bindings proposal V2
+Thread-Topic: Pinmux bindings proposal V2
+Thread-Index: AczaEhu9C4HbIn7uTEW7M8L7JMZ4JgAD/ZQg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178CB81C0D@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
+ <20120123210052.GS22818@atomide.com>
+In-Reply-To: <20120123210052.GS22818@atomide.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In extreme case: Two bridges are properly setup.
-       bridge A
-               bridge AA
-               bridge AB
-       bridge B
-	       bridge BA
-	       bridge BB
-   but AA, AB are not setup properly.
-   bridge A has small range, and bridge AB could need more, when do the
-       first pass0 for bridge A, it will do pass0 and pass1 for AA and AB,
-	during that process, it will extend range of A for AB blindly.
-	because bridge B is not registered yet.
-       that could overlap range that is used by bridge B.
+Tony Lindgren wrote at Monday, January 23, 2012 2:01 PM:
+> This mostly looks pretty good to me, few more comments below.
+> 
+> * Stephen Warren <swarren@nvidia.com> [120120 13:51]:
+> > Here's V2 of my pinmux binding proposal, after incorporating some feedback
+> > from Shawn Guo and Dong Aisheng. Main changes:
+> >
+> > 1) Require the "pin config" nodes the be children of the pinmux controller
+> >    node, rather than allowing them to alternatively be children of the
+> >    device node that's using them. This allows removal of the pin controller
+> >    phandle as the first entry in each specifier.
+> 
+> If you really want to leave out the phandle for each mux entry, this would
+> require supporting multiple "pin config" entries in a device driver node.
 
-Right way should be:
-       do pass0 for all good bridges at first.
-So we could do pass0 for bridge B before pass1 for bridge AB.
+Yes. And that's already supported using the pinctrl-entries property;
+you can reference n nodes at once for each named state in pinctrl-names,
+and each of those nodes could easily be from a different pin controller.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c |   50 ++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 34 insertions(+), 16 deletions(-)
+> >                 pmx_sdhci_active: pinconfig-sdhci-active {
+> >                         /*
+> >                          * In each of these nodes, both the mux and config
+> >                          * properties are optional. This node represents the
+> >                          * additions to pmx_sdhci that are specific to an
+> >                          * active state. In this case, only pin configuration
+> >                          * settings are different.
+> >                          */
+> >                         config =
+> >                                 <TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_TRISTATE 0>
+> >                                 <TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_TRISTATE 0>;
+> >                 };
+> >                 pmx_sdhci_standby: pinconfig-sdhci-standby {
+> >                         config =
+> >                                 <TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_TRISTATE 1>
+> >                                 <TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_TRISTATE 1>;
+> >                 };
+> 
+> After thinking about this a bit more, I'm now thinking that we should
+> probably only describe the active state in the device tree to keep things
+> simple.
+> 
+> Anything PM related could be initialized later on during the boot by the
+> device driver, or even from userspace using /lib/firmware or /sys entries.
+> This would cut down the device tree bloat quite a bit.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index d078a58..91406cd 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -802,6 +802,9 @@ static int __devinit pci_bridge_check_busn_res(struct pci_bus *bus,
- 
- 	return broken;
- }
-+
-+static unsigned int __devinit __pci_scan_child_bus(struct pci_bus *bus,
-+						 int pass);
- /*
-  * If it's a bridge, configure it and scan the bus behind it.
-  * For CardBus bridges, we don't scan behind as the devices will
-@@ -853,11 +856,10 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 	    !is_cardbus && !broken) {
- 		unsigned int cmax;
- 		/*
--		 * Bus already configured by firmware, process it in the first
--		 * pass and just note the configuration.
-+		 * Bus already configured by firmware, still process it in two
-+		 * passes in extreme case like two adjaced bridges have children
-+		 * bridges that are not setup properly.
- 		 */
--		if (pass)
--			goto out;
- 
- 		/*
- 		 * If we already got to this bus through a different bridge,
-@@ -878,7 +880,7 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 			pci_bus_insert_busn_res(child, secondary, subordinate);
- 		}
- 
--		cmax = pci_scan_child_bus(child);
-+		cmax = __pci_scan_child_bus(child, pass);
- 		if (cmax > max)
- 			max = cmax;
- 		if (child->subordinate > max)
-@@ -1654,12 +1656,13 @@ void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
- }
- EXPORT_SYMBOL_GPL(pcie_bus_configure_settings);
- 
--unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
-+static unsigned int __devinit __pci_scan_child_bus(struct pci_bus *bus,
-+						 int pass)
- {
--	unsigned int devfn, pass, max = bus->secondary;
-+	unsigned int devfn, max = bus->secondary;
- 	struct pci_dev *dev;
- 
--	dev_dbg(&bus->dev, "scanning bus\n");
-+	dev_dbg(&bus->dev, "scanning bus pass %d\n", pass);
- 
- 	/* Go find them, Rover! */
- 	for (devfn = 0; devfn < 0x100; devfn += 8)
-@@ -1673,18 +1676,16 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
- 	 * all PCI-to-PCI bridges on this bus.
- 	 */
- 	if (!bus->is_added) {
--		dev_dbg(&bus->dev, "fixups for bus\n");
-+		dev_dbg(&bus->dev, "fixups for bus pass %d\n", pass);
- 		pcibios_fixup_bus(bus);
- 		if (pci_is_root_bus(bus))
- 			bus->is_added = 1;
- 	}
- 
--	for (pass=0; pass < 2; pass++)
--		list_for_each_entry(dev, &bus->devices, bus_list) {
--			if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
--			    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
--				max = pci_scan_bridge(bus, dev, max, pass);
--		}
-+	list_for_each_entry(dev, &bus->devices, bus_list)
-+		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
-+		    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
-+			max = pci_scan_bridge(bus, dev, max, pass);
- 
- 	/*
- 	 * We've scanned the bus and so we know all about what's on
-@@ -1693,7 +1694,24 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
- 	 *
- 	 * Return how far we've got finding sub-buses.
- 	 */
--	dev_dbg(&bus->dev, "bus scan returning with max=%02x\n", max);
-+	dev_dbg(&bus->dev, "bus scan returning with max=%02x pass %d\n",
-+			max, pass);
-+
-+	return max;
-+}
-+
-+unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
-+{
-+	int pass;
-+	unsigned int max = 0, tmp;
-+
-+	for (pass = 0; pass < 2;  pass++) {
-+		tmp = __pci_scan_child_bus(bus, pass);
-+
-+		if (tmp > max)
-+			max = tmp;
-+	}
-+
- 	return max;
- }
- 
+I think it makes sense to describe everything in one place. It's much
+easier to ensure everything is consistent and correct if you don't have
+to cross-check two sources of data for the same thing.
+
+> Setting the initial state from device tree makes sense, but I'm afraid
+> the standby and off states will require driver interaction depending on
+> how the user wants to configure the system.
+> 
+> For example, allowing a device to wake up a system might be user
+> configurable option, such as "Wake up on tapping the touchscreen".
+
+That can be supported pretty easily.
+
+The driver for a simple device can require two named states: "active"
+and "standby". In your more complex example, the driver can require
+three named states: "active", "standby", "standby-wake". During suspend,
+it'll simply select the appropriate of the latter two states based on
+user request.
+
+You can even retrofit this capability to a previously simple driver that
+Originally did:
+
+suspend() {
+    pinconf_select(dev, "suspend");
+}
+
+To make it do the following instead:
+
+suspend() {
+    if (wake)
+        state = "suspend-wake";
+    else
+        state = "suspend-nowake";
+    err = pinconf_select(dev, state);
+    if (err < 0)
+        pinconf_select(dev, "suspend";
+}
+
+... which should allow old device trees to work fine, but new device
+trees to specify a different if they need.
+
+> Then I'd rather not use "config" at all, and just put the value for
+> initial state mux register(s) in the mux to avoid repeating the same data
+> multiple time. Looks like with the mux + config/mux-config option you
+> need to duplicate at least TEGRA_PMX_PG_DTA.
+>
+> BTW, maybe the name "config" should probably be "mux-config" instead?
+
+Mux and config are two unrelated things though. Mux is the function
+(signal, alternate function, mission mode, ...) that is selected for
+the pin/group in question. Config is anything else, but explicitly not
+mux, such as pull-up, pull-down, tri-state, drive-strength, etc.
+
+> >                 /*
+> >                  * Each device node contains a few properties to describe
+> >                  * the named pinmux states that are available to it.
+> >                  *
+> >                  * The binding for the device node specifies the state names
+> >                  * that must be described; common examples such as "default"
+> >                  * or "active" and "suspend" may be universal, but the IO
+> >                  * protocol that a device supports may demand that more
+> >                  * states be defined, such as "active-12mhz", "active-50mhz",
+> >                  * "suspend". Drivers request these named states e.g. using
+> >                  * pinctrl's pinmux_get("state_name") API.
+> >                  *
+> >                  * pinctrl-names lists the available state names.
+> >                  *
+> >                  * Unlike the common clock binding, I assume here that states
+> >                  * are always requested by name. If we don't like that idea,
+> >                  * we'd could make this property optional, and add a new API
+> >                  * pinmux_get(state_id) to the pinctrl subsystem.
+> >                  */
+> >                 pinctrl-names = "active", "suspend";
+> 
+> If we only allow describing the initial state in device tree, then we can
+> leave out pinctrl-names, and assume the setting is always the initial bootup
+> state desired.
+
+That's true, but people have already discussed the usefulness of having
+multiple named states, e.g. an SDHCI controller that needs different pin
+configuration (perhaps drive strength or slew rate?) depending on the
+clock rate of the SD interface itself.
+
+> So to summarize: I suggest we'll just stick to basics to get the system
+> booting and devices working using device tree. In most cases the device
+> drivers should be able to configure the suspend and off states in a generic
+> way using pinctrl API. Everything else, like debugging, we can probably
+> do with userspace tools.
+
+But how will they configure suspend/off states in a generic way using the
+pinctrl API if the pinctrl API has no way of knowing how to configure the
+pins in suspend...
+
+> This would mean just using a minimal subset of your binding, probably
+> very close to what you originally suggested.
+
 -- 
-1.7.7
+nvpublic
 
