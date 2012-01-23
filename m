@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab2AWWWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 17:22:20 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:62246 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752514Ab2AWWWT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 17:22:19 -0500
+	id S1754515Ab2AWWXW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 17:23:22 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:45392 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753603Ab2AWWXU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 17:23:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120123.165530.944969261195932179.davem@davemloft.net>
-References: <1327352046-6896-1-git-send-email-netdev@pradeepdalvi.com>
-	<1327352667.2587.4.camel@edumazet-laptop>
-	<20120123.165530.944969261195932179.davem@davemloft.net>
-Date: Tue, 24 Jan 2012 03:52:17 +0530
-Message-ID: <CA+Dx6HbgoSgeLFCarF5MAh_z5psWyLEb9UVbhKXCjmxm4OsA8w@mail.gmail.com>
-Subject: Re: [PATCH/RESEND net 5/5][NON-TRIVIAL] drivers/net/ethernet:
- dev_alloc_skb to netdev_alloc_skb
-From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@lst.de
+In-Reply-To: <20120123165644.GB13197@redhat.com>
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+	<49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+	<20120118015013.GR11715@one.firstfloor.org>
+	<20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+	<20120118022217.GS11715@one.firstfloor.org>
+	<fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+	<CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com>
+	<20120118170006.GA16835@redhat.com>
+	<20120118171210.GB16835@redhat.com>
+	<CAMnK33VcHEP4sMkzk09VEZL=h2eUqvHHF99jmF0qzDj_6SzVOw@mail.gmail.com>
+	<20120123165644.GB13197@redhat.com>
+Date: Mon, 23 Jan 2012 14:23:18 -0800
+Message-ID: <CAMnK33Xy0hGh=PoKs+JtPqftaPOhWAOHxbOGpsbHgGYgnauu4g@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
+ [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
+From: Chris Evans <scarybeasts@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
+        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 3:25 AM, David Miller <davem@davemloft.net> wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Mon, 23 Jan 2012 22:04:27 +0100
->
->> Le mardi 24 janvier 2012 à 02:24 +0530, Pradeep A. Dalvi a écrit :
->>> Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
->>>   - Removed extra skb->dev = dev after netdev_alloc_skb
->>>
+On Mon, Jan 23, 2012 at 8:56 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/18, Chris Evans wrote:
 >>
->>
->>>
->>>  /* Initialize the LANCE Rx and Tx rings. */
->>>  static void
->>> -lance_init_ring(struct net_device *dev, gfp_t gfp)
->>> +lance_init_ring(struct net_device *dev)
->>>  {
->>>      struct lance_private *lp = dev->ml_priv;
->>>      int i;
->>> @@ -871,13 +871,12 @@ lance_init_ring(struct net_device *dev, gfp_t gfp)
->>>              struct sk_buff *skb;
->>>              void *rx_buff;
->>>
->>> -            skb = alloc_skb(PKT_BUF_SZ, GFP_DMA | gfp);
->>> +            skb = netdev_alloc_skb(dev, PKT_BUF_SZ);
->>>              lp->rx_skbuff[i] = skb;
->>> -            if (skb) {
->>> -                    skb->dev = dev;
->>> +            if (skb)
->>>                      rx_buff = skb->data;
->>> -            } else
->>> -                    rx_buff = kmalloc(PKT_BUF_SZ, GFP_DMA | gfp);
->>> +            else
->>> +                    rx_buff = kmalloc(PKT_BUF_SZ, GFP_DMA | GFP_AUTOMIC);
->>>              if (rx_buff == NULL)
->>>                      lp->rx_ring[i].base = 0;
->>>              else
->>
->> Thats really crap, please dont send us such patches, not even compiled.
->>
->> alloc_skb() has nothing to do with dev_alloc_skb(), and there is a
->> reason GFP_DMA is used in this driver.
+>> Thanks, Oleg. Seems like this would be a nice change to have. As we
+>> can see, people do use ptrace() as a security technology.
 >
-> This is really terrible.
+> OK, I'll send it.
 >
-> Pradeep please stop sending these changes until you have your house
-> in order.  Your patches are buggy and ill conceived.
+>> With this in place, you can also (where possible) set up the tracee
+>> with PR_SET_PDEATHSIG==SIGKILL. And then, you have defences again
+>> either of the tracer or tracee dying from a stray SIGKILL.
 >
-> Please do not submit more patches in this area until you spend the
-> necessary time to truly understand these interfaces and how these code
-> snippets actually work.
+> This can only help if the tracer is the natural parent, is it enough?
+>
+> Indan suggested PTRACE_O_SIGKILL_ON_DEATH, perhaps it makes sense.
 
-Thanks for inputs!
+Yeah, this takes care of all cases.
 
-Have submitted changes in total 118 files, and out of which changes in
-this 1 single file is outcome of final minute changes. Apologies for
-that!
+One caveat I can think of with the implementation: in the parent
+exit() path, the child's SIGKILL needs to be delivered _before_ the
+tracer is detached. Otherwise it might feasible wake up and run for a
+bit :)
 
-Although, there are 4 other patches with trivial changes in total 114
-files. You may want to consider them and probably want to discard
-final i.e. 5th of 5 completely.
 
-Anyways, have already resubmitted all patches again, reverting changes
-pointed in here & correcting 5th patch.
+Cheers
+Chris
+
+>
+> Oleg.
+>
