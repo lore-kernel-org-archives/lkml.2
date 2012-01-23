@@ -1,112 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab2AWXqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:46:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42064 "EHLO mx2.suse.de"
+	id S1755363Ab2AWXqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:46:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42144 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755210Ab2AWXqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:46:17 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:03 2012
-Message-Id: <20120123234203.649739932@clark.kroah.org>
+	id S1755309Ab2AWXqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:46:48 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:24 2012
+Message-Id: <20120123234024.090646620@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:41:09 -0800
+Date: Mon, 23 Jan 2012 15:38:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paolo Bonzini <pbonzini@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Joe Perches <joe@perches.com>, Naohiro Ooiwa <nooiwa@miraclelinux.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [23/27] kernel.h: add printk_ratelimited and pr_<level>_rl
-In-Reply-To: <20120123234224.GA19510@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Lukas Razik <linux@razik.name>,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [13/90] NFS: Retry mounting NFSROOT
+In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Chuck Lever <chuck.lever@oracle.com>
 
-From: Joe Perches <joe@perches.com>
+commit 43717c7daebf10b43f12e68512484b3095bb1ba5 upstream.
 
-commit 8a64f336bc1d4aa203b138d29d5a9c414a9fbb47 upstream.
+Lukas Razik <linux@razik.name> reports that on his SPARC system,
+booting with an NFS root file system stopped working after commit
+56463e50 "NFS: Use super.c for NFSROOT mount option parsing."
 
-Add a printk_ratelimited statement expression macro that uses a per-call
-ratelimit_state so that multiple subsystems output messages are not
-suppressed by a global __ratelimit state.
+We found that the network switch to which Lukas' client was attached
+was delaying access to the LAN after the client's NIC driver reported
+that its link was up.  The delay was longer than the timeouts used in
+the NFS client during mounting.
 
-[akpm@linux-foundation.org: coding-style fixes]
-[akpm@linux-foundation.org: s/_rl/_ratelimited/g]
-Signed-off-by: Joe Perches <joe@perches.com>
-Cc: Naohiro Ooiwa <nooiwa@miraclelinux.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+NFSROOT worked for Lukas before commit 56463e50 because in those
+kernels, the client's first operation was an rpcbind request to
+determine which port the NFS server was listening on.  When that
+request failed after a long timeout, the client simply selected the
+default NFS port (2049).  By that time the switch was allowing access
+to the LAN, and the mount succeeded.
+
+Neither of these client behaviors is desirable, so reverting 56463e50
+is really not a choice.  Instead, introduce a mechanism that retries
+the NFSROOT mount request several times.  This is the same tactic that
+normal user space NFS mounts employ to overcome server and network
+delays.
+
+Signed-off-by: Lukas Razik <linux@razik.name>
+[ cel: match kernel coding style, add proper patch description ]
+[ cel: add exponential back-off ]
+Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+Tested-by: Lukas Razik <linux@razik.name>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/kernel.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
+ init/do_mounts.c |   35 +++++++++++++++++++++++++++++++----
+ 1 file changed, 31 insertions(+), 4 deletions(-)
 
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -407,6 +407,50 @@ static inline char *pack_hex_byte(char *
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -360,15 +360,42 @@ out:
+ }
+  
+ #ifdef CONFIG_ROOT_NFS
++
++#define NFSROOT_TIMEOUT_MIN	5
++#define NFSROOT_TIMEOUT_MAX	30
++#define NFSROOT_RETRY_MAX	5
++
+ static int __init mount_nfs_root(void)
+ {
+ 	char *root_dev, *root_data;
++	unsigned int timeout;
++	int try, err;
+ 
+-	if (nfs_root_data(&root_dev, &root_data) != 0)
+-		return 0;
+-	if (do_mount_root(root_dev, "nfs", root_mountflags, root_data) != 0)
++	err = nfs_root_data(&root_dev, &root_data);
++	if (err != 0)
+ 		return 0;
+-	return 1;
++
++	/*
++	 * The server or network may not be ready, so try several
++	 * times.  Stop after a few tries in case the client wants
++	 * to fall back to other boot methods.
++	 */
++	timeout = NFSROOT_TIMEOUT_MIN;
++	for (try = 1; ; try++) {
++		err = do_mount_root(root_dev, "nfs",
++					root_mountflags, root_data);
++		if (err == 0)
++			return 1;
++		if (try > NFSROOT_RETRY_MAX)
++			break;
++
++		/* Wait, in case the server refused us immediately */
++		ssleep(timeout);
++		timeout <<= 1;
++		if (timeout > NFSROOT_TIMEOUT_MAX)
++			timeout = NFSROOT_TIMEOUT_MAX;
++	}
++	return 0;
+ }
  #endif
  
- /*
-+ * ratelimited messages with local ratelimit_state,
-+ * no local ratelimit_state used in the !PRINTK case
-+ */
-+#ifdef CONFIG_PRINTK
-+#define printk_ratelimited(fmt, ...)  ({		\
-+	static struct ratelimit_state _rs = {		\
-+		.interval = DEFAULT_RATELIMIT_INTERVAL, \
-+		.burst = DEFAULT_RATELIMIT_BURST,       \
-+	};                                              \
-+							\
-+	if (!__ratelimit(&_rs))                         \
-+		printk(fmt, ##__VA_ARGS__);		\
-+})
-+#else
-+/* No effect, but we still get type checking even in the !PRINTK case: */
-+#define printk_ratelimited printk
-+#endif
-+
-+#define pr_emerg_ratelimited(fmt, ...) \
-+	printk_ratelimited(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_alert_ratelimited(fmt, ...) \
-+	printk_ratelimited(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_crit_ratelimited(fmt, ...) \
-+	printk_ratelimited(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_err_ratelimited(fmt, ...) \
-+	printk_ratelimited(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_warning_ratelimited(fmt, ...) \
-+	printk_ratelimited(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_notice_ratelimited(fmt, ...) \
-+	printk_ratelimited(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_info_ratelimited(fmt, ...) \
-+	printk_ratelimited(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-+/* no pr_cont_ratelimited, don't do that... */
-+/* If you are writing a driver, please use dev_dbg instead */
-+#if defined(DEBUG)
-+#define pr_debug_ratelimited(fmt, ...) \
-+	printk_ratelimited(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#else
-+#define pr_debug_ratelimited(fmt, ...) \
-+	({ if (0) printk_ratelimited(KERN_DEBUG pr_fmt(fmt), \
-+				     ##__VA_ARGS__); 0; })
-+#endif
-+
-+/*
-  * General tracing related utility functions - trace_printk(),
-  * tracing_on/tracing_off and tracing_start()/tracing_stop
-  *
 
 
