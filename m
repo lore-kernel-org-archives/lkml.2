@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab2AXAGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:06:35 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51953 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755798Ab2AXAGb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:06:31 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org
-Subject: [RFC][PATCH 1/3] clocksource: s390: Convert s390 to use clocksource_register_khz
-Date: Mon, 23 Jan 2012 16:05:48 -0800
-Message-Id: <1327363550-19952-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
-References: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012400-7282-0000-0000-000005DDD3DA
+	id S1755913Ab2AXAHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:07:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42327 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754895Ab2AWXrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:47:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:24 2012
+Message-Id: <20120123234024.749875650@clark.kroah.org>
+User-Agent: quilt/0.50-11.1
+Date: Mon, 23 Jan 2012 15:39:07 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Gary Hade <garyhade@us.ibm.com>,
+        Thomas Renninger <trenn@novell.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [21/90] x86/PCI: Ignore CPU non-addressable _CRS reserved memory resources
+In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converts s390 TOD clock to use clocksource_register_khz
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-The tod freq I calculated seems a bit fast. Need someone
-to double check me here.
+------------------
 
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: linux-s390@vger.kernel.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+From: Gary Hade <garyhade@us.ibm.com>
+
+commit ae5cd86455381282ece162966183d3f208c6fad7 upstream.
+
+This assures that a _CRS reserved host bridge window or window region is
+not used if it is not addressable by the CPU.  The new code either trims
+the window to exclude the non-addressable portion or totally ignores the
+window if the entire window is non-addressable.
+
+The current code has been shown to be problematic with 32-bit non-PAE
+kernels on systems where _CRS reserves resources above 4GB.
+
+Signed-off-by: Gary Hade <garyhade@us.ibm.com>
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Renninger <trenn@novell.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- arch/s390/kernel/time.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ arch/x86/pci/acpi.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
-index fa02f44..37e8ec5 100644
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -207,8 +207,6 @@ static struct clocksource clocksource_tod = {
- 	.rating		= 400,
- 	.read		= read_tod_clock,
- 	.mask		= -1ULL,
--	.mult		= 1000,
--	.shift		= 12,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -149,7 +149,7 @@ setup_resource(struct acpi_resource *acp
+ 	struct acpi_resource_address64 addr;
+ 	acpi_status status;
+ 	unsigned long flags;
+-	u64 start, end;
++	u64 start, orig_end, end;
  
-@@ -267,7 +265,16 @@ void __init time_init(void)
- 	if (register_external_interrupt(0x1406, timing_alert_interrupt))
- 		panic("Couldn't request external interrupt 0x1406");
+ 	status = resource_to_addr(acpi_res, &addr);
+ 	if (!ACPI_SUCCESS(status))
+@@ -165,7 +165,21 @@ setup_resource(struct acpi_resource *acp
+ 		return AE_OK;
  
--	if (clocksource_register(&clocksource_tod) != 0)
-+	/* s390 TOD apparently runs at 4,096,000,000 cycs/sec
-+	 * XXX - Brute forced tod freq from:
-+	 *    2^shift/mult * NSEC_PER_SEC	= cyc/sec
-+	 *    2^12 / 1000  * 1000000000		= cyc/sec
-+	 *    2^12 * 1000000			= cyc/sec
-+	 *    2^12 * 1000			= kcyc/sec
-+	 *    1000<<12				= kcyc/sec
-+	 * Could be totally wrong. -johnstul
-+	 */
-+	if (clocksource_register_khz(&clocksource_tod, (1000<<12) ) != 0)
- 		panic("Could not register TOD clock source");
+ 	start = addr.minimum + addr.translation_offset;
+-	end = addr.maximum + addr.translation_offset;
++	orig_end = end = addr.maximum + addr.translation_offset;
++
++	/* Exclude non-addressable range or non-addressable portion of range */
++	end = min(end, (u64)iomem_resource.end);
++	if (end <= start) {
++		dev_info(&info->bridge->dev,
++			"host bridge window [%#llx-%#llx] "
++			"(ignored, not CPU addressable)\n", start, orig_end);
++		return AE_OK;
++	} else if (orig_end != end) {
++		dev_info(&info->bridge->dev,
++			"host bridge window [%#llx-%#llx] "
++			"([%#llx-%#llx] ignored, not CPU addressable)\n",
++			start, orig_end, end + 1, orig_end);
++	}
  
- 	/* Enable TOD clock interrupts on the boot cpu. */
--- 
-1.7.3.2.146.gca209
+ 	res = &info->res[info->res_num];
+ 	res->name = info->name;
+
 
