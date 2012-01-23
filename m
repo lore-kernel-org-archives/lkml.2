@@ -1,51 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2AWAtF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 19:49:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47038 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab2AWAtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 19:49:03 -0500
-From: Sam Hansen <solid.se7en@gmail.com>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sam Hansen <solid.se7en@gmail.com>
-Subject: [PATCH V2 0/3] xgifb: patch set
-Date: Sun, 22 Jan 2012 16:48:50 -0800
-Message-Id: <1327279733-3350-1-git-send-email-solid.se7en@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <originalemailid>
-References: <originalemailid>
+	id S1752707Ab2AWAtz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 19:49:55 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:52360 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752681Ab2AWAtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jan 2012 19:49:52 -0500
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jan 2012 19:49:52 EST
+Date: Mon, 23 Jan 2012 11:39:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Subject: linux-next: build failure after merge of the nfs tree
+Message-Id: <20120123113949.b8d1940bb60128c5c4efeece@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__23_Jan_2012_11_39_49_+1100_SxY68HtSrrc+lFx5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is still some cleanup to do for printk, but mainly in the debug code.  I
-noticed the bulk of it is commented out and suspect the rest will follow suit.
+--Signature=_Mon__23_Jan_2012_11_39_49_+1100_SxY68HtSrrc+lFx5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-$ make modules
-make[1]: Nothing to be done for `all'.
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CC [M]  drivers/staging/xgifb/XGI_main_26.o
-  LD [M]  drivers/staging/xgifb/xgifb.o
-  Building modules, stage 2.
-  MODPOST 6 modules
-  LD [M]  drivers/staging/xgifb/xgifb.ko
+Hi Trond,
 
-Sam Hansen (3):
-  xgifb: checkpatch cleanup braces
-  xgifb: checkpatch cleanup __func__
-  xgifb: checkpatch cleanup printk() -> pr_lvl()
+After merging the nfs tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
- drivers/staging/xgifb/XGI_main_26.c |   98 ++++++++++++++++------------------
- 1 files changed, 46 insertions(+), 52 deletions(-)
+drivers/target/iscsi/iscsi_target_configfs.c: In function 'lio_target_call_=
+addnptotpg':
+drivers/target/iscsi/iscsi_target_configfs.c:214:3: error: implicit declara=
+tion of function 'in6_pton' [-Werror=3Dimplicit-function-declaration]
+drivers/target/iscsi/iscsi_target_configfs.c:239:3: error: implicit declara=
+tion of function 'in_aton' [-Werror=3Dimplicit-function-declaration]
 
--- 
-1.7.5.4
+Presumably caused by some include file cleanup in the nfs tree (probably
+commit 0b5357cfc2e6 "NFS: Remove unnecessary includes from
+linux/nfs_fs_i.h").
 
+I applied the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 23 Jan 2012 11:35:02 +1100
+Subject: [PATCH] iscsi: in_aton needs linux/inet.h
+
+so include it directly.
+
+Fixes this error after a recent nfs cleanup:
+
+drivers/target/iscsi/iscsi_target_configfs.c: In function 'lio_target_call_=
+addnptotpg':
+drivers/target/iscsi/iscsi_target_configfs.c:214:3: error: implicit declara=
+tion of function 'in6_pton' [-Werror=3Dimplicit-function-declaration]
+drivers/target/iscsi/iscsi_target_configfs.c:239:3: error: implicit declara=
+tion of function 'in_aton' [-Werror=3Dimplicit-function-declaration]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/target/iscsi/iscsi_target_configfs.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target_configfs.c b/drivers/target/=
+iscsi/iscsi_target_configfs.c
+index 3468caa..6b35b37 100644
+--- a/drivers/target/iscsi/iscsi_target_configfs.c
++++ b/drivers/target/iscsi/iscsi_target_configfs.c
+@@ -21,6 +21,7 @@
+=20
+ #include <linux/configfs.h>
+ #include <linux/export.h>
++#include <linux/inet.h>
+ #include <target/target_core_base.h>
+ #include <target/target_core_fabric.h>
+ #include <target/target_core_fabric_configfs.h>
+--=20
+1.7.9.rc0.23.g7e521
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__23_Jan_2012_11_39_49_+1100_SxY68HtSrrc+lFx5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPHKxVAAoJEECxmPOUX5FEvsAQAIPz+rftVIzKlFxU1U4OmRDg
+1EnrXtD0kkaAsDPyzomCMfcRNS8S135CUrQcei6fUmcyH+JcMCNFdlwna1S2pGFm
+bqbcvWLOD7puR/UGi2tX3EkGees22u6rudute9BRQy5+0iVmqBkczD822L0zht/A
+eGQA0KbwnQeqitwppivNpeM0zzBYcJAk2/kWvhH16n0iDqnUD3Y0vpW3VDq/GBpJ
+95gEsBKHFYYjBHAIufMsaBITI0MyJRajx7oA4nOAbttQxrjtInmTalD8VRd6Oavu
+UUBRYB+Xnc6aPxjnOiEWonzW5oC06XnoSkSmvDzMeA4rtxB6fPbUiY4FsjSLtOWi
+ewEY+nraZki5s1uJJ8MGWcLNdMPCI4lohCiczylmT2WOB8UhAGbBgc3Afzhaz+pT
+NpBY++FnhlksGPZ6pUw+jlPC6sqe5SKH6mZNpyjfk8NkG1Z/K4c+yuB2ImVUiXi2
+bjVVE+d3ai85tyBL1smA23dNcmlmA76exAYPkJeKEgFJJ+7RRd/cgkgeqiNYom1Q
+mACsyYFFVYmIfjJBVbNjR2dj9OrlAFozWEv2kyFLH5rweX8O7MjgARUI80xJ2hGf
+zwhT5G3TxO3vsRNNjoxrJslvKeiQS5Y8kmbnHZ2YN/LAo/RUn9jGHK9T7yZ3yKee
+FMFf736wwwwaOrdzezhn
+=gMy0
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__23_Jan_2012_11_39_49_+1100_SxY68HtSrrc+lFx5--
