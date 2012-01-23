@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab2AWXr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:47:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42334 "EHLO mx2.suse.de"
+	id S1755532Ab2AWXrl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:47:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42405 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754803Ab2AWXrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:47:22 -0500
+	id S1754142Ab2AWXrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:47:39 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:23 2012
-Message-Id: <20120123234023.245050895@clark.kroah.org>
+Message-Id: <20120123234023.668303173@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:38:49 -0800
+Date: Mon, 23 Jan 2012 15:38:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [03/90] mtd: mtd_blkdevs: dont increase open count on error path
+        alan@lxorguk.ukuu.org.uk, Pavel Hofman <pavel.hofman@ivitera.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [08/90] ALSA: ice1724 - Check for ac97 to avoid kernel oops
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,82 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Pavel Hofman <pavel.hofman@ivitera.com>
 
-commit 342ff28f5a2e5aa3236617bd2bddf6c749677ef2 upstream.
+commit e7848163aa2a649d9065f230fadff80dc3519775 upstream.
 
-Some error paths in mtd_blkdevs were fixed in the following commit:
+Cards with identical PCI ids but no AC97 config in EEPROM do not have
+the ac97 field initialized. We must check for this case to avoid kernel oops.
 
-    commit 94735ec4044a6d318b83ad3c5794e931ed168d10
-    mtd: mtd_blkdevs: fix error path in blktrans_open
-
-But on these error paths, the block device's `dev->open' count is
-already incremented before we check for errors. This meant that, while
-the error path was handled correctly on the first time through
-blktrans_open(), the device is erroneously considered already open on
-the second time through.
-
-This problem can be seen, for instance, when a UBI volume is
-simultaneously mounted as a UBIFS partition and read through its
-corresponding gluebi mtdblockX device. This results in blktrans_open()
-passing its error checks (with `dev->open > 0') without actually having
-a handle on the device. Here's a summarized log of the actions and
-results with nandsim:
-
-    # modprobe nandsim
-    # modprobe mtdblock
-    # modprobe gluebi
-    # modprobe ubifs
-    # ubiattach /dev/ubi_ctrl -m 0
-    ...
-    # ubimkvol /dev/ubi0 -N test -s 16MiB
-    ...
-    # mount -t ubifs ubi0:test /mnt
-    # ls /dev/mtdblock*
-    /dev/mtdblock0  /dev/mtdblock1
-    # cat /dev/mtdblock1 > /dev/null
-    cat: can't open '/dev/mtdblock4': Device or resource busy
-    # cat /dev/mtdblock1 > /dev/null
-
-    CPU 0 Unable to handle kernel paging request at virtual address
-    fffffff0, epc == 8031536c, ra == 8031f280
-    Oops[#1]:
-    ...
-    Call Trace:
-    [<8031536c>] ubi_leb_read+0x14/0x164
-    [<8031f280>] gluebi_read+0xf0/0x148
-    [<802edba8>] mtdblock_readsect+0x64/0x198
-    [<802ecfe4>] mtd_blktrans_thread+0x330/0x3f4
-    [<8005be98>] kthread+0x88/0x90
-    [<8000bc04>] kernel_thread_helper+0x10/0x18
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Pavel Hofman <pavel.hofman@ivitera.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/mtd_blkdevs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/ice1712/amp.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/mtd_blkdevs.c
-+++ b/drivers/mtd/mtd_blkdevs.c
-@@ -215,7 +215,7 @@ static int blktrans_open(struct block_de
+--- a/sound/pci/ice1712/amp.c
++++ b/sound/pci/ice1712/amp.c
+@@ -68,8 +68,11 @@ static int __devinit snd_vt1724_amp_init
  
- 	mutex_lock(&dev->lock);
+ static int __devinit snd_vt1724_amp_add_controls(struct snd_ice1712 *ice)
+ {
+-	/* we use pins 39 and 41 of the VT1616 for left and right read outputs */
+-	snd_ac97_write_cache(ice->ac97, 0x5a, snd_ac97_read(ice->ac97, 0x5a) & ~0x8000);
++	if (ice->ac97)
++		/* we use pins 39 and 41 of the VT1616 for left and right
++		read outputs */
++		snd_ac97_write_cache(ice->ac97, 0x5a,
++			snd_ac97_read(ice->ac97, 0x5a) & ~0x8000);
+ 	return 0;
+ }
  
--	if (dev->open++)
-+	if (dev->open)
- 		goto unlock;
- 
- 	kref_get(&dev->ref);
-@@ -235,6 +235,7 @@ static int blktrans_open(struct block_de
- 		goto error_release;
- 
- unlock:
-+	dev->open++;
- 	mutex_unlock(&dev->lock);
- 	blktrans_dev_put(dev);
- 	return ret;
 
 
