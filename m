@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab2AWO2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 09:28:06 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:53591 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317Ab2AWO2E (ORCPT
+	id S1753008Ab2AWOcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 09:32:46 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52747 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752317Ab2AWOcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 09:28:04 -0500
-Message-ID: <4F1D6E44.6070509@linux.vnet.ibm.com>
-Date: Mon, 23 Jan 2012 08:27:16 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Mon, 23 Jan 2012 09:32:45 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Konrad Wilk <konrad.wilk@oracle.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] staging: zsmalloc: memory allocator for compressed
- pages
-References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120120140344.2fb399e4.akpm@linux-foundation.org>
-In-Reply-To: <20120120140344.2fb399e4.akpm@linux-foundation.org>
+In-Reply-To: <20120123141710.GA26809@sepie.suse.cz>
+References: <1326819051-25712-1-git-send-email-lucas.demarchi@profusion.mobi>
+ <1326861219.490.4.camel@cr0> <CAPXgP12vChg=820uamRa6dTekEQD_xa6mg-nroOm1br+7-JCqw@mail.gmail.com>
+ <20120123141710.GA26809@sepie.suse.cz>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Mon, 23 Jan 2012 12:32:22 -0200
+Message-ID: <CAMOw1v7+Hb8RgBdA3ZPzEFM0Mt5y=_6=RF12CodciOw0Yq2vmg@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: do not check for ancient modutils tools
+To: Michal Marek <mmarek@suse.cz>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Cong Wang <amwang@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-modules@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012314-7408-0000-0000-000002187ECF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Andrew,
+On Mon, Jan 23, 2012 at 12:17 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On Fri, Jan 20, 2012 at 05:40:58PM +0100, Kay Sievers wrote:
+>> On Wed, Jan 18, 2012 at 05:33, Cong Wang <amwang@redhat.com> wrote:
+>> > On Tue, 2012-01-17 at 14:50 -0200, Lucas De Marchi wrote:
+>> >> scripts/depmod.sh checks for the output of '-V' expecting that it has
+>> >> module-init-tools in it. It's a hack to prevent users from using
+>> >> modutils instead of module-init-tools, that only works with 2.4.x
+>> >> kernels. This however prints an annoying warning for kmod tool, that is
+>> >> currently replacing module-init-tools.
+>
+> You could call kmod "module-init-tools 3.13 (compatible; kmod 3)" ;)
+>
+> Just kidding.
 
-Thanks for the feedback.
+I even wrote a patch to fake kmod as module-init-tools 4.0. Not worth
+applying though  :-)
 
-On 01/20/2012 04:03 PM, Andrew Morton wrote:
-> On Mon,  9 Jan 2012 16:51:55 -0600
-> Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
-> 
-> The changelog doesn't really describe why the code was written and
-> provides no reason for anyone to merge it. <snip>  This is the most important
-> part of the patch description and you completely omitted it!
 
-Sorry about that.  The purpose is to replace the xvmalloc allocator
-that both zcache and zram use that suffers from the high fragmentation
-described.  I 'll be sure to add this to the cover letter.
+>
+>> >> Rather than putting another check for kmod's version, just remove it
+>> >> since users of 2.4.x kernel are unlikely to upgrade to 3.x, and if they
+>> >> do, let depmod fail in that case because they should know what they are
+>> >> doing.
+>> >>
+>> >> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+>> >
+>> > Acked-by: WANG Cong <amwang@redhat.com>
+>>
+>> Michal, mind picking this up? The warning it produces with kmod is
+>> really misleading, and the check seems unnecessary these days.
+>
+> I applied it to kbuild.git#rc-fixes and will send it to Linus for 3.3.
 
-I was thinking it would go to lib after staging.
-
-Thanks,
---
-Seth
-
+Thanks
+Lucas De Marchi
