@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab2AWEAe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 23:00:34 -0500
-Received: from mga03.intel.com ([143.182.124.21]:52318 "EHLO mga03.intel.com"
+	id S1752833Ab2AWEAn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 23:00:43 -0500
+Received: from home.keithp.com ([63.227.221.253]:53187 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752572Ab2AWEAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 23:00:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="59002873"
-Message-ID: <1327291230.2412.2.camel@jtkirshe-mobl>
-Subject: Re: [E1000-devel] [PATCH] [trivial] ixgbe : Fix typo in
- ixgbe_common.h
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        trivial@kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 22 Jan 2012 20:00:30 -0800
-In-Reply-To: <1327153774-2092-1-git-send-email-standby24x7@gmail.com>
-References: <1327153774-2092-1-git-send-email-standby24x7@gmail.com>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-8ncX2673fNb1+63Ia/GJ"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
+	id S1752572Ab2AWEAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jan 2012 23:00:40 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Lubos Kolouch <lubos.kolouch@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: i915 wakes from suspend to RAM with blank screen after commit cd9dde44f47501394b9f0715b6a36a92aa74c0d0
+In-Reply-To: <20120122102912.GA2123@nbgentoo>
+References: <jfe47e$5dn$1@dough.gmane.org> <86mx9gkjlv.fsf@sumi.keithp.com> <20120121184453.GA2698@nbgentoo> <86hazokcb7.fsf@sumi.keithp.com> <20120122102912.GA2123@nbgentoo>
+User-Agent: Notmuch/0.11 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sun, 22 Jan 2012 20:00:18 -0800
+Message-ID: <867h0j83vx.fsf@sumi.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-8ncX2673fNb1+63Ia/GJ
-Content-Type: text/plain; charset="UTF-8"
+--=-=-=
 Content-Transfer-Encoding: quoted-printable
 
-On Sat, 2012-01-21 at 22:49 +0900, Masanari Iida wrote:
-> Correct spelling "packtetbuf_num" to "packetbuf_num" in
-> drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
->=20
-> Signed-off-by: Masanari Iida<standby24x7@gmail.com>
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_common.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h b/drivers/ne=
-t/ethernet/intel/ixgbe/ixgbe_common.h
-> index 863f9c1..4c9a4c8 100644
-> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-> @@ -75,7 +75,7 @@ s32 ixgbe_update_mc_addr_list_generic(struct ixgbe_hw *=
-hw,
->  s32 ixgbe_enable_mc_generic(struct ixgbe_hw *hw);
->  s32 ixgbe_disable_mc_generic(struct ixgbe_hw *hw);
->  s32 ixgbe_enable_rx_dma_generic(struct ixgbe_hw *hw, u32 regval);
-> -s32 ixgbe_fc_enable_generic(struct ixgbe_hw *hw, s32 packtetbuf_num);
-> +s32 ixgbe_fc_enable_generic(struct ixgbe_hw *hw, s32 packetbuf_num);
->  s32 ixgbe_fc_autoneg(struct ixgbe_hw *hw);
-> =20
->  s32 ixgbe_validate_mac_addr(u8 *mac_addr);
+On Sun, 22 Jan 2012 11:29:12 +0100, Lubos Kolouch <lubos.kolouch@gmail.com>=
+ wrote:
 
-Thanks! I have added the patch to my queue.
+> Thanks, here you go:
+> dmesg after boot - http://paste.pocoo.org/show/538625/
+> dmesg after failed resume - http://paste.pocoo.org/show/538626/
 
---=-8ncX2673fNb1+63Ia/GJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Ok, looks like my theory is correct. We're fitting a 24bpp mode to an
+18bpp data rate, which doesn't work.
+
+I'm in the middle of bisecting a bluetooth failure in 3.3-rc1, so I
+don't have a working kernel at present, but here's a section of
+intel_dp.c in the intel_dp_mode_fixup function:
+
+  	int max_clock =3D intel_dp_max_link_bw(intel_dp) =3D=3D DP_LINK_BW_2_7 ?=
+ 1 : 0;
+=2D	int bpp =3D mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 0;
++	int bpp =3D mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
+ 	static int bws[2] =3D { DP_LINK_BW_1_62, DP_LINK_BW_2_7 };
+
+(this is completely hand-generated, so 'patch' will almost certainly not wo=
+rk)
+
+This will force it to use the correct bpp when computing the bandwidth
+used by the new mode. This should fix your problem. If so, I'll have a
+larger patch which stops the underlying function from (almost always
+incorrectly) using the current bpp when computing bandwidth.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABCgAGBQJPHNteAAoJEOVv75VaS+3Ond8P/2atnuBScobgs1d/L2hRlK8f
-011wJmVu2it3nqBtEB08RNrGOeQJqK8laRxWW0x/OcjY+Y8fxb95ftmcF4yI2Wld
-9TMXQsFMWSvXPnx1wf/IG+sCH3hDGNOS7y8sXnM1Bo7JuQVZ4mJqrG7u7uob57uL
-8iE9f2pn0dXglCnLY9Ln77AvIEt6f6ez9hZ5K+UvNU2UFKb7CU7/gYah/B74Zcpr
-GzFLe7mAGWQZ/iUWSOKQz2XUm4H/uRh4/KTevrImGRy/z6lbx3fsh/7l87GHDz4L
-3DPifZGyh5B68d4Waq89azhs3ooMiBEIC0g5dN9pqYAlQoPHBH+hYf91Yr+xrd7O
-x0a0JOMEkXj2EdbiGcgLunfkHSfkM3aHoryOgAZLoiVMajfb1+Rmtl4bisGbzeeU
-dLDBCcK7QJICO7DAwx/AHbak69u0LxBEILm9xDneaVrmdwz3ZrJDhT+k1u9i/ThY
-wmZi5vcd5DybYgJ5SuDhPs67Eu62zrTvwWlfhqqRtGffQbssONNt7ET6E6cxMaoq
-8atPhw+9qLOX00xVGpOemPr0Tp+y6YnNZH0W8ZUrho3U5xoGpRz1/1L+BmiJniPP
-s38MHYmrVm+UIPtSgRo0+mOxFl8h1Y6gnrG/HD5R8OJhxagHQHrJQP9jav3dojPB
-dCSGHvsuFc7sNFBwvBwJ
-=NpA5
+iQIVAwUBTxzbUjYtFsjWk68qAQizOA//UhwueA5sufzhBHkAn+yGRHgCMXG+hOl5
+1K41+/6CIBuvSaDdi4Xzo0HJVwOMpVyuPQWKE3Ir9QwMPcole2PNLSFsQ4+AdN2n
+8AzsZM6UGdoe7KZozxnE3CQ0pY+ZCB2VCzfsvB5jQIBajR/TbMQaIL12cDiJRB2+
+JO+6iYfmXfGdcFWwzqza+UgmZjttA/zsq4qATBy8PIj5eC5S2GMdMvwW+eBVsGoZ
+GshKr1Oa9n1vbCSCose/yKGDrQmCk1T7dwJyrVVhpgAStYdspJYFv2F0U+PwHFCk
+JT6d9KRf02Uvb8NwaeiDn3f+X7y8WSEmj6IwK72bphPn/IlaGTNedUUWvZw3mUB5
+Jkg0JOC0/oIGxA9SxkMWFntRQEbCbz8INY78BXH0ZZTqjzmWyo+OJVPTzPEVLgK3
+3MFUytCABQPvRDBZ5YCOwoiO2UecijaAbd2uVK7eoNBiA5yMOS4E9/5JNsWbDScY
+9EV+NHP24M5RySExvLZrcG1qi3C2uLdmG/tt7tgoBvt8F0ja91cmweDTSMB4sJIt
+J4hCZ5RAtANS2XKf8tzHwHfr/SjWWAghXvtN/Ho4+Gbj3PB2ZShtfyl6DcyeSxVV
+DFir2a1kwnKqnJ6a305HYhBWVn/3aDMveRbOYvRptS0lMiCcOO51VUTZA9ljPV5O
+wtdrsLnGc3w=
+=M8Te
 -----END PGP SIGNATURE-----
-
---=-8ncX2673fNb1+63Ia/GJ--
-
+--=-=-=--
