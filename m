@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab2AWWif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 17:38:35 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:38424 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab2AWWid (ORCPT
+	id S1754678Ab2AWWmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 17:42:54 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:22673 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab2AWWmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 17:38:33 -0500
+	Mon, 23 Jan 2012 17:42:53 -0500
+Date: Mon, 23 Jan 2012 17:40:27 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        dave@linux.vnet.ibm.com, cascardo@holoscopio.com,
+        sjenning@linux.vnet.ibm.com
+Subject: Re: [PATCH] zcache fix for 3.3-rc1.
+Message-ID: <20120123224027.GA32647@phenom.dumpdata.com>
+References: <1327355540-30681-1-git-send-email-konrad.wilk@oracle.com>
+ <20120123221155.GA10265@suse.de>
+ <20120123222238.GB31852@phenom.dumpdata.com>
+ <20120123223508.GA10729@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQW5VZZrdQmuKF6_4dvTDUO9xPL=uqo0KaohnJ4xboDwSA@mail.gmail.com>
-References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
- <1327139539-14301-2-git-send-email-yinghai@kernel.org> <CA+55aFz7B5ebEGKKJmvuWY+2O-6qarUj40CHASu_4EQ0KDgi_Q@mail.gmail.com>
- <CAE9FiQWbmO+FFsE06eQ=-PVNtdaTG3EsqXNXdUCxb9YxtPS8Cw@mail.gmail.com>
- <CA+55aFyok04YrmEYXLbAE2vB_944+aEJZhd5tzu6U2k0CLaN5A@mail.gmail.com>
- <CAE9FiQXDHHJ0rG6hd6a3B+f0ZyJmjJ3rJGNWTsCwn21o+84C_Q@mail.gmail.com>
- <CA+55aFy4nv5bYdjiZM2HY1E=RU_CaBoQWy6iWXReAK98yRKZpw@mail.gmail.com>
- <CAE9FiQWt7j+Eoo_xhFmaGGh7hA-j2x991KZajmberf8Kod5G1g@mail.gmail.com> <CAE9FiQW5VZZrdQmuKF6_4dvTDUO9xPL=uqo0KaohnJ4xboDwSA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 23 Jan 2012 14:38:12 -0800
-X-Google-Sender-Auth: 6uKXv9dFlVSf45IYf4wBVHZAYCc
-Message-ID: <CA+55aFxBKbXSNmfs8y6SrzA8w3kVRRni9R6VjxSJ-5VsRyhX0g@mail.gmail.com>
-Subject: Re: [PATCH 1/7] PCI: Make sriov work with hotplug remove
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120123223508.GA10729@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4F1DE266.003E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 2:30 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->
-> for_each_prev_safe is working...
->
-> please check attached patch...
+On Mon, Jan 23, 2012 at 02:35:08PM -0800, Greg KH wrote:
+> On Mon, Jan 23, 2012 at 05:22:38PM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Jan 23, 2012 at 02:11:55PM -0800, Greg KH wrote:
+> > > On Mon, Jan 23, 2012 at 04:52:19PM -0500, Konrad Rzeszutek Wilk wrote:
+> > > > Hey Greg,
+> > > > 
+> > > > I posted this patch some time ago  [https://lkml.org/lkml/2012/1/13/253]
+> > > > but I am not seeing it in you tree.
+> > > 
+> > > Did you copy me on it?  I don't see it anywhere in my to-apply queues.
+> > 
+> > Ugh, I did not - I seemed to have forgotten to CC you and had assumed you
+> > would be omnipresent and would magically pick it up. Sorry about that mishap.
+> 
+> Hm, I must be slipping, I should have caught that :)
 
-Ugh. This is probably the best one so far, but the whole thing is
-really confused.
+Tsk tsk .. :-)
+> 
+> > > > Was wondering if you could stick this patch in your tree? It fixes
+> > > > a performance regressions which is quite noticable in small memory systems
+> > > > where a 'swapoff' ends up taking more than it should.
+> > > 
+> > > So this is needed for 3.3?  How about older kernels?  3.2?  3.0?
+> > 
+> > That would be splendid if you could stick it on the stable tree :-)
+> 
+> Which one(s)?
 
-Why does "stop_bus_device" do a "remove" for VF's at _all_? Why is
-everything about those stupid virtual devices so screwed up? Why do we
-have separate "stop" and "remove" methods, and then the "stop" does a
-remove? WTF?
-
-                         Linus
+3.2 please.
