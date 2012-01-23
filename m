@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab2AWLkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 06:40:52 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:11182 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab2AWLku (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 06:40:50 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LY91RV-01-25A-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Michal Marek <mmarek@suse.cz>
-CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH] kbuild: Fix link to headers in 'make deb-pkg'
-Date: Mon, 23 Jan 2012 12:40:28 +0100
-Message-ID: <1327318828-12984-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752953Ab2AWLp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 06:45:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299Ab2AWLp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 06:45:26 -0500
+Message-ID: <4F1D4852.9070002@redhat.com>
+Date: Mon, 23 Jan 2012 09:45:22 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
+CC: linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [v3.3-rc1] media:dvb-t regression bisected
+References: <CADDKRnDHvptV_gODG8XgqEkWGW0AyDfJJkP1dU2uBL6rs5yzDA@mail.gmail.com>
+In-Reply-To: <CADDKRnDHvptV_gODG8XgqEkWGW0AyDfJJkP1dU2uBL6rs5yzDA@mail.gmail.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Link to the kernel header files in the debian packages
-point to the original build directory. This is a bad choice
-if the packages were installed on a different machine. Fix
-this in by manually re-creating the link in the builddeb
-script.
-With this patch applied the lib/modules/$version dir always
-exists, so move the "$ARCH = um" check out of the modules
-check too.
+Em 22-01-2012 13:29, Jörg Otte escreveu:
+> with v3.3-rc1 I can not watch dvb-t. I get the following
+> errors from the media player (Kaffeine,vlc):
+> 
+> kaffeine(1801): DvbDevice::frontendEvent: tuning failed
+> vlc: [0xa278d78] main stream error: cannot pre fill buffer
+> 
+> I have a CinergyT2 usb-stick.
+> 
+> I was able to bisect the problem to:
+> commit 7830bbaff9f5f9cefcdc9acfb1783b230cc69fac
+> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Date:   Mon Dec 26 15:41:01 2011 -0300
+> 
+> [media] cinergyT2-fe: convert set_fontend to use DVBv5 parameters
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- scripts/package/builddeb |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+Could you please try this patch?
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index f6cbc3d..46f63dc 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -91,6 +91,7 @@ fi
- rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
- mkdir -m 755 -p "$tmpdir/DEBIAN"
- mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
-+mkdir -p  "$tmpdir/lib/modules/$version"
- mkdir -m 755 -p "$fwdir/DEBIAN"
- mkdir -p "$fwdir/lib" "$fwdir/usr/share/doc/$fwpackagename"
- mkdir -m 755 -p "$libc_headers_dir/DEBIAN"
-@@ -121,10 +122,14 @@ fi
+[PATCH] cinergyT2-fe: Fix bandwdith settings
+
+Changeset 7830bbaff9f mangled the bandwidth field for CinergyT2.
+Properly fill it.
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/dvb/dvb-usb/cinergyT2-fe.c b/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
+index 8a57ed8..1efc028 100644
+--- a/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
++++ b/drivers/media/dvb/dvb-usb/cinergyT2-fe.c
+@@ -276,14 +276,15 @@ static int cinergyt2_fe_set_frontend(struct dvb_frontend *fe)
+ 	param.flags = 0;
  
- if grep -q '^CONFIG_MODULES=y' .config ; then
- 	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
--	if [ "$ARCH" = "um" ] ; then
--		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
--		rmdir "$tmpdir/lib/modules/$version"
--	fi
-+fi
-+
-+# Make sure link to the headers is correct
-+ln -snf "/usr/src/$kernel_headers_packagename" "$tmpdir/lib/modules/$version/build"
-+
-+if [ "$ARCH" = "um" ] ; then
-+	mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
-+	rmdir "$tmpdir/lib/modules/$version"
- fi
+ 	switch (fep->bandwidth_hz) {
++	default:
+ 	case 8000000:
+-		param.bandwidth = 0;
++		param.bandwidth = 8;
+ 		break;
+ 	case 7000000:
+-		param.bandwidth = 1;
++		param.bandwidth = 7;
+ 		break;
+ 	case 6000000:
+-		param.bandwidth = 2;
++		param.bandwidth = 6;
+ 		break;
+ 	}
  
- make headers_check
--- 
-1.7.5.4
-
-
