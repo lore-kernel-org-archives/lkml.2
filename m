@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab2AWXrx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:47:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42422 "EHLO mx2.suse.de"
+	id S1755612Ab2AWXsL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:48:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42456 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755564Ab2AWXrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:47:49 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:23 2012
-Message-Id: <20120123234023.067684084@clark.kroah.org>
+	id S1755677Ab2AWXsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:48:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:26 2012
+Message-Id: <20120123234025.996367179@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:38:47 -0800
+Date: Mon, 23 Jan 2012 15:39:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Roman Tereshonkov <roman.tereshonkov@nokia.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [01/90] mtdoops: fix the oops_page_used array size
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [36/90] UBIFS: fix debugging messages
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roman Tereshonkov <roman.tereshonkov@nokia.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 556f063580db2953a7e53cd46b47724246320f60 upstream.
+commit d34315da9146253351146140ea4b277193ee5e5f upstream.
 
-The array of unsigned long pointed by oops_page_used is allocated
-by vmalloc which requires the size to be in bytes.
+Patch 56e46742e846e4de167dde0e1e1071ace1c882a5 broke UBIFS debugging messages:
+before that commit when UBIFS debugging was enabled, users saw few useful
+debugging messages after mount. However, that patch turned 'dbg_msg()' into
+'pr_debug()', so to enable the debugging messages users have to enable them
+first via /sys/kernel/debug/dynamic_debug/control, which is very impractical.
 
-BITS_PER_LONG is equal to 32.
-If we want to allocate memory for 32 pages with one bit per page then
-32 / BITS_PER_LONG  is equal to 1 byte that is 8 bits.
-To fix it we need to multiply the result by sizeof(unsigned long) equal to 4.
+This commit makes 'dbg_msg()' to use 'printk()' instead of 'pr_debug()', just
+as it was before the breakage.
 
-Signed-off-by: Roman Tereshonkov <roman.tereshonkov@nokia.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/mtdoops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ubifs/debug.h |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/mtdoops.c
-+++ b/drivers/mtd/mtdoops.c
-@@ -369,7 +369,7 @@ static void mtdoops_notify_add(struct mt
+--- a/fs/ubifs/debug.h
++++ b/fs/ubifs/debug.h
+@@ -134,7 +134,10 @@ const char *dbg_key_str1(const struct ub
+ } while (0)
  
- 	/* oops_page_used is a bit field */
- 	cxt->oops_page_used = vmalloc(DIV_ROUND_UP(mtdoops_pages,
--			BITS_PER_LONG));
-+			BITS_PER_LONG) * sizeof(unsigned long));
- 	if (!cxt->oops_page_used) {
- 		printk(KERN_ERR "mtdoops: could not allocate page array\n");
- 		return;
+ /* Just a debugging messages not related to any specific UBIFS subsystem */
+-#define dbg_msg(fmt, ...)   ubifs_dbg_msg("msg", fmt, ##__VA_ARGS__)
++#define dbg_msg(fmt, ...)                                                     \
++	printk(KERN_DEBUG "UBIFS DBG (pid %d): %s: " fmt "\n", current->pid,  \
++	       __func__, ##__VA_ARGS__)
++
+ /* General messages */
+ #define dbg_gen(fmt, ...)   ubifs_dbg_msg("gen", fmt, ##__VA_ARGS__)
+ /* Additional journal messages */
 
 
