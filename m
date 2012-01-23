@@ -1,49 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab2AWHyr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 02:54:47 -0500
-Received: from sargas.telkomsa.net ([196.25.211.69]:13789 "EHLO
-	sargas.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2AWHyq convert rfc822-to-8bit (ORCPT
+	id S1752398Ab2AWIQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 03:16:00 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:37920 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab2AWIP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 02:54:46 -0500
-Date: Mon, 23 Jan 2012 09:54:40 +0200 (SAST)
-From: =?utf-8?Q?Western_Union_Company_=C2=A9?= 
-	<online445428@telkomsa.net>
-Reply-To: =?utf-8?Q?Western_Union_Company_=C2=A9?= 
-	  <westernoffice79@yahoo.com.hk>
-Message-ID: <1078149868.325142.1327305280388.JavaMail.root@zimbra3-vm1.telkomsa.net>
-Subject: New  Year  Payment  To  Our  Beneficiary!!!
+	Mon, 23 Jan 2012 03:15:59 -0500
+Message-ID: <4F1D173B.1080705@kernel.org>
+Date: Mon, 23 Jan 2012 03:15:55 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.16.52]
-X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
-To: undisclosed-recipients:;
+To: Jean Delvare <khali@linux-fr.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, "R.Durgadoss" <durgadoss.r@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] thermal: Rename generate_netlink_event
+References: <20111104103104.7900dbb6@endymion.delvare>
+In-Reply-To: <20111104103104.7900dbb6@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Beneficiary,
- 
-We are here to notify you that the sum of  $250,000 U.S.Dollars was generated and awarded to you by the Western Union Foundation in conjunction with the African Union Foundation.This award was been selected through the internet, where your e-mail address was indicated and notified.The Western Union  Foundation, All the email addresses of the people that are active online,among the millions of our customers who use Western Union in their business transactions.Four people are selected Every year  to benefit from this promotion and you are one of the Selected Winners.
+applied
 
-To avoid misappropriation of funds, proper verifications must be carried out before the fund is transferred. We require the details below for verification so that the transfer can be carried out.
+thanks,
+Len Brown, Intel Open Source Technology Center
 
-1. Receiver's Full Name:
-2. Receiver's Address:
-3. Receiver's Country:
-4. Receiver's Telephone Number:
-5. Receiver's Occupation:
-
-  Send the above details to us via the email addresses stated below:
- 
-Western Union District Manager (Mr. Mike Moris)
-Website:www.westernunion.com
-E-mail: westernoffice79@yahoo.com.hk
-
-Note: You were selected as a winner on this promotion and I personally advise that you use the funds wisely. However, we need your information as stated above to commence the transaction due process.
-
-As soon as these details are received and verified, the fund will be transferred to you.
-
-Copyright © 2001-2011 The Western Union Company , All Rights Reserved.
