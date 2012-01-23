@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab2AWJxD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 04:53:03 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:52156 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877Ab2AWJxB (ORCPT
+	id S1752984Ab2AWJyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 04:54:00 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61042 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752930Ab2AWJx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 04:53:01 -0500
-X-SENDER-IP: [85.230.170.239]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhxHAGktHU9V5qrvPGdsb2JhbABCiVCkVRkBAQEBNzKBcgEBBScTHCMQCANGFCUKGogRuBkTizBjBJUYhWeMaQ
-X-IronPort-AV: E=Sophos;i="4.71,555,1320620400"; 
-   d="scan'208";a="255453618"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 23 Jan 2012 10:52:48 +0100
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Input: Add EVIOC mechanism for MT slots
-Message-ID: <20120123095248.GA6667@polaris.bitmath.org>
-References: <1326396275-2492-1-git-send-email-rydberg@euromail.se>
- <4F0FEC84.7020605@canonical.com>
- <20120113091556.GA21749@core.coreip.homeip.net>
+	Mon, 23 Jan 2012 04:53:59 -0500
+Date: Mon, 23 Jan 2012 09:53:38 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v3 0/6] ARM: Remove the __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ definition
+Message-ID: <20120123095338.GB11983@arm.com>
+References: <1327081352-13178-1-git-send-email-catalin.marinas@arm.com>
+ <1327310131.2446.1.camel@twins>
+ <20120123092624.GA11983@arm.com>
+ <20120123094759.GU1068@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120113091556.GA21749@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120123094759.GU1068@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-> > > +static int evdev_handle_mt_request(struct input_dev *dev,
-> > > +				   unsigned int size,
-> > > +				   int __user *ip)
-> > > +{
-> > > +	const struct input_mt_slot *mt = dev->mt;
-> > > +	unsigned int code;
-> > > +	int i;
-> > > +
-> > > +	if (get_user(code, &ip[0]))
-> > > +		return -EFAULT;
-> > > +	if (!input_is_mt_value(code))
-> > > +		return -EINVAL;
-> > > +
-> > > +	if (size < sizeof(struct input_mt_request) + dev->mtsize * sizeof(int))
-> > > +		return -EINVAL;
+On Mon, Jan 23, 2012 at 09:47:59AM +0000, Russell King - ARM Linux wrote:
+> On Mon, Jan 23, 2012 at 09:26:24AM +0000, Catalin Marinas wrote:
+> > On Mon, Jan 23, 2012 at 09:15:31AM +0000, Peter Zijlstra wrote:
+> > > On Fri, 2012-01-20 at 17:42 +0000, Catalin Marinas wrote:
+> > > > This is version 3 of the set of patches removing
+> > > > __ARCH_WANT_INTERRUPTS_ON_CTXSW on ARM. The series was rebased on top of
+> > > > 3.3-rc1 and fixed the conflicts with the kernel/sched/ changes and the
+> > > > ARM LPAE patches. There are no functional changes from v2. I plan to
+> > > > push this to -next and get it ready for 3.4-rc1.
+> > > > 
+> > > > Question for Peter/Ingo - how do we merge the first patch that
+> > > > introduces finish_arch_post_lock_switch? Do you pick it up or I can
+> > > > merge it via rmk (with your ack)?
+> > > 
+> > > I'm fine either way, I'll probably ask Ingo to pull your tree so that I
+> > > can stack some other patches on top.
 > > 
-> > Why not fill in up to the size of the array provided?
+> > In which case I would need Russell's acked-by.
 > 
-> Yes, I think we do the same with other ioctls as well.
+> That depends on knowing what CPU architectures this has been tested on,
+> and whether anyone external has tested it.  It's definitely a change
+> which needs some tested-by tags on it.
 
-Agreed, will do it that way.
+I agree. On my side, I tested it on:
 
-> > > +/**
-> > > + * struct input_mt_request - used by EVIOCGMTSLOTS ioctl
-> > > + * @code: ABS_MT code to read
-> > > + * @num_values: number of values written to the value array
-> > > + * @values: value array, one value per slot
-> > > + *
-> > > + * The structure is used to retrieve MT slot data. Before the call,
-> > > + * code is set to the wanted ABS_MT event type. On return, the value
-> > > + * array is filled with the slot values for the specified ABS_MT code,
-> > > + * and num_values is set to the actual number of slots.
-> > > + *
-> > > + * The call argument (len) is the size of the return buffer, satisfying
-> > > + *
-> > > + * len >= sizeof(input_mt_request) + sizeof(__s32) * number_of_slots
-> > > + *
-> > > + * If the request code is not an ABS_MT value, or if len is too small,
-> > > + * -EINVAL is returned.
-> > > + */
-> > > +struct input_mt_request {
-> > > +	__u32 code;
-> > > +	__u32 num_values;
-> 
-> Hmm, might avoid this one... Userspace can do EVIOCGABS to get number of
-> slots and then it will know how much data EVIOCGMTSLOTS will return...
+Versatile Express + Cortex-A9 (SMP configuration, ASIDs)
+Versatile PB926 (UP configuration, no ASIDs)
 
-I think it might be good to keep the length, to avoid possible future
-synchronization problems. Perhaps we could get rid of the structure
-though, for instance by specifying the write as a 32-bit code and the
-read buffer as length, value, value...
-
-Thanks,
-Henrik
+-- 
+Catalin
