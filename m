@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab2AWXsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:48:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42456 "EHLO mx2.suse.de"
+	id S1755829Ab2AWXsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:48:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42512 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755677Ab2AWXsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:48:06 -0500
+	id S1755805Ab2AWXsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:48:30 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:26 2012
-Message-Id: <20120123234025.996367179@clark.kroah.org>
+Message-Id: <20120123234026.510303172@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:22 -0800
+Date: Mon, 23 Jan 2012 15:39:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [36/90] UBIFS: fix debugging messages
+        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>
+Subject: [42/90] kconfig/streamline-config.pl: Simplify backslash line concatination
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +24,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit d34315da9146253351146140ea4b277193ee5e5f upstream.
+commit d060d963e88f3e990cec2fe5214de49de9a49eca upstream.
 
-Patch 56e46742e846e4de167dde0e1e1071ace1c882a5 broke UBIFS debugging messages:
-before that commit when UBIFS debugging was enabled, users saw few useful
-debugging messages after mount. However, that patch turned 'dbg_msg()' into
-'pr_debug()', so to enable the debugging messages users have to enable them
-first via /sys/kernel/debug/dynamic_debug/control, which is very impractical.
+Simplify the way lines ending with backslashes (continuation) in Makefiles
+is parsed. This is needed to implement a necessary fix.
 
-This commit makes 'dbg_msg()' to use 'printk()' instead of 'pr_debug()', just
-as it was before the breakage.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Tested-by: Thomas Lange <thomas-lange2@gmx.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ubifs/debug.h |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ scripts/kconfig/streamline_config.pl |   25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
---- a/fs/ubifs/debug.h
-+++ b/fs/ubifs/debug.h
-@@ -134,7 +134,10 @@ const char *dbg_key_str1(const struct ub
- } while (0)
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -245,17 +245,22 @@ if ($kconfig) {
+ # Read all Makefiles to map the configs to the objects
+ foreach my $makefile (@makefiles) {
  
- /* Just a debugging messages not related to any specific UBIFS subsystem */
--#define dbg_msg(fmt, ...)   ubifs_dbg_msg("msg", fmt, ##__VA_ARGS__)
-+#define dbg_msg(fmt, ...)                                                     \
-+	printk(KERN_DEBUG "UBIFS DBG (pid %d): %s: " fmt "\n", current->pid,  \
-+	       __func__, ##__VA_ARGS__)
+-    my $cont = 0;
++    my $line = "";
+ 
+     open(MIN,$makefile) || die "Can't open $makefile";
+     while (<MIN>) {
+-	my $objs;
+-
+-	# is this a line after a line with a backslash?
+-	if ($cont && /(\S.*)$/) {
+-	    $objs = $1;
++	# if this line ends with a backslash, continue
++	chomp;
++	if (/^(.*)\\$/) {
++	    $line .= $1;
++	    next;
+ 	}
+-	$cont = 0;
 +
- /* General messages */
- #define dbg_gen(fmt, ...)   ubifs_dbg_msg("gen", fmt, ##__VA_ARGS__)
- /* Additional journal messages */
++	$line .= $_;
++	$_ = $line;
++	$line = "";
++
++	my $objs;
+ 
+ 	# collect objects after obj-$(CONFIG_FOO_BAR)
+ 	if (/obj-\$\((CONFIG_[^\)]*)\)\s*[+:]?=\s*(.*)/) {
+@@ -263,12 +268,6 @@ foreach my $makefile (@makefiles) {
+ 	    $objs = $2;
+ 	}
+ 	if (defined($objs)) {
+-	    # test if the line ends with a backslash
+-	    if ($objs =~ m,(.*)\\$,) {
+-		$objs = $1;
+-		$cont = 1;
+-	    }
+-
+ 	    foreach my $obj (split /\s+/,$objs) {
+ 		$obj =~ s/-/_/g;
+ 		if ($obj =~ /(.*)\.o$/) {
 
 
