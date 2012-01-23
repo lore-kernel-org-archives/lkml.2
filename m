@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab2AWXsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:48:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42551 "EHLO mx2.suse.de"
+	id S1756105Ab2AWXtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:49:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42606 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755948Ab2AWXsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:48:50 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:27 2012
-Message-Id: <20120123234027.027140487@clark.kroah.org>
+	id S1755925Ab2AWXtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
+Message-Id: <20120123234025.335241938@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:34 -0800
+Date: Mon, 23 Jan 2012 15:39:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>
-Subject: [48/90] fsnotify: dont BUG in fsnotify_destroy_mark()
+        alan@lxorguk.ukuu.org.uk, Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [28/90] ima: fix invalid memory reference
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,59 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Roberto Sassu <roberto.sassu@polito.it>
 
-commit fed474857efbed79cd390d0aee224231ca718f63 upstream.
+commit 7b7e5916aa2f46e57f8bd8cb89c34620ebfda5da upstream.
 
-Removing the parent of a watched file results in "kernel BUG at
-fs/notify/mark.c:139".
+Don't free a valid measurement entry on TPM PCR extend failure.
 
-To reproduce
-
-  add "-w /tmp/audit/dir/watched_file" to audit.rules
-  rm -rf /tmp/audit/dir
-
-This is caused by fsnotify_destroy_mark() being called without an
-extra reference taken by the caller.
-
-Reported by Francesco Cosoleto here:
-
-  https://bugzilla.novell.com/show_bug.cgi?id=689860
-
-Fix by removing the BUG_ON and adding a comment about not accessing mark after
-the iput.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/notify/mark.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ security/integrity/ima/ima_queue.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/fs/notify/mark.c
-+++ b/fs/notify/mark.c
-@@ -135,9 +135,6 @@ void fsnotify_destroy_mark(struct fsnoti
+--- a/security/integrity/ima/ima_queue.c
++++ b/security/integrity/ima/ima_queue.c
+@@ -23,6 +23,8 @@
+ #include <linux/slab.h>
+ #include "ima.h"
  
- 	mark->flags &= ~FSNOTIFY_MARK_FLAG_ALIVE;
- 
--	/* 1 from caller and 1 for being on i_list/g_list */
--	BUG_ON(atomic_read(&mark->refcnt) < 2);
--
- 	spin_lock(&group->mark_lock);
- 
- 	if (mark->flags & FSNOTIFY_MARK_FLAG_INODE) {
-@@ -182,6 +179,11 @@ void fsnotify_destroy_mark(struct fsnoti
- 		iput(inode);
- 
- 	/*
-+	 * We don't necessarily have a ref on mark from caller so the above iput
-+	 * may have already destroyed it.  Don't touch from now on.
-+	 */
++#define AUDIT_CAUSE_LEN_MAX 32
 +
-+	/*
- 	 * it's possible that this group tried to destroy itself, but this
- 	 * this mark was simultaneously being freed by inode.  If that's the
- 	 * case, we finish freeing the group here.
+ LIST_HEAD(ima_measurements);	/* list of all measurements */
+ 
+ /* key: inode (before secure-hashing a file) */
+@@ -94,7 +96,8 @@ static int ima_pcr_extend(const u8 *hash
+ 
+ 	result = tpm_pcr_extend(TPM_ANY_NUM, CONFIG_IMA_MEASURE_PCR_IDX, hash);
+ 	if (result != 0)
+-		pr_err("IMA: Error Communicating to TPM chip\n");
++		pr_err("IMA: Error Communicating to TPM chip, result: %d\n",
++		       result);
+ 	return result;
+ }
+ 
+@@ -106,8 +109,9 @@ int ima_add_template_entry(struct ima_te
+ {
+ 	u8 digest[IMA_DIGEST_SIZE];
+ 	const char *audit_cause = "hash_added";
++	char tpm_audit_cause[AUDIT_CAUSE_LEN_MAX];
+ 	int audit_info = 1;
+-	int result = 0;
++	int result = 0, tpmresult = 0;
+ 
+ 	mutex_lock(&ima_extend_list_mutex);
+ 	if (!violation) {
+@@ -129,9 +133,11 @@ int ima_add_template_entry(struct ima_te
+ 	if (violation)		/* invalidate pcr */
+ 		memset(digest, 0xff, sizeof digest);
+ 
+-	result = ima_pcr_extend(digest);
+-	if (result != 0) {
+-		audit_cause = "TPM error";
++	tpmresult = ima_pcr_extend(digest);
++	if (tpmresult != 0) {
++		snprintf(tpm_audit_cause, AUDIT_CAUSE_LEN_MAX, "TPM_error(%d)",
++			 tpmresult);
++		audit_cause = tpm_audit_cause;
+ 		audit_info = 0;
+ 	}
+ out:
 
 
