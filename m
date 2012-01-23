@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab2AWKld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 05:41:33 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40233 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab2AWKlb (ORCPT
+	id S1753244Ab2AWKm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 05:42:57 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41409 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab2AWKm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 05:41:31 -0500
+	Mon, 23 Jan 2012 05:42:56 -0500
+Date: Mon, 23 Jan 2012 10:42:20 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Harini Jayaraman <harinij@codeaurora.org>
+Cc: grant.likely@secretlab.ca, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kheitke@codeaurora.org, spi-devel-general@lists.sourceforge.net,
+        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] spi: QUP based bus driver for Qualcomm MSM chipsets
+Message-ID: <20120123104220.GV1068@n2100.arm.linux.org.uk>
+References: <y> <1321307907-31508-1-git-send-email-harinij@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20111226123308.GA11817@srcf.ucam.org>
-References: <87ty4ss0z4.fsf@prochyra.name>
-	<CAHR064h7a=RQq=p1J+gKpC5_6ow8ChUFFkC39HwtmerHaMksjw@mail.gmail.com>
-	<87ty4qdpna.fsf@prochyra.name>
-	<CAHR064gZdnmsMjhr3Vp3BumrkZ07FWgEADLLqqkxP_aCca5ZuQ@mail.gmail.com>
-	<20111226123308.GA11817@srcf.ucam.org>
-Date: Mon, 23 Jan 2012 11:41:29 +0100
-Message-ID: <CAHR064iRcwwgwXkGYdcX_0z8b2cVuDj8JG8rb8_Hk3X9geBcNQ@mail.gmail.com>
-Subject: Re: [PATCH] Platform: samsung-laptop: add DMI information for Samsung
- N150 Plus
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Andrzej Prochyra <andrzej@prochyra.name>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321307907-31508-1-git-send-email-harinij@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 26, 2011 at 1:33 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Mon, Dec 26, 2011 at 10:51:36AM +0100, Corentin Chary wrote:
->> > (The MAINTAINERS file gives the git tree
->> > git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git
->> > in the X86 PLATFORM DRIVERS section but this does not seem to exist.)
->>
->> Matthew, should MAINTAINERS be updated with your new tree, or will you
->> re-create the kernel.org tree in the future ?
->
-> Should be updated. My mistake. I'll send a patch next week.
->
-> --
-> Matthew Garrett | mjg59@srcf.ucam.org
+Not specific to this patch, but I notice that you have in your headers:
 
-Ping ?
+In-Reply-To: <y>
+References: <y>
 
-Also, do you think you'll send the current queue for 3.3-rcX or 3.4 ?
-(Some samsung-laptop users are asking me if it will be available in
-3.3)
+This is rather annoying, because it means that anyone else who has the
+same lines ends up having their messages attached to your messages as
+part of the same thread.
 
-Thanks,
+I think you need to read the documentation for git-send-email again -
+and check that you're using the arguments concerning message ids and
+threading correctly.
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+Thanks.
