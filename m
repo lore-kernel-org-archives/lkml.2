@@ -1,72 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab2AWVBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 16:01:05 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:46493 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753953Ab2AWVBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 16:01:03 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
-Date: Mon, 23 Jan 2012 22:04:35 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: Simon Glass <sjg@chromium.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-serial@vger.kernel.org
-References: <1326826563-32215-1-git-send-email-sjg@chromium.org> <201201210049.35254.rjw@sisk.pl> <20120123164511.GE2434@linux.vnet.ibm.com>
-In-Reply-To: <20120123164511.GE2434@linux.vnet.ibm.com>
+	id S1754253Ab2AWVBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 16:01:22 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:37813 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058Ab2AWVBE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 16:01:04 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX181Q+zWESWuhdE6num95qek
+Date: Mon, 23 Jan 2012 13:00:52 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "Shawn Guo (shawn.guo@linaro.org)" <shawn.guo@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Pinmux bindings proposal V2
+Message-ID: <20120123210052.GS22818@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201232204.35738.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 23, 2012, Paul E. McKenney wrote:
-> On Sat, Jan 21, 2012 at 12:49:35AM +0100, Rafael J. Wysocki wrote:
-> > On Friday, January 20, 2012, Paul E. McKenney wrote:
-> > > On Fri, Jan 20, 2012 at 01:03:34AM +0100, Rafael J. Wysocki wrote:
-> > > > On Thursday, January 19, 2012, Paul E. McKenney wrote:
-> > > > > On Thu, Jan 19, 2012 at 01:02:58AM +0100, Rafael J. Wysocki wrote:
-> > > > > > On Wednesday, January 18, 2012, Paul E. McKenney wrote:
-> > > > > > > On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
-> > > > [...] 
-> > > > > > Yes, you can, but then I'd say it's not necessary for user space to
-> > > > > > be able to carry that out in a tight loop.  So, it seems, alternatively,
-> > > > > > we could make that loop a bit less tight, e.g. by adding an arbitrary
-> > > > > > sleep to the user space interface for the "disable" case.
-> > > > > 
-> > > > > Good point, that would work just as well and be simpler.
-> > > > 
-> > > > Thanks for the confirmation! :-)
-> > > > 
-> > > > By the way, I wonder, would it help to add synchronize_rcu() to
-> > > > wakeup_source_add() too?  Then, even if device_wakeup_enable() and
-> > > > device_wakeup_disable() are executed in a tight loop for the same
-> > > > device, the list_add/list_del operations will always happen in
-> > > > different RCU cycles (or at least it seems so).
-> > > 
-> > > I cannot immediately see how adding a synchronize_rcu() to
-> > > wakeup_source_add() would help anything.  You only need to wait for a
-> > > grace period on removal, not (normally) on addition.  The single grace
-> > > period during removal will catch up all other asynchronous RCU grace
-> > > period requests on that CPU.
-> > > 
-> > > Or am I missing your point?
-> > 
-> > Well, I was thinking about the failure scenario you mentioned where
-> > executing enable/disable in a tight loop might exhaust system memory
-> > (if I understood it correctly).
+Hi,
+
+This mostly looks pretty good to me, few more comments below.
+
+* Stephen Warren <swarren@nvidia.com> [120120 13:51]:
+> Here's V2 of my pinmux binding proposal, after incorporating some feedback
+> from Shawn Guo and Dong Aisheng. Main changes:
 > 
-> Ah, got it.  If they are executing this in a tight loop, there will be
-> little difference between doing one synchronize_rcu() per pass through
-> the loop or doing two.  So we should be just fine with the single instance
-> of synchronize_rcu() per loop.
+> 1) Require the "pin config" nodes the be children of the pinmux controller
+>    node, rather than allowing them to alternatively be children of the
+>    device node that's using them. This allows removal of the pin controller
+>    phandle as the first entry in each specifier.
 
-Good! :-)
+If you really want to leave out the phandle for each mux entry, this would
+require supporting multiple "pin config" entries in a device driver node.
 
-Thanks a lot,
-Rafael
+That's because otherwise supporting pins from multiple pinmux controller
+instances would not work. Note that we already have two pin controller
+instances starting with omap4.
+
+...
+ 
+>                 pmx_sdhci_active: pinconfig-sdhci-active {
+>                         /*
+>                          * In each of these nodes, both the mux and config
+>                          * properties are optional. This node represents the
+>                          * additions to pmx_sdhci that are specific to an
+>                          * active state. In this case, only pin configuration
+>                          * settings are different.
+>                          */
+>                         config =
+>                                 <TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_TRISTATE 0>
+>                                 <TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_TRISTATE 0>;
+>                 };
+>                 pmx_sdhci_standby: pinconfig-sdhci-standby {
+>                         config =
+>                                 <TEGRA_PMX_PG_DTA TEGRA_PMX_CONF_TRISTATE 1>
+>                                 <TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_TRISTATE 1>;
+>                 };
+
+After thinking about this a bit more, I'm now thinking that we should
+probably only describe the active state in the device tree to keep things
+simple.
+
+Anything PM related could be initialized later on during the boot by the
+device driver, or even from userspace using /lib/firmware or /sys entries.
+This would cut down the device tree bloat quite a bit.
+
+Setting the initial state from device tree makes sense, but I'm afraid
+the standby and off states will require driver interaction depending on
+how the user wants to configure the system.
+
+For example, allowing a device to wake up a system might be user
+configurable option, such as "Wake up on tapping the touchscreen".
+
+Then I'd rather not use "config" at all, and just put the value for
+initial state mux register(s) in the mux to avoid repeating the same data
+multiple time. Looks like with the mux + config/mux-config option you
+need to duplicate at least TEGRA_PMX_PG_DTA.
+
+BTW, maybe the name "config" should probably be "mux-config" instead?
+
+>                 /*
+>                  * Each device node contains a few properties to describe
+>                  * the named pinmux states that are available to it.
+>                  *
+>                  * The binding for the device node specifies the state names
+>                  * that must be described; common examples such as "default"
+>                  * or "active" and "suspend" may be universal, but the IO
+>                  * protocol that a device supports may demand that more
+>                  * states be defined, such as "active-12mhz", "active-50mhz",
+>                  * "suspend". Drivers request these named states e.g. using
+>                  * pinctrl's pinmux_get("state_name") API.
+>                  *
+>                  * pinctrl-names lists the available state names.
+>                  *
+>                  * Unlike the common clock binding, I assume here that states
+>                  * are always requested by name. If we don't like that idea,
+>                  * we'd could make this property optional, and add a new API
+>                  * pinmux_get(state_id) to the pinctrl subsystem.
+>                  */
+>                 pinctrl-names = "active", "suspend";
+
+If we only allow describing the initial state in device tree, then we can
+leave out pinctrl-names, and assume the setting is always the initial bootup
+state desired.
+
+So to summarize: I suggest we'll just stick to basics to get the system
+booting and devices working using device tree. In most cases the device
+drivers should be able to configure the suspend and off states in a generic
+way using pinctrl API. Everything else, like debugging, we can probably
+do with userspace tools.
+
+This would mean just using a minimal subset of your binding, probably
+very close to what you originally suggested.
+
+Regards,
+
+Tony
