@@ -1,119 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab2AWDAF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jan 2012 22:00:05 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:47810 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752350Ab2AWDAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jan 2012 22:00:04 -0500
-Date: Mon, 23 Jan 2012 13:59:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: linux-next: build failure after merge of the final tree (nfs tree
- related)
-Message-Id: <20120123135942.3e991094b91d9087d2ba81ae@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__23_Jan_2012_13_59_42_+1100_i5wUYMg/2V_gyD/m"
+	id S1752614Ab2AWDE3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jan 2012 22:04:29 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26833 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752030Ab2AWDE1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jan 2012 22:04:27 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EANrLHE95LElR/2dsb2JhbABDriSBBoFyAQEEATocIwULCAMYLhQlAyETh3y3cxOLMGMElRiSYw
+Date: Mon, 23 Jan 2012 14:04:22 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+Message-ID: <20120123030422.GE15102@dastard>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
+ <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
+ <20120116160136.GC16431@quack.suse.cz>
+ <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+ <20120117003613.GA28571@dastard>
+ <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_Jan_2012_13_59_42_+1100_i5wUYMg/2V_gyD/m
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ LCA delayed responding to this... ]
 
-Hi all,
+On Mon, Jan 16, 2012 at 04:59:41PM -0800, Linus Torvalds wrote:
+> On Mon, Jan 16, 2012 at 4:36 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >
+> > Jan is right, Linus. His definition of what up-to-date means for
+> > dirty buffers is correct, especially in the case of write errors.
+> 
+> It's not a dirty buffer any more.
 
-After merging the final tree, today's linux-next build (powerpc
-ppc44x_defconfig) failed like this:
+Yes it is. The write has not completed, so by definition the buffer
+is not clean.
 
-net/sunrpc/svcsock.c: In function 'svc_setup_socket':
-net/sunrpc/svcsock.c:1412:40: error: 'struct sock_common' has no member nam=
-ed 'skc_net'
+> Go look. We've long since cleared the dirty bit.
 
-This build has CONFIG_NET_NS unset.
+Sure, but the buffer contents are dirty until the IO completes
+successfully and what is on disk matches the contents of the buffer
+in memory. It doesn't magically become clean when we clear the dirty
+bit. We only clear the dirty bit before submitting the IO to stop
+multiple callers from trying to submit it for write at the same
+time. IOWs, the buffer dirty bit doesn't really track the dirty
+state of the buffer correctly.
 
-Caused by commit eff9c3383687 ("SUNRPC: pass network namespace to service
-registering routines").
+> So stop spouting garbage.
+>
+> My argument is simple: the contents ARE NOT CORRECT ENOUGH to be
+> called "up-to-date and clean".
 
-I applied this (suboptimal) patch for today:
+I didn't say it was clean - I said a buffer that failed a write is
+not invalid but was still up-to-date and the error handling should
+treat it that way. I thought it was obvious that this meant we have
+to redirty the buffer at the same time we mark it with an IO error
+so that it's state was correct....
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 23 Jan 2012 13:55:01 +1100
-Subject: [PATCH] SUNRPC: fixup for namespace changes
+> And I outlined the two choices:
+> 
+>  - mark it dirty and continue trying to write it out forever
+> 
+>  - invalidate it.
+> 
+> Anything else is crazy talk.
 
-Fixes this build error when CONFIG_NET_NS is not set:
+I can only assume that you didn't read what I said about how
+different filesystems can (and do) handle write errors differently.
+Indeed, even within a filesystem there can be different error
+handling methods for different types of write IO errors (e.g.
+transient vs unrecoverable).  Hence there are any number of valid
+error handling strategies that can be added to the above list. One
+size does not fit all...
 
-net/sunrpc/svcsock.c: In function 'svc_setup_socket':
-net/sunrpc/svcsock.c:1412:40: error: 'struct sock_common' has no member nam=
-ed 'skc_net'
+> And marking it dirty forever isn't really
+> an option. So..
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/sunrpc/svcsock.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+I guess you don't realise that Linux already has a filesystem that
+uses this technique. It's called XFS.  ;)
 
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index e8af0c9..4d02d1a 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -41,6 +41,7 @@
- #include <net/ipv6.h>
- #include <net/tcp.h>
- #include <net/tcp_states.h>
-+#include <net/net_namespace.h>
- #include <asm/uaccess.h>
- #include <asm/ioctls.h>
-=20
-@@ -1409,7 +1410,13 @@ static struct svc_sock *svc_setup_socket(struct svc_=
-serv *serv,
-=20
- 	/* Register socket with portmapper */
- 	if (*errp >=3D 0 && pmap_register)
--		*errp =3D svc_register(serv, sock->sk->sk_net, inet->sk_family,
-+		*errp =3D svc_register(serv,
-+#ifdef CONFIG_NET_NS
-+				     sock->sk->sk_net,
-+#else
-+				     &init_net,
-+#endif
-+				     inet->sk_family,
- 				     inet->sk_protocol,
- 				     ntohs(inet_sk(inet)->inet_sport));
-=20
---=20
-1.7.9.rc0.23.g7e521
+FYI, XFS has used the redirtying method to retry failed delayed
+write buffer IO since day zero (i.e. 1993). EFS (XFS's predecessor
+on Irix) was doing this long before XFS came along so this technique
+for handling certain types of transient write IO errors has been
+used in production filesystems for somewhere around 25 years.
 
---=20
+The thing is, transient write errors tend to be isolated and go away
+when a retry occurs (think of IO timeouts when multipath failover
+occurs). When non-isolated IO or unrecoverable problems occur (e.g.
+no paths left to fail over onto), critical other metadata reads and
+writes will fail and shut down the filesystem, thereby terminating
+the "try forever" background writeback loop those delayed write
+buffers may be in. So the truth is that "trying forever" on write
+errors can handle a whole class of write IO errors very
+effectively....
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__23_Jan_2012_13_59_42_+1100_i5wUYMg/2V_gyD/m
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPHM0eAAoJEECxmPOUX5FEP/sQAKXX9+MUWz7nJvw7fIOcbTtj
-Ufb8ppw3/M+KPbAj/PgpNSjENudS55/juVQxw5YHmVbVKXpQkFd/Jdw8pA/nSGjl
-DShj02Wjjp9hKHS/g9OFzzJye1eS2bxfr98e7NZxPWR0PstGOFL/iyjymFsZdiab
-cIgLpnSLlSjxOn18vwstfxn5LGtQFhYDNGLphGbnEkC6OEDgiKmgcieHUfqrDaeo
-G+ttofKLgXyEOhMqSP/r7rzopHVIAXJEeSJRcnXgcRxn5YQugjyUyBBAW6fHw7xf
-Yv9jNscswFlZ3mziVPYDskbpCCLOIzNUJSk+GbT0XYryNZ9d21Mc37hRjO1N9Kg9
-LoFr6XfdDut73wkSusm8hgmOYEIS3y88YWOlW53gkXYTsjqCWcfSYYCJnqedNy+8
-Mpj8dxkte0M3+8xN/7KSaqsPKZXY/Idpn+WhdXsE1Jsk4JeLx9NbpZfIvUsl3/Rj
-74aP1qXHsuXdB+wdvH0IMqp4lbDJh2xEPdwjSp7iWJ/LV6xo67jvTFMXkhoWDSFi
-A0GifsBoPeDgUyu31c6QWIdSzxVIBlI4TI+tjIh5ma8BdoMxMHLjOyryg9O3Xk6K
-t4HCTboersG3wgQxjupxeabKd7pcPF63UhewMXXwhqxIxY+SnpnJqI+l24UgtP1i
-kJ/YYYtkUUQ4JDty7iKj
-=CaBY
------END PGP SIGNATURE-----
-
---Signature=_Mon__23_Jan_2012_13_59_42_+1100_i5wUYMg/2V_gyD/m--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
