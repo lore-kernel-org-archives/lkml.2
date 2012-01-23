@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2AWQsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 11:48:24 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:22704
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753181Ab2AWQsW (ORCPT
+	id S1753357Ab2AWQtP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 11:49:15 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56807 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab2AWQtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 11:48:22 -0500
-X-SpamScore: -5
-X-BigFish: PS-5(zzbb2dI9371I98dKzz1202hzzz2fhc1bhc31hc1ah2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:207.46.4.139;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0602HT003.namprd06.prod.outlook.com;RD:none;EFVD:NLI
-Message-ID: <4F1D8F37.6020806@ixiacom.com>
-Date: Mon, 23 Jan 2012 08:47:51 -0800
-From: Earl Chew <echew@ixiacom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Mon, 23 Jan 2012 11:49:13 -0500
+Date: Mon, 23 Jan 2012 08:45:11 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Simon Glass <sjg@chromium.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 3/3] serial: 8250: Add a wakeup_capable module param
+Message-ID: <20120123164511.GE2434@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1326826563-32215-1-git-send-email-sjg@chromium.org>
+ <201201200103.34296.rjw@sisk.pl>
+ <20120120061214.GA2551@linux.vnet.ibm.com>
+ <201201210049.35254.rjw@sisk.pl>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <adobriyan@gmail.com>
-Subject: Re: [PATCH] Support single byte reads from integers published in
- procfs by kernel/sysctl.c
-References: <4F1C5995.3060806@ixiacom.com> <m1fwf6pjal.fsf@fess.ebiederm.org> <4F1D8180.9030509@ixiacom.com> <m1mx9enzr0.fsf@fess.ebiederm.org>
-In-Reply-To: <m1mx9enzr0.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [216.23.154.50]
-X-MS-Exchange-CrossPremises-AuthSource: SN2PRD0602HT003.namprd06.prod.outlook.com
-X-MS-Exchange-CrossPremises-AuthAs: Internal
-X-MS-Exchange-CrossPremises-AuthMechanism: 06
-X-MS-Exchange-CrossPremises-Rules-Execution-History: Support - Juniper
-X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
-X-OrganizationHeadersPreserved: SN2PRD0602HT003.namprd06.prod.outlook.com
-X-OriginatorOrg: ixiacom.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201201210049.35254.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012316-5518-0000-0000-000001BC7015
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/01/2012 8:35 AM, Eric W. Biederman wrote:
-> read X < file seems like a reasonable case to support.
-> Bash doesn't have that problem so presumably BusyBox is simply
-> inefficient.
+On Sat, Jan 21, 2012 at 12:49:35AM +0100, Rafael J. Wysocki wrote:
+> On Friday, January 20, 2012, Paul E. McKenney wrote:
+> > On Fri, Jan 20, 2012 at 01:03:34AM +0100, Rafael J. Wysocki wrote:
+> > > On Thursday, January 19, 2012, Paul E. McKenney wrote:
+> > > > On Thu, Jan 19, 2012 at 01:02:58AM +0100, Rafael J. Wysocki wrote:
+> > > > > On Wednesday, January 18, 2012, Paul E. McKenney wrote:
+> > > > > > On Wed, Jan 18, 2012 at 02:15:59PM -0800, Simon Glass wrote:
+> > > [...] 
+> > > > > Yes, you can, but then I'd say it's not necessary for user space to
+> > > > > be able to carry that out in a tight loop.  So, it seems, alternatively,
+> > > > > we could make that loop a bit less tight, e.g. by adding an arbitrary
+> > > > > sleep to the user space interface for the "disable" case.
+> > > > 
+> > > > Good point, that would work just as well and be simpler.
+> > > 
+> > > Thanks for the confirmation! :-)
+> > > 
+> > > By the way, I wonder, would it help to add synchronize_rcu() to
+> > > wakeup_source_add() too?  Then, even if device_wakeup_enable() and
+> > > device_wakeup_disable() are executed in a tight loop for the same
+> > > device, the list_add/list_del operations will always happen in
+> > > different RCU cycles (or at least it seems so).
+> > 
+> > I cannot immediately see how adding a synchronize_rcu() to
+> > wakeup_source_add() would help anything.  You only need to wait for a
+> > grace period on removal, not (normally) on addition.  The single grace
+> > period during removal will catch up all other asynchronous RCU grace
+> > period requests on that CPU.
+> > 
+> > Or am I missing your point?
+> 
+> Well, I was thinking about the failure scenario you mentioned where
+> executing enable/disable in a tight loop might exhaust system memory
+> (if I understood it correctly).
 
-I think you are correct. In BusyBox, I believe there is a conscious
-design decision to favour minimum size over maximum speed where it makes sense.
+Ah, got it.  If they are executing this in a tight loop, there will be
+little difference between doing one synchronize_rcu() per pass through
+the loop or doing two.  So we should be just fine with the single instance
+of synchronize_rcu() per loop.
 
-> If you are interested in fixing this properly with a tiny buffer
-> reachable from struct file I think this can be worth fixing.  I think
-> this is doable by using seq_file in proc_sys_read.
-
-I did think about using seq_file, but my initial thoughts were that it
-would end up being a much bigger change and I was reluctant to take that
-on without some indication that it would be a more acceptable approach.
-
-> Rereading different bytes of the integer multiple times when the integer
-> may be changing does not seem like a reasonable implementation.
-
-Yes. I agree with you. I shall re-work the patch as per your suggestion.
-
-Earl
+							Thanx, Paul
 
