@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab2AWTdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 14:33:11 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35001 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647Ab2AWTdH (ORCPT
+	id S1753990Ab2AWTdl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 14:33:41 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36268 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab2AWTdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 14:33:07 -0500
-Date: Mon, 23 Jan 2012 23:33:01 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children
- entry v8
-Message-ID: <20120123193301.GI1907@moon>
-References: <20120123142036.025893883@openvz.org>
- <20120123142436.181674896@openvz.org>
- <CAGXu5j+JrntZcr1sZ1sHXmOTT5jCuMp5HUQnucHqEgF+LXX5VA@mail.gmail.com>
+	Mon, 23 Jan 2012 14:33:40 -0500
+Date: Mon, 23 Jan 2012 11:33:35 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <mzxreary@0pointer.de>
+Subject: Re: [PATCH 08/17] blkcg: shoot down blkio_groups on elevator switch
+Message-ID: <20120123193335.GK12652@google.com>
+References: <20120123152055.GD25986@redhat.com>
+ <20120123153913.GB12652@google.com>
+ <20120123155216.GF25986@redhat.com>
+ <20120123155745.GD12652@google.com>
+ <20120123161042.GG25986@redhat.com>
+ <20120123161619.GE12652@google.com>
+ <20120123162553.GI25986@redhat.com>
+ <20120123171049.GH12652@google.com>
+ <20120123182745.GK25986@redhat.com>
+ <20120123184336.GI12652@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGXu5j+JrntZcr1sZ1sHXmOTT5jCuMp5HUQnucHqEgF+LXX5VA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120123184336.GI12652@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 10:54:53AM -0800, Kees Cook wrote:
-> On Mon, Jan 23, 2012 at 6:20 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > When we do checkpoint of a task we need to know the list of children
-> > the task, has but there is no easy and fast way to generate reverse
-> > parent->children chain from arbitrary <pid> (while a parent pid is
-> > provided in "PPid" field of /proc/<pid>/status).
-> > [...]
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> > Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Pavel Emelyanov <xemul@parallels.com>
-> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Mon, Jan 23, 2012 at 10:43:36AM -0800, Tejun Heo wrote:
+> Yeah, this is much more arguable.  I don't think it would be too
+> complex to keep per-policy granularity even w/ unified blkg managed by
+> blkcg core (we'll just need to point to separately allocated
+> per-policy data from the unified blkg and clear them selectively).
+> I'm just not convinced of its necessity.  With initial config out of
+> the way, elvs and blkcg policies don't get molested all that often.
 > 
-> Reviewed-by: Kees Cook <keescook@chromium.org>
-> 
-> > +static int children_seq_show(struct seq_file *seq, void *v)
-> > +{
-> > +       struct inode *inode = seq->private;
-> > +       pid_t pid;
-> > +
-> > +       pid = pid_nr_ns(v, inode->i_sb->s_fs_info);
-> > +       return seq_printf(seq, " %d", pid);
-> > +}
-> 
-> Does this mean the file contents always starts with a space? I think
-> I'd prefer a trailing space than a leading one. Better yet, neither.
-> :)
-> 
+> I'll see how complex it actually gets.  If it isn't too much
+> complexity, yeah, why not...
 
-Yeah, it there children, they will be in say " 1 2 3 4\n" format.
-To drop this space completely i'll have to add more code, which I
-actually trying to escape. Can we live with it? ;)
+Hmmm... while this isn't terribly complex, it involves considerable
+amount of churn as core layer doesn't currently know what policies are
+bound to which queues how - we'll have to add some part of that before
+shootdown change, use it there, and then later replace it with proper
+per-queue thing.  The conversion is already painful enough without
+adding another chunk to juggle around.  Given that clearing all on pol
+change isn't too crazy, how about the following?
 
-	Cyrill
+* For now, clear unconditionally on pol/elv change.
+
+* But structure things such that policy specific data are allocated
+  separately and on pol/elv change only those policy specific part is
+  flushed.
+
+* Later, if deemed necessary, make the clearing of pol-specific part
+  selective.
+
+-- 
+tejun
