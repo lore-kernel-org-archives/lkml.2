@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab2AWF6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 00:58:12 -0500
-Received: from home.keithp.com ([63.227.221.253]:44084 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995Ab2AWF6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 00:58:11 -0500
-From: Keith Packard <keithp@keithp.com>
-To: linux-kernel@vger.kernel.org
-Cc: Keith Packard <keithp@keithp.com>, linux-usb@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org
-Subject: [PATCH] Regression: Revert "Bluetooth: use buffer priority to mark URB_ISO_ASAP flag"
-Date: Sun, 22 Jan 2012 21:58:01 -0800
-Message-Id: <1327298281-2502-1-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.8.3
+	id S1752312Ab2AWGYM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 01:24:12 -0500
+Received: from eddie.linux-mips.org ([78.24.191.182]:51828 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab2AWGYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 01:24:12 -0500
+Date: Mon, 23 Jan 2012 06:24:09 +0000 (GMT)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: john stultz <johnstul@us.ibm.com>
+cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <williams@redhat.com>,
+        Nivedita Singhvi <niv@us.ibm.com>, lkml <linux-kernel@vger.kernel.org>,
+        vosburgh@us.ibm.com
+Subject: Re: Lapic vector priorites
+In-Reply-To: <1327297111.4129.27.camel@work-vm>
+Message-ID: <alpine.LFD.2.00.1201230609560.22644@eddie.linux-mips.org>
+References: <1327297111.4129.27.camel@work-vm>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit b8aabfc92249b239c425da7e4ca85b7e4855e984.
+On Sun, 22 Jan 2012, john stultz wrote:
 
-URB_ISO_ASAP may only be used with iso end points, but this patch was
-attempting to use it with a bulk endpoint. When DEBUG is defined in
-the USB stack, it checks for invalid flags and returns -EINVAL instead
-of actually transmitting the data.
+> I'm really not that familiar with the lapic code, but reading over some
+> of the documentation I could find through searches, and then looking at
+> the lapic vector layout in the kernel, I'm now a little curious.
+> 
+> >From what I've read the irq priority is set by the vector, where 0x0 is
+> the highest and 0xFF is the lowest.
+> 
+> In irq_vectors.h I see:
+> #define NMI_VECTOR			0x02
+> #define MCE_VECTOR			0x12
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
+ Both these vectors are hardwired internally in the CPU and irrelevant to 
+the APIC interrupt priority levels as these apply to ordinary interrupts 
+only.  For these the higher the vector value, the higher the priority (I 
+won't get into the gory details, my memory has already faded about that 
+and I'd have to resort to documentation to avoid confusion).
 
-Ok, so this is a comedy of errors. The Bluetooth code is trying to use
-an iso-specific flag (URB_ISO_ASAP) on a bulk endpoint, which is
-invalid, but normally harmless. Unless the USB code is compiled for
-debugging, in which case it checks a bunch for incorrect usage and
-discards URBs which are wrong.
+ The MCE is actually a processor exception and as such does not go through 
+the APIC at all.  It's either signalled internally by the CPU (to record 
+an internal malfunction) or via an external signal (to raise a bus error 
+or a similar event).
 
-As far as I'm concerned, #ifdef DEBUG code should never ever change
-the behaviour of the code, and so I'd say the USB code is even more
-broken than the bluetooth code...
+ The NMI is the non-maskable interrupt and is driven by the local APIC on 
+a separate processor's internal line (back in the 1990s where discrete 
+local APICs were used this would actually be a separate board signal to 
+the CPU) and it's the CPU that gives this line the priority above an 
+ordinary interrupt that may be asserted at the same time.  For an NMI the 
+CPU does not drive an INTA cycle (again, internally for modern processors) 
+on its bus which the local APIC would respond with an interrupt vector to.
 
-In any case, to reproduce this issue, enable CONFIG_USB_DEBUG and then
-try to use bluetooth (sdptool browse). You'll get error messages from
-the USB stack:
+ I hope this helps.
 
-	usb 1-1.1.3: BOGUS urb flags, 2 --> 0
-
-Apply this patch and bluetooth starts working again.
-
- drivers/bluetooth/btusb.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index f00f596..b7c4f4e 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -726,9 +726,6 @@ static int btusb_send_frame(struct sk_buff *skb)
- 		usb_fill_bulk_urb(urb, data->udev, pipe,
- 				skb->data, skb->len, btusb_tx_complete, skb);
- 
--		if (skb->priority >= HCI_PRIO_MAX - 1)
--			urb->transfer_flags  = URB_ISO_ASAP;
--
- 		hdev->stat.acl_tx++;
- 		break;
- 
--- 
-1.7.8.3
-
+  Maciej
