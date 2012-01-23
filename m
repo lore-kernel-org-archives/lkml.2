@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab2AWWe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 17:34:59 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24475 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab2AWWe6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 17:34:58 -0500
-Date: Mon, 23 Jan 2012 23:34:59 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH] Don't leak in arch/x86/boot/compressed/misc.c::parse_elf()
-Message-ID: <alpine.LNX.2.00.1201232332590.8772@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754682Ab2AWWfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 17:35:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39472 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753501Ab2AWWfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 17:35:47 -0500
+Date: Mon, 23 Jan 2012 14:35:08 -0800
+From: Greg KH <gregkh@suse.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        dave@linux.vnet.ibm.com, cascardo@holoscopio.com,
+        sjenning@linux.vnet.ibm.com
+Subject: Re: [PATCH] zcache fix for 3.3-rc1.
+Message-ID: <20120123223508.GA10729@suse.de>
+References: <1327355540-30681-1-git-send-email-konrad.wilk@oracle.com>
+ <20120123221155.GA10265@suse.de>
+ <20120123222238.GB31852@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120123222238.GB31852@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We allocate memory with malloc(), but neglect to free it before the
-variable 'phdrs' goes out of scope --> leak.
+On Mon, Jan 23, 2012 at 05:22:38PM -0500, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jan 23, 2012 at 02:11:55PM -0800, Greg KH wrote:
+> > On Mon, Jan 23, 2012 at 04:52:19PM -0500, Konrad Rzeszutek Wilk wrote:
+> > > Hey Greg,
+> > > 
+> > > I posted this patch some time ago  [https://lkml.org/lkml/2012/1/13/253]
+> > > but I am not seeing it in you tree.
+> > 
+> > Did you copy me on it?  I don't see it anywhere in my to-apply queues.
+> 
+> Ugh, I did not - I seemed to have forgotten to CC you and had assumed you
+> would be omnipresent and would magically pick it up. Sorry about that mishap.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- arch/x86/boot/compressed/misc.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Hm, I must be slipping, I should have caught that :)
 
- Note: Only compile tested.
+> > > Was wondering if you could stick this patch in your tree? It fixes
+> > > a performance regressions which is quite noticable in small memory systems
+> > > where a 'swapoff' ends up taking more than it should.
+> > 
+> > So this is needed for 3.3?  How about older kernels?  3.2?  3.0?
+> 
+> That would be splendid if you could stick it on the stable tree :-)
 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 3a19d04..7116dcb 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -321,6 +321,8 @@ static void parse_elf(void *output)
- 		default: /* Ignore other PT_* */ break;
- 		}
- 	}
-+
-+	free(phdrs);
- }
- 
- asmlinkage void decompress_kernel(void *rmode, memptr heap,
--- 
-1.7.8.4
+Which one(s)?
 
+thanks,
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+greg k-h
