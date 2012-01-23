@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab2AWX7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:59:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42642 "EHLO mx2.suse.de"
+	id S1756086Ab2AWXtR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:49:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42598 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756129Ab2AWXte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:34 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:24 2012
-Message-Id: <20120123234024.834299686@clark.kroah.org>
+	id S1755925Ab2AWXtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:15 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
+Message-Id: <20120123234025.251212828@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:08 -0800
+Date: Mon, 23 Jan 2012 15:39:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [22/90] x86/PCI: amd: factor out MMCONFIG discovery
+        alan@lxorguk.ukuu.org.uk, Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [27/90] ima: free duplicate measurement memory
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,154 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Roberto Sassu <roberto.sassu@polito.it>
 
-commit 24d25dbfa63c376323096660bfa9ad45a08870ce upstream.
+commit 45fae7493970d7c45626ccd96d4a74f5f1eea5a9 upstream.
 
-This factors out the AMD native MMCONFIG discovery so we can use it
-outside amd_bus.c.
+Info about new measurements are cached in the iint for performance.  When
+the inode is flushed from cache, the associated iint is flushed as well.
+Subsequent access to the inode will cause the inode to be re-measured and
+will attempt to add a duplicate entry to the measurement list.
 
-amd_bus.c reads AMD MSRs so it can remove the MMCONFIG area from the
-PCI resources.  We may also need the MMCONFIG information to work
-around BIOS defects in the ACPI MCFG table.
+This patch frees the duplicate measurement memory, fixing a memory leak.
 
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/amd_nb.h |    2 ++
- arch/x86/kernel/amd_nb.c      |   31 +++++++++++++++++++++++++++++++
- arch/x86/pci/amd_bus.c        |   42 +++++++++++-------------------------------
- 3 files changed, 44 insertions(+), 31 deletions(-)
+ security/integrity/ima/ima_api.c   |    4 ++--
+ security/integrity/ima/ima_queue.c |    1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_AMD_NB_H
- #define _ASM_X86_AMD_NB_H
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -177,8 +177,8 @@ void ima_store_measurement(struct ima_ii
+ 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
  
-+#include <linux/ioport.h>
- #include <linux/pci.h>
- 
- struct amd_nb_bus_dev_range {
-@@ -13,6 +14,7 @@ extern const struct pci_device_id amd_nb
- extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
- 
- extern bool early_is_amd_nb(u32 value);
-+extern struct resource *amd_get_mmconfig_range(struct resource *res);
- extern int amd_cache_northbridges(void);
- extern void amd_flush_garts(void);
- extern int amd_numa_init(void);
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -119,6 +119,37 @@ bool __init early_is_amd_nb(u32 device)
- 	return false;
+ 	result = ima_store_template(entry, violation, inode);
+-	if (!result)
++	if (!result || result == -EEXIST)
+ 		iint->flags |= IMA_MEASURED;
+-	else
++	if (result < 0)
+ 		kfree(entry);
  }
- 
-+struct resource *amd_get_mmconfig_range(struct resource *res)
-+{
-+	u32 address;
-+	u64 base, msr;
-+	unsigned segn_busn_bits;
-+
-+	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
-+		return NULL;
-+
-+	/* assume all cpus from fam10h have mmconfig */
-+        if (boot_cpu_data.x86 < 0x10)
-+		return NULL;
-+
-+	address = MSR_FAM10H_MMIO_CONF_BASE;
-+	rdmsrl(address, msr);
-+
-+	/* mmconfig is not enabled */
-+	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
-+		return NULL;
-+
-+	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
-+
-+	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
-+			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
-+
-+	res->flags = IORESOURCE_MEM;
-+	res->start = base;
-+	res->end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
-+	return res;
-+}
-+
- int amd_get_subcaches(int cpu)
- {
- 	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -30,34 +30,6 @@ static struct pci_hostbridge_probe pci_p
- 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
- };
- 
--static u64 __initdata fam10h_mmconf_start;
--static u64 __initdata fam10h_mmconf_end;
--static void __init get_pci_mmcfg_amd_fam10h_range(void)
--{
--	u32 address;
--	u64 base, msr;
--	unsigned segn_busn_bits;
--
--	/* assume all cpus from fam10h have mmconf */
--        if (boot_cpu_data.x86 < 0x10)
--		return;
--
--	address = MSR_FAM10H_MMIO_CONF_BASE;
--	rdmsrl(address, msr);
--
--	/* mmconfig is not enable */
--	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
--		return;
--
--	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
--
--	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
--			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
--
--	fam10h_mmconf_start = base;
--	fam10h_mmconf_end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
--}
--
- #define RANGE_NUM 16
- 
- /**
-@@ -85,6 +57,9 @@ static int __init early_fill_mp_bus_info
- 	u64 val;
- 	u32 address;
- 	bool found;
-+	struct resource fam10h_mmconf_res, *fam10h_mmconf;
-+	u64 fam10h_mmconf_start;
-+	u64 fam10h_mmconf_end;
- 
- 	if (!early_pci_allowed())
- 		return -1;
-@@ -211,12 +186,17 @@ static int __init early_fill_mp_bus_info
- 		subtract_range(range, RANGE_NUM, 0, end);
- 
- 	/* get mmconfig */
--	get_pci_mmcfg_amd_fam10h_range();
-+	fam10h_mmconf = amd_get_mmconfig_range(&fam10h_mmconf_res);
- 	/* need to take out mmconf range */
--	if (fam10h_mmconf_end) {
--		printk(KERN_DEBUG "Fam 10h mmconf [%llx, %llx]\n", fam10h_mmconf_start, fam10h_mmconf_end);
-+	if (fam10h_mmconf) {
-+		printk(KERN_DEBUG "Fam 10h mmconf %pR\n", fam10h_mmconf);
-+		fam10h_mmconf_start = fam10h_mmconf->start;
-+		fam10h_mmconf_end = fam10h_mmconf->end;
- 		subtract_range(range, RANGE_NUM, fam10h_mmconf_start,
- 				 fam10h_mmconf_end + 1);
-+	} else {
-+		fam10h_mmconf_start = 0;
-+		fam10h_mmconf_end = 0;
+--- a/security/integrity/ima/ima_queue.c
++++ b/security/integrity/ima/ima_queue.c
+@@ -114,6 +114,7 @@ int ima_add_template_entry(struct ima_te
+ 		memcpy(digest, entry->digest, sizeof digest);
+ 		if (ima_lookup_digest_entry(digest)) {
+ 			audit_cause = "hash_exists";
++			result = -EEXIST;
+ 			goto out;
+ 		}
  	}
- 
- 	/* mmio resource */
 
 
