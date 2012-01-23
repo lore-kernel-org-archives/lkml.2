@@ -1,48 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab2AWWGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 17:06:08 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45605 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab2AWWGF (ORCPT
+	id S1754269Ab2AWWIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 17:08:39 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58726 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab2AWWIi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 17:06:05 -0500
-Date: Mon, 23 Jan 2012 22:07:20 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Roger Leigh <rleigh@codelibre.net>,
-        Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org
-Subject: Re: /etc/fstab.d yes or not
-Message-ID: <20120123220720.1b2e9663@pyramind.ukuu.org.uk>
-In-Reply-To: <ACD4236E-A309-465F-8789-DA3A5B648313@mit.edu>
-References: <20120120140444.GC13157@x2.net.home>
-	<20120120154912.GK8797@codelibre.net>
-	<CAPXgP13a9v+f1uNdpe-c+aApLfLpgn15b1-gZxRPd0wMvU=B-Q@mail.gmail.com>
-	<20120120162220.GN8797@codelibre.net>
-	<CAPXgP11pvch92n1=mMfDsMLoGZMG8xq0e1juXyUO6mxFR6_GYg@mail.gmail.com>
-	<ACD4236E-A309-465F-8789-DA3A5B648313@mit.edu>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jan 2012 17:08:38 -0500
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 23 Jan 2012 15:08:14 -0700
+X-Google-Sender-Auth: Bhjd2QiDH9POFz1PCZ6v3ABjB9o
+Message-ID: <CACxGe6tTMSR1sRTg2qGLBD-a=M7ZHErOm_7F_kfir16ojsD=Sg@mail.gmail.com>
+Subject: RFC v2 irq_domain rework posted to linux-kernel. (Was: [RFCv2 00/14])
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
+        benh@kernel.crashing.org, Shawn Guo <shawn.guo@linaro.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jan 2012 08:55:21 -0500
-Theodore Tso <tytso@MIT.EDU> wrote:
+On Mon, Jan 23, 2012 at 2:53 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 01/23/2012 03:07 PM, Grant Likely wrote:
+>>
+>> Hey everyone,
+>>
+>> Here's the second RFC for the irq_domain patches.  I could use some
+>> help testing now.  I still expect there will be a few bugs.  The
+>> series is based on v3.3-rc1, and I've pushed it out to my git server:
+>>
+>> git://git.secretlab.ca/git/linux-2.6.git irqdomain/next
+>
+> Can you post to linux-arm-kernel too so people are aware of this work
+> and stop posting dead-end irqdomain patches.
 
-> I am extremely dubious about systemd, and would much rather it not be on any system that *I* run (and using UUID's to identify kernel notification is just whacko) , but I have to agree with Kay in that /etc/fstab.d is Just Wrong.   The /etc/fstab file is parsed by many programs, shell scripts, and not just the ones in util-linux.   We should consider it an ABI, and not mess with it.
+Oops, I had intended to do so.  Apparently I forgot to set the subject
+line of the cover letter too.  :-(  I don't want to irritate folks
+with an immediate repost of the whole series, but I'm cc'ing the
+linux-arm-kernel list on this email.  I'll repost a v3 and include
+linux-arm-kernel before I ask Stephen to pull this stuff into
+linux-next.
 
-Pedantically speaking /etc/fstab is not API, getmntent is API.
+For anyone who is doing irq_domain work, please be aware of these
+patches that are probably going to be merged for v3.4.  You'll need to
+coordinate with me before your patches hit linux-next, otherwise you
+will have a build failure.  The patches can be found here:
 
-In practical terms though it would be very 'interesting' to implement
-getmentent with an fstab.d, if not down right impossible because the
-argument is a FILE *.
+http://thread.gmane.org/gmane.linux.kernel/1242692
 
-So with a good coding hat on - please don't consider fstab API, it's got
-a programming interface 8). Otherwise I agree fstab.d is wrong.
+g.
 
-Alan
+>
+> I tested what you had as of this morning and it works fine for me. Looks
+> like the only diff is the VExpress code. I'm working on rebasing my
+> domain support for generic irqchip now.
+>
+> Rob
+>
+>> On Wed, Jan 11, 2012 at 1:22 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>> Here are the patches that I've been working on to finish up the creation
+>>> of the generic irq_domain infrastructure.
+>>>
+>>> I'm taking a different approach that I originally intended.
+>>> Originally I intended to start with the basic design of irq_host from
+>>> powerpc, but there were some things about the implementation that I
+>>> didn't like, so I was going to reimplement those bits and then migrate
+>>> powerpc over to use it.  That was a mistake and would have resulted in
+>>> a lot more work.  Instead, I should have started with the powerpc
+>>> irq_host code, moved it to a common location, and then reworked it in
+>>> place.  The powerpc code is working and well tested.  It is a lot less
+>>> risky to use it as the starting point with a nicely bisectable series
+>>> of changes to make it do what other architectures need.
+>>
+>> [RFCv2 01/14] irq_domain: add documentation and MAINTAINERS entry.
+>> [RFCv2 02/14] dt: Make irqdomain less verbose
+>> [RFCv2 03/14] irq_domain: Make irq_domain structure match powerpc's
+>> [RFCv2 04/14] irq_domain: convert microblaze from irq_host to
+>> [RFCv2 05/14] irq_domain/powerpc: Use common irq_domain structure
+>> [RFCv2 06/14] irq_domain/powerpc: eliminate irq_map; use
+>> [RFCv2 07/14] irq_domain/powerpc: Eliminate virq_is_host()
+>> [RFCv2 08/14] irq_domain: Move irq_domain code from powerpc to
+>> [RFCv2 09/14] irqdomain: remove NO_IRQ from irq domain code
+>> [RFCv2 10/14] irq_domain: Remove references to old irq_host names
+>> [RFCv2 11/14] irq_domain: Replace irq_alloc_host() with
+>> [RFCv2 12/14] irq_domain: Add support for base irq and hwirq in
+>> [RFCv2 13/14] irq_domain: Remove 'new' irq_domain in favour of the
+>> [RFCv2 14/14] irq_domain: Remove irq_domain_add_simple()
+>>
+>>  Documentation/IRQ-domain.txt                     |  113 ++++
+>>  MAINTAINERS                                      |    9 +
+>>  arch/arm/common/gic.c                            |   97 ++--
+>>  arch/arm/common/vic.c                            |   16 +-
+>>  arch/arm/include/asm/hardware/gic.h              |    4 +-
+>>  arch/arm/include/asm/hardware/vic.h              |    2 +
+>>  arch/arm/mach-exynos/common.c                    |    2 +-
+>>  arch/arm/mach-imx/mach-imx6q.c                   |    3 +-
+>>  arch/arm/mach-msm/board-msm8x60.c                |    8 +-
+>>  arch/arm/mach-mx5/imx51-dt.c                     |    4 +-
+>>  arch/arm/mach-mx5/imx53-dt.c                     |    4 +-
+>>  arch/arm/mach-omap2/board-generic.c              |    2 +-
+>>  arch/arm/mach-prima2/irq.c                       |    2 +-
+>>  arch/arm/mach-versatile/core.c                   |    5 +-
+>>  arch/microblaze/include/asm/irq.h                |    4 +-
+>>  arch/microblaze/kernel/irq.c                     |    2 +-
+>>  arch/microblaze/kernel/setup.c                   |    2 -
+>>  arch/powerpc/Kconfig                             |    1 +
+>>  arch/powerpc/include/asm/ehv_pic.h               |    2 +-
+>>  arch/powerpc/include/asm/i8259.h                 |    2 +-
+>>  arch/powerpc/include/asm/irq.h                   |  247 +-------
+>>  arch/powerpc/include/asm/mpic.h                  |    2 +-
+>>  arch/powerpc/include/asm/xics.h                  |    2 +-
+>>  arch/powerpc/kernel/irq.c                        |  617 +------------------
+>>  arch/powerpc/platforms/512x/mpc5121_ads_cpld.c   |   12 +-
+>>  arch/powerpc/platforms/52xx/media5200.c          |   15 +-
+>>  arch/powerpc/platforms/52xx/mpc52xx_gpt.c        |   16 +-
+>>  arch/powerpc/platforms/52xx/mpc52xx_pic.c        |   12 +-
+>>  arch/powerpc/platforms/82xx/pq2ads-pci-pic.c     |   14 +-
+>>  arch/powerpc/platforms/85xx/socrates_fpga_pic.c  |   15 +-
+>>  arch/powerpc/platforms/86xx/gef_pic.c            |   15 +-
+>>  arch/powerpc/platforms/cell/axon_msi.c           |   29 +-
+>>  arch/powerpc/platforms/cell/beat_interrupt.c     |   16 +-
+>>  arch/powerpc/platforms/cell/interrupt.c          |   16 +-
+>>  arch/powerpc/platforms/cell/spider-pic.c         |   14 +-
+>>  arch/powerpc/platforms/embedded6xx/flipper-pic.c |   30 +-
+>>  arch/powerpc/platforms/embedded6xx/hlwd-pic.c    |   35 +-
+>>  arch/powerpc/platforms/iseries/irq.c             |   11 +-
+>>  arch/powerpc/platforms/powermac/pic.c            |   15 +-
+>>  arch/powerpc/platforms/powermac/smp.c            |    9 +-
+>>  arch/powerpc/platforms/ps3/interrupt.c           |   11 +-
+>>  arch/powerpc/platforms/wsp/opb_pic.c             |   15 +-
+>>  arch/powerpc/sysdev/cpm1.c                       |    9 +-
+>>  arch/powerpc/sysdev/cpm2_pic.c                   |   11 +-
+>>  arch/powerpc/sysdev/ehv_pic.c                    |   14 +-
+>>  arch/powerpc/sysdev/fsl_msi.c                    |   10 +-
+>>  arch/powerpc/sysdev/fsl_msi.h                    |    2 +-
+>>  arch/powerpc/sysdev/i8259.c                      |   15 +-
+>>  arch/powerpc/sysdev/ipic.c                       |   15 +-
+>>  arch/powerpc/sysdev/ipic.h                       |    2 +-
+>>  arch/powerpc/sysdev/mpc8xx_pic.c                 |   11 +-
+>>  arch/powerpc/sysdev/mpic.c                       |   17 +-
+>>  arch/powerpc/sysdev/mpic_msi.c                   |    2 +-
+>>  arch/powerpc/sysdev/mv64x60_pic.c                |   11 +-
+>>  arch/powerpc/sysdev/qe_lib/qe_ic.c               |   13 +-
+>>  arch/powerpc/sysdev/qe_lib/qe_ic.h               |    2 +-
+>>  arch/powerpc/sysdev/tsi108_pci.c                 |   13 +-
+>>  arch/powerpc/sysdev/uic.c                        |   14 +-
+>>  arch/powerpc/sysdev/xics/xics-common.c           |   25 +-
+>>  arch/powerpc/sysdev/xilinx_intc.c                |   19 +-
+>>  drivers/gpio/gpio-mpc8xxx.c                      |   15 +-
+>>  drivers/mfd/twl-core.c                           |   12 +-
+>>  include/linux/irqdomain.h                        |  180 ++++--
+>>  kernel/irq/irqdomain.c                           |  757 ++++++++++++++++++----
+>>  64 files changed, 1207 insertions(+), 1414 deletions(-)
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
