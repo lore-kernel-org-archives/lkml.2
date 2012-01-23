@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab2AWOZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 09:25:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41849 "EHLO
+	id S1753000Ab2AWOZV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 09:25:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64987 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab2AWOYn (ORCPT
+	with ESMTP id S1752691Ab2AWOYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jan 2012 09:24:43 -0500
-Message-Id: <20120123142436.181674896@openvz.org>
+Message-Id: <20120123142436.258631438@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 23 Jan 2012 18:20:37 +0400
+Date: Mon, 23 Jan 2012 18:20:38 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -20,264 +20,303 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Andrew Vagin <avagin@openvz.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Alexey Dobriyan <adobriyan@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v8
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
 References: <20120123142036.025893883@openvz.org>
-Content-Disposition: inline; filename=fs-proc-tid-children-12
+Content-Disposition: inline; filename=sys-kcmp-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we do checkpoint of a task we need to know the list of children
-the task, has but there is no easy and fast way to generate reverse
-parent->children chain from arbitrary <pid> (while a parent pid is
-provided in "PPid" field of /proc/<pid>/status).
+While doing the checkpoint-restore in the userspace one need to determine
+whether various kernel objects (like mm_struct-s of file_struct-s) are shared
+between tasks and restore this state.
 
-So instead of walking over all pids in the system (creating one big process
-tree in memory, just to figure out which children a task has) -- we add
-explicit /proc/<pid>/task/<tid>/children entry, because the kernel already has
-this kind of information but it is not yet exported.
+The 2nd step can be solved by using appropriate CLONE_ flags and the unshare
+syscall, while there's currently no ways for solving the 1st one.
 
-This is a first level children, not the whole process tree.
+One of the ways for checking whether two tasks share e.g. mm_struct is to
+provide some mm_struct ID of a task to its proc file, but showing such
+info considered to be not that good for security reasons.
 
-v2:
- - Kame suggested to use a separated /proc/<pid>/children entry
-   instead of poking /proc/<pid>/status
- - Andew suggested to use rcu facility instead of locking
-   tasklist_lock
- - Tejun pointed that non-seekable seq file might not be
-   enough for tasks with large number of children
+Thus after some debates we end up in conclusion that using that named
+'comparision' syscall might be the best candidate. So here is it --
+__NR_kcmp.
 
-v3:
- - To be on a safe side use %lu format for pid_t printing
+It takes up to 5 agruments - the pids of the two tasks (which
+characteristics should be compared), the comparision type and
+(in case of comparision of files) two file descriptors.
 
-v4:
- - New line get printed when sequence ends not at seq->stop,
-   a nit pointed by Tejun
- - Documentation update
- - tasklist_lock is back, Oleg pointed that ->children list
-   is actually not rcu-safe
-
-v5:
- - Oleg suggested to make /proc/<pid>/task/<tid>/children
-   instead of global /proc/<pid>/children, which eliminates
-   hardness related to threads and children migration, and
-   allows patch to be a way simplier.
-
-v6:
- - Drop ptrace_may_access tests, pids are can be found anyway
-   so nothing to protect here.
- - Update comments and docs, pointed by Oleg.
-
-v7:
- - Use get_pid over proc-pid directly, to simplify
-   code, pointed by Oleg.
-
-v8:
- - Obtain a starting pid from the proc's inode directly.
+At moment only x86 is supported.
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Andrey Vagin <avagin@openvz.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Glauber Costa <glommer@parallels.com>
+CC: Andi Kleen <andi@firstfloor.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Matt Helsley <matthltc@us.ibm.com>
+CC: Pekka Enberg <penberg@kernel.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Vasiliy Kulikov <segoon@openwall.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Valdis.Kletnieks@vt.edu
 ---
- Documentation/filesystems/proc.txt |   18 +++++
- fs/proc/array.c                    |  123 +++++++++++++++++++++++++++++++++++++
- fs/proc/base.c                     |    1 
- fs/proc/internal.h                 |    1 
- 4 files changed, 143 insertions(+)
+ arch/x86/include/asm/kcmp.h      |   17 ++++
+ arch/x86/include/asm/syscalls.h  |    4 
+ arch/x86/kernel/Makefile         |    1 
+ arch/x86/kernel/kcmp.c           |  163 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/syscalls/syscall_32.tbl |    1 
+ arch/x86/syscalls/syscall_64.tbl |    1 
+ 6 files changed, 187 insertions(+)
 
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
+Index: linux-2.6.git/arch/x86/include/asm/kcmp.h
 ===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -40,6 +40,7 @@ Table of Contents
-   3.4	/proc/<pid>/coredump_filter - Core dump filtering settings
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
-+  3.7   /proc/<pid>/task/<tid>/children - Information about task children
- 
-   4	Configuring procfs
-   4.1	Mount options
-@@ -1549,6 +1550,23 @@ then the kernel's TASK_COMM_LEN (current
- comm value.
- 
- 
-+3.7	/proc/<pid>/task/<tid>/children - Information about task children
-+-------------------------------------------------------------------------
-+This file provides a fast way to retrieve first level children pids
-+of a task pointed by <pid>/<tid> pair. The format is a space separated
-+stream of pids.
+--- /dev/null
++++ linux-2.6.git/arch/x86/include/asm/kcmp.h
+@@ -0,0 +1,17 @@
++#ifndef _LINUX_KCMP_H
++#define _LINUX_KCMP_H
 +
-+Note the "first level" here -- if a child has own children they will
-+not be listed here, one needs to read /proc/<children-pid>/task/<tid>/children
-+to obtain the descendants.
++/* Comparision type */
++enum {
++	KCMP_FILE,
++	KCMP_VM,
++	KCMP_FILES,
++	KCMP_FS,
++	KCMP_SIGHAND,
++	KCMP_IO,
++	KCMP_SYSVSEM,
 +
-+Since this interface is intended to be fast and cheap it doesn't
-+guarantee to provide precise results and some children might be
-+skipped, especially if they've exited right after we printed their
-+pids, so one need to either stop or freeze processes being inspected
-+if precise results are needed.
-+
-+
- ------------------------------------------------------------------------------
- Configuring procfs
- ------------------------------------------------------------------------------
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -547,3 +547,126 @@ int proc_pid_statm(struct seq_file *m, s
- 
- 	return 0;
- }
-+
-+static struct pid *
-+get_children_pid(struct inode *inode, struct pid *pid_prev, loff_t pos)
-+{
-+	struct task_struct *start, *task;
-+	struct pid *pid = NULL;
-+
-+	read_lock(&tasklist_lock);
-+
-+	start = pid_task(proc_pid(inode), PIDTYPE_PID);
-+	if (!start)
-+		goto out;
-+
-+	/*
-+	 * Lets try to continue searching first, this gives
-+	 * us significant speedup on children-rich processes.
-+	 */
-+	if (pid_prev) {
-+		task = pid_task(pid_prev, PIDTYPE_PID);
-+		if (task && task->real_parent == start &&
-+		    !(list_empty(&task->sibling))) {
-+			if (list_is_last(&task->sibling, &start->children))
-+				goto out;
-+			task = list_first_entry(&task->sibling,
-+						struct task_struct, sibling);
-+			pid = get_pid(task_pid(task));
-+			goto out;
-+		}
-+	}
-+
-+	/*
-+	 * Slow search case.
-+	 *
-+	 * We might miss some children here if children
-+	 * are exited while we were not holding the lock,
-+	 * but it was never promised to be accurate that
-+	 * much.
-+	 *
-+	 * "Just suppose that the parent sleeps, but N children
-+	 *  exit after we printed their tids. Now the slow paths
-+	 *  skips N extra children, we miss N tasks." (c)
-+	 *
-+	 * So one need to stop or freeze the leader and all
-+	 * its children to get a precise result.
-+	 */
-+	list_for_each_entry(task, &start->children, sibling) {
-+		if (pos-- == 0) {
-+			pid = get_pid(task_pid(task));
-+			break;
-+		}
-+	}
-+
-+out:
-+	read_unlock(&tasklist_lock);
-+	return pid;
-+}
-+
-+static int children_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct inode *inode = seq->private;
-+	pid_t pid;
-+
-+	pid = pid_nr_ns(v, inode->i_sb->s_fs_info);
-+	return seq_printf(seq, " %d", pid);
-+}
-+
-+static void *children_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	return get_children_pid(seq->private, NULL, *pos);
-+}
-+
-+static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct pid *pid = NULL;
-+
-+	pid = get_children_pid(seq->private, v, *pos + 1);
-+	if (!pid)
-+		seq_printf(seq, "\n");
-+	put_pid(v);
-+
-+	++*pos;
-+	return pid;
-+}
-+
-+static void children_seq_stop(struct seq_file *seq, void *v)
-+{
-+	put_pid(v);
-+}
-+
-+static const struct seq_operations children_seq_ops = {
-+	.start	= children_seq_start,
-+	.next	= children_seq_next,
-+	.stop	= children_seq_stop,
-+	.show	= children_seq_show,
++	KCMP_TYPES,
 +};
 +
-+static int children_seq_open(struct inode *inode, struct file *file)
++#endif /* _LINUX_KCMP_H */
+Index: linux-2.6.git/arch/x86/include/asm/syscalls.h
+===================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/syscalls.h
++++ linux-2.6.git/arch/x86/include/asm/syscalls.h
+@@ -42,6 +42,10 @@ long sys_sigaltstack(const stack_t __use
+ asmlinkage int sys_set_thread_area(struct user_desc __user *);
+ asmlinkage int sys_get_thread_area(struct user_desc __user *);
+ 
++/* kenrel/kcmp.c */
++asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
++			 unsigned long idx1, unsigned long idx2);
++
+ /* X86_32 only */
+ #ifdef CONFIG_X86_32
+ 
+Index: linux-2.6.git/arch/x86/kernel/Makefile
+===================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/Makefile
++++ linux-2.6.git/arch/x86/kernel/Makefile
+@@ -34,6 +34,7 @@ obj-y			+= alternative.o i8253.o pci-nom
+ obj-y			+= tsc.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
++obj-y			+= kcmp.o
+ 
+ obj-y				+= trampoline.o trampoline_$(BITS).o
+ obj-y				+= process.o
+Index: linux-2.6.git/arch/x86/kernel/kcmp.c
+===================================================================
+--- /dev/null
++++ linux-2.6.git/arch/x86/kernel/kcmp.c
+@@ -0,0 +1,163 @@
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <linux/fdtable.h>
++#include <linux/string.h>
++#include <linux/random.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/cache.h>
++#include <linux/bug.h>
++#include <linux/err.h>
++
++#include <asm/unistd.h>
++#include <asm/kcmp.h>
++
++static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
++
++static long kptr_obfuscate(long v, int type)
 +{
-+	struct seq_file *m;
-+	int ret;
++	return (v + cookies[type][0]) ^ cookies[type][1];
++}
 +
-+	ret = seq_open(file, &children_seq_ops);
-+	if (ret)
-+		return ret;
++/*
++ * 0 - equal
++ * 1 - less than
++ * 2 - greater than
++ * 3 - not equal but ordering unavailable
++ */
++static int kcmp_ptr(long v1, long v2, int type)
++{
++	long ret;
 +
-+	m = file->private_data;
-+	m->private = inode;
++	ret = kptr_obfuscate(v1, type) - kptr_obfuscate(v2, type);
++
++	return (ret < 0) | ((ret > 0) << 1);
++}
++
++#define KCMP_TASK_PTR(task1, task2, member, type)	\
++	kcmp_ptr((long)(task1)->member,			\
++		 (long)(task2)->member,			\
++		 type)
++
++#define KCMP_PTR(ptr1, ptr2, type)			\
++	kcmp_ptr((long)ptr1, (long)ptr2, type)
++
++/* A caller must be sure the task is presented in memory */
++static struct file *
++get_file_raw_ptr(struct task_struct *task, unsigned int idx)
++{
++	struct fdtable *fdt;
++	struct file *file;
++
++	spin_lock(&task->files->file_lock);
++	fdt = files_fdtable(task->files);
++	if (idx < fdt->max_fds)
++		file = fdt->fd[idx];
++	else
++		file = NULL;
++	spin_unlock(&task->files->file_lock);
++
++	return file;
++}
++
++SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
++		unsigned long, idx1, unsigned long, idx2)
++{
++	struct task_struct *task1;
++	struct task_struct *task2;
++	int ret = 0;
++
++	rcu_read_lock();
++
++	task1 = find_task_by_vpid(pid1);
++	if (!task1) {
++		rcu_read_unlock();
++		return -ESRCH;
++	}
++
++	task2 = find_task_by_vpid(pid2);
++	if (!task2) {
++		put_task_struct(task1);
++		rcu_read_unlock();
++		return -ESRCH;
++	}
++
++	get_task_struct(task1);
++	get_task_struct(task2);
++
++	rcu_read_unlock();
++
++	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
++	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
++		ret = -EACCES;
++		goto err;
++	}
++
++	/*
++	 * Note for all cases but the KCMP_FILE we
++	 * don't take any locks in a sake of speed.
++	 */
++
++	switch (type) {
++	case KCMP_FILE: {
++		struct file *filp1, *filp2;
++
++		filp1 = get_file_raw_ptr(task1, idx1);
++		filp2 = get_file_raw_ptr(task2, idx2);
++
++		if (filp1 && filp2)
++			ret = KCMP_PTR(filp1, filp2, KCMP_FILE);
++		else
++			ret = -ENOENT;
++		break;
++	}
++	case KCMP_VM:
++		ret = KCMP_TASK_PTR(task1, task2, mm, KCMP_VM);
++		break;
++	case KCMP_FILES:
++		ret = KCMP_TASK_PTR(task1, task2, files, KCMP_FILES);
++		break;
++	case KCMP_FS:
++		ret = KCMP_TASK_PTR(task1, task2, fs, KCMP_FS);
++		break;
++	case KCMP_SIGHAND:
++		ret = KCMP_TASK_PTR(task1, task2, sighand, KCMP_SIGHAND);
++		break;
++	case KCMP_IO:
++		ret = KCMP_TASK_PTR(task1, task2, io_context, KCMP_IO);
++		break;
++	case KCMP_SYSVSEM:
++#ifdef CONFIG_SYSVIPC
++		ret = KCMP_TASK_PTR(task1, task2, sysvsem.undo_list, KCMP_SYSVSEM);
++#else
++		ret = -ENOENT;
++		goto err;
++#endif
++		break;
++	default:
++		ret = -EINVAL;
++		goto err;
++	}
++
++err:
++	put_task_struct(task1);
++	put_task_struct(task2);
 +
 +	return ret;
 +}
 +
-+int children_seq_release(struct inode *inode, struct file *file)
++static __init int kcmp_cookie_init(void)
 +{
-+	seq_release(inode, file);
++	int i, j;
++
++	for (i = 0; i < KCMP_TYPES; i++) {
++		for (j = 0; j < 2; j++) {
++			get_random_bytes(&cookies[i][j],
++					 sizeof(cookies[i][j]));
++			cookies[i][j] |= (~(~0UL >>  1) | 1);
++		}
++	}
++
 +	return 0;
 +}
-+
-+const struct file_operations proc_tid_children_operations = {
-+	.open    = children_seq_open,
-+	.read    = seq_read,
-+	.llseek  = seq_lseek,
-+	.release = children_seq_release,
-+};
-Index: linux-2.6.git/fs/proc/base.c
++late_initcall(kcmp_cookie_init);
+Index: linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
 ===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -3384,6 +3384,7 @@ static const struct pid_entry tid_base_s
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
- 	REG("maps",      S_IRUGO, proc_maps_operations),
-+	REG("children",  S_IRUGO, proc_tid_children_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps", S_IRUGO, proc_numa_maps_operations),
- #endif
-Index: linux-2.6.git/fs/proc/internal.h
+--- linux-2.6.git.orig/arch/x86/syscalls/syscall_32.tbl
++++ linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
+@@ -355,3 +355,4 @@
+ 346	i386	setns			sys_setns
+ 347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
+ 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
++349	i386	kcmp			sys_kcmp
+Index: linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
 ===================================================================
---- linux-2.6.git.orig/fs/proc/internal.h
-+++ linux-2.6.git/fs/proc/internal.h
-@@ -53,6 +53,7 @@ extern int proc_pid_statm(struct seq_fil
- 				struct pid *pid, struct task_struct *task);
- extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
- 
-+extern const struct file_operations proc_tid_children_operations;
- extern const struct file_operations proc_maps_operations;
- extern const struct file_operations proc_numa_maps_operations;
- extern const struct file_operations proc_smaps_operations;
+--- linux-2.6.git.orig/arch/x86/syscalls/syscall_64.tbl
++++ linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
+@@ -318,3 +318,4 @@
+ 309	64	getcpu			sys_getcpu
+ 310	64	process_vm_readv	sys_process_vm_readv
+ 311	64	process_vm_writev	sys_process_vm_writev
++312	64	kcmp			sys_kcmp
 
