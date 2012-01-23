@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab2AWXtR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42598 "EHLO mx2.suse.de"
+	id S1756095Ab2AXAAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:00:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42588 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755925Ab2AWXtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:49:15 -0500
+	id S1755991Ab2AWXtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:49:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:25 2012
-Message-Id: <20120123234025.251212828@clark.kroah.org>
+Message-Id: <20120123234025.167002322@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:13 -0800
+Date: Mon, 23 Jan 2012 15:39:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roberto Sassu <roberto.sassu@polito.it>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [27/90] ima: free duplicate measurement memory
+        alan@lxorguk.ukuu.org.uk, Ian Campbell <ian.campbell@citrix.com>,
+        Haogang Chen <haogangchen@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [26/90] xen/xenbus: Reject replies with payload > XENSTORE_PAYLOAD_MAX.
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roberto Sassu <roberto.sassu@polito.it>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-commit 45fae7493970d7c45626ccd96d4a74f5f1eea5a9 upstream.
+commit 9e7860cee18241633eddb36a4c34c7b61d8cecbc upstream.
 
-Info about new measurements are cached in the iint for performance.  When
-the inode is flushed from cache, the associated iint is flushed as well.
-Subsequent access to the inode will cause the inode to be re-measured and
-will attempt to add a duplicate entry to the measurement list.
+Haogang Chen found out that:
 
-This patch frees the duplicate measurement memory, fixing a memory leak.
+ There is a potential integer overflow in process_msg() that could result
+ in cross-domain attack.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+ 	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
+
+ When a malicious guest passes 0xffffffff in msg->hdr.len, the subsequent
+ call to xb_read() would write to a zero-length buffer.
+
+ The other end of this connection is always the xenstore backend daemon
+ so there is no guest (malicious or otherwise) which can do this. The
+ xenstore daemon is a trusted component in the system.
+
+ However this seem like a reasonable robustness improvement so we should
+ have it.
+
+And Ian when read the API docs found that:
+        The payload length (len field of the header) is limited to 4096
+        (XENSTORE_PAYLOAD_MAX) in both directions.  If a client exceeds the
+        limit, its xenstored connection will be immediately killed by
+        xenstored, which is usually catastrophic from the client's point of
+        view.  Clients (particularly domains, which cannot just reconnect)
+        should avoid this.
+
+so this patch checks against that instead.
+
+This also avoids a potential integer overflow pointed out by Haogang Chen.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Haogang Chen <haogangchen@gmail.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/integrity/ima/ima_api.c   |    4 ++--
- security/integrity/ima/ima_queue.c |    1 +
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/xen/xenbus/xenbus_xs.c     |    6 ++++++
+ include/xen/interface/io/xs_wire.h |    3 +++
+ 2 files changed, 9 insertions(+)
 
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -177,8 +177,8 @@ void ima_store_measurement(struct ima_ii
- 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
- 
- 	result = ima_store_template(entry, violation, inode);
--	if (!result)
-+	if (!result || result == -EEXIST)
- 		iint->flags |= IMA_MEASURED;
--	else
-+	if (result < 0)
- 		kfree(entry);
- }
---- a/security/integrity/ima/ima_queue.c
-+++ b/security/integrity/ima/ima_queue.c
-@@ -114,6 +114,7 @@ int ima_add_template_entry(struct ima_te
- 		memcpy(digest, entry->digest, sizeof digest);
- 		if (ima_lookup_digest_entry(digest)) {
- 			audit_cause = "hash_exists";
-+			result = -EEXIST;
- 			goto out;
- 		}
+--- a/drivers/xen/xenbus/xenbus_xs.c
++++ b/drivers/xen/xenbus/xenbus_xs.c
+@@ -801,6 +801,12 @@ static int process_msg(void)
+ 		goto out;
  	}
+ 
++	if (msg->hdr.len > XENSTORE_PAYLOAD_MAX) {
++		kfree(msg);
++		err = -EINVAL;
++		goto out;
++	}
++
+ 	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
+ 	if (body == NULL) {
+ 		kfree(msg);
+--- a/include/xen/interface/io/xs_wire.h
++++ b/include/xen/interface/io/xs_wire.h
+@@ -84,4 +84,7 @@ struct xenstore_domain_interface {
+     XENSTORE_RING_IDX rsp_cons, rsp_prod;
+ };
+ 
++/* Violating this is very bad.  See docs/misc/xenstore.txt. */
++#define XENSTORE_PAYLOAD_MAX 4096
++
+ #endif /* _XS_WIRE_H */
 
 
