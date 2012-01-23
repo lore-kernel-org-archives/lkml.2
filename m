@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab2AWXmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:42:40 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:43155 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752363Ab2AWXmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:42:38 -0500
-Date: Mon, 23 Jan 2012 16:47:09 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Edward Shishkin <edward@redhat.com>
-Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
-Message-ID: <20120123214709.GB17974@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Edward Shishkin <edward@redhat.com>
-References: <1325774407-28531-1-git-send-email-jack@suse.cz>
- <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
- <20120116160136.GC16431@quack.suse.cz>
- <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
- <20120117003613.GA28571@dastard>
- <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
- <20120123030422.GE15102@dastard>
+	id S1754128Ab2AWXm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:42:57 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:46776 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754012Ab2AWXmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:42:52 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] Power management fixes for 3.3
+Date: Tue, 24 Jan 2012 00:46:24 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <201201232244.19379.rjw@sisk.pl> <CA+55aFyDo34V5qtFPq5XQgZicFOeU7t6eEzuvbx20FS2+CwCNw@mail.gmail.com>
+In-Reply-To: <CA+55aFyDo34V5qtFPq5XQgZicFOeU7t6eEzuvbx20FS2+CwCNw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120123030422.GE15102@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201240046.24894.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 02:04:22PM +1100, Dave Chinner wrote:
+On Tuesday, January 24, 2012, Linus Torvalds wrote:
+> On Mon, Jan 23, 2012 at 1:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > (this actually is a signed tag, which I've tried to use for the first time
+> > ever, but hopefully it's OK).
 > 
-> Sure, but the buffer contents are dirty until the IO completes
-> successfully and what is on disk matches the contents of the buffer
-> in memory. It doesn't magically become clean when we clear the dirty
-> bit. We only clear the dirty bit before submitting the IO to stop
-> multiple callers from trying to submit it for write at the same
-> time. IOWs, the buffer dirty bit doesn't really track the dirty
-> state of the buffer correctly.
+> Looks fine. In the future, I'd suggest not adding things that are
+> computable to the tag message (ie shortlog and diffstat). They don't
+> really add any new information, unlike your own commentary.
 
-Doesn't BH_Lock prevent multple callers from submitting it for write
-at the same time?  If memory serves, one of the reasons why we cleared
-the dirty bit before submitting the write was because we allowed
-writers to dirty the buffer_head while the write was "in flight".  Of
-course, this is becomes problematic if we're trying to support DIF/DIX.
+Well, right.
 
-What if we simply disallow BH_Dirty from being set (and disallow the
-modification of the buffer) while the buffer is locked?  Then the
-dirty bit would indeed correctly track the state of the buffer
-correctly.
+> I edited those parts out from the merge message (it's still accessible
+> in the hidden tag information, of course, since the tag message is
+> part of what gets covered by the signature).
 
-> I can only assume that you didn't read what I said about how
-> different filesystems can (and do) handle write errors differently.
-> Indeed, even within a filesystem there can be different error
-> handling methods for different types of write IO errors (e.g.
-> transient vs unrecoverable).  Hence there are any number of valid
-> error handling strategies that can be added to the above list. One
-> size does not fit all...
+Thanks a lot and sorry for the additional work.
 
-That's another problem, which is that we need more context than just
-!uptodate.  We need to know what sort of write I/O errors occurred, so
-we can determine whether it's likely to be transient or permanent.
-
-> The thing is, transient write errors tend to be isolated and go away
-> when a retry occurs (think of IO timeouts when multipath failover
-> occurs). When non-isolated IO or unrecoverable problems occur (e.g.
-> no paths left to fail over onto), critical other metadata reads and
-> writes will fail and shut down the filesystem, thereby terminating
-> the "try forever" background writeback loop those delayed write
-> buffers may be in. So the truth is that "trying forever" on write
-> errors can handle a whole class of write IO errors very
-> effectively....
-
-So how does XFS decide whether a write should fail and shutdown the
-file system, or just "try forever"?
-
-						- Ted
+Rafael
