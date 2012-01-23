@@ -1,56 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab2AWP6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 10:58:54 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:48198 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2AWP6x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 10:58:53 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6597"; a="157242199"
-Date: Mon, 23 Jan 2012 07:58:51 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Harini Jayaraman <harinij@codeaurora.org>, grant.likely@secretlab.ca,
-        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kheitke@codeaurora.org,
-        spi-devel-general@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] spi: QUP based bus driver for Qualcomm MSM chipsets
-Message-ID: <20120123155851.GA25417@codeaurora.org>
-References: <y>
- <1321307907-31508-1-git-send-email-harinij@codeaurora.org>
- <20120123104220.GV1068@n2100.arm.linux.org.uk>
+	id S1753138Ab2AWQFI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 11:05:08 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:62467 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751690Ab2AWQFG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 11:05:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120123104220.GV1068@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120121165830.GA9216@elte.hu>
+References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
+	<CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
+	<20120121082857.GC32134@elte.hu>
+	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+	<20120121165830.GA9216@elte.hu>
+Date: Tue, 24 Jan 2012 01:05:05 +0900
+Message-ID: <CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
+From: Hitoshi Mitake <h.mitake@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        linux-kernel@vger.kernel.org, linux-nvme@infradead.org,
+        hpa@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 10:42:20AM +0000, Russell King - ARM Linux wrote:
-> Not specific to this patch, but I notice that you have in your headers:
-> 
-> In-Reply-To: <y>
-> References: <y>
-> 
-> This is rather annoying, because it means that anyone else who has the
-> same lines ends up having their messages attached to your messages as
-> part of the same thread.
-> 
-> I think you need to read the documentation for git-send-email again -
-> and check that you're using the arguments concerning message ids and
-> threading correctly.
+On Sun, Jan 22, 2012 at 01:58, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>
+>> On Sat, Jan 21, 2012 at 17:28, Ingo Molnar <mingo@elte.hu> wrote:
+>> >
+>> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>> >
+>> >> On Thu, Jan 19, 2012 at 5:01 PM, Matthew Wilcox
+>> >> <matthew.r.wilcox@intel.com> wrote:
+>> >> > The only places that uses readq/writeq are in the initialisation
+>> >> > path.  Since they're not performance critical, always use readl/writel.
+>> >>
+>> >> The arch rules are that i fthe architecture has readq/writeq, they
+>> >> will be #define'd (they may be inline functions, but there will be a
+>> >>
+>> >>   #define readq readq
+>> >>
+>> >> to make it visible to the preprocessor as well).
+>> >>
+>> >> So if you don't need the atomicity guarantees of a "real" readq, you
+>> >> can do this instead:
+>> >>
+>> >>   #ifndef readq
+>> >>   static inline u64 readq(void __iomem *addr)
+>> >>   {
+>> >>         return readl(addr) | (((u64) readl(addr + 4)) << 32LL);
+>> >>   }
+>> >>   #endif
+>> >>
+>> >> and then use readq() as if it existed.
+>> >>
+>> >> And I do think we should expose this in some generic manner. Because
+>> >> we currently don't, we already have that pattern copied in quite a few
+>> >> drivers.
+>> >>
+>> >> Maybe <asm-generic/io-nonatomic.h> or something? Making it
+>> >> clear that its not atomic, but avoiding the silly duplication
+>> >> we do now..
+>> >>
+>> >> This whole mess was introduced in commit dbee8a0affd5 ("x86:
+>> >> remove 32-bit versions of readq()/writeq()"), and it already
+>> >> talked about the problems but didn't help with the drivers
+>> >> that simply don't care.
+>> >>
+>> >> All the people in those threads were doing their
+>> >> self-satisfied "writeq is broken", without much acknowledging
+>> >> that 99% of users simply don't seem to care.
+>> >>
+>> >> "Occupy Writeq - We are the 99%"
+>> >
+>> > Agreed, and offering a generic facility for silly duplication
+>> > was the motivation of the original commit by Hitoshi Mitake.
+>> >
+>> > This:
+>> >
+>> > | The presense of a writeq() implementation on 32-bit x86 that
+>> > | splits the 64-bit write into two 32-bit writes turns out to
+>> > | break the mpt2sas driver (and in general is risky for drivers
+>> > | as was discussed in
+>> > |   <http://lkml.kernel.org/r/adaab6c1h7c.fsf@cisco.com>).
+>> >
+>> > is actually a mostly bogus statement and creates more problems
+>> > than it solves.
+>> >
+>> > Hitoshi-san, would you be interested in re-adding the generic
+>> > readq/writeq definitions in a slight variation to 2c5643b1c5, to
+>> > a separate io-nonatomic.h file, so that drivers that want it can
+>> > #include that file and be happy?
+>>
+>> It sounds nice. In the previous discussion, I suggested that
+>> chaning the name of non-atomic readq/writeq to
+>> readq_nonatomic/writeq_nonatomic. And James Bottomley
+>> replied that it is fine but not really very useful:
+>>
+>> https://lkml.org/lkml/2011/5/19/13
+>>
+>> The idea of providing non-atomic readq/writeq in the new file
+>> with the name which express non-atomicity clearly might be
+>> able to satisfy both of safety and usefulness.
+>>
+>> It will reduce the duplication of the definition. In addition
+>> readq/writeq users don't have to type the long symbols with
+>> _nonatomic suffix and can know non-atomicity from the name
+>> of header file.
+>>
+>> I'd like to hear opinions from James, Roland and folks who
+>> dislike non-atomic readq/writeq.
+>
+> Drivers that want the definition add this line to their driver:
+>
+> #include <asm/io-nonatomic.h>
+>
+> and then readq()/writeq() does the obvious thing. No need for
+> readq_nonatomic()/writeq_nonatomic() - that extra line declares
+> things clearly enough and cannot be added accidentally.
+>
 
-More specifically, when git-send-email promps for an email address or
-a message id, realize it's not asking a yes or not question.  The
-default it prints in brackets is what you get if you press enter.  If
-you press 'y', the reply will be from 'y' as seen here.
+I wrote the patch which adds the new file include/asm-generic/io-nonatomic.h.
+io-nonatomic.h provides non-atomic version readq()/writeq().
 
-David
+The patch also removes some duplicated readq()/writeq() definitions
+which are added in the commit: dbee8a0affd5e6eaa5d7c816c4bc233f6f110f50.
+The commit was made by Roland Dreier and removed readq()/writeq()
+from arch/x86/include/asm.h.
 
+If I find no error after the building allyesconfig and allmodconfig test,
+I'll send the patch for review. This may take a few hour.
+
+BTW, I placed io-nonatomic.h under include/asm-generic/ because
+non-atomic version readq()/writeq() is architecture dependent.
+If you have comments on this point, I'd like to hear.
+
+Thanks,
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Hitoshi Mitake
+h.mitake@gmail.com
