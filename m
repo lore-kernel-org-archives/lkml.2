@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab2AWLUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 06:20:34 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:54960 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab2AWLUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 06:20:33 -0500
-Date: Mon, 23 Jan 2012 12:20:22 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: vmscan: ensure reclaiming pages on the lru lists of
- zone
-Message-ID: <20120123112022.GB1707@cmpxchg.org>
-References: <CAJd=RBC8dCGgqXqP+yjW2+pVoSeFXwXfjx8DLHhMuY8goOadZw@mail.gmail.com>
- <CAJd=RBBqp3bMGwFc14BJ7+=KsfO0gLnrnXwbRdLDYOJDdvbptA@mail.gmail.com>
+	id S1753033Ab2AWLVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 06:21:47 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56272 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750904Ab2AWLVq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 06:21:46 -0500
+Date: Mon, 23 Jan 2012 11:21:43 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v2] ASoC: da7210: Add support for PLL and SRM
+Message-ID: <20120123112142.GA29465@opensource.wolfsonmicro.com>
+References: <1327313241.31594.12.camel@matrix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJd=RBBqp3bMGwFc14BJ7+=KsfO0gLnrnXwbRdLDYOJDdvbptA@mail.gmail.com>
+In-Reply-To: <1327313241.31594.12.camel@matrix>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 12:47:34AM +0800, Hillf Danton wrote:
-> Hi all
-> 
-> For easy review, it is re-prepared based on 3.3-rc1.
-> 
-> Thanks
-> Hillf
-> 
-> ===cut please===
-> From: Hillf Danton <dhillf@gmail.com>
-> Subject: [PATCH] mm: vmscan: ensure reclaiming pages on the lru lists of zone
-> 
-> While iterating over memory cgroup hierarchy, pages are reclaimed from each
-> mem cgroup, and reclaim terminates after a full round-trip. It is possible
-> that no pages on the lru lists of given zone are reclaimed, as termination
-> is checked after the reclaiming function.
-> 
-> Mem cgroup iteration is rearranged a bit to make sure that pages are reclaimed
-> from both mem cgroups and zone.
+On Mon, Jan 23, 2012 at 03:37:21PM +0530, Ashish Chavan wrote:
 
-It's not only possible, it's guaranteed: with the memory controller
-enabled, the global per-zone lru lists are empty.
+> +/* PLL out frequency values */
+> +#define FOUT_2822400		2822400
+> +#define FOUT_3072000		3072000
 
-Pages used to be linked on the global per-zone AND the memcg per-zone
-lru lists.  Nowadays, they only sit on the memcg per-zone lists, which
-is why global reclaim does a hierarchy walk.
+It's difficult to see what these defines are adding.
 
-The global per-zone lists are just an artifact for when the memory
-controller is not available.  The plan is to make root_mem_cgroup
-available at all times, even without the memory controller.
+> +static const u32 da7210_fout_2822400_div[][DIV_CNT + 1] = {
+> +	{ 12000000, 0xE8, 0x6C, 0x2, },		/* MCLK=12Mhz    Fs=44.1Khz */
 
-So I'm afraid your patch only adds a round of scanning a known-to-be
-empty lruvec.  NAK.
+You're still using magic numbers to find the dividers, and clearly the
+same rate comment should apply to the whole table not specific entries.
+
+> +		/* In PLL master mode, use master mode PLL dividers */
+> +		if (fout == FOUT_2822400) {
+
+
+> +		} else if (fout == FOUT_3072000) {
+
+This looks like a switch statement and...
+
+> +			for (row_idx = 0; row_idx < FREF_CNT; row_idx++) {
+
+ARRAY_SIZE()
+
+> +				if (fref == da7210_fout_3072000_div[row_idx]
+> +								[FREF_IDX]) {
+> +					pll_div1 =
+> +						da7210_fout_3072000_div[row_idx]
+> +						[DIV1_IDX];
+
+...this code is shared between both branches (as well as the SRM case)
+and should be factored out between them.
