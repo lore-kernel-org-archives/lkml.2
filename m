@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab2AWVex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 16:34:53 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60628 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953Ab2AWVew (ORCPT
+	id S1754436Ab2AWVfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 16:35:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44768 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754327Ab2AWVfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 16:34:52 -0500
+	Mon, 23 Jan 2012 16:35:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFy4nv5bYdjiZM2HY1E=RU_CaBoQWy6iWXReAK98yRKZpw@mail.gmail.com>
-References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
-	<1327139539-14301-2-git-send-email-yinghai@kernel.org>
-	<CA+55aFz7B5ebEGKKJmvuWY+2O-6qarUj40CHASu_4EQ0KDgi_Q@mail.gmail.com>
-	<CAE9FiQWbmO+FFsE06eQ=-PVNtdaTG3EsqXNXdUCxb9YxtPS8Cw@mail.gmail.com>
-	<CA+55aFyok04YrmEYXLbAE2vB_944+aEJZhd5tzu6U2k0CLaN5A@mail.gmail.com>
-	<CAE9FiQXDHHJ0rG6hd6a3B+f0ZyJmjJ3rJGNWTsCwn21o+84C_Q@mail.gmail.com>
-	<CA+55aFy4nv5bYdjiZM2HY1E=RU_CaBoQWy6iWXReAK98yRKZpw@mail.gmail.com>
-Date: Mon, 23 Jan 2012 13:34:51 -0800
-X-Google-Sender-Auth: _nUTEdEeXlT07RpUsuMiyqjTAVg
-Message-ID: <CAE9FiQWt7j+Eoo_xhFmaGGh7hA-j2x991KZajmberf8Kod5G1g@mail.gmail.com>
-Subject: Re: [PATCH 1/7] PCI: Make sriov work with hotplug remove
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In-Reply-To: <CAP=VYLqpUun0FtCs4VWDeLm-mAri=+UV3psRA12eVbV1So_c-Q@mail.gmail.com>
+References: <1327343540-30348-1-git-send-email-torne@google.com>
+	<CAP=VYLqpUun0FtCs4VWDeLm-mAri=+UV3psRA12eVbV1So_c-Q@mail.gmail.com>
+Date: Mon, 23 Jan 2012 21:35:12 +0000
+Message-ID: <CAEV-rjeC1NwbUwdmEEquGf7S8uttsW5hwTjF5nTC_JXY7=OC9A@mail.gmail.com>
+Subject: Re: [PATCH] r8169: Randomise invalid MAC addresses
+From: "Torne (Richard Coles)" <torne@google.com>
+To: Paul Gortmaker <paul.gortmaker@gmail.com>
+Cc: nic_swsd@realtek.com, romieu@fr.zoreil.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 11:44 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Jan 23, 2012 at 11:36 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+On 23 January 2012 20:53, Paul Gortmaker <paul.gortmaker@gmail.com> wrote:
+> On Mon, Jan 23, 2012 at 1:32 PM, Torne (Richard Coles) <torne@google.com> wrote:
+>> From: "Torne (Richard Coles)" <torne@google.com>
 >>
->> Maybe we can put VF and PF in bus->devices like:
->> VF come first than PF?
+>> If the default MAC address stored in the card is invalid, replace it
+>> with a random address and complain about it.
 >
-> Ugh. Ok, so that's a disgusting hack, but it's better than messing up
-> the generic PCI subsystem. At least it's a disgusting hack in the IOV
-> code.
-
-just tested, the patch with this hack works.
-
+> You might want to have a look at this thread and its outcome.
 >
-> I still would prefer to just do the virtual devices right instead. Or
-> even just make the removal loop inherently robust, rather than have
-> that insane knowledge of virtual function devices that were done so
-> horribly wrong.
+> https://lkml.org/lkml/2012/1/14/75
 
-ok, let me think about it more.
+While I can appreciate the argument that people shouldn't build
+hardware that relies on this kind of behaviour, I am in the same
+situation as Darren there: I have a retail device I have bought that
+has a garbage MAC address (an OpenPeak Joggler), and so do all the
+others. Requiring that this be worked around in userspace makes it
+tricky to just install a standard Linux distribution onto this piece
+of hardware that's otherwise pretty much x86-pc-compatible (albeit
+with a weird bootloader)
 
->
-> Or even just *keep* the virtual devices on the list even though the
-> physical device has been removed - make them independent of the
-> physical device.
+The vendor's distribution clones the USB wifi adapter's MAC onto the
+ethernet device in userspace at boot, which is rather unpleasant (it
+never uses both interfaces at once, admittedly).
 
-ah, not sure how this going to work.
+So, is this just not going to be acceptable in any form? What about
+refactoring the existing drivers that do this so that this code
+doesn't need to be repeated in every driver, if that would help? I'd
+really quite like to get standard linux distros to be compatible with
+the Joggler, and this is one of the few changes that's actually needed
+(one way or another).
 
-Yinghai
+-- 
+Torne (Richard Coles)
+torne@google.com
