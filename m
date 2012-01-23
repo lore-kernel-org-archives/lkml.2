@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab2AWXtA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:49:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42555 "EHLO mx2.suse.de"
+	id S1755850Ab2AWXsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:48:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42518 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755963Ab2AWXsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:48:54 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:27 2012
-Message-Id: <20120123234027.122572814@clark.kroah.org>
+	id S1755839Ab2AWXse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:48:34 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:26 2012
+Message-Id: <20120123234026.599923990@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:35 -0800
+Date: Mon, 23 Jan 2012 15:39:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jack Steiner <steiner@sgi.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [49/90] x86, UV: Update Boot messages for SGI UV2 platform
+        alan@lxorguk.ukuu.org.uk, Arend van Spriel <arend@broadcom.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [43/90] kconfig/streamline-config.pl: Fix parsing Makefile with variables
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Steiner <steiner@sgi.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit da517a08ac5913cd80ce3507cddd00f2a091b13c upstream.
+commit 364212fddaaa60c5a64f67a0f5624ad996ecc8a0 upstream.
 
-SGI UV systems print a message during boot:
+Thomas Lange reported that when he did a 'make localmodconfig', his
+config was missing the brcmsmac driver, even though he had the module
+loaded.
 
-	UV: Found <num> blades
+Looking into this, I found the file:
+drivers/net/wireless/brcm80211/brcmsmac/Makefile
+had the following in the Makefile:
 
-Due to packaging changes, the blade count is not accurate for
-on the next generation of the platform. This patch corrects the
-count.
+MODULEPFX := brcmsmac
 
-Signed-off-by: Jack Steiner <steiner@sgi.com>
-Link: http://lkml.kernel.org/r/20120106191900.GA19772@sgi.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+obj-$(CONFIG_BRCMSMAC)  += $(MODULEPFX).o
+
+The way streamline-config.pl works, is parsing all the
+ obj-$(CONFIG_FOO) += foo.o
+lines to find that CONFIG_FOO belongs to the module foo.ko.
+
+But in this case, the brcmsmac.o was not used, but a variable in its place.
+
+By changing streamline-config.pl to remember defined variables in Makefiles
+and substituting them when they are used in the obj-X lines, allows
+Thomas (and others) to have their brcmsmac module stay configured
+when it is loaded and running "make localmodconfig".
+
+Reported-by: Thomas Lange <thomas-lange2@gmx.de>
+Tested-by: Thomas Lange <thomas-lange2@gmx.de>
+Cc: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/x2apic_uv_x.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ scripts/kconfig/streamline_config.pl |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -779,7 +779,12 @@ void __init uv_system_init(void)
- 	for(i = 0; i < UVH_NODE_PRESENT_TABLE_DEPTH; i++)
- 		uv_possible_blades +=
- 		  hweight64(uv_read_local_mmr( UVH_NODE_PRESENT_TABLE + i * 8));
--	printk(KERN_DEBUG "UV: Found %d blades\n", uv_num_possible_blades());
-+
-+	/* uv_num_possible_blades() is really the hub count */
-+	printk(KERN_INFO "UV: Found %d blades, %d hubs\n",
-+			is_uv1_hub() ? uv_num_possible_blades() :
-+			(uv_num_possible_blades() + 1) / 2,
-+			uv_num_possible_blades());
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -242,10 +242,33 @@ if ($kconfig) {
+     read_kconfig($kconfig);
+ }
  
- 	bytes = sizeof(struct uv_blade_info) * uv_num_possible_blades();
- 	uv_blade_info = kzalloc(bytes, GFP_KERNEL);
++sub convert_vars {
++    my ($line, %vars) = @_;
++
++    my $process = "";
++
++    while ($line =~ s/^(.*?)(\$\((.*?)\))//) {
++	my $start = $1;
++	my $variable = $2;
++	my $var = $3;
++
++	if (defined($vars{$var})) {
++	    $process .= $start . $vars{$var};
++	} else {
++	    $process .= $start . $variable;
++	}
++    }
++
++    $process .= $line;
++
++    return $process;
++}
++
+ # Read all Makefiles to map the configs to the objects
+ foreach my $makefile (@makefiles) {
+ 
+     my $line = "";
++    my %make_vars;
+ 
+     open(MIN,$makefile) || die "Can't open $makefile";
+     while (<MIN>) {
+@@ -262,10 +285,16 @@ foreach my $makefile (@makefiles) {
+ 
+ 	my $objs;
+ 
++	$_ = convert_vars($_, %make_vars);
++
+ 	# collect objects after obj-$(CONFIG_FOO_BAR)
+ 	if (/obj-\$\((CONFIG_[^\)]*)\)\s*[+:]?=\s*(.*)/) {
+ 	    $var = $1;
+ 	    $objs = $2;
++
++	# check if variables are set
++	} elsif (/^\s*(\S+)\s*[:]?=\s*(.*\S)/) {
++	    $make_vars{$1} = $2;
+ 	}
+ 	if (defined($objs)) {
+ 	    foreach my $obj (split /\s+/,$objs) {
 
 
