@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab2AWXv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 18:51:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42845 "EHLO mx2.suse.de"
+	id S932359Ab2AWXvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 18:51:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42827 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932329Ab2AWXvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:51:24 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:30 2012
-Message-Id: <20120123234030.098945786@clark.kroah.org>
+	id S932210Ab2AWXvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 18:51:13 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:28 2012
+Message-Id: <20120123234028.057677900@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:40:10 -0800
+Date: Mon, 23 Jan 2012 15:39:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
-        Eugene Teo <eugeneteo@kernel.sg>, Arnd Bergmann <arnd@arndb.de>
-Subject: [84/90] score: fix off-by-one index into syscall table
+        alan@lxorguk.ukuu.org.uk,
+        Michael Abbott <michael.abbott@diamond.ac.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [60/90] [S390] fix cputime overflow in uptime_proc_show
 In-Reply-To: <20120123234211.GA19504@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit c25a785d6647984505fa165b5cd84cfc9a95970b upstream.
+commit c3e0ef9a298e028a82ada28101ccd5cf64d209ee upstream.
 
-If the provided system call number is equal to __NR_syscalls, the
-current check will pass and a function pointer just after the system
-call table may be called, since sys_call_table is an array with total
-size __NR_syscalls.
+For 32-bit architectures using standard jiffies the idletime calculation
+in uptime_proc_show will quickly overflow. It takes (2^32 / HZ) seconds
+of idle-time, or e.g. 12.45 days with no load on a quad-core with HZ=1000.
+Switch to 64-bit calculations.
 
-Whether or not this is a security bug depends on what the compiler puts
-immediately after the system call table.  It's likely that this won't do
-anything bad because there is an additional NULL check on the syscall
-entry, but if there happens to be a non-NULL value immediately after the
-system call table, this may result in local privilege escalation.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael Abbott <michael.abbott@diamond.ac.uk>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/score/kernel/entry.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/proc/uptime.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/arch/score/kernel/entry.S
-+++ b/arch/score/kernel/entry.S
-@@ -408,7 +408,7 @@ ENTRY(handle_sys)
- 	sw	r9, [r0, PT_EPC]
+--- a/fs/proc/uptime.c
++++ b/fs/proc/uptime.c
+@@ -11,15 +11,20 @@ static int uptime_proc_show(struct seq_f
+ {
+ 	struct timespec uptime;
+ 	struct timespec idle;
++	cputime64_t idletime;
++	u64 nsec;
++	u32 rem;
+ 	int i;
+-	cputime_t idletime = cputime_zero;
  
- 	cmpi.c	r27, __NR_syscalls 	# check syscall number
--	bgtu	illegal_syscall
-+	bgeu	illegal_syscall
++	idletime = 0;
+ 	for_each_possible_cpu(i)
+ 		idletime = cputime64_add(idletime, kstat_cpu(i).cpustat.idle);
  
- 	slli	r8, r27, 2		# get syscall routine
- 	la	r11, sys_call_table
+ 	do_posix_clock_monotonic_gettime(&uptime);
+ 	monotonic_to_bootbased(&uptime);
+-	cputime_to_timespec(idletime, &idle);
++	nsec = cputime64_to_jiffies64(idletime) * TICK_NSEC;
++	idle.tv_sec = div_u64_rem(nsec, NSEC_PER_SEC, &rem);
++	idle.tv_nsec = rem;
+ 	seq_printf(m, "%lu.%02lu %lu.%02lu\n",
+ 			(unsigned long) uptime.tv_sec,
+ 			(uptime.tv_nsec / (NSEC_PER_SEC / 100)),
 
 
