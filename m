@@ -1,72 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab2AXJ07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 04:26:59 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:65120 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755210Ab2AXJ0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 04:26:55 -0500
-Date: Tue, 24 Jan 2012 10:26:48 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: giancarlo.asnaghi@st.com, peppe.cavallaro@st.com, florian@openwrt.org
-Subject: stmmac: fix phy naming inconsistency
-Message-ID: <20120124092648.GA26380@mail.gnudd.com>
+	id S1755583Ab2AXJit (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 04:38:49 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61775 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181Ab2AXJiq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 04:38:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+Date: Tue, 24 Jan 2012 18:38:45 +0900
+Message-ID: <CANKRQngqJaAq7ucg3VzCMs+-KFXTSuJG=uq4d0kQ95gEMFfB4w@mail.gmail.com>
+Subject: Hang up at .prepare( )
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit "db8857b stmmac: use an unique MDIO bus name" my
-device stopped being probed because two different names were being
-used in different places. This fixes the inconsistency.
+Hi
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Cc: Florian Fainelli <florian@openwrt.org>
----
+I've started debugging our ASoC drivers.
+I've faced issue when installing these drivers,
+system becomes hang up at async_synchronize_full_domain() of
+dapm_power_widgets()
+in .prepare().
 
-Before the commit, the phy was identified like this and stuff worked:
+Do you have any information about this hang up ?
 
-     PHY ID 20005c90 at 1 IRQ 0 (506:01) active
+I show details below.
 
-After that commit, I get 
+======Details============
 
-     PHY ID 20005c90 at 1 IRQ 0 (STMMAC MII Bus-1:01) active
-     PHY stmmac-1:01 not found
+ * Procedure
+install codec-driver
+install platform-driver
+install machine driver
 
-In one place, "stmmac" is a static string, on the other the commit
-used the name field of the bus that was "STMMAC MII Bus", so I changed
-this older string to be nicer -- without spaces.
+echo ml26124 0x1A > /sys/bus/i2c/devices/i2c-1/new_device
+After this command,
+occur system hang up within a few seconds
 
-Maybe the name is available where "stmmac" is spelled out, but I
-didn't check.
+ * Call Trees
 
-Now it works for me:
+platform-driver:.open()
+machine-driver:.hw_params()
+codec-driver:.hw_params()
+platform-driver:.dai_hw_params()
+platform-driver:.hw_params()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
 
-    eth1: PHY ID 20005c90 at 1 IRQ 0 (stmmac-1:01) active
-    PHY: stmmac-1:01 - Link is Up - 100/Full
+platform-driver:.open()
+machine-driver:.hw_params()
+codec-driver:.hw_params()
+platform-driver:.dai_hw_params()
+platform-driver:.hw_params()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
+platform-driver:.hw_free
+platform-driver:.dai_hw_free
+platform-driver:.hw_free
+platform-driver:.dai_hw_free
+platform-driver:.close()
 
+platform-driver:.open()
+machine-driver:.hw_params()
+codec-driver:.hw_params()
+platform-driver:.dai_hw_params()
+platform-driver:.hw_params()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
+platform-driver:.hw_free
+platform-driver:.dai_hw_free
+platform-driver:.hw_free
+platform-driver:.dai_hw_free
+platform-driver:.close()
+platform-driver:.hw_free
+platform-driver:.dai_hw_free
+platform-driver:.hw_free
+platform-driver:.dai_hw_free
+platform-driver:.close()
+platform-driver:.dai_digital_mute()
 
- drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+platform-driver:.open()
+machine-driver:.hw_params()
+codec-driver:.hw_params()
+platform-driver:.dai_hw_params()
+platform-driver:.hw_params()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-index 6e712c5..819606e 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-@@ -154,7 +154,7 @@ int stmmac_mdio_register(struct net_device *ndev)
- 	else
- 		irqlist = priv->mii_irq;
- 
--	new_bus->name = "STMMAC MII Bus";
-+	new_bus->name = "stmmac";
- 	new_bus->read = &stmmac_mdio_read;
- 	new_bus->write = &stmmac_mdio_write;
- 	new_bus->reset = &stmmac_mdio_reset;
--- 
-1.7.7.2
+platform-driver:.open()
+machine-driver:.hw_params()
+codec-driver:.hw_params()
+platform-driver:.dai_hw_params()
+platform-driver:.hw_params()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
+platform-driver:.prepare()
+platform-driver:.dai_digital_mute()
+platform-driver:.hw_free
+platform-driver:.dai_hw_free
+platform-driver:.hw_free
+platform-driver:.dai_hw_free
+platform-driver:.close()
+
+platform-driver:.open()
+machine-driver:.hw_params()
+codec-driver:.hw_params()
+platform-driver:.dai_hw_params()
+platform-driver:.hw_params()
+platform-driver:.prepare()
+
+==> Occur system hang up.
+
+According to system log,
+the hang up seems occuring at async_synchronize_full_domain(),
+which is at soc_pcm_prepare -> soc_dapm_stream_event ->
+dapm_power_widgets -> async_synchronize_full_domain [2nd call]
+
+ * Test condition
+CPU=Intel Atom E6xx series
+IOH=LAPIS Semiconductor ML7213
+Fedora15
+Kernel=3.2
+
+thanks in advance.
+tomoya
