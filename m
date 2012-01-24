@@ -1,127 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2AXHIU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 02:08:20 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49965 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab2AXHIS (ORCPT
+	id S1754172Ab2AXHIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 02:08:45 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39481 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770Ab2AXHIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 02:08:18 -0500
-Message-ID: <4F1E58DD.6030607@openvz.org>
-Date: Tue, 24 Jan 2012 11:08:13 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20111108 Iceape/2.0.14
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: adjust rss counters for migration entiries
-References: <20120106173827.11700.74305.stgit@zurg> <20120106173856.11700.98858.stgit@zurg> <20120111144125.0c61f35f.kamezawa.hiroyu@jp.fujitsu.com> <4F0D46EF.4060705@openvz.org> <20120111174126.f35e708a.kamezawa.hiroyu@jp.fujitsu.com> <20120118152131.45a47966.akpm@linux-foundation.org> <alpine.LSU.2.00.1201231719580.14979@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1201231719580.14979@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 24 Jan 2012 02:08:43 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 24 Jan 2012 16:07:09 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+ entry v8
+Message-Id: <20120124160709.e05c51b5.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120124065338.GB29735@moon>
+References: <20120123142036.025893883@openvz.org>
+	<20120123142436.181674896@openvz.org>
+	<20120124110730.a3536647.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120124065338.GB29735@moon>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Wed, 18 Jan 2012, Andrew Morton wrote:
->> On Wed, 11 Jan 2012 17:41:26 +0900
->> KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>  wrote:
->>> On Wed, 11 Jan 2012 12:23:11 +0400
->>> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
-> I only just got around to looking at these, sorry.
->
->>
->> Putting "fix" in the patch title text is a good way of handling this.
->>
->> I renamed [3/3] to "mm: fix rss count leakage during migration" and
->> shall queue it for 3.3.  If people think we should also backport it
->> into -stable then please let me know.
->
-> I don't think it needs backporting to stable: unless I'm forgetting
-> something, the only thing that actually uses these rss counters is the
-> OOM killer, and I don't think that will be greatly affected by the bug.
->
+On Tue, 24 Jan 2012 10:53:38 +0400
+Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-Yes, there are only counters. But, I can imagine local DoS attack via this race.
+> On Tue, Jan 24, 2012 at 11:07:30AM +0900, KAMEZAWA Hiroyuki wrote:
+> ...
+> > 
+> > From viewpoint I played with seq_file, yesterday.
+> > 
+> > > +static void *children_seq_start(struct seq_file *seq, loff_t *pos)
+> > > +{
+> > > +	return get_children_pid(seq->private, NULL, *pos);
+> > > +}
+> > > +
+> > > +static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+> > > +{
+> > > +	struct pid *pid = NULL;
+> > > +
+> > > +	pid = get_children_pid(seq->private, v, *pos + 1);
+> > > +	if (!pid)
+> > > +		seq_printf(seq, "\n");
+> > > +	put_pid(v);
+> > 
+> > Because seq_printf() may fail. This seems dangeorus.
+> > 
+> > If seq_printf() fails and returns NULL, "\n" will not be
+> > printed out and user land parser will go wrong.
+> >
+> 
+> Hmm. But userspace app will get eof, so frankly I don't see
+> a problem here. Or maybe I miss something?
+> 
 
->>
->> I reordered the patches and worked the chagnelogs quite a bit.  I now
->> have:
->>
->> : From: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> : Subject: mm: fix rss count leakage during migration
->> :
->> : Memory migration fills a pte with a migration entry and it doesn't update
->> : the rss counters.  Then it replaces the migration entry with the new page
->> : (or the old one if migration failed).  But between these two passes this
->> : pte can be unmaped, or a task can fork a child and it will get a copy of
->> : this migration entry.  Nobody accounts for this in the rss counters.
->> :
->> : This patch properly adjust rss counters for migration entries in
->> : zap_pte_range() and copy_one_pte().  Thus we avoid extra atomic operations
->> : on the migration fast-path.
->> :
->> : Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> : Cc: Hugh Dickins<hughd@google.com>
->> : Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->
-> That was a good find, Konstantin: thank you.
->
->>
->> and
->>
->> : From: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> : Subject: mm: add rss counters consistency check
->> :
->> : Warn about non-zero rss counters at final mmdrop.
->> :
->> : This check will prevent reoccurences of bugs such as that fixed in "mm:
->> : fix rss count leakage during migration".
->> :
->> : I didn't hide this check under CONFIG_VM_DEBUG because it rather small and
->> : rss counters cover whole page-table management, so this is a good
->> : invariant.
->> :
->> : Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> : Cc: Hugh Dickins<hughd@google.com>
->> : Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->
-> I'd be happier with this one if you do hide the check under
-> CONFIG_VM_DEBUG - or even under CONFIG_DEBUG_VM if you want it to
-> be compiled in sometimes ;)  I suppose NR_MM_COUNTERS is only 3,
-> so it isn't a huge overhead; but I think you're overestimating the
-> importance of these counters, and it would look better under DEBUG_VM.
+Userspace need to take care of whether there may be"\n" or not even
+if read() returns EOF.
+As an interface, it's BUG to say "\n" will be there if you're lucky!"
+(*) I know script language can handle this but we shouldn't assume that.
 
-Theoretically, some drivers can touch page tables,
-for example if they do that outside of vma we can get some kind of strange memory leaks.
+How about just remove "\n" at EOF  ? I think it's unnecessary.
 
->
->>
->> and
->>
->> : From: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> : Subject: mm: postpone migrated page mapping reset
->> :
->> : Postpone resetting page->mapping until the final remove_migration_ptes().
->> : Otherwise the expression PageAnon(migration_entry_to_page(entry)) does not
->> : work.
->> :
->> : Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> : Cc: Hugh Dickins<hughd@google.com>
->> : Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->
-> Isn't this one actually an essential part of the fix?  It should have
-> been part of the same patch, but you split them apart, now Andrew has
-> reordered them and pushed one part to 3.3, but this needs to go in too?
->
+Thanks,
+-Kame
 
-Oops. I missed that. Yes. race-fix does not work for anon-memory without that patch.
-But this is non-fatal, there are no new bugs.
-
-> Hugh
 
