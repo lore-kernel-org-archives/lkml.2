@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab2AXSro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 13:47:44 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:27318 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932129Ab2AXSrn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 13:47:43 -0500
-Message-ID: <1327430853.2568.4.camel@bwh-desktop>
-Subject: Re: [PATCH] r8169: Randomise invalid MAC addresses
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Pavel Machek <pavel@ucw.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Torne (Richard Coles)" <torne@google.com>, <nic_swsd@realtek.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jan 2012 18:47:33 +0000
-In-Reply-To: <20120124182826.GA24128@electric-eye.fr.zoreil.com>
-References: <1327343540-30348-1-git-send-email-torne@google.com>
-	 <20120123212914.747c852f@pyramind.ukuu.org.uk>
-	 <20120124171546.GA32184@atrey.karlin.mff.cuni.cz>
-	 <20120124182826.GA24128@electric-eye.fr.zoreil.com>
-Organization: Solarflare Communications
+	id S932198Ab2AXSvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 13:51:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932131Ab2AXSvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 13:51:42 -0500
+Message-ID: <1327431098.4131.6.camel@localhost>
+Subject: Re: [PATCH v1] vfs: fix IMA lockdep circular locking dependency
+From: Eric Paris <eparis@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Mimi Zohar <zohar@us.ibm.com>
+Date: Tue, 24 Jan 2012 13:51:38 -0500
+In-Reply-To: <1327430451.2129.22.camel@falcor>
+References: <1327426472-25275-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1327427142.4131.4.camel@localhost> <1327430451.2129.22.camel@falcor>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18662.005
-X-TM-AS-Result: No--18.617600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-24 at 19:28 +0100, Francois Romieu wrote:
-> Pavel Machek <pavel@ucw.cz> :
-> [...]
-> > Kernel should provide hw abstraction, and that should mean doing
-> > something about commonly-bad ethernet cards.
+On Tue, 2012-01-24 at 13:40 -0500, Mimi Zohar wrote:
+> On Tue, 2012-01-24 at 12:45 -0500, Eric Paris wrote:
+> > On Tue, 2012-01-24 at 12:34 -0500, Mimi Zohar wrote:
+> > > The circular lockdep is caused by allocating the 'iint' for mmapped
+> > > files.  Originally when an 'iint' was allocated for every inode
+> > > in inode_alloc_security(), before the inode was accessible, no
+> > > locking was necessary.  Commits bc7d2a3e and 196f518 changed this
+> > > behavior and allocated the 'iint' on a per need basis, resulting in
+> > > the mmap_sem being taken before the i_mutex for mmapped files.
+> > > 
+> > > Possible unsafe locking scenario:
+> > >        CPU0                    CPU1
+> > >        ----                    ----
+> > > lock(&mm->mmap_sem);
+> > >                               lock(&sb->s_type->i_mutex_key);
+> > >                               lock(&mm->mmap_sem);
+> > > lock(&sb->s_type->i_mutex_key);
+> > > 
+> > > The existing security_file_mmap() hook is after the mmap_sem is taken.
+> > > This patch moves the ima_file_mmap() call from security_file_mmap() to
+> > > prior to the mmap_sem being taken.
+> > > 
+> > > Changelog v1:
+> > > - Instead of just pre-allocating the iint in a new hook, do ALL of the
+> > > work in the new/moved ima_file_mmap() hook. (Based on Eric Paris' suggestion.)
+> > > - Removed do_mmap_with_sem() helper function.
+> > > - export ima_file_mmap()
+> > 
+> > Why does it need to be exported?  What module might call this?
 > 
-> Ask for a refund ?
-[...]
+> Without it, I'm getting:
+> 
+> Kernel: arch/x86/boot/bzImage is ready  (#246)
+> ERROR: "ima_file_mmap" [arch/x86/ia32/ia32_aout.ko] undefined!
+> make[1]: *** [__modpost] Error 1
+> make: *** [modules] Error 2
 
-This is mostly being done in embedded systems where the system
-developers control both the kernel and all of userspace and can easily
-bodge things in the userland init process.
+Ok, that's what I was wondering (and guessing).  Sorry!
 
-Then some adventurous users want to run custom kernels on those systems
-and have a reasonable way to deal with that.  The original system worked
-and they cannot replace just the network interface, so it is no good
-asking for a refund.
-
-None of the push-back from netdev is going to have any effect on the
-embedded system developers who are failing to program MAC addresses
-properly; it's only going to hurt those adventurous users.
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Acked-by: Eric Paris <eparis@redhat.com>
 
