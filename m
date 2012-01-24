@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab2AXRZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 12:25:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41535 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755932Ab2AXRZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 12:25:25 -0500
-Date: Tue, 24 Jan 2012 09:22:31 -0800
-From: Greg KH <gregkh@suse.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Simon Glass <sjg@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot time
-Message-ID: <20120124172231.GA27273@suse.de>
-References: <CAPnjgZ0-VdAzudGFopBd+5j4HhOp10C=x0kPuJEZyaYSzwjBAA@mail.gmail.com>
- <Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
- <20120124165711.GC3836@linutronix.de>
+	id S1757018Ab2AXRZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 12:25:35 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59106 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756999Ab2AXRZd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 12:25:33 -0500
+Message-ID: <4F1EE992.5000901@jp.fujitsu.com>
+Date: Tue, 24 Jan 2012 12:25:38 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120124165711.GC3836@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: peterz@infradead.org
+CC: oleg@redhat.com, mingo@elte.hu, y-goto@jp.fujitsu.com, tglx@linutronix.de,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
+References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com>  <1326721082.2442.234.camel@twins>  <20120117174031.3118.E1E9C6FF@jp.fujitsu.com>  <20120117090605.GD7612@elte.hu> <20120117151242.GA13290@redhat.com>  <20120118094219.GE5842@elte.hu>  <20120118142005.GB10105@redhat.com>  <1327400349.2614.10.camel@laptop> <1327402527.2614.17.camel@laptop>
+In-Reply-To: <1327402527.2614.17.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 05:57:11PM +0100, Sebastian Andrzej Siewior wrote:
-> * Alan Stern | 2012-01-21 11:11:09 [-0500]:
+On 1/24/2012 5:55 AM, Peter Zijlstra wrote:
+> On Tue, 2012-01-24 at 11:19 +0100, Peter Zijlstra wrote:
+>> On Wed, 2012-01-18 at 15:20 +0100, Oleg Nesterov wrote:
+>>> do_exit() is different because it can not handle the spurious wakeup.
+>>> Well, may be we can? we can simply do
+>>>
+>>>                 for (;;) {
+>>>                         tsk->state = TASK_DEAD;
+>>>                         schedule();
+>>>                 }
+>>>
+>>> __schedule() can't race with ttwu() once it takes rq->lock. If the
+>>> exiting task is deactivated, finish_task_switch() will see EXIT_DEAD.
+>>
+>> TASK_DEAD, right?
+>>
+>>> Unless I missed something, the only problem is preempt_disable(),
+>>> but schedule_debug() checks ->exit_state.
+>>>
+>>> OTOH, if we fix this race then probably schedule_debug() should
+>>> check state == EXIT_DEAD instead. 
+>>
+>> Hmm, interesting. On the up side that removes the need for that inf loop
+>> after BUG, down side is of course that we loose the BUG itself too. Now
+>> I'm not too sure we actually care about that, a task spinning at 100% in
+>> x state should be fairly obvious borkage and its not like we hit this
+>> thing very often.
 > 
-> >Doing time-consuming things later won't make any difference.  That is,
-> >suppose the boot sequence performs activities A and B, where A takes a
-> >long time.  Doing A later, so that the boot sequence performs B and
-> >then A, won't change the total time required.
+> Something like so, right? schedule_debug() already tests
+> prev->exit_state so it should DTRT afaict.
 > 
-> That is true. However if you show the gui _now_ and look for USB later
-> then it feels faster and this is usually enough.
+> Also, while going over this again, I think Yasunori-San's patch isn't
+> sufficient, note how the p->state = TASK_RUNNING in ttwu_do_wakeup() can
+> happen outside of p->pi_lock when the task gets queued on a remote cpu.
+> 
+> ---
+>  kernel/exit.c |   17 +++++++++++------
+>  1 files changed, 11 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 294b170..ccd4f84 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -1039,13 +1039,18 @@ void do_exit(long code)
+>  		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
+>  	exit_rcu();
+>  	/* causes final put_task_struct in finish_task_switch(). */
+> -	tsk->state = TASK_DEAD;
+>  	tsk->flags |= PF_NOFREEZE;	/* tell freezer to ignore us */
+> -	schedule();
+> -	BUG();
+> -	/* Avoid "noreturn function does return".  */
+> -	for (;;)
+> -		cpu_relax();	/* For when BUG is null */
+> +	for (;;) {
+> +		/*
+> +		 * A spurious wakeup, eg. generated by rwsem when down()'s call
+> +		 * to schedule() doesn't happen but the wakeup from the
+> +		 * previous owner's up() did, can stomp on our ->state.
+> +		 *
+> +		 * This loop also avoids "noreturn functions does return"
+> +		 */
+> +		tsk->state = TASK_DEAD;
+> +		schedule();
+> +	}
+>  }
 
-Which has been done before, with great success (i.e. we did it for
-Moblin boot times), so it shouldn't be that big of an issue.
+This looks ok to me.
 
-Which points out the question, exactly what is the issue here?  We have
-"multithreaded" pci driver startup for a long time now, did that stop
-working here?  If you use bootchart, does it show that the USB host
-driver is stoping the machine from proceeding to the next stage in the
-boot process?
-
->From my experience, I never saw the USB host controller get in the way
-at all, it was always somethine else happening that caused problems
-(i.e. video.)
-
-Simon, do you have boot charts anywhere showing this?
-
-thanks,
-
-greg k-h
