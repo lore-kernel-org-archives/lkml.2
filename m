@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2AXCmc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:42:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49937 "EHLO mx2.suse.de"
+	id S1755829Ab2AXCmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:42:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49918 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755839Ab2AXCm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:42:28 -0500
+	id S1755739Ab2AXCmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:42:21 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:24 2012
-Message-Id: <20120124023924.480931152@clark.kroah.org>
+Message-Id: <20120124023924.297344106@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:33:46 -0800
+Date: Mon, 23 Jan 2012 18:33:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Djalal Harouni <tixxdz@opendz.org>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [006/129] ext4: add missing ext4_resize_end on error paths
+        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [004/129] mtd: tests: stresstest: bail out if device has not enough eraseblocks
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,110 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2504
-Lines: 103
+Content-Length: 1732
+Lines: 53
 
-From: Djalal Harouni <tixxdz@opendz.org>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit 014a1770371a028d22f364718c805f4216911ecd upstream.
+commit 2f4478ccff7df845dc9c0f8996a96373122c4417 upstream.
 
-Online resize ioctls 'EXT4_IOC_GROUP_EXTEND' and 'EXT4_IOC_GROUP_ADD'
-call ext4_resize_begin() to check permissions and to set the
-EXT4_RESIZING bit lock, they do their work and they must finish with
-ext4_resize_end() which calls clear_bit_unlock() to unlock and to
-avoid -EBUSY errors for the next resize operations.
+stresstest needs at least two eraseblocks. Bail out gracefully if that
+condition is not met. Fixes the following 'division by zero' OOPS:
 
-This patch adds the missing ext4_resize_end() calls on error paths.
+[  619.100000] mtd_stresstest: MTD device size 131072, eraseblock size 131072, page size 2048, count of eraseblocks 1, pages per eraseblock 64, OOB size 64
+[  619.120000] mtd_stresstest: scanning for bad eraseblocks
+[  619.120000] mtd_stresstest: scanned 1 eraseblocks, 0 are bad
+[  619.130000] mtd_stresstest: doing operations
+[  619.130000] mtd_stresstest: 0 operations done
+[  619.140000] Division by zero in kernel.
+...
 
-Patch tested.
+caused by
 
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+        /* Read or write up 2 eraseblocks at a time - hence 'ebcnt - 1' */
+        eb %= (ebcnt - 1);
+
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/ioctl.c |   28 ++++++++++++++++++----------
- 1 file changed, 18 insertions(+), 10 deletions(-)
+ drivers/mtd/tests/mtd_stresstest.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -182,19 +182,22 @@ setversion_out:
- 		if (err)
- 			return err;
+--- a/drivers/mtd/tests/mtd_stresstest.c
++++ b/drivers/mtd/tests/mtd_stresstest.c
+@@ -284,6 +284,12 @@ static int __init mtd_stresstest_init(vo
+ 	       (unsigned long long)mtd->size, mtd->erasesize,
+ 	       pgsize, ebcnt, pgcnt, mtd->oobsize);
  
--		if (get_user(n_blocks_count, (__u32 __user *)arg))
--			return -EFAULT;
-+		if (get_user(n_blocks_count, (__u32 __user *)arg)) {
-+			err = -EFAULT;
-+			goto group_extend_out;
-+		}
- 
- 		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
- 			ext4_msg(sb, KERN_ERR,
- 				 "Online resizing not supported with bigalloc");
--			return -EOPNOTSUPP;
-+			err = -EOPNOTSUPP;
-+			goto group_extend_out;
- 		}
- 
- 		err = mnt_want_write(filp->f_path.mnt);
- 		if (err)
--			return err;
-+			goto group_extend_out;
- 
- 		err = ext4_group_extend(sb, EXT4_SB(sb)->s_es, n_blocks_count);
- 		if (EXT4_SB(sb)->s_journal) {
-@@ -204,9 +207,10 @@ setversion_out:
- 		}
- 		if (err == 0)
- 			err = err2;
++	if (ebcnt < 2) {
++		printk(PRINT_PREF "error: need at least 2 eraseblocks\n");
++		err = -ENOSPC;
++		goto out_put_mtd;
++	}
 +
- 		mnt_drop_write(filp->f_path.mnt);
-+group_extend_out:
- 		ext4_resize_end(sb);
--
- 		return err;
- 	}
+ 	/* Read or write up 2 eraseblocks at a time */
+ 	bufsize = mtd->erasesize * 2;
  
-@@ -267,19 +271,22 @@ mext_out:
- 			return err;
- 
- 		if (copy_from_user(&input, (struct ext4_new_group_input __user *)arg,
--				sizeof(input)))
--			return -EFAULT;
-+				sizeof(input))) {
-+			err = -EFAULT;
-+			goto group_add_out;
-+		}
- 
- 		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
- 			ext4_msg(sb, KERN_ERR,
- 				 "Online resizing not supported with bigalloc");
--			return -EOPNOTSUPP;
-+			err = -EOPNOTSUPP;
-+			goto group_add_out;
- 		}
- 
- 		err = mnt_want_write(filp->f_path.mnt);
- 		if (err)
--			return err;
-+			goto group_add_out;
- 
- 		err = ext4_group_add(sb, &input);
- 		if (EXT4_SB(sb)->s_journal) {
-@@ -289,9 +296,10 @@ mext_out:
- 		}
- 		if (err == 0)
- 			err = err2;
-+
- 		mnt_drop_write(filp->f_path.mnt);
-+group_add_out:
- 		ext4_resize_end(sb);
--
- 		return err;
- 	}
- 
+@@ -322,6 +328,7 @@ out:
+ 	kfree(bbt);
+ 	vfree(writebuf);
+ 	vfree(readbuf);
++out_put_mtd:
+ 	put_mtd_device(mtd);
+ 	if (err)
+ 		printk(PRINT_PREF "error %d occurred\n", err);
 
 
