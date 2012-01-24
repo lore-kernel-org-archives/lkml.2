@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab2AXRvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 12:51:15 -0500
-Received: from paperboy.avencall.com ([91.194.178.22]:55784 "EHLO
-	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755100Ab2AXRvN (ORCPT
+	id S1757253Ab2AXR52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 12:57:28 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:40296 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab2AXR51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 12:51:13 -0500
-X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jan 2012 12:51:13 EST
-Date: Tue, 24 Jan 2012 18:42:03 +0100
-From: Guillaume Knispel <gknispel@proformatique.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-acpi@vger.kernel.org, Guillaume Knispel <gknispel@avencall.com>,
-        Xavier Carcelle <xcarcelle@avencall.com>,
-        =?ISO-8859-1?Q?No=E9?= Rubinstein <nrubinstein@avencall.com>
-Subject: How to "register" a GSI for a non PCI non ISA device
-Message-ID: <20120124184203.1b0878c2@xilun>
-Organization: Avencall
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 24 Jan 2012 12:57:27 -0500
+Message-ID: <4F1EF104.1040107@hp.com>
+Date: Tue, 24 Jan 2012 09:57:24 -0800
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: leno soff <lnxuff@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, davem@davemloft.net
+Subject: Re: How to accelerate tcp retransmition
+References: <CAC=NXX3jdCAjmwTjQ-d43DWb-617a33nMcWb_UvBUyB_q7VZTQ@mail.gmail.com> <CAC=NXX2NLsChhuY5_Bv3HJ4fvnq7XpM7UksPS80uaZgGsJnfVw@mail.gmail.com>
+In-Reply-To: <CAC=NXX2NLsChhuY5_Bv3HJ4fvnq7XpM7UksPS80uaZgGsJnfVw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/24/2012 06:09 AM, leno soff wrote:
+> On Tue, Jan 24, 2012 at 4:58 PM, leno soff<lnxuff@gmail.com>  wrote:
+>> Hello everyone,
+>>    I have a lot of client, say C1, C2, .. Cn, which route packets to
+>> my servers through router R. But R will drop 70% - 90% _ non-SYN _
+>> packets from clients to Server.
 
-I'm building a PC platform with additional non-PCI and non-ISA devices:
-they are basically simple telecom chipsets connected to an SPI and an
-old school parallel bus (Intel LEB bus) and GPIO pins that can be used
-as interrupts through the IO APIC which exposes 40 GSI. From the point
-of view of the software the SPI, LEB, and GPIO are provided by PCI
-devices (in reality they are embedded controllers in an Intel SoC
-80579). Anyway I'm not sure the additional GSI are described anywhere
-in whatever black magic ACPI / legacy BIOS table they could be
-(but I've complete control over the FW, so I can had whatever is
- needed when I know it).
+I think you should address that first - why does the router drop 70 to 
+905 of the non-SYN segments it receives.  At first blush that sounds 
+like a classic case of massive over-subscription, and any attempt to 
+accelerate the retransmissions seems destined to trigger congestive 
+collapse.
 
-But as my devices are neither PCI nor ISA, I don't know how i can get
-access to the custom GSI interrupt from a LKM. acpi_register_gsi() used
-to be exported but is not anymore and I guess this is mandatory that
-this function is called to prepare internal structures (maybe irq_desc)
-and most importantly to configure to level triggering active low.
+As a side issue, if the router is dropping 70 to 90% of the non-SYN 
+segments, why is it not also dropping 70 to 90% of the SYN segments?
 
-So I'm thinking about writing black magic DSDT stuffs or whatever,
-which i might be able to sort of do after reading the fabulous ACPI
-specifications. Any feedback or pointer would be highly welcome.
+Also, I'm reasonably confident that an actual keepalive probe would not 
+(or at least should not?) be considered in the three duplicate ACK 
+heuristic.
 
-BTW when Linux devs says that bios writers are writing shit, yeah, they
-do, and given the state of complexity of the PC platform, I'm at the
-risk to do it too because I'm not supposed to delay the production of
-our system by one additional year just to completely learn how the
-shitty PC "standards" are supposed to work. From a more personal
-point of view when I'm reading the ACPI or other related specs tainted
-by MS and their desire to put GUID everywhere and other terrible ideas,
-I would rather prefer being high to not endure that much pain.
-
-As more and more x86 systems are directly designed to run Linux and
-only tested with it, with some of those (like our own) being built
-by people having complete control on the board and firmware (Coreboot),
-maybe it is time to define a legacy-free variant of the x86 plateform
-(especially on the FW/OS interface) for the free software and free
-hardware design world, so that we aren't restricted and slowed down by
-retro-compatible technologies dedicated at running MS-DOS and created
-with the explicit goal to be hard to use for anything else than
-Windows NT.
-
-Cheers!
--- 
-Guillaume Knispel
-Avencall - 10 bis, rue Lucien Voilin - 92800 Puteaux
-
+rick jones
