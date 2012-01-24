@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab2AXNBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 08:01:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19700 "EHLO mx1.redhat.com"
+	id S1756462Ab2AXNBs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 08:01:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9249 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756407Ab2AXNB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756436Ab2AXNB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jan 2012 08:01:26 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
@@ -12,13 +12,15 @@ Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
         Jens Axboe <axboe@kernel.dk>,
         James Bottomley <JBottomley@parallels.com>
-Subject: Re: [091/129] block: fail SCSI passthrough ioctls on partition devices
-Date: Tue, 24 Jan 2012 14:01:06 +0100
-Message-Id: <1327410067-5957-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <20120124023932.023409422@clark.kroah.org>
+Subject: Re: [62/90] block: fail SCSI passthrough ioctls on partition devices
+Date: Tue, 24 Jan 2012 14:01:07 +0100
+Message-Id: <1327410067-5957-2-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <20120123234028.216052731@clark.kroah.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Fixed patch follows.
 
 You need to return -ENOTTY from scsi_verify_blk_ioctl and -ENOIOCTLCMD from
 sd_compat_ioctl, because -ENOIOCTLCMD will not be handled correctly by
@@ -86,7 +88,7 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
  #include <linux/slab.h>
  #include <linux/times.h>
  #include <asm/uaccess.h>
-@@ -690,9 +691,53 @@ int scsi_cmd_ioctl(struct request_queue
+@@ -691,9 +692,53 @@ int scsi_cmd_ioctl(struct request_queue
  }
  EXPORT_SYMBOL(scsi_cmd_ioctl);
  
@@ -142,9 +144,9 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
  EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
 --- a/drivers/scsi/sd.c
 +++ b/drivers/scsi/sd.c
-@@ -1074,6 +1074,10 @@ static int sd_ioctl(struct block_device
-        SCSI_LOG_IOCTL(1, sd_printk(KERN_INFO, sdkp, "sd_ioctl: disk=%s, "
-                                    "cmd=0x%x\n", disk->disk_name, cmd));
+@@ -1073,6 +1073,10 @@ static int sd_ioctl(struct block_device
+        SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
+                                                disk->disk_name, cmd));
  
 +       error = scsi_verify_blk_ioctl(bdev, cmd);
 +       if (error < 0)
@@ -153,7 +155,7 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
         /*
          * If we are in the middle of error recovery, don't let anyone
          * else try and use this device.  Also, if error recovery fails, it
-@@ -1266,6 +1270,11 @@ static int sd_compat_ioctl(struct block_
+@@ -1265,6 +1269,11 @@ static int sd_compat_ioctl(struct block_
                            unsigned int cmd, unsigned long arg)
  {
         struct scsi_device *sdev = scsi_disk(bdev->bd_disk)->device;
@@ -165,7 +167,7 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
  
         /*
          * If we are in the middle of error recovery, don't let anyone
-@@ -1277,8 +1286,6 @@ static int sd_compat_ioctl(struct block_
+@@ -1276,8 +1285,6 @@ static int sd_compat_ioctl(struct block_
                 return -ENODEV;
                
         if (sdev->host->hostt->compat_ioctl) {
@@ -176,7 +178,7 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
                 return ret;
 --- a/include/linux/blkdev.h
 +++ b/include/linux/blkdev.h
-@@ -675,6 +675,7 @@ extern int blk_insert_cloned_request(str
+@@ -670,6 +670,7 @@ extern int blk_insert_cloned_request(str
                                      struct request *rq);
  extern void blk_delay_queue(struct request_queue *, unsigned long);
  extern void blk_recount_segments(struct request_queue *, struct bio *);
@@ -184,6 +186,7 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
  extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
                               unsigned int, void __user *);
  extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+
 
 
 
