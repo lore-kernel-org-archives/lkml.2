@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab2AXHTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 02:19:49 -0500
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:43075
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754446Ab2AXHTs (ORCPT
+	id S1754858Ab2AXHV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 02:21:28 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46858 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab2AXHV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 02:19:48 -0500
-Message-ID: <4F1E5B88.50801@compulab.co.il>
-Date: Tue, 24 Jan 2012 09:19:36 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 24 Jan 2012 02:21:27 -0500
+Date: Tue, 24 Jan 2012 11:21:22 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+ entry v8
+Message-ID: <20120124072122.GD29735@moon>
+References: <20120123142036.025893883@openvz.org>
+ <20120123142436.181674896@openvz.org>
+ <20120124110730.a3536647.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120124065338.GB29735@moon>
+ <20120124160709.e05c51b5.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [000/129] 3.2.2-stable review
-References: <20120124024041.GA18422@kroah.com>
-In-Reply-To: <20120124024041.GA18422@kroah.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124160709.e05c51b5.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On 01/24/12 04:40, Greg KH wrote:
-> #include <stable/formletter.h>
-> #define RELEASE		3.2.2-rc1
-> #define NUM_PATCHES	129
-> #define RESPONSE_DATE	"Wed, Jan 25, 2012 20:00:00 +0000"
-> #define LOCATION	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.2-rc1.gz
+On Tue, Jan 24, 2012 at 04:07:09PM +0900, KAMEZAWA Hiroyuki wrote:
+> > 
+> > Hmm. But userspace app will get eof, so frankly I don't see
+> > a problem here. Or maybe I miss something?
+> > 
 > 
-> diffstat below, no one really reads these things anyway...
+> Userspace need to take care of whether there may be"\n" or not even
+> if read() returns EOF.
+> As an interface, it's BUG to say "\n" will be there if you're lucky!"
+> (*) I know script language can handle this but we shouldn't assume that.
+> 
+> How about just remove "\n" at EOF  ? I think it's unnecessary.
+> 
 
-This is not exactly true...
-I'm (and I think I'm not the only one) going through the diffstat
-to see if there are any files of my interest involved,
-because it is not always straight forward to understand what
-the patch subject means and also there are too many of them to read all...
-So, for me, the compromise between being updated on important issues
-and spend not too much time reading patches subjects/message is
-read the diffstat and if I find anything that is of my interest,
-then go to the patches...
-May be not the best, but works for me...
+Sure thing, it's not a problem to remove it completely.
 
-So, thanks for the great work, you do.
-
-
--- 
-Regards,
-Igor.
+	Cyrill
