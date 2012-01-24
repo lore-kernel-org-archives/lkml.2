@@ -1,186 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab2AXQgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:36:12 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51558 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755186Ab2AXQgK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:36:10 -0500
-Message-ID: <1327422950.5400.40.camel@deadeye>
-Subject: Re: [23/27] kernel.h: add printk_ratelimited and pr_<level>_rl
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: ext Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, James Bottomley <JBottomley@parallels>
-Date: Tue, 24 Jan 2012 16:35:50 +0000
-In-Reply-To: <20120124144613.GD3180@pcarmody2.research.nokia.com>
-References: <20120123234224.GA19510@kroah.com>
-	 <20120123234203.649739932@clark.kroah.org>
-	 <20120124144613.GD3180@pcarmody2.research.nokia.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-bRtAGwA5ctm1rsqCZGr7"
-X-Mailer: Evolution 3.2.2-1 
+	id S1755652Ab2AXQhE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:37:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:1289 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755186Ab2AXQhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 11:37:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="115628685"
+Date: Tue, 24 Jan 2012 08:36:59 -0800
+From: Jesse Barnes <jesse.barnes@intel.com>
+To: "Kay, Allen M" <allen.m.kay@intel.com>
+Cc: "linux-pci-owner@vger.kernel.org" <linux-pci-owner@vger.kernel.org>,
+        "matt.wilcox@intel.com" <matt.wilcox@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jean.guyader@eu.citrix.com" <jean.guyader@eu.citrix.com>
+Subject: Re: [RFC][PATCH 1/1] check for pci bar restore completion and retry
+Message-ID: <20120124083659.0e2302b1@jbarnes-desktop>
+In-Reply-To: <1327362955-4137-1-git-send-email-allen.m.kay@intel.com>
+References: <1327362955-4137-1-git-send-email-allen.m.kay@intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_//71JbOe2e1uowBSzpplDG72"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-bRtAGwA5ctm1rsqCZGr7
-Content-Type: text/plain; charset="UTF-8"
+--Sig_//71JbOe2e1uowBSzpplDG72
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, 2012-01-24 at 16:46 +0200, Phil Carmody wrote:
-> On 23/01/12 15:41 -0800, ext Greg KH wrote:
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let=
- me know.
->=20
-> This looks like an added feature with no users in .32 - does it really=
-=20
-> belong in a stable tree?
-> (But to be explicit, I have no issue with its contents at all.)
+On Mon, 23 Jan 2012 15:55:55 -0800
+"Kay, Allen M" <allen.m.kay@intel.com> wrote:
 
-It's required for commit 0bfc96cb77224736dfa35c3c555d37b3646ef35e
-('block: fail SCSI passthrough ioctls on partition devices'), though
-that hasn't actually been included in this series.  I think that's
-because there is still ongoing discussion of which error codes need to
-be used.
+> On some OEM systems, pci_restore_state() is called while FLR has not yet
+> completed.  As a result, PCI BAR register restore is not successful.  Thi=
+s fix
+> reads back the restored value and compares it with saved value and re-tri=
+es
+> 10 times before giving up.
 
-Ben.
-
-> Phil
->=20
-> > ------------------
-> >=20
-> >=20
-> > From: Joe Perches <joe@perches.com>
-> >=20
-> > commit 8a64f336bc1d4aa203b138d29d5a9c414a9fbb47 upstream.
-> >=20
-> > Add a printk_ratelimited statement expression macro that uses a per-cal=
-l
-> > ratelimit_state so that multiple subsystems output messages are not
-> > suppressed by a global __ratelimit state.
-> >=20
-> > [akpm@linux-foundation.org: coding-style fixes]
-> > [akpm@linux-foundation.org: s/_rl/_ratelimited/g]
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > Cc: Naohiro Ooiwa <nooiwa@miraclelinux.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> >=20
-> > ---
-> >  include/linux/kernel.h |   44 ++++++++++++++++++++++++++++++++++++++++=
-++++
-> >  1 file changed, 44 insertions(+)
-> >=20
-> > --- a/include/linux/kernel.h
-> > +++ b/include/linux/kernel.h
-> > @@ -407,6 +407,50 @@ static inline char *pack_hex_byte(char *
-> >  #endif
-> > =20
-> >  /*
-> > + * ratelimited messages with local ratelimit_state,
-> > + * no local ratelimit_state used in the !PRINTK case
-> > + */
-> > +#ifdef CONFIG_PRINTK
-> > +#define printk_ratelimited(fmt, ...)  ({		\
-> > +	static struct ratelimit_state _rs =3D {		\
-> > +		.interval =3D DEFAULT_RATELIMIT_INTERVAL, \
-> > +		.burst =3D DEFAULT_RATELIMIT_BURST,       \
-> > +	};                                              \
-> > +							\
-> > +	if (!__ratelimit(&_rs))                         \
-> > +		printk(fmt, ##__VA_ARGS__);		\
-> > +})
-> > +#else
-> > +/* No effect, but we still get type checking even in the !PRINTK case:=
- */
-> > +#define printk_ratelimited printk
-> > +#endif
-> > +
-> > +#define pr_emerg_ratelimited(fmt, ...) \
-> > +	printk_ratelimited(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-> > +#define pr_alert_ratelimited(fmt, ...) \
-> > +	printk_ratelimited(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-> > +#define pr_crit_ratelimited(fmt, ...) \
-> > +	printk_ratelimited(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-> > +#define pr_err_ratelimited(fmt, ...) \
-> > +	printk_ratelimited(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-> > +#define pr_warning_ratelimited(fmt, ...) \
-> > +	printk_ratelimited(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-> > +#define pr_notice_ratelimited(fmt, ...) \
-> > +	printk_ratelimited(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-> > +#define pr_info_ratelimited(fmt, ...) \
-> > +	printk_ratelimited(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-> > +/* no pr_cont_ratelimited, don't do that... */
-> > +/* If you are writing a driver, please use dev_dbg instead */
-> > +#if defined(DEBUG)
-> > +#define pr_debug_ratelimited(fmt, ...) \
-> > +	printk_ratelimited(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-> > +#else
-> > +#define pr_debug_ratelimited(fmt, ...) \
-> > +	({ if (0) printk_ratelimited(KERN_DEBUG pr_fmt(fmt), \
-> > +				     ##__VA_ARGS__); 0; })
-> > +#endif
-> > +
-> > +/*
-> >   * General tracing related utility functions - trace_printk(),
-> >   * tracing_on/tracing_off and tracing_start()/tracing_stop
-> >   *
-> >=20
-> >=20
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"=
- in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
+But shouldn't we be doing this wait in the FLR code instead?
 
 --=20
-Ben Hutchings
-Horngren's Observation:
-                   Among economists, the real world is often a special case=
-.
+Jesse Barnes, Intel Open Source Technology Center
 
---=-bRtAGwA5ctm1rsqCZGr7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--Sig_//71JbOe2e1uowBSzpplDG72
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIVAwUATx7d5ue/yOyVhhEJAQqVhhAAuzYvBQ4jP2EiJT6dM0kemBK2EGCDTcMi
-4ScHTn5P6wWYkCCOfl9gNN2jQjnQEKopXEmD3UZliEVnNxvgaqeTKMWpFtwrhHE/
-+XxF51sAwH3kY4F6UmAHEFGvOIlcAgLNd43ppy4R8gCSX1kFbzMxrQ+EdpZzhWlR
-bTv0c7zVdCVaHK1ptMZQfUkNaQ0BWWLwgB6yEx/upmCyabTbPjxYjLgLiOq9gQ74
-+Sop3ofmZwjHzTM5Rmq4TliNpKBUpaA/F5G3j92n0linVUAnbPIkBrcHm0gPqN1T
-eQpRSELXeGJ3tTMaDMEiIeIQDysX9yIlsiqY+MPuB4bWzBVCSW6iOwnThs/VUNq8
-BwqxnNVxricvp8+Y60J448zLOqc+fR3/rTrM2y+3kW4Wf9+8xyyyVfIEqVKKns9Z
-ym36WgY8Wru0xkTM+ByjP0PJdT1vJ2ObAmni+Yh42Kq9jTPC7AAnqXuHtQs0Be6x
-1dcvItpky2EhNZQynwdwQ1KP/aUVPfawQeXrjGWvR0ftuZbR55ULrl0ew06Jgt8v
-Evx43P09yGyDYJ3WPxa8dhCL3btguTQhWgs3dS0we5fVYl98H2Qmbz5zYJ6uyCRw
-iqrztvIdJNSNJ9/iPQrMemV0R1khZ9MKJ0Kt2gQgUDfZgzwTK+V7CaCSLoObrC8T
-dSrKPDcVxm4=
-=SMBY
+iQIcBAEBAgAGBQJPHt4rAAoJEIEoDkX4Qk9hHXsP/RgEzqkU1LpqQkgfRJs9lf0G
+rFM6UhvZAx1WetyddEaC2ASJXVhzjnFLceJJTnUYOfF/FfrcefnXwQzxMn25jptW
+SPeQ2WjMaMZ7PDligIW75mDOu9IBWCg377hxvUXFno+xAFeVit3866iglD7hNZ22
+vI55ZyhyaVyWTlyhksEAmkmepfCv2ONHI9hRdpaWR1rypWNtDPkmkuQW8ubAZYFc
+ouX40xEwJx2zphPLNFZXDeChR2Dsl4zwNARhbIlTO9P0IaJINSX5q5t07jfoXJpB
++AZn1Uiyz+3gd+igFydyjabN7q0tPTGbSs+ESzSVyhS8BCWoz8zMtywhzv2zfIp+
++FZpHuHZonKwNnNmeXjnsU8A4zGNg1GjtLh0fRqsF/6ikTbnda3mBdrTyPIOXes7
+BuHL8v07IYvnb8hDkKVi3V8untb32h51R8zQHGb549CgUOGER3CJuuWso+Fsig2y
+dcXznpbMehN/vssOxsiJsu6DVysLzvRY9BL46yoMJInitlTEp530Jj1KWKc4WNNs
+W27iPJIrUBf6+PTCpZbs2iPLcEtsIZ3sjQIBK3og6vSzFyHyTGBjHcIpRJgiacU/
+OBqTZv3Xwvt6uxy3YF3WAL63ruSjs3dHx2Q6tjS7N20Ajci6n9PD9K9Xq2ZbW0Mo
+b/6ra4z92sMXfoFic21E
+=oZlF
 -----END PGP SIGNATURE-----
 
---=-bRtAGwA5ctm1rsqCZGr7--
+--Sig_//71JbOe2e1uowBSzpplDG72--
