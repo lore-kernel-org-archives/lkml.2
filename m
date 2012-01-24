@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab2AXUvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 15:51:13 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34740 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754741Ab2AXUvL (ORCPT
+	id S1757438Ab2AXUwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 15:52:08 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:44768 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756902Ab2AXUwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 15:51:11 -0500
-X-Sasl-enc: UgH7CwcemOdxkASLAojMueNl4ipkJMyWAgbbjgBJzYQr 1327438270
-Date: Tue, 24 Jan 2012 12:50:10 -0800
-From: Greg KH <greg@kroah.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, Jim Cromie <jim.cromie@gmail.com>,
-        joe@perches.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/16] dynamic_debug: factor vpr_info_dq out of
- ddebug_parse_query
-Message-ID: <20120124205010.GA12455@kroah.com>
-References: <cover.1324318997.git.jbaron@redhat.com>
- <d3379e3504fcb51e666d85b0a7aef33f27e0c353.1324318997.git.jbaron@redhat.com>
- <CAO+b5-rZpHfB+OkHtsvBOaZx3tnLSCmBz=Md1+vY2hx+N2TLtA@mail.gmail.com>
- <CAJfuBxxrDp-1rPA5oR53Oy0OkZFvXTXHaBYL7+8n=ExCX3PtOg@mail.gmail.com>
- <CAO+b5-qMoL-BJupLAsstHDgfNwQTQXmDNUNjSn0ivxmD_j+ENQ@mail.gmail.com>
- <20111221213341.GC30393@redhat.com>
+	Tue, 24 Jan 2012 15:52:05 -0500
+Date: Tue, 24 Jan 2012 20:53:45 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, containers@lists.linux-foundation.org,
+        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] fix devpts mount behavior
+Message-ID: <20120124205345.GA4861@hallyn.com>
+References: <20120124000517.GA28878@sergelap>
+ <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
+ <20120124002555.GA29534@sergelap>
+ <CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
+ <20120124010758.GJ23916@ZenIV.linux.org.uk>
+ <20120124182116.GA11715@hallyn.com>
+ <20120124201600.GB20039@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111221213341.GC30393@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120124201600.GB20039@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 04:33:42PM -0500, Jason Baron wrote:
-> On Tue, Dec 20, 2011 at 03:49:54PM +0000, Bart Van Assche wrote:
-> > On Tue, Dec 20, 2011 at 3:47 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> > > On Tue, Dec 20, 2011 at 1:17 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> > > > On Mon, Dec 19, 2011 at 10:13 PM, Jason Baron <jbaron@redhat.com> wrote:
-> > > >> From: Jim Cromie <jim.cromie@gmail.com>
-> > > >>
-> > > >> Factor pr_info(query) out of ddebug_parse_query, into pr_info_dq(),
-> > > >> for reuse later.  Also change the printed labels: file, func to agree
-> > > >> with the query-spec keywords accepted in the control file.  Pass ""
-> > > >> when string is null, to avoid "(null)" output from sprintf.  For
-> > > >> format print, use precision to skip last char, assuming its '\n', no
-> > > >> great harm if not, its a debug msg.
-> > > >
-> > > > pr_info_dq() or vpr_info_dq() ?
-> > >
-> > > I chose vpr_info_dq, with leading v to hint at the "if (verbose)" part
-> > 
-> > In case my reply was a little too terse: isn't there a letter "v"
-> > missing in the commit message ?
-> > 
-> > Bart.
+Quoting Sukadev Bhattiprolu (sukadev@linux.vnet.ibm.com):
+> Serge Hallyn [serge@hallyn.com] wrote:
+> | Quoting Al Viro (viro@ZenIV.linux.org.uk):
+> | > On Mon, Jan 23, 2012 at 04:41:25PM -0800, Linus Torvalds wrote:
+> | > 
+> | > > Right. I think the opportunity for problems should be pretty small.
+> | > > 
+> | > > And it's not like the pty itself wouldn't continue to work - it's just
+> | > > that programs like /usr/bin/tty wouldn't be able to *find* it.
+> | > > 
+> | > > Although who knows - maybe there is some other subtle interaction.
+> | > 
+> | > FWIW, the subtle and nasty part in all that is  that you can mknod /dev/ptmx
+> | > and it *will* work, refering to the "initial" instance.  That's what
+> | > concerns me about the chroot scenarios -
+> | > 	mknod /jail/dev/ptmx c 5 2
+> | > 	mkdir /jail/dev/pts
+> | > 	mount -t devpts /jail/dev/pts
+> | > 	chroot /jail
+> | > works fine right now, but with that change behaviour will be all wrong -
+> | > opening /dev/ptmx inside of jail will grab you a pts, all right, but
+> | > it will *not* show up in (jail) /dev/pts/* as it does with the current
+> | > kernel.
+> | > 
+> | > Note that if you replace that mknod with symlink pts/ptmx /jail/dev/ptmx
+> | > the things will keep working.  However, that will _only_ work for kernels
+> | > with DEVPTS_MULTIPLE_INSTANCES - without it you won't get ptmx inside
+> | > devpts (which is arguably wrong, BTW)
+> | 
+> | Should /dev/pts/ptmx be created for DEVPTS_MULTIPLE_INSTANCES=n?
 > 
-> Thanks for catching this.
-> 
-> Greg, if you want to s/pr_info_dq/vpr_info_dq, in the commit msg, this
-> one is all set.
+> With DEVPTS_MULTIPLE_INSTANCES=n, there is only _one_ (global) instance
+> right ? Why would we need a 'pts/ptmx' node ? To keep the symlink (i.e
+> user space scripts) valid for both single and multiple instance cases ?
 
-Now done, thanks.
-
-greg k-h
+Exactly
