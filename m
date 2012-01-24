@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab2AXAbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:31:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26120 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752363Ab2AXAbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:31:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="99800861"
-From: Seth Heasley <seth.heasley@intel.com>
-To: jgarzik@pobox.com, linux-ide@vger.kernel.org
-Subject: [PATCH 3/6] ata_piix: IDE-mode SATA patch for Intel Lynx Point DeviceIDs
-Date: Mon, 23 Jan 2012 16:29:50 -0800
-User-Agent: KMail/1.13.6 (Linux/2.6.35.12-88.fc14.x86_64; KDE/4.6.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, james.d.ralston@intel.com,
-        seth.heasley@intel.com
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1755350Ab2AXAb3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:31:29 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51226 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab2AXAb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 19:31:27 -0500
+Message-ID: <1327365073.11738.2.camel@work-vm>
+Subject: Re: REGRESSION 3.2-rcX: RTC auto poweron after 5 minutes
+From: John Stultz <john.stultz@linaro.org>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Andreas Friedrich <afrie@gmx.net>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Date: Mon, 23 Jan 2012 16:31:13 -0800
+In-Reply-To: <CAH+eYFBuK+-md-9QPQ8Z4DSNvKbyOEHg0EyRa2-DaVOZFi=hYQ@mail.gmail.com>
+References: <20111226145841.GA26578@upset.ux.pdb.fsc.net>
+	 <20111227105708.GA29960@upset.ux.pdb.fsc.net>
+	 <CAH+eYFBuK+-md-9QPQ8Z4DSNvKbyOEHg0EyRa2-DaVOZFi=hYQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201231629.50767.seth.heasley@intel.com>
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012400-7408-0000-0000-0000021CE136
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the IDE-mode SATA DeviceIDs for the Intel Lynx Point PCH.
+On Tue, 2011-12-27 at 20:07 +0530, Rabin Vincent wrote:
+> Perhaps we can avoid your five-minute problem by just attempting
+> to disable the irq without setting a new alarm time (not yet tested):
+> 
+> diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+> index 3bcc7cf..54a3b5e 100644
+> --- a/drivers/rtc/interface.c
+> +++ b/drivers/rtc/interface.c
+> @@ -778,16 +778,10 @@ static int rtc_timer_enqueue(struct rtc_device
+> *rtc, struct rtc_timer *timer)
+> 
+>  static void rtc_alarm_disable(struct rtc_device *rtc)
+>  {
+> -	struct rtc_wkalrm alarm;
+> -	struct rtc_time tm;
+> -
+> -	__rtc_read_time(rtc, &tm);
+> -
+> -	alarm.time = rtc_ktime_to_tm(ktime_add(rtc_tm_to_ktime(tm),
+> -				     ktime_set(300, 0)));
+> -	alarm.enabled = 0;
+> +	if (!rtc->ops || !rtc->ops->alarm_irq_enable)
+> +		return;
+> 
+> -	___rtc_set_alarm(rtc, &alarm);
+> +	rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
+>  }
+> 
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
----
- drivers/ata/ata_piix.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+Hey Rabin,
+	Just wanted to close out on this. I know this change worked for
+Andreas, but did it also resolve the original issue for you? I'm trying
+to get this ready to be queued.
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 69ac373..9554f94 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -321,6 +321,14 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	{ 0x8086, 0x1e08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Panther Point) */
- 	{ 0x8086, 0x1e09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Lynx Point) */
-+	{ 0x8086, 0x8c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Lynx Point) */
-+	{ 0x8086, 0x8c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Lynx Point) */
-+	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Lynx Point) */
-+	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	{ }	/* terminate list */
- };
- 
--- 
-1.7.4.4
+thanks
+-john
+
 
