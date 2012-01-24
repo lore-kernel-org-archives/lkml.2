@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab2AXLsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:48:13 -0500
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:50041 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755075Ab2AXLsK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:48:10 -0500
+	id S1756369Ab2AXLwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:52:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45604 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755697Ab2AXLwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 06:52:36 -0500
+Date: Tue, 24 Jan 2012 12:52:34 +0100
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>
+Subject: Re: [PATCH 4/8] xfs: Move ilock before transaction start in
+ xfs_setattr_size()
+Message-ID: <20120124115234.GD15974@quack.suse.cz>
+References: <1327091686-23177-1-git-send-email-jack@suse.cz>
+ <1327091686-23177-5-git-send-email-jack@suse.cz>
+ <20120124065945.GL15102@dastard>
 MIME-Version: 1.0
-From: Felipe Balbi <balbi@ti.com>
-To: Linux USB Mailing List <linux-usb@vger.kernel.org>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de> (supporter:USB SUBSYSTEM 
-	,commit_signer:28/51=55%),
-        Thomas Dahlmann <dahlmann.thomas@arcor.de> (supporter:AMD GEODE
-	CS5536...),
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com> (commit_signer:43/51=84%),
-        linux-omap@vger.kernel.org (open list:DESIGNWARE USB3 D...),
-        linux-kernel@vger.kernel.org (open list),
-        linux-geode@lists.infradead.org (open list:AMD GEODE CS5536...)
-Subject: [PATCH 8/9] usb: gadget: net2280: use generic map/unmap routines
-Date: Tue, 24 Jan 2012 13:45:29 +0200
-Message-Id: <1327405543-27589-9-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.8.2
-In-Reply-To: <1327405543-27589-1-git-send-email-balbi@ti.com>
-References: <1327405543-27589-1-git-send-email-balbi@ti.com>
-Organization: Texas Instruments\n
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124065945.GL15102@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-those routines have everything we need to map/unmap
-USB requests and it's better to use them.
+On Tue 24-01-12 17:59:45, Dave Chinner wrote:
+> On Fri, Jan 20, 2012 at 09:34:42PM +0100, Jan Kara wrote:
+> > In xfs we first take ilock and start transaction afterwards.
+> 
+> The correct order is to allocate the transaction, reserve the space
+> for it and then take the ilock.  We cannot hold the ilock over the
+> transaction reservation because that can deadlock the journal.
+>
+> That is, to make space for the new transaction reservation, we may
+> need to take the ilock to flush the inode and allow the journal tail
+> to move forwards to make space for the new transaction.  If we
+> already hold the ilock, then it can't be flushed, we can't make
+> space available in the journal and hence deadlock.
+  Thanks for clarification!
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/usb/gadget/net2280.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
+> Maybe you confused the ilock vs the iolock.  We can hold the iolock
+> over the trans alloc/reserve because that lock is not required to
+> move the tail of the journal, so the deadlock doesn't exist.
+  Ups! I now had a look at what xfs_rw_ilock() does. I always thought it's
+just a plain rw semaphore and now I see it takes several locks depending on
+the argument. Ugh, a bit surprising for XFS newcomer as me ;) But now
+things become clearer so I fix my patches with this new knowledge in mind.
+So just disregard my locking comments. They were likely bogus.
 
-diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
-index cdedd13..a5ccabc 100644
---- a/drivers/usb/gadget/net2280.c
-+++ b/drivers/usb/gadget/net2280.c
-@@ -806,12 +806,8 @@ done (struct net2280_ep *ep, struct net2280_request *req, int status)
- 		status = req->req.status;
- 
- 	dev = ep->dev;
--	if (req->mapped) {
--		pci_unmap_single (dev->pdev, req->req.dma, req->req.length,
--			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
--		req->req.dma = DMA_ADDR_INVALID;
--		req->mapped = 0;
--	}
-+	if (ep->dma)
-+		usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
- 
- 	if (status && status != -ESHUTDOWN)
- 		VDEBUG (dev, "complete %s req %p stat %d len %u/%u\n",
-@@ -857,10 +853,13 @@ net2280_queue (struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
- 		return -EOPNOTSUPP;
- 
- 	/* set up dma mapping in case the caller didn't */
--	if (ep->dma && _req->dma == DMA_ADDR_INVALID) {
--		_req->dma = pci_map_single (dev->pdev, _req->buf, _req->length,
--			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
--		req->mapped = 1;
-+	if (ep->dma) {
-+		int ret;
-+
-+		ret = usb_gadget_map_request(&dev->gadget, _req,
-+				ep->is_in);
-+		if (ret)
-+			return ret;
- 	}
- 
- #if 0
+								Honza
 -- 
-1.7.8.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
