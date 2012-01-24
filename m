@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab2AXLQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:16:57 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:55520 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755634Ab2AXLQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:16:55 -0500
-Date: Tue, 24 Jan 2012 12:16:44 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH v4] memcg: remove PCG_CACHE page_cgroup flag
-Message-ID: <20120124111644.GE1660@cmpxchg.org>
-References: <20120119181711.8d697a6b.kamezawa.hiroyu@jp.fujitsu.com>
- <20120120122658.1b14b512.kamezawa.hiroyu@jp.fujitsu.com>
- <20120120084545.GC9655@tiehlicka.suse.cz>
- <20120124121636.115f1cf0.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120124121636.115f1cf0.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1756271Ab2AXLRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:17:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55578 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755909Ab2AXLR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 06:17:28 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@ti.com>, Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: Fix documentation for of_node parameter of regulator_register()
+Date: Tue, 24 Jan 2012 11:17:26 +0000
+Message-Id: <1327403846-6108-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 12:16:36PM +0900, KAMEZAWA Hiroyuki wrote:
-> 
-> > Can we make this anon as well?
-> 
-> I'm sorry for long RTT. version 4 here.
-> ==
-> >From c40256561d6cdaee62be7ec34147e6079dc426f4 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 19 Jan 2012 17:09:41 +0900
-> Subject: [PATCH] memcg: remove PCG_CACHE
-> 
-> We record 'the page is cache' by PCG_CACHE bit to page_cgroup.
-> Here, "CACHE" means anonymous user pages (and SwapCache). This
-> doesn't include shmem.
+Commit 5bc75a (kernel-doc: fix new warning in regulator core) added
+documentation for of_node to address a warning but the documentation
+didn't explain what the parameter is for so would be likely to be
+unhelpful for users.  Clarify that.
 
-!CACHE means anonymous/swapcache
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/core.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-> Consdering callers, at charge/uncharge, the caller should know
-> what  the page is and we don't need to record it by using 1bit
-> per page.
-> 
-> This patch removes PCG_CACHE bit and make callers of
-> mem_cgroup_charge_statistics() to specify what the page is.
-> 
-> Changelog since v3
->  - renamed a variable 'rss' to 'anon'
-> 
-> Changelog since v2
->  - removed 'not_rss', added 'anon'
->  - changed a meaning of arguments to mem_cgroup_charge_statisitcs()
->  - removed a patch to mem_cgroup_uncharge_cache
->  - simplified comment.
-> 
-> Changelog since RFC.
->  - rebased onto memcg-devel
->  - rename 'file' to 'not_rss'
->  - some cleanup and added comment.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index dab8516..aa51866 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2839,7 +2839,8 @@ static void rdev_init_debugfs(struct regulator_dev *rdev)
+  * @dev: struct device for the regulator
+  * @init_data: platform provided init data, passed through by driver
+  * @driver_data: private regulator data
+- * @of_node: target open firmware device structure (may be NULL)
++ * @of_node: OpenFirmware node to parse for device tree bindings (may be
++ *           NULL).
+  *
+  * Called by regulator drivers to register a regulator.
+  * Returns 0 on success.
+-- 
+1.7.7.3
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
