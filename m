@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2AXXuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:50:44 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59122 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab2AXXum (ORCPT
+	id S1754148Ab2AXXv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:51:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51356 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753859Ab2AXXv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 18:50:42 -0500
+	Tue, 24 Jan 2012 18:51:28 -0500
+Date: Tue, 24 Jan 2012 23:51:24 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] RCU changes for v3.3
+Message-ID: <20120124235123.GA32176@opensource.wolfsonmicro.com>
+References: <20120105135432.GA31450@elte.hu>
+ <1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20120124165312.GG2531@linux.vnet.ibm.com>
+ <1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20120124194140.GB2381@linux.vnet.ibm.com>
+ <1327435069.2767.1.camel@edumazet-laptop>
+ <20120124211137.GD2381@linux.vnet.ibm.com>
+ <20120124220700.GA11725@sirena.org.uk>
+ <20120124224345.GG2381@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBAuDABE7u1wyc+45ZGoVos5PnxMe6P=ET-CHf-LChTpgw@mail.gmail.com>
-References: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
-	<20120123130221.GA15113@tiehlicka.suse.cz>
-	<CALWz4izWYb=_svn=UJ1C--pWXv59H2ahn6EJEnTpJv-dT6WGsw@mail.gmail.com>
-	<CAJd=RBAuDABE7u1wyc+45ZGoVos5PnxMe6P=ET-CHf-LChTpgw@mail.gmail.com>
-Date: Tue, 24 Jan 2012 15:50:40 -0800
-Message-ID: <CALWz4iwa=d_CDgUmsWB=xaS-7-X+r+2riD7HM3yxHWRTyResOg@mail.gmail.com>
-Subject: Re: [PATCH] mm: memcg: fix over reclaiming mem cgroup
-From: Ying Han <yinghan@google.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124224345.GG2381@linux.vnet.ibm.com>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 7:26 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> Hi all
->
-> On Tue, Jan 24, 2012 at 3:14 AM, Ying Han <yinghan@google.com> wrote:
->> On Mon, Jan 23, 2012 at 5:02 AM, Michal Hocko <mhocko@suse.cz> wrote:
->>> On Sat 21-01-12 22:49:23, Hillf Danton wrote:
->>>> In soft limit reclaim, overreclaim occurs when pages are reclaimed from mem
->>>> group that is under its soft limit, or when more pages are reclaimd than the
->>>> exceeding amount, then performance of reclaimee goes down accordingly.
->>>
->>> First of all soft reclaim is more a help for the global memory pressure
->>> balancing rather than any guarantee about how much we reclaim for the
->>> group.
->>> We need to do more changes in order to make it a guarantee.
->>> For example you implementation will cause severe problems when all
->>> cgroups are soft unlimited (default conf.) or when nobody is above the
->>> limit but the total consumption triggers the global reclaim. Therefore
->>> nobody is in excess and you would skip all groups and only bang on the
->>> root memcg.
->
-> If soft limits are set to be limited and there are no excessors,
-> who are consuming physical pages? The consumers maybe those with soft
-> unlimited. If so, they should be punished first, based on the assumption that
-> the unlimited is treated with no guarantee. Then soft limit guarantee could
-> be assured without changes in the current default setting of soft limit, no?
+On Tue, Jan 24, 2012 at 02:43:45PM -0800, Paul E. McKenney wrote:
+> On Tue, Jan 24, 2012 at 10:07:00PM +0000, Mark Brown wrote:
+> > On Tue, Jan 24, 2012 at 01:11:37PM -0800, Paul E. McKenney wrote:
 
-The current code set the softlimit default to be RESOURCE_MAX, but we
-do have plan to change it to 0. Then every cgroup will be eligible for
-soft limit reclaim unless we set it otherwise. Not sure if that will
-answer some of the questions?
+> > > Hmmm...  Residual power dissipation is given in milliwatts.  I could
+> > > imagine some heartburn from many of the more aggressive embedded folks,
+> > > given that they might prefer microwatts -- or maybe even nanowatts,
+> > > for all I know.
 
->
-> With soft limit available, victims are only selected from excessors, I think.
->
->>>
->>> Ying Han has a patch which basically skips all cgroups which are under
->>> its limit until we reach a certain reclaim priority but even for this we
->>> need some additional changes - e.g. reverse the current default setting
->>> of the soft limit.
->>>
->>> Anyway, I like the nr_to_reclaim reduction idea because we have to do
->>> this in some way because the global reclaim starts with ULONG
->>> nr_to_scan.
->>
->> Agree with Michal where there are quite a lot changes we need to get
->> in for soft limit before any further optimization.
->>
->> Hillf, please refer to the patch from Johannes
->> https://lkml.org/lkml/2012/1/13/99 which got quite a lot recent
->> discussions. I am expecting to get that in before further soft limit
->> changes.
->>
->
-> Johannes did great cleanup, why barriered?
+> > FWIW idle battery referenced draw from a modern smartphone will be in
+> > the low single digit miliwatts or so.
 
-Not sure about the barriered here. As far as I can tell, some changes
-we are talking about here would be easier to be applied after that
-cleanup.
+> Ah, OK, so only the non-smart cellphones would care, but they generally
+> don't run Linux, from what I understand.  Thanks for the info!
 
---Ying
->
-> Thanks
-> Hillf
+Well, that depends.  Anything you're actually accomplishing when you're
+optimising at that level is at the less than a milliwatt level.
