@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab2AXIUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 03:20:08 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:57910 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2AXIUF (ORCPT
+	id S1755071Ab2AXIVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 03:21:25 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:3496 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750972Ab2AXIVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 03:20:05 -0500
-Message-ID: <f22058ee1822af2d989d384409f2e84d.squirrel@webmail.greenhost.nl>
-In-Reply-To: <CAB=4xhqFYdU3s_NQkgdzVVG1r3vGDb=qPewPRFTrJ1B_eiEVDA@mail.gmail.com>
-References: <20120116183730.GB21112@redhat.com>
-    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
-    <20120118022217.GS11715@one.firstfloor.org>
-    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
-    <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
-    <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
-    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
-    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
-    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
-    <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com>
-    <4F1737C9.3070905@zytor.com>
-    <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com>
-    <4F173F48.2070604@zytor.com>
-    <CA+55aFw3kv_JRsSCQEf6fQd0gX939MuoevDxFtcXkPY+bmyjtA@mail.gmail.com>
-    <4F176605.5020101@zytor.com>
-    <CAK1hOcManWsEvjS2xxtfGTKx=JLPvO2sBkWU-xQP+medV=rbAA@mail.gmail.com>
-    <CAB=4xhqFYdU3s_NQkgdzVVG1r3vGDb=qPewPRFTrJ1B_eiEVDA@mail.gmail.com>
-Date: Tue, 24 Jan 2012 09:19:32 +0100
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Roland McGrath" <mcgrathr@google.com>
-Cc: "Denys Vlasenko" <vda.linux@googlemail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andi Kleen" <andi@firstfloor.org>,
-        "Jamie Lokier" <jamie@shareable.org>,
-        "Andrew Lutomirski" <luto@mit.edu>, "Oleg Nesterov" <oleg@redhat.com>,
-        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-User-Agent: SquirrelMail/1.4.22
+	Tue, 24 Jan 2012 03:21:23 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAABnHk95LElR/2dsb2JhbABDriuBBoFyAQEFOhwjEAgDDgouFCUDIRPAQhOMEwSVF4kqiTg
+Date: Tue, 24 Jan 2012 19:21:19 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 2/8] vfs: Protect write paths by sb_start_write -
+ sb_end_write
+Message-ID: <20120124082119.GO15102@dastard>
+References: <1327091686-23177-1-git-send-email-jack@suse.cz>
+ <1327091686-23177-3-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 1.4
-X-Scan-Signature: 74b82c602e180a6a7275945acf229479
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327091686-23177-3-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, January 20, 2012 23:40, Roland McGrath wrote:
-> If you change the size of a regset, then the new full size will be the size
-> of the core file notes.  Existing userland tools will not be expecting
-> this, they expect a known exact size.  If you need to add new stuff, it
-> really is easier all around to add a new regset flavor.  When adding a new
-> one, you can make it variable-sized from the start so as to be extensible
-> in the future.  We did this for NT_X86_XSTATE, for example.
+On Fri, Jan 20, 2012 at 09:34:40PM +0100, Jan Kara wrote:
+> There are three entry points which dirty pages in a filesystem.  mmap (handled
+> by block_page_mkwrite()), buffered write (handled by
+> __generic_file_aio_write()), and truncate (it can dirty last partial page -
+> handled inside each filesystem separately). Protect these places with
+> sb_start_write() and sb_end_write().
 
-If stuffing it into eflags is not acceptable and you really want a
-new regset, perhaps that new regset should only contain the new,
-mostly cross-platform information, instead of slapping it at the
-end of the x86 regset. Because if you do the latter you really
-could have better just stuffed it into eflags.
+fallocate can also dirty pages, either during preallocation or hole
+punching.  Hence if you are going to promote truncate to
+SB_FREEZE_WRITE protection then you need to promote everything else
+that can zero partial blocks as well.
 
-Greetings,
+That also means that anything the has implemented XFS_IOC_ ioctl
+interfaces for prellocation and hole punching (xfs, ocfs2 and gfs2
+IIRC) also needs to be protected in the same way.
 
-Indan
+Cheers,
 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
