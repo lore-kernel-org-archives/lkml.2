@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab2AXFgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 00:36:10 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33310 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab2AXFgH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 00:36:07 -0500
+	id S1752966Ab2AXGBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 01:01:25 -0500
+Received: from ozlabs.org ([203.10.76.45]:35765 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832Ab2AXGBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 01:01:24 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Brian Swetland <swetland@google.com>
+Subject: Re: Linux 3.3-1 out - merge window closed
+In-Reply-To: <201201231518.26158.arnd@arndb.de>
+References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com> <CADMYwHxhyExw8jzAVT6PEdfXT-vCSLxg_eGbbqCwRNh0q3Q6eQ@mail.gmail.com> <20120123131808.GC23571@ponder.secretlab.ca> <201201231518.26158.arnd@arndb.de>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 24 Jan 2012 11:02:00 +1030
+Message-ID: <87y5sydjpb.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzP4xEbcNmZ+MS0SQ3LrULzSq+dBiT_X9U-bPpR-Ukgrw@mail.gmail.com>
-References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
-	<1327139539-14301-7-git-send-email-yinghai@kernel.org>
-	<CA+55aFzP4xEbcNmZ+MS0SQ3LrULzSq+dBiT_X9U-bPpR-Ukgrw@mail.gmail.com>
-Date: Mon, 23 Jan 2012 21:36:07 -0800
-X-Google-Sender-Auth: luq7M0LCusDHUV8aVd_oKNUg86Y
-Message-ID: <CAE9FiQVWtqinNYLRo34VNtUavYm6ifq_tp2f3Rr9+Pyc59DEnQ@mail.gmail.com>
-Subject: Re: [PATCH 6/7] pciehp: Add Disable/enable link functions
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 8:13 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Jan 21, 2012 at 1:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> +
->> +       retval = pciehp_readw(ctrl, PCI_EXP_LNKCTL, &lnk_ctrl);
->> +       if (retval) {
->> +               ctrl_err(ctrl, "Cannot read LNKCTRL register\n");
->> +               return retval;
->> +       }
->
-> Is there really any point at all in checking the return value of that
-> readw() function?
->
-> Nobody actually ever sets it. We should stop even bothering to pretend
-> to care. There is no return value in real life.
->
-> If the device doesn't exist or the read fails, you will never ever get
-> an error *anyway*. You'll likely get 0xffff, and possibly a machine
-> check exception. And that is unlikely to ever change - even if the
-> hardware were to do it, it's insane to do error checking on an
-> individual IO level. It causes more problems than it could possibly
-> ever solve - error checking has to be done at a different level than
-> on some random individual access.
->
-> We should make the return type of pci_read_config_word() be 'void',
-> instead of having code like this that looks like it is careful, but in
-> actual fact in reality is just totally pointless.
+On Mon, 23 Jan 2012 15:18:25 +0000, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 23 January 2012, Grant Likely wrote:
+> > On Mon, Jan 23, 2012 at 11:17:46AM +0200, Ohad Ben-Cohen wrote:
+> >
+> > > I realize there's a slim chance to get it merged at this point, but I
+> > > do think that both remoteproc and rpmsg are not so scary:
+> > > 
+> > > * The code is completely self contained, and the only few external
+> > > places it changes amount to grabbing a new virtio id (which is
+> > > Acked-by Rusty) and some OMAP init platform code (which is Acked-by
+> > > Tony). People who aren't explicitly using it won't notice it's there;
+> > > even its Kconfig entries get selected automatically when relevant
+> > > (i.e. only on OMAP4 at this point) and would never show up otherwise.
+> > 
+> > Hi Linus,
+> > 
+> > I'd also like to see this merged.  Rather than going off and inventing
+> > something completely new, Ohad has built on the existing virtio
+> > infrastructure to implement IPC between CPUs and DSPs running
+> > different operating environments.  This is a strong step in the
+> > RightDirection(tm) in my opinion and such behaviour should be
+> > encouraged.  :-)
+> > 
+> 
+> Agreed. I had reviewed earlier versions of this and they looked very
+> good.
 
-looks like
+Plus I don't think delay will help in any way; it'll just go in as-is,
+one merge window later...
 
-#define PCI_OP_READ(size,type,len) \
-int pci_bus_read_config_##size \
-        (struct pci_bus *bus, unsigned int devfn, int pos, type *value) \
-{                                                                       \
-        int res;                                                        \
-        unsigned long flags;                                            \
-        u32 data = 0;                                                   \
-        if (PCI_##size##_BAD) return PCIBIOS_BAD_REGISTER_NUMBER;       \
-        raw_spin_lock_irqsave(&pci_lock, flags);                        \
-        res = bus->ops->read(bus, devfn, pos, len, &data);              \
-        *value = (type)data;                                            \
-        raw_spin_unlock_irqrestore(&pci_lock, flags);           \
-        return res;                                                     \
-}
-
-will check register number. like we can not pass 0x01 but want to read
-word and dword.
-
-also bus ops read/write like pci_mmcfg_read/write will double check if
-passed bus/dev/fn/reg
-ranges.
-
-Thanks
-
-Yinghai
+Thanks,
+Rusty.
