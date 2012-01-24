@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab2AXCtH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:49:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50681 "EHLO mx2.suse.de"
+	id S932931Ab2AXCtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:49:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50695 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932865Ab2AXCtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:49:01 -0500
+	id S932923Ab2AXCtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:49:07 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:35 2012
-Message-Id: <20120124023935.043993236@clark.kroah.org>
+Message-Id: <20120124023935.212305922@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:45 -0800
+Date: Mon, 23 Jan 2012 18:35:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [125/129] mm: fix NULL ptr dereference in __count_immobile_pages
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [127/129] iwlegacy: 3945: fix hw passive scan on radar channels
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,91 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 3120
-Lines: 84
+Content-Length: 2218
+Lines: 53
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 687875fb7de4a95223af20ee024282fa9099f860 upstream.
+commit 68acc4afb040d98ddfd2cae0de09e2f4e1ee127f upstream.
 
-Fix the following NULL ptr dereference caused by
+Patch fix firmware error on "iw dev wlan0 scan passive" for
+hardware scanning (with disable_hw_scan=0 module parameter).
 
-  cat /sys/devices/system/memory/memory0/removable
+ iwl3945 0000:03:00.0: Microcode SW error detected. Restarting 0x82000008.
+ iwl3945 0000:03:00.0: Loaded firmware version: 15.32.2.9
+ iwl3945 0000:03:00.0: Start IWL Error Log Dump:
+ iwl3945 0000:03:00.0: Status: 0x0002A2E4, count: 1
+ iwl3945 0000:03:00.0: Desc       Time       asrtPC blink2 ilink1  nmiPC   Line
+ iwl3945 0000:03:00.0: SYSASSERT     (0x5) 0041263900 0x13756 0x0031C 0x00000 764
+ iwl3945 0000:03:00.0: Error Reply type 0x000002FC cmd C_SCAN (0x80) seq 0x443E ser 0x00340000
+ iwl3945 0000:03:00.0: Command C_SCAN failed: FW Error
+ iwl3945 0000:03:00.0: Can't stop Rx DMA.
 
-Pid: 13979, comm: sed Not tainted 3.0.13-0.5-default #1 IBM BladeCenter LS21 -[7971PAM]-/Server Blade
-RIP: __count_immobile_pages+0x4/0x100
-Process sed (pid: 13979, threadinfo ffff880221c36000, task ffff88022e788480)
-Call Trace:
-  is_pageblock_removable_nolock+0x34/0x40
-  is_mem_section_removable+0x74/0xf0
-  show_mem_removable+0x41/0x70
-  sysfs_read_file+0xfe/0x1c0
-  vfs_read+0xc7/0x130
-  sys_read+0x53/0xa0
-  system_call_fastpath+0x16/0x1b
+We have disable ability to change passive scanning to active on
+particular channel when traffic is detected on that channel. Otherwise
+firmware will report error, when we try to do passive scan on radar
+channels.
 
-We are crashing because we are trying to dereference NULL zone which
-came from pfn=0 (struct page ffffea0000000000). According to the boot
-log this page is marked reserved:
-e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
-
-and early_node_map confirms that:
-early_node_map[3] active PFN ranges
-    1: 0x00000010 -> 0x0000009c
-    1: 0x00000100 -> 0x000bffa3
-    1: 0x00100000 -> 0x00240000
-
-The problem is that memory_present works in PAGE_SECTION_MASK aligned
-blocks so the reserved range sneaks into the the section as well.  This
-also means that free_area_init_node will not take care of those reserved
-pages and they stay uninitialized.
-
-When we try to read the removable status we walk through all available
-sections and hope that the zone is valid for all pages in the section.
-But this is not true in this case as the zone and nid are not initialized.
-
-We have only one node in this particular case and it is marked as node=1
-(rather than 0) and that made the problem visible because page_to_nid will
-return 0 and there are no zones on the node.
-
-Let's check that the zone is valid and that the given pfn falls into its
-boundaries and mark the section not removable.  This might cause some
-false positives, probably, but we do not have any sane way to find out
-whether the page is reserved by the platform or it is just not used for
-whatever other reasons.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-debugged-by: Pedro Francisco <pedrogfrancisco@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/page_alloc.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/net/wireless/iwlegacy/iwl3945-base.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone
- bool is_pageblock_removable_nolock(struct page *page)
- {
- 	struct zone *zone = page_zone(page);
-+	unsigned long pfn = page_to_pfn(page);
-+
-+	/*
-+	 * We have to be careful here because we are iterating over memory
-+	 * sections which are not zone aware so we might end up outside of
-+	 * the zone but still within the section.
-+	 */
-+	if (!zone || zone->zone_start_pfn > pfn ||
-+			zone->zone_start_pfn + zone->spanned_pages <= pfn)
-+		return false;
-+
- 	return __count_immobile_pages(zone, page, 0);
- }
+--- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
++++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
+@@ -2656,14 +2656,13 @@ int iwl3945_request_scan(struct iwl_priv
+ 		IWL_WARN(priv, "Invalid scan band\n");
+ 		return -EIO;
+ 	}
+-
+ 	/*
+-	 * If active scaning is requested but a certain channel
+-	 * is marked passive, we can do active scanning if we
+-	 * detect transmissions.
++	 * If active scaning is requested but a certain channel is marked
++	 * passive, we can do active scanning if we detect transmissions. For
++	 * passive only scanning disable switching to active on any channel.
+ 	 */
+ 	scan->good_CRC_th = is_active ? IWL_GOOD_CRC_TH_DEFAULT :
+-					IWL_GOOD_CRC_TH_DISABLED;
++					IWL_GOOD_CRC_TH_NEVER;
  
+ 	len = iwl_legacy_fill_probe_req(priv, (struct ieee80211_mgmt *)scan->data,
+ 					vif->addr, priv->scan_request->ie,
 
 
