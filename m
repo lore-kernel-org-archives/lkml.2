@@ -1,132 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab2AXW7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 17:59:06 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48876 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751473Ab2AXW7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 17:59:03 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
-Date: Wed, 25 Jan 2012 00:02:37 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
-References: <4F1EC8D5.5040102@suse.cz> <201201242336.22482.rjw@sisk.pl> <4F1F350B.6010508@suse.cz>
-In-Reply-To: <4F1F350B.6010508@suse.cz>
+	id S1752682Ab2AXW70 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 17:59:26 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:51313 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751473Ab2AXW7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 17:59:24 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Viresh Kumar <viresh.kumar@st.com>,
+        Chris Blair <chris.blair@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v2] mfd/stmpe: Add support for no-interrupt config
+Date: Tue, 24 Jan 2012 23:59:06 +0100
+Message-ID: <1327445946-11470-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201250002.37916.rjw@sisk.pl>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 24, 2012, Jiri Slaby wrote:
-> On 01/24/2012 11:36 PM, Rafael J. Wysocki wrote:
-> > On Tuesday, January 24, 2012, Jiri Slaby wrote:
-> >> On 01/24/2012 05:18 PM, Srivatsa S. Bhat wrote:
-> >>> Hi Jiri,
-> >>>
-> >>> On 01/24/2012 08:35 PM, Jiri Slaby wrote:
-> >>>
-> >>>> Hi,
-> >>>>
-> >>>> this is a freshly booted system. When I do s2dsk, I see:
-> >>>> ...
-> >>>> Freezing remaining freezable tasks ... BUG: 'workqueue_freezing' is true!
-> >>>> ------------[ cut here ]------------
-> >>>> kernel BUG at /l/latest/linux/kernel/workqueue.c:3659!
-> >>>> invalid opcode: 0000 [#1] SMP
-> >>>> CPU 0
-> >>>> Modules linked in:
-> >>>>
-> >>>> Pid: 2669, comm: s2disk Not tainted 3.3.0-rc1-next-20120124_64+ #1627
-> >>>> Bochs Bochs
-> >>>> RIP: 0010:[<ffffffff8107e365>]  [<ffffffff8107e365>]
-> >>>> freeze_workqueues_begin+0x195/0x1a0
-> >>>> RSP: 0018:ffff880046f01d68  EFLAGS: 00010292
-> >>>> RAX: 0000000000000023 RBX: 0000000000000001 RCX: 00000000000000c9
-> >>>> RDX: 0000000000000077 RSI: 0000000000000046 RDI: ffffffff81b51f7c
-> >>>> RBP: ffff880046f01d98 R08: ffffffff81a9d760 R09: 0000000000000000
-> >>>> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-> >>>> R13: 00007fff579464dc R14: ffffffffffffffff R15: 0000000000000004
-> >>>> FS:  00007f3c65d54700(0000) GS:ffff880049600000(0000) knlGS:0000000000000000
-> >>>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> >>>> CR2: 00007f3c64f58c20 CR3: 0000000045b64000 CR4: 00000000000006f0
-> >>>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> >>>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> >>>> Process s2disk (pid: 2669, threadinfo ffff880046f00000, task
-> >>>> ffff880047251980)
-> >>>> Stack:
-> >>>>  ffff880046f01d98 0000000000000001 0000000000000000 00007fff579464dc
-> >>>>  ffffffffffffffff 0000000000000004 ffff880046f01e18 ffffffff81096cb9
-> >>>>  00000000ffff0124 0000000000000004 ffff880046f01e18 000000004f1ec7d1
-> >>>> Call Trace:
-> >>>>  [<ffffffff81096cb9>] try_to_freeze_tasks+0x1b9/0x2d0
-> >>>>  [<ffffffff81096ed5>] freeze_kernel_threads+0x25/0x90
-> >>>>  [<ffffffff81097b55>] hibernation_snapshot+0x75/0x2e0
-> >>>>  [<ffffffff8109d724>] snapshot_ioctl+0x314/0x4e0
-> >>>>  [<ffffffff81130856>] do_vfs_ioctl+0x96/0x550
-> >>>>  [<ffffffff8111ff7b>] ? vfs_write+0x10b/0x180
-> >>>>  [<ffffffff81130d5a>] sys_ioctl+0x4a/0x80
-> >>>>  [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
-> >>>> Code: c7 c6 0a a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 19 94 5a 00 0f 0b
-> >>>> 48 c7 c6 27 a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 02 94 5a 00 <0f> 0b
-> >>>> 66 0f 1f 84 00 00 00 00 00 55 48 c7 c7 82 4b b9 81 48 89
-> >>>> RIP  [<ffffffff8107e365>] freeze_workqueues_begin+0x195/0x1a0
-> >>>>  RSP <ffff880046f01d68>
-> >>>> ---[ end trace 632574abdc098963 ]---
-> >>>>
-> >>>
-> >>>
-> >>> I couldn't find any obvious root-cause from a quick check. Is this completely
-> >>> reproducible upon a fresh boot?
-> >>
-> >> True.
-> >>
-> >> The cause is that the function is called twice:
-> > 
-> > Which function?
-> 
-> The one where the BUG is. Maybe the functions which should clear the
-> flag is not called in between? See:
-> 
-> >>  [<ffffffff8107e206>] freeze_workqueues_begin+0x36/0x1b0
->                          ^^^^^^^^^^^^^^^^^^^^^^^
-> >>  [<ffffffff81096cc9>] try_to_freeze_tasks+0x1b9/0x2d0
-> >>  [<ffffffff81096ee5>] freeze_kernel_threads+0x25/0x90
-> >>  [<ffffffff81097b65>] hibernation_snapshot+0x75/0x2e0
-> >>  [<ffffffff8109d734>] snapshot_ioctl+0x314/0x4e0
-> >>  [<ffffffff81130866>] do_vfs_ioctl+0x96/0x550
-> >>  [<ffffffff8111ff8b>] ? vfs_write+0x10b/0x180
-> >>  [<ffffffff81130d6a>] sys_ioctl+0x4a/0x80
-> >>  [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
-> >> (elapsed 0.03 seconds) done.
-> ...
-> >> Freezing remaining freezable tasks ... BUG: 'workqueue_freezing' is true!
-> >> ------------[ cut here ]------------
-> >> kernel BUG at /l/latest/linux/kernel/workqueue.c:3659!
-> ...
-> >> RIP: 0010:[<ffffffff8107e371>]  [<ffffffff8107e371>
-> >> freeze_workqueues_begin+0x1a1/0x1b0
->    ^^^^^^^^^^^^^^^^^^^^^^^
-> >> Call Trace:
-> >>  [<ffffffff81096cc9>] try_to_freeze_tasks+0x1b9/0x2d0
-> >>  [<ffffffff81096ee5>] freeze_kernel_threads+0x25/0x90
-> >>  [<ffffffff81097b65>] hibernation_snapshot+0x75/0x2e0
-> >>  [<ffffffff8109d734>] snapshot_ioctl+0x314/0x4e0
-> >>  [<ffffffff81130866>] do_vfs_ioctl+0x96/0x550
-> >>  [<ffffffff8111ff8b>] ? vfs_write+0x10b/0x180
-> >>  [<ffffffff81130d6a>] sys_ioctl+0x4a/0x80
-> >>  [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
+From: Chris Blair <chris.blair@stericsson.com>
 
-Ah.  So this is linux-next, right?
+Adds support for boards which have an STMPE device without the
+interrupt pin connected.
 
-Can you please test the linux-next branch of the linux-pm tree and see if
-the problem is reproducible in there?
+Cc: Viresh Kumar <viresh.kumar@st.com>
+Signed-off-by: Chris Blair <chris.blair@stericsson.com>
+Tested-by: Michel Jaouen <michel.jaouen@stericsson.com>
+Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Corrects initialisation, error condition and driver removal cleanup
+  for the no-irq configuration.
+---
+ drivers/mfd/stmpe.c       |  114 +++++++++++++++++++++++++-------------------
+ include/linux/mfd/stmpe.h |    2 +
+ 2 files changed, 67 insertions(+), 49 deletions(-)
 
-Rafael
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index e07947e..04bb013 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -864,7 +864,7 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
+ 	unsigned int irq_trigger = stmpe->pdata->irq_trigger;
+ 	int autosleep_timeout = stmpe->pdata->autosleep_timeout;
+ 	struct stmpe_variant_info *variant = stmpe->variant;
+-	u8 icr;
++	u8 icr = 0;
+ 	unsigned int id;
+ 	u8 data[2];
+ 	int ret;
+@@ -887,31 +887,33 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (id == STMPE801_ID)
+-		icr = STMPE801_REG_SYS_CTRL_INT_EN;
+-	else
+-		icr = STMPE_ICR_LSB_GIM;
+-
+-	/* STMPE801 doesn't support Edge interrupts */
+-	if (id != STMPE801_ID) {
+-		if (irq_trigger == IRQF_TRIGGER_FALLING ||
+-				irq_trigger == IRQF_TRIGGER_RISING)
+-			icr |= STMPE_ICR_LSB_EDGE;
+-	}
+-
+-	if (irq_trigger == IRQF_TRIGGER_RISING ||
+-			irq_trigger == IRQF_TRIGGER_HIGH) {
++	if (!stmpe->pdata->no_irq) {
+ 		if (id == STMPE801_ID)
+-			icr |= STMPE801_REG_SYS_CTRL_INT_HI;
++			icr = STMPE801_REG_SYS_CTRL_INT_EN;
+ 		else
+-			icr |= STMPE_ICR_LSB_HIGH;
+-	}
++			icr = STMPE_ICR_LSB_GIM;
+ 
+-	if (stmpe->pdata->irq_invert_polarity) {
+-		if (id == STMPE801_ID)
+-			icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
+-		else
+-			icr ^= STMPE_ICR_LSB_HIGH;
++		/* STMPE801 doesn't support Edge interrupts */
++		if (id != STMPE801_ID) {
++			if (irq_trigger == IRQF_TRIGGER_FALLING ||
++					irq_trigger == IRQF_TRIGGER_RISING)
++				icr |= STMPE_ICR_LSB_EDGE;
++		}
++
++		if (irq_trigger == IRQF_TRIGGER_RISING ||
++				irq_trigger == IRQF_TRIGGER_HIGH) {
++			if (id == STMPE801_ID)
++				icr |= STMPE801_REG_SYS_CTRL_INT_HI;
++			else
++				icr |= STMPE_ICR_LSB_HIGH;
++		}
++
++		if (stmpe->pdata->irq_invert_polarity) {
++			if (id == STMPE801_ID)
++				icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
++			else
++				icr ^= STMPE_ICR_LSB_HIGH;
++		}
+ 	}
+ 
+ 	if (stmpe->pdata->autosleep) {
+@@ -988,32 +990,42 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 	if (ci->init)
+ 		ci->init(stmpe);
+ 
+-	if (pdata->irq_over_gpio) {
+-		ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "stmpe");
+-		if (ret) {
+-			dev_err(stmpe->dev, "failed to request IRQ GPIO: %d\n",
++	if (pdata->no_irq) {
++		dev_info(stmpe->dev,
++			"board config says IRQs are not supported\n");
++	} else {
++		if (pdata->irq_over_gpio) {
++			ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN,
++						"stmpe");
++			if (ret) {
++				dev_err(stmpe->dev,
++					"failed to request IRQ GPIO: %d\n",
+ 					ret);
+-			goto out_free;
+-		}
++				goto out_free;
++			}
+ 
+-		stmpe->irq = gpio_to_irq(pdata->irq_gpio);
+-	} else {
+-		stmpe->irq = ci->irq;
++			stmpe->irq = gpio_to_irq(pdata->irq_gpio);
++		} else {
++			stmpe->irq = ci->irq;
++		}
+ 	}
+ 
+ 	ret = stmpe_chip_init(stmpe);
+ 	if (ret)
+ 		goto free_gpio;
+ 
+-	ret = stmpe_irq_init(stmpe);
+-	if (ret)
+-		goto free_gpio;
++	if (!pdata->no_irq) {
++		ret = stmpe_irq_init(stmpe);
++		if (ret)
++			goto free_gpio;
+ 
+-	ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
+-			pdata->irq_trigger | IRQF_ONESHOT, "stmpe", stmpe);
+-	if (ret) {
+-		dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
+-		goto out_removeirq;
++		ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
++				pdata->irq_trigger | IRQF_ONESHOT,
++				"stmpe", stmpe);
++		if (ret) {
++			dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
++			goto out_removeirq;
++		}
+ 	}
+ 
+ 	ret = stmpe_devices_init(stmpe);
+@@ -1026,11 +1038,13 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 
+ out_removedevs:
+ 	mfd_remove_devices(stmpe->dev);
+-	free_irq(stmpe->irq, stmpe);
++	if (!pdata->no_irq)
++		free_irq(stmpe->irq, stmpe);
+ out_removeirq:
+-	stmpe_irq_remove(stmpe);
++	if (!pdata->no_irq)
++		stmpe_irq_remove(stmpe);
+ free_gpio:
+-	if (pdata->irq_over_gpio)
++	if (!pdata->no_irq && pdata->irq_over_gpio)
+ 		gpio_free(pdata->irq_gpio);
+ out_free:
+ 	kfree(stmpe);
+@@ -1041,11 +1055,13 @@ int stmpe_remove(struct stmpe *stmpe)
+ {
+ 	mfd_remove_devices(stmpe->dev);
+ 
+-	free_irq(stmpe->irq, stmpe);
+-	stmpe_irq_remove(stmpe);
++	if (!stmpe->pdata->no_irq) {
++		free_irq(stmpe->irq, stmpe);
++		stmpe_irq_remove(stmpe);
+ 
+-	if (stmpe->pdata->irq_over_gpio)
+-		gpio_free(stmpe->pdata->irq_gpio);
++		if (stmpe->pdata->irq_over_gpio)
++			gpio_free(stmpe->pdata->irq_gpio);
++	}
+ 
+ 	kfree(stmpe);
+ 
+@@ -1057,7 +1073,7 @@ static int stmpe_suspend(struct device *dev)
+ {
+ 	struct stmpe *stmpe = dev_get_drvdata(dev);
+ 
+-	if (device_may_wakeup(dev))
++	if (!stmpe->pdata->no_irq && device_may_wakeup(dev))
+ 		enable_irq_wake(stmpe->irq);
+ 
+ 	return 0;
+@@ -1067,7 +1083,7 @@ static int stmpe_resume(struct device *dev)
+ {
+ 	struct stmpe *stmpe = dev_get_drvdata(dev);
+ 
+-	if (device_may_wakeup(dev))
++	if (!stmpe->pdata->no_irq && device_may_wakeup(dev))
+ 		disable_irq_wake(stmpe->irq);
+ 
+ 	return 0;
+diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+index ca1d7a3..c4b45fd 100644
+--- a/include/linux/mfd/stmpe.h
++++ b/include/linux/mfd/stmpe.h
+@@ -188,6 +188,7 @@ struct stmpe_ts_platform_data {
+  * @irq_invert_polarity: IRQ line is connected with reversed polarity
+  * @autosleep: bool to enable/disable stmpe autosleep
+  * @autosleep_timeout: inactivity timeout in milliseconds for autosleep
++ * @no_irq: IRQs are not supported on this board
+  * @irq_base: base IRQ number.  %STMPE_NR_IRQS irqs will be used, or
+  *	      %STMPE_NR_INTERNAL_IRQS if the GPIO driver is not used.
+  * @irq_over_gpio: true if gpio is used to get irq
+@@ -200,6 +201,7 @@ struct stmpe_ts_platform_data {
+ struct stmpe_platform_data {
+ 	int id;
+ 	unsigned int blocks;
++	bool no_irq;
+ 	int irq_base;
+ 	unsigned int irq_trigger;
+ 	bool irq_invert_polarity;
+-- 
+1.7.8
+
