@@ -1,45 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab2AXLgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:36:13 -0500
-Received: from bar.sig21.net ([80.81.252.164]:38764 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885Ab2AXLgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:36:12 -0500
-Date: Tue, 24 Jan 2012 12:36:08 +0100
-From: Johannes Stezenbach <js@sig21.net>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: linux-3.2.1 + KVM: TSC unstable on Core i5-2400S / H67
-Message-ID: <20120124113608.GA16876@sig21.net>
+	id S1754007Ab2AXLge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:36:34 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6965 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab2AXLgd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 06:36:33 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 24 Jan 2012 03:36:31 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "joerg.roedel@amd.com" <joerg.roedel@amd.com>
+CC: "joro@8bytes.org" <joro@8bytes.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linaro-mm-sig-bounces@lists.linaro.org" 
+	<linaro-mm-sig-bounces@lists.linaro.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 24 Jan 2012 12:36:14 +0100
+Subject: Re: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Thread-Topic: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Thread-Index: AczajGl7+S73WsefSYSZNeCrWnaaWw==
+Message-ID: <20120124.133614.1646093482547685131.hdoyu@nvidia.com>
+References: <20120123154310.GC6269@8bytes.org><20120124.115701.2179509760878976509.hdoyu@nvidia.com><20120124110444.GB19255@amd.com>
+In-Reply-To: <20120124110444.GB19255@amd.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Date: Tue, 24 Jan 2012 12:04:44 +0100
+Message-ID: <20120124110444.GB19255@amd.com>
 
-I just got the following in dmesg with linux-3.2.1:
+> > > Hmm, this looks like there is a 1-1 mapping between hardware SMMU
+> > > devices and domains. This is not consistent with IOMMU-API semantics
+> > > where a domain can contain devices behind different SMMUs. Please fix
+> > > that.
+> > 
+> > I'm a bit confused with the concept of "domain". I thought that
+> > "domain" is equivalent to a "virtual address space". Usually a IOMMU
+> > device provides a virtual address space for multiple client
+> > devices. IOW, a IOMMU device provides a virtual address space, which
+> > can be shared with multiple client devices.
+> > 
+> > Actually Tegra SMMU case, a single IOMMU device has 4 different
+> > virtual address speace("smmu_as"). Each "smmu_as" has its own virtual
+> > address space. "smmu_as[i]" has mutiple "smmu_client" devices.
+> > 
+> >   smmu_as[i] == domain[i]
+> > 
+> > I don't understand why "a domain can contain devices behind different
+> > SMMUs" because those client devices belong to different virtual
+> > address spaces, and they should belong to different "domains".
+> > 
+> > Could you please explain a bit more about "domain"?
+> 
+> A domain is, as you said, a virtual address space for IO devices. But
+> the important point is, an arbitrary number of devices can be part of a
+> domain. This also means that the devices can be behind different
+> hardware SMMUs. In this case your driver needs to program the page-table
+> pointer into more than one SMMU to give devices behind different SMMUs
+> the same address space.
 
-[23379.612251] usb 2-1.2: new high-speed USB device number 6 using ehci_hcd
-[    0.006666] Marking TSC unstable due to KVM discovered backwards TSC
-[23421.511167] Switching to clocksource hpet
+Thank you for explaining.
 
-The mainboard is an Asus P8H67-V, BIOS 0806 10/26/2011 with Core i5-2400S.
-The kvm instance was running for a day already, and there was an overnight
-suspend-to-disk cycle in between, but the above happened ~1 hour after resume.
-(I don't think the usb message has anything to do with it, it's just
-the last message before the TSC message.)
+Does the above mean that a buffer can be shared with different devices
+which belong to different IOMMU devices(virtual address spaces)?
 
-Hm, checking /var/log/kern.* it seems this also happened with
-linux-3.1.* without me noticing.
+For example, assuming the following:
 
-Should I be worried?  I thought Core-i5 processors have a stable TSC?
+- We have "struct iommu_domain *domain1".
+- "domain1" has iommu device "iommu_dev1" and "iommu_dev2".
+- "iommu_dev1" has "client_dev1" and "client_dev2".
+- "iommu_dev2" has "client_dev3" and "client_dev4".
 
+"iommu_map(domain1, iova, pa, ...)" will create the following mapping
+___at once___:
 
-Johannes
+- (iova)-(pa) mapping in iommu_dev1(iommmu_dev1's virtual address space)
+- (iova)-(pa) mapping in iommu_dev2(iommmu_dev2's virtual address space)
+
+Is the above correct?
+
+It seems that the same (iova) is used for different virtual address
+spaces. What kind of case is this beneficial most in?
