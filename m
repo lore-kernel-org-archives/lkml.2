@@ -1,248 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab2AXW70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 17:59:26 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:51313 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751473Ab2AXW7Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 17:59:24 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Viresh Kumar <viresh.kumar@st.com>,
-        Chris Blair <chris.blair@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] mfd/stmpe: Add support for no-interrupt config
-Date: Tue, 24 Jan 2012 23:59:06 +0100
-Message-ID: <1327445946-11470-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	id S1752327Ab2AXXAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:00:30 -0500
+Received: from mga03.intel.com ([143.182.124.21]:7570 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab2AXXA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 18:00:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99334305"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v5 03/12] x86/topology.c: Support functions for CPU0
+ online/offline
+Thread-Topic: [PATCH v5 03/12] x86/topology.c: Support functions for CPU0
+ online/offline
+Thread-Index: AQHM0IXsBQT5wJDS+kaktsKKH5Ad3ZYPz3EAgAxdKjCAAI5JgP//elbQ
+Date: Tue, 24 Jan 2012 23:00:25 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C7122003476A@ORSMSX105.amr.corp.intel.com>
+References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
+	 <1326301493-28760-4-git-send-email-fenghua.yu@intel.com>
+	 <1326735308.3065.29.camel@bwh-desktop>
+	 <3E5A0FA7E9CA944F9D5414FEC6C7122003473E@ORSMSX105.amr.corp.intel.com>
+ <1327445577.2568.8.camel@bwh-desktop>
+In-Reply-To: <1327445577.2568.8.camel@bwh-desktop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0ON0a7R032299
 
-From: Chris Blair <chris.blair@stericsson.com>
+> > Quote from https://www.linux.com/how-to-participate-in-the-linux-
+> community
+> > "It can be tempting to add a whole new infrastructure with a series
+> of
+> > patches, but to leave that infrastructure unused until the final
+> patch
+> > in the series enables the whole thing. This temptation should be
+> > avoided if possible; if that series adds regressions, bisection will
+> > finger the last patch as the one which caused the problem, even
+> though
+> > the real bug is elsewhere. Whenever possible, a patch which adds new
+> > code should make that code active immediately."
+> >
+> > So this patch currently is in the right place in the patch set unless
+> > I miss something.
+> 
+> You're giving undue weight to that guidance.  It is far more important
+> that you do not enable features that don't work!
 
-Adds support for boards which have an STMPE device without the
-interrupt pin connected.
+Either way has reasonable arguments. This should be a generic question. But for this specific patch set, the above quote does make more sense to me as far as git bisect is concerned. Maybe someone else in the list can provide more insight?
 
-Cc: Viresh Kumar <viresh.kumar@st.com>
-Signed-off-by: Chris Blair <chris.blair@stericsson.com>
-Tested-by: Michel Jaouen <michel.jaouen@stericsson.com>
-Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v1->v2:
-- Corrects initialisation, error condition and driver removal cleanup
-  for the no-irq configuration.
----
- drivers/mfd/stmpe.c       |  114 +++++++++++++++++++++++++-------------------
- include/linux/mfd/stmpe.h |    2 +
- 2 files changed, 67 insertions(+), 49 deletions(-)
+Thanks.
 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index e07947e..04bb013 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -864,7 +864,7 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
- 	unsigned int irq_trigger = stmpe->pdata->irq_trigger;
- 	int autosleep_timeout = stmpe->pdata->autosleep_timeout;
- 	struct stmpe_variant_info *variant = stmpe->variant;
--	u8 icr;
-+	u8 icr = 0;
- 	unsigned int id;
- 	u8 data[2];
- 	int ret;
-@@ -887,31 +887,33 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
- 	if (ret)
- 		return ret;
- 
--	if (id == STMPE801_ID)
--		icr = STMPE801_REG_SYS_CTRL_INT_EN;
--	else
--		icr = STMPE_ICR_LSB_GIM;
--
--	/* STMPE801 doesn't support Edge interrupts */
--	if (id != STMPE801_ID) {
--		if (irq_trigger == IRQF_TRIGGER_FALLING ||
--				irq_trigger == IRQF_TRIGGER_RISING)
--			icr |= STMPE_ICR_LSB_EDGE;
--	}
--
--	if (irq_trigger == IRQF_TRIGGER_RISING ||
--			irq_trigger == IRQF_TRIGGER_HIGH) {
-+	if (!stmpe->pdata->no_irq) {
- 		if (id == STMPE801_ID)
--			icr |= STMPE801_REG_SYS_CTRL_INT_HI;
-+			icr = STMPE801_REG_SYS_CTRL_INT_EN;
- 		else
--			icr |= STMPE_ICR_LSB_HIGH;
--	}
-+			icr = STMPE_ICR_LSB_GIM;
- 
--	if (stmpe->pdata->irq_invert_polarity) {
--		if (id == STMPE801_ID)
--			icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
--		else
--			icr ^= STMPE_ICR_LSB_HIGH;
-+		/* STMPE801 doesn't support Edge interrupts */
-+		if (id != STMPE801_ID) {
-+			if (irq_trigger == IRQF_TRIGGER_FALLING ||
-+					irq_trigger == IRQF_TRIGGER_RISING)
-+				icr |= STMPE_ICR_LSB_EDGE;
-+		}
-+
-+		if (irq_trigger == IRQF_TRIGGER_RISING ||
-+				irq_trigger == IRQF_TRIGGER_HIGH) {
-+			if (id == STMPE801_ID)
-+				icr |= STMPE801_REG_SYS_CTRL_INT_HI;
-+			else
-+				icr |= STMPE_ICR_LSB_HIGH;
-+		}
-+
-+		if (stmpe->pdata->irq_invert_polarity) {
-+			if (id == STMPE801_ID)
-+				icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
-+			else
-+				icr ^= STMPE_ICR_LSB_HIGH;
-+		}
- 	}
- 
- 	if (stmpe->pdata->autosleep) {
-@@ -988,32 +990,42 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
- 	if (ci->init)
- 		ci->init(stmpe);
- 
--	if (pdata->irq_over_gpio) {
--		ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "stmpe");
--		if (ret) {
--			dev_err(stmpe->dev, "failed to request IRQ GPIO: %d\n",
-+	if (pdata->no_irq) {
-+		dev_info(stmpe->dev,
-+			"board config says IRQs are not supported\n");
-+	} else {
-+		if (pdata->irq_over_gpio) {
-+			ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN,
-+						"stmpe");
-+			if (ret) {
-+				dev_err(stmpe->dev,
-+					"failed to request IRQ GPIO: %d\n",
- 					ret);
--			goto out_free;
--		}
-+				goto out_free;
-+			}
- 
--		stmpe->irq = gpio_to_irq(pdata->irq_gpio);
--	} else {
--		stmpe->irq = ci->irq;
-+			stmpe->irq = gpio_to_irq(pdata->irq_gpio);
-+		} else {
-+			stmpe->irq = ci->irq;
-+		}
- 	}
- 
- 	ret = stmpe_chip_init(stmpe);
- 	if (ret)
- 		goto free_gpio;
- 
--	ret = stmpe_irq_init(stmpe);
--	if (ret)
--		goto free_gpio;
-+	if (!pdata->no_irq) {
-+		ret = stmpe_irq_init(stmpe);
-+		if (ret)
-+			goto free_gpio;
- 
--	ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
--			pdata->irq_trigger | IRQF_ONESHOT, "stmpe", stmpe);
--	if (ret) {
--		dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
--		goto out_removeirq;
-+		ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
-+				pdata->irq_trigger | IRQF_ONESHOT,
-+				"stmpe", stmpe);
-+		if (ret) {
-+			dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
-+			goto out_removeirq;
-+		}
- 	}
- 
- 	ret = stmpe_devices_init(stmpe);
-@@ -1026,11 +1038,13 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
- 
- out_removedevs:
- 	mfd_remove_devices(stmpe->dev);
--	free_irq(stmpe->irq, stmpe);
-+	if (!pdata->no_irq)
-+		free_irq(stmpe->irq, stmpe);
- out_removeirq:
--	stmpe_irq_remove(stmpe);
-+	if (!pdata->no_irq)
-+		stmpe_irq_remove(stmpe);
- free_gpio:
--	if (pdata->irq_over_gpio)
-+	if (!pdata->no_irq && pdata->irq_over_gpio)
- 		gpio_free(pdata->irq_gpio);
- out_free:
- 	kfree(stmpe);
-@@ -1041,11 +1055,13 @@ int stmpe_remove(struct stmpe *stmpe)
- {
- 	mfd_remove_devices(stmpe->dev);
- 
--	free_irq(stmpe->irq, stmpe);
--	stmpe_irq_remove(stmpe);
-+	if (!stmpe->pdata->no_irq) {
-+		free_irq(stmpe->irq, stmpe);
-+		stmpe_irq_remove(stmpe);
- 
--	if (stmpe->pdata->irq_over_gpio)
--		gpio_free(stmpe->pdata->irq_gpio);
-+		if (stmpe->pdata->irq_over_gpio)
-+			gpio_free(stmpe->pdata->irq_gpio);
-+	}
- 
- 	kfree(stmpe);
- 
-@@ -1057,7 +1073,7 @@ static int stmpe_suspend(struct device *dev)
- {
- 	struct stmpe *stmpe = dev_get_drvdata(dev);
- 
--	if (device_may_wakeup(dev))
-+	if (!stmpe->pdata->no_irq && device_may_wakeup(dev))
- 		enable_irq_wake(stmpe->irq);
- 
- 	return 0;
-@@ -1067,7 +1083,7 @@ static int stmpe_resume(struct device *dev)
- {
- 	struct stmpe *stmpe = dev_get_drvdata(dev);
- 
--	if (device_may_wakeup(dev))
-+	if (!stmpe->pdata->no_irq && device_may_wakeup(dev))
- 		disable_irq_wake(stmpe->irq);
- 
- 	return 0;
-diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-index ca1d7a3..c4b45fd 100644
---- a/include/linux/mfd/stmpe.h
-+++ b/include/linux/mfd/stmpe.h
-@@ -188,6 +188,7 @@ struct stmpe_ts_platform_data {
-  * @irq_invert_polarity: IRQ line is connected with reversed polarity
-  * @autosleep: bool to enable/disable stmpe autosleep
-  * @autosleep_timeout: inactivity timeout in milliseconds for autosleep
-+ * @no_irq: IRQs are not supported on this board
-  * @irq_base: base IRQ number.  %STMPE_NR_IRQS irqs will be used, or
-  *	      %STMPE_NR_INTERNAL_IRQS if the GPIO driver is not used.
-  * @irq_over_gpio: true if gpio is used to get irq
-@@ -200,6 +201,7 @@ struct stmpe_ts_platform_data {
- struct stmpe_platform_data {
- 	int id;
- 	unsigned int blocks;
-+	bool no_irq;
- 	int irq_base;
- 	unsigned int irq_trigger;
- 	bool irq_invert_polarity;
--- 
-1.7.8
-
+-Fenghua
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
