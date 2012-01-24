@@ -1,103 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab2AXWbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 17:31:33 -0500
-Received: from mga03.intel.com ([143.182.124.21]:49155 "EHLO mga03.intel.com"
+	id S1752065Ab2AXWcD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 17:32:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4305 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767Ab2AXWbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 17:31:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="59647615"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: RE: [PATCH v5 03/12] x86/topology.c: Support functions for CPU0
- online/offline
-Thread-Topic: [PATCH v5 03/12] x86/topology.c: Support functions for CPU0
- online/offline
-Thread-Index: AQHM0IXsBQT5wJDS+kaktsKKH5Ad3ZYPz3EAgAxdKjA=
-Date: Tue, 24 Jan 2012 22:31:23 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C7122003473E@ORSMSX105.amr.corp.intel.com>
-References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
-	 <1326301493-28760-4-git-send-email-fenghua.yu@intel.com>
- <1326735308.3065.29.camel@bwh-desktop>
-In-Reply-To: <1326735308.3065.29.camel@bwh-desktop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1751970Ab2AXWcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 17:32:01 -0500
+Date: Tue, 24 Jan 2012 17:31:53 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Suresh Jayaraman <sjayaraman@suse.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: Slab corruption in floppy driver module
+Message-ID: <20120124223153.GG17291@redhat.com>
+References: <4F1EAFE9.5000306@suse.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F1EAFE9.5000306@suse.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0OMVa3k032115
 
+On Tue, Jan 24, 2012 at 06:49:37PM +0530, Suresh Jayaraman wrote:
 
-> On Wed, 2012-01-11 at 09:04 -0800, Fenghua Yu wrote:
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> >
-> > If CONFIG_BOOTPARAM_HOTPLUG_CPU is turned on, CPU0 hotplug feature is
-> enabled
-> > by default.
-> >
-> > If CONFIG_BOOTPARAM_HOTPLUG_CPU is not turned on, CPU0 hotplug
-> feature is not
-> > enabled by default. The kernel parameter cpu0_hotplug can enable CPU0
-> hotplug
-> > feature at boot.
-> [...]
-> >  int __ref arch_register_cpu(int num)
-> >  {
-> >  	/*
-> > -	 * CPU0 cannot be offlined due to several
-> > -	 * restrictions and assumptions in kernel. This basically
-> > -	 * doesn't add a control file, one cannot attempt to offline
-> > -	 * BSP.
-> > +	 * Two known BSP/CPU0 dependencies: Resume from suspend/hibernate
-> > +	 * depends on BSP. PIC interrupts depend on BSP.
-> >  	 *
-> > -	 * Also certain PCI quirks require not to enable hotplug control
-> > -	 * for all CPU's.
-> > +	 * If the BSP depencies are under control, one can tell kernel to
-> > +	 * enable BSP hotplug. This basically adds a control file and
-> > +	 * one can attempt to offline BSP.
-> >  	 */
-> > -	if (num)
-> > +	if (num || cpu0_hotpluggable)
-> >  		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
-> >
-> >  	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
+[..]
+
+> [   33.372026]  ffff88041dd9be08 ffffffff8134f517 ffff88041dd9be28
+> ffff88041da9bc68
+> [   33.372026] Call Trace:
+> [   33.372026]  [<ffffffff81243a15>] blk_put_queue+0x15/0x20
+> [   33.372026]  [<ffffffff8124d4ff>] disk_release+0x8f/0xd0
+> [   33.372026]  [<ffffffff8134f517>] device_release+0x27/0xa0
+> [   33.372026]  [<ffffffff812754fd>] kobject_cleanup+0x6d/0x1b0
+> [   33.372026]  [<ffffffff8127564d>] kobject_release+0xd/0x10
+> [   33.372026]  [<ffffffff81276b17>] kref_put+0x37/0x70
+> [   33.372026]  [<ffffffff81275387>] kobject_put+0x27/0x60
+> [   33.372026]  [<ffffffff8124dbf7>] put_disk+0x17/0x20
+> [   33.372026]  [<ffffffffa00fa92c>] floppy_init+0x1c1/0x675 [floppy]
+> [   33.372026]  [<ffffffffa00fae37>] floppy_module_init+0x57/0x220 [floppy]
+> [   33.372026]  [<ffffffff810001d3>] do_one_initcall+0x43/0x180
+> [   33.372026]  [<ffffffff810a526d>] sys_init_module+0xcd/0x240
+> [   33.372026]  [<ffffffff8148d4c2>] system_call_fastpath+0x16/0x1b
+> [   33.372026]  [<00007f86dce3406a>] 0x7f86dce34069
+> [   33.372026] Code: eb cc 48 89 fe 31 c0 48 c7 c7 60 aa 7a 81 e8 26 c4 20 00
+> e8 92 c1 20 00 eb 8e 55 48 89 e5 53 48 89 fb 48 83 ec 08 48 85 ff 74 16 <f6> 47
+> 3c 01 74 19 48 8d 7b 38 48 c7 c6 40 56 27 81 e8 59 17 00
+> [   33.372026] RIP  [<ffffffff81275371>] kobject_put+0x11/0x60
+> [   33.372026]  RSP <ffff88041dd9bda8>
+> [   33.372026] CR2: ffff88041d986c9c
+> [   33.372026] ---[ end trace f624c17dc6e4672a ]---
+> --- cut-here ---
 > 
-> This change belongs at the end of the series.  It should not be
-> possible
-> to enable CPU0 hotplug until after the hotplug logic can do it
-> correctly, and this might break bisection.
+> What seems to be happening is after commit f992ae80, add_disk takes a
+> extra reference to the queue which is supposed to be put in disk_release().
+> In floppy_init() when there were "no floppy controllers found" the control
+> goes to out_flush_work. Note that add_disk() is not being called at all and
+> so extra reference not taken. We try to put_disk() and the call sequence is
+>   put_disk()
+>    kobject_put()
+>     kref_put()
+>      kobject_release()
+>       kobject_cleanup()
+>        device_release()
+>         disk_release()
+>          blk_put_queue()  <-- put without a get
+>           kobject_put()
+> 
+> 
+> Reverting f992ae80 makes the oops and the slab corruption messages disappear.
+> The "no floppy controllers found" message was found in the dmesg.
 
-Quote from https://www.linux.com/how-to-participate-in-the-linux-community
-"It can be tempting to add a whole new infrastructure with a series of patches, but to leave that infrastructure unused until the final patch in the series enables the whole thing. This temptation should be avoided if possible; if that series adds regressions, bisection will finger the last patch as the one which caused the problem, even though the real bug is elsewhere. Whenever possible, a patch which adds new code should make that code active immediately."
+I am wondering if extra queue reference for gendisk should be taken by driver
+and not by add_disk(). Why? Because disk->queue association is setup by
+driver and not by add_disk(). That way even if we don't call, add_disk(),
+we should be fine.
 
-So this patch currently is in the right place in the patch set unless I miss something.
-
-Thanks.
-
--Fenghua
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks
+Vivek
