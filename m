@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab2AXLGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:06:54 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45252 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab2AXLGw (ORCPT
+	id S1756182Ab2AXLHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:07:47 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55260 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab2AXLHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:06:52 -0500
-Message-ID: <4F1E90B6.6090106@openwrt.org>
-Date: Tue, 24 Jan 2012 12:06:30 +0100
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Tue, 24 Jan 2012 06:07:45 -0500
+Date: Tue, 24 Jan 2012 15:03:32 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Borislav Petkov <bp@alien8.de>,
+        Dan Ballard <dan@mindstab.net>, Jiri Kosina <jkosina@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, Stephen Wilson <wilsons@start.ca>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v3] sysctl: control functionality of /proc/pid/mem
+Message-ID: <20120124110332.GA4770@albatros>
+References: <20120123212115.GA29641@www.outflux.net>
 MIME-Version: 1.0
-To: Alessandro Rubini <rubini@gnudd.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        giancarlo.asnaghi@st.com, peppe.cavallaro@st.com
-Subject: Re: stmmac: fix phy naming inconsistency
-References: <20120124092648.GA26380@mail.gnudd.com>
-In-Reply-To: <20120124092648.GA26380@mail.gnudd.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120123212115.GA29641@www.outflux.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alessandro,
+(cc'ed kernel-hardening)
 
-On 01/24/12 10:26, Alessandro Rubini wrote:
-> After commit "db8857b stmmac: use an unique MDIO bus name" my
-> device stopped being probed because two different names were being
-> used in different places. This fixes the inconsistency.
->
-> Signed-off-by: Alessandro Rubini<rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi<giancarlo.asnaghi@st.com>
-> Cc: Giuseppe Cavallaro<peppe.cavallaro@st.com>
-> Cc: Florian Fainelli<florian@openwrt.org>
+On Mon, Jan 23, 2012 at 13:21 -0800, Kees Cook wrote:
+> 
+> Add the "proc_pid_mem" sysctl to control whether or not /proc/pid/mem is
+> allowed to work: 0: disabled, 1: read only, 2: read/write (default).
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+...
+> index f487f25..6fd4bc0 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -103,6 +103,7 @@ extern int percpu_pagelist_fraction;
+>  extern int compat_log;
+>  extern int latencytop_enabled;
+>  extern int sysctl_nr_open_min, sysctl_nr_open_max;
+> +extern int sysctl_proc_pid_mem;
+>  #ifndef CONFIG_MMU
+>  extern int sysctl_nr_trim_pages;
+>  #endif
+> @@ -1004,6 +1005,15 @@ static struct ctl_table kern_table[] = {
+>  		.proc_handler	= proc_dointvec,
+>  	},
+>  #endif
+> +	{
+> +		.procname	= "proc_pid_mem",
+> +		.data		= &sysctl_proc_pid_mem,
+> +		.maxlen		= sizeof(int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dointvec_minmax,
+> +		.extra1		= &zero,
+> +		.extra2		= &two,
+> +	},
 
-Acked-by: Florian Fainelli <florian@openwrt.org>
+While I fully agree that we should step by step opt out all deprecated and
+legacy features, which are not widely used nowadays and are probably
+dangerous from the security POV, but we should define a standart way
+of doing it.  E.g. moving all such stuff to some sysctl group, not bloating
+kernel.*.  Probably sysctl dir kernel.legacy.*?  Then this sysctl would be
+kernel.legacy.proc_pid_mem.
 
-> ---
->
-> Before the commit, the phy was identified like this and stuff worked:
->
->       PHY ID 20005c90 at 1 IRQ 0 (506:01) active
->
-> After that commit, I get
->
->       PHY ID 20005c90 at 1 IRQ 0 (STMMAC MII Bus-1:01) active
->       PHY stmmac-1:01 not found
->
-> In one place, "stmmac" is a static string, on the other the commit
-> used the name field of the bus that was "STMMAC MII Bus", so I changed
-> this older string to be nicer -- without spaces.
->
-> Maybe the name is available where "stmmac" is spelled out, but I
-> didn't check.
->
-> Now it works for me:
->
->      eth1: PHY ID 20005c90 at 1 IRQ 0 (stmmac-1:01) active
->      PHY: stmmac-1:01 - Link is Up - 100/Full
->
->
->   drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-> index 6e712c5..819606e 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-> @@ -154,7 +154,7 @@ int stmmac_mdio_register(struct net_device *ndev)
->   	else
->   		irqlist = priv->mii_irq;
->
-> -	new_bus->name = "STMMAC MII Bus";
-> +	new_bus->name = "stmmac";
->   	new_bus->read =&stmmac_mdio_read;
->   	new_bus->write =&stmmac_mdio_write;
->   	new_bus->reset =&stmmac_mdio_reset;
+Thanks,
 
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
