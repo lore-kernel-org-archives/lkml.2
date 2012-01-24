@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab2AXPAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 10:00:20 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41553 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2AXPAS (ORCPT
+	id S1753197Ab2AXPBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 10:01:51 -0500
+Received: from natasha.panasas.com ([67.152.220.90]:41389 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab2AXPBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 10:00:18 -0500
+	Tue, 24 Jan 2012 10:01:50 -0500
+Message-ID: <4F1EC7C9.2020001@panasas.com>
+Date: Tue, 24 Jan 2012 17:01:29 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <CALfB72BqSEKwGdNUnenMjEujKjObhq12jFjmu6VukuA1AtYHrQ@mail.gmail.com>
-References: <CALfB72BHLmN_vkpz9j7mi4yQWaYfJOojqopJ6d4911vuf3WRAA@mail.gmail.com>
-	<CAL1RGDVh7gNTrteiEaGg=4fxW=p3ydZPVf4d1hgtwNT9xUdOMw@mail.gmail.com>
-	<CALfB72BUDiZOZY8f4wvYej5Ozur2FZN3h3FNgc78Ur=tUsSCmA@mail.gmail.com>
-	<CAL1RGDX9P7tmGTkByEid17FrSFwdAW+4=mb9eUxc_uHvmFOeSg@mail.gmail.com>
-	<CALfB72CAwzRe3u2+yQ15+coY9kNgFTZ_Be-b-+aMe6QvbZy-HA@mail.gmail.com>
-	<CALfB72CLZMrS+gTR3=0QcGry4vA3wKmgbhjp9Lc06UZtVcxzZg@mail.gmail.com>
-	<CALfB72A+A9UDieFtYOMLB9c+XHO8nt8Lr-2pkikaqM=0fJ4OAQ@mail.gmail.com>
-	<CAL1RGDVWDsNhHywkmzaGWxZ5ERYatXVh4fGFC_tmOkkLt3Dg+w@mail.gmail.com>
-	<CALfB72BqSEKwGdNUnenMjEujKjObhq12jFjmu6VukuA1AtYHrQ@mail.gmail.com>
-Date: Tue, 24 Jan 2012 10:00:16 -0500
-Message-ID: <CA+5PVA6aE_9+g_UngHeoL3qzPSHL0oX-8N0SbsZpGRdsoXRWsw@mail.gmail.com>
-Subject: Re: kernel BUG at drivers/iommu/intel-iommu.c:1767 on F16 3.1.1-2.fc16.x86_64
-From: Josh Boyer <jwboyer@gmail.com>
-To: Albert Strasheim <fullung@gmail.com>
-Cc: Roland Dreier <roland@purestorage.com>, linux-rdma@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jeff Layton <jlayton@redhat.com>
+CC: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
+        <bfields@redhat.com>, <linux-nfs@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
+References: <20120120135646.2fc4fa61@tlielax.poochiereds.net> <4F1BCCD6.4020603@codeaurora.org> <20120123102311.4378b8c1@tlielax.poochiereds.net> <20120124074516.GC2420@redhat.com> <4F1E7F3F.3060703@panasas.com> <20120124073626.552bc31c@tlielax.poochiereds.net>
+In-Reply-To: <20120124073626.552bc31c@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 2:02 PM, Albert Strasheim <fullung@gmail.com> wrote:
-> Hello
->
-> On Fri, Jan 20, 2012 at 10:23 AM, Roland Dreier <roland@purestorage.com> wrote:
->> On Thu, Jan 19, 2012 at 12:57 AM, Albert Strasheim <fullung@gmail.com> wrote:
->>> Just checking up on this issue. Is there any further testing or
->>> information we can provide to help make a fix happen?
->> I'm not likely to be much help on VT-d issues, but maybe it
->> would be useful to dump all the values in the BUG_ON if its
->> going to trigger, ie just before
->
-> Just retested with 3.2.1-1.fc16.x86_64 and the bug seems to be gone.
->
-> I confirmed that my test program triggers the bug on 3.1.1-1.fc16.x86_64.
->
-> It seems a bunch of IOMMU fixes went in on 9 and 10 January, so it
-> seems to have fixed this problem in 3.2.
+On 01/24/2012 02:36 PM, Jeff Layton wrote:
+> 
+> No, I don't think the state would be undefined after
+> cancel_delayed_work_sync. In principle you could requeue that work
+> again if you like without needing to reinitialize it.
+> 
+> I think this is a problem in the debugobjects code. It doesn't have
+> any way to know that when the object is recycled out of the slab that
+> the work is already initialized.
+> 
 
-Possibly not.  Fedora disabled the Intel IOMMU by default in 3.1.6 (ish) and
-newer, so if your problem was related to the IOMMU being enabled that might
-explain why it went away.
+The only difference between your above example of requeue after
+cancel_delayed_work_sync, and this here is the visit back to the
+slab. Does the slab (Maybe in debug mode) stumps over some of the
+record memory?
 
-You might try booting with intel_iommu=on and see if it really is gone.
+If the memory is constant what is then the difference between the two
+cases?
 
-josh
+> Certainly it's simple enough to reinitialize the work every time we
+> allocate an inode here, but I don't think this is really a rpc_pipefs
+> bug per-se. 
+
+That depends on the API intention. If an init is intended after
+SLAB free then yes if not then not. We should ask for the intention
+of this API.
+
+> I can send a patch that works around this problem, but
+> if there are plans to fix this in the debugobjects code, I won't
+> bother...
+> 
+
+You mean other fix then calling INIT_DELAYED_WORK? is that so
+bad that we need more code to avoid it?
+
+Thanks
+Boaz
