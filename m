@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2AXErS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 23:47:18 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:34841 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582Ab2AXErQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 23:47:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120124013625.GB18436@gamma.logic.tuwien.ac.at>
-References: <20120124013625.GB18436@gamma.logic.tuwien.ac.at>
-Date: Mon, 23 Jan 2012 20:47:14 -0800
-Message-ID: <CANUX_P3er0orBy8OhDuY1DfgD810UD-_HB_ukJnCA+W8e-VazQ@mail.gmail.com>
-Subject: Re: iwlagn is getting even worse with 3.3-rc1
-From: Emmanuel Grumbach <egrumbach@gmail.com>
-To: Norbert Preining <preining@logic.at>
-Cc: linux-kernel@vger.kernel.org, ipw3945-devel@lists.sourceforge.net,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754831Ab2AXEuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 23:50:37 -0500
+Received: from gate.crashing.org ([63.228.1.57]:43903 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754725Ab2AXEug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 23:50:36 -0500
+Message-ID: <1327380633.19850.33.camel@pasglop>
+Subject: Re: Probing unconfigured PCI bridge resouces
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-pci@vger.kernel.org
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Date: Tue, 24 Jan 2012 15:50:33 +1100
+In-Reply-To: <1327379147.19850.29.camel@pasglop>
+References: <1327379147.19850.29.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 17:36, Norbert Preining <preining@logic.at> wrote:
-> Dear all,
->
-> (please cc)
->
-> long time ago we had a long discussion about iwlagn regressions in 3.1.0
-> Up to 3.2 I still have regular problems on the university network
-> with stuck iwl driver not even realizing that nothing goes out or in.
->
-> Today I switched to 3.3-rc1 to see it is getting even worse, now on my
-> home network I get stuck queue and no connection:
->
+On Tue, 2012-01-24 at 15:25 +1100, Benjamin Herrenschmidt wrote:
+ .../...
 
-Can you please run with debug flags 0x80000000 ?
-We will probably need to enable TX_REPLY too: 0xC0000000 but this one
-is noisy, so let's begin the 0x80000000
+> Or am I missing some important fact here ?
+
+Ok, I think I was missing pci_bridge_check_ranges(), gotta figure now
+why this didn't kick in properly for me, probably some arch code
+crackpot.
+
+One thing I noticed is that we do clear IORESOURCE_UNSET in setup-res.c
+when setting up a device resource but we don't clear it for bridges in
+generic code ever, so it leaks all the way through from my early arch
+code. Not a big deal but annoying.
+
+Cheers,
+Ben.
+
+
