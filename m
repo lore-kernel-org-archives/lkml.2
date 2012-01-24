@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab2AXXwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:52:24 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42427 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab2AXXwX convert rfc822-to-8bit (ORCPT
+	id S1754185Ab2AXXxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:53:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40554 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab2AXXxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 18:52:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327446024.11738.4.camel@work-vm>
-References: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
- <1327363550-19952-3-git-send-email-john.stultz@linaro.org>
- <CAJfuBxwBfB7V_gikW44rTNAYvxKZwORwzdRrvyZM19feFwcwDQ@mail.gmail.com> <1327446024.11738.4.camel@work-vm>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 24 Jan 2012 16:51:51 -0700
-Message-ID: <CAJfuBxw6M7LB_-GpmTxem-aqWz35CDDaaBv+8oqQ_R_SR7r_tQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/3] clocksource: scx200_hrt: Convert scx200 to use clocksource_register_hz
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jan 2012 18:53:04 -0500
+Date: Tue, 24 Jan 2012 15:53:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children
+ entry v8
+Message-Id: <20120124155303.acbb3b11.akpm@linux-foundation.org>
+In-Reply-To: <20120123142436.181674896@openvz.org>
+References: <20120123142036.025893883@openvz.org>
+	<20120123142436.181674896@openvz.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 4:00 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On Tue, 2012-01-24 at 11:53 -0700, Jim Cromie wrote:
->> On Mon, Jan 23, 2012 at 5:05 PM, John Stultz <john.stultz@linaro.org> wrote:
->> > Converts the scx200 clocksource to using clocksource_register_hz.
->> >
->> > This wasn't a straight conversion, so would like some extra review
->> > by the maintainers.
->> >
->>
->> hi John,
->>
->> very nice.  Tested with mhz27 too.
->>
->> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
->
-> I assume you mean Acked-by:/Tested-by: ?  Or are you going to push this
-> upstream?
->
+On Mon, 23 Jan 2012 18:20:37 +0400
+Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-huh - I thought SOB was appropriate since Im maintainer of scx200_hrt.
-That said, youre maintainer of TIMEKEEPING, and author of the patch,
-so I consider you upstream.  Lets make it instead:
+> When we do checkpoint of a task we need to know the list of children
+> the task, has but there is no easy and fast way to generate reverse
+> parent->children chain from arbitrary <pid> (while a parent pid is
+> provided in "PPid" field of /proc/<pid>/status).
+> 
+> So instead of walking over all pids in the system (creating one big process
+> tree in memory, just to figure out which children a task has) -- we add
+> explicit /proc/<pid>/task/<tid>/children entry, because the kernel already has
+> this kind of information but it is not yet exported.
+> 
+> This is a first level children, not the whole process tree.
 
-Acked-by: Jim Cromie <jim.cromie@gmail.com>
-Tested-by: Jim Cromie <jim.cromie@gmail.com>
+Is there a reason for not putting this new code inside
+CONFIG_CHECKPOINT_RESTART?  If so, please changelog that.
 
-Can you also push that trivial s/then/than/ patch I attached,
-and/or should I resend it inline, with git-send-email ?
+We could add
 
-> thanks
-> -john
->
->
+/* #ifdef CONFIG_CHECKPOINT_RESTART (reasoning goes here) */
+
+so that if we should decide to pull all this code out again, a grep
+will flag this code for consideration.
+
