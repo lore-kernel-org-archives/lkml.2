@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab2AXPxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 10:53:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37028 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab2AXPxP (ORCPT
+	id S1754323Ab2AXP7e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 10:59:34 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34511 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab2AXP7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 10:53:15 -0500
-Date: Tue, 24 Jan 2012 07:53:09 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 14/16] blkcg: don't allow or retain configuration of
- missing devices
-Message-ID: <20120124155309.GA12906@google.com>
-References: <1327360193-24679-1-git-send-email-tj@kernel.org>
- <1327360193-24679-15-git-send-email-tj@kernel.org>
- <20120124154224.GA17291@redhat.com>
+	Tue, 24 Jan 2012 10:59:33 -0500
+Date: Tue, 24 Jan 2012 16:59:21 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, Kevin Wells <kevin.wells@nxp.com>
+Subject: Re: [PATCH] Correct bad gpio naming
+Message-ID: <20120124155921.GH2609@pengutronix.de>
+References: <4F1C4E25.6070801@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SdvjNjn6lL3tIsv0"
 Content-Disposition: inline
-In-Reply-To: <20120124154224.GA17291@redhat.com>
+In-Reply-To: <4F1C4E25.6070801@antcom.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 10:42:24AM -0500, Vivek Goyal wrote:
-> On Mon, Jan 23, 2012 at 03:09:51PM -0800, Tejun Heo wrote:
-> > +	disk = get_gendisk(dev, &part);
-> > +
-> > +	if ((!disk || part) && temp) {
-> > +		ret = -ENODEV;
-> > +		goto out;
-> > +	}
-> > +
-> > +	rcu_read_lock();
-> > +
-> > +	if (disk && !part) {
-> > +		spin_lock_irq(disk->queue->queue_lock);
-> > +		blkg = blkg_lookup_create(blkcg, disk->queue, plid);
-> > +		spin_unlock_irq(disk->queue->queue_lock);
-> 
-> If queue is in bypass mode, is group creation and linking allowed when
-> somebody is trying to set per device rules. (/me is thinking if there are
-> any potential races between elevator switch and rule setting in cgroup).
 
-Yeap, there is.  Nice catch.  blkg_lookup_create() should be testing
-blk_queue_bypass() instead of blk_queue_dead() and parse_and_set
-should probably retry after a bit.  Will update.
+--SdvjNjn6lL3tIsv0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On Sun, Jan 22, 2012 at 06:57:57PM +0100, Roland Stigge wrote:
+> One of the GPIO names in drivers/gpio/gpio-lpc32xx.c
+> was bad. Renaming gpi000 -> gpio00
+>=20
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
--- 
-tejun
+Since you are modifying LPC32xx :) Which kernel version do you run? I
+was trying to get a board up with 3.0 (not booting) and 3.3-rc1 (build
+breakage). I even thought about removing that mach, since vital parts
+seem to be missing (Net, NAND) or broken. So, I am interested if there
+are still users.
+
+CCing Kevin Wells, too: Any plans from NXP?
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--SdvjNjn6lL3tIsv0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk8e1VkACgkQD27XaX1/VRulUgCgu1U6uNVM/yBqG67jeE2pd1n8
+PYYAoMnEJHDSL8jKDV3ikddLfUcOvMQE
+=cOJ9
+-----END PGP SIGNATURE-----
+
+--SdvjNjn6lL3tIsv0--
