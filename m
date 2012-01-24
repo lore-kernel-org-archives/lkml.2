@@ -1,217 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab2AXOwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 09:52:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47053 "EHLO mx1.redhat.com"
+	id S1756965Ab2AXOyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 09:54:31 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:55602 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756838Ab2AXOwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 09:52:47 -0500
-Date: Tue, 24 Jan 2012 15:52:47 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.3.0-rc1 kernel becomes unresponsive
-Message-ID: <20120124145246.GB5217@redhat.com>
-References: <4F1E8931.8070605@broadcom.com>
+	id S1753308Ab2AXOya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 09:54:30 -0500
+Date: Tue, 24 Jan 2012 15:54:11 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH v4] memcg: remove PCG_CACHE page_cgroup flag
+Message-ID: <20120124145411.GF1660@cmpxchg.org>
+References: <20120119181711.8d697a6b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120120122658.1b14b512.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120120084545.GC9655@tiehlicka.suse.cz>
+ <20120124121636.115f1cf0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120124111644.GE1660@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="82I3+IH0IqGh5yIs"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F1E8931.8070605@broadcom.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20120124111644.GE1660@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Jan 24, 2012 at 11:34:25AM +0100, Arend van Spriel wrote:
-> I moved my development work to 3.3.0-rc1 from wireless-testing
-> repository. After loading the brcmfmac driver (12 sec.) I suddenly see
-> the BUG message 'scheduling while atomic' and it fills up the entire log
-> with the machine becoming totally unresponsive.
+On Tue, Jan 24, 2012 at 12:16:44PM +0100, Johannes Weiner wrote:
+> On Tue, Jan 24, 2012 at 12:16:36PM +0900, KAMEZAWA Hiroyuki wrote:
+> > 
+> > > Can we make this anon as well?
+> > 
+> > I'm sorry for long RTT. version 4 here.
+> > ==
+> > >From c40256561d6cdaee62be7ec34147e6079dc426f4 Mon Sep 17 00:00:00 2001
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Date: Thu, 19 Jan 2012 17:09:41 +0900
+> > Subject: [PATCH] memcg: remove PCG_CACHE
+> > 
+> > We record 'the page is cache' by PCG_CACHE bit to page_cgroup.
+> > Here, "CACHE" means anonymous user pages (and SwapCache). This
+> > doesn't include shmem.
 > 
-> Any suggestions on where to start looking. What type of problems could
-> cause this?
+> !CACHE means anonymous/swapcache
+> 
+> > Consdering callers, at charge/uncharge, the caller should know
+> > what  the page is and we don't need to record it by using 1bit
+> > per page.
+> > 
+> > This patch removes PCG_CACHE bit and make callers of
+> > mem_cgroup_charge_statistics() to specify what the page is.
+> > 
+> > Changelog since v3
+> >  - renamed a variable 'rss' to 'anon'
+> > 
+> > Changelog since v2
+> >  - removed 'not_rss', added 'anon'
+> >  - changed a meaning of arguments to mem_cgroup_charge_statisitcs()
+> >  - removed a patch to mem_cgroup_uncharge_cache
+> >  - simplified comment.
+> > 
+> > Changelog since RFC.
+> >  - rebased onto memcg-devel
+> >  - rename 'file' to 'not_rss'
+> >  - some cleanup and added comment.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-There are various debug config options which allow to narrow such problems
-down. CONFIG_LOCKDEP seems to be most useful, but there are other quite
-helpful too. Try to add options from attached file to your .config (do not
-forgot to "make oldconfig" and check if these options ware not wiped out),
-and after recompile see if kernel will print some more valuable messages.
-
-Stanislaw
-
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="debug.config"
-
-#
-# Kernel hacking
-#
-CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-CONFIG_PRINTK_TIME=y
-CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
-# CONFIG_ENABLE_WARN_DEPRECATED is not set
-CONFIG_ENABLE_MUST_CHECK=y
-CONFIG_FRAME_WARN=1024
-CONFIG_MAGIC_SYSRQ=y
-CONFIG_STRIP_ASM_SYMS=y
-# CONFIG_UNUSED_SYMBOLS is not set
-CONFIG_DEBUG_FS=y
-CONFIG_HEADERS_CHECK=y
-# CONFIG_DEBUG_SECTION_MISMATCH is not set
-CONFIG_DEBUG_KERNEL=y
-CONFIG_DEBUG_SHIRQ=y
-# CONFIG_LOCKUP_DETECTOR is not set
-# CONFIG_HARDLOCKUP_DETECTOR is not set
-CONFIG_DETECT_HUNG_TASK=y
-CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
-# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
-CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
-CONFIG_SCHED_DEBUG=y
-CONFIG_SCHEDSTATS=y
-CONFIG_TIMER_STATS=y
-CONFIG_DEBUG_OBJECTS=y
-# CONFIG_DEBUG_OBJECTS_SELFTEST is not set
-CONFIG_DEBUG_OBJECTS_FREE=y
-CONFIG_DEBUG_OBJECTS_TIMERS=y
-CONFIG_DEBUG_OBJECTS_WORK=y
-CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
-# CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER is not set
-CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
-# CONFIG_SLUB_STATS is not set
-CONFIG_DEBUG_RT_MUTEXES=y
-CONFIG_DEBUG_PI_LIST=y
-# CONFIG_RT_MUTEX_TESTER is not set
-CONFIG_DEBUG_SPINLOCK=y
-CONFIG_DEBUG_MUTEXES=y
-CONFIG_DEBUG_LOCK_ALLOC=y
-CONFIG_PROVE_LOCKING=y
-# CONFIG_PROVE_RCU is not set
-# CONFIG_SPARSE_RCU_POINTER is not set
-CONFIG_LOCKDEP=y
-# CONFIG_LOCK_STAT is not set
-# CONFIG_DEBUG_LOCKDEP is not set
-CONFIG_TRACE_IRQFLAGS=y
-# CONFIG_DEBUG_ATOMIC_SLEEP is not set
-# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
-CONFIG_STACKTRACE=y
-CONFIG_DEBUG_STACK_USAGE=y
-# CONFIG_DEBUG_KOBJECT is not set
-CONFIG_DEBUG_HIGHMEM=y
-# CONFIG_DEBUG_INFO is not set
-CONFIG_DEBUG_VM=y
-# CONFIG_DEBUG_VIRTUAL is not set
-CONFIG_DEBUG_WRITECOUNT=y
-# CONFIG_DEBUG_MEMORY_INIT is not set
-CONFIG_DEBUG_LIST=y
-# CONFIG_TEST_LIST_SORT is not set
-CONFIG_DEBUG_SG=y
-CONFIG_DEBUG_NOTIFIERS=y
-CONFIG_DEBUG_CREDENTIALS=y
-CONFIG_ARCH_WANT_FRAME_POINTERS=y
-CONFIG_FRAME_POINTER=y
-CONFIG_BOOT_PRINTK_DELAY=y
-# CONFIG_RCU_TORTURE_TEST is not set
-CONFIG_RCU_CPU_STALL_TIMEOUT=60
-# CONFIG_KPROBES_SANITY_TEST is not set
-# CONFIG_BACKTRACE_SELF_TEST is not set
-# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
-# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
-# CONFIG_DEBUG_PER_CPU_MAPS is not set
-# CONFIG_LKDTM is not set
-# CONFIG_CPU_NOTIFIER_ERROR_INJECT is not set
-CONFIG_FAULT_INJECTION=y
-CONFIG_FAILSLAB=y
-CONFIG_FAIL_PAGE_ALLOC=y
-CONFIG_FAIL_MAKE_REQUEST=y
-CONFIG_FAIL_IO_TIMEOUT=y
-CONFIG_FAULT_INJECTION_DEBUG_FS=y
-CONFIG_FAULT_INJECTION_STACKTRACE_FILTER=y
-CONFIG_LATENCYTOP=y
-CONFIG_SYSCTL_SYSCALL_CHECK=y
-CONFIG_DEBUG_PAGEALLOC=y
-CONFIG_USER_STACKTRACE_SUPPORT=y
-CONFIG_NOP_TRACER=y
-CONFIG_HAVE_FUNCTION_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
-CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
-CONFIG_HAVE_DYNAMIC_FTRACE=y
-CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
-CONFIG_HAVE_C_RECORDMCOUNT=y
-CONFIG_TRACER_MAX_TRACE=y
-CONFIG_RING_BUFFER=y
-CONFIG_EVENT_TRACING=y
-CONFIG_EVENT_POWER_TRACING_DEPRECATED=y
-CONFIG_CONTEXT_SWITCH_TRACER=y
-CONFIG_RING_BUFFER_ALLOW_SWAP=y
-CONFIG_TRACING=y
-CONFIG_GENERIC_TRACER=y
-CONFIG_TRACING_SUPPORT=y
-CONFIG_FTRACE=y
-# CONFIG_FUNCTION_TRACER is not set
-# CONFIG_IRQSOFF_TRACER is not set
-CONFIG_SCHED_TRACER=y
-CONFIG_FTRACE_SYSCALLS=y
-CONFIG_BRANCH_PROFILE_NONE=y
-# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
-# CONFIG_PROFILE_ALL_BRANCHES is not set
-# CONFIG_STACK_TRACER is not set
-CONFIG_BLK_DEV_IO_TRACE=y
-CONFIG_KPROBE_EVENT=y
-# CONFIG_FTRACE_STARTUP_TEST is not set
-CONFIG_MMIOTRACE=y
-# CONFIG_MMIOTRACE_TEST is not set
-CONFIG_RING_BUFFER_BENCHMARK=m
-# CONFIG_PROVIDE_OHCI1394_DMA_INIT is not set
-CONFIG_BUILD_DOCSRC=y
-CONFIG_DYNAMIC_DEBUG=y
-CONFIG_DMA_API_DEBUG=y
-# CONFIG_ATOMIC64_SELFTEST is not set
-# CONFIG_SAMPLES is not set
-CONFIG_HAVE_ARCH_KGDB=y
-CONFIG_KGDB=y
-CONFIG_KGDB_SERIAL_CONSOLE=y
-CONFIG_KGDB_TESTS=y
-# CONFIG_KGDB_TESTS_ON_BOOT is not set
-# CONFIG_KGDB_LOW_LEVEL_TRAP is not set
-# CONFIG_KGDB_KDB is not set
-CONFIG_HAVE_ARCH_KMEMCHECK=y
-# CONFIG_KMEMCHECK is not set
-# CONFIG_TEST_KSTRTOX is not set
-CONFIG_STRICT_DEVMEM=y
-# CONFIG_X86_VERBOSE_BOOTUP is not set
-CONFIG_EARLY_PRINTK=y
-CONFIG_EARLY_PRINTK_DBGP=y
-CONFIG_DEBUG_STACKOVERFLOW=y
-CONFIG_X86_PTDUMP=y
-# CONFIG_DEBUG_RODATA is not set
-# CONFIG_DEBUG_SET_MODULE_RONX is not set
-CONFIG_DEBUG_NX_TEST=m
-CONFIG_DOUBLEFAULT=y
-# CONFIG_IOMMU_STRESS is not set
-CONFIG_HAVE_MMIOTRACE_SUPPORT=y
-# CONFIG_X86_DECODER_SELFTEST is not set
-CONFIG_IO_DELAY_TYPE_0X80=0
-CONFIG_IO_DELAY_TYPE_0XED=1
-CONFIG_IO_DELAY_TYPE_UDELAY=2
-CONFIG_IO_DELAY_TYPE_NONE=3
-CONFIG_IO_DELAY_0X80=y
-# CONFIG_IO_DELAY_0XED is not set
-# CONFIG_IO_DELAY_UDELAY is not set
-# CONFIG_IO_DELAY_NONE is not set
-CONFIG_DEFAULT_IO_DELAY_TYPE=0
-CONFIG_DEBUG_BOOT_PARAMS=y
-# CONFIG_CPA_DEBUG is not set
-CONFIG_OPTIMIZE_INLINING=y
-# CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
-
-
-
---82I3+IH0IqGh5yIs--
+Hold on, I think this patch is still not complete: end_migration()
+directly uses __mem_cgroup_uncharge_common() with the FORCE charge
+type.  This will uncharge all migrated anon pages as cache, when it
+should decide based on PageAnon(used), which is the page where
+->mapping is intact after migration.
