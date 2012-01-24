@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab2AXI0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 03:26:45 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42791 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347Ab2AXI0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 03:26:44 -0500
-Message-ID: <4F1E6B40.3000400@monstr.eu>
-Date: Tue, 24 Jan 2012 09:26:40 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1755178Ab2AXIa3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 03:30:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60828 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754633Ab2AXIa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 03:30:28 -0500
+Date: Tue, 24 Jan 2012 09:30:26 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: Ying Han <yinghan@google.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] mm: memcg: fix over reclaiming mem cgroup
+Message-ID: <20120124083026.GB26289@tiehlicka.suse.cz>
+References: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
+ <20120123130221.GA15113@tiehlicka.suse.cz>
+ <CALWz4izWYb=_svn=UJ1C--pWXv59H2ahn6EJEnTpJv-dT6WGsw@mail.gmail.com>
+ <CAKTCnzk1srmgyDzmSDzMsnbjmmt1ke91=kr0C4bECyxb1J6Rog@mail.gmail.com>
 MIME-Version: 1.0
-To: Daniel Borkmann <danborkmann@iogearbox.net>
-CC: linux-kernel@vger.kernel.org, Ariane Keller <ariane.keller@tik.ee.ethz.ch>
-Subject: Re: [PATCH] microblaze: generic atomic64 support
-References: <4F180069.6090805@iogearbox.net>
-In-Reply-To: <4F180069.6090805@iogearbox.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKTCnzk1srmgyDzmSDzMsnbjmmt1ke91=kr0C4bECyxb1J6Rog@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Borkmann wrote:
-> This tiny patch adds generic atomic64 support for the Microblaze
-> architecture.
+On Tue 24-01-12 09:18:21, Balbir Singh wrote:
+> On Tue, Jan 24, 2012 at 12:44 AM, Ying Han <yinghan@google.com> wrote:
+> > On Mon, Jan 23, 2012 at 5:02 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> On Sat 21-01-12 22:49:23, Hillf Danton wrote:
+> >>> In soft limit reclaim, overreclaim occurs when pages are reclaimed from mem
+> >>> group that is under its soft limit, or when more pages are reclaimd than the
+> >>> exceeding amount, then performance of reclaimee goes down accordingly.
+> >>
+> >> First of all soft reclaim is more a help for the global memory pressure
+> >> balancing rather than any guarantee about how much we reclaim for the
+> >> group.
+> >> We need to do more changes in order to make it a guarantee.
+> >> For example you implementation will cause severe problems when all
+> >> cgroups are soft unlimited (default conf.) or when nobody is above the
+> >> limit but the total consumption triggers the global reclaim. Therefore
+> >> nobody is in excess and you would skip all groups and only bang on the
+> >> root memcg.
+> >>
 > 
-> The patch is against the latest linux-2.6-microblaze tree. It also
-> fixes the kernel build for microblaze:
+> True, ideally soft reclaim should not turn on and allow global reclaim
+> to occur in the scenario mentioned.
 > 
-> CC kernel/trace/trace_clock.o 
-> kernel/trace/trace_clock.c:117: error: expected '=', ',', ';', 'asm' 
-> or '__attribute__' before 'trace_counter' 
-> kernel/trace/trace_clock.c: In function 'trace_clock_counter': 
-> kernel/trace/trace_clock.c:126: error: implicit declaration of 
-> function 'atomic64_add_return' 
-> kernel/trace/trace_clock.c:126: error: 'trace_counter' undeclared 
-> (first use in this function) 
-> kernel/trace/trace_clock.c:126: error: (Each undeclared identifier is 
-> reported only once 
-> kernel/trace/trace_clock.c:126: error: for each function it appears in.) 
-> make[2]: *** [kernel/trace/trace_clock.o] Error 1 
-> make[1]: *** [kernel/trace] Error 2 
-> make: *** [kernel] Error 2 
+> >> Ying Han has a patch which basically skips all cgroups which are under
+> >> its limit until we reach a certain reclaim priority but even for this we
+> >> need some additional changes - e.g. reverse the current default setting
+> >> of the soft limit.
+> >>
 > 
-> (the patch got corrupted beforehand, to that's why the resend)
-> 
-> 
-> Signed-off-by: Ariane Keller <ariane.keller@tik.ee.ethz.ch>
-> Signed-off-by: Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
-> ---
->  arch/microblaze/Kconfig              |    1 +
->  arch/microblaze/include/asm/atomic.h |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-> index 74f23a4..c8d6efb 100644
-> --- a/arch/microblaze/Kconfig
-> +++ b/arch/microblaze/Kconfig
-> @@ -19,6 +19,7 @@ config MICROBLAZE
->  	select GENERIC_IRQ_SHOW
->  	select GENERIC_PCI_IOMAP
->  	select GENERIC_CPU_DEVICES
-> +	select GENERIC_ATOMIC64
->  
->  config SWAP
->  	def_bool n
-> diff --git a/arch/microblaze/include/asm/atomic.h b/arch/microblaze/include/asm/atomic.h
-> index 6d2e1d4..615f539 100644
-> --- a/arch/microblaze/include/asm/atomic.h
-> +++ b/arch/microblaze/include/asm/atomic.h
-> @@ -2,6 +2,7 @@
->  #define _ASM_MICROBLAZE_ATOMIC_H
->  
->  #include <asm-generic/atomic.h>
-> +#include <asm-generic/atomic64.h>
->  
->  /*
->   * Atomically test *v and decrement if it is greater than 0.
+> I'd be wary of that approach, because it might be harder to explain
+> the working of soft limits,
 
-Applied to microblaze next branch.
+This is an attempt to turn the soft reclaim into a "guarantee". Changing
+the default value from unlimited to 0 basically says that everybody will
+be considered under memory pressure unless the soft limit setting says
+otherwise.
+This btw. has been the case with the double (global and per-cgroup) LRUs
+as well. It was just hidden.
 
-Thanks,
-Michal
-
+> I'll look at the discussion thread mentioned earlier for the benefits
+> of that approach.
+> 
+> >> Anyway, I like the nr_to_reclaim reduction idea because we have to do
+> >> this in some way because the global reclaim starts with ULONG
+> >> nr_to_scan.
+> >
+> > Agree with Michal where there are quite a lot changes we need to get
+> > in for soft limit before any further optimization.
+> >
+> > Hillf, please refer to the patch from Johannes
+> > https://lkml.org/lkml/2012/1/13/99 which got quite a lot recent
+> > discussions. I am expecting to get that in before further soft limit
+> > changes.
+> 
+> Balbir
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
