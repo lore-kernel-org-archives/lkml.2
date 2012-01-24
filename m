@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab2AXAvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:51:23 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52980 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753267Ab2AXAvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:51:22 -0500
-Date: Tue, 24 Jan 2012 11:51:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure in Linus' tree
-Message-Id: <20120124115110.a94c5c0393253bf5b8c3b048@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__24_Jan_2012_11_51_10_+1100_BXDbPWF3drHbnf2A"
+	id S1754523Ab2AXAy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:54:26 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:38956 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754311Ab2AXAyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 19:54:25 -0500
+Message-ID: <4F1E013E.9060009@fb.com>
+Date: Mon, 23 Jan 2012 16:54:22 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Balbir Singh <bsingharora@gmail.com>, <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
+References: <1326912662-18805-1-git-send-email-asharma@fb.com> <20120119114206.653b88bd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120119114206.653b88bd.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.211,0.0.0000
+ definitions=2012-01-23_06:2012-01-24,2012-01-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__24_Jan_2012_11_51_10_+1100_BXDbPWF3drHbnf2A
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 1/18/12 6:42 PM, KAMEZAWA Hiroyuki wrote:
+>
+> Hmm, then,
+> 1. a new task jumped into this cgroup can see any uncleared data...
+> 2. if a memcg pointer is reused, the information will be leaked.
 
-Hi Linus,
+You're suggesting mm_match_cgroup() is good enough for accounting 
+purposes, but not usable for cases where its important to get the 
+equality right?
 
-After merging the origin tree, today's linux-next build (x86_64 allmodconfi=
-g)
-failed like this:
+> 3. If VM_UNINITALIZED is set, the process can see any data which
+>     was freed by other process which doesn't know VM_UNINITALIZED at all.
+>
+> 4. The process will be able to see file cache data which the it has no
+>     access right if it's accessed by memcg once.
+>
+> 3&  4 seems too danger.
 
-usr/include/linux/fs.h:13: included file 'linux/migrate_mode.h' is not expo=
-rted
+Yes - these are the risks that I'm hoping we can document, so the 
+cgroups admin can avoid opting-in if not everything running in the 
+cgroup is trusted.
 
-Caused by commit 6536e3123e5d ("mm: fix warnings regarding enum migrate_mod=
-e").
+>
+> Isn't it better to have this as per-task rather than per-memcg ?
+> And just allow to reuse pages the page has freed ?
+>
 
-I have applied the following patch for today:
+I'm worrying that the additional complexity of maintaining a per-task 
+page list would be a problem. It might slow down workloads that 
+alloc/free a lot because of the added code. It'll probably touch the 
+kswapd as well (for reclaiming pages from the per-task free lists under 
+low mem conditions).
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 24 Jan 2012 11:41:32 +1100
-Subject: [PATCH] migrate_mode.h is not exported to user mode
+Did you have some implementation ideas which would not have the problems 
+above?
 
-so move its include into fs.h inside the __KERNEL__ protection.
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- include/linux/fs.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 4b3a41f..386da09 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -10,7 +10,6 @@
- #include <linux/ioctl.h>
- #include <linux/blk_types.h>
- #include <linux/types.h>
--#include <linux/migrate_mode.h>
-=20
- /*
-  * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
-@@ -397,6 +396,7 @@ struct inodes_stat_t {
- #include <linux/rculist_bl.h>
- #include <linux/atomic.h>
- #include <linux/shrinker.h>
-+#include <linux/migrate_mode.h>
-=20
- #include <asm/byteorder.h>
-=20
---=20
-1.7.9.rc0.23.g7e521
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__24_Jan_2012_11_51_10_+1100_BXDbPWF3drHbnf2A
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPHgB+AAoJEECxmPOUX5FE5XcP/RDzSfGZnnzLHKINuQFNPtBr
-VFrUFS4d9yjmJKfX4rYrxJt7sT4k0vYwox+rymukKCCjN+F9/QjQGBlfLc69tisR
-wYsxNnwcy+VE+r/7YWdiNDNshAzx6A/aRCBVp1vZj6adhaHC3wQ+bDiSidW61JTX
-Jo6VUX6oj5AlkMn03C8M0FfzlVxJFDW30f4VFC4Pr7+QIxXPSgQO+HPuqT0Zzk8u
-KXus2uWvuNEzqpaks3puwK5CmcpevWE8hVD9nzs6dz8FX4QhTt9fwyq1wctUOqY1
-48X/Iq1XZJ1jeM/BMtGhzy30URxPGb1xtoXdmHZaCvVw91JSJyhHw3xetUj4G7Jb
-shxNE57FVZ4XtH8MOX5Oy+ls/5Vl0QxAeA9WgKbz1XmYB2a2JRRXtmIQrqSZ8dW7
-l1F4iMYBjKq+tWJj4pBpDN7Xlg6K5pO9bWCx3T+1pz7EU917vuzWioNa5QB7dZz/
-zc5FTlO0UMgVIPAjRW+ZyZPMFAeCKaGicMjhtEnvacq0jwcYgG1ThnC/hmJLG610
-R348ditoYk9/0u0J6ENZGZh6E0mMWLRNGHfcQ0SslWvudjvpiKuRP093GU+nQJ5i
-NiasQy9r8jZQVYLGMscoZ24nFP7aZwza30L7sCq2m4Jo68UaSA6asxu0tylECCwl
-BAythB0vb8HTW6j6sIY6
-=uNiI
------END PGP SIGNATURE-----
-
---Signature=_Tue__24_Jan_2012_11_51_10_+1100_BXDbPWF3drHbnf2A--
+  -Arun
