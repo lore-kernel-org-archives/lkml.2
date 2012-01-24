@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab2AXWKI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 17:10:08 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46385 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab2AXWKG (ORCPT
+	id S1751832Ab2AXWLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 17:11:04 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41178 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751558Ab2AXWLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 17:10:06 -0500
-Message-ID: <4F1F2C3A.3060607@gmail.com>
-Date: Tue, 24 Jan 2012 16:10:02 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
-        benh@kernel.crashing.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFCv2 13/14] irq_domain: Remove 'new' irq_domain in favour of
- the ppc one
-References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca> <1327352870-14687-14-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1327352870-14687-14-git-send-email-grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jan 2012 17:11:02 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3.3] mfd: Test for jack detection when deciding if wm8994 should suspend
+Date: Tue, 24 Jan 2012 22:10:58 +0000
+Message-Id: <1327443058-32073-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2012 03:07 PM, Grant Likely wrote:
-> This patch removes the simplistic implementation of irq_domains and enables
-> the powerpc infrastructure for all irq_domain users.  The powerpc
-> infrastructure includes support for complex mappings between Linux and
-> hardware irq numbers, and can manage allocation of irq_descs.
-> 
-> This patch also converts the few users of irq_domain_add()/irq_domain_del()
-> to call irq_domain_add_legacy() instead.
-> 
-> v2: Fix removal of irq_alloc_descs() call in gic driver
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  arch/arm/common/gic.c               |   85 ++++++++-----------
->  arch/arm/common/vic.c               |   16 +---
->  arch/arm/include/asm/hardware/gic.h |    4 +-
->  arch/arm/include/asm/hardware/vic.h |    2 +
->  arch/arm/mach-exynos/common.c       |    2 +-
->  arch/arm/mach-versatile/core.c      |    5 +-
->  drivers/mfd/twl-core.c              |   12 +--
->  include/linux/irqdomain.h           |   45 +---------
->  kernel/irq/irqdomain.c              |  159 +++--------------------------------
->  9 files changed, 69 insertions(+), 261 deletions(-)
-> 
-> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+The jack detection on WM1811 is often required during system suspend, add
+it as another check when deciding if we should suspend.
 
-snip
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
 
-> @@ -716,17 +708,17 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->  		gic_irqs = 1020;
->  	gic->gic_irqs = gic_irqs;
->  
-> -	domain->nr_irq = gic_irqs - domain->hwirq_base;
-> -	domain->irq_base = irq_alloc_descs(irq_start, 16, domain->nr_irq,
-> -					   numa_node_id());
-> -	if (IS_ERR_VALUE(domain->irq_base)) {
-> +	irq_base = irq_alloc_descs(irq_start, 16, gic_irqs - hwirq_base,
-> +				   numa_node_id());
-> +	if (IS_ERR_VALUE(irq_base)) {
->  		WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
->  		     irq_start);
-> -		domain->irq_base = irq_start;
-> +		irq_base = irq_start;
->  	}
-> -	domain->host_data = gic;
-> -	domain->ops = &gic_irq_domain_ops;
-> -	irq_domain_add(domain);
-> +	gic->domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
+This should really have gone into 3.2 as a bug fix - it fell out of the
+merge window for 3.2 due to cross tree issues.  If it's helpful I can
+apply it via the ASoC tree?
 
-gic_irqs is wrong here. It needs 16 or 32 subtracted off. This patch
-will fix things:
+ drivers/mfd/wm8994-core.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index 44bf4e7..5fc0c97 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -707,8 +707,9 @@ void __init gic_init_bases(unsigned int gic_nr, int
-irq_start,
-        if (gic_irqs > 1020)
-                gic_irqs = 1020;
-        gic->gic_irqs = gic_irqs;
-+       gic_irqs -= hwirq_base;
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index f117e7f..a04b3c1 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -256,6 +256,20 @@ static int wm8994_suspend(struct device *dev)
+ 		break;
+ 	}
+ 
++	switch (wm8994->type) {
++	case WM1811:
++		ret = wm8994_reg_read(wm8994, WM8994_ANTIPOP_2);
++		if (ret < 0) {
++			dev_err(dev, "Failed to read jackdet: %d\n", ret);
++		} else if (ret & WM1811_JACKDET_MODE_MASK) {
++			dev_dbg(dev, "CODEC still active, ignoring suspend\n");
++			return 0;
++		}
++		break;
++	default:
++		break;
++	}
++
+ 	/* Disable LDO pulldowns while the device is suspended if we
+ 	 * don't know that something will be driving them. */
+ 	if (!wm8994->ldo_ena_always_driven)
+-- 
+1.7.9.rc1
 
--       irq_base = irq_alloc_descs(irq_start, 16, gic_irqs - hwirq_base,
-+       irq_base = irq_alloc_descs(irq_start, 16, gic_irqs,
-                                   numa_node_id());
-        if (IS_ERR_VALUE(irq_base)) {
-                WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming
-pre-allocated\n",
-
-> +				    hwirq_base, &gic_irq_domain_ops, gic);
-> +	if (WARN_ON(!gic->domain))
-> +		return;
->  
->  	gic_chip.flags |= gic_arch_extn.flags;
->  	gic_dist_init(gic);
