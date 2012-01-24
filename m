@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab2AXBD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 20:03:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52925 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab2AXBD4 (ORCPT
+	id S1754714Ab2AXBIF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 20:08:05 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45424 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab2AXBID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 20:03:56 -0500
-Date: Mon, 23 Jan 2012 17:03:54 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: vmscan: fix malused nr_reclaimed in shrinking zone
-Message-Id: <20120123170354.82b9f127.akpm@linux-foundation.org>
-In-Reply-To: <CAJd=RBDVxT5Pc2HZjz15LUb7xhFbztpFmXqLXVB3nCoQLKHiHg@mail.gmail.com>
-References: <CAJd=RBDVxT5Pc2HZjz15LUb7xhFbztpFmXqLXVB3nCoQLKHiHg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jan 2012 20:08:03 -0500
+Date: Tue, 24 Jan 2012 01:07:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        Dave Hansen <haveblue@us.ibm.com>, sukadev@linux.vnet.ibm.com,
+        Andy Whitcroft <apw@canonical.com>, Matt Helsley <matthltc@us.ibm.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Subject: Re: [RFC] fix devpts mount behavior
+Message-ID: <20120124010758.GJ23916@ZenIV.linux.org.uk>
+References: <20120124000517.GA28878@sergelap>
+ <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
+ <20120124002555.GA29534@sergelap>
+ <CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Jan 2012 22:41:59 +0800
-Hillf Danton <dhillf@gmail.com> wrote:
+On Mon, Jan 23, 2012 at 04:41:25PM -0800, Linus Torvalds wrote:
 
-> The value of nr_reclaimed is the amount of pages reclaimed in the current round,
-> whereas nr_to_reclaim shoud be compared with the amount of pages
-> reclaimed in all
-> rounds, so we have to buffer the pages reclaimed in the past rounds for correct
-> comparison.
+> Right. I think the opportunity for problems should be pretty small.
 > 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
+> And it's not like the pty itself wouldn't continue to work - it's just
+> that programs like /usr/bin/tty wouldn't be able to *find* it.
 > 
-> --- a/mm/vmscan.c	Sat Jan 14 14:02:20 2012
-> +++ b/mm/vmscan.c	Sat Jan 21 22:23:48 2012
-> @@ -2081,13 +2081,15 @@ static void shrink_mem_cgroup_zone(int p
->  				   struct scan_control *sc)
->  {
->  	unsigned long nr[NR_LRU_LISTS];
-> +	unsigned long reclaimed = 0;
->  	unsigned long nr_to_scan;
->  	enum lru_list lru;
-> -	unsigned long nr_reclaimed, nr_scanned;
-> +	unsigned long nr_reclaimed = 0, nr_scanned;
->  	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
->  	struct blk_plug plug;
-> 
->  restart:
-> +	reclaimed += nr_reclaimed;
->  	nr_reclaimed = 0;
->  	nr_scanned = sc->nr_scanned;
->  	get_scan_count(mz, sc, nr, priority);
-> @@ -2113,7 +2115,8 @@ restart:
->  		 * with multiple processes reclaiming pages, the total
->  		 * freeing target can get unreasonably large.
->  		 */
-> -		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
-> +		if ((nr_reclaimed + reclaimed) >= nr_to_reclaim &&
-> +					priority < DEF_PRIORITY)
->  			break;
->  	}
->  	blk_finish_plug(&plug);
+> Although who knows - maybe there is some other subtle interaction.
 
-Well, let's step back and look at it.
+FWIW, the subtle and nasty part in all that is  that you can mknod /dev/ptmx
+and it *will* work, refering to the "initial" instance.  That's what
+concerns me about the chroot scenarios -
+	mknod /jail/dev/ptmx c 5 2
+	mkdir /jail/dev/pts
+	mount -t devpts /jail/dev/pts
+	chroot /jail
+works fine right now, but with that change behaviour will be all wrong -
+opening /dev/ptmx inside of jail will grab you a pts, all right, but
+it will *not* show up in (jail) /dev/pts/* as it does with the current
+kernel.
 
-- The multiple-definitions-of-a-local-per-line thing is generally a
-  bad idea, partly because it prevents people from adding comments to
-  the definition.  It would be better like this:
-
-	unsigned long reclaimed = 0;	/* total for this function */
-	unsigned long nr_reclaimed = 0;	/* on each pass through the loop */
-
-- The names of these things are terrible!  Why not
-  reclaimed_this_pass and reclaimed_total or similar?
-
-- It would be cleaner to do the "reclaimed += nr_reclaimed" at the
-  end of the loop, if we've decided to goto restart.  (But better
-  to do it within the loop!)
-
-- Only need to update sc->nr_reclaimed at the end of the function
-  (assumes that callees of this function aren't interested in
-  sc->nr_reclaimed, which seems a future-safe assumption to me).
-
-- Should be able to avoid the temporary addition of nr_reclaimed to
-  reclaimed inside the loop by updating `reclaimed' at an appropriate
-  place.
-
-
-Or whatever.  That code's handling of `reclaimed' and `nr_reclaimed' is
-a twisty mess.  Please clean it up!  If it is done correctly,
-`nr_reclaimed' can (and should) be local to the internal loop.
+Note that if you replace that mknod with symlink pts/ptmx /jail/dev/ptmx
+the things will keep working.  However, that will _only_ work for kernels
+with DEVPTS_MULTIPLE_INSTANCES - without it you won't get ptmx inside
+devpts (which is arguably wrong, BTW)
