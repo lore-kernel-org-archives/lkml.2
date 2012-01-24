@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab2AXUma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 15:42:30 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:55401 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446Ab2AXUm2 (ORCPT
+	id S1757258Ab2AXUnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 15:43:22 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:41756 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446Ab2AXUnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 15:42:28 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
-References: <20120123142436.258631438@openvz.org>
-	<20120124111655.b29264d2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124064719.GA29735@moon> <4F1E57F3.6020607@zytor.com>
-	<20120124071716.GC29735@moon>
-	<20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124073842.GE29735@moon>
-	<20120124164008.aa1714bd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124084823.GF29735@moon>
-	<CAHGf_=r=zwj4=yjCekYZVRsTwjohJ8F8cP4rnZx6UL9kKNTc+g@mail.gmail.com>
-	<20120124202606.GC2546@moon>
-Date: Tue, 24 Jan 2012 12:44:59 -0800
-In-Reply-To: <20120124202606.GC2546@moon> (Cyrill Gorcunov's message of "Wed,
-	25 Jan 2012 00:26:06 +0400")
-Message-ID: <m18vkwj0dw.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+ER0XSepiIFS3OBav9I0EeUtMpP+Z4BUo=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Tue, 24 Jan 2012 15:43:20 -0500
+Date: Tue, 24 Jan 2012 15:43:11 -0500 (EST)
+Message-Id: <20120124.154311.1857537203481263793.davem@davemloft.net>
+To: rubini@gnudd.com
+Cc: linux-kernel@vger.kernel.org, peppe.cavallaro@st.com,
+        netdev@vger.kernel.org, giancarlo.asnaghi@st.com
+Subject: Re: [PATCH 0/3] stmmac patches
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1327394750.git.rubini@gnudd.com>
+References: <cover.1327394750.git.rubini@gnudd.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 Jan 2012 12:43:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov <gorcunov@gmail.com> writes:
+From: Alessandro Rubini <rubini@gnudd.com>
+Date: Tue, 24 Jan 2012 10:08:45 +0100
 
-> On Tue, Jan 24, 2012 at 03:20:26PM -0500, KOSAKI Motohiro wrote:
->> >> please do as you like.
->> >
->> > So it should be something like below I think...
->> 
->> Looks ok this version to me. So, if you fix other developers pointed
->> issue, I'll ack this.
->> 
->
-> Thanks!
->
-> Eric, so mm/ would be fine or I still should move it to kernel/
-> instead? I've addressed other issues I hope.
+> The following three patches add support for the STA2X11 device in the
+> stmmac driver. The device is a PCI-e bridge, so I need just to
+> add my identifiers.  The identifiers being added are already in pci_ids
+> of linux-next.
 
-The world won't fall apart if the code lands in mm.  I have a strong
-preference for kernel/.  I just don't see anything at all memory
-management like about that code.  Even the fact that you are
-comparing pointers is an implementation detail.
+This patch is fine.
 
-Eric
+> The second patch is a cleanup, already acked by both authors.
+
+I'm not applying this, instead if you want to make changes in this
+area then fix this driver so that it can properly support multiple
+device instances.
+
+I can't even imagine ever writing a driver where from the start
+it can handle only one device instance, this is pure insanity
+especially for a PCI device driver.
+
+> As for the third, I noted that there is "#ifndef MODULE" adding
+> __setup directives, but the module parameters already work, and I
+> successfully use stmmac.phy_id=1 to boot my system, so the __setup
+> adre just duplicates. This has not been acked by Giuseppe Cavallaro
+> but I offer it here nonetheless.
+
+You're breaking things for anyone using 'stmmaceth='.  So I'm not
+applying this patch either.
