@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab2AXCmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:42:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49918 "EHLO mx2.suse.de"
+	id S1755978Ab2AXCmh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:42:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49950 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755739Ab2AXCmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:42:21 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:24 2012
-Message-Id: <20120124023924.297344106@clark.kroah.org>
+	id S1755839Ab2AXCmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:42:35 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:25 2012
+Message-Id: <20120124023925.452220523@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:33:44 -0800
+Date: Mon, 23 Jan 2012 18:33:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [004/129] mtd: tests: stresstest: bail out if device has not enough eraseblocks
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [017/129] drm/radeon/kms: workaround invalid AVI infoframe checksum issue
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1732
-Lines: 53
+Content-Length: 1278
+Lines: 33
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit 2f4478ccff7df845dc9c0f8996a96373122c4417 upstream.
+commit 92db7f6c860b8190571a9dc1fcbc16d003422fe8 upstream.
 
-stresstest needs at least two eraseblocks. Bail out gracefully if that
-condition is not met. Fixes the following 'division by zero' OOPS:
+This change was verified to fix both issues with no video I've
+investigated. I've also checked checksum calculation with fglrx on:
+RV620, HD54xx, HD5450, HD6310, HD6320.
 
-[  619.100000] mtd_stresstest: MTD device size 131072, eraseblock size 131072, page size 2048, count of eraseblocks 1, pages per eraseblock 64, OOB size 64
-[  619.120000] mtd_stresstest: scanning for bad eraseblocks
-[  619.120000] mtd_stresstest: scanned 1 eraseblocks, 0 are bad
-[  619.130000] mtd_stresstest: doing operations
-[  619.130000] mtd_stresstest: 0 operations done
-[  619.140000] Division by zero in kernel.
-...
-
-caused by
-
-        /* Read or write up 2 eraseblocks at a time - hence 'ebcnt - 1' */
-        eb %= (ebcnt - 1);
-
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/tests/mtd_stresstest.c |    7 +++++++
+ drivers/gpu/drm/radeon/r600_hdmi.c |    7 +++++++
  1 file changed, 7 insertions(+)
 
---- a/drivers/mtd/tests/mtd_stresstest.c
-+++ b/drivers/mtd/tests/mtd_stresstest.c
-@@ -284,6 +284,12 @@ static int __init mtd_stresstest_init(vo
- 	       (unsigned long long)mtd->size, mtd->erasesize,
- 	       pgsize, ebcnt, pgcnt, mtd->oobsize);
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -196,6 +196,13 @@ static void r600_hdmi_videoinfoframe(
+ 	frame[0xD] = (right_bar >> 8);
  
-+	if (ebcnt < 2) {
-+		printk(PRINT_PREF "error: need at least 2 eraseblocks\n");
-+		err = -ENOSPC;
-+		goto out_put_mtd;
-+	}
-+
- 	/* Read or write up 2 eraseblocks at a time */
- 	bufsize = mtd->erasesize * 2;
+ 	r600_hdmi_infoframe_checksum(0x82, 0x02, 0x0D, frame);
++	/* Our header values (type, version, length) should be alright, Intel
++	 * is using the same. Checksum function also seems to be OK, it works
++	 * fine for audio infoframe. However calculated value is always lower
++	 * by 2 in comparison to fglrx. It breaks displaying anything in case
++	 * of TVs that strictly check the checksum. Hack it manually here to
++	 * workaround this issue. */
++	frame[0x0] += 2;
  
-@@ -322,6 +328,7 @@ out:
- 	kfree(bbt);
- 	vfree(writebuf);
- 	vfree(readbuf);
-+out_put_mtd:
- 	put_mtd_device(mtd);
- 	if (err)
- 		printk(PRINT_PREF "error %d occurred\n", err);
+ 	WREG32(offset+R600_HDMI_VIDEOINFOFRAME_0,
+ 		frame[0x0] | (frame[0x1] << 8) | (frame[0x2] << 16) | (frame[0x3] << 24));
 
 
