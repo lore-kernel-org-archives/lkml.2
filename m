@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab2AXC57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:57:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50495 "EHLO mx2.suse.de"
+	id S1756888Ab2AXC61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:58:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50480 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932590Ab2AXCrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:47:15 -0500
+	id S932622Ab2AXCrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:47:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:32 2012
-Message-Id: <20120124023932.379992335@clark.kroah.org>
+Message-Id: <20120124023932.183532284@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:15 -0800
+Date: Mon, 23 Jan 2012 18:35:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [095/129] ALSA: virtuoso: Xonar DS: fix polarity of front output
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [093/129] proc: clean up and fix /proc/<pid>/mem handling
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,37 +23,269 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1146
-Lines: 30
+Content-Length: 6373
+Lines: 262
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit f0e48b6bd4e407459715240cd241ddb6b89bdf81 upstream.
+commit e268337dfe26dfc7efd422a804dbb27977a3cccc upstream.
 
-The two DACs for the front output and the surround/center/LFE/back
-outputs are wired up out of phase, so when channels are duplicated,
-their sound can cancel out each other and result in a weaker bass
-response.  To fix this, reverse the polarity of the neutron flow to
-the front output.
+Jüri Aedla reported that the /proc/<pid>/mem handling really isn't very
+robust, and it also doesn't match the permission checking of any of the
+other related files.
 
-Reported-any-tested-by: Daniel Hill <daniel@enemyplanet.geek.nz>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This changes it to do the permission checks at open time, and instead of
+tracking the process, it tracks the VM at the time of the open.  That
+simplifies the code a lot, but does mean that if you hold the file
+descriptor open over an execve(), you'll continue to read from the _old_
+VM.
+
+That is different from our previous behavior, but much simpler.  If
+somebody actually finds a load where this matters, we'll need to revert
+this commit.
+
+I suspect that nobody will ever notice - because the process mapping
+addresses will also have changed as part of the execve.  So you cannot
+actually usefully access the fd across a VM change simply because all
+the offsets for IO would have changed too.
+
+Reported-by: Jüri Aedla <asd@ut.ee>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/oxygen/xonar_wm87x6.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/proc/base.c |  145 +++++++++++++++------------------------------------------
+ 1 file changed, 39 insertions(+), 106 deletions(-)
 
---- a/sound/pci/oxygen/xonar_wm87x6.c
-+++ b/sound/pci/oxygen/xonar_wm87x6.c
-@@ -177,6 +177,7 @@ static void wm8776_registers_init(struct
- 	struct xonar_wm87x6 *data = chip->model_data;
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -194,65 +194,7 @@ static int proc_root_link(struct inode *
+ 	return result;
+ }
  
- 	wm8776_write(chip, WM8776_RESET, 0);
-+	wm8776_write(chip, WM8776_PHASESWAP, WM8776_PH_MASK);
- 	wm8776_write(chip, WM8776_DACCTRL1, WM8776_DZCEN |
- 		     WM8776_PL_LEFT_LEFT | WM8776_PL_RIGHT_RIGHT);
- 	wm8776_write(chip, WM8776_DACMUTE, chip->dac_mute ? WM8776_DMUTE : 0);
+-static struct mm_struct *__check_mem_permission(struct task_struct *task)
+-{
+-	struct mm_struct *mm;
+-
+-	mm = get_task_mm(task);
+-	if (!mm)
+-		return ERR_PTR(-EINVAL);
+-
+-	/*
+-	 * A task can always look at itself, in case it chooses
+-	 * to use system calls instead of load instructions.
+-	 */
+-	if (task == current)
+-		return mm;
+-
+-	/*
+-	 * If current is actively ptrace'ing, and would also be
+-	 * permitted to freshly attach with ptrace now, permit it.
+-	 */
+-	if (task_is_stopped_or_traced(task)) {
+-		int match;
+-		rcu_read_lock();
+-		match = (ptrace_parent(task) == current);
+-		rcu_read_unlock();
+-		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
+-			return mm;
+-	}
+-
+-	/*
+-	 * No one else is allowed.
+-	 */
+-	mmput(mm);
+-	return ERR_PTR(-EPERM);
+-}
+-
+-/*
+- * If current may access user memory in @task return a reference to the
+- * corresponding mm, otherwise ERR_PTR.
+- */
+-static struct mm_struct *check_mem_permission(struct task_struct *task)
+-{
+-	struct mm_struct *mm;
+-	int err;
+-
+-	/*
+-	 * Avoid racing if task exec's as we might get a new mm but validate
+-	 * against old credentials.
+-	 */
+-	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
+-	if (err)
+-		return ERR_PTR(err);
+-
+-	mm = __check_mem_permission(task);
+-	mutex_unlock(&task->signal->cred_guard_mutex);
+-
+-	return mm;
+-}
+-
+-struct mm_struct *mm_for_maps(struct task_struct *task)
++static struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
+ {
+ 	struct mm_struct *mm;
+ 	int err;
+@@ -263,7 +205,7 @@ struct mm_struct *mm_for_maps(struct tas
+ 
+ 	mm = get_task_mm(task);
+ 	if (mm && mm != current->mm &&
+-			!ptrace_may_access(task, PTRACE_MODE_READ)) {
++			!ptrace_may_access(task, mode)) {
+ 		mmput(mm);
+ 		mm = ERR_PTR(-EACCES);
+ 	}
+@@ -272,6 +214,11 @@ struct mm_struct *mm_for_maps(struct tas
+ 	return mm;
+ }
+ 
++struct mm_struct *mm_for_maps(struct task_struct *task)
++{
++	return mm_access(task, PTRACE_MODE_READ);
++}
++
+ static int proc_pid_cmdline(struct task_struct *task, char * buffer)
+ {
+ 	int res = 0;
+@@ -816,38 +763,39 @@ static const struct file_operations proc
+ 
+ static int mem_open(struct inode* inode, struct file* file)
+ {
+-	file->private_data = (void*)((long)current->self_exec_id);
++	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
++	struct mm_struct *mm;
++
++	if (!task)
++		return -ESRCH;
++
++	mm = mm_access(task, PTRACE_MODE_ATTACH);
++	put_task_struct(task);
++
++	if (IS_ERR(mm))
++		return PTR_ERR(mm);
++
+ 	/* OK to pass negative loff_t, we can catch out-of-range */
+ 	file->f_mode |= FMODE_UNSIGNED_OFFSET;
++	file->private_data = mm;
++
+ 	return 0;
+ }
+ 
+ static ssize_t mem_read(struct file * file, char __user * buf,
+ 			size_t count, loff_t *ppos)
+ {
+-	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
++	int ret;
+ 	char *page;
+ 	unsigned long src = *ppos;
+-	int ret = -ESRCH;
+-	struct mm_struct *mm;
++	struct mm_struct *mm = file->private_data;
+ 
+-	if (!task)
+-		goto out_no_task;
++	if (!mm)
++		return 0;
+ 
+-	ret = -ENOMEM;
+ 	page = (char *)__get_free_page(GFP_TEMPORARY);
+ 	if (!page)
+-		goto out;
+-
+-	mm = check_mem_permission(task);
+-	ret = PTR_ERR(mm);
+-	if (IS_ERR(mm))
+-		goto out_free;
+-
+-	ret = -EIO;
+- 
+-	if (file->private_data != (void*)((long)current->self_exec_id))
+-		goto out_put;
++		return -ENOMEM;
+ 
+ 	ret = 0;
+  
+@@ -874,13 +822,7 @@ static ssize_t mem_read(struct file * fi
+ 	}
+ 	*ppos = src;
+ 
+-out_put:
+-	mmput(mm);
+-out_free:
+ 	free_page((unsigned long) page);
+-out:
+-	put_task_struct(task);
+-out_no_task:
+ 	return ret;
+ }
+ 
+@@ -889,27 +831,15 @@ static ssize_t mem_write(struct file * f
+ {
+ 	int copied;
+ 	char *page;
+-	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+ 	unsigned long dst = *ppos;
+-	struct mm_struct *mm;
++	struct mm_struct *mm = file->private_data;
+ 
+-	copied = -ESRCH;
+-	if (!task)
+-		goto out_no_task;
++	if (!mm)
++		return 0;
+ 
+-	copied = -ENOMEM;
+ 	page = (char *)__get_free_page(GFP_TEMPORARY);
+ 	if (!page)
+-		goto out_task;
+-
+-	mm = check_mem_permission(task);
+-	copied = PTR_ERR(mm);
+-	if (IS_ERR(mm))
+-		goto out_free;
+-
+-	copied = -EIO;
+-	if (file->private_data != (void *)((long)current->self_exec_id))
+-		goto out_mm;
++		return -ENOMEM;
+ 
+ 	copied = 0;
+ 	while (count > 0) {
+@@ -933,13 +863,7 @@ static ssize_t mem_write(struct file * f
+ 	}
+ 	*ppos = dst;
+ 
+-out_mm:
+-	mmput(mm);
+-out_free:
+ 	free_page((unsigned long) page);
+-out_task:
+-	put_task_struct(task);
+-out_no_task:
+ 	return copied;
+ }
+ 
+@@ -959,11 +883,20 @@ loff_t mem_lseek(struct file *file, loff
+ 	return file->f_pos;
+ }
+ 
++static int mem_release(struct inode *inode, struct file *file)
++{
++	struct mm_struct *mm = file->private_data;
++
++	mmput(mm);
++	return 0;
++}
++
+ static const struct file_operations proc_mem_operations = {
+ 	.llseek		= mem_lseek,
+ 	.read		= mem_read,
+ 	.write		= mem_write,
+ 	.open		= mem_open,
++	.release	= mem_release,
+ };
+ 
+ static ssize_t environ_read(struct file *file, char __user *buf,
 
 
