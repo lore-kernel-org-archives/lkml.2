@@ -1,193 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab2AXNBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 08:01:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9249 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756436Ab2AXNB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 08:01:26 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [62/90] block: fail SCSI passthrough ioctls on partition devices
-Date: Tue, 24 Jan 2012 14:01:07 +0100
-Message-Id: <1327410067-5957-2-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <20120123234028.216052731@clark.kroah.org>
+	id S1756453Ab2AXNUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 08:20:08 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:24325 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab2AXNUG (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Tue, 24 Jan 2012 08:20:06 -0500
+Message-ID: <4F1EAFE9.5000306@suse.com>
+Date: Tue, 24 Jan 2012 18:49:37 +0530
+From: Suresh Jayaraman <sjayaraman@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Slab corruption in floppy driver module
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed patch follows.
+Hello,
 
-You need to return -ENOTTY from scsi_verify_blk_ioctl and -ENOIOCTLCMD from
-sd_compat_ioctl, because -ENOIOCTLCMD will not be handled correctly by
-block/ioctl.c.  This would break BLKROSET and BLKFLSBUF done by non-root
-but with the appropriate capabilities.
+Got a spew of slab corruption messages during boot on 3.2 vanilla
+kernel with DEBUG_SLAB enabled.
 
-Fixed patch follows.  If you prefer that I send an interdiff, let me know.
+--- cut-here ---
+[    9.643858] pciehp: PCI Express Hot Plug Controller Driver version: 0.4
+[   10.792691] Slab corruption: blkdev_queue start=ffff88042407e088, len=2104
+[   10.799280] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+[   10.805825] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
+[   10.812404] 4e0: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+jkkkkkkkkkkkkkkk
+[   10.818984] Single bit error detected. Probably bad RAM.
+[   10.825554] Run memtest86+ or a similar memory test tool.
+[   10.832125] Next obj: start=ffff88042407e8d8, len=2104
+[   10.838656] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+[   10.845168] Last user: [<          (null)>](0x0)
+[   10.851646] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+kkkkkkkkkkkkkkkk
+[   10.858222] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+kkkkkkkkkkkkkkkk
+[   10.865320] loop: module loaded
+[   10.896232] kjournald starting.  Commit interval 5 seconds
+[   10.896368] EXT3-fs (sda5): using internal journal
+[   10.896373] EXT3-fs (sda5): mounted filesystem with ordered data mode
+[   10.915290] kjournald starting.  Commit interval 5 seconds
+[   10.915385] EXT3-fs (sda3): using internal journal
+[   10.915388] EXT3-fs (sda3): mounted filesystem with ordered data mode
+[   12.361444] fuse init (API version 7.17)
+[   15.776067] Slab corruption: blkdev_queue start=ffff880424d72148, len=2104
+[   15.776074] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+[   15.776076] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
+[   15.776087] 4e0: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+jkkkkkkkkkkkkkkk
+[   15.776092] Single bit error detected. Probably bad RAM.
+[   15.776095] Run memtest86+ or a similar memory test tool.
+[   15.776100] Next obj: start=ffff880424d72998, len=2104
+[   15.776103] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+[   15.776106] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
+[   15.776111] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+kkkkkkkkkkkkkkkk
+[   15.776116] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+kkkkkkkkkkkkkkkk
+[   15.776122] Slab corruption: blkdev_queue start=ffff880424d72998, len=2104
+[   15.776126] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+[   15.776128] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
+[   15.776133] 4e0: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+jkkkkkkkkkkkkkkk
+[   15.776137] Single bit error detected. Probably bad RAM.
+[   15.776139] Run memtest86+ or a similar memory test tool.
+[   15.776144] Prev obj: start=ffff880424d72148, len=2104
+[   15.776146] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+[   15.776150] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
+[   15.776155] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+kkkkkkkkkkkkkkkk
+[   15.776159] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+kkkkkkkkkkkkkkkk
+[   15.776164] Next obj: start=ffff880424d731e8, len=2104
+[   15.776168] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+[   15.776170] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
+[   15.776175] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+kkkkkkkkkkkkkkkk
+[   15.776178] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+kkkkkkkkkkkkkkkk
+[   15.776185] Slab corruption: blkdev_queue start=ffff880424d731e8, len=2104
+[   15.776188] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+[   15.776190] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
+[   15.776195] 4e0: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
+jkkkkkkkkkkkkkkk
+[   15.776199] Single bit error detected. Probably bad RAM.
+[   15.776202] Run memtest86+ or a similar memory test tool.
+[   15.776206] Prev obj: start=ffff880424d72998, len=2104
+--- cut-here ---
 
-Paolo
+After enabling DEBUG_PAGEALLOC the box oopsed and I was able to see the
+problem.
 
--------- 8< ---------
-From: Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH] block: fail SCSI passthrough ioctls on partition devices
+--- cut-here ---
+[   33.228029] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[   33.228029] CPU 5
+[   33.228029] Modules linked in: dcdbas i5k_amb bnx2 i5000_edac vhost_net
+iTCO_wdt edac_core macvtap macvlan tun ses enclosure kvm_intel
+iTCO_vendor_support shpchp kvm pci_hotplug sg serio_raw sr_mod cdrom button
+rtc_cmos pcspkr floppy(+) usbhid hid radeon ttm drm_kms_helper drm i2c_algo_bit
+i2c_core uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif processor
+thermal_sys hwmon ext3 mbcache jbd ata_generic ata_piix libata megaraid_sas
+scsi_mod
+[   33.228029] Supported: Yes
+[   33.228029]
+[   33.228029] Pid: 1161, comm: modprobe Tainted: G           N  3.2.0-1-debug
+#2 Dell Inc. PowerEdge 2950/0H603H
+[   33.228029] RIP: 0010:[<ffffffff81275371>]  [<ffffffff81275371>]
+kobject_put+0x11/0x60
+[   33.228029] RSP: 0018:ffff88041dd9bda8  EFLAGS: 00010286
+[   33.228029] RAX: 0000000000000000 RBX: ffff88041d986c60 RCX:
+ffff88043fd40000
+[   33.228029] RDX: 000000000000e1ac RSI: 0000000000000286 RDI:
+ffff88041d986c60
+[   33.228029] RBP: ffff88041dd9bdb8 R08: 0000000000000000 R09:
+0000000000000009
+[   33.228029] R10: 0000000000000028 R11: 0000000000000000 R12:
+ffff88041da9bc58
+[   33.228029] R13: 0000000000000000 R14: 0000000000000008 R15:
+00000000ffffffed
+[   33.228029] FS:  00007f86dd2ba700(0000) GS:ffff88043fd40000(0000)
+knlGS:0000000000000000
+[   33.228029] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   33.228029] CR2: ffff88041d986c9c CR3: 0000000424796000 CR4:
+00000000000006e0
+[   33.228029] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[   33.228029] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[   33.228029] Process modprobe (pid: 1161, threadinfo ffff88041dd9a000, task
+ffff88041d998680)
+[   33.228029] Stack:
+[   33.228029]  ffff88041da9bbf0 ffff88041da9bbf0 ffff88041dd9bdc8
+ffffffff81243a15
+[   33.372026]  ffff88041dd9bde8 ffffffff8124d4ff 0000000000000000
+ffffffff81a794e0
+[   33.372026]  ffff88041dd9be08 ffffffff8134f517 ffff88041dd9be28
+ffff88041da9bc68
+[   33.372026] Call Trace:
+[   33.372026]  [<ffffffff81243a15>] blk_put_queue+0x15/0x20
+[   33.372026]  [<ffffffff8124d4ff>] disk_release+0x8f/0xd0
+[   33.372026]  [<ffffffff8134f517>] device_release+0x27/0xa0
+[   33.372026]  [<ffffffff812754fd>] kobject_cleanup+0x6d/0x1b0
+[   33.372026]  [<ffffffff8127564d>] kobject_release+0xd/0x10
+[   33.372026]  [<ffffffff81276b17>] kref_put+0x37/0x70
+[   33.372026]  [<ffffffff81275387>] kobject_put+0x27/0x60
+[   33.372026]  [<ffffffff8124dbf7>] put_disk+0x17/0x20
+[   33.372026]  [<ffffffffa00fa92c>] floppy_init+0x1c1/0x675 [floppy]
+[   33.372026]  [<ffffffffa00fae37>] floppy_module_init+0x57/0x220 [floppy]
+[   33.372026]  [<ffffffff810001d3>] do_one_initcall+0x43/0x180
+[   33.372026]  [<ffffffff810a526d>] sys_init_module+0xcd/0x240
+[   33.372026]  [<ffffffff8148d4c2>] system_call_fastpath+0x16/0x1b
+[   33.372026]  [<00007f86dce3406a>] 0x7f86dce34069
+[   33.372026] Code: eb cc 48 89 fe 31 c0 48 c7 c7 60 aa 7a 81 e8 26 c4 20 00
+e8 92 c1 20 00 eb 8e 55 48 89 e5 53 48 89 fb 48 83 ec 08 48 85 ff 74 16 <f6> 47
+3c 01 74 19 48 8d 7b 38 48 c7 c6 40 56 27 81 e8 59 17 00
+[   33.372026] RIP  [<ffffffff81275371>] kobject_put+0x11/0x60
+[   33.372026]  RSP <ffff88041dd9bda8>
+[   33.372026] CR2: ffff88041d986c9c
+[   33.372026] ---[ end trace f624c17dc6e4672a ]---
+--- cut-here ---
 
-commit 0bfc96cb77224736dfa35c3c555d37b3646ef35e upstream.
-
-Linux allows executing the SG_IO ioctl on a partition or LVM volume, and
-will pass the command to the underlying block device.  This is
-well-known, but it is also a large security problem when (via Unix
-permissions, ACLs, SELinux or a combination thereof) a program or user
-needs to be granted access only to part of the disk.
-
-This patch lets partitions forward a small set of harmless ioctls;
-others are logged with printk so that we can see which ioctls are
-actually sent.  In my tests only CDROM_GET_CAPABILITY actually occurred.
-Of course it was being sent to a (partition on a) hard disk, so it would
-have failed with ENOTTY and the patch isn't changing anything in
-practice.  Still, I'm treating it specially to avoid spamming the logs.
-
-In principle, this restriction should include programs running with
-CAP_SYS_RAWIO.  If for example I let a program access /dev/sda2 and
-/dev/sdb, it still should not be able to read/write outside the
-boundaries of /dev/sda2 independent of the capabilities.  However, for
-now programs with CAP_SYS_RAWIO will still be allowed to send the
-ioctls.  Their actions will still be logged.
-
-This patch does not affect the non-libata IDE driver.  That driver
-however already tests for bd != bd->bd_contains before issuing some
-ioctl; it could be restricted further to forbid these ioctls even for
-programs running with CAP_SYS_ADMIN/CAP_SYS_RAWIO.
-
-Cc: linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[ Make it also print the command name when warning - Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-[ Changes with respect to 3.3: return -ENOTTY from scsi_verify_blk_ioctl
-  and -ENOIOCTLCMD from sd_compat_ioctl. ]
-
----
- block/scsi_ioctl.c     |   45 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/scsi/sd.c      |   11 +++++++++--
- include/linux/blkdev.h |    1 +
- 3 files changed, 55 insertions(+), 2 deletions(-)
-
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -24,6 +24,7 @@
- #include <linux/capability.h>
- #include <linux/completion.h>
- #include <linux/cdrom.h>
-+#include <linux/ratelimit.h>
- #include <linux/slab.h>
- #include <linux/times.h>
- #include <asm/uaccess.h>
-@@ -691,9 +692,53 @@ int scsi_cmd_ioctl(struct request_queue
- }
- EXPORT_SYMBOL(scsi_cmd_ioctl);
- 
-+int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
-+{
-+       if (bd && bd == bd->bd_contains)
-+               return 0;
-+
-+       /* Actually none of these is particularly useful on a partition,
-+        * but they are safe.
-+        */
-+       switch (cmd) {
-+       case SCSI_IOCTL_GET_IDLUN:
-+       case SCSI_IOCTL_GET_BUS_NUMBER:
-+       case SCSI_IOCTL_GET_PCI:
-+       case SCSI_IOCTL_PROBE_HOST:
-+       case SG_GET_VERSION_NUM:
-+       case SG_SET_TIMEOUT:
-+       case SG_GET_TIMEOUT:
-+       case SG_GET_RESERVED_SIZE:
-+       case SG_SET_RESERVED_SIZE:
-+       case SG_EMULATED_HOST:
-+               return 0;
-+       case CDROM_GET_CAPABILITY:
-+               /* Keep this until we remove the printk below.  udev sends it
-+                * and we do not want to spam dmesg about it.   CD-ROMs do
-+                * not have partitions, so we get here only for disks.
-+                */
-+               return -ENOTTY;
-+       default:
-+               break;
-+       }
-+
-+       /* In particular, rule out all resets and host-specific ioctls.  */
-+       printk_ratelimited(KERN_WARNING
-+                          "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
-+
-+       return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
-+}
-+EXPORT_SYMBOL(scsi_verify_blk_ioctl);
-+
- int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
-                       unsigned int cmd, void __user *arg)
- {
-+       int ret;
-+
-+       ret = scsi_verify_blk_ioctl(bd, cmd);
-+       if (ret < 0)
-+               return ret;
-+
-        return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
- }
- EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1073,6 +1073,10 @@ static int sd_ioctl(struct block_device
-        SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
-                                                disk->disk_name, cmd));
- 
-+       error = scsi_verify_blk_ioctl(bdev, cmd);
-+       if (error < 0)
-+               return error;
-+
-        /*
-         * If we are in the middle of error recovery, don't let anyone
-         * else try and use this device.  Also, if error recovery fails, it
-@@ -1265,6 +1269,11 @@ static int sd_compat_ioctl(struct block_
-                           unsigned int cmd, unsigned long arg)
- {
-        struct scsi_device *sdev = scsi_disk(bdev->bd_disk)->device;
-+       int ret;
-+
-+       ret = scsi_verify_blk_ioctl(bdev, cmd);
-+       if (ret < 0)
-+               return -ENOIOCTLCMD;
- 
-        /*
-         * If we are in the middle of error recovery, don't let anyone
-@@ -1276,8 +1285,6 @@ static int sd_compat_ioctl(struct block_
-                return -ENODEV;
-               
-        if (sdev->host->hostt->compat_ioctl) {
--               int ret;
--
-                ret = sdev->host->hostt->compat_ioctl(sdev, cmd, (void __user *)arg);
- 
-                return ret;
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -670,6 +670,7 @@ extern int blk_insert_cloned_request(str
-                                     struct request *rq);
- extern void blk_delay_queue(struct request_queue *, unsigned long);
- extern void blk_recount_segments(struct request_queue *, struct bio *);
-+extern int scsi_verify_blk_ioctl(struct block_device *, unsigned int);
- extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
-                              unsigned int, void __user *);
- extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+What seems to be happening is after commit f992ae80, add_disk takes a
+extra reference to the queue which is supposed to be put in disk_release().
+In floppy_init() when there were "no floppy controllers found" the control
+goes to out_flush_work. Note that add_disk() is not being called at all and
+so extra reference not taken. We try to put_disk() and the call sequence is
+  put_disk()
+   kobject_put()
+    kref_put()
+     kobject_release()
+      kobject_cleanup()
+       device_release()
+        disk_release()
+         blk_put_queue()  <-- put without a get
+          kobject_put()
 
 
+Reverting f992ae80 makes the oops and the slab corruption messages disappear.
+The "no floppy controllers found" message was found in the dmesg.
 
 
-
+Thanks
+Suresh
