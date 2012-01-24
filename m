@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab2AXDFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 22:05:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50214 "EHLO mx2.suse.de"
+	id S932388Ab2AXDGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:06:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50203 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932216Ab2AXCpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:45:03 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:29 2012
-Message-Id: <20120124023928.952193326@clark.kroah.org>
+	id S932182Ab2AXCoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:44:55 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:28 2012
+Message-Id: <20120124023928.872275189@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:37 -0800
+Date: Mon, 23 Jan 2012 18:34:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>
-Subject: [057/129] i2c: Fix error value returned by several bus drivers
+        alan@lxorguk.ukuu.org.uk,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [056/129] UBIFS: make debugging messages light again
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,190 +24,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 5429
-Lines: 183
+Content-Length: 1965
+Lines: 51
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 7c1f59c9d5caf3a84f35549b5d58f3c055a68da5 upstream.
+commit 1f5d78dc4823a85f112aaa2d0f17624f8c2a6c52 upstream.
 
-When adding checks for ACPI resource conflicts to many bus drivers,
-not enough attention was paid to the error paths, and for several
-drivers this causes 0 to be returned on error in some cases. Fix this
-by properly returning a non-zero value on every error.
+We switch to dynamic debugging in commit
+56e46742e846e4de167dde0e1e1071ace1c882a5 but did not take into account that
+now we do not control anymore whether a specific message is enabled or not.
+So now we lock the "dbg_lock" and release it in every debugging macro, which
+make them not so light-weight.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+This commit removes the "dbg_lock" protection from the debugging macros to
+fix the issue.
+
+The downside is that now our DBGKEY() stuff is broken, but this is not
+critical at all and will be fixed later.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/i2c/busses/i2c-ali1535.c |   11 +++++++----
- drivers/i2c/busses/i2c-nforce2.c |    2 +-
- drivers/i2c/busses/i2c-sis5595.c |    4 ++--
- drivers/i2c/busses/i2c-sis630.c  |    6 +++++-
- drivers/i2c/busses/i2c-viapro.c  |    7 +++++--
- 5 files changed, 20 insertions(+), 10 deletions(-)
+ fs/ubifs/debug.h |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/i2c/busses/i2c-ali1535.c
-+++ b/drivers/i2c/busses/i2c-ali1535.c
-@@ -140,7 +140,7 @@ static unsigned short ali1535_smba;
-    defined to make the transition easier. */
- static int __devinit ali1535_setup(struct pci_dev *dev)
- {
--	int retval = -ENODEV;
-+	int retval;
- 	unsigned char temp;
+--- a/fs/ubifs/debug.h
++++ b/fs/ubifs/debug.h
+@@ -175,19 +175,17 @@ const char *dbg_key_str1(const struct ub
+ 			 const union ubifs_key *key);
  
- 	/* Check the following things:
-@@ -155,6 +155,7 @@ static int __devinit ali1535_setup(struc
- 	if (ali1535_smba == 0) {
- 		dev_warn(&dev->dev,
- 			"ALI1535_smb region uninitialized - upgrade BIOS?\n");
-+		retval = -ENODEV;
- 		goto exit;
- 	}
+ /*
+- * DBGKEY macros require @dbg_lock to be held, which it is in the dbg message
+- * macros.
++ * TODO: these macros are now broken because there is no locking around them
++ * and we use a global buffer for the key string. This means that in case of
++ * concurrent execution we will end up with incorrect and messy key strings.
+  */
+ #define DBGKEY(key) dbg_key_str0(c, (key))
+ #define DBGKEY1(key) dbg_key_str1(c, (key))
  
-@@ -167,6 +168,7 @@ static int __devinit ali1535_setup(struc
- 			    ali1535_driver.name)) {
- 		dev_err(&dev->dev, "ALI1535_smb region 0x%x already in use!\n",
- 			ali1535_smba);
-+		retval = -EBUSY;
- 		goto exit;
- 	}
+ extern spinlock_t dbg_lock;
  
-@@ -174,6 +176,7 @@ static int __devinit ali1535_setup(struc
- 	pci_read_config_byte(dev, SMBCFG, &temp);
- 	if ((temp & ALI1535_SMBIO_EN) == 0) {
- 		dev_err(&dev->dev, "SMB device not enabled - upgrade BIOS?\n");
-+		retval = -ENODEV;
- 		goto exit_free;
- 	}
+-#define ubifs_dbg_msg(type, fmt, ...) do {                        \
+-	spin_lock(&dbg_lock);                                     \
+-	pr_debug("UBIFS DBG " type ": " fmt "\n", ##__VA_ARGS__); \
+-	spin_unlock(&dbg_lock);                                   \
+-} while (0)
++#define ubifs_dbg_msg(type, fmt, ...) \
++	pr_debug("UBIFS DBG " type ": " fmt "\n", ##__VA_ARGS__)
  
-@@ -181,6 +184,7 @@ static int __devinit ali1535_setup(struc
- 	pci_read_config_byte(dev, SMBHSTCFG, &temp);
- 	if ((temp & 1) == 0) {
- 		dev_err(&dev->dev, "SMBus controller not enabled - upgrade BIOS?\n");
-+		retval = -ENODEV;
- 		goto exit_free;
- 	}
- 
-@@ -198,12 +202,11 @@ static int __devinit ali1535_setup(struc
- 	dev_dbg(&dev->dev, "SMBREV = 0x%X\n", temp);
- 	dev_dbg(&dev->dev, "ALI1535_smba = 0x%X\n", ali1535_smba);
- 
--	retval = 0;
--exit:
--	return retval;
-+	return 0;
- 
- exit_free:
- 	release_region(ali1535_smba, ALI1535_SMB_IOSIZE);
-+exit:
- 	return retval;
- }
- 
---- a/drivers/i2c/busses/i2c-nforce2.c
-+++ b/drivers/i2c/busses/i2c-nforce2.c
-@@ -356,7 +356,7 @@ static int __devinit nforce2_probe_smb (
- 	error = acpi_check_region(smbus->base, smbus->size,
- 				  nforce2_driver.name);
- 	if (error)
--		return -1;
-+		return error;
- 
- 	if (!request_region(smbus->base, smbus->size, nforce2_driver.name)) {
- 		dev_err(&smbus->adapter.dev, "Error requesting region %02x .. %02X for %s\n",
---- a/drivers/i2c/busses/i2c-sis5595.c
-+++ b/drivers/i2c/busses/i2c-sis5595.c
-@@ -147,7 +147,7 @@ static int __devinit sis5595_setup(struc
- 	u16 a;
- 	u8 val;
- 	int *i;
--	int retval = -ENODEV;
-+	int retval;
- 
- 	/* Look for imposters */
- 	for (i = blacklist; *i != 0; i++) {
-@@ -223,7 +223,7 @@ static int __devinit sis5595_setup(struc
- 
- error:
- 	release_region(sis5595_base + SMB_INDEX, 2);
--	return retval;
-+	return -ENODEV;
- }
- 
- static int sis5595_transaction(struct i2c_adapter *adap)
---- a/drivers/i2c/busses/i2c-sis630.c
-+++ b/drivers/i2c/busses/i2c-sis630.c
-@@ -393,7 +393,7 @@ static int __devinit sis630_setup(struct
- {
- 	unsigned char b;
- 	struct pci_dev *dummy = NULL;
--	int retval = -ENODEV, i;
-+	int retval, i;
- 
- 	/* check for supported SiS devices */
- 	for (i=0; supported[i] > 0 ; i++) {
-@@ -418,18 +418,21 @@ static int __devinit sis630_setup(struct
- 	*/
- 	if (pci_read_config_byte(sis630_dev, SIS630_BIOS_CTL_REG,&b)) {
- 		dev_err(&sis630_dev->dev, "Error: Can't read bios ctl reg\n");
-+		retval = -ENODEV;
- 		goto exit;
- 	}
- 	/* if ACPI already enabled , do nothing */
- 	if (!(b & 0x80) &&
- 	    pci_write_config_byte(sis630_dev, SIS630_BIOS_CTL_REG, b | 0x80)) {
- 		dev_err(&sis630_dev->dev, "Error: Can't enable ACPI\n");
-+		retval = -ENODEV;
- 		goto exit;
- 	}
- 
- 	/* Determine the ACPI base address */
- 	if (pci_read_config_word(sis630_dev,SIS630_ACPI_BASE_REG,&acpi_base)) {
- 		dev_err(&sis630_dev->dev, "Error: Can't determine ACPI base address\n");
-+		retval = -ENODEV;
- 		goto exit;
- 	}
- 
-@@ -445,6 +448,7 @@ static int __devinit sis630_setup(struct
- 			    sis630_driver.name)) {
- 		dev_err(&sis630_dev->dev, "SMBus registers 0x%04x-0x%04x already "
- 			"in use!\n", acpi_base + SMB_STS, acpi_base + SMB_SAA);
-+		retval = -EBUSY;
- 		goto exit;
- 	}
- 
---- a/drivers/i2c/busses/i2c-viapro.c
-+++ b/drivers/i2c/busses/i2c-viapro.c
-@@ -324,7 +324,7 @@ static int __devinit vt596_probe(struct
- 				 const struct pci_device_id *id)
- {
- 	unsigned char temp;
--	int error = -ENODEV;
-+	int error;
- 
- 	/* Determine the address of the SMBus areas */
- 	if (force_addr) {
-@@ -390,6 +390,7 @@ found:
- 			dev_err(&pdev->dev, "SMBUS: Error: Host SMBus "
- 				"controller not enabled! - upgrade BIOS or "
- 				"use force=1\n");
-+			error = -ENODEV;
- 			goto release_region;
- 		}
- 	}
-@@ -422,9 +423,11 @@ found:
- 		 "SMBus Via Pro adapter at %04x", vt596_smba);
- 
- 	vt596_pdev = pci_dev_get(pdev);
--	if (i2c_add_adapter(&vt596_adapter)) {
-+	error = i2c_add_adapter(&vt596_adapter);
-+	if (error) {
- 		pci_dev_put(vt596_pdev);
- 		vt596_pdev = NULL;
-+		goto release_region;
- 	}
- 
- 	/* Always return failure here.  This is to allow other drivers to bind
+ /* Just a debugging messages not related to any specific UBIFS subsystem */
+ #define dbg_msg(fmt, ...)                                                     \
 
 
