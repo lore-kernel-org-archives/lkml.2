@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234Ab2AXVpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 16:45:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38030 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab2AXVpM (ORCPT
+	id S1751281Ab2AXVpu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 16:45:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52246 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2AXVps convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 16:45:12 -0500
-Date: Tue, 24 Jan 2012 13:45:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
-Message-Id: <20120124134510.75f2c63f.akpm@linux-foundation.org>
-In-Reply-To: <20120124132222.d78bc0d4.akpm@linux-foundation.org>
-References: <20120124064719.GA29735@moon>
-	<4F1E57F3.6020607@zytor.com>
-	<20120124071716.GC29735@moon>
-	<20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124073842.GE29735@moon>
-	<20120124164008.aa1714bd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124084823.GF29735@moon>
-	<CAHGf_=r=zwj4=yjCekYZVRsTwjohJ8F8cP4rnZx6UL9kKNTc+g@mail.gmail.com>
-	<20120124202606.GC2546@moon>
-	<m18vkwj0dw.fsf@fess.ebiederm.org>
-	<20120124205039.GB2278@moon>
-	<20120124132222.d78bc0d4.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jan 2012 16:45:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1327008905-20544-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1323383765-30742-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	<1327008905-20544-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Date: Tue, 24 Jan 2012 22:45:48 +0100
+Message-ID: <CACRpkdauiejKKPLxXKWP+wvMVA_TOpYK1h2D=qptr-hOWWjeoQ@mail.gmail.com>
+Subject: Re: [PATCH] Documentation/pinctrl: fix a few syntax errors in code examples
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012 13:22:22 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+2012/1/19 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
 
-> static int kcmp_task_pointers(void *task1, void *task2, size_t field_offset,
-> 				enum you_forgot_to_name_the_enum type)
-> {
-> 	void **field1 = t1 + field_offset;	/* points to a pointer in the task_struct */
-> 	void **field2 = t1 + field_offset;
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+> Hello,
+>
+> this is what's left from the patch I sent in the mail with message-id
+> 1323383765-30742-1-git-send-email-u.kleine-koenig@pengutronix.de after
+> rebasing to current linus/master. The original submission got an ack by
+> Stephen Warren that I assumed for this patch, too.
 
-On reflection, this was being too cute.  It would be better to make the
-function type-safer and just put up with the local typecasts:
+Thanks, applied it, if there are many doc fixes I will likely squash
+them however.
 
-static int kcmp_task_pointers(struct task_struct *task1,
-			struct task_struct *task2, size_t field_offset,
-			enum you_forgot_to_name_the_enum type)
-{
-	void **field1 = (void *)t1 + field_offset;
-	void **field2 = (void *)t2 + field_offset;
-
+Yours,
+Linus Walleij
