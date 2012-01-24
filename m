@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab2AXKE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 05:04:59 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40641 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab2AXKE6 (ORCPT
+	id S1756080Ab2AXKLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 05:11:40 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34574 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab2AXKLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 05:04:58 -0500
-Subject: Re: [PATCH] sched/s390: fix compile error in sched/core.c
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4F1691FF.5010703@de.ibm.com>
-References: <1326268696-30904-1-git-send-email-borntraeger@de.ibm.com>
-	 <1326272868.2442.122.camel@twins>  <4F1691FF.5010703@de.ibm.com>
+	Tue, 24 Jan 2012 05:11:39 -0500
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
+ condition
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Oleg Nesterov <oleg@redhat.com>, Yasunori Goto <y-goto@jp.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120118094219.GE5842@elte.hu>
+References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com>
+	 <1326721082.2442.234.camel@twins>
+	 <20120117174031.3118.E1E9C6FF@jp.fujitsu.com>
+	 <20120117090605.GD7612@elte.hu> <20120117151242.GA13290@redhat.com>
+	 <20120118094219.GE5842@elte.hu>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Jan 2012 11:04:54 +0100
-Message-ID: <1327399494.2614.3.camel@laptop>
+Date: Tue, 24 Jan 2012 11:11:25 +0100
+Message-ID: <1327399885.2614.5.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -25,15 +32,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-18 at 10:33 +0100, Christian Borntraeger wrote:
-> On 11/01/12 10:07, Peter Zijlstra wrote:
-> 
-> > Weird, I would have expected -next to pick this up.. Anyway, no
-> > objection although do we really need that extra #ifdef ?
-> 
-> Ping.
-> Do you want me to resubmit without ifdefs?
+On Wed, 2012-01-18 at 10:42 +0100, Ingo Molnar wrote:
+> Well, but does the -rt kernel suffer from the same race? 
 
-Drat, sorry for loosing this. Applied (and removed the ifdeffery
-myself). Thanks!
+Yes it does
+
+> It can 
+> generate delays at the exact same place, and can generate much 
+> longer delays than an SMI, if a high-prio RT task comes along.
+> 
+No it can't, since do_exit() plays silly games with preempt_disable().
 
