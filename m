@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab2AXCxu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:53:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50616 "EHLO mx2.suse.de"
+	id S932843Ab2AXCyN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:54:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50605 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932814Ab2AXCsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:48:24 -0500
+	id S932797Ab2AXCsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:48:18 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:34 2012
-Message-Id: <20120124023934.262597826@clark.kroah.org>
+Message-Id: <20120124023934.090685307@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:36 -0800
+Date: Mon, 23 Jan 2012 18:35:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Cliff Wickman <cpw@sgi.com>,
         Ingo Molnar <mingo@elte.hu>
-Subject: [116/129] x86/UV2: Work around BAU bug
+Subject: [114/129] x86/UV2: Fix new UV2 hardware by using native UV2 broadcast mode
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,569 +24,348 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 18382
-Lines: 562
+Content-Length: 10740
+Lines: 341
 
 From: Cliff Wickman <cpw@sgi.com>
 
-commit c5d35d399e685acccc85a675e8765c26b2a9813a upstream.
+commit da87c937e5a2374686edd58df06cfd5050b125fa upstream.
 
-This patch implements a workaround for a UV2 hardware bug.
-The bug is a non-atomic update of a memory-mapped register. When
-hardware message delivery and software message acknowledge occur
-simultaneously the pending message acknowledge for the arriving
-message may be lost.  This causes the sender's message status to
-stay busy.
+Update the use of the Broadcast Assist Unit on SGI Altix UV2 to
+the use of native UV2 mode on new hardware (not the legacy mode).
 
-Part of the workaround is to not acknowledge a completed message
-until it is verified that no other message is actually using the
-resource that is mistakenly recorded in the completed message.
-
-Part of the workaround is to test for long elapsed time in such
-a busy condition, then handle it by using a spare sending
-descriptor. The stay-busy condition is eventually timed out by
-hardware, and then the original sending descriptor can be
-re-used. Most of that logic change is in keeping track of the
-current descriptor and the state of the spares.
-
-The occurrences of the workaround are added to the BAU
-statistics.
+UV2 native mode has a different format for a broadcast message.
+We also need quick differentiaton between UV1 and UV2.
 
 Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Link: http://lkml.kernel.org/r/20120116211947.GC5767@sgi.com
+Link: http://lkml.kernel.org/r/20120116211750.GA5767@sgi.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/uv/uv_bau.h |   13 +
- arch/x86/platform/uv/tlb_uv.c    |  274 ++++++++++++++++++++++++++++++++++-----
- 2 files changed, 254 insertions(+), 33 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |   93 ++++++++++++++++++++++++++++++++++++---
+ arch/x86/platform/uv/tlb_uv.c    |   88 +++++++++++++++++++++++++++---------
+ 2 files changed, 151 insertions(+), 30 deletions(-)
 
 --- a/arch/x86/include/asm/uv/uv_bau.h
 +++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -167,6 +167,7 @@
- #define FLUSH_RETRY_TIMEOUT		2
- #define FLUSH_GIVEUP			3
- #define FLUSH_COMPLETE			4
-+#define FLUSH_RETRY_BUSYBUG		5
+@@ -65,7 +65,7 @@
+  * UV2: Bit 19 selects between
+  *  (0): 10 microsecond timebase and
+  *  (1): 80 microseconds
+- *  we're using 655us, similar to UV1: 65 units of 10us
++ *  we're using 560us, similar to UV1: 65 units of 10us
+  */
+ #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
+ #define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
+@@ -235,10 +235,10 @@ struct bau_msg_payload {
+ 
  
  /*
-  * tuning the action when the numalink network is extremely delayed
-@@ -463,7 +464,6 @@ struct bau_pq_entry {
- struct msg_desc {
- 	struct bau_pq_entry	*msg;
- 	int			msg_slot;
--	int			swack_slot;
- 	struct bau_pq_entry	*queue_first;
- 	struct bau_pq_entry	*queue_last;
+- * Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
++ * UV1 Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
+  * see table 4.2.3.0.1 in broacast_assist spec.
+  */
+-struct bau_msg_header {
++struct uv1_bau_msg_header {
+ 	unsigned int	dest_subnodeid:6;	/* must be 0x10, for the LB */
+ 	/* bits 5:0 */
+ 	unsigned int	base_dest_nasid:15;	/* nasid of the first bit */
+@@ -318,19 +318,87 @@ struct bau_msg_header {
  };
-@@ -517,6 +517,9 @@ struct ptc_stats {
- 	unsigned long	s_retry_messages;	/* retry broadcasts */
- 	unsigned long	s_bau_reenabled;	/* for bau enable/disable */
- 	unsigned long	s_bau_disabled;		/* for bau enable/disable */
-+	unsigned long	s_uv2_wars;		/* uv2 workaround, perm. busy */
-+	unsigned long	s_uv2_wars_hw;		/* uv2 workaround, hiwater */
-+	unsigned long	s_uv2_war_waits;	/* uv2 workaround, long waits */
- 	/* destination statistics */
- 	unsigned long	d_alltlb;		/* times all tlb's on this
- 						   cpu were flushed */
-@@ -593,6 +596,8 @@ struct bau_control {
+ 
+ /*
++ * UV2 Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
++ * see figure 9-2 of harp_sys.pdf
++ */
++struct uv2_bau_msg_header {
++	unsigned int	base_dest_nasid:15;	/* nasid of the first bit */
++	/* bits 14:0 */				/* in uvhub map */
++	unsigned int	dest_subnodeid:5;	/* must be 0x10, for the LB */
++	/* bits 19:15 */
++	unsigned int	rsvd_1:1;		/* must be zero */
++	/* bit 20 */
++	/* Address bits 59:21 */
++	/* bits 25:2 of address (44:21) are payload */
++	/* these next 24 bits become bytes 12-14 of msg */
++	/* bits 28:21 land in byte 12 */
++	unsigned int	replied_to:1;		/* sent as 0 by the source to
++						   byte 12 */
++	/* bit 21 */
++	unsigned int	msg_type:3;		/* software type of the
++						   message */
++	/* bits 24:22 */
++	unsigned int	canceled:1;		/* message canceled, resource
++						   is to be freed*/
++	/* bit 25 */
++	unsigned int	payload_1:3;		/* not currently used */
++	/* bits 28:26 */
++
++	/* bits 36:29 land in byte 13 */
++	unsigned int	payload_2a:3;		/* not currently used */
++	unsigned int	payload_2b:5;		/* not currently used */
++	/* bits 36:29 */
++
++	/* bits 44:37 land in byte 14 */
++	unsigned int	payload_3:8;		/* not currently used */
++	/* bits 44:37 */
++
++	unsigned int	rsvd_2:7;		/* reserved */
++	/* bits 51:45 */
++	unsigned int	swack_flag:1;		/* software acknowledge flag */
++	/* bit 52 */
++	unsigned int	rsvd_3a:3;		/* must be zero */
++	unsigned int	rsvd_3b:8;		/* must be zero */
++	unsigned int	rsvd_3c:8;		/* must be zero */
++	unsigned int	rsvd_3d:3;		/* must be zero */
++	/* bits 74:53 */
++	unsigned int	fairness:3;		/* usually zero */
++	/* bits 77:75 */
++
++	unsigned int	sequence:16;		/* message sequence number */
++	/* bits 93:78  Suppl_A  */
++	unsigned int	chaining:1;		/* next descriptor is part of
++						   this activation*/
++	/* bit 94 */
++	unsigned int	multilevel:1;		/* multi-level multicast
++						   format */
++	/* bit 95 */
++	unsigned int	rsvd_4:24;		/* ordered / source node /
++						   source subnode / aging
++						   must be zero */
++	/* bits 119:96 */
++	unsigned int	command:8;		/* message type */
++	/* bits 127:120 */
++};
++
++/*
+  * The activation descriptor:
+  * The format of the message to send, plus all accompanying control
+  * Should be 64 bytes
+  */
+ struct bau_desc {
+-	struct pnmask			distribution;
++	struct pnmask				distribution;
+ 	/*
+ 	 * message template, consisting of header and payload:
+ 	 */
+-	struct bau_msg_header		header;
+-	struct bau_msg_payload		payload;
++	union bau_msg_header {
++		struct uv1_bau_msg_header	uv1_hdr;
++		struct uv2_bau_msg_header	uv2_hdr;
++	} header;
++
++	struct bau_msg_payload			payload;
+ };
+-/*
++/* UV1:
+  *   -payload--    ---------header------
+  *   bytes 0-11    bits 41-56  bits 58-81
+  *       A           B  (2)      C (3)
+@@ -340,6 +408,16 @@ struct bau_desc {
+  *   bytes 0-11  bytes 12-14  bytes 16-17  (byte 15 filled in by hw as vector)
+  *   ------------payload queue-----------
+  */
++/* UV2:
++ *   -payload--    ---------header------
++ *   bytes 0-11    bits 70-78  bits 21-44
++ *       A           B  (2)      C (3)
++ *
++ *            A/B/C are moved to:
++ *       A            C          B
++ *   bytes 0-11  bytes 12-14  bytes 16-17  (byte 15 filled in by hw as vector)
++ *   ------------payload queue-----------
++ */
+ 
+ /*
+  * The payload queue on the destination side is an array of these.
+@@ -511,6 +589,7 @@ struct bau_control {
+ 	short			osnode;
+ 	short			uvhub_cpu;
+ 	short			uvhub;
++	short			uvhub_version;
  	short			cpus_in_socket;
  	short			cpus_in_uvhub;
  	short			partition_base_pnode;
-+	short			using_desc; /* an index, like uvhub_cpu */
-+	unsigned int		inuse_map;
- 	unsigned short		message_number;
- 	unsigned short		uvhub_quiesce;
- 	short			socket_acknowledge_count[DEST_Q_SIZE];
-@@ -610,6 +615,7 @@ struct bau_control {
- 	int			cong_response_us;
- 	int			cong_reps;
- 	int			cong_period;
-+	unsigned long		clocks_per_100_usec;
- 	cycles_t		period_time;
- 	long			period_requests;
- 	struct hub_and_pnode	*thp;
-@@ -670,6 +676,11 @@ static inline void write_mmr_sw_ack(unsi
- 	uv_write_local_mmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS, mr);
- }
- 
-+static inline void write_gmmr_sw_ack(int pnode, unsigned long mr)
-+{
-+	write_gmmr(pnode, UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS, mr);
-+}
-+
- static inline unsigned long read_mmr_sw_ack(void)
- {
- 	return read_lmmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
 --- a/arch/x86/platform/uv/tlb_uv.c
 +++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -157,13 +157,14 @@ static int __init uvhub_to_first_apicid(
-  * clear of the Timeout bit (as well) will free the resource. No reply will
-  * be sent (the hardware will only do one reply per message).
-  */
--static void reply_to_message(struct msg_desc *mdp, struct bau_control *bcp)
-+static void reply_to_message(struct msg_desc *mdp, struct bau_control *bcp,
-+						int do_acknowledge)
- {
- 	unsigned long dw;
- 	struct bau_pq_entry *msg;
- 
- 	msg = mdp->msg;
--	if (!msg->canceled) {
-+	if (!msg->canceled && do_acknowledge) {
- 		dw = (msg->swack_vec << UV_SW_ACK_NPENDING) | msg->swack_vec;
- 		write_mmr_sw_ack(dw);
- 	}
-@@ -212,8 +213,8 @@ static void bau_process_retry_msg(struct
- 			if (mmr & (msg_res << UV_SW_ACK_NPENDING)) {
- 				unsigned long mr;
- 				/*
--				 * is the resource timed out?
--				 * make everyone ignore the cancelled message.
-+				 * Is the resource timed out?
-+				 * Make everyone ignore the cancelled message.
- 				 */
- 				msg2->canceled = 1;
- 				stat->d_canceled++;
-@@ -231,8 +232,8 @@ static void bau_process_retry_msg(struct
-  * Do all the things a cpu should do for a TLB shootdown message.
-  * Other cpu's may come here at the same time for this message.
-  */
--static void bau_process_message(struct msg_desc *mdp,
--					struct bau_control *bcp)
-+static void bau_process_message(struct msg_desc *mdp, struct bau_control *bcp,
-+						int do_acknowledge)
- {
- 	short socket_ack_count = 0;
- 	short *sp;
-@@ -284,8 +285,9 @@ static void bau_process_message(struct m
- 		if (msg_ack_count == bcp->cpus_in_uvhub) {
- 			/*
- 			 * All cpus in uvhub saw it; reply
-+			 * (unless we are in the UV2 workaround)
- 			 */
--			reply_to_message(mdp, bcp);
-+			reply_to_message(mdp, bcp, do_acknowledge);
- 		}
+@@ -573,7 +573,7 @@ static int wait_completion(struct bau_de
+ 		right_shift = ((cpu - UV_CPUS_PER_AS) * UV_ACT_STATUS_SIZE);
  	}
  
-@@ -491,27 +493,138 @@ static int uv1_wait_completion(struct ba
- /*
-  * UV2 has an extra bit of status in the ACTIVATION_STATUS_2 register.
-  */
--static unsigned long uv2_read_status(unsigned long offset, int rshft, int cpu)
-+static unsigned long uv2_read_status(unsigned long offset, int rshft, int desc)
- {
- 	unsigned long descriptor_status;
- 	unsigned long descriptor_status2;
- 
- 	descriptor_status = ((read_lmmr(offset) >> rshft) & UV_ACT_STATUS_MASK);
--	descriptor_status2 = (read_mmr_uv2_status() >> cpu) & 0x1UL;
-+	descriptor_status2 = (read_mmr_uv2_status() >> desc) & 0x1UL;
- 	descriptor_status = (descriptor_status << 1) | descriptor_status2;
- 	return descriptor_status;
- }
- 
-+/*
-+ * Return whether the status of the descriptor that is normally used for this
-+ * cpu (the one indexed by its hub-relative cpu number) is busy.
-+ * The status of the original 32 descriptors is always reflected in the 64
-+ * bits of UVH_LB_BAU_SB_ACTIVATION_STATUS_0.
-+ * The bit provided by the activation_status_2 register is irrelevant to
-+ * the status if it is only being tested for busy or not busy.
-+ */
-+int normal_busy(struct bau_control *bcp)
-+{
-+	int cpu = bcp->uvhub_cpu;
-+	int mmr_offset;
-+	int right_shift;
-+
-+	mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_0;
-+	right_shift = cpu * UV_ACT_STATUS_SIZE;
-+	return (((((read_lmmr(mmr_offset) >> right_shift) &
-+				UV_ACT_STATUS_MASK)) << 1) == UV2H_DESC_BUSY);
-+}
-+
-+/*
-+ * Entered when a bau descriptor has gone into a permanent busy wait because
-+ * of a hardware bug.
-+ * Workaround the bug.
-+ */
-+int handle_uv2_busy(struct bau_control *bcp)
-+{
-+	int busy_one = bcp->using_desc;
-+	int normal = bcp->uvhub_cpu;
-+	int selected = -1;
-+	int i;
-+	unsigned long descriptor_status;
-+	unsigned long status;
-+	int mmr_offset;
-+	struct bau_desc *bau_desc_old;
-+	struct bau_desc *bau_desc_new;
-+	struct bau_control *hmaster = bcp->uvhub_master;
-+	struct ptc_stats *stat = bcp->statp;
-+	cycles_t ttm;
-+
-+	stat->s_uv2_wars++;
-+	spin_lock(&hmaster->uvhub_lock);
-+	/* try for the original first */
-+	if (busy_one != normal) {
-+		if (!normal_busy(bcp))
-+			selected = normal;
-+	}
-+	if (selected < 0) {
-+		/* can't use the normal, select an alternate */
-+		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_1;
-+		descriptor_status = read_lmmr(mmr_offset);
-+
-+		/* scan available descriptors 32-63 */
-+		for (i = 0; i < UV_CPUS_PER_AS; i++) {
-+			if ((hmaster->inuse_map & (1 << i)) == 0) {
-+				status = ((descriptor_status >>
-+						(i * UV_ACT_STATUS_SIZE)) &
-+						UV_ACT_STATUS_MASK) << 1;
-+				if (status != UV2H_DESC_BUSY) {
-+					selected = i + UV_CPUS_PER_AS;
-+					break;
-+				}
-+			}
-+		}
-+	}
-+
-+	if (busy_one != normal)
-+		/* mark the busy alternate as not in-use */
-+		hmaster->inuse_map &= ~(1 << (busy_one - UV_CPUS_PER_AS));
-+
-+	if (selected >= 0) {
-+		/* switch to the selected descriptor */
-+		if (selected != normal) {
-+			/* set the selected alternate as in-use */
-+			hmaster->inuse_map |=
-+					(1 << (selected - UV_CPUS_PER_AS));
-+			if (selected > stat->s_uv2_wars_hw)
-+				stat->s_uv2_wars_hw = selected;
-+		}
-+		bau_desc_old = bcp->descriptor_base;
-+		bau_desc_old += (ITEMS_PER_DESC * busy_one);
-+		bcp->using_desc = selected;
-+		bau_desc_new = bcp->descriptor_base;
-+		bau_desc_new += (ITEMS_PER_DESC * selected);
-+		*bau_desc_new = *bau_desc_old;
-+	} else {
-+		/*
-+		 * All are busy. Wait for the normal one for this cpu to
-+		 * free up.
-+		 */
-+		stat->s_uv2_war_waits++;
-+		spin_unlock(&hmaster->uvhub_lock);
-+		ttm = get_cycles();
-+		do {
-+			cpu_relax();
-+		} while (normal_busy(bcp));
-+		spin_lock(&hmaster->uvhub_lock);
-+		/* switch to the original descriptor */
-+		bcp->using_desc = normal;
-+		bau_desc_old = bcp->descriptor_base;
-+		bau_desc_old += (ITEMS_PER_DESC * bcp->using_desc);
-+		bcp->using_desc = (ITEMS_PER_DESC * normal);
-+		bau_desc_new = bcp->descriptor_base;
-+		bau_desc_new += (ITEMS_PER_DESC * normal);
-+		*bau_desc_new = *bau_desc_old; /* copy the entire descriptor */
-+	}
-+	spin_unlock(&hmaster->uvhub_lock);
-+	return FLUSH_RETRY_BUSYBUG;
-+}
-+
- static int uv2_wait_completion(struct bau_desc *bau_desc,
- 				unsigned long mmr_offset, int right_shift,
- 				struct bau_control *bcp, long try)
- {
- 	unsigned long descriptor_stat;
- 	cycles_t ttm;
--	int cpu = bcp->uvhub_cpu;
-+	int desc = bcp->using_desc;
-+	long busy_reps = 0;
- 	struct ptc_stats *stat = bcp->statp;
- 
--	descriptor_stat = uv2_read_status(mmr_offset, right_shift, cpu);
-+	descriptor_stat = uv2_read_status(mmr_offset, right_shift, desc);
- 
- 	/* spin on the status MMR, waiting for it to go idle */
- 	while (descriptor_stat != UV2H_DESC_IDLE) {
-@@ -542,12 +655,23 @@ static int uv2_wait_completion(struct ba
- 			bcp->conseccompletes = 0;
- 			return FLUSH_RETRY_TIMEOUT;
- 		} else {
-+			busy_reps++;
-+			if (busy_reps > 1000000) {
-+				/* not to hammer on the clock */
-+				busy_reps = 0;
-+				ttm = get_cycles();
-+				if ((ttm - bcp->send_message) >
-+					(bcp->clocks_per_100_usec)) {
-+					return handle_uv2_busy(bcp);
-+				}
-+			}
- 			/*
- 			 * descriptor_stat is still BUSY
- 			 */
- 			cpu_relax();
- 		}
--		descriptor_stat = uv2_read_status(mmr_offset, right_shift, cpu);
-+		descriptor_stat = uv2_read_status(mmr_offset, right_shift,
-+									desc);
- 	}
- 	bcp->conseccompletes++;
- 	return FLUSH_COMPLETE;
-@@ -563,14 +687,14 @@ static int wait_completion(struct bau_de
- {
- 	int right_shift;
- 	unsigned long mmr_offset;
--	int cpu = bcp->uvhub_cpu;
-+	int desc = bcp->using_desc;
- 
--	if (cpu < UV_CPUS_PER_AS) {
-+	if (desc < UV_CPUS_PER_AS) {
- 		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_0;
--		right_shift = cpu * UV_ACT_STATUS_SIZE;
-+		right_shift = desc * UV_ACT_STATUS_SIZE;
- 	} else {
- 		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_1;
--		right_shift = ((cpu - UV_CPUS_PER_AS) * UV_ACT_STATUS_SIZE);
-+		right_shift = ((desc - UV_CPUS_PER_AS) * UV_ACT_STATUS_SIZE);
- 	}
- 
- 	if (bcp->uvhub_version == 1)
-@@ -752,8 +876,7 @@ static void handle_cmplt(int completion_
-  * Returns 1 if it gives up entirely and the original cpu mask is to be
-  * returned to the kernel.
-  */
--int uv_flush_send_and_wait(struct bau_desc *bau_desc,
--			struct cpumask *flush_mask, struct bau_control *bcp)
-+int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
+-	if (is_uv1_hub())
++	if (bcp->uvhub_version == 1)
+ 		return uv1_wait_completion(bau_desc, mmr_offset, right_shift,
+ 								bcp, try);
+ 	else
+@@ -757,15 +757,22 @@ int uv_flush_send_and_wait(struct bau_de
  {
  	int seq_number = 0;
  	int completion_stat = 0;
-@@ -766,20 +889,24 @@ int uv_flush_send_and_wait(struct bau_de
++	int uv1 = 0;
+ 	long try = 0;
+ 	unsigned long index;
+ 	cycles_t time1;
+ 	cycles_t time2;
+ 	struct ptc_stats *stat = bcp->statp;
  	struct bau_control *hmaster = bcp->uvhub_master;
- 	struct uv1_bau_msg_header *uv1_hdr = NULL;
- 	struct uv2_bau_msg_header *uv2_hdr = NULL;
-+	struct bau_desc *bau_desc;
++	struct uv1_bau_msg_header *uv1_hdr = NULL;
++	struct uv2_bau_msg_header *uv2_hdr = NULL;
  
--	if (bcp->uvhub_version == 1) {
--		uv1 = 1;
-+	if (bcp->uvhub_version == 1)
+-	if (is_uv1_hub())
++	if (bcp->uvhub_version == 1) {
++		uv1 = 1;
  		uv1_throttle(hmaster, stat);
--		uv1_hdr = &bau_desc->header.uv1_hdr;
--	} else
--		uv2_hdr = &bau_desc->header.uv2_hdr;
++		uv1_hdr = &bau_desc->header.uv1_hdr;
++	} else
++		uv2_hdr = &bau_desc->header.uv2_hdr;
  
  	while (hmaster->uvhub_quiesce)
  		cpu_relax();
- 
+@@ -773,14 +780,23 @@ int uv_flush_send_and_wait(struct bau_de
  	time1 = get_cycles();
  	do {
--		if (try == 0) {
-+		bau_desc = bcp->descriptor_base;
-+		bau_desc += (ITEMS_PER_DESC * bcp->using_desc);
-+		if (bcp->uvhub_version == 1) {
-+			uv1 = 1;
-+			uv1_hdr = &bau_desc->header.uv1_hdr;
-+		} else
-+			uv2_hdr = &bau_desc->header.uv2_hdr;
-+		if ((try == 0) || (completion_stat == FLUSH_RETRY_BUSYBUG)) {
- 			if (uv1)
- 				uv1_hdr->msg_type = MSG_REGULAR;
- 			else
-@@ -797,13 +924,14 @@ int uv_flush_send_and_wait(struct bau_de
- 			uv1_hdr->sequence = seq_number;
- 		else
- 			uv2_hdr->sequence = seq_number;
--		index = (1UL << AS_PUSH_SHIFT) | bcp->uvhub_cpu;
-+		index = (1UL << AS_PUSH_SHIFT) | bcp->using_desc;
+ 		if (try == 0) {
+-			bau_desc->header.msg_type = MSG_REGULAR;
++			if (uv1)
++				uv1_hdr->msg_type = MSG_REGULAR;
++			else
++				uv2_hdr->msg_type = MSG_REGULAR;
+ 			seq_number = bcp->message_number++;
+ 		} else {
+-			bau_desc->header.msg_type = MSG_RETRY;
++			if (uv1)
++				uv1_hdr->msg_type = MSG_RETRY;
++			else
++				uv2_hdr->msg_type = MSG_RETRY;
+ 			stat->s_retry_messages++;
+ 		}
+ 
+-		bau_desc->header.sequence = seq_number;
++		if (uv1)
++			uv1_hdr->sequence = seq_number;
++		else
++			uv2_hdr->sequence = seq_number;
+ 		index = (1UL << AS_PUSH_SHIFT) | bcp->uvhub_cpu;
  		bcp->send_message = get_cycles();
  
- 		write_mmr_activation(index);
- 
- 		try++;
- 		completion_stat = wait_completion(bau_desc, bcp, try);
-+		/* UV2: wait_completion() may change the bcp->using_desc */
- 
- 		handle_cmplt(completion_stat, bau_desc, bcp, hmaster, stat);
- 
-@@ -814,6 +942,7 @@ int uv_flush_send_and_wait(struct bau_de
- 		}
- 		cpu_relax();
- 	} while ((completion_stat == FLUSH_RETRY_PLUGGED) ||
-+		 (completion_stat == FLUSH_RETRY_BUSYBUG) ||
- 		 (completion_stat == FLUSH_RETRY_TIMEOUT));
- 
- 	time2 = get_cycles();
-@@ -828,6 +957,7 @@ int uv_flush_send_and_wait(struct bau_de
- 	record_send_stats(time1, time2, bcp, stat, completion_stat, try);
- 
- 	if (completion_stat == FLUSH_GIVEUP)
-+		/* FLUSH_GIVEUP will fall back to using IPI's for tlb flush */
- 		return 1;
- 	return 0;
- }
-@@ -983,7 +1113,7 @@ const struct cpumask *uv_flush_tlb_other
+@@ -967,7 +983,7 @@ const struct cpumask *uv_flush_tlb_other
  		stat->s_ntargself++;
  
  	bau_desc = bcp->descriptor_base;
--	bau_desc += (ITEMS_PER_DESC * bcp->uvhub_cpu);
-+	bau_desc += (ITEMS_PER_DESC * bcp->using_desc);
+-	bau_desc += ITEMS_PER_DESC * bcp->uvhub_cpu;
++	bau_desc += (ITEMS_PER_DESC * bcp->uvhub_cpu);
  	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
  	if (set_distrib_bits(flush_mask, bcp, bau_desc, &locals, &remotes))
  		return NULL;
-@@ -996,13 +1126,86 @@ const struct cpumask *uv_flush_tlb_other
- 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
- 	 * or 1 if it gave up and the original cpumask should be returned.
- 	 */
--	if (!uv_flush_send_and_wait(bau_desc, flush_mask, bcp))
-+	if (!uv_flush_send_and_wait(flush_mask, bcp))
- 		return NULL;
- 	else
- 		return cpumask;
- }
- 
- /*
-+ * Search the message queue for any 'other' message with the same software
-+ * acknowledge resource bit vector.
-+ */
-+struct bau_pq_entry *find_another_by_swack(struct bau_pq_entry *msg,
-+			struct bau_control *bcp, unsigned char swack_vec)
-+{
-+	struct bau_pq_entry *msg_next = msg + 1;
-+
-+	if (msg_next > bcp->queue_last)
-+		msg_next = bcp->queue_first;
-+	while ((msg_next->swack_vec != 0) && (msg_next != msg)) {
-+		if (msg_next->swack_vec == swack_vec)
-+			return msg_next;
-+		msg_next++;
-+		if (msg_next > bcp->queue_last)
-+			msg_next = bcp->queue_first;
-+	}
-+	return NULL;
-+}
-+
-+/*
-+ * UV2 needs to work around a bug in which an arriving message has not
-+ * set a bit in the UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE register.
-+ * Such a message must be ignored.
-+ */
-+void process_uv2_message(struct msg_desc *mdp, struct bau_control *bcp)
-+{
-+	unsigned long mmr_image;
-+	unsigned char swack_vec;
-+	struct bau_pq_entry *msg = mdp->msg;
-+	struct bau_pq_entry *other_msg;
-+
-+	mmr_image = read_mmr_sw_ack();
-+	swack_vec = msg->swack_vec;
-+
-+	if ((swack_vec & mmr_image) == 0) {
-+		/*
-+		 * This message was assigned a swack resource, but no
-+		 * reserved acknowlegment is pending.
-+		 * The bug has prevented this message from setting the MMR.
-+		 * And no other message has used the same sw_ack resource.
-+		 * Do the requested shootdown but do not reply to the msg.
-+		 * (the 0 means make no acknowledge)
-+		 */
-+		bau_process_message(mdp, bcp, 0);
-+		return;
-+	}
-+
-+	/*
-+	 * Some message has set the MMR 'pending' bit; it might have been
-+	 * another message.  Look for that message.
-+	 */
-+	other_msg = find_another_by_swack(msg, bcp, msg->swack_vec);
-+	if (other_msg) {
-+		/* There is another.  Do not ack the current one. */
-+		bau_process_message(mdp, bcp, 0);
-+		/*
-+		 * Let the natural processing of that message acknowledge
-+		 * it. Don't get the processing of sw_ack's out of order.
-+		 */
-+		return;
-+	}
-+
-+	/*
-+	 * There is no other message using this sw_ack, so it is safe to
-+	 * acknowledge it.
-+	 */
-+	bau_process_message(mdp, bcp, 1);
-+
-+	return;
-+}
-+
-+/*
-  * The BAU message interrupt comes here. (registered by set_intr_gate)
-  * See entry_64.S
-  *
-@@ -1038,9 +1241,11 @@ void uv_bau_message_interrupt(struct pt_
- 		count++;
- 
- 		msgdesc.msg_slot = msg - msgdesc.queue_first;
--		msgdesc.swack_slot = ffs(msg->swack_vec) - 1;
- 		msgdesc.msg = msg;
--		bau_process_message(&msgdesc, bcp);
-+		if (bcp->uvhub_version == 2)
-+			process_uv2_message(&msgdesc, bcp);
-+		else
-+			bau_process_message(&msgdesc, bcp, 1);
- 
- 		msg++;
- 		if (msg > msgdesc.queue_last)
-@@ -1158,7 +1363,7 @@ static int ptc_seq_show(struct seq_file
- 		seq_printf(file,
- 			"all one mult none retry canc nocan reset rcan ");
- 		seq_printf(file,
--			"disable enable\n");
-+			"disable enable wars warshw warwaits\n");
- 	}
- 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
- 		stat = &per_cpu(ptcstats, cpu);
-@@ -1189,8 +1394,10 @@ static int ptc_seq_show(struct seq_file
- 			   stat->d_nomsg, stat->d_retries, stat->d_canceled,
- 			   stat->d_nocanceled, stat->d_resets,
- 			   stat->d_rcanceled);
--		seq_printf(file, "%ld %ld\n",
--			stat->s_bau_disabled, stat->s_bau_reenabled);
-+		seq_printf(file, "%ld %ld %ld %ld %ld\n",
-+			stat->s_bau_disabled, stat->s_bau_reenabled,
-+			stat->s_uv2_wars, stat->s_uv2_wars_hw,
-+			stat->s_uv2_war_waits);
- 	}
- 	return 0;
- }
-@@ -1564,6 +1771,7 @@ static void pq_init(int node, int pnode)
- 	write_mmr_payload_first(pnode, pn_first);
- 	write_mmr_payload_tail(pnode, first);
- 	write_mmr_payload_last(pnode, last);
-+	write_gmmr_sw_ack(pnode, 0xffffUL);
- 
- 	/* in effect, all msg_type's are set to MSG_NOOP */
- 	memset(pqp, 0, sizeof(struct bau_pq_entry) * DEST_Q_SIZE);
-@@ -1651,6 +1859,7 @@ static void __init init_per_cpu_tunables
- 		bcp->cong_response_us		= congested_respns_us;
- 		bcp->cong_reps			= congested_reps;
- 		bcp->cong_period		= congested_period;
-+		bcp->clocks_per_100_usec =	usec_2_cycles(100);
- 	}
- }
- 
-@@ -1771,6 +1980,7 @@ static int scan_sock(struct socket_desc
+@@ -1083,7 +1099,7 @@ static void __init enable_timeouts(void)
+ 		 */
+ 		mmr_image |= (1L << SOFTACK_MSHIFT);
+ 		if (is_uv2_hub()) {
+-			mmr_image |= (1L << UV2_LEG_SHFT);
++			mmr_image &= ~(1L << UV2_LEG_SHFT);
+ 			mmr_image |= (1L << UV2_EXT_SHFT);
  		}
+ 		write_mmr_misc_control(pnode, mmr_image);
+@@ -1432,12 +1448,15 @@ static void activation_descriptor_init(i
+ {
+ 	int i;
+ 	int cpu;
++	int uv1 = 0;
+ 	unsigned long gpa;
+ 	unsigned long m;
+ 	unsigned long n;
+ 	size_t dsize;
+ 	struct bau_desc *bau_desc;
+ 	struct bau_desc *bd2;
++	struct uv1_bau_msg_header *uv1_hdr;
++	struct uv2_bau_msg_header *uv2_hdr;
+ 	struct bau_control *bcp;
+ 
+ 	/*
+@@ -1451,6 +1470,8 @@ static void activation_descriptor_init(i
+ 	gpa = uv_gpa(bau_desc);
+ 	n = uv_gpa_to_gnode(gpa);
+ 	m = uv_gpa_to_offset(gpa);
++	if (is_uv1_hub())
++		uv1 = 1;
+ 
+ 	/* the 14-bit pnode */
+ 	write_mmr_descriptor_base(pnode, (n << UV_DESC_PSHIFT | m));
+@@ -1461,21 +1482,33 @@ static void activation_descriptor_init(i
+ 	 */
+ 	for (i = 0, bd2 = bau_desc; i < (ADP_SZ * ITEMS_PER_DESC); i++, bd2++) {
+ 		memset(bd2, 0, sizeof(struct bau_desc));
+-		bd2->header.swack_flag =	1;
+-		/*
+-		 * The base_dest_nasid set in the message header is the nasid
+-		 * of the first uvhub in the partition. The bit map will
+-		 * indicate destination pnode numbers relative to that base.
+-		 * They may not be consecutive if nasid striding is being used.
+-		 */
+-		bd2->header.base_dest_nasid =	UV_PNODE_TO_NASID(base_pnode);
+-		bd2->header.dest_subnodeid =	UV_LB_SUBNODEID;
+-		bd2->header.command =		UV_NET_ENDPOINT_INTD;
+-		bd2->header.int_both =		1;
+-		/*
+-		 * all others need to be set to zero:
+-		 *   fairness chaining multilevel count replied_to
+-		 */
++		if (uv1) {
++			uv1_hdr = &bd2->header.uv1_hdr;
++			uv1_hdr->swack_flag =	1;
++			/*
++			 * The base_dest_nasid set in the message header
++			 * is the nasid of the first uvhub in the partition.
++			 * The bit map will indicate destination pnode numbers
++			 * relative to that base. They may not be consecutive
++			 * if nasid striding is being used.
++			 */
++			uv1_hdr->base_dest_nasid =
++						UV_PNODE_TO_NASID(base_pnode);
++			uv1_hdr->dest_subnodeid =	UV_LB_SUBNODEID;
++			uv1_hdr->command =		UV_NET_ENDPOINT_INTD;
++			uv1_hdr->int_both =		1;
++			/*
++			 * all others need to be set to zero:
++			 *   fairness chaining multilevel count replied_to
++			 */
++		} else {
++			uv2_hdr = &bd2->header.uv2_hdr;
++			uv2_hdr->swack_flag =	1;
++			uv2_hdr->base_dest_nasid =
++						UV_PNODE_TO_NASID(base_pnode);
++			uv2_hdr->dest_subnodeid =	UV_LB_SUBNODEID;
++			uv2_hdr->command =		UV_NET_ENDPOINT_INTD;
++		}
+ 	}
+ 	for_each_present_cpu(cpu) {
+ 		if (pnode != uv_blade_to_pnode(uv_cpu_to_blade_id(cpu)))
+@@ -1728,6 +1761,14 @@ static int scan_sock(struct socket_desc
+ 		bcp->cpus_in_socket = sdp->num_cpus;
+ 		bcp->socket_master = *smasterp;
+ 		bcp->uvhub = bdp->uvhub;
++		if (is_uv1_hub())
++			bcp->uvhub_version = 1;
++		else if (is_uv2_hub())
++			bcp->uvhub_version = 2;
++		else {
++			printk(KERN_EMERG "uvhub version not 1 or 2\n");
++			return 1;
++		}
  		bcp->uvhub_master = *hmasterp;
  		bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->blade_processor_id;
-+		bcp->using_desc = bcp->uvhub_cpu;
  		if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
- 			printk(KERN_EMERG "%d cpus per uvhub invalid\n",
- 				bcp->uvhub_cpu);
+@@ -1867,7 +1908,8 @@ static int __init uv_bau_init(void)
+ 			val = 1L << 63;
+ 			write_gmmr_activation(pnode, val);
+ 			mmr = 1; /* should be 1 to broadcast to both sockets */
+-			write_mmr_data_broadcast(pnode, mmr);
++			if (!is_uv1_hub())
++				write_mmr_data_broadcast(pnode, mmr);
+ 		}
+ 	}
+ 
 
 
