@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab2AXJJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 04:09:06 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:65031 "EHLO mail.gnudd.com"
+	id S1755566Ab2AXJJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 04:09:41 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:65035 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754750Ab2AXJJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 04:09:00 -0500
-Date: Tue, 24 Jan 2012 10:08:56 +0100
+	id S1755283Ab2AXJJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 04:09:37 -0500
+Date: Tue, 24 Jan 2012 10:09:31 +0100
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org, peppe.cavallaro@st.com,
         netdev@vger.kernel.org
-Cc: giancarlo.asnaghi@st.com
-Subject: [PATCH 1/3] stmmac: added PCI identifiers
-Message-ID: <e05c69415f05b3dbca26cd8255374de3656dcbff.1327394751.git.rubini@gnudd.com>
+Cc: giancarlo.asnaghi@st.com, rayagond@vayavyalabs.com
+Subject: [PATCH 2/3] stmmac: err out on second probe; use precompiled
+ static structures
+Message-ID: <81a7bd5642756bb3aa1495de4941bbbc827f3260.1327394751.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,33 +24,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The driver can support one device only, and this patch makes it
+explicit, spitting an error in case someone makes an ASIC or FPGA with
+two stmmac cells in it.
 
-STM has a device ID within its own VENDOR space, and it is being
-used in the STA2X11 I/O Hub.
+Also, the data structures are static and compile-time initialized,
+instead of being in the global name space and filled at run time. This
+also eases turning some fields to parameters, as different chips will
+have different setups.
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Acked-by: Rayagond Kokatanur <rayagond@vayavyalabs.com>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c |   47 ++++++++++++----------
+ 1 files changed, 26 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-index 54a819a..c796de9 100644
+index c796de9..b075a5d 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-@@ -170,9 +170,9 @@ static int stmmac_pci_resume(struct pci_dev *pdev)
- #define STMMAC_DEVICE_ID 0x1108
+@@ -24,27 +24,26 @@
+ *******************************************************************************/
  
- static DEFINE_PCI_DEVICE_TABLE(stmmac_id_table) = {
--	{
--	PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID)}, {
--	}
-+	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_MAC)},
-+	{}
- };
+ #include <linux/pci.h>
++#include <linux/atomic.h>
+ #include "stmmac.h"
  
- MODULE_DEVICE_TABLE(pci, stmmac_id_table);
+-struct plat_stmmacenet_data plat_dat;
+-struct stmmac_mdio_bus_data mdio_data;
++/* This driver supports one PCI device only, with static platform data */
++static atomic_t stmmac_pci_probed;
+ 
+-static void stmmac_default_data(void)
+-{
+-	memset(&plat_dat, 0, sizeof(struct plat_stmmacenet_data));
+-	plat_dat.bus_id = 1;
+-	plat_dat.phy_addr = 0;
+-	plat_dat.interface = PHY_INTERFACE_MODE_GMII;
+-	plat_dat.pbl = 32;
+-	plat_dat.clk_csr = 2;	/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
+-	plat_dat.has_gmac = 1;
+-	plat_dat.force_sf_dma_mode = 1;
+-
+-	mdio_data.bus_id = 1;
+-	mdio_data.phy_reset = NULL;
+-	mdio_data.phy_mask = 0;
+-	plat_dat.mdio_bus_data = &mdio_data;
+-}
++static struct stmmac_mdio_bus_data stmmac_default_mdio_data = {
++	.bus_id = 1,
++};
++
++static struct plat_stmmacenet_data stmmac_default_data = {
++	.bus_id = 1,
++	.phy_addr = 0,
++	.interface = PHY_INTERFACE_MODE_GMII,
++	.pbl = 32,
++	.clk_csr = 2,	/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
++	.has_gmac = 1,
++	.force_sf_dma_mode = 1,
++	.mdio_bus_data = &stmmac_default_mdio_data,
++};
+ 
+ /**
+  * stmmac_pci_probe
+@@ -66,6 +65,13 @@ static int __devinit stmmac_pci_probe(struct pci_dev *pdev,
+ 	struct stmmac_priv *priv = NULL;
+ 	int i;
+ 
++	/* One device only in this version */
++	if (atomic_inc_and_test(&stmmac_pci_probed)) {
++		atomic_dec(&stmmac_pci_probed);
++		dev_err(&pdev->dev, "this driver supports one device only\n");
++		return -ENODEV;
++	}
++
+ 	/* Enable pci device */
+ 	ret = pci_enable_device(pdev);
+ 	if (ret) {
+@@ -94,9 +100,7 @@ static int __devinit stmmac_pci_probe(struct pci_dev *pdev,
+ 	}
+ 	pci_set_master(pdev);
+ 
+-	stmmac_default_data();
+-
+-	priv = stmmac_dvr_probe(&(pdev->dev), &plat_dat);
++	priv = stmmac_dvr_probe(&(pdev->dev), &stmmac_default_data);
+ 	if (!priv) {
+ 		pr_err("%s: main drivr probe failed", __func__);
+ 		goto err_out;
+@@ -140,6 +144,7 @@ static void __devexit stmmac_pci_remove(struct pci_dev *pdev)
+ 	pci_iounmap(pdev, priv->ioaddr);
+ 	pci_release_regions(pdev);
+ 	pci_disable_device(pdev);
++	atomic_dec(&stmmac_pci_probed);
+ }
+ 
+ #ifdef CONFIG_PM
 -- 
 1.7.7.2
