@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab2AXId7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 03:33:59 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:55449 "EHLO zene.cmpxchg.org"
+	id S1754931Ab2AXIix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 03:38:53 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:34322 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754633Ab2AXId6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 03:33:58 -0500
-Date: Tue, 24 Jan 2012 09:33:47 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: vmscan: check mem cgroup over reclaimed
-Message-ID: <20120124083347.GC1660@cmpxchg.org>
-References: <CAJd=RBBG5X8=vkdRTCZ1bvTaVxPAVun9O+yiX0SM6yDzrxDGDQ@mail.gmail.com>
- <20120123104731.GA1707@cmpxchg.org>
- <CAJd=RBDUK=LQVhQm_P3DO-bgWka=gK9cKUkm8esOaZs261EexA@mail.gmail.com>
+	id S1753061Ab2AXIiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 03:38:51 -0500
+Message-ID: <4F1E6E09.9060509@parallels.com>
+Date: Tue, 24 Jan 2012 12:38:33 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree (nfs
+ tree related)
+References: <20120123135942.3e991094b91d9087d2ba81ae@canb.auug.org.au> <1327342224.2628.3.camel@lade.trondhjem.org>
+In-Reply-To: <1327342224.2628.3.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBDUK=LQVhQm_P3DO-bgWka=gK9cKUkm8esOaZs261EexA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 08:30:42PM +0800, Hillf Danton wrote:
-> On Mon, Jan 23, 2012 at 6:47 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Mon, Jan 23, 2012 at 09:55:07AM +0800, Hillf Danton wrote:
-> >> To avoid reduction in performance of reclaimee, checking overreclaim is added
-> >> after shrinking lru list, when pages are reclaimed from mem cgroup.
-> >>
-> >> If over reclaim occurs, shrinking remaining lru lists is skipped, and no more
-> >> reclaim for reclaim/compaction.
-> >>
-> >> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> >> ---
-> >>
-> >> --- a/mm/vmscan.c     Mon Jan 23 00:23:10 2012
-> >> +++ b/mm/vmscan.c     Mon Jan 23 09:57:20 2012
-> >> @@ -2086,6 +2086,7 @@ static void shrink_mem_cgroup_zone(int p
-> >>       unsigned long nr_reclaimed, nr_scanned;
-> >>       unsigned long nr_to_reclaim = sc->nr_to_reclaim;
-> >>       struct blk_plug plug;
-> >> +     bool memcg_over_reclaimed = false;
-> >>
-> >>  restart:
-> >>       nr_reclaimed = 0;
-> >> @@ -2103,6 +2104,11 @@ restart:
-> >>
-> >>                               nr_reclaimed += shrink_list(lru, nr_to_scan,
-> >>                                                           mz, sc, priority);
-> >> +
-> >> +                             memcg_over_reclaimed = !scanning_global_lru(mz)
-> >> +                                     && (nr_reclaimed >= nr_to_reclaim);
-> >> +                             if (memcg_over_reclaimed)
-> >> +                                     goto out;
-> >
-> > Since this merge window, scanning_global_lru() is always false when
-> > the memory controller is enabled, i.e. most common configurations and
-> > distribution kernels.
-> >
-> > This will with quite likely have bad effects on zone balancing,
-> > pressure balancing between anon/file lru etc, while you haven't shown
-> > that any workloads actually benefit from this.
-> >
-> Hi Johannes
-> 
-> Thanks for your comment, first.
-> 
-> Impact on zone balance and lru-list balance is introduced actually, but I
-> dont think the patch is totally responsible for the balance mentioned,
-> because soft limit, embedded in mem cgroup, is setup by users according to
-> whatever tastes they have.
-> 
-> Though there is room for the patch to be fine tuned in this direction or that,
-> over reclaim should not be neglected entirely, but be avoided as much as we
-> could, or users are enforced to set up soft limit with much care not to mess
-> up zone balance.
+23.01.2012 22:10, Trond Myklebust Ð¿Ð¸ÑˆÐµÑ‚:
+> On Mon, 2012-01-23 at 13:59 +1100, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> After merging the final tree, today's linux-next build (powerpc
+>> ppc44x_defconfig) failed like this:
+>>
+>> net/sunrpc/svcsock.c: In function 'svc_setup_socket':
+>> net/sunrpc/svcsock.c:1412:40: error: 'struct sock_common' has no member named 'skc_net'
+>>
+>> This build has CONFIG_NET_NS unset.
+>>
+>> Caused by commit eff9c3383687 ("SUNRPC: pass network namespace to service
+>> registering routines").
+>>
+>> I applied this (suboptimal) patch for today:
+>>
+>> From: Stephen Rothwell<sfr@canb.auug.org.au>
+>> Date: Mon, 23 Jan 2012 13:55:01 +1100
+>> Subject: [PATCH] SUNRPC: fixup for namespace changes
+>>
+>> Fixes this build error when CONFIG_NET_NS is not set:
+>>
+>> net/sunrpc/svcsock.c: In function 'svc_setup_socket':
+>> net/sunrpc/svcsock.c:1412:40: error: 'struct sock_common' has no member named 'skc_net'
+>>
+>> Signed-off-by: Stephen Rothwell<sfr@canb.auug.org.au>
+>> ---
+>>   net/sunrpc/svcsock.c |    9 ++++++++-
+>>   1 files changed, 8 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+>> index e8af0c9..4d02d1a 100644
+>> --- a/net/sunrpc/svcsock.c
+>> +++ b/net/sunrpc/svcsock.c
+>> @@ -41,6 +41,7 @@
+>>   #include<net/ipv6.h>
+>>   #include<net/tcp.h>
+>>   #include<net/tcp_states.h>
+>> +#include<net/net_namespace.h>
+>>   #include<asm/uaccess.h>
+>>   #include<asm/ioctls.h>
+>>
+>> @@ -1409,7 +1410,13 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
+>>
+>>   	/* Register socket with portmapper */
+>>   	if (*errp>= 0&&  pmap_register)
+>> -		*errp = svc_register(serv, sock->sk->sk_net, inet->sk_family,
+>> +		*errp = svc_register(serv,
+>> +#ifdef CONFIG_NET_NS
+>> +				     sock->sk->sk_net,
+>> +#else
+>> +				&init_net,
+>> +#endif
+>> +				     inet->sk_family,
+>>   				     inet->sk_protocol,
+>>   				     ntohs(inet_sk(inet)->inet_sport));
+>>
+>> --
+>> 1.7.9.rc0.23.g7e521
+>
+> Stanislav,
+>
+> Shouldn't we just be using a 'sock_net(sock->sk)'?
+>
 
-Overreclaim is absolutely horrible with soft limits, but I think there
-are more direct reasons than checking nr_to_reclaim only after a full
-zone scan, for example, soft limit reclaim is invoked on zones that
-are totally fine.
+Yes, you right, Trond.
+Should I fix it with a new patch?
+
+-- 
+Best regards,
+Stanislav Kinsbursky
