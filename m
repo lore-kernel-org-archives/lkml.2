@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab2AXCts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:49:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50766 "EHLO mx2.suse.de"
+	id S932958Ab2AXCto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:49:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50754 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933026Ab2AXCtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:49:45 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:35 2012
-Message-Id: <20120124023935.292641596@clark.kroah.org>
+	id S932996Ab2AXCti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:49:38 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:32 2012
+Message-Id: <20120124023932.668116344@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:48 -0800
+Date: Mon, 23 Jan 2012 18:35:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>
-Subject: [128/129] SHM_UNLOCK: fix long unpreemptible section
+        alan@lxorguk.ukuu.org.uk, Thomas Renninger <trenn@suse.de>,
+        Bruno Friedmann <bruno@ioda-net.ch>, Len Brown <len.brown@intel.com>
+Subject: [098/129] intel idle: Make idle driver more robust
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,183 +24,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 5974
-Lines: 176
+Content-Length: 1651
+Lines: 47
 
-From: Hugh Dickins <hughd@google.com>
+From: Thomas Renninger <trenn@suse.de>
 
-commit 85046579bde15e532983438f86b36856e358f417 upstream.
+commit 5c2a9f06a9cd7194f884cdc88144866235dec07d upstream.
 
-scan_mapping_unevictable_pages() is used to make SysV SHM_LOCKed pages
-evictable again once the shared memory is unlocked.  It does this with
-pagevec_lookup()s across the whole object (which might occupy most of
-memory), and takes 300ms to unlock 7GB here.  A cond_resched() every
-PAGEVEC_SIZE pages would be good.
+kvm -cpu host passes the original cpuid info to the guest.
 
-However, KOSAKI-san points out that this is called under shmem.c's
-info->lock, and it's also under shm.c's shm_lock(), both spinlocks.
-There is no strong reason for that: we need to take these pages off the
-unevictable list soonish, but those locks are not required for it.
+Latest kvm version seem to return true for mwait_leaf cpuid
+function on recent Intel CPUs. But it does not return mwait
+C-states (mwait_substates), instead zero is returned.
 
-So move the call to scan_mapping_unevictable_pages() from shmem.c's
-unlock handling up to shm.c's unlock handling.  Remove the recently
-added barrier, not needed now we have spin_unlock() before the scan.
+While real CPUs seem to always return non-zero values, the intel
+idle driver should not get active in kvm (mwait_substates == 0)
+case and bail out.
+Otherwise a Null pointer exception will happen later when the
+cpuidle subsystem tries to get active:
+[0.984807] BUG: unable to handle kernel NULL pointer dereference at (null)
+[0.984807] IP: [<(null)>] (null)
+...
+[0.984807][<ffffffff8143cf34>] ? cpuidle_idle_call+0xb4/0x340
+[0.984807][<ffffffff8159e7bc>] ? __atomic_notifier_call_chain+0x4c/0x70
+[0.984807][<ffffffff81001198>] ? cpu_idle+0x78/0xd0
 
-Use get_file(), with subsequent fput(), to make sure we have a reference
-to mapping throughout scan_mapping_unevictable_pages(): that's something
-that was previously guaranteed by the shm_lock().
+Reference:
+https://bugzilla.novell.com/show_bug.cgi?id=726296
 
-Remove shmctl's lru_add_drain_all(): we don't fault in pages at SHM_LOCK
-time, and we lazily discover them to be Unevictable later, so it serves
-no purpose for SHM_LOCK; and serves no purpose for SHM_UNLOCK, since
-pages still on pagevec are not marked Unevictable.
-
-The original code avoided redundant rescans by checking VM_LOCKED flag
-at its level: now avoid them by checking shp's SHM_LOCKED.
-
-The original code called scan_mapping_unevictable_pages() on a locked
-area at shm_destroy() time: perhaps we once had accounting cross-checks
-which required that, but not now, so skip the overhead and just let
-inode eviction deal with them.
-
-Put check_move_unevictable_page() and scan_mapping_unevictable_pages()
-under CONFIG_SHMEM (with stub for the TINY case when ramfs is used),
-more as comment than to save space; comment them used for SHM_UNLOCK.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Shaohua Li <shaohua.li@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michel Lespinasse <walken@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: Bruno Friedmann <bruno@ioda-net.ch>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- ipc/shm.c   |   37 ++++++++++++++++++++++---------------
- mm/shmem.c  |    7 -------
- mm/vmscan.c |   12 +++++++++++-
- 3 files changed, 33 insertions(+), 23 deletions(-)
+ drivers/idle/intel_idle.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -870,9 +870,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 	case SHM_LOCK:
- 	case SHM_UNLOCK:
- 	{
--		struct file *uninitialized_var(shm_file);
--
--		lru_add_drain_all();  /* drain pagevecs to lru lists */
-+		struct file *shm_file;
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -348,7 +348,8 @@ static int intel_idle_probe(void)
+ 	cpuid(CPUID_MWAIT_LEAF, &eax, &ebx, &ecx, &mwait_substates);
  
- 		shp = shm_lock_check(ns, shmid);
- 		if (IS_ERR(shp)) {
-@@ -895,22 +893,31 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 		err = security_shm_shmctl(shp, cmd);
- 		if (err)
- 			goto out_unlock;
--		
--		if(cmd==SHM_LOCK) {
-+
-+		shm_file = shp->shm_file;
-+		if (is_file_hugepages(shm_file))
-+			goto out_unlock;
-+
-+		if (cmd == SHM_LOCK) {
- 			struct user_struct *user = current_user();
--			if (!is_file_hugepages(shp->shm_file)) {
--				err = shmem_lock(shp->shm_file, 1, user);
--				if (!err && !(shp->shm_perm.mode & SHM_LOCKED)){
--					shp->shm_perm.mode |= SHM_LOCKED;
--					shp->mlock_user = user;
--				}
-+			err = shmem_lock(shm_file, 1, user);
-+			if (!err && !(shp->shm_perm.mode & SHM_LOCKED)) {
-+				shp->shm_perm.mode |= SHM_LOCKED;
-+				shp->mlock_user = user;
- 			}
--		} else if (!is_file_hugepages(shp->shm_file)) {
--			shmem_lock(shp->shm_file, 0, shp->mlock_user);
--			shp->shm_perm.mode &= ~SHM_LOCKED;
--			shp->mlock_user = NULL;
-+			goto out_unlock;
- 		}
-+
-+		/* SHM_UNLOCK */
-+		if (!(shp->shm_perm.mode & SHM_LOCKED))
-+			goto out_unlock;
-+		shmem_lock(shm_file, 0, shp->mlock_user);
-+		shp->shm_perm.mode &= ~SHM_LOCKED;
-+		shp->mlock_user = NULL;
-+		get_file(shm_file);
- 		shm_unlock(shp);
-+		scan_mapping_unevictable_pages(shm_file->f_mapping);
-+		fput(shm_file);
- 		goto out;
- 	}
- 	case IPC_RMID:
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1068,13 +1068,6 @@ int shmem_lock(struct file *file, int lo
- 		user_shm_unlock(inode->i_size, user);
- 		info->flags &= ~VM_LOCKED;
- 		mapping_clear_unevictable(file->f_mapping);
--		/*
--		 * Ensure that a racing putback_lru_page() can see
--		 * the pages of this mapping are evictable when we
--		 * skip them due to !PageLRU during the scan.
--		 */
--		smp_mb__after_clear_bit();
--		scan_mapping_unevictable_pages(file->f_mapping);
- 	}
- 	retval = 0;
+ 	if (!(ecx & CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
+-		!(ecx & CPUID5_ECX_INTERRUPT_BREAK))
++	    !(ecx & CPUID5_ECX_INTERRUPT_BREAK) ||
++	    !mwait_substates)
+ 			return -ENODEV;
  
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3353,6 +3353,7 @@ int page_evictable(struct page *page, st
- 	return 1;
- }
- 
-+#ifdef CONFIG_SHMEM
- /**
-  * check_move_unevictable_page - check page for evictability and move to appropriate zone lru list
-  * @page: page to check evictability and move to appropriate lru list
-@@ -3363,6 +3364,8 @@ int page_evictable(struct page *page, st
-  *
-  * Restrictions: zone->lru_lock must be held, page must be on LRU and must
-  * have PageUnevictable set.
-+ *
-+ * This function is only used for SysV IPC SHM_UNLOCK.
-  */
- static void check_move_unevictable_page(struct page *page, struct zone *zone)
- {
-@@ -3396,6 +3399,8 @@ retry:
-  *
-  * Scan all pages in mapping.  Check unevictable pages for
-  * evictability and move them to the appropriate zone lru list.
-+ *
-+ * This function is only used for SysV IPC SHM_UNLOCK.
-  */
- void scan_mapping_unevictable_pages(struct address_space *mapping)
- {
-@@ -3441,9 +3446,14 @@ void scan_mapping_unevictable_pages(stru
- 		pagevec_release(&pvec);
- 
- 		count_vm_events(UNEVICTABLE_PGSCANNED, pg_scanned);
-+		cond_resched();
- 	}
--
- }
-+#else
-+void scan_mapping_unevictable_pages(struct address_space *mapping)
-+{
-+}
-+#endif /* CONFIG_SHMEM */
- 
- static void warn_scan_unevictable_pages(void)
- {
+ 	pr_debug(PREFIX "MWAIT substates: 0x%x\n", mwait_substates);
 
 
