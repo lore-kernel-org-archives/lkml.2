@@ -1,174 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab2AXTOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 14:14:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38360 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419Ab2AXTOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 14:14:34 -0500
-Date: Tue, 24 Jan 2012 14:14:00 -0500
-From: Rik van Riel <riel@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Adrian Drzewieki <z@drze.net>
-Subject: [PATCH v4 -mm] make swapin readahead skip over holes
-Message-ID: <20120124141400.6d33b7c4@annuminas.surriel.com>
-In-Reply-To: <20120124131351.05309a2a@annuminas.surriel.com>
-References: <20120124131351.05309a2a@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754544Ab2AXTPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 14:15:00 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39048 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab2AXTO5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 14:14:57 -0500
+X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=KJAFIYNSBYkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=8HmFGesX5zIfzJw5pZIA:9 a=tEZjjxiFV9Evg3296u0A:7 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120124191454.114144050@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Tue, 24 Jan 2012 13:53:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Andi Kleen <ak@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Clark Williams <williams@redhat.com>,
+        Luis Goncalves <lgoncalv@redhat.com>
+Subject: [PATCH RT 1/2][RFC] x86: Do not disable preemption in int3 on 32bit
+References: <20120124185350.092483803@goodmis.org>
+Content-Disposition: inline; filename=fix-rt-int3-x86_32.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ever since abandoning the virtual scan of processes, for scalability
-reasons, swap space has been a little more fragmented than before.
-This can lead to the situation where a large memory user is killed,
-swap space ends up full of "holes" and swapin readahead is totally
-ineffective.
+Preemption must be disabled before enabling interrupts in do_trap
+on x86_64 because the stack in use for int3 and debug is a per CPU
+stack set by th IST. But in 32bit, the stack still belongs to the
+current task and there is no problem in scheduling out the task.
 
-On my home system, after killing a leaky firefox it took over an
-hour to page just under 2GB of memory back in, slowing the virtual
-machines down to a crawl.
+Keep preemption enabled on X86_32 when enabling interrupts for
+do_trap().
 
-This patch makes swapin readahead simply skip over holes, instead
-of stopping at them.  This allows the system to swap things back in
-at rates of several MB/second, instead of a few hundred kB/second.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-The checks done in valid_swaphandles are already done in 
-read_swap_cache_async as well, allowing us to remove a fair amount
-of code.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
--v4: fix typos caught by Adrian Drzewieki - somehow the code still worked...
--v3: chainsawed out even more stuff we don't need
--v2: cleanups suggested by Mel Gorman
-     skip swap offset zero
- include/linux/swap.h |    1 -
- mm/swap_state.c      |   24 ++++++++++------------
- mm/swapfile.c        |   52 --------------------------------------------------
- 3 files changed, 11 insertions(+), 66 deletions(-)
-
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 06061a7..2a7a362 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -329,7 +329,6 @@ extern long total_swap_pages;
- extern void si_swapinfo(struct sysinfo *);
- extern swp_entry_t get_swap_page(void);
- extern swp_entry_t get_swap_page_of_type(int);
--extern int valid_swaphandles(swp_entry_t, unsigned long *);
- extern int add_swap_count_continuation(swp_entry_t, gfp_t);
- extern void swap_shmem_alloc(swp_entry_t);
- extern int swap_duplicate(swp_entry_t);
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index 470038a..f8b5503 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -382,25 +382,23 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
- struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
- 			struct vm_area_struct *vma, unsigned long addr)
- {
--	int nr_pages;
- 	struct page *page;
--	unsigned long offset;
--	unsigned long end_offset;
-+	unsigned long offset = swp_offset(entry);
-+	unsigned long start_offset, end_offset;
-+	unsigned long mask = (1 << page_cluster) - 1;
+Index: linux-rt.git/arch/x86/kernel/traps.c
+===================================================================
+--- linux-rt.git.orig/arch/x86/kernel/traps.c
++++ linux-rt.git/arch/x86/kernel/traps.c
+@@ -89,7 +89,14 @@ static inline void conditional_sti(struc
  
--	/*
--	 * Get starting offset for readaround, and number of pages to read.
--	 * Adjust starting address by readbehind (for NUMA interleave case)?
--	 * No, it's very unlikely that swap layout would follow vma layout,
--	 * more likely that neighbouring swap pages came from the same node:
--	 * so use the same "addr" to choose the same node for each swap read.
--	 */
--	nr_pages = valid_swaphandles(entry, &offset);
--	for (end_offset = offset + nr_pages; offset < end_offset; offset++) {
-+	/* Read a page_cluster sized and aligned cluster around offset. */
-+	start_offset = offset & ~mask;
-+	end_offset = offset | mask;
-+	if (!start_offset)	/* First page is swap header. */
-+		start_offset++;
-+
-+	for (offset = start_offset; offset <= end_offset ; offset++) {
- 		/* Ok, do the async read-ahead now */
- 		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
- 						gfp_mask, vma, addr);
- 		if (!page)
--			break;
-+			continue;
- 		page_cache_release(page);
- 	}
- 	lru_add_drain();	/* Push any new pages onto the LRU now */
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index d999f09..856bfc6 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -2290,58 +2290,6 @@ int swapcache_prepare(swp_entry_t entry)
+ static inline void preempt_conditional_sti(struct pt_regs *regs)
+ {
++#ifdef CONFIG_X86_64
++	/*
++	 * X86_64 uses a per CPU stack for certain traps like int3.
++	 * We must disable preemption, otherwise we can corrupt the
++	 * stack if the task is scheduled out with this stack.
++	 */
+ 	inc_preempt_count();
++#endif
+ 	if (regs->flags & X86_EFLAGS_IF)
+ 		local_irq_enable();
+ }
+@@ -104,7 +111,9 @@ static inline void preempt_conditional_c
+ {
+ 	if (regs->flags & X86_EFLAGS_IF)
+ 		local_irq_disable();
++#ifdef CONFIG_X86_64
+ 	dec_preempt_count();
++#endif
  }
  
- /*
-- * swap_lock prevents swap_map being freed. Don't grab an extra
-- * reference on the swaphandle, it doesn't matter if it becomes unused.
-- */
--int valid_swaphandles(swp_entry_t entry, unsigned long *offset)
--{
--	struct swap_info_struct *si;
--	int our_page_cluster = page_cluster;
--	pgoff_t target, toff;
--	pgoff_t base, end;
--	int nr_pages = 0;
--
--	if (!our_page_cluster)	/* no readahead */
--		return 0;
--
--	si = swap_info[swp_type(entry)];
--	target = swp_offset(entry);
--	base = (target >> our_page_cluster) << our_page_cluster;
--	end = base + (1 << our_page_cluster);
--	if (!base)		/* first page is swap header */
--		base++;
--
--	spin_lock(&swap_lock);
--	if (end > si->max)	/* don't go beyond end of map */
--		end = si->max;
--
--	/* Count contiguous allocated slots above our target */
--	for (toff = target; ++toff < end; nr_pages++) {
--		/* Don't read in free or bad pages */
--		if (!si->swap_map[toff])
--			break;
--		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
--			break;
--	}
--	/* Count contiguous allocated slots below our target */
--	for (toff = target; --toff >= base; nr_pages++) {
--		/* Don't read in free or bad pages */
--		if (!si->swap_map[toff])
--			break;
--		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
--			break;
--	}
--	spin_unlock(&swap_lock);
--
--	/*
--	 * Indicate starting offset, and return number of pages to get:
--	 * if only 1, say 0, since there's then no readahead to be done.
--	 */
--	*offset = ++toff;
--	return nr_pages? ++nr_pages: 0;
--}
--
--/*
-  * add_swap_count_continuation - called when a swap count is duplicated
-  * beyond SWAP_MAP_MAX, it allocates a new page and links that to the entry's
-  * page of the original vmalloc'ed swap_map, to hold the continuation count
+ static void __kprobes
 
