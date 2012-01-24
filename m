@@ -1,147 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab2AXX13 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:27:29 -0500
+	id S1753345Ab2AXX1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:27:34 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:56370 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab2AXX12 (ORCPT
+	with ESMTP id S1753302Ab2AXX1b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 18:27:28 -0500
+	Tue, 24 Jan 2012 18:27:31 -0500
 MIME-Version: 1.0
-From: Venkatesh Pallipadi <venki@google.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus -v4
-Date: Tue, 24 Jan 2012 15:25:41 -0800
-Message-Id: <1327447541-3040-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <CABeCy1ZA1nkWSmbN2LE+V1SxKEHX4XrpN5xfdzY=NSsS8=L0DA@mail.gmail.com>
-References: <CABeCy1ZA1nkWSmbN2LE+V1SxKEHX4XrpN5xfdzY=NSsS8=L0DA@mail.gmail.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178CB81F06@HQMAIL01.nvidia.com>
+References: <1327083746-31430-1-git-send-email-swarren@nvidia.com>
+	<CACRpkdZvakueQGYX0wyTFWmpC6wiixj2g1PTuKM4CgEzqJbmig@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF178CB81F06@HQMAIL01.nvidia.com>
+Date: Wed, 25 Jan 2012 00:27:31 +0100
+Message-ID: <CACRpkdb5eu+5k98XKkZXA0m0FHEP4XjVGwD9F=Ezm5gVP5WrQQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] pinctrl: add a driver for NVIDIA Tegra
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Olof Johansson <olof@lixom.net>, Colin Cross <ccross@android.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel's notion of possible cpus (from include/linux/cpumask.h)
- *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
+On Wed, Jan 25, 2012 at 12:09 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> [Me]
+>> Why are all of these things (reg bank bit ets) signed?
+>
+> The basic issue is that all of these features are optional for any
+> given pin group. I used -1 to indicate an unsupported feature.
 
- *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
- *  that it is possible might ever be plugged in at anytime during the
- *  life of that system boot.
+Ahyeah. Makes sense. Well do it any way that makes sense
+to you. Plus note in the kerneldoc that this is the reason these
+are signed.
 
- #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
+>> Also, things named  *_bit are a bit (no pun intended) binary,
+>> are they containing a single bit? In that case say
+>
+> They're the bit number/shift within a register. Range 0..31
 
-and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
-and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
+Can that thing really be negative then?
+Or is it really: u8 foo_bit:5 ?
 
-i.e, We needlessly go through this mask based calculation everytime
-num_possible_cpus() is called.
+>> u8 foo:1
+>>
+>> To mark that it's only one bit wide, or u8 foo:4 for four bits
+>> etc.
+>
+> I guess I could be explicit about the max range for each value. It might
+> save up to about 8 bytes per pin group, perhaps less based on how well
+> things pack to u32 boundaries.
 
-The problem is there with cpu_online_mask() as well, which is fixed value at
-boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
-in HOTPLUG case.
+Nah I think you would have to pack the struct with #pragmas for that
+and I don't even know if it'd pack below byte limits. Probably not.
 
-Though most of the callers of these two routines are init time (with few
-exceptions of runtime calls), it is cleaner to use variables
-and not go through this repeated mask based calculation.
+The valid usecase is for static code analyzers like people tend to
+run on military systems and such and loop over every state
+of a code path, this restricts the search space.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- include/linux/cpumask.h |    9 +++++++--
- kernel/cpu.c            |   13 +++++++++++++
- 2 files changed, 20 insertions(+), 2 deletions(-)
+But it's admittedly *very* esoteric.
 
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index 4f7a632..ec0f6c9 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -27,6 +27,9 @@ typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
- extern int nr_cpu_ids;
- #endif
- 
-+extern int nr_online_cpus;
-+extern int nr_possible_cpus;
-+
- #ifdef CONFIG_CPUMASK_OFFSTACK
- /* Assuming NR_CPUS is huge, a runtime limit is more efficient.  Also,
-  * not all bits may be allocated. */
-@@ -81,8 +84,10 @@ extern const struct cpumask *const cpu_present_mask;
- extern const struct cpumask *const cpu_active_mask;
- 
- #if NR_CPUS > 1
--#define num_online_cpus()	cpumask_weight(cpu_online_mask)
--#define num_possible_cpus()	cpumask_weight(cpu_possible_mask)
-+
-+#define num_online_cpus()	(nr_online_cpus)
-+#define num_possible_cpus()	(nr_possible_cpus)
-+
- #define num_present_cpus()	cpumask_weight(cpu_present_mask)
- #define num_active_cpus()	cpumask_weight(cpu_active_mask)
- #define cpu_online(cpu)		cpumask_test_cpu((cpu), cpu_online_mask)
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 2060c6e..58894e0 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -604,16 +604,23 @@ EXPORT_SYMBOL(cpu_all_bits);
- #ifdef CONFIG_INIT_ALL_POSSIBLE
- static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly
- 	= CPU_BITS_ALL;
-+int nr_possible_cpus __read_mostly = NR_CPUS;
- #else
- static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly;
-+int nr_possible_cpus __read_mostly;
- #endif
- const struct cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
- EXPORT_SYMBOL(cpu_possible_mask);
- 
-+EXPORT_SYMBOL(nr_possible_cpus);
-+
- static DECLARE_BITMAP(cpu_online_bits, CONFIG_NR_CPUS) __read_mostly;
- const struct cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
- EXPORT_SYMBOL(cpu_online_mask);
- 
-+int nr_online_cpus __read_mostly;
-+EXPORT_SYMBOL(nr_online_cpus);
-+
- static DECLARE_BITMAP(cpu_present_bits, CONFIG_NR_CPUS) __read_mostly;
- const struct cpumask *const cpu_present_mask = to_cpumask(cpu_present_bits);
- EXPORT_SYMBOL(cpu_present_mask);
-@@ -628,6 +635,8 @@ void set_cpu_possible(unsigned int cpu, bool possible)
- 		cpumask_set_cpu(cpu, to_cpumask(cpu_possible_bits));
- 	else
- 		cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
-+
-+	nr_possible_cpus = cpumask_weight(cpu_possible_mask);
- }
- 
- void set_cpu_present(unsigned int cpu, bool present)
-@@ -644,6 +653,8 @@ void set_cpu_online(unsigned int cpu, bool online)
- 		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
- 	else
- 		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
-+
-+	nr_online_cpus = cpumask_weight(cpu_online_mask);
- }
- 
- void set_cpu_active(unsigned int cpu, bool active)
-@@ -662,9 +673,11 @@ void init_cpu_present(const struct cpumask *src)
- void init_cpu_possible(const struct cpumask *src)
- {
- 	cpumask_copy(to_cpumask(cpu_possible_bits), src);
-+	nr_possible_cpus = cpumask_weight(cpu_possible_mask);
- }
- 
- void init_cpu_online(const struct cpumask *src)
- {
- 	cpumask_copy(to_cpumask(cpu_online_bits), src);
-+	nr_online_cpus = cpumask_weight(cpu_online_mask);
- }
--- 
-1.7.7.3
+>> func_safe doesn't look like an int either when I look at
+>> the code. It's something else, u8?
+>
+> It's a "enum tegra_mux", which IIRC is technically an int, but unsigned
+> is more consistent with the rest of pinctrl.
 
+Hm "enum tegra_mux foo" should work fine too then,
+what am I missing here...
+
+> On Tegra20, each of these features is configured at a pin group level;
+> there is a single register field that affects multiple pins at once.
+> (...)
+> Tegra30 is somewhat simpler; each pin can be mux'd separately,
+> (...)
+> some advanced
+> drive-strength-related parameters are still configured at a pin-group
+> level not a per-pin level, and again not all groups support every
+> parameter.
+
+This actually makes me understand what makes Tegra so special
+when it comes to muxing, it's the mix of group-level control in
+one architecture and pin-level control in another.
+
+For my systems U300 is a pure Tegra20 type, Nomadik is
+pure per-pin controlled. This mixture of group and pin-level
+control is what makes the Tegra30 so special, with all effects
+on how we model it etc...
+
+Yours,
+Linus Walleij
