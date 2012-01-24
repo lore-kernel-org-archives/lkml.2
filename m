@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab2AXLsR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:48:17 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:52086 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756294Ab2AXLsO (ORCPT
+	id S1756289Ab2AXLsN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:48:13 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:50041 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755075Ab2AXLsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:48:14 -0500
+	Tue, 24 Jan 2012 06:48:10 -0500
 MIME-Version: 1.0
 From: Felipe Balbi <balbi@ti.com>
 To: Linux USB Mailing List <linux-usb@vger.kernel.org>
@@ -19,9 +19,9 @@ Cc: Felipe Balbi <balbi@ti.com>,
         linux-omap@vger.kernel.org (open list:DESIGNWARE USB3 D...),
         linux-kernel@vger.kernel.org (open list),
         linux-geode@lists.infradead.org (open list:AMD GEODE CS5536...)
-Subject: [PATCH 9/9] usb: gadget: goku: use generic map/unmap routines
-Date: Tue, 24 Jan 2012 13:45:30 +0200
-Message-Id: <1327405543-27589-10-git-send-email-balbi@ti.com>
+Subject: [PATCH 8/9] usb: gadget: net2280: use generic map/unmap routines
+Date: Tue, 24 Jan 2012 13:45:29 +0200
+Message-Id: <1327405543-27589-9-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.8.2
 In-Reply-To: <1327405543-27589-1-git-send-email-balbi@ti.com>
 References: <1327405543-27589-1-git-send-email-balbi@ti.com>
@@ -35,45 +35,46 @@ USB requests and it's better to use them.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/usb/gadget/goku_udc.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
+ drivers/usb/gadget/net2280.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
-index 5af70fcc..5e1b766 100644
---- a/drivers/usb/gadget/goku_udc.c
-+++ b/drivers/usb/gadget/goku_udc.c
-@@ -310,12 +310,9 @@ done(struct goku_ep *ep, struct goku_request *req, int status)
+diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
+index cdedd13..a5ccabc 100644
+--- a/drivers/usb/gadget/net2280.c
++++ b/drivers/usb/gadget/net2280.c
+@@ -806,12 +806,8 @@ done (struct net2280_ep *ep, struct net2280_request *req, int status)
  		status = req->req.status;
  
  	dev = ep->dev;
 -	if (req->mapped) {
--		pci_unmap_single(dev->pdev, req->req.dma, req->req.length,
+-		pci_unmap_single (dev->pdev, req->req.dma, req->req.length,
 -			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
 -		req->req.dma = DMA_ADDR_INVALID;
 -		req->mapped = 0;
 -	}
-+
 +	if (ep->dma)
 +		usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
  
- #ifndef USB_TRACE
  	if (status && status != -ESHUTDOWN)
-@@ -736,10 +733,11 @@ goku_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
- 		return -EBUSY;
+ 		VDEBUG (dev, "complete %s req %p stat %d len %u/%u\n",
+@@ -857,10 +853,13 @@ net2280_queue (struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
+ 		return -EOPNOTSUPP;
  
  	/* set up dma mapping in case the caller didn't */
 -	if (ep->dma && _req->dma == DMA_ADDR_INVALID) {
--		_req->dma = pci_map_single(dev->pdev, _req->buf, _req->length,
+-		_req->dma = pci_map_single (dev->pdev, _req->buf, _req->length,
 -			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
 -		req->mapped = 1;
 +	if (ep->dma) {
-+		status = usb_gadget_map_request(&dev->gadget, &req->req,
++		int ret;
++
++		ret = usb_gadget_map_request(&dev->gadget, _req,
 +				ep->is_in);
-+		if (status)
-+			return status;
++		if (ret)
++			return ret;
  	}
  
- #ifdef USB_TRACE
+ #if 0
 -- 
 1.7.8.2
 
