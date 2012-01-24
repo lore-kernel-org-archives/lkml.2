@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab2AXSdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 13:33:41 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:59167 "HELO
+	id S1757401Ab2AXSe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 13:34:27 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59180 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757361Ab2AXSdj (ORCPT
+	with SMTP id S1757375Ab2AXSeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 13:33:39 -0500
-Date: Tue, 24 Jan 2012 13:33:37 -0500 (EST)
+	Tue, 24 Jan 2012 13:34:25 -0500
+Date: Tue, 24 Jan 2012 13:34:24 -0500 (EST)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
 To: Greg KH <greg@kroah.com>
@@ -15,55 +15,206 @@ cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Andy Walls <awalls@md.metrocast.net>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michael Buesch <m@bues.ch>, Joerg Roedel <joerg.roedel@amd.com>,
         <linux-input@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-pcmcia@lists.infradead.org>,
-        <linux-s390@vger.kernel.org>, USB list <linux-usb@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>,
+        <linux-s390@vger.kernel.org>,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/5] Get rid of get_driver() and put_driver()
-Message-ID: <Pine.LNX.4.44L0.1201241158540.1200-100000@iolanthe.rowland.org>
+Subject: [PATCH 1/5] Driver core: driver_find() drops reference before
+ returning
+Message-ID: <Pine.LNX.4.44L0.1201241258510.1200-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg:
+As part of the removal of get_driver()/put_driver(), this patch
+(as1510) changes driver_find(); it now drops the reference it acquires
+before returning.  The patch also adjusts all the callers of
+driver_find() to remove the now unnecessary calls to put_driver().
 
-This patch series removes the get_driver() and put_driver() routines
-from the kernel.
+In addition, the patch adds a warning to driver_find(): Callers must
+make sure the driver they are searching for does not get unloaded
+while they are using it.  This has always been the case; driver_find()
+has never prevented a driver from being unregistered or unloaded.
+Hence the patch will not introduce any new bugs.  The existing callers
+all seem to be okay in this respect, however I don't understand the
+video drivers well enough to be certain about them.
 
-Those routines don't do anything useful.  Their comments say that they
-increment and decrement the driver's reference count, just like
-get_device()/put_device() and a lot of other utility routines.  But a
-struct driver is _not_ like a struct device!  It resembles a piece of
-code more than a piece of data -- it acts as an encapsulation of a
-driver.  Incrementing its refcount doesn't have much meaning because a
-driver's lifetime isn't determined by the structure's refcount; it's
-determined by when the driver's module gets unloaded.
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Kyungmin Park <kyungmin.park@samsung.com>
+CC: Andy Walls <awalls@md.metrocast.net>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-What really matters for a driver is whether or not it is registered.  
-Drivers expect, for example, that none of their methods will be called
-after driver_unregister() returns.  It doesn't matter if some other
-thread still holds a reference to the driver structure; that reference
-mustn't be used for accessing the driver code after unregistration.  
-get_driver() does not do any checking for this.
+---
 
-People may have been misled by the kerneldoc into thinking that the
-references obtained by get_driver() do somehow pin the driver structure
-in memory.  This simply isn't true; all it pins is the associated
-private structure.  Code that needs to pin a driver must do it some
-other way (probably by calling try_module_get()).
+ drivers/base/driver.c                       |    7 +++++--
+ drivers/input/gameport/gameport.c           |    1 -
+ drivers/input/serio/serio.c                 |    1 -
+ drivers/media/video/cx18/cx18-alsa-main.c   |    1 -
+ drivers/media/video/ivtv/ivtvfb.c           |    2 --
+ drivers/media/video/s5p-fimc/fimc-mdevice.c |    5 +----
+ drivers/media/video/s5p-tv/mixer_video.c    |    1 -
+ drivers/s390/net/smsgiucv_app.c             |    9 ++++-----
+ 8 files changed, 10 insertions(+), 17 deletions(-)
 
-In short, these routines don't do anything useful and they can actively 
-mislead people.  Removing them won't introduce any bugs that aren't 
-already present.  There is no reason to keep them.
-
-Alan Stern
+Index: usb-3.3/drivers/base/driver.c
+===================================================================
+--- usb-3.3.orig/drivers/base/driver.c
++++ usb-3.3/drivers/base/driver.c
+@@ -234,7 +234,6 @@ int driver_register(struct device_driver
+ 
+ 	other = driver_find(drv->name, drv->bus);
+ 	if (other) {
+-		put_driver(other);
+ 		printk(KERN_ERR "Error: Driver '%s' is already registered, "
+ 			"aborting...\n", drv->name);
+ 		return -EBUSY;
+@@ -275,7 +274,9 @@ EXPORT_SYMBOL_GPL(driver_unregister);
+  * Call kset_find_obj() to iterate over list of drivers on
+  * a bus to find driver by name. Return driver if found.
+  *
+- * Note that kset_find_obj increments driver's reference count.
++ * This routine provides no locking to prevent the driver it returns
++ * from being unregistered or unloaded while the caller is using it.
++ * The caller is responsible for preventing this.
+  */
+ struct device_driver *driver_find(const char *name, struct bus_type *bus)
+ {
+@@ -283,6 +284,8 @@ struct device_driver *driver_find(const
+ 	struct driver_private *priv;
+ 
+ 	if (k) {
++		/* Drop reference added by kset_find_obj() */
++		kobject_put(k);
+ 		priv = to_driver(k);
+ 		return priv->driver;
+ 	}
+Index: usb-3.3/drivers/input/gameport/gameport.c
+===================================================================
+--- usb-3.3.orig/drivers/input/gameport/gameport.c
++++ usb-3.3/drivers/input/gameport/gameport.c
+@@ -449,7 +449,6 @@ static ssize_t gameport_rebind_driver(st
+ 	} else if ((drv = driver_find(buf, &gameport_bus)) != NULL) {
+ 		gameport_disconnect_port(gameport);
+ 		error = gameport_bind_driver(gameport, to_gameport_driver(drv));
+-		put_driver(drv);
+ 	} else {
+ 		error = -EINVAL;
+ 	}
+Index: usb-3.3/drivers/input/serio/serio.c
+===================================================================
+--- usb-3.3.orig/drivers/input/serio/serio.c
++++ usb-3.3/drivers/input/serio/serio.c
+@@ -441,7 +441,6 @@ static ssize_t serio_rebind_driver(struc
+ 	} else if ((drv = driver_find(buf, &serio_bus)) != NULL) {
+ 		serio_disconnect_port(serio);
+ 		error = serio_bind_driver(serio, to_serio_driver(drv));
+-		put_driver(drv);
+ 		serio_remove_duplicate_events(serio, SERIO_RESCAN_PORT);
+ 	} else {
+ 		error = -EINVAL;
+Index: usb-3.3/drivers/media/video/cx18/cx18-alsa-main.c
+===================================================================
+--- usb-3.3.orig/drivers/media/video/cx18/cx18-alsa-main.c
++++ usb-3.3/drivers/media/video/cx18/cx18-alsa-main.c
+@@ -285,7 +285,6 @@ static void __exit cx18_alsa_exit(void)
+ 
+ 	drv = driver_find("cx18", &pci_bus_type);
+ 	ret = driver_for_each_device(drv, NULL, NULL, cx18_alsa_exit_callback);
+-	put_driver(drv);
+ 
+ 	cx18_ext_init = NULL;
+ 	printk(KERN_INFO "cx18-alsa: module unload complete\n");
+Index: usb-3.3/drivers/media/video/ivtv/ivtvfb.c
+===================================================================
+--- usb-3.3.orig/drivers/media/video/ivtv/ivtvfb.c
++++ usb-3.3/drivers/media/video/ivtv/ivtvfb.c
+@@ -1293,7 +1293,6 @@ static int __init ivtvfb_init(void)
+ 
+ 	drv = driver_find("ivtv", &pci_bus_type);
+ 	err = driver_for_each_device(drv, NULL, &registered, ivtvfb_callback_init);
+-	put_driver(drv);
+ 	if (!registered) {
+ 		printk(KERN_ERR "ivtvfb:  no cards found\n");
+ 		return -ENODEV;
+@@ -1310,7 +1309,6 @@ static void ivtvfb_cleanup(void)
+ 
+ 	drv = driver_find("ivtv", &pci_bus_type);
+ 	err = driver_for_each_device(drv, NULL, NULL, ivtvfb_callback_cleanup);
+-	put_driver(drv);
+ }
+ 
+ module_init(ivtvfb_init);
+Index: usb-3.3/drivers/media/video/s5p-fimc/fimc-mdevice.c
+===================================================================
+--- usb-3.3.orig/drivers/media/video/s5p-fimc/fimc-mdevice.c
++++ usb-3.3/drivers/media/video/s5p-fimc/fimc-mdevice.c
+@@ -344,16 +344,13 @@ static int fimc_md_register_platform_ent
+ 		return -ENODEV;
+ 	ret = driver_for_each_device(driver, NULL, fmd,
+ 				     fimc_register_callback);
+-	put_driver(driver);
+ 	if (ret)
+ 		return ret;
+ 
+ 	driver = driver_find(CSIS_DRIVER_NAME, &platform_bus_type);
+-	if (driver) {
++	if (driver)
+ 		ret = driver_for_each_device(driver, NULL, fmd,
+ 					     csis_register_callback);
+-		put_driver(driver);
+-	}
+ 	return ret;
+ }
+ 
+Index: usb-3.3/drivers/media/video/s5p-tv/mixer_video.c
+===================================================================
+--- usb-3.3.orig/drivers/media/video/s5p-tv/mixer_video.c
++++ usb-3.3/drivers/media/video/s5p-tv/mixer_video.c
+@@ -58,7 +58,6 @@ static struct v4l2_subdev *find_and_regi
+ 	}
+ 
+ done:
+-	put_driver(drv);
+ 	return sd;
+ }
+ 
+Index: usb-3.3/drivers/s390/net/smsgiucv_app.c
+===================================================================
+--- usb-3.3.orig/drivers/s390/net/smsgiucv_app.c
++++ usb-3.3/drivers/s390/net/smsgiucv_app.c
+@@ -168,7 +168,7 @@ static int __init smsgiucv_app_init(void
+ 	rc = dev_set_name(smsg_app_dev, KMSG_COMPONENT);
+ 	if (rc) {
+ 		kfree(smsg_app_dev);
+-		goto fail_put_driver;
++		goto fail;
+ 	}
+ 	smsg_app_dev->bus = &iucv_bus;
+ 	smsg_app_dev->parent = iucv_root;
+@@ -177,7 +177,7 @@ static int __init smsgiucv_app_init(void
+ 	rc = device_register(smsg_app_dev);
+ 	if (rc) {
+ 		put_device(smsg_app_dev);
+-		goto fail_put_driver;
++		goto fail;
+ 	}
+ 
+ 	/* convert sender to uppercase characters */
+@@ -191,12 +191,11 @@ static int __init smsgiucv_app_init(void
+ 	rc = smsg_register_callback(SMSG_PREFIX, smsg_app_callback);
+ 	if (rc) {
+ 		device_unregister(smsg_app_dev);
+-		goto fail_put_driver;
++		goto fail;
+ 	}
+ 
+ 	rc = 0;
+-fail_put_driver:
+-	put_driver(smsgiucv_drv);
++fail:
+ 	return rc;
+ }
+ module_init(smsgiucv_app_init);
 
