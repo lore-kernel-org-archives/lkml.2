@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab2AXCsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:48:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50620 "EHLO mx2.suse.de"
+	id S932872Ab2AXCsm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:48:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50642 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932776Ab2AXCs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:48:28 -0500
+	id S932840Ab2AXCsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:48:38 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:34 2012
-Message-Id: <20120124023934.361708356@clark.kroah.org>
+Message-Id: <20120124023934.532008617@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:37 -0800
+Date: Mon, 23 Jan 2012 18:35:39 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org, xfs@oss.sgi.com,
+        bpm@sgi.com
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [117/129] ath9k_hw: fix interpretation of the rx KeyMiss flag
+        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>
+Subject: [119/129] xfs: fix endian conversion issue in discard code
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,60 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1809
-Lines: 53
+Content-Length: 1239
+Lines: 39
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 7a532fe7131216a02c81a6c1b1f8632da1195a58 upstream.
+commit b1c770c273a4787069306fc82aab245e9ac72e9d upstream
 
-Documentation states that the KeyMiss flag is only valid if RxFrameOK is
-unset, however empirical evidence has shown that this is false.
-When KeyMiss is set (and RxFrameOK is 1), the hardware passes a valid frame
-which has not been decrypted. The driver then falsely marks the frame
-as decrypted, and when using CCMP this corrupts the rx CCMP PN, leading
-to connection hangs.
+When finding the longest extent in an AG, we read the value directly
+out of the AGF buffer without endian conversion. This will give an
+incorrect length, resulting in FITRIM operations potentially not
+trimming everything that it should.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_mac.c |    5 +++--
- drivers/net/wireless/ath/ath9k/mac.c        |    5 +++--
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ fs/xfs/xfs_discard.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-@@ -526,10 +526,11 @@ int ath9k_hw_process_rxdesc_edma(struct
- 			rxs->rs_status |= ATH9K_RXERR_DECRYPT;
- 		else if (rxsp->status11 & AR_MichaelErr)
- 			rxs->rs_status |= ATH9K_RXERR_MIC;
--		if (rxsp->status11 & AR_KeyMiss)
--			rxs->rs_status |= ATH9K_RXERR_KEYMISS;
- 	}
+--- a/fs/xfs/xfs_discard.c
++++ b/fs/xfs/xfs_discard.c
+@@ -68,7 +68,7 @@ xfs_trim_extents(
+ 	 * Look up the longest btree in the AGF and start with it.
+ 	 */
+ 	error = xfs_alloc_lookup_le(cur, 0,
+-				    XFS_BUF_TO_AGF(agbp)->agf_longest, &i);
++			    be32_to_cpu(XFS_BUF_TO_AGF(agbp)->agf_longest), &i);
+ 	if (error)
+ 		goto out_del_cursor;
  
-+	if (rxsp->status11 & AR_KeyMiss)
-+		rxs->rs_status |= ATH9K_RXERR_KEYMISS;
-+
- 	return 0;
- }
- EXPORT_SYMBOL(ath9k_hw_process_rxdesc_edma);
---- a/drivers/net/wireless/ath/ath9k/mac.c
-+++ b/drivers/net/wireless/ath/ath9k/mac.c
-@@ -621,10 +621,11 @@ int ath9k_hw_rxprocdesc(struct ath_hw *a
- 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
- 		else if (ads.ds_rxstatus8 & AR_MichaelErr)
- 			rs->rs_status |= ATH9K_RXERR_MIC;
--		if (ads.ds_rxstatus8 & AR_KeyMiss)
--			rs->rs_status |= ATH9K_RXERR_KEYMISS;
- 	}
+@@ -84,7 +84,7 @@ xfs_trim_extents(
+ 		if (error)
+ 			goto out_del_cursor;
+ 		XFS_WANT_CORRUPTED_GOTO(i == 1, out_del_cursor);
+-		ASSERT(flen <= XFS_BUF_TO_AGF(agbp)->agf_longest);
++		ASSERT(flen <= be32_to_cpu(XFS_BUF_TO_AGF(agbp)->agf_longest));
  
-+	if (ads.ds_rxstatus8 & AR_KeyMiss)
-+		rs->rs_status |= ATH9K_RXERR_KEYMISS;
-+
- 	return 0;
- }
- EXPORT_SYMBOL(ath9k_hw_rxprocdesc);
+ 		/*
+ 		 * Too small?  Give up.
 
 
