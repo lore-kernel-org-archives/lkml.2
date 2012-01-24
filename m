@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab2AXIVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 03:21:25 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:3496 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750972Ab2AXIVX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 03:21:23 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAABnHk95LElR/2dsb2JhbABDriuBBoFyAQEFOhwjEAgDDgouFCUDIRPAQhOMEwSVF4kqiTg
-Date: Tue, 24 Jan 2012 19:21:19 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 2/8] vfs: Protect write paths by sb_start_write -
- sb_end_write
-Message-ID: <20120124082119.GO15102@dastard>
-References: <1327091686-23177-1-git-send-email-jack@suse.cz>
- <1327091686-23177-3-git-send-email-jack@suse.cz>
+	id S1755048Ab2AXIX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 03:23:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60690 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883Ab2AXIX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 03:23:58 -0500
+Date: Tue, 24 Jan 2012 09:23:53 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Ying Han <yinghan@google.com>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] mm: memcg: fix over reclaiming mem cgroup
+Message-ID: <20120124082352.GA26289@tiehlicka.suse.cz>
+References: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
+ <20120123130221.GA15113@tiehlicka.suse.cz>
+ <CALWz4izWYb=_svn=UJ1C--pWXv59H2ahn6EJEnTpJv-dT6WGsw@mail.gmail.com>
+ <CAJd=RBAuDABE7u1wyc+45ZGoVos5PnxMe6P=ET-CHf-LChTpgw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327091686-23177-3-git-send-email-jack@suse.cz>
+In-Reply-To: <CAJd=RBAuDABE7u1wyc+45ZGoVos5PnxMe6P=ET-CHf-LChTpgw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 09:34:40PM +0100, Jan Kara wrote:
-> There are three entry points which dirty pages in a filesystem.  mmap (handled
-> by block_page_mkwrite()), buffered write (handled by
-> __generic_file_aio_write()), and truncate (it can dirty last partial page -
-> handled inside each filesystem separately). Protect these places with
-> sb_start_write() and sb_end_write().
+On Tue 24-01-12 11:26:05, Hillf Danton wrote:
+> Hi all
+> 
+> On Tue, Jan 24, 2012 at 3:14 AM, Ying Han <yinghan@google.com> wrote:
+> > On Mon, Jan 23, 2012 at 5:02 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> On Sat 21-01-12 22:49:23, Hillf Danton wrote:
+> >>> In soft limit reclaim, overreclaim occurs when pages are reclaimed from mem
+> >>> group that is under its soft limit, or when more pages are reclaimd than the
+> >>> exceeding amount, then performance of reclaimee goes down accordingly.
+> >>
+> >> First of all soft reclaim is more a help for the global memory pressure
+> >> balancing rather than any guarantee about how much we reclaim for the
+> >> group.
+> >> We need to do more changes in order to make it a guarantee.
+> >> For example you implementation will cause severe problems when all
+> >> cgroups are soft unlimited (default conf.) or when nobody is above the
+> >> limit but the total consumption triggers the global reclaim. Therefore
+> >> nobody is in excess and you would skip all groups and only bang on the
+> >> root memcg.
+> 
+> If soft limits are set to be limited and there are no excessors, who
+> are consuming physical pages? The consumers maybe those with soft
+> unlimited.
 
-fallocate can also dirty pages, either during preallocation or hole
-punching.  Hence if you are going to promote truncate to
-SB_FREEZE_WRITE protection then you need to promote everything else
-that can zero partial blocks as well.
+You might have many small groups which are all under their soft limit
+but their total usage triggers global reclaim for example.
 
-That also means that anything the has implemented XFS_IOC_ ioctl
-interfaces for prellocation and hole punching (xfs, ocfs2 and gfs2
-IIRC) also needs to be protected in the same way.
+> If so, they should be punished first, based on the assumption that the
+> unlimited is treated with no guarantee.
+> Then soft limit guarantee could be assured without changes in the
+> current default setting of soft limit, no?
 
-Cheers,
+How would you prioritize between over soft limit groups (which should
+give at least some protection from over reclaim AFAIU from your
+suggestion) from those that are unlimited?
 
-Dave.
+Also, when we start talking about guarantees, why would somebody who
+is soft unlimited be punished at all? Soft unlimited basically means
+soft_limit >= hard_limit which says please do not reclaim from me unless
+really really really necessary.
+
+> With soft limit available, victims are only selected from excessors, I think.
+> 
+> >>
+> >> Ying Han has a patch which basically skips all cgroups which are under
+> >> its limit until we reach a certain reclaim priority but even for this we
+> >> need some additional changes - e.g. reverse the current default setting
+> >> of the soft limit.
+> >>
+> >> Anyway, I like the nr_to_reclaim reduction idea because we have to do
+> >> this in some way because the global reclaim starts with ULONG
+> >> nr_to_scan.
+> >
+> > Agree with Michal where there are quite a lot changes we need to get
+> > in for soft limit before any further optimization.
+> >
+> > Hillf, please refer to the patch from Johannes
+> > https://lkml.org/lkml/2012/1/13/99 which got quite a lot recent
+> > discussions. I am expecting to get that in before further soft limit
+> > changes.
+> >
+> 
+> Johannes did great cleanup, why barriered?
+
+Barriered?
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
