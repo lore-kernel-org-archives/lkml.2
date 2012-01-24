@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab2AXSAH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 13:00:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65311 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2AXSAB (ORCPT
+	id S1757287Ab2AXSAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 13:00:30 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40264 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab2AXSAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 13:00:01 -0500
+	Tue, 24 Jan 2012 13:00:04 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 2/3] nohz: Remove ts->inidle checks before restarting the tick
-Date: Tue, 24 Jan 2012 18:59:43 +0100
-Message-Id: <1327427984-23282-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/3] timer: Fix bad idle check on irq entry
+Date: Tue, 24 Jan 2012 18:59:44 +0100
+Message-Id: <1327427984-23282-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1327427984-23282-1-git-send-email-fweisbec@gmail.com>
 References: <1327427984-23282-1-git-send-email-fweisbec@gmail.com>
@@ -23,58 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ts->inidle is set by tick_nohz_idle_enter() and unset by
-tick_nohz_idle_exit(). However These two calls are assumed
-to be always paired. This means that by the time we call
-tick_nohz_idle_exit(), ts->inidle is supposed to be always
-set to 1.
+idle_cpu() is called on irq entry to guess if
+we need to call tick_check_idle(). This way we can
+catch up with jiffies if the tick was stopped, stop
+accounting idle time during the interrupt and maintain
+the sched clock if it is unstable.
 
-Remove the checks for ts->inidle in tick_nohz_idle_exit().
-This simplifies a bit the code and improves its debuggability
-(ie: ensure the call is paired with a tick_nohz_idle_enter()
-call).
+But if we are going to exit the idle loop to schedule
+a new task (ie: if we have a task in the runqueue or a
+remotely enqueued ttwu to perform), the idle_cpu() check
+will return 0 such that we miss the call to tick_check_idle()
+for all interrupts happening before we schedule the new task.
+
+As a result these interrupts and the softirqs coming
+along may deal with stale jiffies values, bad sched clock
+values, and won't substract their time from the idle time
+accounting.
+
+Fix this with using is_idle_task() instead that strictly
+checks that we are running the idle task, without caring
+about the fact we are going to schedule a task soon.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/tick-sched.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ kernel/softirq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 85a67e8..6aecf74 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -560,20 +560,21 @@ void tick_nohz_idle_exit(void)
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 4eb3a0f..5ace266 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -297,7 +297,7 @@ void irq_enter(void)
+ 	int cpu = smp_processor_id();
  
- 	local_irq_disable();
- 
--	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
-+	WARN_ON_ONCE(!ts->inidle);
-+
-+	ts->inidle = 0;
-+
-+	if (ts->idle_active || ts->tick_stopped)
- 		now = ktime_get();
- 
- 	if (ts->idle_active)
- 		tick_nohz_stop_idle(cpu, now);
- 
--	if (!ts->inidle || !ts->tick_stopped) {
--		ts->inidle = 0;
-+	if (!ts->tick_stopped) {
- 		local_irq_enable();
- 		return;
- 	}
- 
--	ts->inidle = 0;
--
- 	/* Update jiffies first */
- 	select_nohz_load_balancer(0);
- 	tick_do_update_jiffies64(now);
+ 	rcu_irq_enter();
+-	if (idle_cpu(cpu) && !in_interrupt()) {
++	if (is_idle_task(current) && !in_interrupt()) {
+ 		/*
+ 		 * Prevent raise_softirq from needlessly waking up ksoftirqd
+ 		 * here, as softirq will be serviced on return from interrupt.
 -- 
 1.7.5.4
 
