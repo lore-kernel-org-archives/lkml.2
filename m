@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab2AXCn0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:43:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50040 "EHLO mx2.suse.de"
+	id S1756471Ab2AXCnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:43:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50073 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756303Ab2AXCnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:43:22 -0500
+	id S1756323Ab2AXCni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:43:38 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:26 2012
-Message-Id: <20120124023926.502760699@clark.kroah.org>
+Message-Id: <20120124023926.859888923@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:09 -0800
+Date: Mon, 23 Jan 2012 18:34:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bhavesh Parekh <bparekh@nvidia.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [029/129] UBI: fix missing scrub when there is a bit-flip
+        alan@lxorguk.ukuu.org.uk, Gary Hade <garyhade@us.ibm.com>,
+        Thomas Renninger <trenn@novell.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [033/129] x86/PCI: Ignore CPU non-addressable _CRS reserved memory resources
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,78 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2141
-Lines: 71
+Content-Length: 1988
+Lines: 58
 
-From: Bhavesh Parekh <bparekh@nvidia.com>
+From: Gary Hade <garyhade@us.ibm.com>
 
-commit e801e128b2200c40a0ec236cf2330b2586b6e05a upstream.
+commit ae5cd86455381282ece162966183d3f208c6fad7 upstream.
 
-Under some cases, when scrubbing the PEB if we did not get the lock on
-the PEB it fails to scrub. Add that PEB again to the scrub list
+This assures that a _CRS reserved host bridge window or window region is
+not used if it is not addressable by the CPU.  The new code either trims
+the window to exclude the non-addressable portion or totally ignores the
+window if the entire window is non-addressable.
 
-Artem: minor amendments.
+The current code has been shown to be problematic with 32-bit non-PAE
+kernels on systems where _CRS reserves resources above 4GB.
 
-Signed-off-by: Bhavesh Parekh <bparekh@nvidia.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Gary Hade <garyhade@us.ibm.com>
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Renninger <trenn@novell.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/ubi/eba.c |    6 ++++--
- drivers/mtd/ubi/ubi.h |    2 ++
- drivers/mtd/ubi/wl.c  |    5 ++++-
- 3 files changed, 10 insertions(+), 3 deletions(-)
+ arch/x86/pci/acpi.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/ubi/eba.c
-+++ b/drivers/mtd/ubi/eba.c
-@@ -1028,12 +1028,14 @@ int ubi_eba_copy_leb(struct ubi_device *
- 	 * 'ubi_wl_put_peb()' function on the @ubi->move_mutex. In turn, we are
- 	 * holding @ubi->move_mutex and go sleep on the LEB lock. So, if the
- 	 * LEB is already locked, we just do not move it and return
--	 * %MOVE_CANCEL_RACE, which means that UBI will re-try, but later.
-+	 * %MOVE_RETRY. Note, we do not return %MOVE_CANCEL_RACE here because
-+	 * we do not know the reasons of the contention - it may be just a
-+	 * normal I/O on this LEB, so we want to re-try.
- 	 */
- 	err = leb_write_trylock(ubi, vol_id, lnum);
- 	if (err) {
- 		dbg_wl("contention on LEB %d:%d, cancel", vol_id, lnum);
--		return MOVE_CANCEL_RACE;
-+		return MOVE_RETRY;
- 	}
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -149,7 +149,7 @@ setup_resource(struct acpi_resource *acp
+ 	struct acpi_resource_address64 addr;
+ 	acpi_status status;
+ 	unsigned long flags;
+-	u64 start, end;
++	u64 start, orig_end, end;
  
- 	/*
---- a/drivers/mtd/ubi/ubi.h
-+++ b/drivers/mtd/ubi/ubi.h
-@@ -120,6 +120,7 @@ enum {
-  *                     PEB
-  * MOVE_CANCEL_BITFLIPS: canceled because a bit-flip was detected in the
-  *                       target PEB
-+ * MOVE_RETRY: retry scrubbing the PEB
-  */
- enum {
- 	MOVE_CANCEL_RACE = 1,
-@@ -127,6 +128,7 @@ enum {
- 	MOVE_TARGET_RD_ERR,
- 	MOVE_TARGET_WR_ERR,
- 	MOVE_CANCEL_BITFLIPS,
-+	MOVE_RETRY,
- };
+ 	status = resource_to_addr(acpi_res, &addr);
+ 	if (!ACPI_SUCCESS(status))
+@@ -165,7 +165,21 @@ setup_resource(struct acpi_resource *acp
+ 		return AE_OK;
  
- /**
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -795,7 +795,10 @@ static int wear_leveling_worker(struct u
- 			protect = 1;
- 			goto out_not_moved;
- 		}
--
-+		if (err == MOVE_RETRY) {
-+			scrubbing = 1;
-+			goto out_not_moved;
-+		}
- 		if (err == MOVE_CANCEL_BITFLIPS || err == MOVE_TARGET_WR_ERR ||
- 		    err == MOVE_TARGET_RD_ERR) {
- 			/*
+ 	start = addr.minimum + addr.translation_offset;
+-	end = addr.maximum + addr.translation_offset;
++	orig_end = end = addr.maximum + addr.translation_offset;
++
++	/* Exclude non-addressable range or non-addressable portion of range */
++	end = min(end, (u64)iomem_resource.end);
++	if (end <= start) {
++		dev_info(&info->bridge->dev,
++			"host bridge window [%#llx-%#llx] "
++			"(ignored, not CPU addressable)\n", start, orig_end);
++		return AE_OK;
++	} else if (orig_end != end) {
++		dev_info(&info->bridge->dev,
++			"host bridge window [%#llx-%#llx] "
++			"([%#llx-%#llx] ignored, not CPU addressable)\n",
++			start, orig_end, end + 1, orig_end);
++	}
+ 
+ 	res = &info->res[info->res_num];
+ 	res->name = info->name;
 
 
