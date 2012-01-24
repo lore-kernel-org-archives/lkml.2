@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab2AXUVK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 15:21:10 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56374 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756118Ab2AXUVH convert rfc822-to-8bit (ORCPT
+	id S1756817Ab2AXUVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 15:21:31 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:43071 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756118Ab2AXUVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 15:21:07 -0500
+	Tue, 24 Jan 2012 15:21:30 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Dave Hansen <haveblue@us.ibm.com>, sukadev@linux.vnet.ibm.com,
+        Andy Whitcroft <apw@canonical.com>, Matt Helsley <matthltc@us.ibm.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Subject: Re: [RFC] fix devpts mount behavior
+References: <20120124000517.GA28878@sergelap>
+	<CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
+	<20120124002555.GA29534@sergelap>
+	<CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
+	<20120124010758.GJ23916@ZenIV.linux.org.uk>
+Date: Tue, 24 Jan 2012 12:24:01 -0800
+In-Reply-To: <20120124010758.GJ23916@ZenIV.linux.org.uk> (Al Viro's message of
+	"Tue, 24 Jan 2012 01:07:58 +0000")
+Message-ID: <m1k44gj1cu.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1326686570-19303-2-git-send-email-maxim.uvarov@oracle.com>
-References: <1326686570-19303-1-git-send-email-maxim.uvarov@oracle.com> <1326686570-19303-2-git-send-email-maxim.uvarov@oracle.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Jan 2012 12:20:46 -0800
-X-Google-Sender-Auth: 2_IfWGbRqwCgXTJTt9D39WNSoyI
-Message-ID: <CA+55aFxzfCxwYUcRbSyf+U7nr5GPjH4Qfine_TcY6Oxj8WQrWw@mail.gmail.com>
-Subject: Re: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
-To: Maxim Uvarov <maxim.uvarov@oracle.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, wim@iguana.be,
-        stable@vger.kernel.org, Thomas.Mingarelli@hp.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19CLR31mTD0ssPQE3fFHY/bB/TMhBVHc/I=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I don't know who is supposed to be handling this (Wim?), but the
-patch itself looks suspicious.
+Al Viro <viro@ZenIV.linux.org.uk> writes:
 
-On Sun, Jan 15, 2012 at 8:02 PM, Maxim Uvarov <maxim.uvarov@oracle.com> wrote:
-> -       set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
-> +       set_memory_x((unsigned long)bios32_entrypoint & PAGE_MASK, 2);
+> On Mon, Jan 23, 2012 at 04:41:25PM -0800, Linus Torvalds wrote:
+>
+>> Right. I think the opportunity for problems should be pretty small.
+>> 
+>> And it's not like the pty itself wouldn't continue to work - it's just
+>> that programs like /usr/bin/tty wouldn't be able to *find* it.
+>> 
+>> Although who knows - maybe there is some other subtle interaction.
+>
+> FWIW, the subtle and nasty part in all that is  that you can mknod /dev/ptmx
+> and it *will* work, refering to the "initial" instance.  That's what
+> concerns me about the chroot scenarios -
+> 	mknod /jail/dev/ptmx c 5 2
+> 	mkdir /jail/dev/pts
+> 	mount -t devpts /jail/dev/pts
+> 	chroot /jail
+> works fine right now, but with that change behaviour will be all wrong -
+> opening /dev/ptmx inside of jail will grab you a pts, all right, but
+> it will *not* show up in (jail) /dev/pts/* as it does with the current
+> kernel.
+>
+> Note that if you replace that mknod with symlink pts/ptmx /jail/dev/ptmx
+> the things will keep working.  However, that will _only_ work for kernels
+> with DEVPTS_MULTIPLE_INSTANCES - without it you won't get ptmx inside
+> devpts (which is arguably wrong, BTW)
 
-If it wasn't page-aligned to begin with, then maybe it needs three pages now?
+For testing I would recommend looking at the distro chroot build cases.
 
-> -                               set_memory_x((unsigned long)cru_rom_addr, cru_length);
-> +                               set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK, cru_length >> PAGE_SHIFT);
+It looks like relatively recent udev still creates /dev/ptmx and does
+not create the symlink.  So we might get into the awkward situation of
+/dev/ptmx not matching /dev/pts/ptmx with something as simple as
+initramfs mounting /dev/pts and then initscripts mounting /dev/pts.
 
-Same here. If we align the start address down, we should fix up the
-length. And should we not align the number of pages up?
-
-In general, a "start/length" conversion to a "page/nr" model needs to be roughly
-
-   len += start & ~PAGE_MASK;
-   start &= PAGE_MASK;
-   nr_pages = (len + PAGE_SIZE - 1) >> PAGE_SHIFT;
-
-to do things right. But I don't know where those magic numbers come
-from. Maybe the "2" is already due to the code possibly traversing a
-page boundary, and has already been fixed up. Somebody who knows the
-driver and the requirements should take a look at this.
-
-                      Linus
+Eric
