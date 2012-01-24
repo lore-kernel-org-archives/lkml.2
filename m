@@ -1,76 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab2AXHl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 02:41:59 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55392 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab2AXHl6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 02:41:58 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 24 Jan 2012 16:40:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
-Message-Id: <20120124164008.aa1714bd.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120124073842.GE29735@moon>
-References: <20120123142036.025893883@openvz.org>
-	<20120123142436.258631438@openvz.org>
-	<20120124111655.b29264d2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124064719.GA29735@moon>
-	<4F1E57F3.6020607@zytor.com>
-	<20120124071716.GC29735@moon>
-	<20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124073842.GE29735@moon>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754398Ab2AXHpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 02:45:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751926Ab2AXHpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 02:45:21 -0500
+Date: Tue, 24 Jan 2012 08:45:17 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        bfields@redhat.com, linux-nfs@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
+Message-ID: <20120124074516.GC2420@redhat.com>
+References: <20120120135646.2fc4fa61@tlielax.poochiereds.net>
+ <4F1BCCD6.4020603@codeaurora.org>
+ <20120123102311.4378b8c1@tlielax.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120123102311.4378b8c1@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012 11:38:42 +0400
-Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On Tue, Jan 24, 2012 at 04:20:31PM +0900, KAMEZAWA Hiroyuki wrote:
-> ...
-> > > > 
-> > > > That's not a reason to put it in arch/ ... that's possibly a reason to
-> > > > not map the system call on other architectures yet.
-> > > > 
-> > > 
-> > > Where it should live then? In kernel/ or mm/ ?
-> > > 
-> > 
-> > kernel/checkpoint_restart ?
-> > 
-> > gathering related changes to a directory may help developpers joins later....
-> > To me, this makes seeing git log easy ;)
-> >  
+On Mon, Jan 23, 2012 at 10:23:11AM -0500, Jeff Layton wrote:
+> On Sun, 22 Jan 2012 00:46:14 -0800
+> Stephen Boyd <sboyd@codeaurora.org> wrote:
 > 
-> Such separate directory implies everything related to c/r should live there,
-> it also implies (I think) that code which is under CHECKPOINT_RESTORE should
-> be moved there as well, so I'm not sure, Kame ;) I guess mm/ will be a good
-> place since these are operations with memory pointers.
+> > On 1/20/2012 10:56 AM, Jeff Layton wrote:
+> > > What I'm finding though is that if I stop and start nfsd multiple
+> > > times, then I eventually get a warning like this on start:
+> > >
+> > > [ 5157.128514] WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
+> > > [ 5157.128742] Hardware name: Bochs
+> > > [ 5157.128742] ODEBUG: activate not available (active state 0) object type: timer_list hint: stub_timer+0x0/0x20
+> > > [ 5157.128742] Modules linked in: nfsd(O) nfs_acl auth_rpcgss lockd sunrpc floppy virtio_net i2c_piix4 i2c_core virtio_balloon joydev pcspkr virtio_blk [last unloaded: nfsd]
+> > > [ 5157.128742] Pid: 1312, comm: rpc.nfsd Tainted: G        W  O 3.3.0-rc1+ #1
+> > > [ 5157.128742] Call Trace:
+> > > [ 5157.128742]  [<ffffffff8106135f>] warn_slowpath_common+0x7f/0xc0
+> > > [ 5157.128742]  [<ffffffff81061456>] warn_slowpath_fmt+0x46/0x50
+> > > [ 5157.128742]  [<ffffffff8132ba2c>] debug_print_object+0x8c/0xb0
+> > > [ 5157.128742]  [<ffffffff81070db0>] ? timer_debug_hint+0x10/0x10
+> > > [ 5157.128742]  [<ffffffff8132c02b>] debug_object_activate+0xfb/0x190
+> > > [ 5157.128742]  [<ffffffff81072728>] ? lock_timer_base.isra.24+0x38/0x70
+> > > [ 5157.128742]  [<ffffffff81074676>] mod_timer+0xf6/0x450
+> > > [ 5157.128742]  [<ffffffff810749e8>] add_timer+0x18/0x20
+> > > [ 5157.128742]  [<ffffffff8108168e>] queue_delayed_work_on+0xbe/0x140
+> > > [ 5157.128742]  [<ffffffff81084441>] queue_delayed_work+0x21/0x40
+> > > [ 5157.128742]  [<ffffffffa006e568>] rpc_queue_upcall+0xe8/0x100 [sunrpc]
+> > > [ 5157.128742]  [<ffffffffa012a121>] __cld_pipe_upcall+0x61/0xc0 [nfsd]
+> > > [ 5157.128742]  [<ffffffffa012ad98>] nfsd4_cld_init+0x48/0x140 [nfsd]
+> > > [ 5157.128742]  [<ffffffffa012b22a>] nfsd4_client_tracking_init+0x2a/0xc0 [nfsd]
+> > > [ 5157.128742]  [<ffffffff8169797e>] ? mutex_unlock+0xe/0x10
+> > > [ 5157.128742]  [<ffffffffa01266fa>] nfs4_state_start+0x1a/0x100 [nfsd]
+> > > [ 5157.128742]  [<ffffffffa01028c5>] nfsd_svc+0x135/0x200 [nfsd]
+> > > [ 5157.128742]  [<ffffffffa0103df0>] ? write_maxblksize+0x130/0x130 [nfsd]
+> > > [ 5157.128742]  [<ffffffffa0103e6d>] write_threads+0x7d/0xd0 [nfsd]
+> > > [ 5157.128742]  [<ffffffff811dd16a>] ? simple_transaction_get+0xca/0xe0
+> > > [ 5157.128742]  [<ffffffffa0102ee7>] nfsctl_transaction_write+0x57/0x90 [nfsd]
+> > > [ 5157.128742]  [<ffffffff811b4c9f>] vfs_write+0xaf/0x190
+> > > [ 5157.128742]  [<ffffffff811b4fdd>] sys_write+0x4d/0x90
+> > > [ 5157.128742]  [<ffffffff816a3469>] system_call_fastpath+0x16/0x1b
+> > 
+> > This one is telling you that the timer you're about to run hasn't been 
+> > registered with debug_objects. Most likely the work item hasn't been 
+> > initialized properly and so it hasn't had INIT_DELAYED_WORK() called on it.
+> > 
+> > >
+> > > ...or this on stop:
+> > >
+> > > [ 5200.804410] WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
+> > > [ 5200.808205] Hardware name: Bochs
+> > > [ 5200.810121] ODEBUG: assert_init not available (active state 0) object type: timer_list hint: stub_timer+0x0/0x20
+> > > [ 5200.812734] Modules linked in: nfsd(O) nfs_acl auth_rpcgss lockd sunrpc floppy virtio_net i2c_piix4 i2c_core virtio_balloon joydev pcspkr virtio_blk [last unloaded: nfsd]
+> > > [ 5200.821596] Pid: 1394, comm: nfsd Tainted: G        W  O 3.3.0-rc1+ #1
+> > > [ 5200.822409] Call Trace:
+> > > [ 5200.822726]  [<ffffffff8106135f>] warn_slowpath_common+0x7f/0xc0
+> > > [ 5200.823509]  [<ffffffff81061456>] warn_slowpath_fmt+0x46/0x50
+> > > [ 5200.824243]  [<ffffffff8132ba2c>] debug_print_object+0x8c/0xb0
+> > > [ 5200.824935]  [<ffffffff81070db0>] ? timer_debug_hint+0x10/0x10
+> > > [ 5200.825665]  [<ffffffff8132c543>] debug_object_assert_init+0xe3/0x120
+> > > [ 5200.826474]  [<ffffffff810737b4>] del_timer+0x24/0x1b0
+> > > [ 5200.827129]  [<ffffffff81085314>] __cancel_work_timer+0x34/0x140
+> > > [ 5200.827829]  [<ffffffff81085432>] cancel_delayed_work_sync+0x12/0x20
+> > > [ 5200.832905]  [<ffffffffa006e430>] rpc_unlink+0x1e0/0x230 [sunrpc]
+> > > [ 5200.833716]  [<ffffffffa012a195>] nfsd4_remove_cld_pipe+0x15/0x40 [nfsd]
+> > > [ 5200.834558]  [<ffffffffa012b2e0>] nfsd4_client_tracking_exit+0x20/0x30 [nfsd]
+> > > [ 5200.835434]  [<ffffffffa0126984>] nfs4_state_shutdown+0x1a4/0x1c0 [nfsd]
+> > > [ 5200.836271]  [<ffffffffa010219a>] nfsd_last_thread+0x2a/0x60 [nfsd]
+> > > [ 5200.837045]  [<ffffffffa005f66c>] svc_destroy+0x5c/0x140 [sunrpc]
+> > > [ 5200.837778]  [<ffffffffa005f9f6>] svc_exit_thread+0xa6/0xb0 [sunrpc]
+> > > [ 5200.838545]  [<ffffffffa0102123>] nfsd+0x123/0x170 [nfsd]
+> > > [ 5200.839221]  [<ffffffffa0102000>] ? 0xffffffffa0101fff
+> > > [ 5200.839820]  [<ffffffff8108a747>] kthread+0xb7/0xc0
+> > > [ 5200.840431]  [<ffffffff816a48b4>] kernel_thread_helper+0x4/0x10
+> > > [ 5200.850883]  [<ffffffff8169acf4>] ? retint_restore_args+0x13/0x13
+> > > [ 5200.851654]  [<ffffffff8108a690>] ? kthread_worker_fn+0x1a0/0x1a0
+> > > [ 5200.852418]  [<ffffffff816a48b0>] ? gs_change+0x13/0x13
+> > 
+> > This is similar. Now you're deleting a timer that debug_objects doesn't 
+> > know about.
+> > 
+> > >
+> > > The problem is that even after staring at this code for a while, I'm
+> > > still clueless as to what this is telling me. It doesn't happen every
+> > > time either, so maybe there's a race of some sort involved.
+> > >
+> > > It's possible that my patch is broken and doing something wrong, but
+> > > I'm starting not to think so. I'm not really using timers directly --
+> > > I'm using rpc_pipefs, which queues a delayed job to a workqueue, and
+> > > that is manipulating the timer. The delayed_work (and hence the timer)
+> > > are part of an rpc_inode.
+> > >
+> > > Can anyone shed a little light on what this is complaining about?
+> > >
+> > 
+> > Do you have workqueue debugging enabled too (DEBUG_OBJECTS_WORK)? I 
+> > would hope that work item debugging would say the same things and then 
+> > we would know that the work item itself wasn't initialized properly.
 > 
+> (adding linux-nfs to cc list...)
+> 
+> Ok, I think I sort of see what's happening, but I'm not sure if it's a
+> bug in the debug objects code or something else. To answer the question
+> that I didn't before, the kernels I've been testing have this set:
+> 
+>     CONFIG_DEBUG_OBJECTS_WORK=y
+> 
+> ...so workqueue debugging is on but I haven't seen any messages that
+> come from it AFAICT. The rpc_inode objects have their delayed_work
+> fields initialized via a slab "constructor". Here's the rpc_inode_cache
+> creation call:
+> 
+>         rpc_inode_cachep = kmem_cache_create("rpc_inode_cache",
+>                                 sizeof(struct rpc_inode),
+>                                 0, (SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT|
+>                                                 SLAB_MEM_SPREAD),
+>                                 init_once);
+> 
+> ...and the init_once() routine does this:
+> 
+>         INIT_DELAYED_WORK(&rpci->queue_timeout,
+>                             rpc_timeout_upcall_queue);
+> 
+> On the first use of an rpc_inode object, everything works fine. I think
+> the problem comes in when rpc_inode objects get recycled without the
+> INIT_DELAYED_WORK() getting called on it again.
+> 
+> Before the object is freed it gets cancel_delayed_work_sync() called on
+> it, but that's apparently not enough to convince the debugobjects code
+> that it's already correctly initialized. As a Q&D check, the following
+> patch seems to stop the warnings. Is there some better way to do this
+> that doesn't require the reinitialization of the delayed work on each
+> inode allocation?
 
-please do as you like. 
--Kame
+If this is debug objects false positive, it should be rather fixed in
+debug object code itself, not workaround in nfs code, but I do not have
+any idea how to do this.
 
+Stanislaw
+ 
+> --- a/net/sunrpc/rpc_pipe.c
+> +++ b/net/sunrpc/rpc_pipe.c
+> @@ -178,6 +178,8 @@ rpc_alloc_inode(struct super_block *sb)
+>         rpci = (struct rpc_inode *)kmem_cache_alloc(rpc_inode_cachep, GFP_KERNEL);
+>         if (!rpci)
+>                 return NULL;
+> +
+> +       INIT_DELAYED_WORK(&rpci->queue_timeout, rpc_timeout_upcall_queue);
+>         return &rpci->vfs_inode;
+>  }
+> 
+> -- 
+> Jeff Layton <jlayton@redhat.com>
