@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab2AXG7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 01:59:51 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:20032 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751951Ab2AXG7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 01:59:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EANpVHk95LElR/2dsb2JhbABDriqBBoFyAQEEATocIwULCAMOCi4UJQMhE4d8uE0TjBMElReJKgcBiTA
-Date: Tue, 24 Jan 2012 17:59:45 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>
-Subject: Re: [PATCH 4/8] xfs: Move ilock before transaction start in
- xfs_setattr_size()
-Message-ID: <20120124065945.GL15102@dastard>
-References: <1327091686-23177-1-git-send-email-jack@suse.cz>
- <1327091686-23177-5-git-send-email-jack@suse.cz>
+	id S1754443Ab2AXHFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 02:05:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57363 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116Ab2AXHFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 02:05:08 -0500
+Message-ID: <4F1E57F3.6020607@zytor.com>
+Date: Mon, 23 Jan 2012 23:04:19 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327091686-23177-5-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
+References: <20120123142036.025893883@openvz.org> <20120123142436.258631438@openvz.org> <20120124111655.b29264d2.kamezawa.hiroyu@jp.fujitsu.com> <20120124064719.GA29735@moon>
+In-Reply-To: <20120124064719.GA29735@moon>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 09:34:42PM +0100, Jan Kara wrote:
-> In xfs we first take ilock and start transaction afterwards.
+On 01/23/2012 10:47 PM, Cyrill Gorcunov wrote:
+>>
+>> Why under /arch ?
+>>
+> 
+> Hi Kame,
+> 
+> because I've tested it under x86 only. Once someone
+> confirm it's needed on some else arch and does work
+> as expected -- it wont be a problem to make it system
+> wide. Until then -- I think better to stick with
+> at least tested case.
+> ...
 
-The correct order is to allocate the transaction, reserve the space
-for it and then take the ilock.  We cannot hold the ilock over the
-transaction reservation because that can deadlock the journal.
+That's not a reason to put it in arch/ ... that's possibly a reason to
+not map the system call on other architectures yet.
 
-That is, to make space for the new transaction reservation, we may
-need to take the ilock to flush the inode and allow the journal tail
-to move forwards to make space for the new transaction.  If we
-already hold the ilock, then it can't be flushed, we can't make
-space available in the journal and hence deadlock.
-
-Maybe you confused the ilock vs the iolock.  We can hold the iolock
-over the trans alloc/reserve because that lock is not required to
-move the tail of the journal, so the deadlock doesn't exist.
-
-> We should obey
-> this order in all places because otherwise we can create the following deadlock
-> with filesystem freezing: One process holds ilock and blocks on s_frozen ==
-> SB_FREEZE_TRANS in xfs_trans_alloc(), another process has a transaction started
-> (thus blocking freezing) and blocks on ilock. So we have to take ilock earlier
-> in xfs_setattr_size().
-
-Where are we taking the ilock and then calling xfs_trans_alloc()?
-That's the caller needs to be fixed, not the 40-odd that do the
-right thing by taking the ilock -after- the trans alloc/reserve
-calls.
-
-Cheers,
-
-Dave.
-
--- 
-Dave Chinner
-david@fromorbit.com
+	-hpa
