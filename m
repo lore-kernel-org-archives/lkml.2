@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab2AXVGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 16:06:54 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:5171 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab2AXVGw convert rfc822-to-8bit (ORCPT
+	id S1757489Ab2AXVJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 16:09:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33672 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755844Ab2AXVJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 16:06:52 -0500
-From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
-To: Wim Van Sebroeck <wim@iguana.be>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Maxim Uvarov <maxim.uvarov@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        dann frazier <dannf@hp.com>
-Subject: RE: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
-Thread-Topic: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
-Thread-Index: AQHM1AQmvgYktPlZTkqNjF1gWE474ZYcA0YAgAAEtwCAAAZWcA==
-Date: Tue, 24 Jan 2012 21:05:53 +0000
-Message-ID: <9774516974AF5F4C8A2C3C69CD3412332032E846@G9W0755.americas.hpqcorp.net>
-References: <1326686570-19303-1-git-send-email-maxim.uvarov@oracle.com>
- <1326686570-19303-2-git-send-email-maxim.uvarov@oracle.com>
- <CA+55aFxzfCxwYUcRbSyf+U7nr5GPjH4Qfine_TcY6Oxj8WQrWw@mail.gmail.com>
- <20120124203738.GA27296@infomag.iguana.be>
-In-Reply-To: <20120124203738.GA27296@infomag.iguana.be>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.193.129.71]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jan 2012 16:09:39 -0500
+Date: Tue, 24 Jan 2012 22:09:24 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, Kevin Wells <kevin.wells@nxp.com>
+Subject: Re: LPC32xx status (Re: [PATCH] Correct bad gpio naming)
+Message-ID: <20120124210924.GD8502@pengutronix.de>
+References: <4F1C4E25.6070801@antcom.de>
+ <20120124155921.GH2609@pengutronix.de>
+ <4F1EDD15.7010704@antcom.de>
+ <20120124192545.GB8502@pengutronix.de>
+ <4F1F16A8.7010407@antcom.de>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wLAMOaPNJ0fu1fTG"
+Content-Disposition: inline
+In-Reply-To: <4F1F16A8.7010407@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes I agree that Maxim's patch is correct. The original set_memory_x call for 64 bit was done correctly and the newer calls are wrong.
 
-The 2 pages for the BIOS SD is a known value so it should be safe to use as is.
-
-
-
-Tom
------Original Message-----
-From: Wim Van Sebroeck [mailto:wim@iguana.be] 
-Sent: Tuesday, January 24, 2012 2:38 PM
-To: Linus Torvalds
-Cc: Maxim Uvarov; linux-kernel@vger.kernel.org; akpm@linux-foundation.org; stable@vger.kernel.org; Mingarelli, Thomas; dann frazier
-Subject: Re: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
-
-Hi Linus,
-
-> So I don't know who is supposed to be handling this (Wim?), but the
-> patch itself looks suspicious.
-
-I asked Tom to look at Maxim's patch and see what it does. Tom was going to look at the patch and
-I'm waiting on feedback from him first. (That's why I din't sent it upstream yet).
-
-> On Sun, Jan 15, 2012 at 8:02 PM, Maxim Uvarov <maxim.uvarov@oracle.com> wrote:
-> > -       set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
-> > +       set_memory_x((unsigned long)bios32_entrypoint & PAGE_MASK, 2);
-> 
-> If it wasn't page-aligned to begin with, then maybe it needs three pages now?
-> 
-> > -                               set_memory_x((unsigned long)cru_rom_addr, cru_length);
-> > +                               set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK, cru_length >> PAGE_SHIFT);
-> 
-> Same here. If we align the start address down, we should fix up the
-> length. And should we not align the number of pages up?
-> 
-> In general, a "start/length" conversion to a "page/nr" model needs to be roughly
-> 
->    len += start & ~PAGE_MASK;
->    start &= PAGE_MASK;
->    nr_pages = (len + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> 
-> to do things right. But I don't know where those magic numbers come
-> from. Maybe the "2" is already due to the code possibly traversing a
-> page boundary, and has already been fixed up. Somebody who knows the
-> driver and the requirements should take a look at this.
-
-Valid comments indeed. Tom please take Linus comments with you when you look at the patch.
-
-Dan: I put you in Cc: also so that you can have a look at it also.
-
-Kind regards,
-Wim.
+--wLAMOaPNJ0fu1fTG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
+> Unfortunately, I currently don't have a phy3250, but can check
+> tomorrow with colleagues.
+
+Shouldn't matter that much, or? Once the core support is back and works for
+your board, others could test with their boards.
+
+> I guess the work92105_defconfig is only useful once the drivers
+> currently missing in mainline are merged. Or is there an arm specific
+> tree I should update from?
+
+You can keep the work92105_defconfig in your tree, but we'd need to introdu=
+ce a
+lpc32xx_defconfig. That should start with a minimal (but working) config and
+can be extended once the drivers are in place.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--wLAMOaPNJ0fu1fTG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk8fHgQACgkQD27XaX1/VRsoRgCffgo9rwt65Bl7sZKk5hQ23OCj
+jzMAn2GhgA27GFLYOWzDG5tl8uMq1vJY
+=c6pk
+-----END PGP SIGNATURE-----
+
+--wLAMOaPNJ0fu1fTG--
