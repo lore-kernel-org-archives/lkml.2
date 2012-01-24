@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab2AXUgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 15:36:21 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:62349
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751645Ab2AXUgU (ORCPT
+	id S1756984Ab2AXUhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 15:37:31 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:15112
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755942Ab2AXUha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 15:36:20 -0500
-X-IronPort-AV: E=Sophos;i="4.71,563,1320620400"; 
-   d="scan'208";a="128723522"
-Date: Tue, 24 Jan 2012 21:36:17 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing iounmap
-In-Reply-To: <20120124202203.GD1135@opensource.wolfsonmicro.com>
-Message-ID: <alpine.DEB.2.02.1201242135430.1998@hadrien>
-References: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr> <7FE21149F4667147B645348EC605788508FBDB@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1201241828480.1779@localhost6.localdomain6> <20120124202203.GD1135@opensource.wolfsonmicro.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 24 Jan 2012 15:37:30 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275ch8275bhz2dhc1bhc31hc1ah2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <broonie@opensource.wolfsonmicro.com>, <rdunlap@xenotime.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] regulator: mc13xxx-regulator-core: Fix the build when driver is selected as module
+Date: Tue, 24 Jan 2012 18:37:16 -0200
+Message-ID: <1327437436-10937-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012, Mark Brown wrote:
+Fix the following build error when mc138xxx driver is built as module:
 
-> On Tue, Jan 24, 2012 at 06:29:13PM +0100, Julia Lawall wrote:
->
->>  	if (IS_ERR(saif->clk)) {
->> -		ret = PTR_ERR(saif->clk);
->>  		dev_err(&pdev->dev, "Cannot get the clock: %d\n",
->>  			ret);
->> -		goto failed_clk;
->> +		return PTR_ERR(saif->clk);
->
-> Looks like the transformation is overly enthusiastic here - the
-> assignment to ret is removed but ret is used in the log message.
+ERROR: "mc13xxx_parse_regulators_dt" [drivers/regulator/mc13892-regulator.ko] undefined!
+ERROR: "mc13xxx_get_num_regulators_dt" [drivers/regulator/mc13892-regulator.ko] undefined!
 
-Uh, no, I did that stupid thing by hand.  I'll fix it.  Thanks.
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/regulator/mc13xxx-regulator-core.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-julia
+diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
+index 80ecafe..62dcd0a 100644
+--- a/drivers/regulator/mc13xxx-regulator-core.c
++++ b/drivers/regulator/mc13xxx-regulator-core.c
+@@ -254,6 +254,7 @@ int __devinit mc13xxx_get_num_regulators_dt(struct platform_device *pdev)
+ 
+ 	return num;
+ }
++EXPORT_SYMBOL_GPL(mc13xxx_get_num_regulators_dt);
+ 
+ struct mc13xxx_regulator_init_data * __devinit mc13xxx_parse_regulators_dt(
+ 	struct platform_device *pdev, struct mc13xxx_regulator *regulators,
+@@ -291,6 +292,7 @@ struct mc13xxx_regulator_init_data * __devinit mc13xxx_parse_regulators_dt(
+ 
+ 	return data;
+ }
++EXPORT_SYMBOL_GPL(mc13xxx_parse_regulators_dt);
+ #endif
+ 
+ MODULE_LICENSE("GPL v2");
+-- 
+1.7.1
+
+
