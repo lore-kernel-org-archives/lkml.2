@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab2AXRpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 12:45:12 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43679 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757167Ab2AXRpJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 12:45:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <fd9de2a6c650eb4f5cf611ccd7775b6abb73ac35.1327348286.git.vjaquez@igalia.com>
-References: <cover.1327348286.git.vjaquez@igalia.com>
-	<fd9de2a6c650eb4f5cf611ccd7775b6abb73ac35.1327348286.git.vjaquez@igalia.com>
-Date: Tue, 24 Jan 2012 19:45:08 +0200
-Message-ID: <CAMP44s0YapTKw6tbz3mnYeBXu1Ut-fPahRNy8U3uSroo_zDWtA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] staging: tidspbridge: remove unused header
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: =?UTF-8?Q?V=C3=ADctor_Manuel_J=C3=A1quez_Leal?= 
-	<vjaquez@igalia.com>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Armando Uribe <x0095078@ti.com>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, Ernesto Ramos <ernesto@ti.com>,
-        Rene Sapiens <rene.sapiens@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757236Ab2AXRpr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 12:45:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10401 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757167Ab2AXRpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 12:45:46 -0500
+Message-ID: <1327427142.4131.4.camel@localhost>
+Subject: Re: [PATCH v1] vfs: fix IMA lockdep circular locking dependency
+From: Eric Paris <eparis@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Mimi Zohar <zohar@us.ibm.com>
+Date: Tue, 24 Jan 2012 12:45:42 -0500
+In-Reply-To: <1327426472-25275-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1327426472-25275-1-git-send-email-zohar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/23 Víctor Manuel Jáquez Leal <vjaquez@igalia.com>:
-> No functional changes.
->
-> The header file drv_interface.h was only used locally, hence there's no need
-> to have it.
->
-> Also the only prototyped functions were the file_operations callbacks, then
-> this commit moves them up to avoid prototyping too.
+On Tue, 2012-01-24 at 12:34 -0500, Mimi Zohar wrote:
+> The circular lockdep is caused by allocating the 'iint' for mmapped
+> files.  Originally when an 'iint' was allocated for every inode
+> in inode_alloc_security(), before the inode was accessible, no
+> locking was necessary.  Commits bc7d2a3e and 196f518 changed this
+> behavior and allocated the 'iint' on a per need basis, resulting in
+> the mmap_sem being taken before the i_mutex for mmapped files.
+> 
+> Possible unsafe locking scenario:
+>        CPU0                    CPU1
+>        ----                    ----
+> lock(&mm->mmap_sem);
+>                               lock(&sb->s_type->i_mutex_key);
+>                               lock(&mm->mmap_sem);
+> lock(&sb->s_type->i_mutex_key);
+> 
+> The existing security_file_mmap() hook is after the mmap_sem is taken.
+> This patch moves the ima_file_mmap() call from security_file_mmap() to
+> prior to the mmap_sem being taken.
+> 
+> Changelog v1:
+> - Instead of just pre-allocating the iint in a new hook, do ALL of the
+> work in the new/moved ima_file_mmap() hook. (Based on Eric Paris' suggestion.)
+> - Removed do_mmap_with_sem() helper function.
+> - export ima_file_mmap()
 
-'Also' is a keyword that usually denotes that we are talking about two
-patches here: one that reshuffles the code, and another one that
-removes the header.
+Why does it need to be exported?  What module might call this?
 
-But looks good to me either way.
-
--- 
-Felipe Contreras
