@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044Ab2AXCuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:50:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50758 "EHLO mx2.suse.de"
+	id S932997Ab2AXCti (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:49:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50725 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932960Ab2AXCtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:49:42 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:35 2012
-Message-Id: <20120124023935.374380147@clark.kroah.org>
+	id S932957Ab2AXCtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:49:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:33 2012
+Message-Id: <20120124023933.202280417@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:49 -0800
+Date: Mon, 23 Jan 2012 18:35:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>
-Subject: [129/129] SHM_UNLOCK: fix Unevictable pages stranded after swap
+        alan@lxorguk.ukuu.org.uk, Lin Ming <ming.m.lin@intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [104/129] ACPI: processor: fix acpi_get_cpuid for UP processor
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,336 +24,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 10601
-Lines: 329
+Content-Length: 2114
+Lines: 69
 
-From: Hugh Dickins <hughd@google.com>
+From: Lin Ming <ming.m.lin@intel.com>
 
-commit 245132643e1cfcd145bbc86a716c1818371fcb93 upstream.
+commit d640113fe80e45ebd4a5b420b220d3f6bf37f682 upstream.
 
-Commit cc39c6a9bbde ("mm: account skipped entries to avoid looping in
-find_get_pages") correctly fixed an infinite loop; but left a problem
-that find_get_pages() on shmem would return 0 (appearing to callers to
-mean end of tree) when it meets a run of nr_pages swap entries.
+For UP processor, it is likely that no _MAT method or MADT table defined.
+So currently acpi_get_cpuid(...) always return -1 for UP processor.
+This is wrong. It should return valid value for CPU0.
 
-The only uses of find_get_pages() on shmem are via pagevec_lookup(),
-called from invalidate_mapping_pages(), and from shmctl SHM_UNLOCK's
-scan_mapping_unevictable_pages().  The first is already commented, and
-not worth worrying about; but the second can leave pages on the
-Unevictable list after an unusual sequence of swapping and locking.
+In the other hand, BIOS may define multiple CPU handles even for UP
+processor, for example
 
-Fix that by using shmem_find_get_pages_and_swap() (then ignoring the
-swap) instead of pagevec_lookup().
+        Scope (_PR)
+        {
+            Processor (CPU0, 0x00, 0x00000410, 0x06) {}
+            Processor (CPU1, 0x01, 0x00000410, 0x06) {}
+            Processor (CPU2, 0x02, 0x00000410, 0x06) {}
+            Processor (CPU3, 0x03, 0x00000410, 0x06) {}
+        }
 
-But I don't want to contaminate vmscan.c with shmem internals, nor
-shmem.c with LRU locking.  So move scan_mapping_unevictable_pages() into
-shmem.c, renaming it shmem_unlock_mapping(); and rename
-check_move_unevictable_page() to check_move_unevictable_pages(), looping
-down an array of pages, oftentimes under the same lock.
+We should only return valid value for CPU0's acpi handle.
+And return invalid value for others.
 
-Leave out the "rotate unevictable list" block: that's a leftover from
-when this was used for /proc/sys/vm/scan_unevictable_pages, whose flawed
-handling involved looking at pages at tail of LRU.
+http://marc.info/?t=132329819900003&r=1&w=2
 
-Was there significance to the sequence first ClearPageUnevictable, then
-test page_evictable, then SetPageUnevictable here? I think not, we're
-under LRU lock, and have no barriers between those.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Shaohua Li <shaohua.li@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michel Lespinasse <walken@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-tested-by: wallak@free.fr
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- include/linux/shmem_fs.h |    1 
- include/linux/swap.h     |    2 
- ipc/shm.c                |    2 
- mm/shmem.c               |   46 +++++++++++++++--
- mm/vmscan.c              |  124 ++++++++++++++---------------------------------
- 5 files changed, 82 insertions(+), 93 deletions(-)
+ drivers/acpi/processor_core.c |   26 ++++++++++++++++++++++++--
+ 1 file changed, 24 insertions(+), 2 deletions(-)
 
---- a/include/linux/shmem_fs.h
-+++ b/include/linux/shmem_fs.h
-@@ -48,6 +48,7 @@ extern struct file *shmem_file_setup(con
- 					loff_t size, unsigned long flags);
- extern int shmem_zero_setup(struct vm_area_struct *);
- extern int shmem_lock(struct file *file, int lock, struct user_struct *user);
-+extern void shmem_unlock_mapping(struct address_space *mapping);
- extern struct page *shmem_read_mapping_page_gfp(struct address_space *mapping,
- 					pgoff_t index, gfp_t gfp_mask);
- extern void shmem_truncate_range(struct inode *inode, loff_t start, loff_t end);
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -272,7 +272,7 @@ static inline int zone_reclaim(struct zo
- #endif
- 
- extern int page_evictable(struct page *page, struct vm_area_struct *vma);
--extern void scan_mapping_unevictable_pages(struct address_space *);
-+extern void check_move_unevictable_pages(struct page **, int nr_pages);
- 
- extern unsigned long scan_unevictable_pages;
- extern int scan_unevictable_handler(struct ctl_table *, int,
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -916,7 +916,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 		shp->mlock_user = NULL;
- 		get_file(shm_file);
- 		shm_unlock(shp);
--		scan_mapping_unevictable_pages(shm_file->f_mapping);
-+		shmem_unlock_mapping(shm_file->f_mapping);
- 		fput(shm_file);
- 		goto out;
- 	}
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -379,7 +379,7 @@ static int shmem_free_swap(struct addres
- /*
-  * Pagevec may contain swap entries, so shuffle up pages before releasing.
-  */
--static void shmem_pagevec_release(struct pagevec *pvec)
-+static void shmem_deswap_pagevec(struct pagevec *pvec)
- {
- 	int i, j;
- 
-@@ -389,7 +389,36 @@ static void shmem_pagevec_release(struct
- 			pvec->pages[j++] = page;
- 	}
- 	pvec->nr = j;
--	pagevec_release(pvec);
-+}
-+
-+/*
-+ * SysV IPC SHM_UNLOCK restore Unevictable pages to their evictable lists.
-+ */
-+void shmem_unlock_mapping(struct address_space *mapping)
-+{
-+	struct pagevec pvec;
-+	pgoff_t indices[PAGEVEC_SIZE];
-+	pgoff_t index = 0;
-+
-+	pagevec_init(&pvec, 0);
-+	/*
-+	 * Minor point, but we might as well stop if someone else SHM_LOCKs it.
-+	 */
-+	while (!mapping_unevictable(mapping)) {
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -173,8 +173,30 @@ int acpi_get_cpuid(acpi_handle handle, i
+ 	apic_id = map_mat_entry(handle, type, acpi_id);
+ 	if (apic_id == -1)
+ 		apic_id = map_madt_entry(type, acpi_id);
+-	if (apic_id == -1)
+-		return apic_id;
++	if (apic_id == -1) {
 +		/*
-+		 * Avoid pagevec_lookup(): find_get_pages() returns 0 as if it
-+		 * has finished, if it hits a row of PAGEVEC_SIZE swap entries.
++		 * On UP processor, there is no _MAT or MADT table.
++		 * So above apic_id is always set to -1.
++		 *
++		 * BIOS may define multiple CPU handles even for UP processor.
++		 * For example,
++		 *
++		 * Scope (_PR)
++                 * {
++		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
++		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
++		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
++		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
++		 * }
++		 *
++		 * Ignores apic_id and always return 0 for CPU0's handle.
++		 * Return -1 for other CPU's handle.
 +		 */
-+		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
-+					PAGEVEC_SIZE, pvec.pages, indices);
-+		if (!pvec.nr)
-+			break;
-+		index = indices[pvec.nr - 1] + 1;
-+		shmem_deswap_pagevec(&pvec);
-+		check_move_unevictable_pages(pvec.pages, pvec.nr);
-+		pagevec_release(&pvec);
-+		cond_resched();
-+	}
- }
- 
- /*
-@@ -440,7 +469,8 @@ void shmem_truncate_range(struct inode *
- 			}
- 			unlock_page(page);
- 		}
--		shmem_pagevec_release(&pvec);
-+		shmem_deswap_pagevec(&pvec);
-+		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		cond_resched();
- 		index++;
-@@ -470,7 +500,8 @@ void shmem_truncate_range(struct inode *
- 			continue;
- 		}
- 		if (index == start && indices[0] > end) {
--			shmem_pagevec_release(&pvec);
-+			shmem_deswap_pagevec(&pvec);
-+			pagevec_release(&pvec);
- 			break;
- 		}
- 		mem_cgroup_uncharge_start();
-@@ -494,7 +525,8 @@ void shmem_truncate_range(struct inode *
- 			}
- 			unlock_page(page);
- 		}
--		shmem_pagevec_release(&pvec);
-+		shmem_deswap_pagevec(&pvec);
-+		pagevec_release(&pvec);
- 		mem_cgroup_uncharge_end();
- 		index++;
- 	}
-@@ -2439,6 +2471,10 @@ int shmem_lock(struct file *file, int lo
- 	return 0;
- }
- 
-+void shmem_unlock_mapping(struct address_space *mapping)
-+{
-+}
-+
- void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
- {
- 	truncate_inode_pages_range(inode->i_mapping, lstart, lend);
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -636,7 +636,7 @@ redo:
- 		 * When racing with an mlock or AS_UNEVICTABLE clearing
- 		 * (page is unlocked) make sure that if the other thread
- 		 * does not observe our setting of PG_lru and fails
--		 * isolation/check_move_unevictable_page,
-+		 * isolation/check_move_unevictable_pages,
- 		 * we see PG_mlocked/AS_UNEVICTABLE cleared below and move
- 		 * the page back to the evictable list.
- 		 *
-@@ -3355,104 +3355,56 @@ int page_evictable(struct page *page, st
- 
- #ifdef CONFIG_SHMEM
- /**
-- * check_move_unevictable_page - check page for evictability and move to appropriate zone lru list
-- * @page: page to check evictability and move to appropriate lru list
-- * @zone: zone page is in
-+ * check_move_unevictable_pages - check pages for evictability and move to appropriate zone lru list
-+ * @pages:	array of pages to check
-+ * @nr_pages:	number of pages to check
-  *
-- * Checks a page for evictability and moves the page to the appropriate
-- * zone lru list.
-- *
-- * Restrictions: zone->lru_lock must be held, page must be on LRU and must
-- * have PageUnevictable set.
-+ * Checks pages for evictability and moves them to the appropriate lru list.
-  *
-  * This function is only used for SysV IPC SHM_UNLOCK.
-  */
--static void check_move_unevictable_page(struct page *page, struct zone *zone)
-+void check_move_unevictable_pages(struct page **pages, int nr_pages)
- {
--	VM_BUG_ON(PageActive(page));
--
--retry:
--	ClearPageUnevictable(page);
--	if (page_evictable(page, NULL)) {
--		enum lru_list l = page_lru_base_type(page);
--
--		__dec_zone_state(zone, NR_UNEVICTABLE);
--		list_move(&page->lru, &zone->lru[l].list);
--		mem_cgroup_move_lists(page, LRU_UNEVICTABLE, l);
--		__inc_zone_state(zone, NR_INACTIVE_ANON + l);
--		__count_vm_event(UNEVICTABLE_PGRESCUED);
--	} else {
--		/*
--		 * rotate unevictable list
--		 */
--		SetPageUnevictable(page);
--		list_move(&page->lru, &zone->lru[LRU_UNEVICTABLE].list);
--		mem_cgroup_rotate_lru_list(page, LRU_UNEVICTABLE);
--		if (page_evictable(page, NULL))
--			goto retry;
--	}
--}
-+	struct zone *zone = NULL;
-+	int pgscanned = 0;
-+	int pgrescued = 0;
-+	int i;
- 
--/**
-- * scan_mapping_unevictable_pages - scan an address space for evictable pages
-- * @mapping: struct address_space to scan for evictable pages
-- *
-- * Scan all pages in mapping.  Check unevictable pages for
-- * evictability and move them to the appropriate zone lru list.
-- *
-- * This function is only used for SysV IPC SHM_UNLOCK.
-- */
--void scan_mapping_unevictable_pages(struct address_space *mapping)
--{
--	pgoff_t next = 0;
--	pgoff_t end   = (i_size_read(mapping->host) + PAGE_CACHE_SIZE - 1) >>
--			 PAGE_CACHE_SHIFT;
--	struct zone *zone;
--	struct pagevec pvec;
-+	for (i = 0; i < nr_pages; i++) {
-+		struct page *page = pages[i];
-+		struct zone *pagezone;
-+
-+		pgscanned++;
-+		pagezone = page_zone(page);
-+		if (pagezone != zone) {
-+			if (zone)
-+				spin_unlock_irq(&zone->lru_lock);
-+			zone = pagezone;
-+			spin_lock_irq(&zone->lru_lock);
-+		}
- 
--	if (mapping->nrpages == 0)
--		return;
-+		if (!PageLRU(page) || !PageUnevictable(page))
-+			continue;
- 
--	pagevec_init(&pvec, 0);
--	while (next < end &&
--		pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)) {
--		int i;
--		int pg_scanned = 0;
--
--		zone = NULL;
--
--		for (i = 0; i < pagevec_count(&pvec); i++) {
--			struct page *page = pvec.pages[i];
--			pgoff_t page_index = page->index;
--			struct zone *pagezone = page_zone(page);
--
--			pg_scanned++;
--			if (page_index > next)
--				next = page_index;
--			next++;
--
--			if (pagezone != zone) {
--				if (zone)
--					spin_unlock_irq(&zone->lru_lock);
--				zone = pagezone;
--				spin_lock_irq(&zone->lru_lock);
--			}
-+		if (page_evictable(page, NULL)) {
-+			enum lru_list lru = page_lru_base_type(page);
- 
--			if (PageLRU(page) && PageUnevictable(page))
--				check_move_unevictable_page(page, zone);
-+			VM_BUG_ON(PageActive(page));
-+			ClearPageUnevictable(page);
-+			__dec_zone_state(zone, NR_UNEVICTABLE);
-+			list_move(&page->lru, &zone->lru[lru].list);
-+			mem_cgroup_move_lists(page, LRU_UNEVICTABLE, lru);
-+			__inc_zone_state(zone, NR_INACTIVE_ANON + lru);
-+			pgrescued++;
- 		}
--		if (zone)
--			spin_unlock_irq(&zone->lru_lock);
--		pagevec_release(&pvec);
++		if (acpi_id == 0)
++			return acpi_id;
++		else
++			return apic_id;
 +	}
  
--		count_vm_events(UNEVICTABLE_PGSCANNED, pg_scanned);
--		cond_resched();
-+	if (zone) {
-+		__count_vm_events(UNEVICTABLE_PGRESCUED, pgrescued);
-+		__count_vm_events(UNEVICTABLE_PGSCANNED, pgscanned);
-+		spin_unlock_irq(&zone->lru_lock);
- 	}
- }
--#else
--void scan_mapping_unevictable_pages(struct address_space *mapping)
--{
--}
- #endif /* CONFIG_SHMEM */
- 
- static void warn_scan_unevictable_pages(void)
+ #ifdef CONFIG_SMP
+ 	for_each_possible_cpu(i) {
 
 
