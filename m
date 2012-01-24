@@ -1,58 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab2AXDET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 22:04:19 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:57750 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932385Ab2AXDEN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 22:04:13 -0500
-X-Sasl-enc: RvwT9bjcjdymma0Jq/a1b2z1+DyURV1JaZ/EZlrJhqVJ 1327374252
-Date: Mon, 23 Jan 2012 19:03:35 -0800
-From: Greg KH <greg@kroah.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org, gwingerde@gmail.com,
-        larry.finger@lwfinger.net, davem@davemloft.net,
-        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] drivers: misc: Remove MISC_DEVICES config option
-Message-ID: <20120124030335.GA15514@kroah.com>
-References: <1325796541-11402-1-git-send-email-festevam@gmail.com>
- <CAOMZO5BQhcxViN3KnjhzF9hL1w04egkmb9njc7sDUB0GFdgBog@mail.gmail.com>
- <20120106050355.GA7633@kroah.com>
- <201201061200.44183.arnd@arndb.de>
- <CAOMZO5A9qpgAhL9NZXL3uYqSVjDPchdmBMySzjD=uenndjY4bw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5A9qpgAhL9NZXL3uYqSVjDPchdmBMySzjD=uenndjY4bw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756933Ab2AXDEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:04:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50268 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932300Ab2AXCpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:45:23 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:29 2012
+Message-Id: <20120124023929.471367689@clark.kroah.org>
+User-Agent: quilt/0.50-11.1
+Date: Mon, 23 Jan 2012 18:34:43 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jiri Olsa <jolsa@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [063/129] ftrace: Fix unregister ftrace_ops accounting
+In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 12:57:36AM -0200, Fabio Estevam wrote:
-> Hi Greg,
-> 
-> On Fri, Jan 6, 2012 at 10:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > I think that is true for the majority of stuff we have under drivers/misc
-> > anyway. I had done the same patch that Fabio sent a couple of months ago
-> > but then forgot about it, so here is a wholehearted
-> >
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> >
-> > for the new patch. It fixes a real problem, and we applied a similar patch
-> > in drivers/mfd as 8a0a8e8e already. We probably still want to find a better
-> > home for drivers that frequently get selected by other subsystems as you
-> > said, but that is an independent issue. I don't see why anyone would
-> > need a way to disable all MISC drivers at once, when the only thing that
-> > (in theory) connects them is that they are all different from everything
-> > else.
-> 
-> Do you have any objections about this patch?
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, I said my problems with it, I don't recall it being resent
-afterward, with any changes.
+------------------
+Content-Length: 8172
+Lines: 221
 
-greg k-h
+From: Jiri Olsa <jolsa@redhat.com>
+
+commit 30fb6aa74011dcf595f306ca2727254d708b786e upstream.
+
+Multiple users of the function tracer can register their functions
+with the ftrace_ops structure. The accounting within ftrace will
+update the counter on each function record that is being traced.
+When the ftrace_ops filtering adds or removes functions, the
+function records will be updated accordingly if the ftrace_ops is
+still registered.
+
+When a ftrace_ops is removed, the counter of the function records,
+that the ftrace_ops traces, are decremented. When they reach zero
+the functions that they represent are modified to stop calling the
+mcount code.
+
+When changes are made, the code is updated via stop_machine() with
+a command passed to the function to tell it what to do. There is an
+ENABLE and DISABLE command that tells the called function to enable
+or disable the functions. But the ENABLE is really a misnomer as it
+should just update the records, as records that have been enabled
+and now have a count of zero should be disabled.
+
+The DISABLE command is used to disable all functions regardless of
+their counter values. This is the big off switch and is not the
+complement of the ENABLE command.
+
+To make matters worse, when a ftrace_ops is unregistered and there
+is another ftrace_ops registered, neither the DISABLE nor the
+ENABLE command are set when calling into the stop_machine() function
+and the records will not be updated to match their counter. A command
+is passed to that function that will update the mcount code to call
+the registered callback directly if it is the only one left. This
+means that the ftrace_ops that is still registered will have its callback
+called by all functions that have been set for it as well as the ftrace_ops
+that was just unregistered.
+
+Here's a way to trigger this bug. Compile the kernel with
+CONFIG_FUNCTION_PROFILER set and with CONFIG_FUNCTION_GRAPH not set:
+
+ CONFIG_FUNCTION_PROFILER=y
+ # CONFIG_FUNCTION_GRAPH is not set
+
+This will force the function profiler to use the function tracer instead
+of the function graph tracer.
+
+  # cd /sys/kernel/debug/tracing
+  # echo schedule > set_ftrace_filter
+  # echo function > current_tracer
+  # cat set_ftrace_filter
+ schedule
+  # cat trace
+ # tracer: nop
+ #
+ # entries-in-buffer/entries-written: 692/68108025   #P:4
+ #
+ #                              _-----=> irqs-off
+ #                             / _----=> need-resched
+ #                            | / _---=> hardirq/softirq
+ #                            || / _--=> preempt-depth
+ #                            ||| /     delay
+ #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+ #              | |       |   ||||       |         |
+      kworker/0:2-909   [000] ....   531.235574: schedule <-worker_thread
+           <idle>-0     [001] .N..   531.235575: schedule <-cpu_idle
+      kworker/0:2-909   [000] ....   531.235597: schedule <-worker_thread
+             sshd-2563  [001] ....   531.235647: schedule <-schedule_hrtimeout_range_clock
+
+  # echo 1 > function_profile_enabled
+  # echo 0 > function_porfile_enabled
+  # cat set_ftrace_filter
+ schedule
+  # cat trace
+ # tracer: function
+ #
+ # entries-in-buffer/entries-written: 159701/118821262   #P:4
+ #
+ #                              _-----=> irqs-off
+ #                             / _----=> need-resched
+ #                            | / _---=> hardirq/softirq
+ #                            || / _--=> preempt-depth
+ #                            ||| /     delay
+ #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+ #              | |       |   ||||       |         |
+           <idle>-0     [002] ...1   604.870655: local_touch_nmi <-cpu_idle
+           <idle>-0     [002] d..1   604.870655: enter_idle <-cpu_idle
+           <idle>-0     [002] d..1   604.870656: atomic_notifier_call_chain <-enter_idle
+           <idle>-0     [002] d..1   604.870656: __atomic_notifier_call_chain <-atomic_notifier_call_chain
+
+The same problem could have happened with the trace_probe_ops,
+but they are modified with the set_frace_filter file which does the
+update at closure of the file.
+
+The simple solution is to change ENABLE to UPDATE and call it every
+time an ftrace_ops is unregistered.
+
+Link: http://lkml.kernel.org/r/1323105776-26961-3-git-send-email-jolsa@redhat.com
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/trace/ftrace.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
+
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -948,7 +948,7 @@ struct ftrace_func_probe {
+ };
+ 
+ enum {
+-	FTRACE_ENABLE_CALLS		= (1 << 0),
++	FTRACE_UPDATE_CALLS		= (1 << 0),
+ 	FTRACE_DISABLE_CALLS		= (1 << 1),
+ 	FTRACE_UPDATE_TRACE_FUNC	= (1 << 2),
+ 	FTRACE_START_FUNC_RET		= (1 << 3),
+@@ -1519,7 +1519,7 @@ int ftrace_text_reserved(void *start, vo
+ 
+ 
+ static int
+-__ftrace_replace_code(struct dyn_ftrace *rec, int enable)
++__ftrace_replace_code(struct dyn_ftrace *rec, int update)
+ {
+ 	unsigned long ftrace_addr;
+ 	unsigned long flag = 0UL;
+@@ -1527,17 +1527,17 @@ __ftrace_replace_code(struct dyn_ftrace
+ 	ftrace_addr = (unsigned long)FTRACE_ADDR;
+ 
+ 	/*
+-	 * If we are enabling tracing:
++	 * If we are updating calls:
+ 	 *
+ 	 *   If the record has a ref count, then we need to enable it
+ 	 *   because someone is using it.
+ 	 *
+ 	 *   Otherwise we make sure its disabled.
+ 	 *
+-	 * If we are disabling tracing, then disable all records that
++	 * If we are disabling calls, then disable all records that
+ 	 * are enabled.
+ 	 */
+-	if (enable && (rec->flags & ~FTRACE_FL_MASK))
++	if (update && (rec->flags & ~FTRACE_FL_MASK))
+ 		flag = FTRACE_FL_ENABLED;
+ 
+ 	/* If the state of this record hasn't changed, then do nothing */
+@@ -1553,7 +1553,7 @@ __ftrace_replace_code(struct dyn_ftrace
+ 	return ftrace_make_nop(NULL, rec, ftrace_addr);
+ }
+ 
+-static void ftrace_replace_code(int enable)
++static void ftrace_replace_code(int update)
+ {
+ 	struct dyn_ftrace *rec;
+ 	struct ftrace_page *pg;
+@@ -1567,7 +1567,7 @@ static void ftrace_replace_code(int enab
+ 		if (rec->flags & FTRACE_FL_FREE)
+ 			continue;
+ 
+-		failed = __ftrace_replace_code(rec, enable);
++		failed = __ftrace_replace_code(rec, update);
+ 		if (failed) {
+ 			ftrace_bug(failed, rec->ip);
+ 			/* Stop processing */
+@@ -1623,7 +1623,7 @@ static int __ftrace_modify_code(void *da
+ 	 */
+ 	function_trace_stop++;
+ 
+-	if (*command & FTRACE_ENABLE_CALLS)
++	if (*command & FTRACE_UPDATE_CALLS)
+ 		ftrace_replace_code(1);
+ 	else if (*command & FTRACE_DISABLE_CALLS)
+ 		ftrace_replace_code(0);
+@@ -1691,7 +1691,7 @@ static int ftrace_startup(struct ftrace_
+ 		return -ENODEV;
+ 
+ 	ftrace_start_up++;
+-	command |= FTRACE_ENABLE_CALLS;
++	command |= FTRACE_UPDATE_CALLS;
+ 
+ 	/* ops marked global share the filter hashes */
+ 	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
+@@ -1743,8 +1743,7 @@ static void ftrace_shutdown(struct ftrac
+ 	if (ops != &global_ops || !global_start_up)
+ 		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
+ 
+-	if (!ftrace_start_up)
+-		command |= FTRACE_DISABLE_CALLS;
++	command |= FTRACE_UPDATE_CALLS;
+ 
+ 	if (saved_ftrace_func != ftrace_trace_function) {
+ 		saved_ftrace_func = ftrace_trace_function;
+@@ -1766,7 +1765,7 @@ static void ftrace_startup_sysctl(void)
+ 	saved_ftrace_func = NULL;
+ 	/* ftrace_start_up is true if we want ftrace running */
+ 	if (ftrace_start_up)
+-		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
++		ftrace_run_update_code(FTRACE_UPDATE_CALLS);
+ }
+ 
+ static void ftrace_shutdown_sysctl(void)
+@@ -2919,7 +2918,7 @@ ftrace_set_regex(struct ftrace_ops *ops,
+ 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
+ 	if (!ret && ops->flags & FTRACE_OPS_FL_ENABLED
+ 	    && ftrace_enabled)
+-		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
++		ftrace_run_update_code(FTRACE_UPDATE_CALLS);
+ 
+ 	mutex_unlock(&ftrace_lock);
+ 
+@@ -3107,7 +3106,7 @@ ftrace_regex_release(struct inode *inode
+ 				       orig_hash, iter->hash);
+ 		if (!ret && (iter->ops->flags & FTRACE_OPS_FL_ENABLED)
+ 		    && ftrace_enabled)
+-			ftrace_run_update_code(FTRACE_ENABLE_CALLS);
++			ftrace_run_update_code(FTRACE_UPDATE_CALLS);
+ 
+ 		mutex_unlock(&ftrace_lock);
+ 	}
+
+
