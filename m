@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab2AXJLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 04:11:43 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48404 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761Ab2AXJLk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 04:11:40 -0500
-Date: Tue, 24 Jan 2012 13:11:35 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children
- entry v8
-Message-ID: <20120124091135.GI29735@moon>
-References: <20120123142036.025893883@openvz.org>
- <20120123142436.181674896@openvz.org>
- <20120124110730.a3536647.kamezawa.hiroyu@jp.fujitsu.com>
- <20120124065338.GB29735@moon>
- <20120124160709.e05c51b5.kamezawa.hiroyu@jp.fujitsu.com>
- <20120124072122.GD29735@moon>
- <m1boptmqj0.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1boptmqj0.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755490Ab2AXJPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 04:15:18 -0500
+Received: from mga14.intel.com ([143.182.124.37]:2763 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754633Ab2AXJPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 04:15:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99063738"
+Subject: Re: [PATCH] sound: Fix memory leak on error in
+ snd_compr_set_params()
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        Jaroslav Kysela <perex@perex.cz>
+In-Reply-To: <alpine.LNX.2.00.1201232059540.8772@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1201232059540.8772@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Jan 2012 14:46:14 +0530
+Message-ID: <1327396574.517.33.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 12:52:03AM -0800, Eric W. Biederman wrote:
-> Cyrill Gorcunov <gorcunov@gmail.com> writes:
+On Mon, 2012-01-23 at 21:02 +0100, Jesper Juhl wrote:
+> If copy_from_user() does not return 0 we'll leak the memory we
+> allocated for 'params' when that variable goes out of scope.
 > 
-> > On Tue, Jan 24, 2012 at 04:07:09PM +0900, KAMEZAWA Hiroyuki wrote:
-> >> > 
-> >> > Hmm. But userspace app will get eof, so frankly I don't see
-> >> > a problem here. Or maybe I miss something?
-> >> > 
-> >> 
-> >> Userspace need to take care of whether there may be"\n" or not even
-> >> if read() returns EOF.
-> >> As an interface, it's BUG to say "\n" will be there if you're lucky!"
-> >> (*) I know script language can handle this but we shouldn't assume that.
-> >> 
-> >> How about just remove "\n" at EOF  ? I think it's unnecessary.
-> >> 
-> >
-> > Sure thing, it's not a problem to remove it completely.
+> Also a small CodingStyle cleanup: Use braces on both branches of
+> if/else when one branch needs it.
 > 
-> Foolish question.  Is there any reason why this is a file instead
-> of being the obvious directory full of symlinks?
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Thanks for the fix
+Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+> ---
+>  sound/core/compress_offload.c |   13 ++++++++-----
+>  1 files changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
+> index dac3633..a68aed7 100644
+> --- a/sound/core/compress_offload.c
+> +++ b/sound/core/compress_offload.c
+> @@ -441,19 +441,22 @@ snd_compr_set_params(struct snd_compr_stream *stream, unsigned long arg)
+>  		params = kmalloc(sizeof(*params), GFP_KERNEL);
+>  		if (!params)
+>  			return -ENOMEM;
+> -		if (copy_from_user(params, (void __user *)arg, sizeof(*params)))
+> -			return -EFAULT;
+> +		if (copy_from_user(params, (void __user *)arg, sizeof(*params))) {
+> +			retval = -EFAULT;
+> +			goto out;
+> +		}
+>  		retval = snd_compr_allocate_buffer(stream, params);
+>  		if (retval) {
+> -			kfree(params);
+> -			return -ENOMEM;
+> +			retval = -ENOMEM;
+> +			goto out;
+>  		}
+>  		retval = stream->ops->set_params(stream, params);
+>  		if (retval)
+>  			goto out;
+>  		stream->runtime->state = SNDRV_PCM_STATE_SETUP;
+> -	} else
+> +	} else {
+>  		return -EPERM;
+> +	}
+>  out:
+>  	kfree(params);
+>  	return retval;
+> -- 
+> 1.7.8.4
+> 
 > 
 
-How would these symlinks look like? "../../pid"? There were a conversation
-about such things (https://lkml.org/lkml/2011/12/2/142) but I suppose we
-were agree on children with pids as consensus.
 
-	Cyrill
+-- 
+~Vinod
+
