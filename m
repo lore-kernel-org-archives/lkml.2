@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab2AXQcZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:32:25 -0500
-Received: from antcom.de ([188.40.178.216]:56551 "EHLO chuck.antcom.de"
+	id S1755483Ab2AXQcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:32:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab2AXQcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:32:24 -0500
-Message-ID: <4F1EDD15.7010704@antcom.de>
-Date: Tue, 24 Jan 2012 17:32:21 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120104 Icedove/8.0
+	id S1755403Ab2AXQca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 11:32:30 -0500
+Date: Tue, 24 Jan 2012 11:32:24 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 14/16] blkcg: don't allow or retain configuration of
+ missing devices
+Message-ID: <20120124163224.GB17291@redhat.com>
+References: <1327360193-24679-1-git-send-email-tj@kernel.org>
+ <1327360193-24679-15-git-send-email-tj@kernel.org>
+ <20120124154224.GA17291@redhat.com>
+ <20120124155309.GA12906@google.com>
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, Kevin Wells <kevin.wells@nxp.com>
-Subject: Re: [PATCH] Correct bad gpio naming
-References: <4F1C4E25.6070801@antcom.de> <20120124155921.GH2609@pengutronix.de>
-In-Reply-To: <20120124155921.GH2609@pengutronix.de>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124155309.GA12906@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 01/24/2012 04:59 PM, Wolfram Sang wrote:
-> On Sun, Jan 22, 2012 at 06:57:57PM +0100, Roland Stigge wrote:
->> One of the GPIO names in drivers/gpio/gpio-lpc32xx.c was bad.
->> Renaming gpi000 -> gpio00
->> 
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
+On Tue, Jan 24, 2012 at 07:53:09AM -0800, Tejun Heo wrote:
+> On Tue, Jan 24, 2012 at 10:42:24AM -0500, Vivek Goyal wrote:
+> > On Mon, Jan 23, 2012 at 03:09:51PM -0800, Tejun Heo wrote:
+> > > +	disk = get_gendisk(dev, &part);
+> > > +
+> > > +	if ((!disk || part) && temp) {
+> > > +		ret = -ENODEV;
+> > > +		goto out;
+> > > +	}
+> > > +
+> > > +	rcu_read_lock();
+> > > +
+> > > +	if (disk && !part) {
+> > > +		spin_lock_irq(disk->queue->queue_lock);
+> > > +		blkg = blkg_lookup_create(blkcg, disk->queue, plid);
+> > > +		spin_unlock_irq(disk->queue->queue_lock);
+> > 
+> > If queue is in bypass mode, is group creation and linking allowed when
+> > somebody is trying to set per device rules. (/me is thinking if there are
+> > any potential races between elevator switch and rule setting in cgroup).
 > 
-> Since you are modifying LPC32xx :) Which kernel version do you run?
-> I was trying to get a board up with 3.0 (not booting) and 3.3-rc1
-> (build breakage). I even thought about removing that mach, since
-> vital parts seem to be missing (Net, NAND) or broken. So, I am
-> interested if there are still users.
+> Yeap, there is.  Nice catch.  blkg_lookup_create() should be testing
+> blk_queue_bypass() instead of blk_queue_dead() and parse_and_set
+> should probably retry after a bit.  Will update.
 
-I'm actively maintaining an LPC32xx machine line (WORK Microwave GmbH
-devices) at http://git.antcom.de/ - feel free to merge from there.
+So now group creation fails if queue is in bypass mode. So a per device
+rule setting will fail both for cfq and throttling logic while device
+is still around. So a user is supposed to retry? How would a user know 
+that elevator switch is happening and he should retry and till when should
+he retry.
 
-For me, it works fine with Linux 3.2.0.
-
-The repo includes some additional features like NAND (esp. MLC
-controller, while NXP implemented an SLC driver), High Speed UARTs and
-ADC. Some of those are not yet integrated mainline, but I'm willing to
-help here. Looks like I will maintain it anyway for the next few years.
-
-Expect the first one of the drivers to be submitted soon, I will do
-them one by one.
-
-Thanks for keeping LPC32xx :-)
-
-Roland
+Thanks
+Vivek
