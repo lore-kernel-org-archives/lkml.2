@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab2AXLox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:44:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45124 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753296Ab2AXLow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:44:52 -0500
-Date: Tue, 24 Jan 2012 12:44:49 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 2/8] vfs: Protect write paths by sb_start_write -
- sb_end_write
-Message-ID: <20120124114449.GC15974@quack.suse.cz>
-References: <1327091686-23177-1-git-send-email-jack@suse.cz>
- <1327091686-23177-3-git-send-email-jack@suse.cz>
- <20120124082119.GO15102@dastard>
+	id S1754611Ab2AXLq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:46:57 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:54418 "HELO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753889Ab2AXLqz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 06:46:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120124082119.GO15102@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Felipe Balbi <balbi@ti.com>
+To: Linux USB Mailing List <linux-usb@vger.kernel.org>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de> (supporter:USB SUBSYSTEM 
+	,commit_signer:27/51=53%),
+        Thomas Dahlmann <dahlmann.thomas@arcor.de> (supporter:AMD GEODE
+	CS5536...),
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com> (commit_signer:44/51=86%),
+        linux-omap@vger.kernel.org (open list:DESIGNWARE USB3 D...),
+        linux-kernel@vger.kernel.org (open list),
+        linux-geode@lists.infradead.org (open list:AMD GEODE CS5536...)
+Subject: [PATCH 0/9] usb: gadget: generic map/unmap routines
+Date: Tue, 24 Jan 2012 13:45:21 +0200
+Message-Id: <1327405543-27589-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.8.2
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 24-01-12 19:21:19, Dave Chinner wrote:
-> On Fri, Jan 20, 2012 at 09:34:40PM +0100, Jan Kara wrote:
-> > There are three entry points which dirty pages in a filesystem.  mmap (handled
-> > by block_page_mkwrite()), buffered write (handled by
-> > __generic_file_aio_write()), and truncate (it can dirty last partial page -
-> > handled inside each filesystem separately). Protect these places with
-> > sb_start_write() and sb_end_write().
-> 
-> fallocate can also dirty pages, either during preallocation or hole
-> punching.  Hence if you are going to promote truncate to
-> SB_FREEZE_WRITE protection then you need to promote everything else
-> that can zero partial blocks as well.
-> 
-> That also means that anything the has implemented XFS_IOC_ ioctl
-> interfaces for prellocation and hole punching (xfs, ocfs2 and gfs2
-> IIRC) also needs to be protected in the same way.
-  Yeah, you are right. As I wrote in the introductory mail, there's problem
-with metadata operations (e.g. directory modifications) anyway so we'll
-have to audit all places where transactions are started. First I'll do this
-for ext4 as a POC and then I'll try to do that for XFS if Eric doesn't beat
-me to it (he promised to have a look at XFS part ;).
+Hi all,
 
-								Honza
+here's a rebased version of generic map/unmap patchset.
+
+Also available on generic-map-unmap branch of my tree, some
+of the patches have been tested before and already have a
+Tested-by tag.
+
+Felipe Balbi (9):
+  usb: gadget: add generic map/unmap request utilities
+  usb: dwc3: gadget: use generic map/unmap routines
+  usb: gadget: langwell: use generic map/unmap functions
+  usb: renesas: gadget: use generic map/unmap routines
+  usb: gadget: amd5536: use generic map/unmap routines
+  usb: gadget: r8a66597: use generic map/unmap routines
+  usb: gadget: net2272: use generic map/umap routines
+  usb: gadget: net2280: use generic map/unmap routines
+  usb: gadget: goku: use generic map/unmap routines
+
+ drivers/usb/dwc3/core.h                |    2 -
+ drivers/usb/dwc3/ep0.c                 |   16 +++++-
+ drivers/usb/dwc3/gadget.c              |   93 ++++++--------------------------
+ drivers/usb/dwc3/gadget.h              |    2 -
+ drivers/usb/gadget/amd5536udc.c        |   33 ++---------
+ drivers/usb/gadget/goku_udc.c          |   18 +++----
+ drivers/usb/gadget/langwell_udc.c      |   45 +++-------------
+ drivers/usb/gadget/net2272.c           |   18 +++----
+ drivers/usb/gadget/net2280.c           |   19 +++----
+ drivers/usb/gadget/r8a66597-udc.c      |   10 +---
+ drivers/usb/gadget/udc-core.c          |   52 ++++++++++++++++++
+ drivers/usb/renesas_usbhs/mod_gadget.c |   73 ++++++-------------------
+ include/linux/usb/gadget.h             |   10 ++++
+ 13 files changed, 149 insertions(+), 242 deletions(-)
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.8.2
+
