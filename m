@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab2AXPbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 10:31:38 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:58272
+	id S1753615Ab2AXPgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 10:36:25 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:58283
 	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751473Ab2AXPbh (ORCPT
+	by vger.kernel.org with ESMTP id S1751443Ab2AXPgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 10:31:37 -0500
+	Tue, 24 Jan 2012 10:36:24 -0500
 From: Masanari Iida <standby24x7@gmail.com>
-To: dwmw2@infradead.org, iommu@lists.linux-foundation.org
-Cc: standby24x7@gmail.com, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] [trivial] iommu: Fix typo in intel-iommu.c
-Date: Wed, 25 Jan 2012 00:25:52 +0900
-Message-Id: <1327418752-3622-1-git-send-email-standby24x7@gmail.com>
+To: gregkh@suse.de
+Cc: standby24x7@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH] [trivial] staging: Fix typo in ieee80211_rx.c
+Date: Wed, 25 Jan 2012 00:35:41 +0900
+Message-Id: <1327419341-3796-1-git-send-email-standby24x7@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "supportd" to "supported" in
-drivers/iommu/intel-iommu.c
+Correct spelling "suppported" to "supported" in
+drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
 
-Signed-off-by: Masanari Iida<standby24x7@gmail.com>
+Signed-off-by: Masanari iida<standby24x7@gmail.com>
 ---
- drivers/iommu/intel-iommu.c |    2 +-
+ drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index c9c6053..e23f273 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1241,7 +1241,7 @@ static int iommu_init_domains(struct intel_iommu *iommu)
- 	unsigned long nlongs;
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
+index c9bdc7f..be2a28c 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
+@@ -237,7 +237,7 @@ ieee80211_rx_frame_mgmt(struct ieee80211_device *ieee, struct sk_buff *skb,
  
- 	ndomains = cap_ndoms(iommu->cap);
--	pr_debug("IOMMU %d: Number of Domains supportd <%ld>\n", iommu->seq_id,
-+	pr_debug("IOMMU %d: Number of Domains supported <%ld>\n", iommu->seq_id,
- 			ndomains);
- 	nlongs = BITS_TO_LONGS(ndomains);
- 
+ 	#ifdef NOT_YET
+ 	if (ieee->iw_mode == IW_MODE_MASTER) {
+-		printk(KERN_DEBUG "%s: Master mode not yet suppported.\n",
++		printk(KERN_DEBUG "%s: Master mode not yet supported.\n",
+ 		       ieee->dev->name);
+ 		return 0;
+ /*
 -- 
 1.7.6.5
 
