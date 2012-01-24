@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab2AXXv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:51:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51356 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753859Ab2AXXv2 (ORCPT
+	id S1754157Ab2AXXwY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:52:24 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42427 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830Ab2AXXwX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 18:51:28 -0500
-Date: Tue, 24 Jan 2012 23:51:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] RCU changes for v3.3
-Message-ID: <20120124235123.GA32176@opensource.wolfsonmicro.com>
-References: <20120105135432.GA31450@elte.hu>
- <1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20120124165312.GG2531@linux.vnet.ibm.com>
- <1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20120124194140.GB2381@linux.vnet.ibm.com>
- <1327435069.2767.1.camel@edumazet-laptop>
- <20120124211137.GD2381@linux.vnet.ibm.com>
- <20120124220700.GA11725@sirena.org.uk>
- <20120124224345.GG2381@linux.vnet.ibm.com>
+	Tue, 24 Jan 2012 18:52:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120124224345.GG2381@linux.vnet.ibm.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1327446024.11738.4.camel@work-vm>
+References: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
+ <1327363550-19952-3-git-send-email-john.stultz@linaro.org>
+ <CAJfuBxwBfB7V_gikW44rTNAYvxKZwORwzdRrvyZM19feFwcwDQ@mail.gmail.com> <1327446024.11738.4.camel@work-vm>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Tue, 24 Jan 2012 16:51:51 -0700
+Message-ID: <CAJfuBxw6M7LB_-GpmTxem-aqWz35CDDaaBv+8oqQ_R_SR7r_tQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 2/3] clocksource: scx200_hrt: Convert scx200 to use clocksource_register_hz
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 02:43:45PM -0800, Paul E. McKenney wrote:
-> On Tue, Jan 24, 2012 at 10:07:00PM +0000, Mark Brown wrote:
-> > On Tue, Jan 24, 2012 at 01:11:37PM -0800, Paul E. McKenney wrote:
+On Tue, Jan 24, 2012 at 4:00 PM, John Stultz <john.stultz@linaro.org> wrote:
+> On Tue, 2012-01-24 at 11:53 -0700, Jim Cromie wrote:
+>> On Mon, Jan 23, 2012 at 5:05 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> > Converts the scx200 clocksource to using clocksource_register_hz.
+>> >
+>> > This wasn't a straight conversion, so would like some extra review
+>> > by the maintainers.
+>> >
+>>
+>> hi John,
+>>
+>> very nice.  Tested with mhz27 too.
+>>
+>> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+>
+> I assume you mean Acked-by:/Tested-by: ?  Or are you going to push this
+> upstream?
+>
 
-> > > Hmmm...  Residual power dissipation is given in milliwatts.  I could
-> > > imagine some heartburn from many of the more aggressive embedded folks,
-> > > given that they might prefer microwatts -- or maybe even nanowatts,
-> > > for all I know.
+huh - I thought SOB was appropriate since Im maintainer of scx200_hrt.
+That said, youre maintainer of TIMEKEEPING, and author of the patch,
+so I consider you upstream.  Lets make it instead:
 
-> > FWIW idle battery referenced draw from a modern smartphone will be in
-> > the low single digit miliwatts or so.
+Acked-by: Jim Cromie <jim.cromie@gmail.com>
+Tested-by: Jim Cromie <jim.cromie@gmail.com>
 
-> Ah, OK, so only the non-smart cellphones would care, but they generally
-> don't run Linux, from what I understand.  Thanks for the info!
+Can you also push that trivial s/then/than/ patch I attached,
+and/or should I resend it inline, with git-send-email ?
 
-Well, that depends.  Anything you're actually accomplishing when you're
-optimising at that level is at the less than a milliwatt level.
+> thanks
+> -john
+>
+>
