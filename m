@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab2AXWmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 17:42:54 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51575 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab2AXWmx convert rfc822-to-8bit (ORCPT
+	id S1752340Ab2AXWnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 17:43:53 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:51495 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab2AXWnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 17:42:53 -0500
+	Tue, 24 Jan 2012 17:43:51 -0500
+Date: Tue, 24 Jan 2012 14:43:45 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] RCU changes for v3.3
+Message-ID: <20120124224345.GG2381@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120105135432.GA31450@elte.hu>
+ <1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20120124165312.GG2531@linux.vnet.ibm.com>
+ <1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20120124194140.GB2381@linux.vnet.ibm.com>
+ <1327435069.2767.1.camel@edumazet-laptop>
+ <20120124211137.GD2381@linux.vnet.ibm.com>
+ <20120124220700.GA11725@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120124141332.GD18136@quack.suse.cz>
-References: <1327132572-11841-1-git-send-email-linkinjeon@gmail.com>
-	<20120124141332.GD18136@quack.suse.cz>
-Date: Wed, 25 Jan 2012 07:42:51 +0900
-Message-ID: <CAKYAXd_uskOwun-cieNhsr=SQae0Qm7sh9=UTh0ahSOsGamyUQ@mail.gmail.com>
-Subject: Re: [PATCH] ext4: add error handling when discarding is fail in
- FITRIM ioctl
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124220700.GA11725@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012422-3270-0000-0000-00000376CE71
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/24 Jan Kara <jack@suse.cz>:
-> On Sat 21-01-12 02:56:12, Namjae Jeon wrote:
->> Although free extents is proper not trimmed(mmc driver return error code while sending trim command), currently FITRIM ioctl return success.
->> I tried to add exception routine to inform user error code.
->>
->> #> ./fitrim_test
->> end_request: I/O error, dev mmcblk0, sector 27232
->> EXT4-fs warning (device mmcblk0): ext4_trim_all_free:4857: Discard command returned error -5
->> #>
->>
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
->> ---
->>  fs/ext4/mballoc.c |   22 +++++++++++++++-------
->>  1 files changed, 15 insertions(+), 7 deletions(-)
->>
->> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
->> index cb990b2..09cc09a 100644
->> --- a/fs/ext4/mballoc.c
->> +++ b/fs/ext4/mballoc.c
->> @@ -4901,10 +4901,11 @@ error_return:
->>   * one will allocate those blocks, mark it as used in buddy bitmap. This must
->>   * be called with under the group lock.
->>   */
->> -static void ext4_trim_extent(struct super_block *sb, int start, int count,
->> +static int ext4_trim_extent(struct super_block *sb, int start, int count,
->>                            ext4_group_t group, struct ext4_buddy *e4b)
->>  {
->>       struct ext4_free_extent ex;
->> +     int err;
->>
->>       trace_ext4_trim_extent(sb, group, start, count);
->>
->> @@ -4920,9 +4921,10 @@ static void ext4_trim_extent(struct super_block *sb, int start, int count,
->>        */
->>       mb_mark_used(e4b, &ex);
->>       ext4_unlock_group(sb, group);
->> -     ext4_issue_discard(sb, group, start, count);
->> +     err = ext4_issue_discard(sb, group, start, count);
->>       ext4_lock_group(sb, group);
->>       mb_free_blocks(NULL, e4b, start, ex.fe_len);
->> +     return err;
->>  }
->>
->>  /**
->> @@ -4978,15 +4980,21 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
->>               next = mb_find_next_bit(bitmap, max, start);
->>
->>               if ((next - start) >= minblocks) {
->> -                     ext4_trim_extent(sb, start,
->> -                                      next - start, group, &e4b);
->> -                     count += next - start;
->> +                     ret = ext4_trim_extent(sb, start,
->> +                                             next - start, group, &e4b);
->> +                     if (ret < 0) {
->> +                             if (ret != -EOPNOTSUPP)
->> +                                     ext4_warning(sb, "Discard command "
->> +                                              "returned error %d\n", ret);
->> +                             break;
->> +                     } else
->> +                             count += next - start;
->>               }
->>               free_count += next - start;
->>               start = next + 1;
->>
->>               if (fatal_signal_pending(current)) {
->> -                     count = -ERESTARTSYS;
->> +                     ret = -ERESTARTSYS;
->>                       break;
->>               }
->>
->> @@ -5009,7 +5017,7 @@ out:
->>       ext4_debug("trimmed %d blocks in the group %d\n",
->>               count, group);
->>
->> -     return count;
->> +     return (ret < 0) ? ret : count;
->  I think you need to initialize ret to 0 at the beginning of the function.
-> Otherwise you could use it uninitialized. Otherwise the patch looks good to
-> me and makes things consistent with ext3 so after fixing that bug you can add:
->  Reviewed-by: Jan Kara <jack@suse.cz>
-Hi. Jan.
-Thanks for your review.~
->
->                                                                Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+On Tue, Jan 24, 2012 at 10:07:00PM +0000, Mark Brown wrote:
+> On Tue, Jan 24, 2012 at 01:11:37PM -0800, Paul E. McKenney wrote:
+> 
+> > Hmmm...  Residual power dissipation is given in milliwatts.  I could
+> > imagine some heartburn from many of the more aggressive embedded folks,
+> > given that they might prefer microwatts -- or maybe even nanowatts,
+> > for all I know.
+> 
+> FWIW idle battery referenced draw from a modern smartphone will be in
+> the low single digit miliwatts or so.
+
+Ah, OK, so only the non-smart cellphones would care, but they generally
+don't run Linux, from what I understand.  Thanks for the info!
+
+							Thanx, Paul
+
