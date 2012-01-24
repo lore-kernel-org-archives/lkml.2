@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab2AYAGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 19:06:48 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34834 "EHLO
+	id S1754665Ab2AYAGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 19:06:50 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52687 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754317Ab2AYAGr (ORCPT
+	by vger.kernel.org with ESMTP id S1754585Ab2AYAGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 19:06:47 -0500
-X-Sasl-enc: FPZX3Y62V22EgVdxNPBemZWXRPE6Js3DDwzZ97bHOiz7 1327450006
-Date: Tue, 24 Jan 2012 15:55:51 -0800
+	Tue, 24 Jan 2012 19:06:49 -0500
+X-Sasl-enc: zIv4KECXc7Qs6WkWnUTmPqRSFNZwQ+1MKkSJ5Y9RZRuK 1327450008
+Date: Tue, 24 Jan 2012 15:57:34 -0800
 From: Greg KH <greg@kroah.com>
 To: Ludwig Nussel <ludwig.nussel@suse.de>
 Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
 Subject: Re: [PATCH] debugfs: add mode, uid and gid options
-Message-ID: <20120124235551.GA24596@kroah.com>
+Message-ID: <20120124235734.GA28585@kroah.com>
 References: <1326729981-6605-1-git-send-email-ludwig.nussel@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 In-Reply-To: <1326729981-6605-1-git-send-email-ludwig.nussel@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,8 +35,13 @@ On Mon, Jan 16, 2012 at 05:06:21PM +0100, Ludwig Nussel wrote:
 > 
 > Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
 
-I've applied this now, but shouldn't it also be documented somewhere as
-well?  Please send a follow-on patch doing that.
+Oops, no, I didn't apply this as I get a compiler warning with it
+applied:
+
+fs/debugfs/inode.c:244:2: warning: initialization from incompatible pointer type [enabled by default]
+fs/debugfs/inode.c:244:2: warning: (near initialization for ‘debugfs_super_operations.show_options’) [enabled by default]
+
+Please fix this and resend.
 
 thanks,
 
