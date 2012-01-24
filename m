@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2AXRmY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 12:42:24 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50879 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756913Ab2AXRmX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 12:42:23 -0500
+	id S1757198Ab2AXRna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 12:43:30 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:37889 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757167Ab2AXRn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 12:43:29 -0500
+Date: Tue, 24 Jan 2012 11:43:30 -0600
+From: Ben Myers <bpm@sgi.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [41/42] xfs: validate acl count
+Message-ID: <20120124174330.GQ8262@sgi.com>
+References: <20120110215031.GA19398@kroah.com> <20120110215024.482323323@clark.kroah.org> <20120111074135.GA30829@lst.de> <20120111150021.GB23608@suse.de> <20120111150532.GL20739@sgi.com> <20120113161727.GB6519@sgi.com> <20120113181952.GA30393@suse.de> <20120113194218.GB14857@sgi.com> <20120113195206.GA16462@suse.de> <20120124163301.GA6077@lst.de>
 MIME-Version: 1.0
-In-Reply-To: <4F1ED780.3010305@gmail.com>
-References: <1326127761-2723-1-git-send-email-eranian@google.com>
-	<CABPqkBTYrEeSefnXr4-ezmXHjNv1XkfVZGULzY5-=FE3tr3pfg@mail.gmail.com>
-	<1327321532.2446.6.camel@twins>
-	<CABPqkBSqA071Yt4KcCH25P6HZ1C8OOGFfcjOQ_aLmBRc3ir=9A@mail.gmail.com>
-	<CABPqkBSALpYBTpaJo4Wor6weM-XM3PRxj23u8N+Kihvm36Hj8w@mail.gmail.com>
-	<4F1ED780.3010305@gmail.com>
-Date: Tue, 24 Jan 2012 18:42:21 +0100
-Message-ID: <CABPqkBRoSBjzXPOZ+iK-CLX34ocQ=G3SWyuLwWXsfQYOzmYsBw@mail.gmail.com>
-Subject: Re: [PATCH 00/13] perf_events: add support for sampling taken
- branches (v3)
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, acme@infradead.org, robert.richter@amd.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, asharma@fb.com,
-        ravitillo@lbl.gov, vweaver1@eecs.utk.edu
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124163301.GA6077@lst.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 5:08 PM, David Ahern <dsahern@gmail.com> wrote:
->
-> On 01/24/2012 08:39 AM, Stephane Eranian wrote:
->> Hi,
->>
->> The branch stack sampling patch exposes a flaw in the sampling
->> buffer format as currently exported by the kernel.
->>
->> In the current format, sample records (RECORD_SAMPLE) are NOT
->> self-describing. That means that by looking at the fixed size header, it
->> is not possible to determine which event caused the sample to be recorded
->> and what's in the body of the variable length sample.
->>
->> Such introspection is only possible once we know the event unique id
->> (PERF_SAMPLE_ID). But to get the event ID, we need to parse the
->> sample. But, given that a sample has a variable length, there is no
->> predefined position for that ID in the sample. You have a chicken
->> and egg problem here. There is no room left in the fixed size header
->> to fit this in.
->
-> I brought this up last Fall as well. As I recall the response is to move
-> each sample_type based stream into its own data file and then merge the
-> data files while processing.
+Christoph,
 
-By data stream, you're talking about actual sampling buffer.
-Sampling on 10 events, means 10 sampling buffers. If you reach
-the rlimit on it, you need to decrease buffer size, and therefore
-you increase overhead.
+On Tue, Jan 24, 2012 at 05:33:01PM +0100, Christoph Hellwig wrote:
+> On Fri, Jan 13, 2012 at 11:52:06AM -0800, Greg KH wrote:
+> > > > > I ran xfstests with 'xfs: validate acl count' and 'xfs: fix acl count
+> > > > > validation in xfs_acl_from_disk()' applied to 3.1-stable.  It came out
+> > > > > ok.  I'll get started on 2.6.32.
+> > > > 
+> > > > Thanks, how about the 3.0 release?
+> > > 
+> > > HCH would have given them a spin before he sent them to stable@.
+> > 
+> > You are right, sorry, for some reason I thought that was for 3.1, too
+> > many different kernel trees at the moment :(
+> 
+> This should go into 3.0 and 3.1 stable, too.
 
-Moreover, I don't think perf record is well equipped to handle this.
+This made 3.0, but unfortunately not 3.1, which is end-of-life.
+
+-Ben
+
+> And I think this one actually is simple enough that I don't need a QA
+> run, so if you can just add it, please do.
+> 
