@@ -1,104 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab2AXAmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:42:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63065 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752484Ab2AXAmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:42:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="99803364"
-From: Seth Heasley <seth.heasley@intel.com>
-To: wim@iguana.be, linux-watchdog@vger.kernel.org
-Subject: [PATCH 5/6] iTCO_wdt: TCO Watchdog patch for Intel Lynx Point DeviceIDs
-Date: Mon, 23 Jan 2012 16:40:55 -0800
-User-Agent: KMail/1.13.6 (Linux/2.6.35.12-88.fc14.x86_64; KDE/4.6.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, james.d.ralston@intel.com,
-        seth.heasley@intel.com
+	id S1755054Ab2AXAna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:43:30 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:32954 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab2AXAn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 19:43:29 -0500
+Date: Mon, 23 Jan 2012 16:43:22 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Jones <drjones@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu,
+        david.woodhouse@intel.com, linux-kernel@vger.kernel.org,
+        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, arnd@arndb.de,
+        holt@sgi.com, linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com,
+        jesper nilsson <jesper.nilsson@axis.com>, dhowells@redhat.com,
+        takata@linux-m32r.org, geert@linux-m68k.org,
+        yasutake koichi <yasutake.koichi@jp.panasonic.com>, jonas@southpole.se,
+        kyle@mcmartin.ca, deller@gmx.de, jejb@parisc-linux.org,
+        chris@zankel.net, greg@kroah.com, davej@redhat.com, airlied@linux.ie,
+        jkosina@suse.cz, mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+In-Reply-To: <20120123134632.GA8235@turtle.usersys.redhat.com>
+Message-ID: <alpine.DEB.2.00.1201231641380.19019@chino.kir.corp.google.com>
+References: <1326295008-29795-1-git-send-email-drjones@redhat.com> <b6315f9b-0ead-4de4-a8f5-ed619f852c6c@zmail13.collab.prod.int.phx2.redhat.com> <20120118122830.037f1e29.akpm@linux-foundation.org> <20120123134632.GA8235@turtle.usersys.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201231640.55956.seth.heasley@intel.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the TCO Watchdog DeviceIDs for the Intel Lynx Point PCH.
+On Mon, 23 Jan 2012, Andrew Jones wrote:
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
----
- drivers/watchdog/iTCO_wdt.c |   35 +++++++++++++++++++++++++++++++++++
- 1 files changed, 35 insertions(+), 0 deletions(-)
+> I thought EXPERT was the best way to manage the visibility of expert
+> options, but probably not, since it's prone to silent default changing.
 
-diff --git a/drivers/watchdog/iTCO_wdt.c b/drivers/watchdog/iTCO_wdt.c
-index 99796c5..bdf401b 100644
---- a/drivers/watchdog/iTCO_wdt.c
-+++ b/drivers/watchdog/iTCO_wdt.c
-@@ -36,6 +36,7 @@
-  *	document number TBD                   : Patsburg (PBG)
-  *	document number TBD                   : DH89xxCC
-  *	document number TBD                   : Panther Point
-+ *	document number TBD                   : Lynx Point
-  */
- 
- /*
-@@ -126,6 +127,7 @@ enum iTCO_chipsets {
- 	TCO_PBG,	/* Patsburg */
- 	TCO_DH89XXCC,	/* DH89xxCC */
- 	TCO_PPT,	/* Panther Point */
-+	TCO_LPT,	/* Lynx Point */
- };
- 
- static struct {
-@@ -189,6 +191,7 @@ static struct {
- 	{"Patsburg", 2},
- 	{"DH89xxCC", 2},
- 	{"Panther Point", 2},
-+	{"Lynx Point", 2},
- 	{NULL, 0}
- };
- 
-@@ -331,6 +334,38 @@ static DEFINE_PCI_DEVICE_TABLE(iTCO_wdt_pci_tbl) = {
- 	{ PCI_VDEVICE(INTEL, 0x1e5d), TCO_PPT},
- 	{ PCI_VDEVICE(INTEL, 0x1e5e), TCO_PPT},
- 	{ PCI_VDEVICE(INTEL, 0x1e5f), TCO_PPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c40), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c41), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c42), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c43), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c44), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c45), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c46), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c47), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c48), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c49), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c4a), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c4b), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c4c), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c4d), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c4e), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c4f), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c50), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c51), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c52), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c53), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c54), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c55), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c56), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c57), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c58), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c59), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c5a), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c5b), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c5c), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c5d), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c5e), TCO_LPT},
-+	{ PCI_VDEVICE(INTEL, 0x8c5f), TCO_LPT},
- 	{ 0, },			/* End of list */
- };
- MODULE_DEVICE_TABLE(pci, iTCO_wdt_pci_tbl);
--- 
-1.7.4.4
-
+Why not propose patches to subsystem maintainers to erradicate "default 
+EXPERT" or "default !EXPERT"?
