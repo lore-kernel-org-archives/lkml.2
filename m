@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab2AXL5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:57:34 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:22088
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754374Ab2AXL5b (ORCPT
+	id S1753384Ab2AXL7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:59:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52812 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751325Ab2AXL66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:57:31 -0500
-X-SpamScore: -19
-X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dhc1bhc31hc1ah668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LYAX7M-01-9NE-02
-X-M-MSG: 
-Date: Tue, 24 Jan 2012 12:57:23 +0100
-From: "joerg.roedel@amd.com" <joerg.roedel@amd.com>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: "joro@8bytes.org" <joro@8bytes.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linaro-mm-sig-bounces@lists.linaro.org" 
-	<linaro-mm-sig-bounces@lists.linaro.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
-Message-ID: <20120124115723.GC19255@amd.com>
-References: <20120123154310.GC6269@8bytes.org>
- <20120124.115701.2179509760878976509.hdoyu@nvidia.com>
- <20120124110444.GB19255@amd.com>
- <20120124.133614.1646093482547685131.hdoyu@nvidia.com>
+	Tue, 24 Jan 2012 06:58:58 -0500
+Date: Tue, 24 Jan 2012 11:58:55 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, jedu@slimlogic.co.uk, sameo@linux.intel.com,
+        gg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V1] regulator: tps65910: Sleep control through external
+ inputs
+Message-ID: <20120124115855.GC14888@opensource.wolfsonmicro.com>
+References: <1327395919-32378-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120124.133614.1646093482547685131.hdoyu@nvidia.com>
+In-Reply-To: <1327395919-32378-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You will be successful in love.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 12:36:14PM +0100, Hiroshi Doyu wrote:
-> > A domain is, as you said, a virtual address space for IO devices. But
-> > the important point is, an arbitrary number of devices can be part of a
-> > domain. This also means that the devices can be behind different
-> > hardware SMMUs. In this case your driver needs to program the page-table
-> > pointer into more than one SMMU to give devices behind different SMMUs
-> > the same address space.
-> 
-> Thank you for explaining.
-> 
-> Does the above mean that a buffer can be shared with different devices
-> which belong to different IOMMU devices(virtual address spaces)?
-> 
-> For example, assuming the following:
-> 
-> - We have "struct iommu_domain *domain1".
-> - "domain1" has iommu device "iommu_dev1" and "iommu_dev2".
-> - "iommu_dev1" has "client_dev1" and "client_dev2".
-> - "iommu_dev2" has "client_dev3" and "client_dev4".
-> 
-> "iommu_map(domain1, iova, pa, ...)" will create the following mapping
-> ___at once___:
-> 
-> - (iova)-(pa) mapping in iommu_dev1(iommmu_dev1's virtual address space)
-> - (iova)-(pa) mapping in iommu_dev2(iommmu_dev2's virtual address space)
-> 
-> Is the above correct?
+On Tue, Jan 24, 2012 at 02:35:19PM +0530, Laxman Dewangan wrote:
 
-Yes, this is correct.
+> +	/*
+> +	 * Rail can not be control from all external input EN1, EN2 and EN3
+> +	 * together.
+> +	 */
+> +	if ((ext_sleep_config & EXT_SLEEP_CONTROL) == EXT_SLEEP_CONTROL) {
+> +		dev_err(mfd->dev, "External sleep control flag is not "
+> +					" not proper\n");
+> +		return -EINVAL;
+> +	}
 
-> It seems that the same (iova) is used for different virtual address
-> spaces. What kind of case is this beneficial most in?
+Don't split log messages over multiple lines, it makes grepping the logs
+harder.  Also, are combinations of two external enables valid?
 
-It is actually the _same_ virtual address space which is used by
-iommu_dev1 and iommu_dev2. Think of it like multiple threads of a single
-process. They also share the address space.
-This is a requirement of the iommu-api which is beneficial for
-virtualization and simplifies the usage of the api in general. The user
-does not need to care which devices can be assigned to which domain
-because of underlying hardware constraints. The goal of the iommu-api is
-to hide such contraints.
+> +static void tps65910_shutdown(struct platform_device *pdev)
+> +{
+> +	struct tps65910_reg *pmic = platform_get_drvdata(pdev);
+> +	int i;
+> +	int err;
+> +	dev_err(&pdev->dev, "%s() is called\n", __func__);
+> +
+> +	/* Remove all external control before shutting down the device */
+> +	for (i = 0; i < pmic->num_regulators; i++) {
+> +		if (!pmic->rdev[i])
+> +			continue;
+> +
+> +		err = tps65910_set_ext_sleep_config(pmic, i, 0);
+> +		if (err < 0)
+> +			dev_err(&pdev->dev, "Error in clearing external "
+> +				"control\n");
+> +	}
 
+Why?
 
-	Joerg
+> +/*
+> + * Regulator mode when rail is in sleep state which controlled by external
+> + * input. The regultor will be OFF if it is in sleep state by default but
+> + * can be set in LOW power mode by ORing following macro with any of
+> + * above exterenl input option.
+> + */
+> +#define TPS65910_SLEEP_CONTROL_REG_LOW_POWER		0x10
 
--- 
-AMD Operating System Research Center
+There's the suspend mode API for configuring suspend modes.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+> +
+>  /**
+>   * struct tps65910_board
+>   * Board platform data may be used to initialize regulators.
+> @@ -779,6 +792,7 @@ struct tps65910_board {
+>  	int irq_base;
+>  	int vmbch_threshold;
+>  	int vmbch2_threshold;
+> +	unsigned long regulator_ext_sleep_control[TPS65910_NUM_REGS];
 
+I can't see anything in this code which will manage the enable signals?
