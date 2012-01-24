@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab2AXCma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:42:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49928 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab2AXCm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:42:27 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:24 2012
-Message-Id: <20120124023924.386300194@clark.kroah.org>
-User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:33:45 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [005/129] drivers/rtc/interface.c: fix alarm rollover when day or month is out-of-range
-In-Reply-To: <20120124024041.GA18422@kroah.com>
+	id S1755775Ab2AXDRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:17:47 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50272 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560Ab2AXDRp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 22:17:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120106050355.GA7633@kroah.com>
+References: <1325796541-11402-1-git-send-email-festevam@gmail.com>
+	<20120105223933.GA10268@kroah.com>
+	<CAOMZO5BQhcxViN3KnjhzF9hL1w04egkmb9njc7sDUB0GFdgBog@mail.gmail.com>
+	<20120106050355.GA7633@kroah.com>
+Date: Tue, 24 Jan 2012 01:17:44 -0200
+Message-ID: <CAOMZO5AO8TBm+C8LX97j=0SHUXEfcqb+VykBZhu8-ruazWD_3A@mail.gmail.com>
+Subject: Re: [PATCH] drivers: misc: Remove MISC_DEVICES config option
+From: Fabio Estevam <festevam@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: netdev@vger.kernel.org, gwingerde@gmail.com, larry.finger@lwfinger.net,
+        davem@davemloft.net, bhutchings@solarflare.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jan 6, 2012 at 3:03 AM, Greg KH <greg@kroah.com> wrote:
 
-------------------
-Content-Length: 1761
-Lines: 46
+> Then remove that selection.  Nothing should be depending on a misc
+> driver,
 
-From: Ben Hutchings <ben@decadent.org.uk>
+Yes, this is the exact issue that this patch tries to solve.
 
-commit e74a8f2edb92cb690b467cea0ab652c509e9f624 upstream.
+Currently all of these are dependent on MISC_DEVICES being set.
 
-Commit f44f7f96a20a ("RTC: Initialize kernel state from RTC") introduced a
-potential infinite loop.  If an alarm time contains a wildcard month and
-an invalid day (> 31), or a wildcard year and an invalid month (>= 12),
-the loop searching for the next matching date will never terminate.  Treat
-the invalid values as wildcards.
+source "drivers/misc/c2port/Kconfig"
+source "drivers/misc/eeprom/Kconfig"
+source "drivers/misc/cb710/Kconfig"
+source "drivers/misc/iwmc3200top/Kconfig"
+source "drivers/misc/ti-st/Kconfig"
+source "drivers/misc/lis3lv02d/Kconfig"
+source "drivers/misc/carma/Kconfig"
+source "drivers/misc/altera-stapl/Kconfig"
 
-Fixes <http://bugs.debian.org/646429>, <http://bugs.debian.org/653331>
+With the patch applied it is possible to select all the drivers above
+and we don't need to select MISC_DEVICES.
 
-Reported-by: leo weppelman <leoweppelman@googlemail.com>
-Reported-by: "P. van Gaans" <mailme667@yahoo.co.uk>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Acked-by: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Regards,
 
----
- drivers/rtc/interface.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -228,11 +228,11 @@ int __rtc_read_alarm(struct rtc_device *
- 		alarm->time.tm_hour = now.tm_hour;
- 
- 	/* For simplicity, only support date rollover for now */
--	if (alarm->time.tm_mday == -1) {
-+	if (alarm->time.tm_mday < 1 || alarm->time.tm_mday > 31) {
- 		alarm->time.tm_mday = now.tm_mday;
- 		missing = day;
- 	}
--	if (alarm->time.tm_mon == -1) {
-+	if ((unsigned)alarm->time.tm_mon >= 12) {
- 		alarm->time.tm_mon = now.tm_mon;
- 		if (missing == none)
- 			missing = month;
-
-
+Fabio Estevam
