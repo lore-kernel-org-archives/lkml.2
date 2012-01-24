@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab2AXVJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 16:09:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33672 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755844Ab2AXVJj (ORCPT
+	id S1757502Ab2AXVJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 16:09:55 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:49575 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755844Ab2AXVJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 16:09:39 -0500
-Date: Tue, 24 Jan 2012 22:09:24 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, Kevin Wells <kevin.wells@nxp.com>
-Subject: Re: LPC32xx status (Re: [PATCH] Correct bad gpio naming)
-Message-ID: <20120124210924.GD8502@pengutronix.de>
-References: <4F1C4E25.6070801@antcom.de>
- <20120124155921.GH2609@pengutronix.de>
- <4F1EDD15.7010704@antcom.de>
- <20120124192545.GB8502@pengutronix.de>
- <4F1F16A8.7010407@antcom.de>
+	Tue, 24 Jan 2012 16:09:53 -0500
+Message-ID: <4F1F2BC9.1040109@xenotime.net>
+Date: Tue, 24 Jan 2012 14:08:09 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wLAMOaPNJ0fu1fTG"
-Content-Disposition: inline
-In-Reply-To: <4F1F16A8.7010407@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Wim Van Sebroeck <wim@iguana.be>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-watchdog@vger.kernel.org,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH RESEND] watchdog: documentation: remove index-file
+References: <1327346258-28697-1-git-send-email-w.sang@pengutronix.de> <20120124090933.GA23784@infomag.iguana.be>
+In-Reply-To: <20120124090933.GA23784@infomag.iguana.be>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/24/2012 01:09 AM, Wim Van Sebroeck wrote:
+> Hi all,
+> 
+>> The 00-index file in the watchdog directory is, like many others,
+>> outdated (conversion-howto is missing) and doesn't contain worthwhile
+>> additional information. As it seems to be a maintenance burden without
+>> much gain, simply remove it.
+> 
+> I would like to know what other kernel developers think about removing
+> 00-INDEX files from the Documentation Directory.
 
---wLAMOaPNJ0fu1fTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Some of the 00-INDEX files add more info/value than others do.
+I don't think that we are ready to remove all of them, but if one
+of them isn't particularly useful, it can go away.  We don't need to
+have one in every sub-directory.
 
 
-> Unfortunately, I currently don't have a phy3250, but can check
-> tomorrow with colleagues.
-
-Shouldn't matter that much, or? Once the core support is back and works for
-your board, others could test with their boards.
-
-> I guess the work92105_defconfig is only useful once the drivers
-> currently missing in mainline are merged. Or is there an arm specific
-> tree I should update from?
-
-You can keep the work92105_defconfig in your tree, but we'd need to introdu=
-ce a
-lpc32xx_defconfig. That should start with a minimal (but working) config and
-can be extended once the drivers are in place.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---wLAMOaPNJ0fu1fTG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk8fHgQACgkQD27XaX1/VRsoRgCffgo9rwt65Bl7sZKk5hQ23OCj
-jzMAn2GhgA27GFLYOWzDG5tl8uMq1vJY
-=c6pk
------END PGP SIGNATURE-----
-
---wLAMOaPNJ0fu1fTG--
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
