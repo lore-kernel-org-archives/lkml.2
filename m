@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab2AXONh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 09:13:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53777 "EHLO mx2.suse.de"
+	id S1756711Ab2AXOZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 09:25:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55222 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756610Ab2AXONg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 09:13:36 -0500
-Date: Tue, 24 Jan 2012 15:13:32 +0100
+	id S1756694Ab2AXOZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 09:25:07 -0500
+Date: Tue, 24 Jan 2012 15:25:00 +0100
 From: Jan Kara <jack@suse.cz>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: Re: [PATCH] ext4: add error handling when discarding is fail in
- FITRIM ioctl
-Message-ID: <20120124141332.GD18136@quack.suse.cz>
-References: <1327132572-11841-1-git-send-email-linkinjeon@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PULL REQUEST] Ext3 & ext2 fix, quota improvement
+Message-ID: <20120124142500.GE18136@quack.suse.cz>
+References: <20120120163910.GA16973@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327132572-11841-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <20120120163910.GA16973@quack.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 21-01-12 02:56:12, Namjae Jeon wrote:
-> Although free extents is proper not trimmed(mmc driver return error code while sending trim command), currently FITRIM ioctl return success.
-> I tried to add exception routine to inform user error code.
+  Hello,
+
+On Fri 20-01-12 17:39:10, Jan Kara wrote:
+>   Hello Linus,
 > 
-> #> ./fitrim_test 
-> end_request: I/O error, dev mmcblk0, sector 27232
-> EXT4-fs warning (device mmcblk0): ext4_trim_all_free:4857: Discard command returned error -5
-> #>
+>   could you please pull from
 > 
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-> ---
->  fs/ext4/mballoc.c |   22 +++++++++++++++-------
->  1 files changed, 15 insertions(+), 7 deletions(-)
+> git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 > 
-> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-> index cb990b2..09cc09a 100644
-> --- a/fs/ext4/mballoc.c
-> +++ b/fs/ext4/mballoc.c
-> @@ -4901,10 +4901,11 @@ error_return:
->   * one will allocate those blocks, mark it as used in buddy bitmap. This must
->   * be called with under the group lock.
->   */
-> -static void ext4_trim_extent(struct super_block *sb, int start, int count,
-> +static int ext4_trim_extent(struct super_block *sb, int start, int count,
->  			     ext4_group_t group, struct ext4_buddy *e4b)
->  {
->  	struct ext4_free_extent ex;
-> +	int err;
->  
->  	trace_ext4_trim_extent(sb, group, start, count);
->  
-> @@ -4920,9 +4921,10 @@ static void ext4_trim_extent(struct super_block *sb, int start, int count,
->  	 */
->  	mb_mark_used(e4b, &ex);
->  	ext4_unlock_group(sb, group);
-> -	ext4_issue_discard(sb, group, start, count);
-> +	err = ext4_issue_discard(sb, group, start, count);
->  	ext4_lock_group(sb, group);
->  	mb_free_blocks(NULL, e4b, start, ex.fe_len);
-> +	return err;
->  }
->  
->  /**
-> @@ -4978,15 +4980,21 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
->  		next = mb_find_next_bit(bitmap, max, start);
->  
->  		if ((next - start) >= minblocks) {
-> -			ext4_trim_extent(sb, start,
-> -					 next - start, group, &e4b);
-> -			count += next - start;
-> +			ret = ext4_trim_extent(sb, start,
-> +						next - start, group, &e4b);
-> +			if (ret < 0) {
-> +				if (ret != -EOPNOTSUPP)
-> +					ext4_warning(sb, "Discard command "
-> +						 "returned error %d\n", ret);
-> +				break;
-> +			} else
-> +				count += next - start;
->  		}
->  		free_count += next - start;
->  		start = next + 1;
->  
->  		if (fatal_signal_pending(current)) {
-> -			count = -ERESTARTSYS;
-> +			ret = -ERESTARTSYS;
->  			break;
->  		}
->  
-> @@ -5009,7 +5017,7 @@ out:
->  	ext4_debug("trimmed %d blocks in the group %d\n",
->  		count, group);
->  
-> -	return count;
-> +	return (ret < 0) ? ret : count;
-  I think you need to initialize ret to 0 at the beginning of the function.
-Otherwise you could use it uninitialized. Otherwise the patch looks good to
-me and makes things consistent with ext3 so after fixing that bug you can add:
-  Reviewed-by: Jan Kara <jack@suse.cz>
+> The most important is an ext3 fix of corruption after power failure. The
+> other two patches are just minor things...
+> 
+> Top of the tree is 46fe44c. The full shortlog is:
+> 
+> Djalal Harouni (1):
+>       ext2: protect inode changes in the SETVERSION and SETFLAGS ioctls
+> 
+> Jan Kara (2):
+>       jbd: Issue cache flush after checkpointing
+>       quota: Pass information that quota is stored in system file to userspace
+  Did you just forget to pull or do you disagree with some of the changes?
 
 								Honza
+> 
+> The diffstat is
+> 
+>  fs/ext2/ioctl.c       |   22 ++++++++++++++++------
+>  fs/jbd/checkpoint.c   |   27 ++++++++++++++++++++++-----
+>  fs/jbd/recovery.c     |    4 ++++
+>  fs/quota/dquot.c      |    8 +++++---
+>  include/linux/quota.h |    6 +++++-
+>  5 files changed, 52 insertions(+), 15 deletions(-)
+> 
+> 							Thanks
+> 								Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
