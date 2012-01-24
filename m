@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab2AXUIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 15:08:06 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:38058 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755931Ab2AXUIF (ORCPT
+	id S1756315Ab2AXUPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 15:15:49 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54772 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755778Ab2AXUPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 15:08:05 -0500
-Date: Tue, 24 Jan 2012 22:08:00 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: giorgos kyprianidis <elapoueis@gmail.com>
-Cc: balbi@ti.com, linux-kernel@vger.kernel.org, p3100225@dias.aueb.gr
-Subject: Re: [PATCH] drivers:usb:gadget:f_audio.c fixed a 'space before tab'
- warning
-Message-ID: <20120124200757.GB2936@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <n>
- <1326458564-25533-1-git-send-email-p3100225@dias.aueb.gr>
+	Tue, 24 Jan 2012 15:15:48 -0500
+Date: Tue, 24 Jan 2012 12:16:00 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, containers@lists.linux-foundation.org,
+        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] fix devpts mount behavior
+Message-ID: <20120124201600.GB20039@us.ibm.com>
+References: <20120124000517.GA28878@sergelap>
+ <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
+ <20120124002555.GA29534@sergelap>
+ <CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
+ <20120124010758.GJ23916@ZenIV.linux.org.uk>
+ <20120124182116.GA11715@hallyn.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326458564-25533-1-git-send-email-p3100225@dias.aueb.gr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120124182116.GA11715@hallyn.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012420-3352-0000-0000-000002266C15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Serge Hallyn [serge@hallyn.com] wrote:
+| Quoting Al Viro (viro@ZenIV.linux.org.uk):
+| > On Mon, Jan 23, 2012 at 04:41:25PM -0800, Linus Torvalds wrote:
+| > 
+| > > Right. I think the opportunity for problems should be pretty small.
+| > > 
+| > > And it's not like the pty itself wouldn't continue to work - it's just
+| > > that programs like /usr/bin/tty wouldn't be able to *find* it.
+| > > 
+| > > Although who knows - maybe there is some other subtle interaction.
+| > 
+| > FWIW, the subtle and nasty part in all that is  that you can mknod /dev/ptmx
+| > and it *will* work, refering to the "initial" instance.  That's what
+| > concerns me about the chroot scenarios -
+| > 	mknod /jail/dev/ptmx c 5 2
+| > 	mkdir /jail/dev/pts
+| > 	mount -t devpts /jail/dev/pts
+| > 	chroot /jail
+| > works fine right now, but with that change behaviour will be all wrong -
+| > opening /dev/ptmx inside of jail will grab you a pts, all right, but
+| > it will *not* show up in (jail) /dev/pts/* as it does with the current
+| > kernel.
+| > 
+| > Note that if you replace that mknod with symlink pts/ptmx /jail/dev/ptmx
+| > the things will keep working.  However, that will _only_ work for kernels
+| > with DEVPTS_MULTIPLE_INSTANCES - without it you won't get ptmx inside
+| > devpts (which is arguably wrong, BTW)
+| 
+| Should /dev/pts/ptmx be created for DEVPTS_MULTIPLE_INSTANCES=n?
 
---7iMSBzlTiPOCCT2k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+With DEVPTS_MULTIPLE_INSTANCES=n, there is only _one_ (global) instance
+right ? Why would we need a 'pts/ptmx' node ? To keep the symlink (i.e
+user space scripts) valid for both single and multiple instance cases ?
 
-On Fri, Jan 13, 2012 at 02:42:44PM +0200, giorgos kyprianidis wrote:
-> From: bstrds <p3100225@dias.aueb.gr>
+Sukadev
 
-I would like to have a real name here. Also, you need to Cc
-linux-usb@vger.kernel.org (scripts/get_maintainer.pl would help), then
-add a commit log here too with the warning written down.
-
-And last, but not least, you need a Signed-off-by tag.
-
-Please read Documentation/SubmittingPatches,
-Documentation/SubmitChecklist.
-
---=20
-balbi
-
---7iMSBzlTiPOCCT2k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPHw+dAAoJEIaOsuA1yqRElugP/2Gi22C7xJJ9NbnU1ZVyXAaf
-FYUL+faqdr1pWAMVGBV784cf1ohlYReTBLCBKQo+7yQfSu9tZ/x+MlVjbLmO+vpJ
-AAiNzu/7pnDxRnIHhT25ATkahLtbCGfBqeY1QQ/bWFl8Hg4haY2j2EVKTll+b28/
-FAnpMGOwgTaHwZFZxao+J5H+YqfDi2POub/INiRGDXX9MgC+nL81H+CLhjxTRWN3
-nxT+b/2jv7QJLmVvLJBJbAHNvpEFE7CPEyO7YKj0SO/zCC2wq+rfumrWsnB78DHT
-lqTs44AgNzEkcABfLswWsNUxFX74qRzr2aAlCPFP5OVcfZjr4RCkSg6lKZi9yXAU
-om+/dZChmqL+BacJCuuW4kp1IK2C7YfG+9Mpec0YJR3NUtLlqpgRaTV7+y2aDvO6
-GXZ1A9BFsJo+XGayYmkk0vl/Y1NSPuIZuXIKAxyKG1XOewdS6PHFz9SMOzOW9Qly
-gZViVnnpquvK0BKSw7RigcAofVl/zD2VaTt/ZmLlGY7svchJKWJy9G3bd33Ok7Y+
-GNCwBQul44ZYUv0VPiccHiJQRo5FxcJPdm5DTLCHCFYbc46MV8x9m4rML3mykNcW
-zEfFusdkttUifa6I1XSsL2YwpmBGbiIJLor6LVqTdh9xEtvOO1nSca3otex+nLn2
-8W1crBnmttrXWe13yfn/
-=1lI0
------END PGP SIGNATURE-----
-
---7iMSBzlTiPOCCT2k--
