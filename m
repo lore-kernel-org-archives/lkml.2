@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab2AXDZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 22:25:28 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:34936 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071Ab2AXDZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 22:25:27 -0500
-Date: Tue, 24 Jan 2012 14:25:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>
-Subject: linux-next: build failure after merge of the input tree
-Message-Id: <20120124142516.07860a401ac9216cfa10a6ad@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__24_Jan_2012_14_25_16_+1100_yoEXx9l/m9kYXoaz"
+	id S1755988Ab2AXD0K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:26:10 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34497 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab2AXD0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 22:26:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALWz4izWYb=_svn=UJ1C--pWXv59H2ahn6EJEnTpJv-dT6WGsw@mail.gmail.com>
+References: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
+	<20120123130221.GA15113@tiehlicka.suse.cz>
+	<CALWz4izWYb=_svn=UJ1C--pWXv59H2ahn6EJEnTpJv-dT6WGsw@mail.gmail.com>
+Date: Tue, 24 Jan 2012 11:26:05 +0800
+Message-ID: <CAJd=RBAuDABE7u1wyc+45ZGoVos5PnxMe6P=ET-CHf-LChTpgw@mail.gmail.com>
+Subject: Re: [PATCH] mm: memcg: fix over reclaiming mem cgroup
+From: Hillf Danton <dhillf@gmail.com>
+To: Ying Han <yinghan@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__24_Jan_2012_14_25_16_+1100_yoEXx9l/m9kYXoaz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi all
 
-Hi Dmitry,
+On Tue, Jan 24, 2012 at 3:14 AM, Ying Han <yinghan@google.com> wrote:
+> On Mon, Jan 23, 2012 at 5:02 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>> On Sat 21-01-12 22:49:23, Hillf Danton wrote:
+>>> In soft limit reclaim, overreclaim occurs when pages are reclaimed from mem
+>>> group that is under its soft limit, or when more pages are reclaimd than the
+>>> exceeding amount, then performance of reclaimee goes down accordingly.
+>>
+>> First of all soft reclaim is more a help for the global memory pressure
+>> balancing rather than any guarantee about how much we reclaim for the
+>> group.
+>> We need to do more changes in order to make it a guarantee.
+>> For example you implementation will cause severe problems when all
+>> cgroups are soft unlimited (default conf.) or when nobody is above the
+>> limit but the total consumption triggers the global reclaim. Therefore
+>> nobody is in excess and you would skip all groups and only bang on the
+>> root memcg.
 
-After merging the input tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+If soft limits are set to be limited and there are no excessors,
+who are consuming physical pages? The consumers maybe those with soft
+unlimited. If so, they should be punished first, based on the assumption that
+the unlimited is treated with no guarantee. Then soft limit guarantee could
+be assured without changes in the current default setting of soft limit, no?
 
-ERROR: ".ktime_get_monotonic_offset" [drivers/input/evdev.ko] undefined!
+With soft limit available, victims are only selected from excessors, I think.
 
-Caused by commit 04f2c50e5fd8 ("Input: add infrastructure for selecting
-clockid for event time stamps").
+>>
+>> Ying Han has a patch which basically skips all cgroups which are under
+>> its limit until we reach a certain reclaim priority but even for this we
+>> need some additional changes - e.g. reverse the current default setting
+>> of the soft limit.
+>>
+>> Anyway, I like the nr_to_reclaim reduction idea because we have to do
+>> this in some way because the global reclaim starts with ULONG
+>> nr_to_scan.
+>
+> Agree with Michal where there are quite a lot changes we need to get
+> in for soft limit before any further optimization.
+>
+> Hillf, please refer to the patch from Johannes
+> https://lkml.org/lkml/2012/1/13/99 which got quite a lot recent
+> discussions. I am expecting to get that in before further soft limit
+> changes.
+>
 
-I have used the input tree from next-20120123 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Johannes did great cleanup, why barriered?
 
---Signature=_Tue__24_Jan_2012_14_25_16_+1100_yoEXx9l/m9kYXoaz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPHiScAAoJEECxmPOUX5FEPzUP/RuEeilb7HoFZO2CbH530wDW
-Q50EeWqHcXTtczX4qEio1bW7aefB54exDrvpchzObxGr4IHMJAFteFhm8kl3kDqY
-T66+ixG+ocenZgi/RO+bRYvz5650bVzw+g50yMBQ05dJS2PbAJ6q4Cay1OP19+5m
-iLH3yo7TTwbJetmdJwFI7AwF/fS64FlkQICman6/a0XoqoNFhqO/bZZt6exdBkSI
-EmcdHa8CAnWovkoRuDdQOtYE1atoX+ne85faYBiZbRw/Fyts+FyNxjPuShCLHm+F
-IuldmqdZohKHPoHldEGiRUqUl/Ra25p9vT0D4DV60MLyczfayo+d7iS3ngR8t2Su
-eRhgre+phx+RafRbFsH5go1MaYXsdjKBFhzrHWzHzt8vqO4CkZ1wcTah3eUr/BW8
-HfJCT3uXz9BBWhVnmFWZJNeqAmVzIw7pcXFiaCmwDCYCBbUWfvnLCeYNVYl7ClFf
-EVUHTRdvOvbV2wHl+E2YZgYBp3T8HvqSNTvx8o+9mT22tfk2CDN7n6hpa+G1KlRI
-RHYWWvEmIyXe9lRN2SjO9krSRJYT/91qoTeQvSU4w2TDGvuIjG+qSAsWzHei0e5v
-6djT8DbbIlyvRtJbIjt40ObUckMGLxqPAjXE/52I2RZE3l1L66PlsEieGa1NExFY
-NGzyzqhvDvNe1BHxh+6R
-=05gt
------END PGP SIGNATURE-----
-
---Signature=_Tue__24_Jan_2012_14_25_16_+1100_yoEXx9l/m9kYXoaz--
+Thanks
+Hillf
