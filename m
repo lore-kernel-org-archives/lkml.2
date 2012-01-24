@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab2AXOZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 09:25:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55222 "EHLO mx2.suse.de"
+	id S1756738Ab2AXOZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 09:25:26 -0500
+Received: from 8bytes.org ([88.198.83.132]:58398 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756694Ab2AXOZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 09:25:07 -0500
-Date: Tue, 24 Jan 2012 15:25:00 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PULL REQUEST] Ext3 & ext2 fix, quota improvement
-Message-ID: <20120124142500.GE18136@quack.suse.cz>
-References: <20120120163910.GA16973@quack.suse.cz>
+	id S1756694Ab2AXOZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 09:25:22 -0500
+Date: Tue, 24 Jan 2012 15:25:21 +0100
+From: "joro@8bytes.org" <joro@8bytes.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig-bounces@lists.linaro.org" 
+	<linaro-mm-sig-bounces@lists.linaro.org>
+Subject: Re: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Message-ID: <20120124142521.GE6269@8bytes.org>
+References: <1325747509-29665-1-git-send-email-hdoyu@nvidia.com> <1325747509-29665-3-git-send-email-hdoyu@nvidia.com> <20120123154310.GC6269@8bytes.org> <20120124.154121.1062920821192552748.hdoyu@nvidia.com> <20120124134601.GT27414@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120120163910.GA16973@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120124134601.GT27414@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+On Tue, Jan 24, 2012 at 03:46:01PM +0200, Felipe Balbi wrote:
+> On Tue, Jan 24, 2012 at 02:41:21PM +0100, Hiroshi Doyu wrote:
+> > Actually I really like the concept of this "domain" now, which hides
+> > the H/W hierarchy from users.
+> > 
+> > But in Tegra SMMU/GART case, there's a single one IOMMU device in the
+> > system. Keeping a iommu device list in a domain and iterating iommu
+> > device list in each iommu_ops seem to be so nice, but I'm afraid that
+> > this may be a bit too much when one already knows that there's only
+> > one IOMMU device in the system.
+> >
+> > If there's no actual problem for 1-1 mapping between IOMMU H/Ws and
+> > domains, I think that it may not so bad to keep the original code(1-1)
+> > for GART and SMMU. What do you think?
+> 
+> I think it boils down to "extensability". If you can truly/fully
+> guarantee that there will *always* be a single IOMMU on all upcoming
+> Tegras, then it's really overkill.
+> 
+> But if there's even a remote possibility of the HW being changed and you
+> end up with more IOMMUs, things start to feel necessary for the sake of
+> making it easy to extend.
 
-On Fri 20-01-12 17:39:10, Jan Kara wrote:
->   Hello Linus,
-> 
->   could you please pull from
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
-> 
-> The most important is an ext3 fix of corruption after power failure. The
-> other two patches are just minor things...
-> 
-> Top of the tree is 46fe44c. The full shortlog is:
-> 
-> Djalal Harouni (1):
->       ext2: protect inode changes in the SETVERSION and SETFLAGS ioctls
-> 
-> Jan Kara (2):
->       jbd: Issue cache flush after checkpointing
->       quota: Pass information that quota is stored in system file to userspace
-  Did you just forget to pull or do you disagree with some of the changes?
+Right. But I am fine with the logic as-is when there is only one SMMU in
+the system. But please also change the IOMMU driver so that it really
+only initializes a single SMMU. When boards pop up with more than one
+you we notice that assumption in the code again and are reminded to
+change it.
 
-								Honza
-> 
-> The diffstat is
-> 
->  fs/ext2/ioctl.c       |   22 ++++++++++++++++------
->  fs/jbd/checkpoint.c   |   27 ++++++++++++++++++++++-----
->  fs/jbd/recovery.c     |    4 ++++
->  fs/quota/dquot.c      |    8 +++++---
->  include/linux/quota.h |    6 +++++-
->  5 files changed, 52 insertions(+), 15 deletions(-)
-> 
-> 							Thanks
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+	Joerg
+
