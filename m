@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab2AXDC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 22:02:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50308 "EHLO mx2.suse.de"
+	id S932448Ab2AXDDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:03:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50293 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932322Ab2AXCps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:45:48 -0500
+	id S932388Ab2AXCpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:45:41 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:27 2012
-Message-Id: <20120124023927.660375010@clark.kroah.org>
+Message-Id: <20120124023927.480510588@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:22 -0800
+Date: Mon, 23 Jan 2012 18:34:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [042/129] slub: fix a possible memleak in __slab_alloc()
+        alan@lxorguk.ukuu.org.uk, Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [040/129] ima: free duplicate measurement memory
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,48 +24,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1140
-Lines: 41
+Content-Length: 1475
+Lines: 44
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Roberto Sassu <roberto.sassu@polito.it>
 
-commit 73736e0387ba0e6d2b703407b4d26168d31516a7 upstream.
+commit 45fae7493970d7c45626ccd96d4a74f5f1eea5a9 upstream.
 
-Zhihua Che reported a possible memleak in slub allocator on
-CONFIG_PREEMPT=y builds.
+Info about new measurements are cached in the iint for performance.  When
+the inode is flushed from cache, the associated iint is flushed as well.
+Subsequent access to the inode will cause the inode to be re-measured and
+will attempt to add a duplicate entry to the measurement list.
 
-It is possible current thread migrates right before disabling irqs in
-__slab_alloc(). We must check again c->freelist, and perform a normal
-allocation instead of scratching c->freelist.
+This patch frees the duplicate measurement memory, fixing a memory leak.
 
-Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
-
-V2: Its also possible an IRQ freed one (or several) object(s) and
-populated c->freelist, so its not a CONFIG_PREEMPT only problem.
-
-Reported-by: Zhihua Che <zhihua.che@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/slub.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ security/integrity/ima/ima_api.c   |    4 ++--
+ security/integrity/ima/ima_queue.c |    1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2166,6 +2166,11 @@ redo:
- 		goto new_slab;
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -178,8 +178,8 @@ void ima_store_measurement(struct integr
+ 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
+ 
+ 	result = ima_store_template(entry, violation, inode);
+-	if (!result)
++	if (!result || result == -EEXIST)
+ 		iint->flags |= IMA_MEASURED;
+-	else
++	if (result < 0)
+ 		kfree(entry);
+ }
+--- a/security/integrity/ima/ima_queue.c
++++ b/security/integrity/ima/ima_queue.c
+@@ -114,6 +114,7 @@ int ima_add_template_entry(struct ima_te
+ 		memcpy(digest, entry->digest, sizeof digest);
+ 		if (ima_lookup_digest_entry(digest)) {
+ 			audit_cause = "hash_exists";
++			result = -EEXIST;
+ 			goto out;
+ 		}
  	}
- 
-+	/* must check again c->freelist in case of cpu migration or IRQ */
-+	object = c->freelist;
-+	if (object)
-+		goto load_freelist;
-+
- 	stat(s, ALLOC_SLOWPATH);
- 
- 	do {
 
 
