@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab2AXXQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:16:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46718 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab2AXXQb (ORCPT
+	id S1753163Ab2AXXRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:17:34 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16438 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab2AXXRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 18:16:31 -0500
-Date: Tue, 24 Jan 2012 17:16:01 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org,
-        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Whitcroft <apw@canonical.com>, sukadev@linux.vnet.ibm.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC] fix devpts mount behavior
-Message-ID: <20120124231601.GA4470@sergelap>
-References: <20120124000517.GA28878@sergelap>
- <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
- <20120124002555.GA29534@sergelap>
- <CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
- <20120124010758.GJ23916@ZenIV.linux.org.uk>
- <m1k44gj1cu.fsf@fess.ebiederm.org>
- <20120124220247.GA26353@hallyn.com>
- <CAPXgP13_gczQmG_USAp0p2AuTfxkzAvzHvjbZY_rbbLH-4rDyg@mail.gmail.com>
+	Tue, 24 Jan 2012 18:17:32 -0500
+Date: Wed, 25 Jan 2012 00:17:36 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Joe Perches <joe@perches.com>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Ilia Mirkin <imirkin@alum.mit.edu>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: [PATCH 1/2] Staging; bcm/CmHost.c: Style cleanup
+In-Reply-To: <1327446791.15724.0.camel@joe2Laptop>
+Message-ID: <alpine.LNX.2.00.1201250016090.27508@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1201242338500.27508@swampdragon.chaosbits.net>  <alpine.LNX.2.00.1201242345140.27508@swampdragon.chaosbits.net> <1327446791.15724.0.camel@joe2Laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPXgP13_gczQmG_USAp0p2AuTfxkzAvzHvjbZY_rbbLH-4rDyg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kay Sievers (kay.sievers@vrfy.org):
-> On Tue, Jan 24, 2012 at 23:02, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+On Tue, 24 Jan 2012, Joe Perches wrote:
+
+> On Tue, 2012-01-24 at 23:46 +0100, Jesper Juhl wrote:
+> > This patch tries to bring drivers/staging/bcm/CmHost.c somewhat in
+> > line with CodingStyle.
 > 
-> >> It looks like relatively recent udev still creates /dev/ptmx and does
-> >
-> > Boy, it does, and it's stubborn about it.  Removing the /lib/udev/rules.d
-> > entry doesn't stop it.  (this is after I've had an init job replace the
-> > devtmpfs-created ptmx entry with a symlink)
+> There are already a couple of CmHost patches waiting.
 > 
-> Udev has nothing to do with that. The kernel creates that device node.
-> Udev does not carry any rules you could remove, to name device nodes,
-> it only set permissions and creates symlinks to device nodes.
+Thank you for the heads-up Joe. I wasn't aware of that.
+I just noticed a few mem leaks and wanted to fix them and then couldn't 
+help myself doing the style cleanup first ;)
 
-That's odd, because I was sure I deleted the node after the kernel created
-it.
 
-But it sounds like I must have done it wrong.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-> It will never replace a kernel-created device node with a symlink,
-> there is no way to express that. If you don't want a device node
-> there, you need to change the kernel, to not export
-> /sys/class/tty/ptmx/ the way it is today.
-> 
-> > So current distros (well, Ubuntu and Fedora at least) would need to at least
-> > (a) fix udev,
-> 
-> To do what?
-
-Nothing, as I'm sure you're right above  :)
-
-> > (b) change the default devpts mount (done from initramfs) to
-> > add ptmxmode=666,
-> 
-> > (c) (if not done in udev) create the /dev/ptmx symlink.
-> 
-> Udev can only create symlinks to devices the driver-core creates, not
-> to devices inside a custom filesystem.
-
-I see.
-
-> > For safety I'd recommend creating /dev/pts/ptmx with
-> > DEVPTS_MULTIPLE_INSTANCES=n (or dropping that support), and by default
-> > setting ptmxmode to 666 as that's what udev does.
-> 
-> The mode for ptmx is set by the kernel itself, and does not even need
-> udev to do that:
->   $ cat /sys/class/tty/ptmx/uevent
->   MAJOR=5
->   MINOR=2
->   DEVNAME=ptmx
->   DEVMODE=0666
-
-That has nothing to do with /dev/pts/ptmx, whose perms are set based on
-the '-o ptmxmode=" argument, and default to 000 if not specified.  If
-/dev/ptmx is going to be a symlink to /dev/pts/ptmx, then we have to set
-the /dev/pts/ptmx perms to not be 000, or users won't be able to create
-ptys.
-
--serge
