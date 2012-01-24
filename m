@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab2AXHRX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 02:17:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44952 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2AXHRW (ORCPT
+	id S1754843Ab2AXHTb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 02:19:31 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:6092 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754446Ab2AXHTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 02:17:22 -0500
-Date: Tue, 24 Jan 2012 11:17:16 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
-Message-ID: <20120124071716.GC29735@moon>
-References: <20120123142036.025893883@openvz.org>
- <20120123142436.258631438@openvz.org>
- <20120124111655.b29264d2.kamezawa.hiroyu@jp.fujitsu.com>
- <20120124064719.GA29735@moon>
- <4F1E57F3.6020607@zytor.com>
+	Tue, 24 Jan 2012 02:19:30 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAONYHk95LElR/2dsb2JhbABDriuBBoFyAQEEAScTHCMFCwgDDgojCxQlAyETh3y4SxOMEwSVF4kqiTg
+Date: Tue, 24 Jan 2012 18:19:26 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>
+Subject: Re: [PATCH 5/8] xfs: Protect xfs_file_aio_write() &
+ xfs_setattr_size() with sb_start_write - sb_end_write
+Message-ID: <20120124071926.GM15102@dastard>
+References: <1327091686-23177-1-git-send-email-jack@suse.cz>
+ <1327091686-23177-6-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F1E57F3.6020607@zytor.com>
+In-Reply-To: <1327091686-23177-6-git-send-email-jack@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 11:04:19PM -0800, H. Peter Anvin wrote:
-> On 01/23/2012 10:47 PM, Cyrill Gorcunov wrote:
-> >>
-> >> Why under /arch ?
-> >>
-> > 
-> > Hi Kame,
-> > 
-> > because I've tested it under x86 only. Once someone
-> > confirm it's needed on some else arch and does work
-> > as expected -- it wont be a problem to make it system
-> > wide. Until then -- I think better to stick with
-> > at least tested case.
-> > ...
-> 
-> That's not a reason to put it in arch/ ... that's possibly a reason to
-> not map the system call on other architectures yet.
-> 
+On Fri, Jan 20, 2012 at 09:34:43PM +0100, Jan Kara wrote:
+> Replace racy xfs_wait_for_freeze() check in xfs_file_aio_write() with
+> a reliable sb_start_write() - sb_end_write() locking. Due to lock ranking
+> dictated by the page fault code we have to call sb_start_write() after we
+> acquire ilock.
 
-Where it should live then? In kernel/ or mm/ ?
+It appears to me that you have indeed confused the ilock with the
+iolock.
 
-	Cyrill
+> Similarly we have to protect xfs_setattr_size() because it can modify last
+> page of truncated file. Because ilock is dropped in xfs_setattr_size() we
+> have to drop and retake write access as well to avoid deadlocks.
+
+> 
+> CC: Ben Myers <bpm@sgi.com>
+> CC: Alex Elder <elder@kernel.org>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/xfs/xfs_file.c |    6 ++++--
+>  fs/xfs/xfs_iops.c |    6 ++++++
+>  2 files changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index 753ed9b..9efd153 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -862,9 +862,11 @@ xfs_file_dio_aio_write(
+>  		*iolock = XFS_IOLOCK_SHARED;
+>  	}
+>  
+> +	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
+>  	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
+>  	ret = generic_file_direct_write(iocb, iovp,
+>  			&nr_segs, pos, &iocb->ki_pos, count, ocount);
+> +	sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
+
+That's inside the iolock, not the ilock. Either way, it is
+incorrect. This accounting should be outside the iolock - because
+xfs_trans_alloc() can be called with the iolock held. Therefore the
+freeze/lock order needs to be
+
+	sb_start_write(SB_FREEZE_WRITE)
+	  XFS(ip)->i_iolock
+	    XFS(ip)->i_ilock
+	sb_end_write(SB_FREEZE_WRITE)
+
+Which matches the current freeze/lock order.
+
+> @@ -945,8 +949,6 @@ xfs_file_aio_write(
+>  	if (ocount == 0)
+>  		return 0;
+>  
+> -	xfs_wait_for_freeze(ip->i_mount, SB_FREEZE_WRITE);
+> -
+
+that's where sb_start_write() needs to be, and the sb-end_write()
+call needs to below the generic_write_sync() calls that will trigger
+IO on O_SYNC writes. Otherwise it is not covering all the IO path
+correctly.
+
+>  	if (XFS_FORCED_SHUTDOWN(ip->i_mount))
+>  		return -EIO;
+>  
+> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+> index 3579bc8..798b9c6 100644
+> --- a/fs/xfs/xfs_iops.c
+> +++ b/fs/xfs/xfs_iops.c
+> @@ -793,6 +793,7 @@ xfs_setattr_size(
+>  		return xfs_setattr_nonsize(ip, iattr, 0);
+>  	}
+>  
+> +	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
+>  	/*
+>  	 * Make sure that the dquots are attached to the inode.
+>  	 */
+> @@ -849,10 +850,14 @@ xfs_setattr_size(
+>  				     xfs_get_blocks);
+>  	if (error)
+>  		goto out_unlock;
+> +	/* Drop the write access to avoid lock inversion with ilock */
+> +	sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
+>  
+>  	xfs_ilock(ip, XFS_ILOCK_EXCL);
+>  	lock_flags |= XFS_ILOCK_EXCL;
+>  
+> +	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
+> +
+
+This is caused by the previous problems I pointed out. You should
+not need to drop the freeze reference here at all.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
