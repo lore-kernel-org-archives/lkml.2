@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab2AXCmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:42:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49982 "EHLO mx2.suse.de"
+	id S1756093Ab2AXCm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:42:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49993 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755814Ab2AXCmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:42:49 -0500
+	id S1755814Ab2AXCmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:42:55 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:25 2012
-Message-Id: <20120124023925.783044267@clark.kroah.org>
+Message-Id: <20120124023925.868037360@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:01 -0800
+Date: Mon, 23 Jan 2012 18:34:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Boaz Harrosh <bharrosh@panasas.com>,
+        alan@lxorguk.ukuu.org.uk, Lukas Razik <linux@razik.name>,
+        Chuck Lever <chuck.lever@oracle.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [021/129] pnfs-obj: Must return layout on IO error
+Subject: [022/129] NFS: Retry mounting NFSROOT
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,89 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2865
-Lines: 82
+Content-Length: 2780
+Lines: 88
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Chuck Lever <chuck.lever@oracle.com>
 
-commit fe0fe83585f88346557868a803a479dfaaa0688a upstream.
+commit 43717c7daebf10b43f12e68512484b3095bb1ba5 upstream.
 
-As mandated by the standard. In case of an IO error, a pNFS
-objects layout driver must return it's layout. This is because
-all device errors are reported to the server as part of the
-layout return buffer.
+Lukas Razik <linux@razik.name> reports that on his SPARC system,
+booting with an NFS root file system stopped working after commit
+56463e50 "NFS: Use super.c for NFSROOT mount option parsing."
 
-This is implemented the same way PNFS_LAYOUTRET_ON_SETATTR
-is done, through a bit flag on the pnfs_layoutdriver_type->flags
-member. The flag is set by the layout driver that wants a
-layout_return preformed at pnfs_ld_{write,read}_done in case
-of an error.
-(Though I have not defined a wrapper like pnfs_ld_layoutret_on_setattr
- because this code is never called outside of pnfs.c and pnfs IO
- paths)
+We found that the network switch to which Lukas' client was attached
+was delaying access to the LAN after the client's NIC driver reported
+that its link was up.  The delay was longer than the timeouts used in
+the NFS client during mounting.
 
-Without this patch 3.[0-2] Kernels leak memory and have an annoying
-WARN_ON after every IO error utilizing the pnfs-obj driver.
+NFSROOT worked for Lukas before commit 56463e50 because in those
+kernels, the client's first operation was an rpcbind request to
+determine which port the NFS server was listening on.  When that
+request failed after a long timeout, the client simply selected the
+default NFS port (2049).  By that time the switch was allowing access
+to the LAN, and the mount succeeded.
 
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Neither of these client behaviors is desirable, so reverting 56463e50
+is really not a choice.  Instead, introduce a mechanism that retries
+the NFSROOT mount request several times.  This is the same tactic that
+normal user space NFS mounts employ to overcome server and network
+delays.
+
+Signed-off-by: Lukas Razik <linux@razik.name>
+[ cel: match kernel coding style, add proper patch description ]
+[ cel: add exponential back-off ]
+Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+Tested-by: Lukas Razik <linux@razik.name>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/objlayout/objio_osd.c |    3 ++-
- fs/nfs/pnfs.c                |   12 ++++++++++++
- fs/nfs/pnfs.h                |    1 +
- 3 files changed, 15 insertions(+), 1 deletion(-)
+ init/do_mounts.c |   35 +++++++++++++++++++++++++++++++----
+ 1 file changed, 31 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/objlayout/objio_osd.c
-+++ b/fs/nfs/objlayout/objio_osd.c
-@@ -551,7 +551,8 @@ static const struct nfs_pageio_ops objio
- static struct pnfs_layoutdriver_type objlayout_type = {
- 	.id = LAYOUT_OSD2_OBJECTS,
- 	.name = "LAYOUT_OSD2_OBJECTS",
--	.flags                   = PNFS_LAYOUTRET_ON_SETATTR,
-+	.flags                   = PNFS_LAYOUTRET_ON_SETATTR |
-+				   PNFS_LAYOUTRET_ON_ERROR,
- 
- 	.alloc_layout_hdr        = objlayout_alloc_layout_hdr,
- 	.free_layout_hdr         = objlayout_free_layout_hdr,
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -1178,6 +1178,15 @@ void pnfs_ld_write_done(struct nfs_write
- 		put_lseg(data->lseg);
- 		data->lseg = NULL;
- 		dprintk("pnfs write error = %d\n", data->pnfs_error);
-+		if (NFS_SERVER(data->inode)->pnfs_curr_ld->flags &
-+						PNFS_LAYOUTRET_ON_ERROR) {
-+			/* Don't lo_commit on error, Server will needs to
-+			 * preform a file recovery.
-+			 */
-+			clear_bit(NFS_INO_LAYOUTCOMMIT,
-+				  &NFS_I(data->inode)->flags);
-+			pnfs_return_layout(data->inode);
-+		}
- 	}
- 	data->mds_ops->rpc_release(data);
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -398,15 +398,42 @@ out:
  }
-@@ -1267,6 +1276,9 @@ static void pnfs_ld_handle_read_error(st
- 	put_lseg(data->lseg);
- 	data->lseg = NULL;
- 	dprintk("pnfs write error = %d\n", data->pnfs_error);
-+	if (NFS_SERVER(data->inode)->pnfs_curr_ld->flags &
-+						PNFS_LAYOUTRET_ON_ERROR)
-+		pnfs_return_layout(data->inode);
+  
+ #ifdef CONFIG_ROOT_NFS
++
++#define NFSROOT_TIMEOUT_MIN	5
++#define NFSROOT_TIMEOUT_MAX	30
++#define NFSROOT_RETRY_MAX	5
++
+ static int __init mount_nfs_root(void)
+ {
+ 	char *root_dev, *root_data;
++	unsigned int timeout;
++	int try, err;
  
- 	nfs_pageio_init_read_mds(&pgio, data->inode);
+-	if (nfs_root_data(&root_dev, &root_data) != 0)
+-		return 0;
+-	if (do_mount_root(root_dev, "nfs", root_mountflags, root_data) != 0)
++	err = nfs_root_data(&root_dev, &root_data);
++	if (err != 0)
+ 		return 0;
+-	return 1;
++
++	/*
++	 * The server or network may not be ready, so try several
++	 * times.  Stop after a few tries in case the client wants
++	 * to fall back to other boot methods.
++	 */
++	timeout = NFSROOT_TIMEOUT_MIN;
++	for (try = 1; ; try++) {
++		err = do_mount_root(root_dev, "nfs",
++					root_mountflags, root_data);
++		if (err == 0)
++			return 1;
++		if (try > NFSROOT_RETRY_MAX)
++			break;
++
++		/* Wait, in case the server refused us immediately */
++		ssleep(timeout);
++		timeout <<= 1;
++		if (timeout > NFSROOT_TIMEOUT_MAX)
++			timeout = NFSROOT_TIMEOUT_MAX;
++	}
++	return 0;
+ }
+ #endif
  
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -68,6 +68,7 @@ enum {
- enum layoutdriver_policy_flags {
- 	/* Should the pNFS client commit and return the layout upon a setattr */
- 	PNFS_LAYOUTRET_ON_SETATTR	= 1 << 0,
-+	PNFS_LAYOUTRET_ON_ERROR		= 1 << 1,
- };
- 
- struct nfs4_deviceid_node;
 
 
