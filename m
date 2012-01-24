@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2AXQ5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:57:14 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54651 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab2AXQ5M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:57:12 -0500
-Date: Tue, 24 Jan 2012 17:57:11 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Simon Glass <sjg@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot
- time
-Message-ID: <20120124165711.GC3836@linutronix.de>
-References: <CAPnjgZ0-VdAzudGFopBd+5j4HhOp10C=x0kPuJEZyaYSzwjBAA@mail.gmail.com>
- <Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
+	id S1756185Ab2AXQ7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:59:10 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:27907 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752699Ab2AXQ7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 11:59:08 -0500
+Subject: [PATCH] Lockd: don't mark freshly created sockets with XPT_CHNGBUF
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Tue, 24 Jan 2012 20:59:01 +0400
+Message-ID: <20120124165826.22037.58630.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alan Stern | 2012-01-21 11:11:09 [-0500]:
+This is a cleanup patch.
+XPT_CHNGBUF bit is set on UDP socket creation. Calling svc_sock_update_bufs
+from lockd after sockets creation looks redundant.
+Below is Lockd UDP sockets creating call trace:
 
->Doing time-consuming things later won't make any difference.  That is,
->suppose the boot sequence performs activities A and B, where A takes a
->long time.  Doing A later, so that the boot sequence performs B and
->then A, won't change the total time required.
+lockd_up {
 
-That is true. However if you show the gui _now_ and look for USB later
-then it feels faster and this is usually enough.
+make_socks
+create_lockd_family
+create_lockd_listener
+svc_create_xprt
+__svc_xpo_create
+svc_udp_create
+svc_create_socket
+svc_setup_socket
+svc_udp_init (raise XPT_CHNGBUF)
 
->Alan Stern
+....
 
-Sebastian
+svc_sock_update_bufs (raise XPT_CHNGBUF again)
+
+....
+
+}
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+
+---
+ fs/lockd/svc.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index ff379ff..55fea92 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -292,7 +292,6 @@ int lockd_up(void)
+ 		goto destroy_and_out;
+ 	}
+ 
+-	svc_sock_update_bufs(serv);
+ 	serv->sv_maxconn = nlm_max_connections;
+ 
+ 	nlmsvc_task = kthread_run(lockd, nlmsvc_rqst, serv->sv_name);
+
