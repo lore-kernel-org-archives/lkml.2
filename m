@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2AXL7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:59:00 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52812 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751325Ab2AXL66 (ORCPT
+	id S1753888Ab2AXMHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 07:07:53 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15487 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab2AXMHw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:58:58 -0500
-Date: Tue, 24 Jan 2012 11:58:55 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, jedu@slimlogic.co.uk, sameo@linux.intel.com,
-        gg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V1] regulator: tps65910: Sleep control through external
- inputs
-Message-ID: <20120124115855.GC14888@opensource.wolfsonmicro.com>
-References: <1327395919-32378-1-git-send-email-ldewangan@nvidia.com>
+	Tue, 24 Jan 2012 07:07:52 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 24 Jan 2012 04:07:50 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "joerg.roedel@amd.com" <joerg.roedel@amd.com>
+CC: "joro@8bytes.org" <joro@8bytes.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linaro-mm-sig-bounces@lists.linaro.org" 
+	<linaro-mm-sig-bounces@lists.linaro.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 24 Jan 2012 13:07:40 +0100
+Subject: Re: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Thread-Topic: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Thread-Index: AczakMl7Y700/DRRTt+ySYGe/3uE/Q==
+Message-ID: <20120124.140740.446867797082060957.hdoyu@nvidia.com>
+References: <20120124110444.GB19255@amd.com><20120124.133614.1646093482547685131.hdoyu@nvidia.com><20120124115723.GC19255@amd.com>
+In-Reply-To: <20120124115723.GC19255@amd.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327395919-32378-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You will be successful in love.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 02:35:19PM +0530, Laxman Dewangan wrote:
+From: "joerg.roedel@amd.com" <joerg.roedel@amd.com>
+Subject: Re: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Date: Tue, 24 Jan 2012 12:57:23 +0100
+Message-ID: <20120124115723.GC19255@amd.com>
 
-> +	/*
-> +	 * Rail can not be control from all external input EN1, EN2 and EN3
-> +	 * together.
-> +	 */
-> +	if ((ext_sleep_config & EXT_SLEEP_CONTROL) == EXT_SLEEP_CONTROL) {
-> +		dev_err(mfd->dev, "External sleep control flag is not "
-> +					" not proper\n");
-> +		return -EINVAL;
-> +	}
+> On Tue, Jan 24, 2012 at 12:36:14PM +0100, Hiroshi Doyu wrote:
+> > > A domain is, as you said, a virtual address space for IO devices. But
+> > > the important point is, an arbitrary number of devices can be part of a
+> > > domain. This also means that the devices can be behind different
+> > > hardware SMMUs. In this case your driver needs to program the page-table
+> > > pointer into more than one SMMU to give devices behind different SMMUs
+> > > the same address space.
+> > 
+> > Thank you for explaining.
+> > 
+> > Does the above mean that a buffer can be shared with different devices
+> > which belong to different IOMMU devices(virtual address spaces)?
+> > 
+> > For example, assuming the following:
+> > 
+> > - We have "struct iommu_domain *domain1".
+> > - "domain1" has iommu device "iommu_dev1" and "iommu_dev2".
+> > - "iommu_dev1" has "client_dev1" and "client_dev2".
+> > - "iommu_dev2" has "client_dev3" and "client_dev4".
+> > 
+> > "iommu_map(domain1, iova, pa, ...)" will create the following mapping
+> > ___at once___:
+> > 
+> > - (iova)-(pa) mapping in iommu_dev1(iommmu_dev1's virtual address space)
+> > - (iova)-(pa) mapping in iommu_dev2(iommmu_dev2's virtual address space)
+> > 
+> > Is the above correct?
+> 
+> Yes, this is correct.
+> 
+> > It seems that the same (iova) is used for different virtual address
+> > spaces. What kind of case is this beneficial most in?
+> 
+> It is actually the _same_ virtual address space which is used by
+> iommu_dev1 and iommu_dev2. Think of it like multiple threads of a single
+> process. They also share the address space.
 
-Don't split log messages over multiple lines, it makes grepping the logs
-harder.  Also, are combinations of two external enables valid?
+I see. The above makes more sense.
 
-> +static void tps65910_shutdown(struct platform_device *pdev)
-> +{
-> +	struct tps65910_reg *pmic = platform_get_drvdata(pdev);
-> +	int i;
-> +	int err;
-> +	dev_err(&pdev->dev, "%s() is called\n", __func__);
-> +
-> +	/* Remove all external control before shutting down the device */
-> +	for (i = 0; i < pmic->num_regulators; i++) {
-> +		if (!pmic->rdev[i])
-> +			continue;
-> +
-> +		err = tps65910_set_ext_sleep_config(pmic, i, 0);
-> +		if (err < 0)
-> +			dev_err(&pdev->dev, "Error in clearing external "
-> +				"control\n");
-> +	}
+> This is a requirement of the iommu-api which is beneficial for
+> virtualization and simplifies the usage of the api in general. The user
+> does not need to care which devices can be assigned to which domain
+> because of underlying hardware constraints. The goal of the iommu-api is
+> to hide such contraints.
 
-Why?
+Now it's clear to me. I'll send the update patch soon.
+Thank you for explaining all of this.
 
-> +/*
-> + * Regulator mode when rail is in sleep state which controlled by external
-> + * input. The regultor will be OFF if it is in sleep state by default but
-> + * can be set in LOW power mode by ORing following macro with any of
-> + * above exterenl input option.
-> + */
-> +#define TPS65910_SLEEP_CONTROL_REG_LOW_POWER		0x10
-
-There's the suspend mode API for configuring suspend modes.
-
-> +
->  /**
->   * struct tps65910_board
->   * Board platform data may be used to initialize regulators.
-> @@ -779,6 +792,7 @@ struct tps65910_board {
->  	int irq_base;
->  	int vmbch_threshold;
->  	int vmbch2_threshold;
-> +	unsigned long regulator_ext_sleep_control[TPS65910_NUM_REGS];
-
-I can't see anything in this code which will manage the enable signals?
+> 
+> 
+> 	Joerg
+> 
+> -- 
+> AMD Operating System Research Center
+> 
+> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+> General Managers: Alberto Bozzo
+> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+> 
