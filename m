@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab2AXUaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 15:30:11 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:41640 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2AXUaJ (ORCPT
+	id S1756938Ab2AXUgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 15:36:21 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:62349
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751645Ab2AXUgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 15:30:09 -0500
-Date: Tue, 24 Jan 2012 15:29:52 -0500 (EST)
-Message-Id: <20120124.152952.59640686729726715.davem@davemloft.net>
-To: florian@openwrt.org
-Cc: rubini@gnudd.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        giancarlo.asnaghi@st.com, peppe.cavallaro@st.com
-Subject: Re: stmmac: fix phy naming inconsistency
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F1E90B6.6090106@openwrt.org>
-References: <20120124092648.GA26380@mail.gnudd.com>
-	<4F1E90B6.6090106@openwrt.org>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 Jan 2012 12:29:55 -0800 (PST)
+	Tue, 24 Jan 2012 15:36:20 -0500
+X-IronPort-AV: E=Sophos;i="4.71,563,1320620400"; 
+   d="scan'208";a="128723522"
+Date: Tue, 24 Jan 2012 21:36:17 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing iounmap
+In-Reply-To: <20120124202203.GD1135@opensource.wolfsonmicro.com>
+Message-ID: <alpine.DEB.2.02.1201242135430.1998@hadrien>
+References: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr> <7FE21149F4667147B645348EC605788508FBDB@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1201241828480.1779@localhost6.localdomain6> <20120124202203.GD1135@opensource.wolfsonmicro.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Fainelli <florian@openwrt.org>
-Date: Tue, 24 Jan 2012 12:06:30 +0100
+On Tue, 24 Jan 2012, Mark Brown wrote:
 
-> Hello Alessandro,
-> 
-> On 01/24/12 10:26, Alessandro Rubini wrote:
->> After commit "db8857b stmmac: use an unique MDIO bus name" my
->> device stopped being probed because two different names were being
->> used in different places. This fixes the inconsistency.
->>
->> Signed-off-by: Alessandro Rubini<rubini@gnudd.com>
->> Acked-by: Giancarlo Asnaghi<giancarlo.asnaghi@st.com>
->> Cc: Giuseppe Cavallaro<peppe.cavallaro@st.com>
->> Cc: Florian Fainelli<florian@openwrt.org>
-> 
-> Acked-by: Florian Fainelli <florian@openwrt.org>
+> On Tue, Jan 24, 2012 at 06:29:13PM +0100, Julia Lawall wrote:
+>
+>>  	if (IS_ERR(saif->clk)) {
+>> -		ret = PTR_ERR(saif->clk);
+>>  		dev_err(&pdev->dev, "Cannot get the clock: %d\n",
+>>  			ret);
+>> -		goto failed_clk;
+>> +		return PTR_ERR(saif->clk);
+>
+> Looks like the transformation is overly enthusiastic here - the
+> assignment to ret is removed but ret is used in the log message.
 
-Applied, thanks.
+Uh, no, I did that stupid thing by hand.  I'll fix it.  Thanks.
+
+julia
