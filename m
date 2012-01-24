@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab2AXQpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:45:22 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50577 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755691Ab2AXQpT (ORCPT
+	id S1756027Ab2AXQvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:51:40 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49639 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808Ab2AXQvh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:45:19 -0500
-X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=1WUCDaJ4X04A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=SG1-INwkJVZbZwXjC5UA:9 a=JDmNLeM2MghZ9mfk-gwA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1327423516.22710.31.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] New stable 3.0-rt-rebase branch at
- git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        Clark Williams <clark@redhat.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Date: Tue, 24 Jan 2012 11:45:16 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Jan 2012 11:51:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F1EDC6D.1060102@cs.wisc.edu>
+References: <1327415447.15015.0.camel@lappy> <4F1EDC6D.1060102@cs.wisc.edu>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 24 Jan 2012 11:51:16 -0500
+Message-ID: <CA+1xoqd=d2QcDQK2Wpt659aWkbnrN4pRvEf0C_voMS7pMw-ySw@mail.gmail.com>
+Subject: Re: [BUG] Hang (deadlock?) inside iscsi_if_rx
+To: Mike Christie <michaelc@cs.wisc.edu>
+Cc: JBottomley@parallels.com, Dave Jones <davej@redhat.com>,
+        open-iscsi@googlegroups.com, linux-scsi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because people have complained that there's no more broken out patches
-of the stable -rt tree (even though all commits are publicly available
-in git), I have decided to create a "rebase" branch. This branch will
-contain all the commits for the preempt-rt stable tree based on the last
-mainline stable release.
+On Tue, Jan 24, 2012 at 11:29 AM, Mike Christie <michaelc@cs.wisc.edu> wrote:
+> On 01/24/2012 08:30 AM, Sasha Levin wrote:
+>> Hi all,
+>>
+>> I got the following hang when running trinity under KVM tool:
+>>
+>> [ 2520.824250] INFO: task trinity:31986 blocked for more than 120 seconds.
+>> [ 2520.825513] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> [ 2520.826983] trinity         D 0000000000000000  5504 31986   2767 0x00000004
+>> [ 2520.828416]  ffff88000a21ba98 0000000000000086 ffff88000a3f8000 ffff88000a3f8000
+>> [ 2520.829892]  00000000001d4340 ffff88000a21bfd8 ffff88000a21a000 00000000001d4340
+>> [ 2520.831380]  00000000001d4340 00000000001d4340 ffff88000a21bfd8 00000000001d4340
+>> [ 2520.832838] Call Trace:
+>> [ 2520.837089]  [<ffffffff8265297a>] schedule+0x3a/0x50
+>> [ 2520.837983]  [<ffffffff82651049>] __mutex_lock_common+0x209/0x5b0
+>> [ 2520.839181]  [<ffffffff81af64f3>] ? iscsi_if_rx+0x23/0xa00
+>> [ 2520.840232]  [<ffffffff81053943>] ? sched_clock+0x13/0x20
+>> [ 2520.841242]  [<ffffffff81af64f3>] ? iscsi_if_rx+0x23/0xa00
+>> [ 2520.842271]  [<ffffffff82651430>] mutex_lock_nested+0x40/0x50
+>> [ 2520.843353]  [<ffffffff81af64f3>] iscsi_if_rx+0x23/0xa00
+>> [ 2520.844461]  [<ffffffff810dfffd>] ? sub_preempt_count+0x9d/0xd0
+>> [ 2520.845576]  [<ffffffff82654130>] ? _raw_read_unlock+0x30/0x60
+>> [ 2520.846705]  [<ffffffff8221632e>] netlink_unicast+0x1ae/0x1f0
+>> [ 2520.847790]  [<ffffffff82216ae7>] netlink_sendmsg+0x227/0x350
+>> [ 2520.848884]  [<ffffffff821a490d>] ? sock_update_netprioidx+0xdd/0x1b0
+>> [ 2520.850105]  [<ffffffff821a4882>] ? sock_update_netprioidx+0x52/0x1b0
+>> [ 2520.851282]  [<ffffffff8219e376>] sock_aio_write+0x166/0x180
+>> [ 2520.852317]  [<ffffffff810dfe51>] ? get_parent_ip+0x11/0x50
+>> [ 2520.853342]  [<ffffffff811d0b1a>] do_sync_write+0xda/0x120
+>> [ 2520.854347]  [<ffffffff81109c42>] ? lock_release_holdtime+0xb2/0x160
+>> [ 2520.855533]  [<ffffffff810dfe51>] ? get_parent_ip+0x11/0x50
+>> [ 2520.856569]  [<ffffffff817914e7>] ? security_file_permission+0x27/0xb0
+>> [ 2520.857756]  [<ffffffff811d0ccc>] vfs_write+0x16c/0x180
+>> [ 2520.858713]  [<ffffffff811d0dcf>] sys_write+0x4f/0xa0
+>> [ 2520.859680]  [<ffffffff826553f9>] system_call_fastpath+0x16/0x1b
+>> [ 2520.873039] 1 lock held by trinity/31986:
+>> [ 2520.873801]  #0:  (rx_queue_mutex){+.+...}, at: [<ffffffff81af64f3>] iscsi_if_rx+0x23/0xa00
+>> [ 2520.875587] Kernel panic - not syncing: hung_task: blocked tasks
+>>
+>> From looking at the logs, there were two instances of the fuzzer blocked on a write() to a netlink socket. There are no iSCSI targets anywhere on the network.
+>>
+>
+> What does the trinity test do? Does it write random junk to netlink
+> sockets to test the kernel handlers or were you actually stressing the
+> creation of targets. If the latter what driver were you trying to create
+> targets with (iscsi_tcp, bnx2i, etc)?
 
-The v3.0-rt branch will never rebase, and should be what users develop
-git repositories with.
+It basically just writes junk into sockets. In this case it was just a
+large chunk of it written into the netlink socket.
 
-The v3.0-rt-rebase branch is a branch that will rebase at every version,
-and should *not* be used by other developmental git repositories. This
-branch will allow you to pull out the commits that will apply to the
-stable tree.
-
-At each version, the rebase branch will be tagged with a "-rebase" name
-after it.
-
-$ git tag | grep -- -rt
-v3.0.10-rt27
-v3.0.10-rt27-rebase
-v3.0.11-rt28
-v3.0.11-rt28-rebase
-v3.0.12-rt29
-v3.0.12-rt29-rebase
-v3.0.12-rt30
-v3.0.12-rt30-rebase
-v3.0.14-rt31
-v3.0.14-rt31-rebase
-v3.0.14-rt32
-v3.0.14-rt32-rebase
-v3.0.17-rt33
-v3.0.17-rt33-rebase
-v3.0.9-rt25
-v3.0.9-rt26
-
-
-As the 3.0 stable git tree started with 3.0.9-rt25, there was no need to
-create a rebase version for that branch.  All rebase tagged commits will
-equal their non-rebase counter part using git diff, but the commit IDs
-will not be the same.
-
-$ git diff v3.0.17-rt33 v3.0.17-rt33-rebase
-
-The above will show no differences.
-
-To create a quilt queue, simply do the following in your git repo:
-
-
-$ cd linux-rt-stable.git
-$ git checkout v3.0.17-rt33-rebase
-$ mkdir patches
-$ git format-patch -o patches v3.0.17
-$ ls patches > series
-$ mv series patches
-
-Now the patches directory will be a quilt queue of the broken out
-3.0.17-rt33 patches.
-
-IMPORTANT NOTE: The rebase branch and tags are very low priority. If it
-becomes too time consuming to maintain, I *will* stop adding them. They
-will be created when I have time to do so. This rebase branch is a
-convenience for people that may want it. It may be discontinued at any
-time without notice!
-
--- Steve
-
-
-
+I'm not directly trying to stress iscsi, though it might have happened
+somehow during the test accidentally (but thats not probable).
