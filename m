@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab2AXSBH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 13:01:07 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49424 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2AXSBF (ORCPT
+	id S1757266Ab2AXSCW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 13:02:22 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49332
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751645Ab2AXSCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 13:01:05 -0500
-Message-ID: <4F1EF1E8.4090909@jp.fujitsu.com>
-Date: Tue, 24 Jan 2012 13:01:12 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Tue, 24 Jan 2012 13:02:21 -0500
+Date: Tue, 24 Jan 2012 13:02:15 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: JiSheng Zhang <jszhang3@mail.ustc.edu.cn>
+Cc: xfs@oss.sgi.com, elder@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xfs: remove unecessary AIL push wakeups
+Message-ID: <20120124180215.GC23671@infradead.org>
+References: <20120113013028.6802d878@ustc>
 MIME-Version: 1.0
-To: peterz@infradead.org
-CC: kosaki.motohiro@gmail.com, oleg@redhat.com, y-goto@jp.fujitsu.com,
-        mingo@elte.hu, kamezawa.hiroyu@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-References: <1324633794.24803.48.camel@twins>  <20111223154137.GA27901@redhat.com>  <20111226172357.CE4D.E1E9C6FF@jp.fujitsu.com>  <20111226171151.GA4472@redhat.com>  <4EFB8523.6080708@gmail.com> <1327400618.2614.13.camel@laptop>
-In-Reply-To: <1327400618.2614.13.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120113013028.6802d878@ustc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/24/2012 5:23 AM, Peter Zijlstra wrote:
-> On Wed, 2011-12-28 at 16:07 -0500, KOSAKI Motohiro wrote:
->> I looked at scheduler code today briefly. now I'm afraid following code 
->> have similar race.
->>
->>
->>          if (task_contributes_to_load(p))
->>                  rq->nr_uninterruptible--;
->>
->>
->>
->> Can't following schenario be happen?
->>
->>
->> CPU0                    CPU1
->> --------------------------------------------------------
->> deactivate_task()
->>                         task->state = TASK_UNINTERRUPTIBLE;
->> activate_task()
->>    rq->nr_uninterruptible--;
->>
->>                         schedule()
->>                           deactivate_task()
->>                             rq->nr_uninterruptible++;
->>
->> Totally, nr_uninterruptible wasn't incremented.
->>
->>
->> I'm still not sure. I need to read more sched code. 
+On Fri, Jan 13, 2012 at 01:30:28AM +0800, JiSheng Zhang wrote:
 > 
-> You shouldn't ever set another tasks ->state. 
+> In commit 0030807c66("xfs: revert to using a kthread for AIL pushing"),
+> AIL pushing is revert back to use a kthread. But unfortunately, it
+> introduced a regression: there are unnecessary AIL push wakeups during
+> idle, ~20 wakeups/s. This change remove the wakeups by reverting a bit
+> more: set "tout" value as zero during idle.
+> 
+> Signed-off-by: JiSheng Zhang <jszhang3@mail.ustc.edu.cn>
 
-I'm sorry. I haven't catch your point. I think following step is
-valid kernel code. Do you disagree?
-
->>                         task->state = TASK_UNINTERRUPTIBLE;
->>                         schedule()
+Looks fine, although I'm a bit worried that I don't have the setup to
+reproduce the issue that the patch addressed any more and we might
+regress here.
 
