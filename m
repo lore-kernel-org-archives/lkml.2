@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab2AXAHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:07:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42327 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754895Ab2AWXrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:47:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:24 2012
-Message-Id: <20120123234024.749875650@clark.kroah.org>
-User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:39:07 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gary Hade <garyhade@us.ibm.com>,
-        Thomas Renninger <trenn@novell.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [21/90] x86/PCI: Ignore CPU non-addressable _CRS reserved memory resources
-In-Reply-To: <20120123234211.GA19504@kroah.com>
+	id S1755527Ab2AXAHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:07:33 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49664 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab2AXAH3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 19:07:29 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Jim Cromie <jim.cromie@gmail.com>
+Subject: [RFC][PATCH 2/3] clocksource: scx200_hrt: Convert scx200 to use clocksource_register_hz
+Date: Mon, 23 Jan 2012 16:05:49 -0800
+Message-Id: <1327363550-19952-3-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
+References: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012400-5518-0000-0000-000001BF275F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Converts the scx200 clocksource to using clocksource_register_hz.
 
-------------------
+This wasn't a straight conversion, so would like some extra review
+by the maintainers.
 
-From: Gary Hade <garyhade@us.ibm.com>
-
-commit ae5cd86455381282ece162966183d3f208c6fad7 upstream.
-
-This assures that a _CRS reserved host bridge window or window region is
-not used if it is not addressable by the CPU.  The new code either trims
-the window to exclude the non-addressable portion or totally ignores the
-window if the entire window is non-addressable.
-
-The current code has been shown to be problematic with 32-bit non-PAE
-kernels on systems where _CRS reserves resources above 4GB.
-
-Signed-off-by: Gary Hade <garyhade@us.ibm.com>
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Renninger <trenn@novell.com>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+CC: Jim Cromie <jim.cromie@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/x86/pci/acpi.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/clocksource/scx200_hrt.c |   19 ++++++-------------
+ 1 files changed, 6 insertions(+), 13 deletions(-)
 
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -149,7 +149,7 @@ setup_resource(struct acpi_resource *acp
- 	struct acpi_resource_address64 addr;
- 	acpi_status status;
- 	unsigned long flags;
--	u64 start, end;
-+	u64 start, orig_end, end;
+diff --git a/drivers/clocksource/scx200_hrt.c b/drivers/clocksource/scx200_hrt.c
+index 27f4d96..24f884c 100644
+--- a/drivers/clocksource/scx200_hrt.c
++++ b/drivers/clocksource/scx200_hrt.c
+@@ -49,9 +49,6 @@ static cycle_t read_hrt(struct clocksource *cs)
+ 	return (cycle_t) inl(scx200_cb_base + SCx200_TIMER_OFFSET);
+ }
  
- 	status = resource_to_addr(acpi_res, &addr);
- 	if (!ACPI_SUCCESS(status))
-@@ -165,7 +165,21 @@ setup_resource(struct acpi_resource *acp
- 		return AE_OK;
+-#define HRT_SHIFT_1	22
+-#define HRT_SHIFT_27	26
+-
+ static struct clocksource cs_hrt = {
+ 	.name		= "scx200_hrt",
+ 	.rating		= 250,
+@@ -63,6 +60,7 @@ static struct clocksource cs_hrt = {
  
- 	start = addr.minimum + addr.translation_offset;
--	end = addr.maximum + addr.translation_offset;
-+	orig_end = end = addr.maximum + addr.translation_offset;
+ static int __init init_hrt_clocksource(void)
+ {
++	u32 freq;
+ 	/* Make sure scx200 has initialized the configuration block */
+ 	if (!scx200_cb_present())
+ 		return -ENODEV;
+@@ -79,19 +77,14 @@ static int __init init_hrt_clocksource(void)
+ 	outb(HR_TMEN | (mhz27 ? HR_TMCLKSEL : 0),
+ 	     scx200_cb_base + SCx200_TMCNFG_OFFSET);
+ 
+-	if (mhz27) {
+-		cs_hrt.shift = HRT_SHIFT_27;
+-		cs_hrt.mult = clocksource_hz2mult((HRT_FREQ + ppm) * 27,
+-						  cs_hrt.shift);
+-	} else {
+-		cs_hrt.shift = HRT_SHIFT_1;
+-		cs_hrt.mult = clocksource_hz2mult(HRT_FREQ + ppm,
+-						  cs_hrt.shift);
+-	}
++	freq = (HRT_FREQ + ppm);
++	if (mhz27)
++		freq *= 27;
 +
-+	/* Exclude non-addressable range or non-addressable portion of range */
-+	end = min(end, (u64)iomem_resource.end);
-+	if (end <= start) {
-+		dev_info(&info->bridge->dev,
-+			"host bridge window [%#llx-%#llx] "
-+			"(ignored, not CPU addressable)\n", start, orig_end);
-+		return AE_OK;
-+	} else if (orig_end != end) {
-+		dev_info(&info->bridge->dev,
-+			"host bridge window [%#llx-%#llx] "
-+			"([%#llx-%#llx] ignored, not CPU addressable)\n",
-+			start, orig_end, end + 1, orig_end);
-+	}
+ 	printk(KERN_INFO "enabling scx200 high-res timer (%s MHz +%d ppm)\n",
+ 		mhz27 ? "27":"1", ppm);
  
- 	res = &info->res[info->res_num];
- 	res->name = info->name;
-
+-	return clocksource_register(&cs_hrt);
++	return clocksource_register_hz(&cs_hrt, freq);
+ }
+ 
+ module_init(init_hrt_clocksource);
+-- 
+1.7.3.2.146.gca209
 
