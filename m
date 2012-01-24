@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab2AXXSx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:18:53 -0500
-Received: from gate.crashing.org ([63.228.1.57]:39036 "EHLO gate.crashing.org"
+	id S1753157Ab2AXXUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:20:14 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:38289 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753126Ab2AXXSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 18:18:51 -0500
-Message-ID: <1327447120.19850.46.camel@pasglop>
-Subject: Re: error: 'cpus_in_crash' defined but not used
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 25 Jan 2012 10:18:40 +1100
-In-Reply-To: <alpine.DEB.2.01.1201201642580.2895@trent.utfs.org>
-References: <alpine.DEB.2.01.1201172006310.2895@trent.utfs.org>
-	 <alpine.DEB.2.01.1201172104410.2895@trent.utfs.org>
-	 <alpine.DEB.2.01.1201201642580.2895@trent.utfs.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
+	id S1752838Ab2AXXUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 18:20:12 -0500
+Date: Wed, 25 Jan 2012 10:20:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: linux-next: Tree for Jan 24
+Message-Id: <20120125102000.df33159bdc5f627730d9b1b4@canb.auug.org.au>
+In-Reply-To: <201201250018.16848.rjw@sisk.pl>
+References: <20120124163055.3c99bca0d5dfd754a352fb02@canb.auug.org.au>
+	<201201250018.16848.rjw@sisk.pl>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__25_Jan_2012_10_20_00_+1100_cXhyDffoyzdfSfYc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-20 at 16:45 -0800, Christian Kujau wrote:
-> > On Tue, 17 Jan 2012 at 20:13, Christian Kujau wrote:
-> > > 
-> > > compiling today's git (mainline, a25a2b8) on powerpc32 gives:
-> > > 
-> > >   CC      arch/powerpc/kernel/crash.o
-> > > cc1: warnings being treated as errors
-> > > /usr/local/src/linux-2.6-git/arch/powerpc/kernel/crash.c:49: error: 
-> > > ‘cpus_in_crash’ defined but not used
-> > > make[2]: *** [arch/powerpc/kernel/crash.o] Error 1
-> > > make[1]: *** [arch/powerpc/kernel] Error 2
-> > > make: *** [sub-make] Error 2
-> 
-> This still happens in 3.3.0-rc1 and is fixed by the patch below.
-> 
-> .config is here: http://nerdbynature.de/bits/3.2.0/
-> 
-> Thoughts?
+--Signature=_Wed__25_Jan_2012_10_20_00_+1100_cXhyDffoyzdfSfYc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Applying now, thanks.
+Hi Rafael,
 
+On Wed, 25 Jan 2012 00:18:16 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+>
+> Is there any new material touching kernel/workqueue.c or kernel/freezer.c?
+>=20
+> We seem to have a freezer regression in linux-next which doesn't seem to =
+be
+> present in my tree.
+
+There are no commits in next-20120124 that touch either of those files.
+
+Since v3.2 we have these (so in the merge window and Linus' tree):
+
+$ git shortlog v3.2..master kernel/workqueue.c kernel/freezer.c
+Tejun Heo (17):
+      freezer: fix current->state restoration race in refrigerator()
+      freezer: unexport refrigerator() and update try_to_freeze() slightly
+      freezer: implement and use kthread_freezable_should_stop()
+      freezer: rename thaw_process() to __thaw_task() and simplify the impl=
+ement
+      freezer: use dedicated lock instead of task_lock() + memory barrier
+      freezer: make freezing indicate freeze condition in effect
+      freezer: test freezable conditions while holding freezer_lock
+      freezer: kill PF_FREEZING
+      freezer: clean up freeze_processes() failure path
+      freezer: make freezing() test freeze conditions in effect instead of =
+TIF_F
+      freezer: remove should_send_signal() and update frozen()
+      freezer: fix set_freezable[_with_signal]() race
+      freezer: restructure __refrigerator()
+      freezer: use lock_task_sighand() in fake_signal_wake_up()
+      freezer: remove unused @sig_only from freeze_task()
+      freezer: kill unused set_freezable_with_signal()
+      workqueue: make alloc_workqueue() take printf fmt and args for name
+
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Thanks,
-> Christian.
-> 
-> > I could not find cpus_in_crash anywhere in the sourcetree, except for 
-> > arch/powerpc/kernel/crash.c. Moving the definition into the CONFIG_SMP 
-> > ifdef helps on my UP system, of course - not sure about other machines 
-> > though:
-> > 
-> > diff --git a/arch/powerpc/kernel/crash.c b/arch/powerpc/kernel/crash.c
-> > index 28be345..abef751 100644
-> > --- a/arch/powerpc/kernel/crash.c
-> > +++ b/arch/powerpc/kernel/crash.c
-> > @@ -46,7 +46,6 @@
-> >  
-> >  /* This keeps a track of which one is the crashing cpu. */
-> >  int crashing_cpu = -1;
-> > -static atomic_t cpus_in_crash;
-> >  static int time_to_dump;
-> >  
-> >  #define CRASH_HANDLER_MAX 3
-> > @@ -66,6 +65,7 @@ static int handle_fault(struct pt_regs *regs)
-> >  
-> >  #ifdef CONFIG_SMP
-> >  
-> > +static atomic_t cpus_in_crash;
-> >  void crash_ipi_callback(struct pt_regs *regs)
-> >  {
-> >  	static cpumask_t cpus_state_saved = CPU_MASK_NONE;
-> > 
-> > 
-> > Christian.
-> > -- 
-> > BOFH excuse #272:
-> > 
-> > Netscape has crashed
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
+--Signature=_Wed__25_Jan_2012_10_20_00_+1100_cXhyDffoyzdfSfYc
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPHzygAAoJEECxmPOUX5FEKjUQAJoUE5hOaV0MbHKACodNRwyY
+ZAS3kQ4vO8lfbXz6P1iNwjsX2hPEAz1JvKMlG9Ze+5meqGCnOhRGZpFRlJlOX1lk
+/gT4h72c8IG1SJnK8c5wrtF3XA5+97THykBPZolgon34eH894re9LxB/FigRLaws
+0eyuulayQwA7udre+YCdUNxqcuEchACM7LQNLBnvpylCOHhJnFgTtuN/WwSqiCGO
+XjczXe7qPGDoRu2q9sdI0aqGvagWGy5NwTo3FznVgbyqdJkMW1SyAPZng8g/glFo
+0dAjM9HqgmnzDqe9FRMIihBVrtc/8yLs3Ruv4fNlr2KPW8cja/fd8N/1sbFzX/f3
+EmM7pMJFz0kqam8vekGbVEHHIGyY9Dfx0nF5w2rqVAvBd/Nlaysa3wNVU4blgjCd
+O+aAdM04fiXzcQ7zqXWlGOhYEojH1LK6TgUmiBcv8FXLrAgD00BP6VNetIuX3PPl
+BoeJrjmuOR84CuIYQrnrZAnFMVfGP5hhjfE5/oatPIGAd3hgMluGStepatsQDuTI
+p6w/lnu4XB9JaAcjR0El+wntgGSOxTHBAOO7JjfU49DJOQYXwQk4Mmk/NLSf1F58
+lq0OiQN9A8rQ4L09gDIG+JcrY1CAhqIiE5NiZjNFcUpntgG9cYrhUkPOlv38hBKp
+4Jz8PSInuOZ1XQimh1ZP
+=rw8s
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__25_Jan_2012_10_20_00_+1100_cXhyDffoyzdfSfYc--
