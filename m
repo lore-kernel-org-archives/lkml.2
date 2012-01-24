@@ -1,79 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab2AXLHr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:07:47 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55260 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab2AXLHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:07:45 -0500
-Date: Tue, 24 Jan 2012 15:03:32 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Borislav Petkov <bp@alien8.de>,
-        Dan Ballard <dan@mindstab.net>, Jiri Kosina <jkosina@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>, Stephen Wilson <wilsons@start.ca>,
-        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v3] sysctl: control functionality of /proc/pid/mem
-Message-ID: <20120124110332.GA4770@albatros>
-References: <20120123212115.GA29641@www.outflux.net>
+	id S1756194Ab2AXLK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:10:27 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13373 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755734Ab2AXLKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 06:10:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="110191282"
+Date: Tue, 24 Jan 2012 05:10:14 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: disable -Wmissing-field-initializers for W=1
+Message-ID: <20120124031014.GA12570@otc-wbsnb-06>
+References: <1327290850-5405-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120123211834.GA3981@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
 Content-Disposition: inline
-In-Reply-To: <20120123212115.GA29641@www.outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120123211834.GA3981@sepie.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ed kernel-hardening)
 
-On Mon, Jan 23, 2012 at 13:21 -0800, Kees Cook wrote:
-> 
-> Add the "proc_pid_mem" sysctl to control whether or not /proc/pid/mem is
-> allowed to work: 0: disabled, 1: read only, 2: read/write (default).
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-...
-> index f487f25..6fd4bc0 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -103,6 +103,7 @@ extern int percpu_pagelist_fraction;
->  extern int compat_log;
->  extern int latencytop_enabled;
->  extern int sysctl_nr_open_min, sysctl_nr_open_max;
-> +extern int sysctl_proc_pid_mem;
->  #ifndef CONFIG_MMU
->  extern int sysctl_nr_trim_pages;
->  #endif
-> @@ -1004,6 +1005,15 @@ static struct ctl_table kern_table[] = {
->  		.proc_handler	= proc_dointvec,
->  	},
->  #endif
-> +	{
-> +		.procname	= "proc_pid_mem",
-> +		.data		= &sysctl_proc_pid_mem,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec_minmax,
-> +		.extra1		= &zero,
-> +		.extra2		= &two,
-> +	},
+--82I3+IH0IqGh5yIs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-While I fully agree that we should step by step opt out all deprecated and
-legacy features, which are not widely used nowadays and are probably
-dangerous from the security POV, but we should define a standart way
-of doing it.  E.g. moving all such stuff to some sysctl group, not bloating
-kernel.*.  Probably sysctl dir kernel.legacy.*?  Then this sysctl would be
-kernel.legacy.proc_pid_mem.
+On Mon, Jan 23, 2012 at 10:18:34PM +0100, Michal Marek wrote:
+> On Mon, Jan 23, 2012 at 05:54:10AM +0200, Kirill A. Shutemov wrote:
+> > -Wmissing-field-initializers is too noisy to be useful on W=3D1. Let's
+> > move it to W=3D2.
+> >=20
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > ---
+> >  scripts/Makefile.build |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> >=20
+> > diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+> > index d2b366c..1535a2f 100644
+> > --- a/scripts/Makefile.build
+> > +++ b/scripts/Makefile.build
+> > @@ -62,7 +62,7 @@ endif
+> >  ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
+> >  warning-  :=3D $(empty)
+> > =20
+> > -warning-1 :=3D -Wextra -Wunused -Wno-unused-parameter
+> > +warning-1 :=3D -Wextra -Wunused -Wno-unused-parameter -Wno-missing-fie=
+ld-initializers
+>=20
+> I would use $(call cc-disable-warning, missing-field-initializers), so
+> that W=3D1 has a chance of working with gcc 3.x.
 
-Thanks,
+Something like this?
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+---
+
+=46rom 9ee1c7006d14efddcb7cd52053b97aa39edf6ec3 Mon Sep 17 00:00:00 2001
+=46rom: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Mon, 23 Jan 2012 04:59:28 +0200
+Subject: [PATCH] kbuild: disable -Wmissing-field-initializers for W=3D1
+
+-Wmissing-field-initializers is too noisy to be useful on W=3D1. Let's
+move it to W=3D2.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ scripts/Makefile.build |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index d2b366c..ff1720d 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -69,6 +69,7 @@ warning-1 +=3D -Wmissing-prototypes
+ warning-1 +=3D -Wold-style-definition
+ warning-1 +=3D $(call cc-option, -Wmissing-include-dirs)
+ warning-1 +=3D $(call cc-option, -Wunused-but-set-variable)
++warning-1 +=3D $(call cc-disable-warning, missing-field-initializers)
+=20
+ warning-2 :=3D -Waggregate-return
+ warning-2 +=3D -Wcast-align
+@@ -76,6 +77,7 @@ warning-2 +=3D -Wdisabled-optimization
+ warning-2 +=3D -Wnested-externs
+ warning-2 +=3D -Wshadow
+ warning-2 +=3D $(call cc-option, -Wlogical-op)
++warning-2 +=3D $(call cc-option, -Wmissing-field-initializers)
+=20
+ warning-3 :=3D -Wbad-function-cast
+ warning-3 +=3D -Wcast-qual
+--=20
+1.7.8.3
+
+
+--=20
+ Kirill A. Shutemov
+
+--82I3+IH0IqGh5yIs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPHiEWAAoJEAd+omnVudOMYUcP/2epf+3BL0V7ruoaNVjt/lPp
+LbRfPSxZvUimjhbmd1ShbkDz3KYWtM1fMFkk8ExKjIjpVwx5M9TEWEAmINZf0e6Q
+pP0FKtQwfCyLS1K41WA5WEVJfScdJVoY5UQqZkluHvTYu2M6ktsVoCza/OPpHEvh
+V2fIjJl+RL0Tclrl36VMwaQzej3HBhWXsKJiewi/Yazc/9pd5ruF/XRanzBMXYmI
+9KTlm2NqBTeMwB11lWKpc6npxU3GTr3HxfK2eesaI6W5z2QysLeuvZAYFAikSbag
+9KfvPrrPGCrHXmTR1plWvGNMGG5SpEx06+l6XSacNnolPgRw/AmAyPnHVhSwpx20
+7RIkT4dlLcBhv8eUjMN7pSXyslvwJP3X/o2Xp+bbk+mkPHGzEPqQvyI667Vju68/
+euOqLeqKN+fs6ZHda/5PDQdRIPJ3bbmSQcKgPSH0x0z75EqIi4JikHCuXkLXeHqn
+wOEb0cWvcLirhALPLuz0ZT80ZcPAz0guu6qgwW10yCI0rHuc3l+a4nYg5TjWPCog
+RamWQFN7CyjF17FW0z8itIk75vDHv5MtNsgDfmdLQhzyVK5EodC/9aDQXf26BAoh
+djHKMr+vhK2IdIw/+mOJIYTgPC125mQMx8pu77pfqNH9mc2Wbg/5MmRuCV4GdBzb
+0jiuUn1f8eXqh/J0szBM
+=aAZg
+-----END PGP SIGNATURE-----
+
+--82I3+IH0IqGh5yIs--
