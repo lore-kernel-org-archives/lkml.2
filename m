@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2AXQyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:54:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38075 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755706Ab2AXQyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:54:50 -0500
-Date: Tue, 24 Jan 2012 08:52:04 -0800
-From: Greg KH <gregkh@suse.de>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [000/129] 3.2.2-stable review
-Message-ID: <20120124165204.GB26552@suse.de>
-References: <20120124024041.GA18422@kroah.com>
- <4F1E5B88.50801@compulab.co.il>
+	id S1756120Ab2AXQ5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:57:14 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54651 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab2AXQ5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 11:57:12 -0500
+Date: Tue, 24 Jan 2012 17:57:11 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Simon Glass <sjg@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot
+ time
+Message-ID: <20120124165711.GC3836@linutronix.de>
+References: <CAPnjgZ0-VdAzudGFopBd+5j4HhOp10C=x0kPuJEZyaYSzwjBAA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4F1E5B88.50801@compulab.co.il>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 09:19:36AM +0200, Igor Grinberg wrote:
-> Hi Greg,
-> 
-> On 01/24/12 04:40, Greg KH wrote:
-> > #include <stable/formletter.h>
-> > #define RELEASE		3.2.2-rc1
-> > #define NUM_PATCHES	129
-> > #define RESPONSE_DATE	"Wed, Jan 25, 2012 20:00:00 +0000"
-> > #define LOCATION	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.2-rc1.gz
-> > 
-> > diffstat below, no one really reads these things anyway...
-> 
-> This is not exactly true...
-> I'm (and I think I'm not the only one) going through the diffstat
-> to see if there are any files of my interest involved,
-> because it is not always straight forward to understand what
-> the patch subject means and also there are too many of them to read all...
-> So, for me, the compromise between being updated on important issues
-> and spend not too much time reading patches subjects/message is
-> read the diffstat and if I find anything that is of my interest,
-> then go to the patches...
-> May be not the best, but works for me...
+* Alan Stern | 2012-01-21 11:11:09 [-0500]:
 
-Sorry, I didn't mean to imply that no one reads the diffstat, I ment the
-other generic wording that I've had in the announcement emails for the
-past 6 years.
+>Doing time-consuming things later won't make any difference.  That is,
+>suppose the boot sequence performs activities A and B, where A takes a
+>long time.  Doing A later, so that the boot sequence performs B and
+>then A, won't change the total time required.
 
-Glad it's still useful for you.
+That is true. However if you show the gui _now_ and look for USB later
+then it feels faster and this is usually enough.
 
-greg k-h
+>Alan Stern
+
+Sebastian
