@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab2AXCqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:46:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50324 "EHLO mx2.suse.de"
+	id S932503Ab2AXCqo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:46:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50410 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932350Ab2AXCp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:45:58 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:27 2012
-Message-Id: <20120124023927.840480908@clark.kroah.org>
+	id S932535Ab2AXCqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:46:40 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:31 2012
+Message-Id: <20120124023931.583421981@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:24 -0800
+Date: Mon, 23 Jan 2012 18:35:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Grant Grundler <grundler@chromium.org>, Allan Chou <allan@asix.com.tw>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [044/129] asix: fix setting custom MAC address on Asix 88178 devices
+        alan@lxorguk.ukuu.org.uk,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>
+Subject: [086/129] HID: multitouch: add support of Atmel multitouch panels
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1263
-Lines: 38
+Content-Length: 1598
+Lines: 52
 
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 
-commit 71bc5d94061516c4e70303570128797bcf768b10 upstream.
+commit b105712469d957cf1ab223c1ea72b7ba88edb926 upstream.
 
-In kernel v3.2 initialization sequence for Asix 88178 devices was changed so
-that hardware is reseted on every time interface is brought up (ifconfig up),
-instead just at USB probe time. This causes problem with setting custom MAC
-address to device as ax88178_reset causes reload of MAC address from EEPROM.
-
-This patch fixes the issue by rewriting MAC address at end of ax88178_reset.
-
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Acked-by: Grant Grundler <grundler@chromium.org>
-Cc: Allan Chou <allan@asix.com.tw>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Acked-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/usb/asix.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/hid/Kconfig          |    1 +
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |    5 +++++
+ 3 files changed, 9 insertions(+)
 
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -1316,6 +1316,13 @@ static int ax88178_reset(struct usbnet *
- 	if (ret < 0)
- 		return ret;
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -335,6 +335,7 @@ config HID_MULTITOUCH
+ 	  Say Y here if you have one of the following devices:
+ 	  - 3M PCT touch screens
+ 	  - ActionStar dual touch panels
++	  - Atmel panels
+ 	  - Cando dual touch panels
+ 	  - Chunghwa panels
+ 	  - CVTouch panels
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -145,6 +145,9 @@
+ #define USB_DEVICE_ID_ATEN_4PORTKVM	0x2205
+ #define USB_DEVICE_ID_ATEN_4PORTKVMC	0x2208
  
-+	/* Rewrite MAC address */
-+	memcpy(data->mac_addr, dev->net->dev_addr, ETH_ALEN);
-+	ret = asix_write_cmd(dev, AX_CMD_WRITE_NODE_ID, 0, 0, ETH_ALEN,
-+							data->mac_addr);
-+	if (ret < 0)
-+		return ret;
++#define USB_VENDOR_ID_ATMEL		0x03eb
++#define USB_DEVICE_ID_ATMEL_MULTITOUCH	0x211c
 +
- 	ret = asix_write_rx_ctl(dev, AX_DEFAULT_RX_CTL);
- 	if (ret < 0)
- 		return ret;
+ #define USB_VENDOR_ID_AVERMEDIA		0x07ca
+ #define USB_DEVICE_ID_AVER_FM_MR800	0xb800
+ 
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -615,6 +615,11 @@ static const struct hid_device_id mt_dev
+ 		HID_USB_DEVICE(USB_VENDOR_ID_ACTIONSTAR,
+ 			USB_DEVICE_ID_ACTIONSTAR_1011) },
+ 
++	/* Atmel panels */
++	{ .driver_data = MT_CLS_SERIAL,
++		HID_USB_DEVICE(USB_VENDOR_ID_ATMEL,
++			USB_DEVICE_ID_ATMEL_MULTITOUCH) },
++
+ 	/* Cando panels */
+ 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
 
 
