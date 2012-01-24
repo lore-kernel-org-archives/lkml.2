@@ -1,94 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab2AXXUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:20:14 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:38289 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838Ab2AXXUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 18:20:12 -0500
-Date: Wed, 25 Jan 2012 10:20:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: linux-next: Tree for Jan 24
-Message-Id: <20120125102000.df33159bdc5f627730d9b1b4@canb.auug.org.au>
-In-Reply-To: <201201250018.16848.rjw@sisk.pl>
-References: <20120124163055.3c99bca0d5dfd754a352fb02@canb.auug.org.au>
-	<201201250018.16848.rjw@sisk.pl>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__25_Jan_2012_10_20_00_+1100_cXhyDffoyzdfSfYc"
+	id S1753266Ab2AXXWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:22:11 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43339 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab2AXXWK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 18:22:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJd=RBC+y3pVAsbCNP+mBm6Lfcx5XpTcg6D-us5J1E+W+_JcAQ@mail.gmail.com>
+References: <CAJd=RBBG5X8=vkdRTCZ1bvTaVxPAVun9O+yiX0SM6yDzrxDGDQ@mail.gmail.com>
+	<CALWz4iyB0oSMBsfLJYD+xrB7ua9bRg5FD=cw4Sc-EdG1iLynow@mail.gmail.com>
+	<CAJd=RBC+y3pVAsbCNP+mBm6Lfcx5XpTcg6D-us5J1E+W+_JcAQ@mail.gmail.com>
+Date: Tue, 24 Jan 2012 15:22:09 -0800
+Message-ID: <CALWz4iznfeLX1u00bWWf_ziThCrJNAJUQVBRu8Rv9yDsdMmKsQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: vmscan: check mem cgroup over reclaimed
+From: Ying Han <yinghan@google.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__25_Jan_2012_10_20_00_+1100_cXhyDffoyzdfSfYc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Rafael,
-
-On Wed, 25 Jan 2012 00:18:16 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Mon, Jan 23, 2012 at 7:45 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> Hi all
 >
-> Is there any new material touching kernel/workqueue.c or kernel/freezer.c?
->=20
-> We seem to have a freezer regression in linux-next which doesn't seem to =
-be
-> present in my tree.
+> On Tue, Jan 24, 2012 at 3:04 AM, Ying Han <yinghan@google.com> wrote:
+>> On Sun, Jan 22, 2012 at 5:55 PM, Hillf Danton <dhillf@gmail.com> wrote:
+>>> To avoid reduction in performance of reclaimee, checking overreclaim is added
+>>> after shrinking lru list, when pages are reclaimed from mem cgroup.
+>>>
+>>> If over reclaim occurs, shrinking remaining lru lists is skipped, and no more
+>>> reclaim for reclaim/compaction.
+>>>
+>>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>>> ---
+>>>
+>>> --- a/mm/vmscan.c       Mon Jan 23 00:23:10 2012
+>>> +++ b/mm/vmscan.c       Mon Jan 23 09:57:20 2012
+>>> @@ -2086,6 +2086,7 @@ static void shrink_mem_cgroup_zone(int p
+>>>        unsigned long nr_reclaimed, nr_scanned;
+>>>        unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+>>>        struct blk_plug plug;
+>>> +       bool memcg_over_reclaimed = false;
+>>>
+>>>  restart:
+>>>        nr_reclaimed = 0;
+>>> @@ -2103,6 +2104,11 @@ restart:
+>>>
+>>>                                nr_reclaimed += shrink_list(lru, nr_to_scan,
+>>>                                                            mz, sc, priority);
+>>> +
+>>> +                               memcg_over_reclaimed = !scanning_global_lru(mz)
+>>> +                                       && (nr_reclaimed >= nr_to_reclaim);
+>>> +                               if (memcg_over_reclaimed)
+>>> +                                       goto out;
+>>
+>> Why we need the change here? Do we have number to demonstrate?
+>
+> See below please 8-)
+>
+>>
+>>
+>>>                        }
+>>>                }
+>>>                /*
+>>> @@ -2116,6 +2122,7 @@ restart:
+>>>                if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
+>>>                        break;
+>>>        }
+>>> +out:
+>>>        blk_finish_plug(&plug);
+>>>        sc->nr_reclaimed += nr_reclaimed;
+>>>
+>>> @@ -2127,7 +2134,8 @@ restart:
+>>>                shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
+>>>
+>>>        /* reclaim/compaction might need reclaim to continue */
+>>> -       if (should_continue_reclaim(mz, nr_reclaimed,
+>>> +       if (!memcg_over_reclaimed &&
+>>> +           should_continue_reclaim(mz, nr_reclaimed,
+>>>                                        sc->nr_scanned - nr_scanned, sc))
+>>
+>> This changes the existing logic. What if the nr_reclaimed is greater
+>> than nr_to_reclaim, but smaller than pages_for_compaction? The
+>> existing logic is to continue reclaiming.
+>>
+> With soft limit available, what if nr_to_reclaim set to be the number of
+> pages exceeding soft limit? With over reclaim abused, what are the targets
+> of soft limit?
 
-There are no commits in next-20120124 that touch either of those files.
+The nr_to_reclaim is set to SWAP_CLUSTER_MAX (32) for direct reclaim
+and ULONG_MAX for background reclaim. Not sure we can set it, but it
+is possible the res_counter_soft_limit_excess equal to that target
+value. The current soft limit mechanism provides a clue of WHERE to
+reclaim pages when there is memory pressure, it doesn't change the
+reclaim target as it was before.
 
-Since v3.2 we have these (so in the merge window and Linus' tree):
+Overreclaim a cgroup under its softlimit is bad, but we should be
+careful not introducing side effect before providing the guarantee.
+Here, the should_continue_reclaim() has logic of freeing a bit more
+order-0 pages for compaction. The logic got changed after this.
 
-$ git shortlog v3.2..master kernel/workqueue.c kernel/freezer.c
-Tejun Heo (17):
-      freezer: fix current->state restoration race in refrigerator()
-      freezer: unexport refrigerator() and update try_to_freeze() slightly
-      freezer: implement and use kthread_freezable_should_stop()
-      freezer: rename thaw_process() to __thaw_task() and simplify the impl=
-ement
-      freezer: use dedicated lock instead of task_lock() + memory barrier
-      freezer: make freezing indicate freeze condition in effect
-      freezer: test freezable conditions while holding freezer_lock
-      freezer: kill PF_FREEZING
-      freezer: clean up freeze_processes() failure path
-      freezer: make freezing() test freeze conditions in effect instead of =
-TIF_F
-      freezer: remove should_send_signal() and update frozen()
-      freezer: fix set_freezable[_with_signal]() race
-      freezer: restructure __refrigerator()
-      freezer: use lock_task_sighand() in fake_signal_wake_up()
-      freezer: remove unused @sig_only from freeze_task()
-      freezer: kill unused set_freezable_with_signal()
-      workqueue: make alloc_workqueue() take printf fmt and args for name
+--Ying
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Wed__25_Jan_2012_10_20_00_+1100_cXhyDffoyzdfSfYc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPHzygAAoJEECxmPOUX5FEKjUQAJoUE5hOaV0MbHKACodNRwyY
-ZAS3kQ4vO8lfbXz6P1iNwjsX2hPEAz1JvKMlG9Ze+5meqGCnOhRGZpFRlJlOX1lk
-/gT4h72c8IG1SJnK8c5wrtF3XA5+97THykBPZolgon34eH894re9LxB/FigRLaws
-0eyuulayQwA7udre+YCdUNxqcuEchACM7LQNLBnvpylCOHhJnFgTtuN/WwSqiCGO
-XjczXe7qPGDoRu2q9sdI0aqGvagWGy5NwTo3FznVgbyqdJkMW1SyAPZng8g/glFo
-0dAjM9HqgmnzDqe9FRMIihBVrtc/8yLs3Ruv4fNlr2KPW8cja/fd8N/1sbFzX/f3
-EmM7pMJFz0kqam8vekGbVEHHIGyY9Dfx0nF5w2rqVAvBd/Nlaysa3wNVU4blgjCd
-O+aAdM04fiXzcQ7zqXWlGOhYEojH1LK6TgUmiBcv8FXLrAgD00BP6VNetIuX3PPl
-BoeJrjmuOR84CuIYQrnrZAnFMVfGP5hhjfE5/oatPIGAd3hgMluGStepatsQDuTI
-p6w/lnu4XB9JaAcjR0El+wntgGSOxTHBAOO7JjfU49DJOQYXwQk4Mmk/NLSf1F58
-lq0OiQN9A8rQ4L09gDIG+JcrY1CAhqIiE5NiZjNFcUpntgG9cYrhUkPOlv38hBKp
-4Jz8PSInuOZ1XQimh1ZP
-=rw8s
------END PGP SIGNATURE-----
-
---Signature=_Wed__25_Jan_2012_10_20_00_+1100_cXhyDffoyzdfSfYc--
+> Thanks
+> Hillf
