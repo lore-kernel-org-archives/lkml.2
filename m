@@ -1,159 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab2AXSf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 13:35:28 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:59205 "HELO
+	id S1757431Ab2AXSfl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 13:35:41 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59208 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756192Ab2AXSfZ (ORCPT
+	with SMTP id S1756192Ab2AXSfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 13:35:25 -0500
-Date: Tue, 24 Jan 2012 13:35:24 -0500 (EST)
+	Tue, 24 Jan 2012 13:35:38 -0500
+Date: Tue, 24 Jan 2012 13:35:37 -0500 (EST)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
 To: Greg KH <greg@kroah.com>
 cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michael Buesch <m@bues.ch>, Joerg Roedel <joerg.roedel@amd.com>,
-        <netdev@vger.kernel.org>, <xen-devel@lists.xensource.com>,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/5] Remove useless get_driver()/put_driver() calls
-Message-ID: <Pine.LNX.4.44L0.1201241317120.1200-100000@iolanthe.rowland.org>
+Subject: [PATCH 5/5] Eliminate get_driver() and put_driver()
+Message-ID: <Pine.LNX.4.44L0.1201241323290.1200-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the removal of get_driver()/put_driver(), this patch
-(as1512) gets rid of various useless and unnecessary calls in several
-drivers.  In some cases it may be desirable to pin the driver by
-calling try_module_get(), but that can be done later.
+Now that there are no users of get_driver() or put_driver(), this
+patch (as1513) removes those routines completely.
 
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Michael Buesch <m@bues.ch>
-CC: Joerg Roedel <joerg.roedel@amd.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
 ---
 
- drivers/net/phy/phy_device.c |    6 +-----
- drivers/pci/xen-pcifront.c   |    3 +--
- drivers/ssb/main.c           |   20 ++------------------
- lib/dma-debug.c              |    3 +--
- 4 files changed, 5 insertions(+), 27 deletions(-)
+ drivers/base/driver.c  |   28 ----------------------------
+ include/linux/device.h |    2 --
+ 2 files changed, 30 deletions(-)
 
-Index: usb-3.3/drivers/net/phy/phy_device.c
+Index: usb-3.3/drivers/base/driver.c
 ===================================================================
---- usb-3.3.orig/drivers/net/phy/phy_device.c
-+++ usb-3.3/drivers/net/phy/phy_device.c
-@@ -915,9 +915,7 @@ static int phy_probe(struct device *dev)
- 
- 	phydev = to_phy_device(dev);
- 
--	/* Make sure the driver is held.
--	 * XXX -- Is this correct? */
--	drv = get_driver(phydev->dev.driver);
-+	drv = phydev->dev.driver;
- 	phydrv = to_phy_driver(drv);
- 	phydev->drv = phydrv;
- 
-@@ -957,8 +955,6 @@ static int phy_remove(struct device *dev
- 
- 	if (phydev->drv->remove)
- 		phydev->drv->remove(phydev);
--
--	put_driver(dev->driver);
- 	phydev->drv = NULL;
- 
- 	return 0;
-Index: usb-3.3/drivers/pci/xen-pcifront.c
-===================================================================
---- usb-3.3.orig/drivers/pci/xen-pcifront.c
-+++ usb-3.3/drivers/pci/xen-pcifront.c
-@@ -593,7 +593,7 @@ static pci_ers_result_t pcifront_common_
- 	}
- 	pdrv = pcidev->driver;
- 
--	if (get_driver(&pdrv->driver)) {
-+	if (pdrv->driver) {
- 		if (pdrv->err_handler && pdrv->err_handler->error_detected) {
- 			dev_dbg(&pcidev->dev,
- 				"trying to call AER service\n");
-@@ -623,7 +623,6 @@ static pci_ers_result_t pcifront_common_
- 				}
- 			}
- 		}
--		put_driver(&pdrv->driver);
- 	}
- 	if (!flag)
- 		result = PCI_ERS_RESULT_NONE;
-Index: usb-3.3/drivers/ssb/main.c
-===================================================================
---- usb-3.3.orig/drivers/ssb/main.c
-+++ usb-3.3/drivers/ssb/main.c
-@@ -140,19 +140,6 @@ static void ssb_device_put(struct ssb_de
- 		put_device(dev->dev);
+--- usb-3.3.orig/drivers/base/driver.c
++++ usb-3.3/drivers/base/driver.c
+@@ -153,34 +153,6 @@ int driver_add_kobj(struct device_driver
  }
+ EXPORT_SYMBOL_GPL(driver_add_kobj);
  
--static inline struct ssb_driver *ssb_driver_get(struct ssb_driver *drv)
+-/**
+- * get_driver - increment driver reference count.
+- * @drv: driver.
+- */
+-struct device_driver *get_driver(struct device_driver *drv)
 -{
--	if (drv)
--		get_driver(&drv->drv);
--	return drv;
--}
+-	if (drv) {
+-		struct driver_private *priv;
+-		struct kobject *kobj;
 -
--static inline void ssb_driver_put(struct ssb_driver *drv)
+-		kobj = kobject_get(&drv->p->kobj);
+-		priv = to_driver(kobj);
+-		return priv->driver;
+-	}
+-	return NULL;
+-}
+-EXPORT_SYMBOL_GPL(get_driver);
+-
+-/**
+- * put_driver - decrement driver's refcount.
+- * @drv: driver.
+- */
+-void put_driver(struct device_driver *drv)
 -{
--	if (drv)
--		put_driver(&drv->drv);
+-	kobject_put(&drv->p->kobj);
 -}
+-EXPORT_SYMBOL_GPL(put_driver);
 -
- static int ssb_device_resume(struct device *dev)
+ static int driver_add_groups(struct device_driver *drv,
+ 			     const struct attribute_group **groups)
  {
- 	struct ssb_device *ssb_dev = dev_to_ssb_dev(dev);
-@@ -250,11 +237,9 @@ int ssb_devices_freeze(struct ssb_bus *b
- 			ssb_device_put(sdev);
- 			continue;
- 		}
--		sdrv = ssb_driver_get(drv_to_ssb_drv(sdev->dev->driver));
--		if (!sdrv || SSB_WARN_ON(!sdrv->remove)) {
--			ssb_device_put(sdev);
-+		sdrv = drv_to_ssb_drv(sdev->dev->driver);
-+		if (SSB_WARN_ON(!sdrv->remove))
- 			continue;
--		}
- 		sdrv->remove(sdev);
- 		ctx->device_frozen[i] = 1;
- 	}
-@@ -293,7 +278,6 @@ int ssb_devices_thaw(struct ssb_freeze_c
- 				   dev_name(sdev->dev));
- 			result = err;
- 		}
--		ssb_driver_put(sdrv);
- 		ssb_device_put(sdev);
- 	}
- 
-Index: usb-3.3/lib/dma-debug.c
+Index: usb-3.3/include/linux/device.h
 ===================================================================
---- usb-3.3.orig/lib/dma-debug.c
-+++ usb-3.3/lib/dma-debug.c
-@@ -170,7 +170,7 @@ static bool driver_filter(struct device
- 		return false;
+--- usb-3.3.orig/include/linux/device.h
++++ usb-3.3/include/linux/device.h
+@@ -238,8 +238,6 @@ struct device_driver {
+ extern int __must_check driver_register(struct device_driver *drv);
+ extern void driver_unregister(struct device_driver *drv);
  
- 	/* driver filter on but not yet initialized */
--	drv = get_driver(dev->driver);
-+	drv = dev->driver;
- 	if (!drv)
- 		return false;
- 
-@@ -185,7 +185,6 @@ static bool driver_filter(struct device
- 	}
- 
- 	read_unlock_irqrestore(&driver_name_lock, flags);
--	put_driver(drv);
- 
- 	return ret;
- }
+-extern struct device_driver *get_driver(struct device_driver *drv);
+-extern void put_driver(struct device_driver *drv);
+ extern struct device_driver *driver_find(const char *name,
+ 					 struct bus_type *bus);
+ extern int driver_probe_done(void);
 
