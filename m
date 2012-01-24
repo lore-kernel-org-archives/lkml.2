@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab2AXJpl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 04:45:41 -0500
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:35554 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755327Ab2AXJpi (ORCPT
+	id S1755661Ab2AXJpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 04:45:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43645 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755470Ab2AXJpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jan 2012 04:45:38 -0500
-Date: Tue, 24 Jan 2012 11:45:33 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: usb: update Michal Nazarewicz's email address
-Message-ID: <20120124094532.GY27414@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <c29768d070313ce590395418442a346c91fe41f8.1326463041.git.mina86@mina86.com>
+Message-ID: <4F1E7DC0.5060208@canonical.com>
+Date: Tue, 24 Jan 2012 10:45:36 +0100
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="utG8zEvBNE7w4yrA"
-Content-Disposition: inline
-In-Reply-To: <c29768d070313ce590395418442a346c91fe41f8.1326463041.git.mina86@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seth Heasley <seth.heasley@intel.com>
+CC: tiwai@suse.de, alsa-devel@alsa-project.org, perex@perex.cz,
+        james.d.ralston@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 1/6] hda_intel: Add Lynx Point HD Audio Controller
+ DeviceIDs
+References: <201201231624.31275.seth.heasley@intel.com>
+In-Reply-To: <201201231624.31275.seth.heasley@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/24/2012 01:24 AM, Seth Heasley wrote:
+> This patch adds the HD Audio DeviceIDs for the Intel Lynx Point PCH.
 
---utG8zEvBNE7w4yrA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks. As we asked for oak trail: can you confirm you prefer DMA 
+Position buffers for detecting current playback/recording position, over 
+using the LPIB register?
 
-On Fri, Jan 13, 2012 at 03:05:16PM +0100, Michal Nazarewicz wrote:
-> The m.nazarewicz@samsung.com email address is no longer valid,
-> so this commit replaces it with mina86@mina86.com which is
-> employer-agnostic and thus should be valid for foreseeable
-> feature.
->=20
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Also; these types of quirks should have a line "Cc: stable@kernel.org" 
+added to their commit messages, that will make it automatically be 
+applied to some of the older kernels in due time.
 
-applied, thanks
+>
+> Signed-off-by: Seth Heasley<seth.heasley@intel.com>
+> ---
+>   sound/pci/hda/hda_intel.c |    5 +++++
+>   1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+> index 0852e20..adb4fa7 100644
+> --- a/sound/pci/hda/hda_intel.c
+> +++ b/sound/pci/hda/hda_intel.c
+> @@ -148,6 +148,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
+>   			 "{Intel, PCH},"
+>   			 "{Intel, CPT},"
+>   			 "{Intel, PPT},"
+> +			 "{Intel, LPT},"
+>   			 "{Intel, PBG},"
+>   			 "{Intel, SCH},"
+>   			 "{ATI, SB450},"
+> @@ -2989,6 +2990,10 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+>   	{ PCI_DEVICE(0x8086, 0x1e20),
+>   	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+>   	  AZX_DCAPS_BUFSIZE},
+> +	/* Lynx Point */
+> +	{ PCI_DEVICE(0x8086, 0x8c20),
+> +	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+> +	  AZX_DCAPS_BUFSIZE},
+>   	/* SCH */
+>   	{ PCI_DEVICE(0x8086, 0x811b),
+>   	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
 
---=20
-balbi
 
---utG8zEvBNE7w4yrA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPHn28AAoJEIaOsuA1yqREPLEP/jschO5gVvBMOf58OX+IxWkc
-eV3kG1psXo7G8IGILNFYR3RS2MVAw59nZXnunRJQ/CctKysBhYTX28yOFvxzRawo
-q/MIok2VRaOxFbuBruywWU7HBJo4Jb1Yy24rtqk2gLo5Tf/td7fP3Muye7DEfpG/
-7hSgURK3f9KjVwMUMwYxr0vPNiYkcNtj0JpqK/UqxbPG0ydAU1Tvo3qLisOhHq9Q
-6PUTzFFPMZ+4JUQ5fAkVUAUOz0FjdI+/IlM3SV5LV7PCq86tGZ6cBu0yBIy14qph
-o9CNyeRnouZ0187Hy9pD8aVLeI5R8IPzBuKAMYLB2WOVwS3e2dN3fm/7yp87fw5B
-pw3Wm2+CCk5ZG235ohMqll7NvY5AmRk+7ZnD8uCjzq/fzXz0vd0ztiwHVEROxbHD
-SdXFkTSuwSVg34F7feyHsx+DbYe6w3lZX62vqO1cb4LOMz2A9xX0+eEWS3Spv7Y1
-c/2yw59pHqPco10GAAnuuhbGNuDXvKsix7bFL05IANGNaPN7/jskTDAS1DLQyrEi
-39tPlCAXUJn1u36Uu7wbFlOim30VTxbMqccsvEnJC5chX00/HeT9XB13waS6u3QN
-SeAdhose+Sqj02+n6WLweaiKJJ/U0X/srn+XG2NMN+PIvBkJjIaXwbby20YCwHjw
-sjE7T5RRN0LzobrpltKJ
-=ocf3
------END PGP SIGNATURE-----
-
---utG8zEvBNE7w4yrA--
+-- 
+David Henningsson, Canonical Ltd.
+http://launchpad.net/~diwic
