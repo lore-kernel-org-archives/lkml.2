@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab2AXLwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 06:52:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45604 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755697Ab2AXLwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 06:52:36 -0500
-Date: Tue, 24 Jan 2012 12:52:34 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>
-Subject: Re: [PATCH 4/8] xfs: Move ilock before transaction start in
- xfs_setattr_size()
-Message-ID: <20120124115234.GD15974@quack.suse.cz>
-References: <1327091686-23177-1-git-send-email-jack@suse.cz>
- <1327091686-23177-5-git-send-email-jack@suse.cz>
- <20120124065945.GL15102@dastard>
+	id S1756532Ab2AXLzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 06:55:25 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54230 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756034Ab2AXLzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 06:55:24 -0500
+Date: Tue, 24 Jan 2012 15:51:04 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Borislav Petkov <bp@alien8.de>,
+        Dan Ballard <dan@mindstab.net>, Jiri Kosina <jkosina@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, Stephen Wilson <wilsons@start.ca>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v3] sysctl: control functionality of /proc/pid/mem
+Message-ID: <20120124115104.GA5743@albatros>
+References: <20120123212115.GA29641@www.outflux.net>
+ <20120124110332.GA4770@albatros>
+ <CACVxJT95OjBkqh01AGVLVXDEw3YNaEcCNptgM9kbb47AG5C7zg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120124065945.GL15102@dastard>
+In-Reply-To: <CACVxJT95OjBkqh01AGVLVXDEw3YNaEcCNptgM9kbb47AG5C7zg@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 24-01-12 17:59:45, Dave Chinner wrote:
-> On Fri, Jan 20, 2012 at 09:34:42PM +0100, Jan Kara wrote:
-> > In xfs we first take ilock and start transaction afterwards.
+On Tue, Jan 24, 2012 at 13:12 +0200, Alexey Dobriyan wrote:
+> On 1/24/12, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> >> +		.procname	= "proc_pid_mem",
+> >> +		.data		= &sysctl_proc_pid_mem,
+> >> +		.maxlen		= sizeof(int),
+> >> +		.mode		= 0644,
+> >> +		.proc_handler	= proc_dointvec_minmax,
+> >> +		.extra1		= &zero,
+> >> +		.extra2		= &two,
+> >> +	},
 > 
-> The correct order is to allocate the transaction, reserve the space
-> for it and then take the ilock.  We cannot hold the ilock over the
-> transaction reservation because that can deadlock the journal.
->
-> That is, to make space for the new transaction reservation, we may
-> need to take the ilock to flush the inode and allow the journal tail
-> to move forwards to make space for the new transaction.  If we
-> already hold the ilock, then it can't be flushed, we can't make
-> space available in the journal and hence deadlock.
-  Thanks for clarification!
+> >E.g. moving all such stuff to some sysctl group, not bloating
+> > kernel.*.
+> 
+> Ehh.
+> How bloat is measured in this case?
 
-> Maybe you confused the ilock vs the iolock.  We can hold the iolock
-> over the trans alloc/reserve because that lock is not required to
-> move the tail of the journal, so the deadlock doesn't exist.
-  Ups! I now had a look at what xfs_rw_ilock() does. I always thought it's
-just a plain rw semaphore and now I see it takes several locks depending on
-the argument. Ugh, a bit surprising for XFS newcomer as me ;) But now
-things become clearer so I fix my patches with this new knowledge in mind.
-So just disregard my locking comments. They were likely bogus.
+Do we want to add such sort of sysctls "from time to time" when we
+consider one or another feature as deprecated?  If yes, I'd group them
+somehow, e.g. by introducing subdirectory inside of kernel.
 
-								Honza
+Btw, kernel sysctl dir contains all sort of stuff which goes to "kernel"
+as if it is "etc".  It already contains ftrace, perf, printk, scheduler,
+ipc.  IMHO plain kernel hierarchy is not profitable in the long term.
+
+Thanks,
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
