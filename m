@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab2AXC6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:58:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50477 "EHLO mx2.suse.de"
+	id S1756880Ab2AXC7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:59:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50456 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932612Ab2AXCrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:47:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:32 2012
-Message-Id: <20120124023932.103527046@clark.kroah.org>
+	id S932581Ab2AXCqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:46:54 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:31 2012
+Message-Id: <20120124023931.854823057@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:12 -0800
+Date: Mon, 23 Jan 2012 18:35:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alasdair G Kergon <agk@redhat.com>,
-        dm-devel@redhat.com, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [092/129] dm: do not forward ioctls from logical volumes to the
- underlying device
+        alan@lxorguk.ukuu.org.uk,
+        Michael Abbott <michael.abbott@diamond.ac.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [089/129] [S390] fix cputime overflow in uptime_proc_show
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,86 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2491
-Lines: 79
+Content-Length: 1352
+Lines: 43
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit ec8013beddd717d1740cfefb1a9b900deef85462 upstream.
+commit c3e0ef9a298e028a82ada28101ccd5cf64d209ee upstream.
 
-A logical volume can map to just part of underlying physical volume.
-In this case, it must be treated like a partition.
+For 32-bit architectures using standard jiffies the idletime calculation
+in uptime_proc_show will quickly overflow. It takes (2^32 / HZ) seconds
+of idle-time, or e.g. 12.45 days with no load on a quad-core with HZ=1000.
+Switch to 64-bit calculations.
 
-Based on a patch from Alasdair G Kergon.
-
-Cc: Alasdair G Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael Abbott <michael.abbott@diamond.ac.uk>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-flakey.c |   11 ++++++++++-
- drivers/md/dm-linear.c |   12 +++++++++++-
- drivers/md/dm-mpath.c  |    6 ++++++
- 3 files changed, 27 insertions(+), 2 deletions(-)
+ fs/proc/uptime.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-flakey.c
-+++ b/drivers/md/dm-flakey.c
-@@ -368,8 +368,17 @@ static int flakey_status(struct dm_targe
- static int flakey_ioctl(struct dm_target *ti, unsigned int cmd, unsigned long arg)
+--- a/fs/proc/uptime.c
++++ b/fs/proc/uptime.c
+@@ -11,15 +11,20 @@ static int uptime_proc_show(struct seq_f
  {
- 	struct flakey_c *fc = ti->private;
-+	struct dm_dev *dev = fc->dev;
-+	int r = 0;
+ 	struct timespec uptime;
+ 	struct timespec idle;
++	cputime64_t idletime;
++	u64 nsec;
++	u32 rem;
+ 	int i;
+-	cputime_t idletime = cputime_zero;
  
--	return __blkdev_driver_ioctl(fc->dev->bdev, fc->dev->mode, cmd, arg);
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (fc->start ||
-+	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
-+	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
- }
++	idletime = 0;
+ 	for_each_possible_cpu(i)
+ 		idletime = cputime64_add(idletime, kstat_cpu(i).cpustat.idle);
  
- static int flakey_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
---- a/drivers/md/dm-linear.c
-+++ b/drivers/md/dm-linear.c
-@@ -116,7 +116,17 @@ static int linear_ioctl(struct dm_target
- 			unsigned long arg)
- {
- 	struct linear_c *lc = (struct linear_c *) ti->private;
--	return __blkdev_driver_ioctl(lc->dev->bdev, lc->dev->mode, cmd, arg);
-+	struct dm_dev *dev = lc->dev;
-+	int r = 0;
-+
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (lc->start ||
-+	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
-+	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
- }
- 
- static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1520,6 +1520,12 @@ static int multipath_ioctl(struct dm_tar
- 
- 	spin_unlock_irqrestore(&m->lock, flags);
- 
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
- 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
- }
- 
+ 	do_posix_clock_monotonic_gettime(&uptime);
+ 	monotonic_to_bootbased(&uptime);
+-	cputime_to_timespec(idletime, &idle);
++	nsec = cputime64_to_jiffies64(idletime) * TICK_NSEC;
++	idle.tv_sec = div_u64_rem(nsec, NSEC_PER_SEC, &rem);
++	idle.tv_nsec = rem;
+ 	seq_printf(m, "%lu.%02lu %lu.%02lu\n",
+ 			(unsigned long) uptime.tv_sec,
+ 			(uptime.tv_nsec / (NSEC_PER_SEC / 100)),
 
 
