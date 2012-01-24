@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab2AXRXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 12:23:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41454 "EHLO mx2.suse.de"
+	id S1756989Ab2AXRZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 12:25:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41535 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756164Ab2AXRXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 12:23:11 -0500
-Date: Tue, 24 Jan 2012 18:23:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH v4] memcg: remove PCG_CACHE page_cgroup flag
-Message-ID: <20120124172308.GI26289@tiehlicka.suse.cz>
-References: <20120119181711.8d697a6b.kamezawa.hiroyu@jp.fujitsu.com>
- <20120120122658.1b14b512.kamezawa.hiroyu@jp.fujitsu.com>
- <20120120084545.GC9655@tiehlicka.suse.cz>
- <20120124121636.115f1cf0.kamezawa.hiroyu@jp.fujitsu.com>
- <20120124111644.GE1660@cmpxchg.org>
- <20120124145411.GF1660@cmpxchg.org>
- <20120124160140.GH26289@tiehlicka.suse.cz>
- <20120124164449.GH1660@cmpxchg.org>
+	id S1755932Ab2AXRZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 12:25:25 -0500
+Date: Tue, 24 Jan 2012 09:22:31 -0800
+From: Greg KH <gregkh@suse.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Simon Glass <sjg@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot time
+Message-ID: <20120124172231.GA27273@suse.de>
+References: <CAPnjgZ0-VdAzudGFopBd+5j4HhOp10C=x0kPuJEZyaYSzwjBAA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
+ <20120124165711.GC3836@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120124164449.GH1660@cmpxchg.org>
+In-Reply-To: <20120124165711.GC3836@linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 24-01-12 17:44:49, Johannes Weiner wrote:
-> On Tue, Jan 24, 2012 at 05:01:40PM +0100, Michal Hocko wrote:
-> > On Tue 24-01-12 15:54:11, Johannes Weiner wrote:
-> > > Hold on, I think this patch is still not complete: end_migration()
-> > > directly uses __mem_cgroup_uncharge_common() with the FORCE charge
-> > > type.  This will uncharge all migrated anon pages as cache, when it
-> > > should decide based on PageAnon(used), which is the page where
-> > > ->mapping is intact after migration.
-> > 
-> > You are right, I've missed that one as well. Anyway
-> > MEM_CGROUP_CHARGE_TYPE_FORCE is used only in mem_cgroup_end_migration
-> > these days and it got out of sync with its documentation (used by
-> > force_empty) quite some time ago (f817ed48). What about something like
-> > the following on top of the previous patch?
-> > --- 
-> > Should be foldet into the previous patch with the updated changelog:
-> > 
-> > Mapping of the unused page is not touched during migration (see
+On Tue, Jan 24, 2012 at 05:57:11PM +0100, Sebastian Andrzej Siewior wrote:
+> * Alan Stern | 2012-01-21 11:11:09 [-0500]:
 > 
-> used one, not unused.  unused->mapping is globbered during migration.
+> >Doing time-consuming things later won't make any difference.  That is,
+> >suppose the boot sequence performs activities A and B, where A takes a
+> >long time.  Doing A later, so that the boot sequence performs B and
+> >then A, won't change the total time required.
+> 
+> That is true. However if you show the gui _now_ and look for USB later
+> then it feels faster and this is usually enough.
 
-Yes, you are right:
----
-Should be foldet into the previous patch with the updated changelog:
+Which has been done before, with great success (i.e. we did it for
+Moblin boot times), so it shouldn't be that big of an issue.
 
-Mapping of the unused page is not touched during migration (see
-page_remove_rmap) so we can rely on it and push the correct charge type
-down to __mem_cgroup_uncharge_common from end_migration.
-The force flag was misleading was abused for skipping the needless
-page_mapped() / PageCgroupMigration() check, as we know the unused page
-is no longer mapped and cleared the migration flag just a few lines
-up.  But doing the checks is no biggie and it's not worth adding another
-flag just to skip them.  But I guess this should be mentioned in the
-changelog.
+Which points out the question, exactly what is the issue here?  We have
+"multithreaded" pci driver startup for a long time now, did that stop
+working here?  If you use bootchart, does it show that the USB host
+driver is stoping the machine from proceeding to the next stage in the
+boot process?
 
-[hannes@cmpxchg.org: fix for end_migration with clarification]
----
- mm/memcontrol.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+>From my experience, I never saw the USB host controller get in the way
+at all, it was always somethine else happening that caused problems
+(i.e. video.)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 4d655ee..6a8cc56 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3195,6 +3195,7 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
- {
- 	struct page *used, *unused;
- 	struct page_cgroup *pc;
-+	bool anon;
- 
- 	if (!memcg)
- 		return;
-@@ -3207,6 +3208,7 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
- 		used = newpage;
- 		unused = oldpage;
- 	}
-+
- 	/*
- 	 * We disallowed uncharge of pages under migration because mapcount
- 	 * of the page goes down to zero, temporarly.
-@@ -3217,7 +3219,10 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
- 	ClearPageCgroupMigration(pc);
- 	unlock_page_cgroup(pc);
- 
--	__mem_cgroup_uncharge_common(unused, MEM_CGROUP_CHARGE_TYPE_FORCE);
-+	anon = PageAnon(used);
-+	__mem_cgroup_uncharge_common(unused,
-+			anon ? MEM_CGROUP_CHARGE_TYPE_MAPPED
-+			: MEM_CGROUP_CHARGE_TYPE_CACHE);
- 
- 	/*
- 	 * If a page is a file cache, radix-tree replacement is very atomic
--- 
-1.7.8.3
+Simon, do you have boot charts anywhere showing this?
 
+thanks,
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+greg k-h
