@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab2AXAOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:14:16 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65364 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315Ab2AXAOM (ORCPT
+	id S1754566Ab2AXATh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:19:37 -0500
+Received: from natasha.panasas.com ([67.152.220.90]:56047 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab2AXATf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:14:12 -0500
+	Mon, 23 Jan 2012 19:19:35 -0500
+Message-ID: <4F1DF90C.5070108@panasas.com>
+Date: Tue, 24 Jan 2012 02:19:24 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <20120124000517.GA28878@sergelap>
-References: <20120124000517.GA28878@sergelap>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 23 Jan 2012 16:13:49 -0800
-X-Google-Sender-Auth: 3iziQua8EVxMRkDW-JjoG8OgGoc
-Message-ID: <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
-Subject: Re: [RFC] fix devpts mount behavior
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Dave Hansen <haveblue@us.ibm.com>, sukadev@linux.vnet.ibm.com,
-        Andy Whitcroft <apw@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Matt Helsley <matthltc@us.ibm.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Masatake YAMATO <yamato@redhat.com>, <kzak@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <util-linux@vger.kernel.org>
+Subject: Re: /etc/fstab.d yes or not
+References: <20120120140444.GC13157@x2.net.home> <20120120.232002.849876084731555262.yamato@redhat.com> <CAPXgP10uUpSQzX0RzYY24uDBkNkRXM7NbR0H6P=dZ=+LxdX3Fw@mail.gmail.com>
+In-Reply-To: <CAPXgP10uUpSQzX0RzYY24uDBkNkRXM7NbR0H6P=dZ=+LxdX3Fw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 4:05 PM, Serge Hallyn
-<serge.hallyn@canonical.com> wrote:
->
-> I've been playing for the last week with ways to fix this, and in the
-> end I can see two ways.
+On 01/20/2012 04:56 PM, Kay Sievers wrote:
+> 
+> It's an old glibc API, and /etc/fstab is ABI, not a service config
+> file, which now can read more than one file. It's a very different
+> problem. It an ABI change, not a config extension.
+> 
 
-How about a third way:
+Can't we have our cake and eat it too?
 
- - make "newinstance" mandatory (and "-o newinstance" is a no-op) and
-forget about the whole issue.
+I mean why not have both?
 
- - if you really want to remount the old global one, you have to use a
-bind mount of that original mount instead.
+The subsystem that you currently plan to parse the /etc/fstab.d/ will
+intelligently  add the /etc/fstab.d/ entries to /etc/fstab before
+actually processing and mounting /etc/fstab.
 
-There may be some subtle reason why the above is totally broken and
-just fundamnetally wouldn't work, and breaks all existing setups, but
-maybe it's worth at least discussing as an option?
+So the rpm guys have their /etc/fstab.d/ convenience and the rest
+of the  ABI is kept intact. (If you can't bit them join them)
 
-Or did I entirely misunderstand the problem?
+Since /etc/fstab is hand edited as well. There are lots of smart
+things that can be done like a remark (#) marker at the end of the
+file that all /etc/fstab.d/ entries get to be added after. (And
+a comment for the user) and some smart duplicate removal of, and
+so on ... Even a marker per line added.
 
-                      Linus
+Just my $0,017
+Boaz
