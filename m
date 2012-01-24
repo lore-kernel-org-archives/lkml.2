@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab2AXCo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:44:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50198 "EHLO mx2.suse.de"
+	id S1756728Ab2AXCog (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:44:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50158 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab2AXCow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:44:52 -0500
+	id S1756769Ab2AXCoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:44:32 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:28 2012
-Message-Id: <20120124023928.789919893@clark.kroah.org>
+Message-Id: <20120124023928.261553652@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:35 -0800
+Date: Mon, 23 Jan 2012 18:34:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [055/129] UBIFS: fix debugging messages
+        alan@lxorguk.ukuu.org.uk, Gary Morain <gmorain@google.com>,
+        Paul Stewart <pstew@google.com>,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [049/129] ath9k: Fix regression in channelwidth switch at the same channel
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1393
-Lines: 35
+Content-Length: 2247
+Lines: 59
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit d34315da9146253351146140ea4b277193ee5e5f upstream.
+commit 1a19f77f3642b8194ad9cf55548cc5d92e841766 upstream.
 
-Patch 56e46742e846e4de167dde0e1e1071ace1c882a5 broke UBIFS debugging messages:
-before that commit when UBIFS debugging was enabled, users saw few useful
-debugging messages after mount. However, that patch turned 'dbg_msg()' into
-'pr_debug()', so to enable the debugging messages users have to enable them
-first via /sys/kernel/debug/dynamic_debug/control, which is very impractical.
+The commit "ath9k: Fix invalid noisefloor reading due to channel update"
+preserves the current channel noisefloor readings before updating
+channel type at the same channel index. It is also updating the curchan
+pointer. As survey updation is also referring curchan pointer to fetch
+the appropriate index, which might leads to invalid memory access. This
+patch partially reverts the change and stores the noise floor history
+buffer before updating channel type w/o updating curchan.
 
-This commit makes 'dbg_msg()' to use 'printk()' instead of 'pr_debug()', just
-as it was before the breakage.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Gary Morain <gmorain@google.com>
+Cc: Paul Stewart <pstew@google.com>
+Reported-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ubifs/debug.h |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/calib.c |    1 +
+ drivers/net/wireless/ath/ath9k/main.c  |    8 ++------
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
---- a/fs/ubifs/debug.h
-+++ b/fs/ubifs/debug.h
-@@ -190,7 +190,10 @@ extern spinlock_t dbg_lock;
- } while (0)
+--- a/drivers/net/wireless/ath/ath9k/calib.c
++++ b/drivers/net/wireless/ath/ath9k/calib.c
+@@ -402,6 +402,7 @@ bool ath9k_hw_getnf(struct ath_hw *ah, s
+ 	ah->noise = ath9k_hw_getchan_noise(ah, chan);
+ 	return true;
+ }
++EXPORT_SYMBOL(ath9k_hw_getnf);
  
- /* Just a debugging messages not related to any specific UBIFS subsystem */
--#define dbg_msg(fmt, ...)   ubifs_dbg_msg("msg", fmt, ##__VA_ARGS__)
-+#define dbg_msg(fmt, ...)                                                     \
-+	printk(KERN_DEBUG "UBIFS DBG (pid %d): %s: " fmt "\n", current->pid,  \
-+	       __func__, ##__VA_ARGS__)
-+
- /* General messages */
- #define dbg_gen(fmt, ...)   ubifs_dbg_msg("gen", fmt, ##__VA_ARGS__)
- /* Additional journal messages */
+ void ath9k_init_nfcal_hist_buffer(struct ath_hw *ah,
+ 				  struct ath9k_channel *chan)
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1667,7 +1667,6 @@ static int ath9k_config(struct ieee80211
+ 
+ 	if (changed & IEEE80211_CONF_CHANGE_CHANNEL) {
+ 		struct ieee80211_channel *curchan = hw->conf.channel;
+-		struct ath9k_channel old_chan;
+ 		int pos = curchan->hw_value;
+ 		int old_pos = -1;
+ 		unsigned long flags;
+@@ -1693,11 +1692,8 @@ static int ath9k_config(struct ieee80211
+ 		 * Preserve the current channel values, before updating
+ 		 * the same channel
+ 		 */
+-		if (old_pos == pos) {
+-			memcpy(&old_chan, &sc->sc_ah->channels[pos],
+-				sizeof(struct ath9k_channel));
+-			ah->curchan = &old_chan;
+-		}
++		if (ah->curchan && (old_pos == pos))
++			ath9k_hw_getnf(ah, ah->curchan);
+ 
+ 		ath9k_cmn_update_ichannel(&sc->sc_ah->channels[pos],
+ 					  curchan, conf->channel_type);
 
 
