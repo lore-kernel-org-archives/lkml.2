@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab2AXKnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 05:43:09 -0500
-Received: from spamkiller.ahe.lodz.pl ([194.42.117.20]:43642 "EHLO
-	spamkiller.ahe.lodz.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755327Ab2AXKnH (ORCPT
+	id S1755936Ab2AXKwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 05:52:30 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59490 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab2AXKw2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 05:43:07 -0500
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jan 2012 05:43:07 EST
-X-Originating-IP: 194.42.117.14
-Date: Tue, 24 Jan 2012 11:49:12 +0100
-From: "Webmaster Upgrade Abteilung" <info@webmaster.de>
-Reply-To: customercarewebdept40@w.cn
-User-Agent: SquirrelMail/1.4.21
+	Tue, 24 Jan 2012 05:52:28 -0500
 MIME-Version: 1.0
-X-Priority: 3 (Normal)
-Importance: Normal
-Message-ID: <7888583217a867f35482569e56abb3e3.squirrel@poczta.ahe.lodz.pl>
-Content-Type: text/plain;charset=iso-8859-2
-Content-Transfer-Encoding: 8bit
-Subject: Webmaster-Mitteilung!!
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.42/RELEASE,
-	 bases: 20120124 #6667722, check: 20120124 notchecked
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1327390229-30170-1-git-send-email-levinsasha928@gmail.com>
+References: <1327390229-30170-1-git-send-email-levinsasha928@gmail.com>
+Date: Tue, 24 Jan 2012 11:52:27 +0100
+Message-ID: <CAJK669acbPLTxTDrk_uqdB2FmewcSA+HF0qEFADgT8YdfNMcpQ@mail.gmail.com>
+Subject: Re: [PATCH] net: caif: Don't act on notification for non-caif devices
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: davem@davemloft.net, davej@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sasha,
 
+> Since the list of CAIF devices is stored in the net generic struct in each
+> net namespace, which is not initialized at that point, we see the following
+> BUG():
+>
+> [ Â 200.752016] kernel BUG at include/net/netns/generic.h:40!
+...
+> [ Â 200.752016] Call Trace:
+> [ Â 200.752016] Â [<ffffffff825c3cea>] ? get_cfcnfg+0x3a/0x180
+> [ Â 200.752016] Â [<ffffffff821cf0b0>] ? lockdep_rtnl_is_held+0x10/0x20
+> [ Â 200.752016] Â [<ffffffff825c41be>] caif_device_notify+0x2e/0x530
 
+Argh, my bad. This issue has been identified and fixed by David
+Woodhouse earlier,
+but was reintroduced again by me when adding support for CAIF over NCM.
+The CAIF code is handling if net_generic() returns NULL, but I missed that
+net_generic() does BUG_ON().
 
-Liebe E-Mail-Konto-Teilnehmer,
+> Instead, we'll first check if the device in the notification is a CAIF device:
+> Â - If it is - the net generic struct in that namespace must have been already
+> initialized.
+> Â - If not - just ignore it as we don't care about other devices.
+>
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 
-Diese Mitteilung ist von der webmail Mitteilungmitte zu allen unseren
-webmail  Kontoinhabern. Als Erstes Viertel von 2012 führen wir z.Z. durch,
-Service für unsere Datenbank- und E-Mail-Kontomitte verbessernd. Wir
-löschen alles unbenutzte webmail Konto, um mehr Raum für neue Konten zu
-verursachen.
+Nack, we have to handle other device types than just ARPHDR_CAIF after
+introducing
+CAIF over USB/NCM. I'd rather fix this in netns by removing the BUG_ON
+and return
+NULL. How about this instead:
 
-Um Ihr Konto am Löschen zu verhindern und unsere Dienstleistungen zu
-verwenden fortzufahren werden Sie angefordert Ihr webmail Konto zu
-aktualisieren und zu bestätigen.
+diff --git a/include/net/netns/generic.h b/include/net/netns/generic.h
+index 3419bf5..0fc2eea 100644
+--- a/include/net/netns/generic.h
++++ b/include/net/netns/generic.h
+@@ -37,8 +37,10 @@ static inline void *net_generic(const struct net *net, int id
 
-Zu Ihre Kontobestätigung für das erste Viertel von 2012 abschließen,
-sollen Sie auf diese Mitteilung sofort antworten und Ihre Kontodetails
-eintragen, wie unten verlangt.
+        rcu_read_lock();
+        ng = rcu_dereference(net->gen);
+-       BUG_ON(id == 0 || id > ng->len);
+-       ptr = ng->ptr[id - 1];
++       if (id == 0 || id > ng->len)
++               ptr = NULL;
++       else
++               ptr = ng->ptr[id - 1];
+        rcu_read_unlock();
 
-Bestätigen Sie Ihr Konto-Detail
-Username: .....................
-EMail-username.................
-Kennwort: .....................
-Bestätigen Sie Kennwort: ......
-Geburtsdatum: .................
+        return ptr;
 
+I'll post a patch for this soon.
 
-Important* liefern bitte alle diese Informationen vollständig und richtig
-anders wegen der Sicherheitsgründe, die wir Ihr webmail Konto
-vorübergehend abschließen müssen können. Wir danken Ihnen für Ihre
-sofortige Aufmerksamkeit zu dieser Angelegenheit. Verstehen Sie bitte,
-dass dieses eine Sicherheitsmaßnahme ist, die helfen soll, Sie und Ihr
-webmail Konto zu schützen. Wir entschuldigen uns für jede mögliche
-Unannehmlichkeit.
-
+Regards,
+Sjur
