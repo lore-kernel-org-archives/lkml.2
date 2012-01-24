@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab2AXCoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:44:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50130 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756660Ab2AXCoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:44:13 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:25 2012
-Message-Id: <20120124023925.273133567@clark.kroah.org>
-User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:33:55 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [015/129] ALSA: hda - Fix the detection of "Loopback Mixing" control for VIA codecs
-In-Reply-To: <20120124024041.GA18422@kroah.com>
+	id S1756713Ab2AXDI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:08:29 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36860 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187Ab2AXDI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 22:08:27 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 24 Jan 2012 12:07:04 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Balbir Singh <bsingharora@gmail.com>, <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
+Message-Id: <20120124120704.3f09b206.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F1E013E.9060009@fb.com>
+References: <1326912662-18805-1-git-send-email-asharma@fb.com>
+	<20120119114206.653b88bd.kamezawa.hiroyu@jp.fujitsu.com>
+	<4F1E013E.9060009@fb.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 23 Jan 2012 16:54:22 -0800
+Arun Sharma <asharma@fb.com> wrote:
 
-------------------
-Content-Length: 1227
-Lines: 35
+> On 1/18/12 6:42 PM, KAMEZAWA Hiroyuki wrote:
+> >
+> > Hmm, then,
+> > 1. a new task jumped into this cgroup can see any uncleared data...
+> > 2. if a memcg pointer is reused, the information will be leaked.
+> 
+> You're suggesting mm_match_cgroup() is good enough for accounting 
+> purposes, but not usable for cases where its important to get the 
+> equality right?
+> 
 
-From: Takashi Iwai <tiwai@suse.de>
+I think there is no 100% solution to check reuse of object.
 
-commit 4808d12d1dddb046ec86425e5f6766f02e950292 upstream.
 
-Currently the driver checks only the out_mix_path[] for the primary
-output route for judging whether to create the loopback-mixing control
-or not.  But, there are cases where aamix-routing is available only on
-headphone or speaker paths but not on the primary output path.  So, the
-driver ignores such cases inappropriately.
 
-This patch fixes the check of the loopback-mixing control by testing
-all mix-routing paths.
+> > 3. If VM_UNINITALIZED is set, the process can see any data which
+> >     was freed by other process which doesn't know VM_UNINITALIZED at all.
+> >
+> > 4. The process will be able to see file cache data which the it has no
+> >     access right if it's accessed by memcg once.
+> >
+> > 3&  4 seems too danger.
+> 
+> Yes - these are the risks that I'm hoping we can document, so the 
+> cgroups admin can avoid opting-in if not everything running in the 
+> cgroup is trusted.
+> 
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+I guess admins/users can't handle that.
 
----
- sound/pci/hda/patch_via.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> >
+> > Isn't it better to have this as per-task rather than per-memcg ?
+> > And just allow to reuse pages the page has freed ?
+> >
+> 
+> I'm worrying that the additional complexity of maintaining a per-task 
+> page list would be a problem. It might slow down workloads that 
+> alloc/free a lot because of the added code. It'll probably touch the 
+> kswapd as well (for reclaiming pages from the per-task free lists under 
+> low mem conditions).
+> 
+> Did you have some implementation ideas which would not have the problems 
+> above?
+> 
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -2200,7 +2200,10 @@ static int via_auto_create_loopback_swit
- {
- 	struct via_spec *spec = codec->spec;
- 
--	if (!spec->aa_mix_nid || !spec->out_mix_path.depth)
-+	if (!spec->aa_mix_nid)
-+		return 0; /* no loopback switching available */
-+	if (!(spec->out_mix_path.depth || spec->hp_mix_path.depth ||
-+	      spec->speaker_path.depth))
- 		return 0; /* no loopback switching available */
- 	if (!via_clone_control(spec, &via_aamix_ctl_enum))
- 		return -ENOMEM;
+If you just want to reduce latency of GFP_ZERO, you may be able to
+clear pages by (rate limited) kernel daemon for minimize latency.
+
+But, what I'm not sure is the effect of cpu cache. Now, user process
+can expect the page is on cpu cache when it faulted. page-fault
+does all prefetching by clearing pages. This helps performance much
+in general. So, I think it's limited situation that no-clear-page-at-fault
+is good for total applications performance.
+You can see reduction of clear_page() cost by removing GFP_ZERO but
+what's your application's total performance ? Is it good enough considering
+many risks ?
+
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
+
 
 
