@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab2AXVVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 16:21:34 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:58907 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756653Ab2AXVVc (ORCPT
+	id S1757541Ab2AXVVs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 16:21:48 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41312 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757363Ab2AXVVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 16:21:32 -0500
-Message-ID: <4F1F2E85.1010505@xenotime.net>
-Date: Tue, 24 Jan 2012 14:19:49 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 24 Jan 2012 16:21:47 -0500
+Date: Tue, 24 Jan 2012 21:21:44 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "lrg@ti.com" <lrg@ti.com>, "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V1] regulator: tps65910: Sleep control through external
+ inputs
+Message-ID: <20120124212144.GG1135@opensource.wolfsonmicro.com>
+References: <1327395919-32378-1-git-send-email-ldewangan@nvidia.com>
+ <20120124115855.GC14888@opensource.wolfsonmicro.com>
+ <4F1EA1E8.90104@nvidia.com>
+ <20120124122411.GB31839@opensource.wolfsonmicro.com>
+ <4F1EA608.3020204@nvidia.com>
 MIME-Version: 1.0
-To: Fabio Estevam <fabio.estevam@freescale.com>
-CC: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] regulator: mc13xxx-regulator-core: Fix the build when
- driver is selected as module
-References: <1327437436-10937-1-git-send-email-fabio.estevam@freescale.com>
-In-Reply-To: <1327437436-10937-1-git-send-email-fabio.estevam@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rMWmSaSbD7nr+du9"
+Content-Disposition: inline
+In-Reply-To: <4F1EA608.3020204@nvidia.com>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2012 12:37 PM, Fabio Estevam wrote:
-> Fix the following build error when mc138xxx driver is built as module:
-> 
-> ERROR: "mc13xxx_parse_regulators_dt" [drivers/regulator/mc13892-regulator.ko] undefined!
-> ERROR: "mc13xxx_get_num_regulators_dt" [drivers/regulator/mc13892-regulator.ko] undefined!
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+--rMWmSaSbD7nr+du9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks.
+On Tue, Jan 24, 2012 at 06:07:28PM +0530, Laxman Dewangan wrote:
 
-> ---
->  drivers/regulator/mc13xxx-regulator-core.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
-> index 80ecafe..62dcd0a 100644
-> --- a/drivers/regulator/mc13xxx-regulator-core.c
-> +++ b/drivers/regulator/mc13xxx-regulator-core.c
-> @@ -254,6 +254,7 @@ int __devinit mc13xxx_get_num_regulators_dt(struct platform_device *pdev)
->  
->  	return num;
->  }
-> +EXPORT_SYMBOL_GPL(mc13xxx_get_num_regulators_dt);
->  
->  struct mc13xxx_regulator_init_data * __devinit mc13xxx_parse_regulators_dt(
->  	struct platform_device *pdev, struct mc13xxx_regulator *regulators,
-> @@ -291,6 +292,7 @@ struct mc13xxx_regulator_init_data * __devinit mc13xxx_parse_regulators_dt(
->  
->  	return data;
->  }
-> +EXPORT_SYMBOL_GPL(mc13xxx_parse_regulators_dt);
->  #endif
->  
->  MODULE_LICENSE("GPL v2");
+> E.g. If cpu power is in VDDCTRL rail and if DVFS mechanism of SOC
+> wants that cpu rails to be ON, it will make the control signal
+> active and if it wants to disable the rail then it will deactivate
+> it.
 
+> The toggling of the control lines depends on how the power
+> management controller is designed for a given SOC and how it
+> manages.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Hrm, right.  This isn't something that the regulator API usually deals
+with - normally we just deal with things that Linux owns and assume that
+if the hardware is wired up for something else to own the regulator it
+will deal with that completely including the configuration.  If we do
+need to do something here we need to make sure that the normal regulator
+code doesn't try to do anything clever with the regulator which messes
+up the other device.  But I guess this doesn't really have a problem
+with that, someone can always add a further patch optionally specifying
+GPIOs which won't conflict with this approach.
+
+--rMWmSaSbD7nr+du9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPHyDhAAoJEBus8iNuMP3dcqMP/2igwR+ANMFPX9ZSdBNf8Rso
+SkI6/bn704xEZ6YKOnsZVgoSN3Dq/5fxmG/Fm1AlQ8xmI0w/WIvZQveTPPm7+/gW
+J+GCrm+XXE3oipuXUb6yQmwV9vSDCLlUR24EpAghRF3ATWpj8S7bVD78ngHmvF4T
+Evy1G8lTMWK6kK19SOFcLnAsGhhaUWnE9oAoxiXMhQddBXgBv4cjuEuHhObOvyaF
+wHBbBI8ai9VNIPoQrlQdzrUVHmFOSpYgBJRMj6yiPtVltsH0HLc+Pjedv+fo7fCV
+T6ykpcnBB+bekRSlvAaF3PqA/Bx+ZVM+042zwE5imRHOemGtR4xFA9+mP5T1hEud
+hvqKNK7yiXvtEquT8w9AUk3qtUlh2nGq3fgSw6y19mLNziiC5S23AxXskE1hAa6A
+hcDhiXdEax0yp18OtVgr568kD4/ggs6Xf6/zWvE4YbzLC16aQDvT+ADPasy5iXAU
+DyqZJ1Ij8AFdr89YoRw95eiDe2owBYIng8Li1LMSQH3fwjqqM9C1u/LA1NA4E4va
+VbPZqXoRHub3bQjiZYSWtWCBH1dVrJDxHqFVgbyMz/3LCg0nuXOwMrm/VNJvYfwK
+8ihdCiZCDtOUdmwlMagoZeFFs64t6pe2axMztb6spq/D53K+jKFOau/Xo2b3jyFv
+A3rosxKorB87DayaFKeN
+=Hv+Z
+-----END PGP SIGNATURE-----
+
+--rMWmSaSbD7nr+du9--
