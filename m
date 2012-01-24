@@ -1,144 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab2AXQY0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:24:26 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48739 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab2AXQYX (ORCPT
+	id S1755312Ab2AXQYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:24:40 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42443 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab2AXQYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:24:23 -0500
-Message-ID: <4F1EDB32.3010903@gmail.com>
-Date: Tue, 24 Jan 2012 17:24:18 +0100
-From: Vincent Vanackere <vincent.vanackere@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
+	Tue, 24 Jan 2012 11:24:37 -0500
+Message-ID: <4F1EDB41.2070303@suse.cz>
+Date: Tue, 24 Jan 2012 17:24:33 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120118 Thunderbird/10.0
 MIME-Version: 1.0
-To: Mitch Harder <mitch.harder@sabayonlinux.org>
-CC: linux-btrfs@vger.kernel.org,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG - btrfs] kernel oops in extent_range_uptodate
-References: <4F182BED.3090009@gmail.com> <CAKcLGm9kVOw6D8kPECfhfohH4pAT=09qws7-jRsh1TZJTyh1_A@mail.gmail.com> <4F199AF9.4030909@gmail.com> <CAKcLGm9ppCT94y2ijuEEQjH+tP8wPK1E+U6x6RHH2CjtoHmJMg@mail.gmail.com>
-In-Reply-To: <CAKcLGm9ppCT94y2ijuEEQjH+tP8wPK1E+U6x6RHH2CjtoHmJMg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
+References: <4F1EC8D5.5040102@suse.cz> <4F1ED9C4.9020503@linux.vnet.ibm.com>
+In-Reply-To: <4F1ED9C4.9020503@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2012 09:54 PM, Mitch Harder wrote:
-> On Fri, Jan 20, 2012 at 10:48 AM, Vincent Vanackere
-> <vincent.vanackere@gmail.com>  wrote:
->> On 01/19/2012 05:24 PM, Mitch Harder wrote:
->>> On Thu, Jan 19, 2012 at 8:42 AM, Vincent Vanackere
->>> <vincent.vanackere@gmail.com>    wrote:
->>>> Hi,
->>>>
->>>> With the most current git kernel
->>>> (90a4c0f51e8e44111a926be6f4c87af3938a79c3)
->>>> I'm still getting the same reproducible kernel panic when trying to read
->>>> a
->>>> particular file stored on a btrfs filesystem (as seen in the log there
->>>> are
->>>> indeed disk media errors on this disk).
->>>> I'd like the "software" part of this to be fixed - btrfs should
->>>> definitely
->>>> not oops even in case of media error - before sending the disk to RMA. Is
->>>> there anything I can do to make progress on this ?
->>>>
->>> Is this kernel compiled with "Compile the kernel with debug info" (in
->>> the "Kernel hacking  --->" configuration section)?
->>>
->>> It would be nice to have the specific line of code passing the NULL
->>> pointer.
+On 01/24/2012 05:18 PM, Srivatsa S. Bhat wrote:
+> Hi Jiri,
+> 
+> On 01/24/2012 08:35 PM, Jiri Slaby wrote:
+> 
+>> Hi,
 >>
->> The kernel was compiled with debug information but modern linux distribution
->> make it really hard to keep your debug information it seems :-(
-> I see where the find_get_page(...) function called in
-> extent_range_uptodate has the potential to return a NULL value.
->
-> Could you try the following patch, and if it solves your oops and
-> shows the included warning in your dmesg log, I'll simplify the patch
-> to drop the printk and submit it to the list.
->
-> I only included the printk since your current error log is ambiguous
-> regarding the specific point where we're getting the NULL pointer
-> dereference, but I'll pull it out if it works.
->
-> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-> index 9d09a4f..35c3a2a 100644
-> --- a/fs/btrfs/extent_io.c
-> +++ b/fs/btrfs/extent_io.c
-> @@ -3909,6 +3909,13 @@ int extent_range_uptodate(struct extent_io_tree *tree,
->   	while (start<= end) {
->   		index = start>>  PAGE_CACHE_SHIFT;
->   		page = find_get_page(tree->mapping, index);
-> +		if (unlikely(!page)) {
-> +			if (printk_ratelimit())
-> + 				printk(KERN_WARNING
-> + 				       "btrfs: NULL page in "
-> + 				       "extent_range_uptodate()\n");
-> +			return 1;
-> +		}
->   		uptodate = PageUptodate(page);
->   		page_cache_release(page);
->   		if (!uptodate) {
+>> this is a freshly booted system. When I do s2dsk, I see:
+>> ...
+>> Freezing remaining freezable tasks ... BUG: 'workqueue_freezing' is true!
+>> ------------[ cut here ]------------
+>> kernel BUG at /l/latest/linux/kernel/workqueue.c:3659!
+>> invalid opcode: 0000 [#1] SMP
+>> CPU 0
+>> Modules linked in:
+>>
+>> Pid: 2669, comm: s2disk Not tainted 3.3.0-rc1-next-20120124_64+ #1627
+>> Bochs Bochs
+>> RIP: 0010:[<ffffffff8107e365>]  [<ffffffff8107e365>]
+>> freeze_workqueues_begin+0x195/0x1a0
+>> RSP: 0018:ffff880046f01d68  EFLAGS: 00010292
+>> RAX: 0000000000000023 RBX: 0000000000000001 RCX: 00000000000000c9
+>> RDX: 0000000000000077 RSI: 0000000000000046 RDI: ffffffff81b51f7c
+>> RBP: ffff880046f01d98 R08: ffffffff81a9d760 R09: 0000000000000000
+>> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+>> R13: 00007fff579464dc R14: ffffffffffffffff R15: 0000000000000004
+>> FS:  00007f3c65d54700(0000) GS:ffff880049600000(0000) knlGS:0000000000000000
+>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> CR2: 00007f3c64f58c20 CR3: 0000000045b64000 CR4: 00000000000006f0
+>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> Process s2disk (pid: 2669, threadinfo ffff880046f00000, task
+>> ffff880047251980)
+>> Stack:
+>>  ffff880046f01d98 0000000000000001 0000000000000000 00007fff579464dc
+>>  ffffffffffffffff 0000000000000004 ffff880046f01e18 ffffffff81096cb9
+>>  00000000ffff0124 0000000000000004 ffff880046f01e18 000000004f1ec7d1
+>> Call Trace:
+>>  [<ffffffff81096cb9>] try_to_freeze_tasks+0x1b9/0x2d0
+>>  [<ffffffff81096ed5>] freeze_kernel_threads+0x25/0x90
+>>  [<ffffffff81097b55>] hibernation_snapshot+0x75/0x2e0
+>>  [<ffffffff8109d724>] snapshot_ioctl+0x314/0x4e0
+>>  [<ffffffff81130856>] do_vfs_ioctl+0x96/0x550
+>>  [<ffffffff8111ff7b>] ? vfs_write+0x10b/0x180
+>>  [<ffffffff81130d5a>] sys_ioctl+0x4a/0x80
+>>  [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
+>> Code: c7 c6 0a a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 19 94 5a 00 0f 0b
+>> 48 c7 c6 27 a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 02 94 5a 00 <0f> 0b
+>> 66 0f 1f 84 00 00 00 00 00 55 48 c7 c7 82 4b b9 81 48 89
+>> RIP  [<ffffffff8107e365>] freeze_workqueues_begin+0x195/0x1a0
+>>  RSP <ffff880046f01d68>
+>> ---[ end trace 632574abdc098963 ]---
+>>
+> 
+> 
+> I couldn't find any obvious root-cause from a quick check. Is this completely
+> reproducible upon a fresh boot?
 
-Indeed your patch helps. No kernel panic any more... but it looks like 
-the task doesn't finish and there's another problem to solve now :
+True.
 
-sd 5:0:0:0: [sdd] Unhandled sense code
-sd 5:0:0:0: [sdd]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-sd 5:0:0:0: [sdd]  Sense Key : Medium Error [current] [descriptor]
-Descriptor sense data with sense descriptors (in hex):
-         72 03 11 04 00 00 00 0c 00 0a 80 00 00 00 00 00
-         70 2f dc 61
-sd 5:0:0:0: [sdd]  Add. Sense: Unrecovered read error - auto reallocate 
-failed
-sd 5:0:0:0: [sdd] CDB: Read(10): 28 00 70 2f dc 5f 00 00 08 00
-end_request: I/O error, dev sdd, sector 1882184801
-ata6: EH complete
-btrfs: NULL page in extent_range_uptodate()
-btrfs: NULL page in extent_range_uptodate()
-btrfs bad tree block start 959241011200 959241011200
-INFO: task cat:3099 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-cat             D ffffffff8180c600     0  3099   3002 0x00000000
-  ffff8801f2b0f618 0000000000000086 ffff8801f2b0f5d8 ffff880221018770
-  ffff880222c65b80 ffff8801f2b0ffd8 ffff8801f2b0ffd8 ffff8801f2b0ffd8
-  ffff8802241816e0 ffff880222c65b80 ffff8801f2b0f5e8 ffff88022fd13e88
+The cause is that the function is called twice:
+# s2disk
+PM: Marking nosave pages: 000000000009f000 - 0000000000100000
+PM: Basic memory bitmaps created
+Syncing filesystems ... done.
+Freezing user space processes ... (elapsed 0.01 seconds) done.
+PM: Preallocating image memory... done (allocated 264170 pages)
+PM: Allocated 1056680 kbytes in 0.45 seconds (2348.17 MB/s)
+Freezing remaining freezable tasks ... Pid: 2650, comm: s2disk Not
+tainted 3.3.0-rc1-next-20120124_64+ #1628
 Call Trace:
-  [<ffffffff81114260>] ? __lock_page+0x70/0x70
-  [<ffffffff8162c93f>] schedule+0x3f/0x60
-  [<ffffffff8162c9ef>] io_schedule+0x8f/0xd0
-  [<ffffffff8111426e>] sleep_on_page+0xe/0x20
-  [<ffffffff8162b1ff>] __wait_on_bit+0x5f/0x90
-  [<ffffffff811143d8>] wait_on_page_bit+0x78/0x80
-  [<ffffffff81070c40>] ? autoremove_wake_function+0x40/0x40
-  [<ffffffffa0192161>] read_extent_buffer_pages+0x471/0x4d0 [btrfs]
-  [<ffffffffa01697b0>] ? verify_parent_transid+0x160/0x160 [btrfs]
-  [<ffffffffa016a13a>] btree_read_extent_buffer_pages.isra.99+0x8a/0xc0 
-[btrfs]
-  [<ffffffffa016c1e1>] read_tree_block+0x41/0x60 [btrfs]
-  [<ffffffffa01526a3>] read_block_for_search.isra.34+0xf3/0x3d0 [btrfs]
-  [<ffffffffa0154930>] btrfs_search_slot+0x300/0x8a0 [btrfs]
-  [<ffffffffa0166ab4>] btrfs_lookup_csum+0x74/0x170 [btrfs]
-  [<ffffffffa0166d5f>] __btrfs_lookup_bio_sums+0x1af/0x3b0 [btrfs]
-  [<ffffffffa0166fb6>] btrfs_lookup_bio_sums+0x16/0x20 [btrfs]
-  [<ffffffffa0173650>] btrfs_submit_bio_hook+0x140/0x170 [btrfs]
-  [<ffffffffa01755d0>] ? btrfs_real_readdir+0x720/0x720 [btrfs]
-  [<ffffffffa018c17a>] submit_one_bio+0x6a/0xa0 [btrfs]
-  [<ffffffffa0190e34>] extent_readpages+0xe4/0x100 [btrfs]
-  [<ffffffffa01755d0>] ? btrfs_real_readdir+0x720/0x720 [btrfs]
-  [<ffffffffa0173ebf>] btrfs_readpages+0x1f/0x30 [btrfs]
-  [<ffffffff81120a0f>] __do_page_cache_readahead+0x1af/0x250
-  [<ffffffff81120e11>] ra_submit+0x21/0x30
-  [<ffffffff81120f35>] ondemand_readahead+0x115/0x230
-  [<ffffffff81137cd9>] ? __do_fault+0x419/0x530
-  [<ffffffff81121131>] page_cache_sync_readahead+0x31/0x50
-  [<ffffffff811165f8>] generic_file_aio_read+0x438/0x780
-  [<ffffffff81173bb2>] do_sync_read+0xd2/0x110
-  [<ffffffff81293e73>] ? security_file_permission+0x93/0xb0
-  [<ffffffff81174031>] ? rw_verify_area+0x61/0xf0
-  [<ffffffff81174510>] vfs_read+0xb0/0x180
-  [<ffffffff8117462a>] sys_read+0x4a/0x90
-  [<ffffffff81635ae9>] system_call_fastpath+0x16/0x1b
+ [<ffffffff8109edd2>] ? getnstimeofday+0x52/0xf0
+ [<ffffffff8107e206>] freeze_workqueues_begin+0x36/0x1b0
+ [<ffffffff81096cc9>] try_to_freeze_tasks+0x1b9/0x2d0
+ [<ffffffff81096ee5>] freeze_kernel_threads+0x25/0x90
+ [<ffffffff81097b65>] hibernation_snapshot+0x75/0x2e0
+ [<ffffffff8109d734>] snapshot_ioctl+0x314/0x4e0
+ [<ffffffff81130866>] do_vfs_ioctl+0x96/0x550
+ [<ffffffff8111ff8b>] ? vfs_write+0x10b/0x180
+ [<ffffffff81130d6a>] sys_ioctl+0x4a/0x80
+ [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
+(elapsed 0.03 seconds) done.
+PM: freeze of devices complete after 57.216 msecs
+PM: late freeze of devices complete after 0.720 msecs
+ACPI: Preparing to enter system sleep state S4
+PM: Saving platform NVS memory
+Disabling non-boot CPUs ...
+CPU 1 is now offline
+PM: Creating hibernation image:
+PM: Need to copy 24112 pages
+PM: Normal pages needed: 24112 + 1024, available pages: 277076
+PM: Hibernation image created (24112 pages copied)
+Enabling non-boot CPUs ...
+Booting Node 0 Processor 1 APIC 0x1
+smpboot cpu 1: start_ip = 9a000
+Calibrating delay loop (skipped) already calibrated this CPU
+NMI watchdog disabled (cpu1): hardware events not enabled
+CPU1 is up
+ACPI: Waking up from system sleep state S4
+PM: early thaw of devices complete after 0.093 msecs
+ata_piix 0000:00:01.1: setting latency timer to 64
+e1000 0000:00:03.0: setting latency timer to 64
+e1000: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX
+ata2.01: NODEV after polling detection
+ata1.00: configured for MWDMA2
+ata2.00: configured for MWDMA2
+ata1.01: configured for MWDMA2
+sd 0:0:1:0: [sdb] Starting disk
+sd 0:0:0:0: [sda] Starting disk
+PM: thaw of devices complete after 192.317 msecs
+PM: Preallocating image memory... done (allocated 264295 pages)
+PM: Allocated 1057180 kbytes in 0.12 seconds (8809.83 MB/s)
+Freezing remaining freezable tasks ... BUG: 'workqueue_freezing' is true!
+------------[ cut here ]------------
+kernel BUG at /l/latest/linux/kernel/workqueue.c:3659!
+invalid opcode: 0000 [#1] SMP
+CPU 1
+Modules linked in:
 
+Pid: 2650, comm: s2disk Not tainted 3.3.0-rc1-next-20120124_64+ #1628
+Bochs Bochs
+RIP: 0010:[<ffffffff8107e371>]  [<ffffffff8107e371>]
+freeze_workqueues_begin+0x1a1/0x1b0
+RSP: 0018:ffff8800456d7d68  EFLAGS: 00010292
+RAX: 0000000000000023 RBX: 0000000000000001 RCX: 0000000000000073
+RDX: 00000000000000ea RSI: 0000000000000046 RDI: ffffffff81b51f7c
+RBP: ffff8800456d7d98 R08: ffffffff81a9d760 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+R13: 00007fff11d8709c R14: ffffffffffffffff R15: 0000000000000004
+FS:  00007f4744397700(0000) GS:ffff880049700000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000001f46bc0 CR3: 000000004483b000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process s2disk (pid: 2650, threadinfo ffff8800456d6000, task
+ffff880046c93300)
+Stack:
+ ffff8800456d7d98 0000000000000001 0000000000000000 00007fff11d8709c
+ ffffffffffffffff 0000000000000004 ffff8800456d7e18 ffffffff81096cc9
+ 00000000ffff008f 0000000000000004 ffff8800456d7e18 000000004f1edaaf
+Call Trace:
+ [<ffffffff81096cc9>] try_to_freeze_tasks+0x1b9/0x2d0
+ [<ffffffff81096ee5>] freeze_kernel_threads+0x25/0x90
+ [<ffffffff81097b65>] hibernation_snapshot+0x75/0x2e0
+ [<ffffffff8109d734>] snapshot_ioctl+0x314/0x4e0
+ [<ffffffff81130866>] do_vfs_ioctl+0x96/0x550
+ [<ffffffff8111ff8b>] ? vfs_write+0x10b/0x180
+ [<ffffffff81130d6a>] sys_ioctl+0x4a/0x80
+ [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
+Code: c7 c6 0a a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 1d 94 5a 00 0f 0b
+48 c7 c6 27 a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 06 94 5a 00 <0f> 0b
+66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 c7 c7 82 4b
+RIP  [<ffffffff8107e371>] freeze_workqueues_begin+0x1a1/0x1b0
+ RSP <ffff8800456d7d68>
+---[ end trace 696a23a038efce41 ]---
+
+
+
+>  
+> Regards,
+> Srivatsa S. Bhat
+> IBM Linux Technology Center
+> 
+
+
+-- 
+js
+suse labs
