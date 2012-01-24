@@ -1,171 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab2AXKSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 05:18:49 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:60491 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755002Ab2AXKSr (ORCPT
+	id S1756074Ab2AXKTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 05:19:14 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40779 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755685Ab2AXKTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 05:18:47 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Viresh Kumar <viresh.kumar@st.com>,
-        Michel Jaouen <michel.jaouen@stericsson.com>,
-        Chris Blair <chris.blair@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] mfd/stmpe: Add support for no-interrupt config
-Date: Tue, 24 Jan 2012 11:18:34 +0100
-Message-ID: <1327400314-18030-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 24 Jan 2012 05:19:12 -0500
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
+ condition
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Yasunori Goto <y-goto@jp.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120118142005.GB10105@redhat.com>
+References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com>
+	 <1326721082.2442.234.camel@twins>
+	 <20120117174031.3118.E1E9C6FF@jp.fujitsu.com>
+	 <20120117090605.GD7612@elte.hu> <20120117151242.GA13290@redhat.com>
+	 <20120118094219.GE5842@elte.hu>  <20120118142005.GB10105@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Jan 2012 11:19:09 +0100
+Message-ID: <1327400349.2614.10.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Blair <chris.blair@stericsson.com>
+On Wed, 2012-01-18 at 15:20 +0100, Oleg Nesterov wrote:
+> do_exit() is different because it can not handle the spurious wakeup.
+> Well, may be we can? we can simply do
+> 
+>                 for (;;) {
+>                         tsk->state = TASK_DEAD;
+>                         schedule();
+>                 }
+> 
+> __schedule() can't race with ttwu() once it takes rq->lock. If the
+> exiting task is deactivated, finish_task_switch() will see EXIT_DEAD.
 
-Adds support for boards which have an STMPE device without the
-interrupt pin connected.
+TASK_DEAD, right?
 
-Cc: Viresh Kumar <viresh.kumar@st.com>
-Signed-off-by: Chris Blair <chris.blair@stericsson.com>
-Tested-by: Michel Jaouen <michel.jaouen@stericsson.com>
-Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/stmpe.c       |   72 +++++++++++++++++++++++++--------------------
- include/linux/mfd/stmpe.h |    2 +
- 2 files changed, 42 insertions(+), 32 deletions(-)
+> Unless I missed something, the only problem is preempt_disable(),
+> but schedule_debug() checks ->exit_state.
+> 
+> OTOH, if we fix this race then probably schedule_debug() should
+> check state == EXIT_DEAD instead. 
 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index e07947e..7c98e61 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -864,7 +864,7 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
- 	unsigned int irq_trigger = stmpe->pdata->irq_trigger;
- 	int autosleep_timeout = stmpe->pdata->autosleep_timeout;
- 	struct stmpe_variant_info *variant = stmpe->variant;
--	u8 icr;
-+	u8 icr = 0;
- 	unsigned int id;
- 	u8 data[2];
- 	int ret;
-@@ -887,31 +887,33 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
- 	if (ret)
- 		return ret;
- 
--	if (id == STMPE801_ID)
--		icr = STMPE801_REG_SYS_CTRL_INT_EN;
--	else
--		icr = STMPE_ICR_LSB_GIM;
--
--	/* STMPE801 doesn't support Edge interrupts */
--	if (id != STMPE801_ID) {
--		if (irq_trigger == IRQF_TRIGGER_FALLING ||
--				irq_trigger == IRQF_TRIGGER_RISING)
--			icr |= STMPE_ICR_LSB_EDGE;
--	}
--
--	if (irq_trigger == IRQF_TRIGGER_RISING ||
--			irq_trigger == IRQF_TRIGGER_HIGH) {
-+	if (!stmpe->pdata->no_irq) {
- 		if (id == STMPE801_ID)
--			icr |= STMPE801_REG_SYS_CTRL_INT_HI;
-+			icr = STMPE801_REG_SYS_CTRL_INT_EN;
- 		else
--			icr |= STMPE_ICR_LSB_HIGH;
--	}
-+			icr = STMPE_ICR_LSB_GIM;
- 
--	if (stmpe->pdata->irq_invert_polarity) {
--		if (id == STMPE801_ID)
--			icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
--		else
--			icr ^= STMPE_ICR_LSB_HIGH;
-+		/* STMPE801 doesn't support Edge interrupts */
-+		if (id != STMPE801_ID) {
-+			if (irq_trigger == IRQF_TRIGGER_FALLING ||
-+					irq_trigger == IRQF_TRIGGER_RISING)
-+				icr |= STMPE_ICR_LSB_EDGE;
-+		}
-+
-+		if (irq_trigger == IRQF_TRIGGER_RISING ||
-+				irq_trigger == IRQF_TRIGGER_HIGH) {
-+			if (id == STMPE801_ID)
-+				icr |= STMPE801_REG_SYS_CTRL_INT_HI;
-+			else
-+				icr |= STMPE_ICR_LSB_HIGH;
-+		}
-+
-+		if (stmpe->pdata->irq_invert_polarity) {
-+			if (id == STMPE801_ID)
-+				icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
-+			else
-+				icr ^= STMPE_ICR_LSB_HIGH;
-+		}
- 	}
- 
- 	if (stmpe->pdata->autosleep) {
-@@ -988,7 +990,7 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
- 	if (ci->init)
- 		ci->init(stmpe);
- 
--	if (pdata->irq_over_gpio) {
-+	if (!pdata->no_irq && pdata->irq_over_gpio) {
- 		ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "stmpe");
- 		if (ret) {
- 			dev_err(stmpe->dev, "failed to request IRQ GPIO: %d\n",
-@@ -1005,15 +1007,21 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
- 	if (ret)
- 		goto free_gpio;
- 
--	ret = stmpe_irq_init(stmpe);
--	if (ret)
--		goto free_gpio;
-+	if (pdata->no_irq) {
-+		dev_info(stmpe->dev,
-+			"board config says IRQs are not supported\n");
-+	} else {
-+		ret = stmpe_irq_init(stmpe);
-+		if (ret)
-+			goto free_gpio;
- 
--	ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
--			pdata->irq_trigger | IRQF_ONESHOT, "stmpe", stmpe);
--	if (ret) {
--		dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
--		goto out_removeirq;
-+		ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
-+				pdata->irq_trigger | IRQF_ONESHOT,
-+				"stmpe", stmpe);
-+		if (ret) {
-+			dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
-+			goto out_removeirq;
-+		}
- 	}
- 
- 	ret = stmpe_devices_init(stmpe);
-diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-index ca1d7a3..c4b45fd 100644
---- a/include/linux/mfd/stmpe.h
-+++ b/include/linux/mfd/stmpe.h
-@@ -188,6 +188,7 @@ struct stmpe_ts_platform_data {
-  * @irq_invert_polarity: IRQ line is connected with reversed polarity
-  * @autosleep: bool to enable/disable stmpe autosleep
-  * @autosleep_timeout: inactivity timeout in milliseconds for autosleep
-+ * @no_irq: IRQs are not supported on this board
-  * @irq_base: base IRQ number.  %STMPE_NR_IRQS irqs will be used, or
-  *	      %STMPE_NR_INTERNAL_IRQS if the GPIO driver is not used.
-  * @irq_over_gpio: true if gpio is used to get irq
-@@ -200,6 +201,7 @@ struct stmpe_ts_platform_data {
- struct stmpe_platform_data {
- 	int id;
- 	unsigned int blocks;
-+	bool no_irq;
- 	int irq_base;
- 	unsigned int irq_trigger;
- 	bool irq_invert_polarity;
--- 
-1.7.8
+Hmm, interesting. On the up side that removes the need for that inf loop
+after BUG, down side is of course that we loose the BUG itself too. Now
+I'm not too sure we actually care about that, a task spinning at 100% in
+x state should be fairly obvious borkage and its not like we hit this
+thing very often.
+
+
 
