@@ -1,339 +1,423 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab2AXO6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 09:58:46 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47116 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab2AXO6p (ORCPT
+	id S1752851Ab2AXO7Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 09:59:24 -0500
+Received: from 5-meo-dmt.ynet.sk ([147.175.167.220]:38991 "EHLO
+	5-meo-dmt.ynet.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab2AXO7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 09:58:45 -0500
-Date: Tue, 24 Jan 2012 09:51:32 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tj@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/urgent] memblock: Fix alloc failure due to dumb
- underflow protection in memblock_find_in_range_node ()
-Message-ID: <20120124145132.GA30828@phenom.dumpdata.com>
-References: <20120113181412.GA11112@google.com>
- <tip-5d53cb27d849c899136c048ec84c940ac449494b@git.kernel.org>
+	Tue, 24 Jan 2012 09:59:22 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.499
+Date: Tue, 24 Jan 2012 15:55:53 +0100 (CET)
+From: Stefan Gula <steweg@ynet.sk>
+To: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <25119746.2341327416953583.JavaMail.root@5-MeO-DMT.ynet.sk>
+In-Reply-To: <12446987.2261327416407141.JavaMail.root@5-MeO-DMT.ynet.sk>
+Subject: [patch v3, kernel version 3.2.1] Source mode for macvlan interface
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-5d53cb27d849c899136c048ec84c940ac449494b@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090203.4F1EC70E.013B,ss=1,re=-2.300,fgs=0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [15.195.185.76]
+X-Mailer: Zimbra 5.0.8_GA_2462.UBUNTU6 (ZimbraWebClient - FF3.0 (Win)/5.0.8_GA_2462.UBUNTU6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 16, 2012 at 01:03:50AM -0800, tip-bot for Tejun Heo wrote:
-> Commit-ID:  5d53cb27d849c899136c048ec84c940ac449494b
-> Gitweb:     http://git.kernel.org/tip/5d53cb27d849c899136c048ec84c940ac449494b
-> Author:     Tejun Heo <tj@kernel.org>
-> AuthorDate: Fri, 13 Jan 2012 10:14:12 -0800
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 16 Jan 2012 08:38:06 +0100
-> 
-> memblock: Fix alloc failure due to dumb underflow protection in memblock_find_in_range_node()
-> 
-> 7bd0b0f0da ("memblock: Reimplement memblock allocation using
-> reverse free area iterator") implemented a simple top-down
-> allocator using a reverse memblock iterator.  To avoid underflow
-> in the allocator loop, it simply raised the lower boundary to
-> the requested size under the assumption that requested size
-> would be far smaller than available memblocks.
-> 
-> This causes early page table allocation failure under certain
-> configurations in Xen.  Fix it by checking for underflow directly
-> instead of bumping up lower bound.
+From: Stefan Gula <steweg@gmail.com>
 
-Well, it fixes my 4GB problem, but when I try to boot a 2GB (1GB of that
-is for balloon usage) guest (i386 only) I get a new failure:
+New mode of macvlan interface called "source" allows one to set a list
+of allowed mac address, which is used to match against source mac
+address from received frames on underlying interface. This allows
+creating mac based VLAN associations, instead of standard port or tag
+based. The feature is useful to deploy 802.1x mac based behavior,
+where drivers of underlying interfaces doesn't allows that.
+Configuration is done through the netlink interface using e.g.:
+  ip link add link eth0 name macvlan0 type macvlan mode source
+  ip link add link eth0 name macvlan1 type macvlan mode source
+  ip link set link macvlan0 type macvlan macaddr add 00:11:11:11:11:11
+  ip link set link macvlan0 type macvlan macaddr add 00:22:22:22:22:22
+  ip link set link macvlan0 type macvlan macaddr add 00:33:33:33:33:33
+  ip link set link macvlan1 type macvlan macaddr add 00:33:33:33:33:33
+  ip link set link macvlan1 type macvlan macaddr add 00:44:44:44:44:44
+This allows clients with MAC addresses 00:11:11:11:11:11,
+00:22:22:22:22:22 to be part of only VLAN associated with macvlan0 
+interface. Clients with MAC addresses 00:44:44:44:44:44 with only VLAN
+associated with macvlan1 interface. And client with MAC address
+00:33:33:33:33:33 to be associated with both VLANs.
 
-> more /mnt/lab/bootstrap-i386/test.xm 
-extra="console=hvc0 debug earlyprintk=xen memblock=debug"
-kernel="/mnt/lab/bootstrap-i386/vmlinuz"
-ramdisk="/mnt/lab/bootstrap-i386/initramfs.cpio.gz"
-memory=1024
-maxmem=2048
-vcpus=2
-name="bootstrap-i386"
-on_crash="preserve"
-vif = [ 'mac=00:0F:4B:00:00:68, bridge=switch' ]
-vfb = [ 'vnc=1, vnclisten=0.0.0.0,vncunused=1']
-disk=['phy:/dev/vg_guests/bootstrap-i386,xvda,w']
+Signed-off-by: Stefan Gula <steweg@gmail.com>
 
-So this is v3.3-rc1 + this patch by itself. Any thoughts of what else
-might be amiss?
+---
 
-Using config file "/mnt/lab/bootstrap-i386/test.xm".
-Started domain bootstrap-i386 (id=2)
-(early) [    0.000000] Reserving virtual address space above 0xf5800000
-(early) [    0.000000] Initializing cgroup subsys cpuset
-(early) [    0.000000] Initializing cgroup subsys cpu
-(early) [    0.000000] Linux version 3.3.0-rc1-00065-gc9d7799 (konrad@build.dumpdata.com) (gcc version 4.4.4 20100503 (Red Hat 4.4.4-2) (GCC) ) #1 SMP PREEMPT Tue Jan 24 04:34:24 EST 2012
-(early) [    0.000000] ACPI in unprivileged domain disabled
-(early) [    0.000000] Released 0 pages of unused memory
-(early) [    0.000000] Set 0 page(s) to 1-1 mapping
-(early) [    0.000000] BIOS-provided physical RAM map:
-(early) [    0.000000]  Xen: 0000000000000000 - 00000000000a0000 (usable)
-(early) [    0.000000]  Xen: 00000000000a0000 - 0000000000100000 (reserved)
-(early) [    0.000000]  Xen: 0000000000100000 - 0000000080800000 (usable)
-(early) [    0.000000] bootconsole [xenboot0] enabled
-(early) [    0.000000] NX (Execute Disable) protection: active
-(early) [    0.000000] DMI not present or invalid.
-(early) [    0.000000] e820 update range: 0000000000000000 - 0000000000010000 (early) (usable)(early)  ==> (early) (reserved)(early) 
-(early) [    0.000000] e820 remove range: 00000000000a0000 - 0000000000100000 (early) (usable)(early) 
-(early) [    0.000000] last_pfn = 0x80800 max_arch_pfn = 0x1000000
-(early) [    0.000000] memblock_reserve: [0x0000000185a000-0x0000000186b000] setup_arch+0x67a/0xc9e
-(early) [    0.000000] MEMBLOCK configuration:
-(early) [    0.000000]  memory size = 0x80790000 reserved size = 0x59593000
-(early) [    0.000000]  memory.cnt  = 0x2
-(early) [    0.000000]  memory[0x0]	[0x00000000010000-0x0000000009ffff], 0x90000 bytes
-(early) [    0.000000]  memory[0x1]	[0x00000000100000-0x000000807fffff], 0x80700000 bytes
-(early) [    0.000000]  reserved.cnt  = 0x3
-(early) [    0.000000]  reserved[0x0]	[0x00000001000000-0x0000000186afff], 0x86b000 bytes
-(early) [    0.000000]  reserved[0x1]	[0x00000001ab4000-0x00000019fdbfff], 0x18528000 bytes
-(early) [    0.000000]  reserved[0x2]	[0x00000040000000-0x000000807fffff], 0x40800000 bytes
-(early) [    0.000000] initial memory mapped : 0 - 1abff000
-(early) [    0.000000] memblock_reserve: [0x0000000009c000-0x000000000a0000] setup_trampolines+0x81/0xba
-(early) [    0.000000] Base memory trampoline at [c009c000] 9c000 size 16384
-(early) [    0.000000] init_memory_mapping: 0000000000000000-000000002d3fe000
-(early) [    0.000000]  0000000000 - 002d3fe000 page 4k
-(early) [    0.000000] kernel direct mapping tables up to 2d3fe000 @ 1aa92000-1abff000
-(early) [    0.000000] memblock_reserve: [0x0000001aa92000-0x0000001ab26000] native_pagetable_reserve+0x22/0x28
-(early) [    0.000000] xen: setting RW the range 1ab26000 - 1abff000
-(early) [    0.000000]    memblock_free: [0x00000001ab4000-0x00000019e05000] setup_arch+0x7d5/0xc9e
-(early) [    0.000000] initrd too large to handle, disabling initrd
-(early) [    0.000000] 1332MB HIGHMEM available.
-(early) [    0.000000] 723MB LOWMEM available.
-(early) [    0.000000]   mapped low ram: 0 - 2d3fe000
-(early) [    0.000000]   low ram: 0 - 2d3fe000
-(early) [    0.000000] memblock_reserve: [0x0000002d3fd000-0x0000002d3fe000] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] Zone PFN ranges:
-(early) [    0.000000]   DMA      (early) 0x00000010 -> 0x00001000
-(early) [    0.000000]   Normal   (early) 0x00001000 -> 0x0002d3fe
-(early) [    0.000000]   HighMem  (early) 0x0002d3fe -> 0x00080800
-(early) [    0.000000] Movable zone start PFN for each node
-(early) [    0.000000] Early memory PFN ranges
-(early) [    0.000000]     0: 0x00000010 -> 0x000000a0
-(early) [    0.000000]     0: 0x00000100 -> 0x00080800
-(early) [    0.000000] On node 0 totalpages: 526224
-(early) [    0.000000] memblock_reserve: [0x0000002c3ed000-0x0000002d3fd000] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] free_area_init_node: node 0, pgdat c170c540, node_mem_map ec3ed200
-(early) [    0.000000]   DMA zone: 32 pages used for memmap
-(early) [    0.000000]   DMA zone: 0 pages reserved
-(early) [    0.000000]   DMA zone: 3952 pages, LIFO batch:0
-(early) [    0.000000] memblock_reserve: [0x0000002c3ecfc0-0x0000002c3ecfc4] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3ecf00-0x0000002c3ecfc0] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000]   Normal zone: 1416 pages used for memmap
-(early) [    0.000000]   Normal zone: 179830 pages, LIFO batch:31
-(early) [    0.000000] memblock_reserve: [0x0000002c3ece40-0x0000002c3ecec8] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e9e40-0x0000002c3ece40] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000]   HighMem zone: 2665 pages used for memmap
-(early) [    0.000000]   HighMem zone: 338329 pages, LIFO batch:31
-(early) [    0.000000] memblock_reserve: [0x0000002c3e9d40-0x0000002c3e9e3c] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e3d40-0x0000002c3e9d40] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] Using APIC driver default
-(early) [    0.000000] SMP: Allowing 2 CPUs, 0 hotplug CPUs
-(early) [    0.000000] Local APIC disabled by BIOS -- you can enable it with "lapic"
-(early) [    0.000000] APIC: disable apic facility
-(early) [    0.000000] APIC: switched to apic NOOP
-(early) [    0.000000] nr_irqs_gsi: 16
-(early) [    0.000000] memblock_reserve: [0x0000002c3e3c80-0x0000002c3e3d10] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e3c40-0x0000002c3e3c80] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e3c00-0x0000002c3e3c40] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e3bc0-0x0000002c3e3c00] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e3b80-0x0000002c3e3b90] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] PM: Registered nosave memory: 00000000000a0000 - 0000000000100000
-(early) [    0.000000] Allocating PCI resources starting at 80800000 (gap: 80800000:7f800000)
-(early) [    0.000000] Booting paravirtualized kernel on Xen
-(early) [    0.000000] Xen version: 4.1-120124 (preserve-AD)
-(early) [    0.000000] memblock_reserve: [0x0000002c3e3b40-0x0000002c3e3b72] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e3b00-0x0000002c3e3b32] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] setup_percpu: NR_CPUS:8 nr_cpumask_bits:8 nr_cpu_ids:2 nr_node_ids:1
-(early) [    0.000000] memblock_reserve: [0x0000002c3e2b00-0x0000002c3e3b00] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e1b00-0x0000002c3e2b00] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3c5000-0x0000002c3e1000] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000]    memblock_free: [0x0000002c3d3000-0x0000002c3d3000] free_bootmem+0x2b/0x31
-(early) [    0.000000]    memblock_free: [0x0000002c3e1000-0x0000002c3e1000] free_bootmem+0x2b/0x31
-(early) [    0.000000] PERCPU: Embedded 14 pages/cpu @ec3c5000 s33600 r0 d23744 u57344
-(early) [    0.000000] memblock_reserve: [0x0000002c3e1ac0-0x0000002c3e1ac4] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e1a80-0x0000002c3e1a84] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e1a40-0x0000002c3e1a48] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e1a00-0x0000002c3e1a08] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] pcpu-alloc: s33600 r0 d23744 u57344 alloc=14*4096(early) 
-(early) [    0.000000] pcpu-alloc: (early) [0] (early) 0 (early) [0] (early) 1 (early) 
-(early) [    0.000000] memblock_reserve: [0x0000002c3e1980-0x0000002c3e19f8] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] memblock_reserve: [0x0000002c3e1940-0x0000002c3e196c] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000]    memblock_free: [0x0000002c3e2b00-0x0000002c3e3b00] free_bootmem+0x2b/0x31
-(early) [    0.000000]    memblock_free: [0x0000002c3e1b00-0x0000002c3e2b00] free_bootmem+0x2b/0x31
-(early) [    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 522111
-(early) [    0.000000] Kernel command line: console=hvc0 debug earlyprintk=xen memblock=debug
-(early) [    0.000000] memblock_reserve: [0x0000002c3c1000-0x0000002c3c5000] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] PID hash table entries: 4096 (order: 2, 16384 bytes)
-(early) [    0.000000] memblock_reserve: [0x0000002c341000-0x0000002c3c1000] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
-(early) [    0.000000] memblock_reserve: [0x0000002c301000-0x0000002c341000] __alloc_memory_core_early+0x8c/0xaa
-(early) [    0.000000] Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
-(early) [    0.000000] Initializing CPU#0
-(early) [    0.000000] Initializing HighMem for node 0 (0002d3fe:00080800)
-(early) [    0.000000] Memory: 1019624k/2105344k available (5450k kernel code, 28504k reserved, 1812k data, 508k init, 307208k highmem)
-(early) [    0.000000] virtual kernel memory layout:
-(early) [    0.000000]     fixmap  : 0xf5715000 - 0xf57ff000   ( 936 kB)
-(early) [    0.000000]     pkmap   : 0xf5400000 - 0xf5600000   (2048 kB)
-(early) [    0.000000]     vmalloc : 0xedbfe000 - 0xf53fe000   ( 120 MB)
-(early) [    0.000000]     lowmem  : 0xc0000000 - 0xed3fe000   ( 723 MB)
-(early) [    0.000000]       .init : 0xc1718000 - 0xc1797000   ( 508 kB)
-(early) [    0.000000]       .data : 0xc1552935 - 0xc1717a40   (1812 kB)
-(early) [    0.000000]       .text : 0xc1000000 - 0xc1552935   (5450 kB)
-(early) [    0.000000] SLUB: Genslabs=15, HWalign=64, Order=0-3, MinObjects=0, CPUs=2, Nodes=1
-(early) [    0.000000] Preemptible hierarchical RCU implementation.
-(early) [    0.000000] NR_IRQS:2304 nr_irqs:288 16
-(early) [    0.000000] CPU 0 irqstacks, hard=ebc10000 soft=ebc12000
-(early) [    0.000000] Console: colour dummy device 80x25
-(early) [    0.000000] console [tty0] enabled
-[    0.000000] console [hvc0] enabled, bootconsole disabled
-(early) [    0.000000] console [hvc0] enabled, bootconsole disabled
-[    0.000000] Xen: using vcpuop timer interface
-[    0.000000] installing Xen timer for CPU 0
-[    0.000000] Detected 3292.620 MHz processor.
-[    0.000999] Calibrating delay loop (skipped), value calculated using timer frequency.. 6585.24 BogoMIPS (lpj=3292620)
-[    0.000999] pid_max: default: 32768 minimum: 301
-[    0.000999] Security Framework initialized
-[    0.000999] SELinux:  Initializing.
-[    0.000999] SELinux:  Starting in permissive mode
-[    0.000999] Mount-cache hash table entries: 512
-[    0.001120] Initializing cgroup subsys cpuacct
-[    0.001130] Initializing cgroup subsys freezer
-[    0.001263] CPU: Physical Processor ID: 0
-[    0.001272] CPU: Processor Core ID: 0
-[    0.001280] ENERGY_PERF_BIAS: Set to 'normal', was 'performance'
-[    0.001281] ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)
-[    0.001519] SMP alternatives: switching to UP code
-[    0.002138] cpu 0 spinlock event irq 17
-[    0.002298] Performance Events: unsupported p6 CPU model 42 no PMU driver, software events only.
-[    0.008072] NMI watchdog disabled (cpu0): hardware events not enabled
-[    0.014031] CPU 1 irqstacks, hard=ebc8a000 soft=ebc8c000
-[    0.014041] installing Xen timer for CPU 1
-[    0.014116] cpu 1 spinlock event irq 23
-[    0.014145] SMP alternatives: switching to SMP code
-[    0.000999] Initializing CPU#1
-[    0.000999] Disabled fast string operations
-[    0.015199] NMI watchdog disabled (cpu1): hardware events not enabled
-[    0.017015] Brought up 2 CPUs
-[    0.019112] kworker/u:0 used greatest stack depth: 6968 bytes left
-[    0.019157] Grant tables using version 2 layout.
-[    0.019157] Grant table initialized
-[    0.038273] RTC time: 165:165:165, date: 165/165/65
-[    0.038580] NET: Registered protocol family 16
-[    0.041681] PCI: setting up Xen PCI frontend stub
-[    0.041691] PCI: pci_cache_line_size set to 64 bytes
-[    0.043149] kworker/u:0 used greatest stack depth: 6928 bytes left
-[    0.046216] kworker/u:0 used greatest stack depth: 6784 bytes left
-[    0.067350] kworker/u:0 used greatest stack depth: 6620 bytes left
-[    0.086154] bio: create slab <bio-0> at 0
-[    0.087533] ACPI: Interpreter disabled.
-[    0.087647] xen/balloon: Initialising balloon driver.
-[    0.092191] xen-balloon: Initialising balloon driver.
-[    0.093348] vgaarb: loaded
-[    0.095177] usbcore: registered new interface driver usbfs
-[    0.095274] usbcore: registered new interface driver hub
-[    0.096014] usbcore: registered new device driver usb
-[    0.097187] PCI: System does not support PCI
-[    0.097187] PCI: System does not support PCI
-[    0.098239] NetLabel: Initializing
-[    0.098239] NetLabel:  domain hash size = 128
-[    0.098239] NetLabel:  protocols = UNLABELED CIPSOv4
-[    0.098274] NetLabel:  unlabeled traffic allowed by default
-[    0.099464] Switching to clocksource xen
-[    0.130294] pnp: PnP ACPI: disabled
-[    0.156747] PCI: max bus depth: 0 pci_try_num: 1
-[    0.156899] NET: Registered protocol family 2
-[    0.157124] IP route cache hash table entries: 32768 (order: 5, 131072 bytes)
-[    0.157918] TCP established hash table entries: 131072 (order: 8, 1048576 bytes)
-[    0.158302] TCP bind hash table entries: 65536 (order: 7, 524288 bytes)
-[    0.158391] TCP: Hash tables configured (established 131072 bind 65536)
-[    0.158402] TCP reno registered
-[    0.158414] UDP hash table entries: 512 (order: 2, 16384 bytes)
-[    0.158429] UDP-Lite hash table entries: 512 (order: 2, 16384 bytes)
-[    0.158763] NET: Registered protocol family 1
-[    0.159684] RPC: Registered named UNIX socket transport module.
-[    0.159696] RPC: Registered udp transport module.
-[    0.159704] RPC: Registered tcp transport module.
-[    0.159712] RPC: Registered tcp NFSv4.1 backchannel transport module.
-[    0.159723] PCI: CLS 0 bytes, default 64
-[    0.249509] DMA-API: preallocated 32768 debug entries
-[    0.249524] DMA-API: debugging enabled by kernel config
-[    0.250058] platform rtc_cmos: registered platform RTC device (no PNP device found)
-[    0.250596] Machine check injector initialized
-[    0.252469] microcode: no support for this CPU vendor
-[    0.254141] audit: initializing netlink socket (disabled)
-[    0.254196] type=2000 audit(1327444216.488:1): initialized
-[    0.267418] highmem bounce pool size: 64 pages
-[    0.267441] HugeTLB registered 2 MB page size, pre-allocated 0 pages
-[    0.291085] kworker/u:0 used greatest stack depth: 6588 bytes left
-[    0.293529] VFS: Disk quotas dquot_6.5.2
-[    0.294081] Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
-[    0.297116] NTFS driver 2.1.30 [Flags: R/W].
-[    0.298412] msgmni has been set to 1391
-[    0.299046] SELinux:  Registering netfilter hooks
-[    0.301611] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)
-[    0.301625] io scheduler noop registered
-[    0.301633] io scheduler deadline registered
-[    0.301663] io scheduler cfq registered (default)
-[    0.302462] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
-[    0.400113] kworker/u:1 used greatest stack depth: 6496 bytes left
-[    0.461905] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-[    0.484000] Non-volatile memory driver v1.3
-[    0.484022] Linux agpgart interface v0.103
-[    0.487010] [drm] Initialized drm 1.1.0 20060810
-[    0.502366] brd: module loaded
-[    0.510758] loop: module loaded
-[    0.512577] Fixed MDIO Bus: probed
-[    0.512587] tun: Universal TUN/TAP device driver, 1.6
-[    0.512595] tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
-[    0.514744] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-[    0.514756] ehci_hcd: block sizes: qh 68 qtd 96 itd 160 sitd 96
-[    0.515062] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-[    0.515073] ohci_hcd: block sizes: ed 64 td 64
-[    0.515319] uhci_hcd: USB Universal Host Controller Interface driver
-[    0.515892] usbcore: registered new interface driver usblp
-[    0.516182] usbcore: registered new interface driver libusual
-[    0.516986] i8042: PNP: No PS/2 controller found. Probing ports directly.
-[    0.517812] i8042: No controller found
-[    0.518502] mousedev: PS/2 mouse device common for all mice
-[    0.560132] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
-[    0.560440] rtc_cmos: probe of rtc_cmos failed with error -38
-[    0.561343] EFI Variables Facility v0.08 2004-May-17
-[    0.562715] Netfilter messages via NETLINK v0.30.
-[    0.562771] nf_conntrack version 0.5.0 (15931 buckets, 63724 max)
-[    0.563857] ctnetlink v0.93: registering with nfnetlink.
-[    0.565724] ip_tables: (C) 2000-2006 Netfilter Core Team
-[    0.565930] TCP cubic registered
-[    0.565938] Initializing XFRM netlink socket
-[    0.567531] NET: Registered protocol family 10
-[    0.570396] ip6_tables: (C) 2000-2006 Netfilter Core Team
-[    0.570615] IPv6 over IPv4 tunneling driver
-[    0.573725] NET: Registered protocol family 17
-[    0.573841] Registering the dns_resolver key type
-[    0.573932] Using IPI No-Shortcut mode
-[    0.574835] PM: Hibernation image not present or could not be loaded.
-[    0.574914] registered taskstats version 1
-[    0.575042] kmemleak: Kernel memory leak detector initialized
-[    0.575065] kmemleak: Automatic memory scanning thread started
-[    0.575189] XENBUS: Device with no driver: device/vkbd/0
-[    0.575199] XENBUS: Device with no driver: device/vfb/0
-[    0.575208] XENBUS: Device with no driver: device/vbd/51712
-[    0.575216] XENBUS: Device with no driver: device/vif/0
-[    0.575225] XENBUS: Device with no driver: device/console/0
-[    0.575248]   Magic number: 1:252:3141
-[    0.576109] Root-NFS: no NFS server address
-[    0.576118] VFS: Unable to mount root fs via NFS, trying floppy.
-[    0.576215] VFS: Cannot open root device "(null)" or unknown-block(2,0)
-[    0.576224] Please append a correct "root=" boot option; here are the available partitions:
-[    0.576244] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(2,0)
+V3: list of changes:
+ - changed GFP_ATOMIC to GFP_KERNEL
+ - modified rtnetlink.c to automatic adjust min_ifinfo_dump_size during 
+   do_setlink to adjust size of allocated sk_buff structure
+ - removed IFLA_MACVLAN_MACADDR_ADT - not needed anymore
+
+diff -uprN -X linux/Documentation/dontdiff linux-3.2.1-orig/drivers/net/macvlan.c linux/drivers/net/macvlan.c
+--- linux-3.2.1-orig/drivers/net/macvlan.c	2012-01-12 20:42:45.000000000 +0100
++++ linux/drivers/net/macvlan.c	2012-01-24 14:25:38.176220426 +0100
+@@ -40,6 +40,7 @@ struct macvlan_port {
+ 	struct rcu_head		rcu;
+ 	bool 			passthru;
+ 	int			count;
++	struct hlist_head	vlan_source_hash[MACVLAN_HASH_SIZE];
+ };
+ 
+ static void macvlan_port_destroy(struct net_device *dev);
+@@ -155,6 +156,114 @@ static void macvlan_broadcast(struct sk_
+ 	}
+ }
+ 
++struct macvlan_source_list {
++	struct hlist_node	hlist;
++	struct macvlan_dev	*vlan;
++	unsigned char		addr[ETH_ALEN];
++	struct rcu_head		rcu;
++};
++
++static struct macvlan_source_list *macvlan_hash_lookup_sources_list(
++	const struct macvlan_dev *vlan,
++	const unsigned char *addr)
++{
++	struct macvlan_source_list *list;
++	struct hlist_node *n;
++
++	hlist_for_each_entry_rcu(list, n,
++		&vlan->port->vlan_source_hash[addr[5]], hlist) {
++		if (!compare_ether_addr_64bits(list->addr, addr) &&
++			list->vlan == vlan)
++			return list;
++	}
++	return NULL;
++}
++
++static int macvlan_hash_add_sources(struct macvlan_dev *vlan,
++				const unsigned char *addr)
++{
++	struct macvlan_port *port = vlan->port;
++	struct macvlan_source_list *list;
++
++	list = macvlan_hash_lookup_sources_list(vlan, addr);
++	if (!list) {
++		list = kmalloc(sizeof(*list), GFP_KERNEL);
++		if (list) {
++			memcpy(list->addr, addr, ETH_ALEN);
++			list->vlan = vlan;
++			hlist_add_head_rcu(&list->hlist,
++				&port->vlan_source_hash[addr[5]]);
++		} else
++			return -ENOMEM;
++	}
++	return 0;
++}
++
++static void macvlan_hash_del_sources(struct macvlan_source_list *list)
++{
++	hlist_del_rcu(&list->hlist);
++	kfree_rcu(list, rcu);
++}
++
++static void macvlan_flush_sources(struct macvlan_port *port,
++				struct macvlan_dev *vlan)
++{
++	int i;
++
++	for (i = 0; i < MACVLAN_HASH_SIZE; i++) {
++		struct hlist_node *h, *n;
++
++		hlist_for_each_safe(h, n, &port->vlan_source_hash[i]) {
++			struct macvlan_source_list *list
++				= hlist_entry(h, struct macvlan_source_list,
++						hlist);
++			if (list->vlan == vlan)
++				macvlan_hash_del_sources(list);
++		}
++	}
++}
++
++static void macvlan_forward_sources_one(struct sk_buff *skb,
++					struct macvlan_dev *vlan)
++{
++	struct sk_buff *nskb;
++	struct net_device *dev;
++	int len;
++	int ret;
++
++	dev = vlan->dev;
++	if (unlikely(!(dev->flags & IFF_UP)))
++		return;
++
++	nskb = skb_clone(skb, GFP_ATOMIC);
++	if (!nskb)
++		return;
++
++	len = nskb->len + ETH_HLEN;
++	nskb->dev = dev;
++	nskb->pkt_type = PACKET_HOST;
++	ret = vlan->receive(nskb);
++	macvlan_count_rx(vlan, len, ret == NET_RX_SUCCESS, 0);
++}
++
++static void macvlan_forward_sources(struct sk_buff *skb,
++	const struct macvlan_port *port,
++	const unsigned char *addr)
++{
++	struct macvlan_source_list *list;
++	struct hlist_node *n;
++
++	hlist_for_each_entry_rcu(list, n, &port->vlan_source_hash[addr[5]],
++				hlist) {
++		if (!compare_ether_addr_64bits(list->addr, addr))
++			if (list->vlan->dev->flags & IFF_UP)
++				macvlan_forward_sources_one(skb, list->vlan);
++	}
++	return;
++}
++
++
++
+ /* called under rcu_read_lock() from netif_receive_skb */
+ static rx_handler_result_t macvlan_handle_frame(struct sk_buff **pskb)
+ {
+@@ -172,6 +281,8 @@ static rx_handler_result_t macvlan_handl
+ 		skb = ip_check_defrag(skb, IP_DEFRAG_MACVLAN);
+ 		if (!skb)
+ 			return RX_HANDLER_CONSUMED;
++
++		macvlan_forward_sources(skb, port, eth->h_source);
+ 		src = macvlan_hash_lookup(port, eth->h_source);
+ 		if (!src)
+ 			/* frame comes from an external address */
+@@ -202,6 +313,7 @@ static rx_handler_result_t macvlan_handl
+ 		return RX_HANDLER_PASS;
+ 	}
+ 
++	macvlan_forward_sources(skb, port, eth->h_source);
+ 	if (port->passthru)
+ 		vlan = list_first_entry(&port->vlans, struct macvlan_dev, list);
+ 	else
+@@ -474,6 +586,7 @@ static void macvlan_uninit(struct net_de
+ 
+ 	free_percpu(vlan->pcpu_stats);
+ 
++	macvlan_flush_sources(port, vlan);
+ 	port->count -= 1;
+ 	if (!port->count)
+ 		macvlan_port_destroy(port->dev);
+@@ -615,7 +728,8 @@ static int macvlan_port_create(struct ne
+ 	INIT_LIST_HEAD(&port->vlans);
+ 	for (i = 0; i < MACVLAN_HASH_SIZE; i++)
+ 		INIT_HLIST_HEAD(&port->vlan_hash[i]);
+-
++	for (i = 0; i < MACVLAN_HASH_SIZE; i++)
++		INIT_HLIST_HEAD(&port->vlan_source_hash[i]);
+ 	err = netdev_rx_handler_register(dev, macvlan_handle_frame, port);
+ 	if (err)
+ 		kfree(port);
+@@ -648,11 +762,31 @@ static int macvlan_validate(struct nlatt
+ 		case MACVLAN_MODE_VEPA:
+ 		case MACVLAN_MODE_BRIDGE:
+ 		case MACVLAN_MODE_PASSTHRU:
++		case MACVLAN_MODE_SOURCE:
++			break;
++		default:
++			return -EINVAL;
++		}
++	}
++
++	if (data && data[IFLA_MACVLAN_MACADDR_MODE]) {
++		switch (nla_get_u32(data[IFLA_MACVLAN_MACADDR_MODE])) {
++		case MACVLAN_MACADDR_ADD:
++		case MACVLAN_MACADDR_DEL:
+ 			break;
+ 		default:
+ 			return -EINVAL;
+ 		}
+ 	}
++
++	if (data && data[IFLA_MACVLAN_MACADDR]) {
++		if (nla_len(data[IFLA_MACVLAN_MACADDR]) != ETH_ALEN)
++			return -EINVAL;
++
++		if (!is_valid_ether_addr(nla_data(data[IFLA_MACVLAN_MACADDR])))
++			return -EADDRNOTAVAIL;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -749,6 +883,8 @@ void macvlan_dellink(struct net_device *
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+ 
++	if (vlan->mode == MACVLAN_MODE_SOURCE)
++		macvlan_flush_sources(vlan->port, vlan);
+ 	list_del(&vlan->list);
+ 	unregister_netdevice_queue(dev, head);
+ }
+@@ -758,30 +894,120 @@ static int macvlan_changelink(struct net
+ 		struct nlattr *tb[], struct nlattr *data[])
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+-	if (data && data[IFLA_MACVLAN_MODE])
++
++	if (data && data[IFLA_MACVLAN_MODE]) {
++		if (vlan->mode == MACVLAN_MODE_SOURCE &&
++			vlan->mode != nla_get_u32(data[IFLA_MACVLAN_MODE]))
++			macvlan_flush_sources(vlan->port, vlan);
+ 		vlan->mode = nla_get_u32(data[IFLA_MACVLAN_MODE]);
++	}
++
++	if (data && data[IFLA_MACVLAN_MACADDR_MODE] &&
++		data[IFLA_MACVLAN_MACADDR]) {
++		if (vlan->mode == MACVLAN_MODE_SOURCE) {
++			if ((nla_get_u32(data[IFLA_MACVLAN_MACADDR_MODE]) ==
++				MACVLAN_MACADDR_ADD))
++				return macvlan_hash_add_sources(vlan,
++					nla_data(data[IFLA_MACVLAN_MACADDR]));
++
++			else if (nla_get_u32(data[IFLA_MACVLAN_MACADDR_MODE]) ==
++				MACVLAN_MACADDR_DEL) {
++				struct macvlan_source_list *list;
++
++				list = macvlan_hash_lookup_sources_list(vlan,
++					nla_data(data[IFLA_MACVLAN_MACADDR]));
++				if (list)
++					macvlan_hash_del_sources(list);
++			} else
++				return -EINVAL;
++		} else
++			return -EINVAL;
++	}
++
+ 	return 0;
+ }
+ 
+ static size_t macvlan_get_size(const struct net_device *dev)
+ {
+-	return nla_total_size(4);
++	struct macvlan_dev *vlan = netdev_priv(dev);
++	u16 source_size = 0;
++	int count = 0;
++
++	if (vlan->mode == MACVLAN_MODE_SOURCE) {
++		int i;
++		for (i = 0; i < MACVLAN_HASH_SIZE; i++) {
++			struct hlist_node *n;
++			struct macvlan_source_list *list;
++
++			hlist_for_each_entry_rcu(list, n,
++				&vlan->port->vlan_source_hash[i], hlist) {
++				if (list->vlan == vlan)
++					count++;
++			}
++		}
++		if (count)
++			source_size = nla_total_size(sizeof(struct nlattr))
++				+ nla_total_size(sizeof(u8) * ETH_ALEN) * count;
++	}
++
++	return nla_total_size(4) + source_size;
++}
++
++static int macvlan_fill_nested(struct sk_buff *skb, const char *addr)
++{
++	NLA_PUT(skb, IFLA_MACVLAN_MACADDR, ETH_ALEN, addr);
++
++	return 0;
++
++nla_put_failure:
++	return -EMSGSIZE;
+ }
+ 
+ static int macvlan_fill_info(struct sk_buff *skb,
+ 				const struct net_device *dev)
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
++	struct nlattr *adt;
+ 
+ 	NLA_PUT_U32(skb, IFLA_MACVLAN_MODE, vlan->mode);
++
++	if (vlan->mode == MACVLAN_MODE_SOURCE) {
++		int i;
++
++		adt = nla_nest_start(skb, IFLA_MACVLAN_MACADDR_DATA);
++		if (!adt)
++			goto nla_put_failure;
++
++		for (i = 0; i < MACVLAN_HASH_SIZE; i++) {
++			struct hlist_node *n;
++			struct macvlan_source_list *list;
++
++			hlist_for_each_entry_rcu(list, n,
++				&vlan->port->vlan_source_hash[i], hlist) {
++				if (list->vlan == vlan)
++					if (macvlan_fill_nested(skb,
++						list->addr))
++						goto nla_nested_failure;
++			}
++		}
++		nla_nest_end(skb, adt);
++	}
++
+ 	return 0;
+ 
++nla_nested_failure:
++	nla_nest_end(skb, adt);
++	return -EMSGSIZE;
++
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
+ 
+ static const struct nla_policy macvlan_policy[IFLA_MACVLAN_MAX + 1] = {
+ 	[IFLA_MACVLAN_MODE] = { .type = NLA_U32 },
++	[IFLA_MACVLAN_MACADDR_MODE] = { .type = NLA_U32 },
++	[IFLA_MACVLAN_MACADDR] = { .type = NLA_BINARY, .len = MAX_ADDR_LEN },
++	[IFLA_MACVLAN_MACADDR_DATA] = { .type = NLA_NESTED },
+ };
+ 
+ int macvlan_link_register(struct rtnl_link_ops *ops)
+diff -uprN -X linux/Documentation/dontdiff linux-3.2.1-orig/include/linux/if_link.h linux/include/linux/if_link.h
+--- linux-3.2.1-orig/include/linux/if_link.h	2012-01-12 20:42:45.000000000 +0100
++++ linux/include/linux/if_link.h	2012-01-24 12:36:51.885312680 +0100
+@@ -252,6 +252,9 @@ struct ifla_vlan_qos_mapping {
+ enum {
+ 	IFLA_MACVLAN_UNSPEC,
+ 	IFLA_MACVLAN_MODE,
++	IFLA_MACVLAN_MACADDR_MODE,
++	IFLA_MACVLAN_MACADDR,
++	IFLA_MACVLAN_MACADDR_DATA,
+ 	__IFLA_MACVLAN_MAX,
+ };
+ 
+@@ -262,6 +265,12 @@ enum macvlan_mode {
+ 	MACVLAN_MODE_VEPA    = 2, /* talk to other ports through ext bridge */
+ 	MACVLAN_MODE_BRIDGE  = 4, /* talk to bridge ports directly */
+ 	MACVLAN_MODE_PASSTHRU = 8,/* take over the underlying device */
++	MACVLAN_MODE_SOURCE  = 16,/* use source MAC address list to assign */
++};
++
++enum macvlan_macaddr_mode {
++	MACVLAN_MACADDR_ADD,
++	MACVLAN_MACADDR_DEL,
+ };
+ 
+ /* SR-IOV virtual function management section */
+diff -uprN -X linux/Documentation/dontdiff linux-3.2.1-orig/net/core/rtnetlink.c linux/net/core/rtnetlink.c
+--- linux-3.2.1-orig/net/core/rtnetlink.c	2012-01-12 20:42:45.000000000 +0100
++++ linux/net/core/rtnetlink.c	2012-01-24 14:26:58.083219352 +0100
+@@ -1506,6 +1506,9 @@ errout:
+ 
+ 	if (send_addr_notify)
+ 		call_netdevice_notifiers(NETDEV_CHANGEADDR, dev);
++	min_ifinfo_dump_size = max_t(u16, if_nlmsg_size(dev),
++					min_ifinfo_dump_size);
++
+ 	return err;
+ }
+ 
