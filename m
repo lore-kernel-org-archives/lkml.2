@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab2AXAy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:54:26 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:38956 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754311Ab2AXAyZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:54:25 -0500
-Message-ID: <4F1E013E.9060009@fb.com>
-Date: Mon, 23 Jan 2012 16:54:22 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Balbir Singh <bsingharora@gmail.com>, <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
-References: <1326912662-18805-1-git-send-email-asharma@fb.com> <20120119114206.653b88bd.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120119114206.653b88bd.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.211,0.0.0000
- definitions=2012-01-23_06:2012-01-24,2012-01-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+	id S1754661Ab2AXA7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:59:21 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:35107 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754456Ab2AXA7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 19:59:20 -0500
+Date: Tue, 24 Jan 2012 11:59:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: linux-next: manual merge of the arm-current tree with Linus' tree
+Message-Id: <20120124115909.0c2119249212ac9669860afc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__24_Jan_2012_11_59_09_+1100_XPWVt_+J5yVOddE3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/18/12 6:42 PM, KAMEZAWA Hiroyuki wrote:
->
-> Hmm, then,
-> 1. a new task jumped into this cgroup can see any uncleared data...
-> 2. if a memcg pointer is reused, the information will be leaked.
+--Signature=_Tue__24_Jan_2012_11_59_09_+1100_XPWVt_+J5yVOddE3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You're suggesting mm_match_cgroup() is good enough for accounting 
-purposes, but not usable for cases where its important to get the 
-equality right?
+Hi Russell,
 
-> 3. If VM_UNINITALIZED is set, the process can see any data which
->     was freed by other process which doesn't know VM_UNINITALIZED at all.
->
-> 4. The process will be able to see file cache data which the it has no
->     access right if it's accessed by memcg once.
->
-> 3&  4 seems too danger.
+Today's linux-next merge of the arm-current tree got a conflict in
+arch/arm/mach-mx5/Kconfig between commit 784a90c0a7d8 ("ARM i.MX: Merge
+i.MX5 support into mach-imx") from Linus' tree and commit a092f2b15399
+("ARM: 7291/1: cache: assume 64-byte L1 cachelines for ARMv7 CPUs") from
+the arm-current tree.
 
-Yes - these are the risks that I'm hoping we can document, so the 
-cgroups admin can avoid opting-in if not everything running in the 
-cgroup is trusted.
+The former removed the file and merged its contents into
+arch/arm/mach-imx/Kconfig, so I removed it and applied the following
+fixup patch - which I can carry as necessary.
 
->
-> Isn't it better to have this as per-task rather than per-memcg ?
-> And just allow to reuse pages the page has freed ?
->
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 24 Jan 2012 11:56:27 +1100
+Subject: [PATCH] ARM: fix up for cache size assumed to be 64 bytes
 
-I'm worrying that the additional complexity of maintaining a per-task 
-page list would be a problem. It might slow down workloads that 
-alloc/free a lot because of the added code. It'll probably touch the 
-kswapd as well (for reclaiming pages from the per-task free lists under 
-low mem conditions).
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/arm/mach-imx/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Did you have some implementation ideas which would not have the problems 
-above?
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 09f357b..4defb97 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -87,7 +87,6 @@ config SOC_IMX35
+=20
+ config SOC_IMX5
+ 	select CPU_V7
+-	select ARM_L1_CACHE_SHIFT_6
+ 	select MXC_TZIC
+ 	select ARCH_MXC_IOMUX_V3
+ 	select ARCH_MXC_AUDMUX_V2
+--=20
+1.7.9.rc0.23.g7e521
 
-  -Arun
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__24_Jan_2012_11_59_09_+1100_XPWVt_+J5yVOddE3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPHgJdAAoJEECxmPOUX5FEYdoP/1/T2FbDGJSfSRuXjawazs91
+a/xPlATvKmqyhoJzQApuGjmdMHG5sp7sywNM6JWtoc/CfrdLqrbI68lQO68m5Qdq
+jRnk+f+xg9Blm5Jj4MYYFIj+znYAoWCs2l42nj6clSAZU//MUeM3F4Th3HxAhDi9
+EKqhNJmn05Ke38+xcIbd0IBlrUWTDVH6T0cXiIj7WWyeFWbjv9v7f2H3uwvLSA+W
+ybgCi9A/g3aHiu9KEbsK+GVYlGJcIj7YW39X03sXsgRL2cJq1Qg1hYel54N7HQ8c
+88EBzfQMBC5ide4diUPStm+8tBJ+sAqMsKHwy+jPHvVybZG8EvgONK0z2WLfKFI4
+6nnKw6oRts4Cn8UcFi/RSnkOHZ5ENSWuKTahLNvd0SKcWT12KUVb9w5v19hO3SD3
+JuE/aVrY9YR1g6VBFLJxQVWdtQPljgKCa5JAkMeavSzqP+2JuCWwbr0I35nHs31F
+jmt8kYHSug+l42HmI6csLCW/U8+aSNTPULokeVndpXz1NK7OQb/1hXw+PH8Lo1j9
+M08Ri+IKT3T/vQIOLrdKjwmS7iSnuvp1c8fPxALioQLeB9MEe2yk6wktv+mQl8hO
+5LnVVLlaCFuIySLk8DiLLuHaEt3FtYzpmdMUCIiVCfsH/SmH55zRdBa2JRGuAHDx
+WVDM3uaUrTyfKSBw6rqj
+=j+bd
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__24_Jan_2012_11_59_09_+1100_XPWVt_+J5yVOddE3--
