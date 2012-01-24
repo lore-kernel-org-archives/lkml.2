@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab2AXXI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:08:26 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59161 "EHLO
+	id S1752832Ab2AXXIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:08:24 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59157 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab2AXXIO (ORCPT
+	with ESMTP id S1752721Ab2AXXIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jan 2012 18:08:14 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Jan Beulich <JBeulich@suse.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jan Beulich <jbeulich@suse.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 6/9] perf bench: Allow passing an iteration count to "bench mem mem{cpy,set}"
-Date: Tue, 24 Jan 2012 21:07:58 -0200
-Message-Id: <1327446481-5505-7-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/9] perf tools: Add fprintf methods for thread_map and cpu_map classes
+Date: Tue, 24 Jan 2012 21:07:53 -0200
+Message-Id: <1327446481-5505-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.rc2.1.g69204
 In-Reply-To: <1327446481-5505-1-git-send-email-acme@infradead.org>
 References: <1327446481-5505-1-git-send-email-acme@infradead.org>
@@ -26,139 +27,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-"perf stat ... perf bench mem mem..." is pretty meaningless when using
-small block sizes (as the overhead of the invocation of each test run
-basically hides the actual test result in the noise). Repeating the
-actually interesting function's invocation a number of times allows the
-results to become meaningful.
+For helping with debugging.
 
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4F16D767020000780006D738@nat28.tlf.novell.com
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-m06n4rp7pwr6dlzwoq89cl69@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bench/mem-memcpy.c |   11 +++++++++--
- tools/perf/bench/mem-memset.c |   11 +++++++++--
- 2 files changed, 18 insertions(+), 4 deletions(-)
+ tools/perf/util/cpumap.c     |   11 +++++++++++
+ tools/perf/util/cpumap.h     |    4 ++++
+ tools/perf/util/thread_map.c |   11 +++++++++++
+ tools/perf/util/thread_map.h |    4 ++++
+ 4 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index db82021..6ad2b1c 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -24,6 +24,7 @@
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index 6893eec..adc72f0 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -166,6 +166,17 @@ out:
+ 	return cpus;
+ }
  
- static const char	*length_str	= "1MB";
- static const char	*routine	= "default";
-+static int		iterations	= 1;
- static bool		use_clock;
- static int		clock_fd;
- static bool		only_prefault;
-@@ -35,6 +36,8 @@ static const struct option options[] = {
- 		    "available unit: B, MB, GB (upper and lower)"),
- 	OPT_STRING('r', "routine", &routine, "default",
- 		    "Specify routine to copy"),
-+	OPT_INTEGER('i', "iterations", &iterations,
-+		    "repeat memcpy() invocation this number of times"),
- 	OPT_BOOLEAN('c', "clock", &use_clock,
- 		    "Use CPU clock for measuring"),
- 	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
-@@ -121,6 +124,7 @@ static u64 do_memcpy_clock(memcpy_t fn, size_t len, bool prefault)
- {
- 	u64 clock_start = 0ULL, clock_end = 0ULL;
- 	void *src = NULL, *dst = NULL;
++size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp)
++{
 +	int i;
- 
- 	alloc_mem(&src, &dst, len);
- 
-@@ -128,7 +132,8 @@ static u64 do_memcpy_clock(memcpy_t fn, size_t len, bool prefault)
- 		fn(dst, src, len);
- 
- 	clock_start = get_clock();
--	fn(dst, src, len);
-+	for (i = 0; i < iterations; ++i)
-+		fn(dst, src, len);
- 	clock_end = get_clock();
- 
- 	free(src);
-@@ -140,6 +145,7 @@ static double do_memcpy_gettimeofday(memcpy_t fn, size_t len, bool prefault)
++	size_t printed = fprintf(fp, "%d cpu%s: ",
++				 map->nr, map->nr > 1 ? "s" : "");
++	for (i = 0; i < map->nr; ++i)
++		printed += fprintf(fp, "%s%d", i ? ", " : "", map->map[i]);
++
++	return printed + fprintf(fp, "\n");
++}
++
+ struct cpu_map *cpu_map__dummy_new(void)
  {
- 	struct timeval tv_start, tv_end, tv_diff;
- 	void *src = NULL, *dst = NULL;
-+	int i;
+ 	struct cpu_map *cpus = malloc(sizeof(*cpus) + sizeof(int));
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 072c0a3..c415185 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -1,6 +1,8 @@
+ #ifndef __PERF_CPUMAP_H
+ #define __PERF_CPUMAP_H
  
- 	alloc_mem(&src, &dst, len);
++#include <stdio.h>
++
+ struct cpu_map {
+ 	int nr;
+ 	int map[];
+@@ -10,4 +12,6 @@ struct cpu_map *cpu_map__new(const char *cpu_list);
+ struct cpu_map *cpu_map__dummy_new(void);
+ void cpu_map__delete(struct cpu_map *map);
  
-@@ -147,7 +153,8 @@ static double do_memcpy_gettimeofday(memcpy_t fn, size_t len, bool prefault)
- 		fn(dst, src, len);
- 
- 	BUG_ON(gettimeofday(&tv_start, NULL));
--	fn(dst, src, len);
-+	for (i = 0; i < iterations; ++i)
-+		fn(dst, src, len);
- 	BUG_ON(gettimeofday(&tv_end, NULL));
- 
- 	timersub(&tv_end, &tv_start, &tv_diff);
-diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-index 9c0c6f0..59d4933 100644
---- a/tools/perf/bench/mem-memset.c
-+++ b/tools/perf/bench/mem-memset.c
-@@ -24,6 +24,7 @@
- 
- static const char	*length_str	= "1MB";
- static const char	*routine	= "default";
-+static int		iterations	= 1;
- static bool		use_clock;
- static int		clock_fd;
- static bool		only_prefault;
-@@ -35,6 +36,8 @@ static const struct option options[] = {
- 		    "available unit: B, MB, GB (upper and lower)"),
- 	OPT_STRING('r', "routine", &routine, "default",
- 		    "Specify routine to copy"),
-+	OPT_INTEGER('i', "iterations", &iterations,
-+		    "repeat memset() invocation this number of times"),
- 	OPT_BOOLEAN('c', "clock", &use_clock,
- 		    "Use CPU clock for measuring"),
- 	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
-@@ -117,6 +120,7 @@ static u64 do_memset_clock(memset_t fn, size_t len, bool prefault)
++size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
++
+ #endif /* __PERF_CPUMAP_H */
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index a5df131..894d52f 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -62,3 +62,14 @@ void thread_map__delete(struct thread_map *threads)
  {
- 	u64 clock_start = 0ULL, clock_end = 0ULL;
- 	void *dst = NULL;
+ 	free(threads);
+ }
++
++size_t thread_map__fprintf(struct thread_map *threads, FILE *fp)
++{
 +	int i;
++	size_t printed = fprintf(fp, "%d thread%s: ",
++				 threads->nr, threads->nr > 1 ? "s" : "");
++	for (i = 0; i < threads->nr; ++i)
++		printed += fprintf(fp, "%s%d", i ? ", " : "", threads->map[i]);
++
++	return printed + fprintf(fp, "\n");
++}
+diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
+index 3cb9073..736ab4a26 100644
+--- a/tools/perf/util/thread_map.h
++++ b/tools/perf/util/thread_map.h
+@@ -2,6 +2,7 @@
+ #define __PERF_THREAD_MAP_H
  
- 	alloc_mem(&dst, len);
+ #include <sys/types.h>
++#include <stdio.h>
  
-@@ -124,7 +128,8 @@ static u64 do_memset_clock(memset_t fn, size_t len, bool prefault)
- 		fn(dst, -1, len);
- 
- 	clock_start = get_clock();
--	fn(dst, 0, len);
-+	for (i = 0; i < iterations; ++i)
-+		fn(dst, i, len);
- 	clock_end = get_clock();
- 
- 	free(dst);
-@@ -135,6 +140,7 @@ static double do_memset_gettimeofday(memset_t fn, size_t len, bool prefault)
- {
- 	struct timeval tv_start, tv_end, tv_diff;
- 	void *dst = NULL;
-+	int i;
- 
- 	alloc_mem(&dst, len);
- 
-@@ -142,7 +148,8 @@ static double do_memset_gettimeofday(memset_t fn, size_t len, bool prefault)
- 		fn(dst, -1, len);
- 
- 	BUG_ON(gettimeofday(&tv_start, NULL));
--	fn(dst, 0, len);
-+	for (i = 0; i < iterations; ++i)
-+		fn(dst, i, len);
- 	BUG_ON(gettimeofday(&tv_end, NULL));
- 
- 	timersub(&tv_end, &tv_start, &tv_diff);
+ struct thread_map {
+ 	int nr;
+@@ -12,4 +13,7 @@ struct thread_map *thread_map__new_by_pid(pid_t pid);
+ struct thread_map *thread_map__new_by_tid(pid_t tid);
+ struct thread_map *thread_map__new(pid_t pid, pid_t tid);
+ void thread_map__delete(struct thread_map *threads);
++
++size_t thread_map__fprintf(struct thread_map *threads, FILE *fp);
++
+ #endif	/* __PERF_THREAD_MAP_H */
 -- 
 1.7.9.rc2.1.g69204
 
