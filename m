@@ -1,120 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab2AXOJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 09:09:46 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38780 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756597Ab2AXOJo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 09:09:44 -0500
+	id S1756659Ab2AXOKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 09:10:12 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:49895 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755055Ab2AXOKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 09:10:10 -0500
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX19foq88n+Zf1iMMobLR00oNi0ONxBAi0+LTRvFJju
+	kIWl7MxMvTh9/V
+From: Sven Joachim <svenjoac@gmx.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [091/129] block: fail SCSI passthrough ioctls on partition devices
+References: <20120124023932.023409422@clark.kroah.org>
+	<1327410067-5957-1-git-send-email-pbonzini@redhat.com>
+Date: Tue, 24 Jan 2012 15:10:05 +0100
+In-Reply-To: <1327410067-5957-1-git-send-email-pbonzini@redhat.com> (Paolo
+	Bonzini's message of "Tue, 24 Jan 2012 14:01:06 +0100")
+Message-ID: <87sjj5b39e.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAC=NXX3jdCAjmwTjQ-d43DWb-617a33nMcWb_UvBUyB_q7VZTQ@mail.gmail.com>
-References: <CAC=NXX3jdCAjmwTjQ-d43DWb-617a33nMcWb_UvBUyB_q7VZTQ@mail.gmail.com>
-Date: Tue, 24 Jan 2012 22:09:43 +0800
-Message-ID: <CAC=NXX2NLsChhuY5_Bv3HJ4fvnq7XpM7UksPS80uaZgGsJnfVw@mail.gmail.com>
-Subject: Re: How to accelerate tcp retransmition
-From: leno soff <lnxuff@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, eric.dumazet@gmail.com, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 4:58 PM, leno soff <lnxuff@gmail.com> wrote:
-> Hello everyone,
->   I have a lot of client, say C1, C2, .. Cn, which route packets to
-> my servers through router R. But R will drop 70% - 90% _ non-SYN _
-> packets from clients to Server.
->
->  The clients and server work like http client and server, sending a
-> request, wating for the response.
->
->  When router R drop the request-like packets(without SYN flag, of
-> cause), the clients retransmit with icsk_backoff++;  They usually
-> should wait 15 seconds+ (1+2+4+8), and sometimes more or just timeout.
->
->   So, my question is:
->
->        Is there any way in _server_ side, to accelerate the
-> retransmition like accelerating slow-start. I tried SO_KEEPALIVE in
-> server, interval == 1 second or less,  I assume the keepalive ack will
->  accelerate the retransmition, ,  but it does not work:
->
->       Flags [P.], seq 1:314, ack 1.  ----------------client request,
-> which is lost
->       Flags [.], ack 1, win 905, length 0  --- server keepalive ack
->       Flags [.], ack 1, win 115, length 0  --- client responds ack
->       .... A lot keepalive and response.
->
->    The client timeout because of RTO, why doesn't retransmit the
-> request packet but just an ack without data when it sees keepalive ack
-> ?
->
->
-> Thanks.
+On 2012-01-24 14:01 +0100, Paolo Bonzini wrote:
 
+> You need to return -ENOTTY from scsi_verify_blk_ioctl and -ENOIOCTLCMD from
+> sd_compat_ioctl, because -ENOIOCTLCMD will not be handled correctly by
+> block/ioctl.c.  This would break BLKROSET and BLKFLSBUF done by non-root
+> but with the appropriate capabilities.
 
-After 3-way shakehands,  Client sends 9 bytes(I make sure it is
-DROPPED by router),
-I modify the server-side kernel, set keepalive timer interval = 100ms
-to accelerate retransmiting 3+ DUP ACKS which makes sure the client
-will not timeout.
-I run 'ss -en|grep 8888' in client side, it shows the retransmition
-timer exp-increasing which is not expected for me. I assume it will
-retransimit after receiving 3+ DUP ACKS.
-And below is the packets flow.
-I think it is not the right way to solve this Bad-Router problem, but
-it is the only method I know which failed.
+I assume this is the reason why I suddenly got lots of ioctl32 warnings
+in dmesg with 3.2.2-rc1?
 
-In one word, I don't want the client timeout.
+,----
+| $ dmesg | grep ioctl | head
+| [    0.815394] ioctl32(blkid:150): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda1
+| [    0.815812] ioctl32(blkid:154): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda6
+| [    0.816184] ioctl32(blkid:151): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda5
+| [    0.816559] ioctl32(blkid:155): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda9
+| [    0.816997] ioctl32(blkid:157): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda8
+| [    0.817371] ioctl32(blkid:153): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda3
+| [    0.817692] ioctl32(blkid:156): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda2
+| [    0.818063] ioctl32(blkid:152): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda7
+| [    2.824909] ioctl32(findfs:204): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda6
+| [    5.545235] ioctl32(blkid:435): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda3
+`----
 
-Any  suggestion is helpful
-Thanks
+> Fixed patch follows.  If you prefer that I send an interdiff, let me know.
 
+Going to try that.
 
-21:41:17.586310 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[.], ack 1, win 115, options [nop,nop,TS val 38962812 ecr 12647162],
-length 0
-21:41:17.680113 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[P.], seq 1:9, ack 1, win 115, options [nop,nop,TS val 38962906 ecr
-12647162], length 8
-21:41:17.687612 IP 199.192.156.23.8888 > 192.168.10.22.49538: Flags
-[.], ack 1, win 905, options [nop,nop,TS val 12673575 ecr 38962367],
-length 0
-21:41:17.687635 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[.], ack 1, win 115, options [nop,nop,TS val 38962913 ecr 12647162],
-length 0
- --------- a lot keepalive here interval=100ms ------
-21:41:18.418845 IP 199.192.156.23.8888 > 192.168.10.22.49538: Flags
-[.], ack 1, win 905, options [nop,nop,TS val 12674313 ecr 38962367],
-length 0
-21:41:18.418862 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[.], ack 1, win 115, options [nop,nop,TS val 38963644 ecr 12647162],
-length 0
-21:41:18.427900 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[P.], seq 1:9, ack 1, win 115, options [nop,nop,TS val 38963654 ecr
-12647162], length 8
-21:41:18.520310 IP 199.192.156.23.8888 > 192.168.10.22.49538: Flags
-[.], ack 1, win 905, options [nop,nop,TS val 12674413 ecr 38962367],
-length 0
-21:41:18.520332 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[.], ack 1, win 115, options [nop,nop,TS val 38963746 ecr 12647162],
-length 0
------------  a lot keepalive here too ----------
-21:41:19.877055 IP 199.192.156.23.8888 > 192.168.10.22.49538: Flags
-[.], ack 1, win 905, options [nop,nop,TS val 12675771 ecr 38962367],
-length 0
-21:41:19.877082 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[.], ack 1, win 115, options [nop,nop,TS val 38965103 ecr 12647162],
-length 0
-21:41:19.925886 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[P.], seq 1:9, ack 1, win 115, options [nop,nop,TS val 38965152 ecr
-12647162], length 8
-21:41:19.975419 IP 199.192.156.23.8888 > 192.168.10.22.49538: Flags
-[.], ack 1, win 905, options [nop,nop,TS val 12675871 ecr 38962367],
-length 0
-21:41:19.975446 IP 192.168.10.22.49538 > 199.192.156.23.8888: Flags
-[.], ack 1, win 115, options [nop,nop,TS val 38965201 ecr 12647162],
-length 0
+> Paolo
+>
+> -------- 8< ---------
+> From: Paolo Bonzini <pbonzini@redhat.com>
+> Subject: [PATCH] block: fail SCSI passthrough ioctls on partition devices
+>
+> commit 0bfc96cb77224736dfa35c3c555d37b3646ef35e upstream.
+>
+> Linux allows executing the SG_IO ioctl on a partition or LVM volume, and
+> will pass the command to the underlying block device.  This is
+> well-known, but it is also a large security problem when (via Unix
+> permissions, ACLs, SELinux or a combination thereof) a program or user
+> needs to be granted access only to part of the disk.
+>
+> This patch lets partitions forward a small set of harmless ioctls;
+> others are logged with printk so that we can see which ioctls are
+> actually sent.  In my tests only CDROM_GET_CAPABILITY actually occurred.
+> Of course it was being sent to a (partition on a) hard disk, so it would
+> have failed with ENOTTY and the patch isn't changing anything in
+> practice.  Still, I'm treating it specially to avoid spamming the logs.
+>
+> In principle, this restriction should include programs running with
+> CAP_SYS_RAWIO.  If for example I let a program access /dev/sda2 and
+> /dev/sdb, it still should not be able to read/write outside the
+> boundaries of /dev/sda2 independent of the capabilities.  However, for
+> now programs with CAP_SYS_RAWIO will still be allowed to send the
+> ioctls.  Their actions will still be logged.
+>
+> This patch does not affect the non-libata IDE driver.  That driver
+> however already tests for bd != bd->bd_contains before issuing some
+> ioctl; it could be restricted further to forbid these ioctls even for
+> programs running with CAP_SYS_ADMIN/CAP_SYS_RAWIO.
+>
+> Cc: linux-scsi@vger.kernel.org
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: James Bottomley <JBottomley@parallels.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> [ Make it also print the command name when warning - Linus ]
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>
+> [ Changes with respect to 3.3: return -ENOTTY from scsi_verify_blk_ioctl
+>   and -ENOIOCTLCMD from sd_compat_ioctl. ]
+>
+> ---
+>  block/scsi_ioctl.c     |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/scsi/sd.c      |   11 +++++++++--
+>  include/linux/blkdev.h |    1 +
+>  3 files changed, 55 insertions(+), 2 deletions(-)
+>
+> --- a/block/scsi_ioctl.c
+> +++ b/block/scsi_ioctl.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/capability.h>
+>  #include <linux/completion.h>
+>  #include <linux/cdrom.h>
+> +#include <linux/ratelimit.h>
+>  #include <linux/slab.h>
+>  #include <linux/times.h>
+>  #include <asm/uaccess.h>
+> @@ -690,9 +691,53 @@ int scsi_cmd_ioctl(struct request_queue
+>  }
+>  EXPORT_SYMBOL(scsi_cmd_ioctl);
+>  
+> +int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+> +{
+> +       if (bd && bd == bd->bd_contains)
+> +               return 0;
+> +
+> +       /* Actually none of these is particularly useful on a partition,
+> +        * but they are safe.
+> +        */
+> +       switch (cmd) {
+> +       case SCSI_IOCTL_GET_IDLUN:
+> +       case SCSI_IOCTL_GET_BUS_NUMBER:
+> +       case SCSI_IOCTL_GET_PCI:
+> +       case SCSI_IOCTL_PROBE_HOST:
+> +       case SG_GET_VERSION_NUM:
+> +       case SG_SET_TIMEOUT:
+> +       case SG_GET_TIMEOUT:
+> +       case SG_GET_RESERVED_SIZE:
+> +       case SG_SET_RESERVED_SIZE:
+> +       case SG_EMULATED_HOST:
+> +               return 0;
+> +       case CDROM_GET_CAPABILITY:
+> +               /* Keep this until we remove the printk below.  udev sends it
+> +                * and we do not want to spam dmesg about it.   CD-ROMs do
+> +                * not have partitions, so we get here only for disks.
+> +                */
+> +               return -ENOTTY;
+> +       default:
+> +               break;
+> +       }
+> +
+> +       /* In particular, rule out all resets and host-specific ioctls.  */
+> +       printk_ratelimited(KERN_WARNING
+> +                          "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+> +
+> +       return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
+> +}
+> +EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+> +
+>  int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
+>                        unsigned int cmd, void __user *arg)
+>  {
+> +       int ret;
+> +
+> +       ret = scsi_verify_blk_ioctl(bd, cmd);
+> +       if (ret < 0)
+> +               return ret;
+> +
+>         return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
+>  }
+>  EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -1074,6 +1074,10 @@ static int sd_ioctl(struct block_device
+>         SCSI_LOG_IOCTL(1, sd_printk(KERN_INFO, sdkp, "sd_ioctl: disk=%s, "
+>                                     "cmd=0x%x\n", disk->disk_name, cmd));
+>  
+> +       error = scsi_verify_blk_ioctl(bdev, cmd);
+> +       if (error < 0)
+> +               return error;
+> +
+>         /*
+>          * If we are in the middle of error recovery, don't let anyone
+>          * else try and use this device.  Also, if error recovery fails, it
+> @@ -1266,6 +1270,11 @@ static int sd_compat_ioctl(struct block_
+>                            unsigned int cmd, unsigned long arg)
+>  {
+>         struct scsi_device *sdev = scsi_disk(bdev->bd_disk)->device;
+> +       int ret;
+> +
+> +       ret = scsi_verify_blk_ioctl(bdev, cmd);
+> +       if (ret < 0)
+> +               return -ENOIOCTLCMD;
+>  
+>         /*
+>          * If we are in the middle of error recovery, don't let anyone
+> @@ -1277,8 +1286,6 @@ static int sd_compat_ioctl(struct block_
+>                 return -ENODEV;
+>                
+>         if (sdev->host->hostt->compat_ioctl) {
+> -               int ret;
+> -
+>                 ret = sdev->host->hostt->compat_ioctl(sdev, cmd, (void __user *)arg);
+>  
+>                 return ret;
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -675,6 +675,7 @@ extern int blk_insert_cloned_request(str
+>                                      struct request *rq);
+>  extern void blk_delay_queue(struct request_queue *, unsigned long);
+>  extern void blk_recount_segments(struct request_queue *, struct bio *);
+> +extern int scsi_verify_blk_ioctl(struct block_device *, unsigned int);
+>  extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
+>                               unsigned int, void __user *);
+>  extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
