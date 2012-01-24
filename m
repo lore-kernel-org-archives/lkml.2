@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab2AXAZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:25:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43526 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab2AXAZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:25:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="99799611"
-From: Seth Heasley <seth.heasley@intel.com>
-To: tiwai@suse.de, alsa-devel@alsa-project.org, perex@perex.cz
-Subject: [PATCH 1/6] hda_intel: Add Lynx Point HD Audio Controller DeviceIDs
-Date: Mon, 23 Jan 2012 16:24:31 -0800
-User-Agent: KMail/1.13.6 (Linux/2.6.35.12-88.fc14.x86_64; KDE/4.6.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, james.d.ralston@intel.com,
-        seth.heasley@intel.com
+	id S1754501Ab2AXA0U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:26:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42591 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab2AXA0E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 19:26:04 -0500
+Date: Mon, 23 Jan 2012 18:25:55 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Hansen <haveblue@us.ibm.com>, sukadev@linux.vnet.ibm.com,
+        Andy Whitcroft <apw@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Matt Helsley <matthltc@us.ibm.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [RFC] fix devpts mount behavior
+Message-ID: <20120124002555.GA29534@sergelap>
+References: <20120124000517.GA28878@sergelap>
+ <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201231624.31275.seth.heasley@intel.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the HD Audio DeviceIDs for the Intel Lynx Point PCH.
+Quoting Linus Torvalds (torvalds@linux-foundation.org):
+> On Mon, Jan 23, 2012 at 4:05 PM, Serge Hallyn
+> <serge.hallyn@canonical.com> wrote:
+> >
+> > I've been playing for the last week with ways to fix this, and in the
+> > end I can see two ways.
+> 
+> How about a third way:
+> 
+>  - make "newinstance" mandatory (and "-o newinstance" is a no-op) and
+> forget about the whole issue.
+> 
+>  - if you really want to remount the old global one, you have to use a
+> bind mount of that original mount instead.
+> 
+> There may be some subtle reason why the above is totally broken and
+> just fundamnetally wouldn't work, and breaks all existing setups, but
+> maybe it's worth at least discussing as an option?
+> 
+> Or did I entirely misunderstand the problem?
+> 
+>                       Linus
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
----
- sound/pci/hda/hda_intel.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+I like it.
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index 0852e20..adb4fa7 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -148,6 +148,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
- 			 "{Intel, PCH},"
- 			 "{Intel, CPT},"
- 			 "{Intel, PPT},"
-+			 "{Intel, LPT},"
- 			 "{Intel, PBG},"
- 			 "{Intel, SCH},"
- 			 "{ATI, SB450},"
-@@ -2989,6 +2990,10 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
- 	{ PCI_DEVICE(0x8086, 0x1e20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
- 	  AZX_DCAPS_BUFSIZE},
-+	/* Lynx Point */
-+	{ PCI_DEVICE(0x8086, 0x8c20),
-+	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
-+	  AZX_DCAPS_BUFSIZE},
- 	/* SCH */
- 	{ PCI_DEVICE(0x8086, 0x811b),
- 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
--- 
-1.7.4.4
+The only place that *might* be a problem is if initramsfs does a devpts
+mount, and later init blindly mounts tmpfs on /dev and mounts a new
+devpts.  But it seems unlikely there would be any open pty's so it
+shouldn't really matter.
 
+I could go ahead and test that, say, ubuntu and fedora systems boot fine
+with this change.  But of course I can't be sure there is no userspace
+out there that won't cope...
+
+-serge
