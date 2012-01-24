@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab2AXG7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 01:59:16 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65170 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab2AXG7O (ORCPT
+	id S1754295Ab2AXG7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 01:59:51 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:20032 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751951Ab2AXG7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 01:59:14 -0500
-Date: Mon, 23 Jan 2012 22:59:07 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: linux-next: build failure after merge of the input tree
-Message-ID: <20120124065907.GA4572@core.coreip.homeip.net>
-References: <20120124142516.07860a401ac9216cfa10a6ad@canb.auug.org.au>
+	Tue, 24 Jan 2012 01:59:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EANpVHk95LElR/2dsb2JhbABDriqBBoFyAQEEATocIwULCAMOCi4UJQMhE4d8uE0TjBMElReJKgcBiTA
+Date: Tue, 24 Jan 2012 17:59:45 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>
+Subject: Re: [PATCH 4/8] xfs: Move ilock before transaction start in
+ xfs_setattr_size()
+Message-ID: <20120124065945.GL15102@dastard>
+References: <1327091686-23177-1-git-send-email-jack@suse.cz>
+ <1327091686-23177-5-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120124142516.07860a401ac9216cfa10a6ad@canb.auug.org.au>
+In-Reply-To: <1327091686-23177-5-git-send-email-jack@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Fri, Jan 20, 2012 at 09:34:42PM +0100, Jan Kara wrote:
+> In xfs we first take ilock and start transaction afterwards.
 
-On Tue, Jan 24, 2012 at 02:25:16PM +1100, Stephen Rothwell wrote:
-> Hi Dmitry,
-> 
-> After merging the input tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> ERROR: ".ktime_get_monotonic_offset" [drivers/input/evdev.ko] undefined!
-> 
-> Caused by commit 04f2c50e5fd8 ("Input: add infrastructure for selecting
-> clockid for event time stamps").
-> 
-> I have used the input tree from next-20120123 for today.
+The correct order is to allocate the transaction, reserve the space
+for it and then take the ilock.  We cannot hold the ilock over the
+transaction reservation because that can deadlock the journal.
 
-Sorry about that, I will drop the offending commit for time being.
+That is, to make space for the new transaction reservation, we may
+need to take the ilock to flush the inode and allow the journal tail
+to move forwards to make space for the new transaction.  If we
+already hold the ilock, then it can't be flushed, we can't make
+space available in the journal and hence deadlock.
 
-Thanks.
+Maybe you confused the ilock vs the iolock.  We can hold the iolock
+over the trans alloc/reserve because that lock is not required to
+move the tail of the journal, so the deadlock doesn't exist.
+
+> We should obey
+> this order in all places because otherwise we can create the following deadlock
+> with filesystem freezing: One process holds ilock and blocks on s_frozen ==
+> SB_FREEZE_TRANS in xfs_trans_alloc(), another process has a transaction started
+> (thus blocking freezing) and blocks on ilock. So we have to take ilock earlier
+> in xfs_setattr_size().
+
+Where are we taking the ilock and then calling xfs_trans_alloc()?
+That's the caller needs to be fixed, not the 40-odd that do the
+right thing by taking the ilock -after- the trans alloc/reserve
+calls.
+
+Cheers,
+
+Dave.
 
 -- 
-Dmitry
+Dave Chinner
+david@fromorbit.com
