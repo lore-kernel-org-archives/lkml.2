@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2AXA7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:59:21 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:35107 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab2AXA7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:59:20 -0500
-Date: Tue, 24 Jan 2012 11:59:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: linux-next: manual merge of the arm-current tree with Linus' tree
-Message-Id: <20120124115909.0c2119249212ac9669860afc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	id S1754701Ab2AXBD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 20:03:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52925 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456Ab2AXBD4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 20:03:56 -0500
+Date: Mon, 23 Jan 2012 17:03:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: vmscan: fix malused nr_reclaimed in shrinking zone
+Message-Id: <20120123170354.82b9f127.akpm@linux-foundation.org>
+In-Reply-To: <CAJd=RBDVxT5Pc2HZjz15LUb7xhFbztpFmXqLXVB3nCoQLKHiHg@mail.gmail.com>
+References: <CAJd=RBDVxT5Pc2HZjz15LUb7xhFbztpFmXqLXVB3nCoQLKHiHg@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__24_Jan_2012_11_59_09_+1100_XPWVt_+J5yVOddE3"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__24_Jan_2012_11_59_09_+1100_XPWVt_+J5yVOddE3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 21 Jan 2012 22:41:59 +0800
+Hillf Danton <dhillf@gmail.com> wrote:
 
-Hi Russell,
+> The value of nr_reclaimed is the amount of pages reclaimed in the current round,
+> whereas nr_to_reclaim shoud be compared with the amount of pages
+> reclaimed in all
+> rounds, so we have to buffer the pages reclaimed in the past rounds for correct
+> comparison.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+> 
+> --- a/mm/vmscan.c	Sat Jan 14 14:02:20 2012
+> +++ b/mm/vmscan.c	Sat Jan 21 22:23:48 2012
+> @@ -2081,13 +2081,15 @@ static void shrink_mem_cgroup_zone(int p
+>  				   struct scan_control *sc)
+>  {
+>  	unsigned long nr[NR_LRU_LISTS];
+> +	unsigned long reclaimed = 0;
+>  	unsigned long nr_to_scan;
+>  	enum lru_list lru;
+> -	unsigned long nr_reclaimed, nr_scanned;
+> +	unsigned long nr_reclaimed = 0, nr_scanned;
+>  	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+>  	struct blk_plug plug;
+> 
+>  restart:
+> +	reclaimed += nr_reclaimed;
+>  	nr_reclaimed = 0;
+>  	nr_scanned = sc->nr_scanned;
+>  	get_scan_count(mz, sc, nr, priority);
+> @@ -2113,7 +2115,8 @@ restart:
+>  		 * with multiple processes reclaiming pages, the total
+>  		 * freeing target can get unreasonably large.
+>  		 */
+> -		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
+> +		if ((nr_reclaimed + reclaimed) >= nr_to_reclaim &&
+> +					priority < DEF_PRIORITY)
+>  			break;
+>  	}
+>  	blk_finish_plug(&plug);
 
-Today's linux-next merge of the arm-current tree got a conflict in
-arch/arm/mach-mx5/Kconfig between commit 784a90c0a7d8 ("ARM i.MX: Merge
-i.MX5 support into mach-imx") from Linus' tree and commit a092f2b15399
-("ARM: 7291/1: cache: assume 64-byte L1 cachelines for ARMv7 CPUs") from
-the arm-current tree.
+Well, let's step back and look at it.
 
-The former removed the file and merged its contents into
-arch/arm/mach-imx/Kconfig, so I removed it and applied the following
-fixup patch - which I can carry as necessary.
+- The multiple-definitions-of-a-local-per-line thing is generally a
+  bad idea, partly because it prevents people from adding comments to
+  the definition.  It would be better like this:
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 24 Jan 2012 11:56:27 +1100
-Subject: [PATCH] ARM: fix up for cache size assumed to be 64 bytes
+	unsigned long reclaimed = 0;	/* total for this function */
+	unsigned long nr_reclaimed = 0;	/* on each pass through the loop */
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/arm/mach-imx/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+- The names of these things are terrible!  Why not
+  reclaimed_this_pass and reclaimed_total or similar?
 
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index 09f357b..4defb97 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -87,7 +87,6 @@ config SOC_IMX35
-=20
- config SOC_IMX5
- 	select CPU_V7
--	select ARM_L1_CACHE_SHIFT_6
- 	select MXC_TZIC
- 	select ARCH_MXC_IOMUX_V3
- 	select ARCH_MXC_AUDMUX_V2
---=20
-1.7.9.rc0.23.g7e521
+- It would be cleaner to do the "reclaimed += nr_reclaimed" at the
+  end of the loop, if we've decided to goto restart.  (But better
+  to do it within the loop!)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+- Only need to update sc->nr_reclaimed at the end of the function
+  (assumes that callees of this function aren't interested in
+  sc->nr_reclaimed, which seems a future-safe assumption to me).
 
---Signature=_Tue__24_Jan_2012_11_59_09_+1100_XPWVt_+J5yVOddE3
-Content-Type: application/pgp-signature
+- Should be able to avoid the temporary addition of nr_reclaimed to
+  reclaimed inside the loop by updating `reclaimed' at an appropriate
+  place.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPHgJdAAoJEECxmPOUX5FEYdoP/1/T2FbDGJSfSRuXjawazs91
-a/xPlATvKmqyhoJzQApuGjmdMHG5sp7sywNM6JWtoc/CfrdLqrbI68lQO68m5Qdq
-jRnk+f+xg9Blm5Jj4MYYFIj+znYAoWCs2l42nj6clSAZU//MUeM3F4Th3HxAhDi9
-EKqhNJmn05Ke38+xcIbd0IBlrUWTDVH6T0cXiIj7WWyeFWbjv9v7f2H3uwvLSA+W
-ybgCi9A/g3aHiu9KEbsK+GVYlGJcIj7YW39X03sXsgRL2cJq1Qg1hYel54N7HQ8c
-88EBzfQMBC5ide4diUPStm+8tBJ+sAqMsKHwy+jPHvVybZG8EvgONK0z2WLfKFI4
-6nnKw6oRts4Cn8UcFi/RSnkOHZ5ENSWuKTahLNvd0SKcWT12KUVb9w5v19hO3SD3
-JuE/aVrY9YR1g6VBFLJxQVWdtQPljgKCa5JAkMeavSzqP+2JuCWwbr0I35nHs31F
-jmt8kYHSug+l42HmI6csLCW/U8+aSNTPULokeVndpXz1NK7OQb/1hXw+PH8Lo1j9
-M08Ri+IKT3T/vQIOLrdKjwmS7iSnuvp1c8fPxALioQLeB9MEe2yk6wktv+mQl8hO
-5LnVVLlaCFuIySLk8DiLLuHaEt3FtYzpmdMUCIiVCfsH/SmH55zRdBa2JRGuAHDx
-WVDM3uaUrTyfKSBw6rqj
-=j+bd
------END PGP SIGNATURE-----
-
---Signature=_Tue__24_Jan_2012_11_59_09_+1100_XPWVt_+J5yVOddE3--
+Or whatever.  That code's handling of `reclaimed' and `nr_reclaimed' is
+a twisty mess.  Please clean it up!  If it is done correctly,
+`nr_reclaimed' can (and should) be local to the internal loop.
