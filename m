@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab2AXCvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:51:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50739 "EHLO mx2.suse.de"
+	id S932990Ab2AXCvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:51:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50712 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932925Ab2AXCtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:49:31 -0500
+	id S932923Ab2AXCtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:49:17 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:33 2012
-Message-Id: <20120124023933.368836771@clark.kroah.org>
+Message-Id: <20120124023933.030443577@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:26 -0800
+Date: Mon, 23 Jan 2012 18:35:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [106/129] target: Set response format in INQUIRY response
+        alan@lxorguk.ukuu.org.uk, Kurt Garloff <kurt@garloff.de>,
+        Len Brown <len.brown@intel.com>
+Subject: [102/129] ACPI, ia64: Use SRAT table rev to use 8bit or 16/32bit PXM fields (ia64)
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,45 +24,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1233
-Lines: 38
+Content-Length: 1954
+Lines: 59
 
-From: Roland Dreier <roland@purestorage.com>
+From: Kurt Garloff <kurt@garloff.de>
 
-commit ce136176fea522fc8f4c16dcae7e8ed1d890ca39 upstream.
+commit 9f10f6a520deb3639fac78d81151a3ade88b4e7f upstream.
 
-Current SCSI specs say that the "response format" field in the standard
-INQUIRY response should be set to 2, and all the real SCSI devices I
-have do put 2 here.  So let's do that too.
+In SRAT v1, we had 8bit proximity domain (PXM) fields; SRAT v2 provides
+32bits for these. The new fields were reserved before.
+According to the ACPI spec, the OS must disregrard reserved fields.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+ia64 did handle the PXM fields almost consistently, but depending on
+sgi's sn2 platform. This patch leaves the sn2 logic in, but does also
+use 16/32 bits for PXM if the SRAT has rev 2 or higher.
+
+The patch also adds __init to the two pxm accessor functions, as they
+access __initdata now and are called from an __init function only anyway.
+
+Note that the code only uses 16 bits for the PXM field in the processor
+proximity field; the patch does not address this as 16 bits are more than
+enough.
+
+Signed-off-by: Kurt Garloff <kurt@garloff.de>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_cdb.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/ia64/kernel/acpi.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -94,6 +94,18 @@ target_emulate_inquiry_std(struct se_cmd
- 	buf[2] = dev->transport->get_device_rev(dev);
+--- a/arch/ia64/kernel/acpi.c
++++ b/arch/ia64/kernel/acpi.c
+@@ -429,22 +429,24 @@ static u32 __devinitdata pxm_flag[PXM_FL
+ static struct acpi_table_slit __initdata *slit_table;
+ cpumask_t early_cpu_possible_map = CPU_MASK_NONE;
  
- 	/*
-+	 * NORMACA and HISUP = 0, RESPONSE DATA FORMAT = 2
-+	 *
-+	 * SPC4 says:
-+	 *   A RESPONSE DATA FORMAT field set to 2h indicates that the
-+	 *   standard INQUIRY data is in the format defined in this
-+	 *   standard. Response data format values less than 2h are
-+	 *   obsolete. Response data format values greater than 2h are
-+	 *   reserved.
-+	 */
-+	buf[3] = 2;
-+
-+	/*
- 	 * Enable SCCS and TPGS fields for Emulated ALUA
- 	 */
- 	if (dev->se_sub_dev->t10_alua.alua_type == SPC3_ALUA_EMULATED)
+-static int get_processor_proximity_domain(struct acpi_srat_cpu_affinity *pa)
++static int __init
++get_processor_proximity_domain(struct acpi_srat_cpu_affinity *pa)
+ {
+ 	int pxm;
+ 
+ 	pxm = pa->proximity_domain_lo;
+-	if (ia64_platform_is("sn2"))
++	if (ia64_platform_is("sn2") || acpi_srat_revision >= 2)
+ 		pxm += pa->proximity_domain_hi[0] << 8;
+ 	return pxm;
+ }
+ 
+-static int get_memory_proximity_domain(struct acpi_srat_mem_affinity *ma)
++static int __init
++get_memory_proximity_domain(struct acpi_srat_mem_affinity *ma)
+ {
+ 	int pxm;
+ 
+ 	pxm = ma->proximity_domain;
+-	if (!ia64_platform_is("sn2"))
++	if (!ia64_platform_is("sn2") && acpi_srat_revision <= 1)
+ 		pxm &= 0xff;
+ 
+ 	return pxm;
 
 
