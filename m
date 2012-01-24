@@ -1,210 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab2AXANq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:13:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41934 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754322Ab2AWXpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:45:15 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:42:02 2012
-Message-Id: <20120123234202.859856612@clark.kroah.org>
-User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:41:00 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>
-Subject: [14/27] i2c: Fix error value returned by several bus drivers
-In-Reply-To: <20120123234224.GA19510@kroah.com>
+	id S1755127Ab2AXAOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:14:16 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:65364 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754315Ab2AXAOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 19:14:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120124000517.GA28878@sergelap>
+References: <20120124000517.GA28878@sergelap>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 23 Jan 2012 16:13:49 -0800
+X-Google-Sender-Auth: 3iziQua8EVxMRkDW-JjoG8OgGoc
+Message-ID: <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
+Subject: Re: [RFC] fix devpts mount behavior
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Dave Hansen <haveblue@us.ibm.com>, sukadev@linux.vnet.ibm.com,
+        Andy Whitcroft <apw@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Matt Helsley <matthltc@us.ibm.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On Mon, Jan 23, 2012 at 4:05 PM, Serge Hallyn
+<serge.hallyn@canonical.com> wrote:
+>
+> I've been playing for the last week with ways to fix this, and in the
+> end I can see two ways.
 
-------------------
+How about a third way:
 
-From: Jean Delvare <khali@linux-fr.org>
+ - make "newinstance" mandatory (and "-o newinstance" is a no-op) and
+forget about the whole issue.
 
-commit 7c1f59c9d5caf3a84f35549b5d58f3c055a68da5 upstream.
+ - if you really want to remount the old global one, you have to use a
+bind mount of that original mount instead.
 
-When adding checks for ACPI resource conflicts to many bus drivers,
-not enough attention was paid to the error paths, and for several
-drivers this causes 0 to be returned on error in some cases. Fix this
-by properly returning a non-zero value on every error.
+There may be some subtle reason why the above is totally broken and
+just fundamnetally wouldn't work, and breaks all existing setups, but
+maybe it's worth at least discussing as an option?
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Or did I entirely misunderstand the problem?
 
----
- drivers/i2c/busses/i2c-ali1535.c |   11 +++++++----
- drivers/i2c/busses/i2c-nforce2.c |    2 +-
- drivers/i2c/busses/i2c-sis5595.c |    4 ++--
- drivers/i2c/busses/i2c-sis630.c  |    6 +++++-
- drivers/i2c/busses/i2c-viapro.c  |    7 +++++--
- 5 files changed, 20 insertions(+), 10 deletions(-)
-
---- a/drivers/i2c/busses/i2c-ali1535.c
-+++ b/drivers/i2c/busses/i2c-ali1535.c
-@@ -140,7 +140,7 @@ static unsigned short ali1535_smba;
-    defined to make the transition easier. */
- static int ali1535_setup(struct pci_dev *dev)
- {
--	int retval = -ENODEV;
-+	int retval;
- 	unsigned char temp;
- 
- 	/* Check the following things:
-@@ -155,6 +155,7 @@ static int ali1535_setup(struct pci_dev
- 	if (ali1535_smba == 0) {
- 		dev_warn(&dev->dev,
- 			"ALI1535_smb region uninitialized - upgrade BIOS?\n");
-+		retval = -ENODEV;
- 		goto exit;
- 	}
- 
-@@ -167,6 +168,7 @@ static int ali1535_setup(struct pci_dev
- 			    ali1535_driver.name)) {
- 		dev_err(&dev->dev, "ALI1535_smb region 0x%x already in use!\n",
- 			ali1535_smba);
-+		retval = -EBUSY;
- 		goto exit;
- 	}
- 
-@@ -174,6 +176,7 @@ static int ali1535_setup(struct pci_dev
- 	pci_read_config_byte(dev, SMBCFG, &temp);
- 	if ((temp & ALI1535_SMBIO_EN) == 0) {
- 		dev_err(&dev->dev, "SMB device not enabled - upgrade BIOS?\n");
-+		retval = -ENODEV;
- 		goto exit_free;
- 	}
- 
-@@ -181,6 +184,7 @@ static int ali1535_setup(struct pci_dev
- 	pci_read_config_byte(dev, SMBHSTCFG, &temp);
- 	if ((temp & 1) == 0) {
- 		dev_err(&dev->dev, "SMBus controller not enabled - upgrade BIOS?\n");
-+		retval = -ENODEV;
- 		goto exit_free;
- 	}
- 
-@@ -198,12 +202,11 @@ static int ali1535_setup(struct pci_dev
- 	dev_dbg(&dev->dev, "SMBREV = 0x%X\n", temp);
- 	dev_dbg(&dev->dev, "ALI1535_smba = 0x%X\n", ali1535_smba);
- 
--	retval = 0;
--exit:
--	return retval;
-+	return 0;
- 
- exit_free:
- 	release_region(ali1535_smba, ALI1535_SMB_IOSIZE);
-+exit:
- 	return retval;
- }
- 
---- a/drivers/i2c/busses/i2c-nforce2.c
-+++ b/drivers/i2c/busses/i2c-nforce2.c
-@@ -355,7 +355,7 @@ static int __devinit nforce2_probe_smb (
- 	error = acpi_check_region(smbus->base, smbus->size,
- 				  nforce2_driver.name);
- 	if (error)
--		return -1;
-+		return error;
- 
- 	if (!request_region(smbus->base, smbus->size, nforce2_driver.name)) {
- 		dev_err(&smbus->adapter.dev, "Error requesting region %02x .. %02X for %s\n",
---- a/drivers/i2c/busses/i2c-sis5595.c
-+++ b/drivers/i2c/busses/i2c-sis5595.c
-@@ -147,7 +147,7 @@ static int sis5595_setup(struct pci_dev
- 	u16 a;
- 	u8 val;
- 	int *i;
--	int retval = -ENODEV;
-+	int retval;
- 
- 	/* Look for imposters */
- 	for (i = blacklist; *i != 0; i++) {
-@@ -223,7 +223,7 @@ static int sis5595_setup(struct pci_dev
- 
- error:
- 	release_region(sis5595_base + SMB_INDEX, 2);
--	return retval;
-+	return -ENODEV;
- }
- 
- static int sis5595_transaction(struct i2c_adapter *adap)
---- a/drivers/i2c/busses/i2c-sis630.c
-+++ b/drivers/i2c/busses/i2c-sis630.c
-@@ -393,7 +393,7 @@ static int sis630_setup(struct pci_dev *
- {
- 	unsigned char b;
- 	struct pci_dev *dummy = NULL;
--	int retval = -ENODEV, i;
-+	int retval, i;
- 
- 	/* check for supported SiS devices */
- 	for (i=0; supported[i] > 0 ; i++) {
-@@ -418,18 +418,21 @@ static int sis630_setup(struct pci_dev *
- 	*/
- 	if (pci_read_config_byte(sis630_dev, SIS630_BIOS_CTL_REG,&b)) {
- 		dev_err(&sis630_dev->dev, "Error: Can't read bios ctl reg\n");
-+		retval = -ENODEV;
- 		goto exit;
- 	}
- 	/* if ACPI already enabled , do nothing */
- 	if (!(b & 0x80) &&
- 	    pci_write_config_byte(sis630_dev, SIS630_BIOS_CTL_REG, b | 0x80)) {
- 		dev_err(&sis630_dev->dev, "Error: Can't enable ACPI\n");
-+		retval = -ENODEV;
- 		goto exit;
- 	}
- 
- 	/* Determine the ACPI base address */
- 	if (pci_read_config_word(sis630_dev,SIS630_ACPI_BASE_REG,&acpi_base)) {
- 		dev_err(&sis630_dev->dev, "Error: Can't determine ACPI base address\n");
-+		retval = -ENODEV;
- 		goto exit;
- 	}
- 
-@@ -445,6 +448,7 @@ static int sis630_setup(struct pci_dev *
- 			    sis630_driver.name)) {
- 		dev_err(&sis630_dev->dev, "SMBus registers 0x%04x-0x%04x already "
- 			"in use!\n", acpi_base + SMB_STS, acpi_base + SMB_SAA);
-+		retval = -EBUSY;
- 		goto exit;
- 	}
- 
---- a/drivers/i2c/busses/i2c-viapro.c
-+++ b/drivers/i2c/busses/i2c-viapro.c
-@@ -330,7 +330,7 @@ static int __devinit vt596_probe(struct
- 				 const struct pci_device_id *id)
- {
- 	unsigned char temp;
--	int error = -ENODEV;
-+	int error;
- 
- 	/* Determine the address of the SMBus areas */
- 	if (force_addr) {
-@@ -396,6 +396,7 @@ found:
- 			dev_err(&pdev->dev, "SMBUS: Error: Host SMBus "
- 				"controller not enabled! - upgrade BIOS or "
- 				"use force=1\n");
-+			error = -ENODEV;
- 			goto release_region;
- 		}
- 	}
-@@ -428,9 +429,11 @@ found:
- 		 "SMBus Via Pro adapter at %04x", vt596_smba);
- 
- 	vt596_pdev = pci_dev_get(pdev);
--	if (i2c_add_adapter(&vt596_adapter)) {
-+	error = i2c_add_adapter(&vt596_adapter);
-+	if (error) {
- 		pci_dev_put(vt596_pdev);
- 		vt596_pdev = NULL;
-+		goto release_region;
- 	}
- 
- 	/* Always return failure here.  This is to allow other drivers to bind
-
-
+                      Linus
