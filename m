@@ -1,107 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab2AXJKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 04:10:15 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:65036 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755364Ab2AXJJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 04:09:46 -0500
-Date: Tue, 24 Jan 2012 10:09:42 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org, peppe.cavallaro@st.com,
-        netdev@vger.kernel.org
-Cc: giancarlo.asnaghi@st.com
-Subject: [PATCH 3/3] stmmac: remove kernel cmdline parsing
-Message-ID: <cccc8a7f01bf1a92d197336b9f2e2674d436993b.1327394751.git.rubini@gnudd.com>
+	id S1755543Ab2AXJJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 04:09:40 -0500
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:13041 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755210Ab2AXJJg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 04:09:36 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAMV0Hk9tg128/2dsb2JhbABDriuBBoFyAQEEATocFgoDBQsIA0YUJQMhiA8CuF8TiHsDBgMGCQMGAQMGCQYFBwIBAgGCTAICAwUJDhGDT2MElRySUA
+Date: Tue, 24 Jan 2012 10:09:33 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-watchdog@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH RESEND] watchdog: documentation: remove index-file
+Message-ID: <20120124090933.GA23784@infomag.iguana.be>
+References: <1327346258-28697-1-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-References: <cover.1327394750.git.rubini@gnudd.com>
-In-Reply-To: <cover.1327394750.git.rubini@gnudd.com>
+In-Reply-To: <1327346258-28697-1-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All configurable arguments are already there as module_param, and they
-work in the main command line as well, by saying
-e.g. "stmmac.phyaddr=1" (I do it on my board).
+Hi all,
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
----
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   59 ---------------------
- 1 files changed, 0 insertions(+), 59 deletions(-)
+> The 00-index file in the watchdog directory is, like many others,
+> outdated (conversion-howto is missing) and doesn't contain worthwhile
+> additional information. As it seems to be a maintenance burden without
+> much gain, simply remove it.
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 96fa2da..625d0d1 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -1981,65 +1981,6 @@ int stmmac_restore(struct net_device *ndev)
- }
- #endif /* CONFIG_PM */
- 
--#ifndef MODULE
--static int __init stmmac_cmdline_opt(char *str)
--{
--	char *opt;
--
--	if (!str || !*str)
--		return -EINVAL;
--	while ((opt = strsep(&str, ",")) != NULL) {
--		if (!strncmp(opt, "debug:", 6)) {
--			if (strict_strtoul(opt + 6, 0, (unsigned long *)&debug))
--				goto err;
--		} else if (!strncmp(opt, "phyaddr:", 8)) {
--			if (strict_strtoul(opt + 8, 0,
--					   (unsigned long *)&phyaddr))
--				goto err;
--		} else if (!strncmp(opt, "dma_txsize:", 11)) {
--			if (strict_strtoul(opt + 11, 0,
--					   (unsigned long *)&dma_txsize))
--				goto err;
--		} else if (!strncmp(opt, "dma_rxsize:", 11)) {
--			if (strict_strtoul(opt + 11, 0,
--					   (unsigned long *)&dma_rxsize))
--				goto err;
--		} else if (!strncmp(opt, "buf_sz:", 7)) {
--			if (strict_strtoul(opt + 7, 0,
--					   (unsigned long *)&buf_sz))
--				goto err;
--		} else if (!strncmp(opt, "tc:", 3)) {
--			if (strict_strtoul(opt + 3, 0, (unsigned long *)&tc))
--				goto err;
--		} else if (!strncmp(opt, "watchdog:", 9)) {
--			if (strict_strtoul(opt + 9, 0,
--					   (unsigned long *)&watchdog))
--				goto err;
--		} else if (!strncmp(opt, "flow_ctrl:", 10)) {
--			if (strict_strtoul(opt + 10, 0,
--					   (unsigned long *)&flow_ctrl))
--				goto err;
--		} else if (!strncmp(opt, "pause:", 6)) {
--			if (strict_strtoul(opt + 6, 0, (unsigned long *)&pause))
--				goto err;
--#ifdef CONFIG_STMMAC_TIMER
--		} else if (!strncmp(opt, "tmrate:", 7)) {
--			if (strict_strtoul(opt + 7, 0,
--					   (unsigned long *)&tmrate))
--				goto err;
--#endif
--		}
--	}
--	return 0;
--
--err:
--	pr_err("%s: ERROR broken module parameter conversion", __func__);
--	return -EINVAL;
--}
--
--__setup("stmmaceth=", stmmac_cmdline_opt);
--#endif
--
- MODULE_DESCRIPTION("STMMAC 10/100/1000 Ethernet device driver");
- MODULE_AUTHOR("Giuseppe Cavallaro <peppe.cavallaro@st.com>");
- MODULE_LICENSE("GPL");
--- 
-1.7.7.2
+I would like to know what other kernel developers think about removing
+00-INDEX files from the Documentation Directory.
+
+Kind regards,
+Wim.
+
