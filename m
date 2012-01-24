@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab2AXDFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 22:05:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50262 "EHLO mx2.suse.de"
+	id S932325Ab2AXDFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:05:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50252 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932288Ab2AXCpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:45:19 -0500
+	id S932269Ab2AXCpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:45:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:29 2012
-Message-Id: <20120124023929.370755245@clark.kroah.org>
+Message-Id: <20120124023929.290732440@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:42 -0800
+Date: Mon, 23 Jan 2012 18:34:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gleb Natapov <gleb@redhat.com>
-Subject: [062/129] Unused iocbs in a batch should not be accounted as active.
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [061/129] [media] V4L/DVB: v4l2-ioctl: integer overflow in video_usercopy()
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,71 +24,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1954
-Lines: 64
+Content-Length: 1532
+Lines: 45
 
-From: Gleb Natapov <gleb@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 69e4747ee9727d660b88d7e1efe0f4afcb35db1b upstream.
+commit 6c06108be53ca5e94d8b0e93883d534dd9079646 upstream.
 
-Since commit 080d676de095 ("aio: allocate kiocbs in batches") iocbs are
-allocated in a batch during processing of first iocbs.  All iocbs in a
-batch are automatically added to ctx->active_reqs list and accounted in
-ctx->reqs_active.
+If ctrls->count is too high the multiplication could overflow and
+array_size would be lower than expected.  Mauro and Hans Verkuil
+suggested that we cap it at 1024.  That comes from the maximum
+number of controls with lots of room for expantion.
 
-If one (not the last one) of iocbs submitted by an user fails, further
-iocbs are not processed, but they are still present in ctx->active_reqs
-and accounted in ctx->reqs_active.  This causes process to stuck in a D
-state in wait_for_all_aios() on exit since ctx->reqs_active will never
-go down to zero.  Furthermore since kiocb_batch_free() frees iocb
-without removing it from active_reqs list the list become corrupted
-which may cause oops.
+$ grep V4L2_CID include/linux/videodev2.h | wc -l
+211
 
-Fix this by removing iocb from ctx->active_reqs and updating
-ctx->reqs_active in kiocb_batch_free().
-
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/aio.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/media/video/v4l2-ioctl.c |    4 ++++
+ include/linux/videodev2.h        |    1 +
+ 2 files changed, 5 insertions(+)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -476,14 +476,21 @@ static void kiocb_batch_init(struct kioc
- 	batch->count = total;
- }
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -2226,6 +2226,10 @@ static int check_array_args(unsigned int
+ 		struct v4l2_ext_controls *ctrls = parg;
  
--static void kiocb_batch_free(struct kiocb_batch *batch)
-+static void kiocb_batch_free(struct kioctx *ctx, struct kiocb_batch *batch)
- {
- 	struct kiocb *req, *n;
+ 		if (ctrls->count != 0) {
++			if (ctrls->count > V4L2_CID_MAX_CTRLS) {
++				ret = -EINVAL;
++				break;
++			}
+ 			*user_ptr = (void __user *)ctrls->controls;
+ 			*kernel_ptr = (void *)&ctrls->controls;
+ 			*array_size = sizeof(struct v4l2_ext_control)
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -1131,6 +1131,7 @@ struct v4l2_querymenu {
+ #define V4L2_CTRL_FLAG_NEXT_CTRL	0x80000000
  
-+	if (list_empty(&batch->head))
-+		return;
-+
-+	spin_lock_irq(&ctx->ctx_lock);
- 	list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
- 		list_del(&req->ki_batch);
-+		list_del(&req->ki_list);
- 		kmem_cache_free(kiocb_cachep, req);
-+		ctx->reqs_active--;
- 	}
-+	spin_unlock_irq(&ctx->ctx_lock);
- }
- 
- /*
-@@ -1742,7 +1749,7 @@ long do_io_submit(aio_context_t ctx_id,
- 	}
- 	blk_finish_plug(&plug);
- 
--	kiocb_batch_free(&batch);
-+	kiocb_batch_free(ctx, &batch);
- 	put_ioctx(ctx);
- 	return i ? i : ret;
- }
+ /*  User-class control IDs defined by V4L2 */
++#define V4L2_CID_MAX_CTRLS		1024
+ #define V4L2_CID_BASE			(V4L2_CTRL_CLASS_USER | 0x900)
+ #define V4L2_CID_USER_BASE 		V4L2_CID_BASE
+ /*  IDs reserved for driver specific controls */
 
 
