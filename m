@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2AXNbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 08:31:46 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:35567 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754868Ab2AXNbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 08:31:44 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: kernel-janitors@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch/hexagon/kernel/dma.c: make function static
-Date: Tue, 24 Jan 2012 14:31:36 +0100
-Message-Id: <1327411896-4532-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1756550Ab2AXNl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 08:41:28 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4491 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754436Ab2AXNl1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 08:41:27 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 24 Jan 2012 05:41:26 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "joro@8bytes.org" <joro@8bytes.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig-bounces@lists.linaro.org" 
+	<linaro-mm-sig-bounces@lists.linaro.org>
+Date: Tue, 24 Jan 2012 14:41:21 +0100
+Subject: Re: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Thread-Topic: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Thread-Index: Aczand1O++Gny6yZQRSckoP8Qc0nYg==
+Message-ID: <20120124.154121.1062920821192552748.hdoyu@nvidia.com>
+References: <1325747509-29665-1-git-send-email-hdoyu@nvidia.com><1325747509-29665-3-git-send-email-hdoyu@nvidia.com><20120123154310.GC6269@8bytes.org>
+In-Reply-To: <20120123154310.GC6269@8bytes.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Date: Mon, 23 Jan 2012 16:43:10 +0100
+Message-ID: <20120123154310.GC6269@8bytes.org>
 
-This function is only used in the same file, and the other similar
-functions in this file are also static.
+> > +	}
+> > +
+> > +	spin_unlock_irqrestore(&as->lock, flags);
+> > +
+> > +	domain->priv = NULL;
+> > +	dev_dbg(smmu->dev, "smmu_as@%p\n", as);
+> > +}
+> > +
+> > +static int smmu_iommu_attach_dev(struct iommu_domain *domain,
+> > +				 struct device *dev)
+> > +{
+> > +	struct smmu_as *as = domain->priv;
+> > +	struct smmu_device *smmu = as->smmu;
+> 
+> Hmm, this looks like there is a 1-1 mapping between hardware SMMU
+> devices and domains. This is not consistent with IOMMU-API semantics
+> where a domain can contain devices behind different SMMUs. Please fix
+> that.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Actually I really like the concept of this "domain" now, which hides
+the H/W hierarchy from users.
 
----
- arch/hexagon/kernel/dma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+But in Tegra SMMU/GART case, there's a single one IOMMU device in the
+system. Keeping a iommu device list in a domain and iterating iommu
+device list in each iommu_ops seem to be so nice, but I'm afraid that
+this may be a bit too much when one already knows that there's only
+one IOMMU device in the system.
 
-diff --git a/arch/hexagon/kernel/dma.c b/arch/hexagon/kernel/dma.c
-index 54891e1..0b49a0a 100644
---- a/arch/hexagon/kernel/dma.c
-+++ b/arch/hexagon/kernel/dma.c
-@@ -54,7 +54,7 @@ static struct gen_pool *coherent_pool;
- 
- /* Allocates from a pool of uncached memory that was reserved at boot time */
- 
--void *hexagon_dma_alloc_coherent(struct device *dev, size_t size,
-+static void *hexagon_dma_alloc_coherent(struct device *dev, size_t size,
- 				 dma_addr_t *dma_addr, gfp_t flag)
- {
- 	void *ret;
-
+If there's no actual problem for 1-1 mapping between IOMMU H/Ws and
+domains, I think that it may not so bad to keep the original code(1-1)
+for GART and SMMU. What do you think?
