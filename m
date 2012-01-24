@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab2AXCzl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:55:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50563 "EHLO mx2.suse.de"
+	id S932787Ab2AXC4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:56:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50548 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932745Ab2AXCr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:47:56 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:33 2012
-Message-Id: <20120124023933.553323508@clark.kroah.org>
+	id S932655Ab2AXCrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:47:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:30 2012
+Message-Id: <20120124023930.582693589@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:28 -0800
+Date: Mon, 23 Jan 2012 18:34:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [108/129] bcma: invalidate the mapped core over suspend/resume
+        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [075/129] dcache: use a dispose list in select_parent
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +24,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1013
-Lines: 35
+Content-Length: 5647
+Lines: 166
 
-From: Rafał Miłecki <zajec5@gmail.com>
+From: Dave Chinner <david@fromorbit.com>
 
-commit 28e7d218da975f6ae1751e293aed938952c55c98 upstream.
+commit b48f03b319ba78f3abf9a7044d1f436d8d90f4f9 upstream.
 
-This clears the currently mapped core when suspending, to force
-re-mapping after resume. Without that we were touching default core
-registers believing some other core is mapped. Such a behaviour
-resulted in lockups on some machines.
+select_parent currently abuses the dentry cache LRU to provide
+cleanup features for child dentries that need to be freed. It moves
+them to the tail of the LRU, then tells shrink_dcache_parent() to
+calls __shrink_dcache_sb to unconditionally move them to a dispose
+list (as DCACHE_REFERENCED is ignored). __shrink_dcache_sb() has to
+relock the dentries to move them off the LRU onto the dispose list,
+but otherwise does not touch the dentries that select_parent() moved
+to the tail of the LRU. It then passses the dispose list to
+shrink_dentry_list() which tries to free the dentries.
 
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+IOWs, the use of __shrink_dcache_sb() is superfluous - we can build
+exactly the same list of dentries for disposal directly in
+select_parent() and call shrink_dentry_list() instead of calling
+__shrink_dcache_sb() to do that. This means that we avoid long holds
+on the lru lock walking the LRU moving dentries to the dispose list
+We also avoid the need to relock each dentry just to move it off the
+LRU, reducing the numebr of times we lock each dentry to dispose of
+them in shrink_dcache_parent() from 3 to 2 times.
+
+Further, we remove one of the two callers of __shrink_dcache_sb().
+This also means that __shrink_dcache_sb can be moved into back into
+prune_dcache_sb() and we no longer have to handle referenced
+dentries conditionally, simplifying the code.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/bcma/host_pci.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/dcache.c |   63 ++++++++++++++++++++----------------------------------------
+ 1 file changed, 21 insertions(+), 42 deletions(-)
 
---- a/drivers/bcma/host_pci.c
-+++ b/drivers/bcma/host_pci.c
-@@ -227,11 +227,14 @@ static void bcma_host_pci_remove(struct
- #ifdef CONFIG_PM
- static int bcma_host_pci_suspend(struct pci_dev *dev, pm_message_t state)
- {
-+	struct bcma_bus *bus = pci_get_drvdata(dev);
-+
- 	/* Host specific */
- 	pci_save_state(dev);
- 	pci_disable_device(dev);
- 	pci_set_power_state(dev, pci_choose_state(dev, state));
- 
-+	bus->mapped_core = NULL;
- 	return 0;
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -275,15 +275,15 @@ static void dentry_lru_prune(struct dent
+ 	}
  }
+ 
+-static void dentry_lru_move_tail(struct dentry *dentry)
++static void dentry_lru_move_list(struct dentry *dentry, struct list_head *list)
+ {
+ 	spin_lock(&dcache_lru_lock);
+ 	if (list_empty(&dentry->d_lru)) {
+-		list_add_tail(&dentry->d_lru, &dentry->d_sb->s_dentry_lru);
++		list_add_tail(&dentry->d_lru, list);
+ 		dentry->d_sb->s_nr_dentry_unused++;
+ 		dentry_stat.nr_unused++;
+ 	} else {
+-		list_move_tail(&dentry->d_lru, &dentry->d_sb->s_dentry_lru);
++		list_move_tail(&dentry->d_lru, list);
+ 	}
+ 	spin_unlock(&dcache_lru_lock);
+ }
+@@ -769,14 +769,18 @@ static void shrink_dentry_list(struct li
+ }
+ 
+ /**
+- * __shrink_dcache_sb - shrink the dentry LRU on a given superblock
+- * @sb:		superblock to shrink dentry LRU.
+- * @count:	number of entries to prune
+- * @flags:	flags to control the dentry processing
++ * prune_dcache_sb - shrink the dcache
++ * @sb: superblock
++ * @count: number of entries to try to free
++ *
++ * Attempt to shrink the superblock dcache LRU by @count entries. This is
++ * done when we need more memory an called from the superblock shrinker
++ * function.
+  *
+- * If flags contains DCACHE_REFERENCED reference dentries will not be pruned.
++ * This function may fail to free any resources if all the dentries are in
++ * use.
+  */
+-static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
++void prune_dcache_sb(struct super_block *sb, int count)
+ {
+ 	struct dentry *dentry;
+ 	LIST_HEAD(referenced);
+@@ -795,13 +799,7 @@ relock:
+ 			goto relock;
+ 		}
+ 
+-		/*
+-		 * If we are honouring the DCACHE_REFERENCED flag and the
+-		 * dentry has this flag set, don't free it.  Clear the flag
+-		 * and put it back on the LRU.
+-		 */
+-		if (flags & DCACHE_REFERENCED &&
+-				dentry->d_flags & DCACHE_REFERENCED) {
++		if (dentry->d_flags & DCACHE_REFERENCED) {
+ 			dentry->d_flags &= ~DCACHE_REFERENCED;
+ 			list_move(&dentry->d_lru, &referenced);
+ 			spin_unlock(&dentry->d_lock);
+@@ -821,23 +819,6 @@ relock:
+ }
+ 
+ /**
+- * prune_dcache_sb - shrink the dcache
+- * @sb: superblock
+- * @nr_to_scan: number of entries to try to free
+- *
+- * Attempt to shrink the superblock dcache LRU by @nr_to_scan entries. This is
+- * done when we need more memory an called from the superblock shrinker
+- * function.
+- *
+- * This function may fail to free any resources if all the dentries are in
+- * use.
+- */
+-void prune_dcache_sb(struct super_block *sb, int nr_to_scan)
+-{
+-	__shrink_dcache_sb(sb, nr_to_scan, DCACHE_REFERENCED);
+-}
+-
+-/**
+  * shrink_dcache_sb - shrink dcache for a superblock
+  * @sb: superblock
+  *
+@@ -1091,7 +1072,7 @@ EXPORT_SYMBOL(have_submounts);
+  * drop the lock and return early due to latency
+  * constraints.
+  */
+-static int select_parent(struct dentry * parent)
++static int select_parent(struct dentry *parent, struct list_head *dispose)
+ {
+ 	struct dentry *this_parent;
+ 	struct list_head *next;
+@@ -1113,12 +1094,11 @@ resume:
+ 
+ 		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+ 
+-		/* 
+-		 * move only zero ref count dentries to the end 
+-		 * of the unused list for prune_dcache
++		/*
++		 * move only zero ref count dentries to the dispose list.
+ 		 */
+ 		if (!dentry->d_count) {
+-			dentry_lru_move_tail(dentry);
++			dentry_lru_move_list(dentry, dispose);
+ 			found++;
+ 		} else {
+ 			dentry_lru_del(dentry);
+@@ -1180,14 +1160,13 @@ rename_retry:
+  *
+  * Prune the dcache to remove unused children of the parent dentry.
+  */
+- 
+ void shrink_dcache_parent(struct dentry * parent)
+ {
+-	struct super_block *sb = parent->d_sb;
++	LIST_HEAD(dispose);
+ 	int found;
+ 
+-	while ((found = select_parent(parent)) != 0)
+-		__shrink_dcache_sb(sb, found, 0);
++	while ((found = select_parent(parent, &dispose)) != 0)
++		shrink_dentry_list(&dispose);
+ }
+ EXPORT_SYMBOL(shrink_dcache_parent);
  
 
 
