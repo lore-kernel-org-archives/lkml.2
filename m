@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614Ab2AXCrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:47:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50463 "EHLO mx2.suse.de"
+	id S1756902Ab2AXC6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:58:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50477 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932520Ab2AXCq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:46:58 -0500
+	id S932612Ab2AXCrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:47:04 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:32 2012
-Message-Id: <20120124023931.950516050@clark.kroah.org>
+Message-Id: <20120124023932.103527046@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:10 -0800
+Date: Mon, 23 Jan 2012 18:35:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [090/129] block: add and use scsi_blk_cmd_ioctl
+        alan@lxorguk.ukuu.org.uk, Alasdair G Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [092/129] dm: do not forward ioctls from logical volumes to the
+ underlying device
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,153 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 5210
-Lines: 146
+Content-Length: 2491
+Lines: 79
 
 From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 577ebb374c78314ac4617242f509e2f5e7156649 upstream.
+commit ec8013beddd717d1740cfefb1a9b900deef85462 upstream.
 
-Introduce a wrapper around scsi_cmd_ioctl that takes a block device.
+A logical volume can map to just part of underlying physical volume.
+In this case, it must be treated like a partition.
 
-The function will then be enhanced to detect partition block devices
-and, in that case, subject the ioctls to whitelisting.
+Based on a patch from Alasdair G Kergon.
 
-Cc: linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: James Bottomley <JBottomley@parallels.com>
+Cc: Alasdair G Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/scsi_ioctl.c             |    7 +++++++
- drivers/block/cciss.c          |    6 +++---
- drivers/block/ub.c             |    3 +--
- drivers/block/virtio_blk.c     |    4 ++--
- drivers/cdrom/cdrom.c          |    3 +--
- drivers/ide/ide-floppy_ioctl.c |    3 +--
- drivers/scsi/sd.c              |    2 +-
- include/linux/blkdev.h         |    2 ++
- 8 files changed, 18 insertions(+), 12 deletions(-)
+ drivers/md/dm-flakey.c |   11 ++++++++++-
+ drivers/md/dm-linear.c |   12 +++++++++++-
+ drivers/md/dm-mpath.c  |    6 ++++++
+ 3 files changed, 27 insertions(+), 2 deletions(-)
 
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -690,6 +690,13 @@ int scsi_cmd_ioctl(struct request_queue
- }
- EXPORT_SYMBOL(scsi_cmd_ioctl);
+--- a/drivers/md/dm-flakey.c
++++ b/drivers/md/dm-flakey.c
+@@ -368,8 +368,17 @@ static int flakey_status(struct dm_targe
+ static int flakey_ioctl(struct dm_target *ti, unsigned int cmd, unsigned long arg)
+ {
+ 	struct flakey_c *fc = ti->private;
++	struct dm_dev *dev = fc->dev;
++	int r = 0;
  
-+int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
-+		       unsigned int cmd, void __user *arg)
-+{
-+	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
-+}
-+EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
+-	return __blkdev_driver_ioctl(fc->dev->bdev, fc->dev->mode, cmd, arg);
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (fc->start ||
++	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
 +
- static int __init blk_scsi_ioctl_init(void)
- {
- 	blk_set_cmd_filter_defaults(&blk_default_cmd_filter);
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -1735,7 +1735,7 @@ static int cciss_ioctl(struct block_devi
- 	case CCISS_BIG_PASSTHRU:
- 		return cciss_bigpassthru(h, argp);
- 
--	/* scsi_cmd_ioctl handles these, below, though some are not */
-+	/* scsi_cmd_blk_ioctl handles these, below, though some are not */
- 	/* very meaningful for cciss.  SG_IO is the main one people want. */
- 
- 	case SG_GET_VERSION_NUM:
-@@ -1746,9 +1746,9 @@ static int cciss_ioctl(struct block_devi
- 	case SG_EMULATED_HOST:
- 	case SG_IO:
- 	case SCSI_IOCTL_SEND_COMMAND:
--		return scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
-+		return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
- 
--	/* scsi_cmd_ioctl would normally handle these, below, but */
-+	/* scsi_cmd_blk_ioctl would normally handle these, below, but */
- 	/* they aren't a good fit for cciss, as CD-ROMs are */
- 	/* not supported, and we don't have any bus/target/lun */
- 	/* which we present to the kernel. */
---- a/drivers/block/ub.c
-+++ b/drivers/block/ub.c
-@@ -1744,12 +1744,11 @@ static int ub_bd_release(struct gendisk
- static int ub_bd_ioctl(struct block_device *bdev, fmode_t mode,
-     unsigned int cmd, unsigned long arg)
- {
--	struct gendisk *disk = bdev->bd_disk;
- 	void __user *usermem = (void __user *) arg;
- 	int ret;
- 
- 	mutex_lock(&ub_mutex);
--	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, usermem);
-+	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, usermem);
- 	mutex_unlock(&ub_mutex);
- 
- 	return ret;
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -243,8 +243,8 @@ static int virtblk_ioctl(struct block_de
- 	if (!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_SCSI))
- 		return -ENOTTY;
- 
--	return scsi_cmd_ioctl(disk->queue, disk, mode, cmd,
--			      (void __user *)data);
-+	return scsi_cmd_blk_ioctl(bdev, mode, cmd,
-+				  (void __user *)data);
++	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
  }
  
- /* We provide getgeo only to please some old bootloader/partitioning tools */
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2747,12 +2747,11 @@ int cdrom_ioctl(struct cdrom_device_info
+ static int flakey_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
+--- a/drivers/md/dm-linear.c
++++ b/drivers/md/dm-linear.c
+@@ -116,7 +116,17 @@ static int linear_ioctl(struct dm_target
+ 			unsigned long arg)
  {
- 	void __user *argp = (void __user *)arg;
- 	int ret;
--	struct gendisk *disk = bdev->bd_disk;
+ 	struct linear_c *lc = (struct linear_c *) ti->private;
+-	return __blkdev_driver_ioctl(lc->dev->bdev, lc->dev->mode, cmd, arg);
++	struct dm_dev *dev = lc->dev;
++	int r = 0;
++
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (lc->start ||
++	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
++	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
+ }
  
- 	/*
- 	 * Try the generic SCSI command ioctl's first.
- 	 */
--	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
-+	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
- 	if (ret != -ENOTTY)
- 		return ret;
+ static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -1520,6 +1520,12 @@ static int multipath_ioctl(struct dm_tar
  
---- a/drivers/ide/ide-floppy_ioctl.c
-+++ b/drivers/ide/ide-floppy_ioctl.c
-@@ -292,8 +292,7 @@ int ide_floppy_ioctl(ide_drive_t *drive,
- 	 * and CDROM_SEND_PACKET (legacy) ioctls
- 	 */
- 	if (cmd != CDROM_SEND_PACKET && cmd != SCSI_IOCTL_SEND_COMMAND)
--		err = scsi_cmd_ioctl(bdev->bd_disk->queue, bdev->bd_disk,
--				mode, cmd, argp);
-+		err = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 	spin_unlock_irqrestore(&m->lock, flags);
  
- 	if (err == -ENOTTY)
- 		err = generic_ide_ioctl(drive, bdev, cmd, arg);
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1096,7 +1096,7 @@ static int sd_ioctl(struct block_device
- 			error = scsi_ioctl(sdp, cmd, p);
- 			break;
- 		default:
--			error = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, p);
-+			error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
- 			if (error != -ENOTTY)
- 				break;
- 			error = scsi_ioctl(sdp, cmd, p);
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -675,6 +675,8 @@ extern int blk_insert_cloned_request(str
- 				     struct request *rq);
- extern void blk_delay_queue(struct request_queue *, unsigned long);
- extern void blk_recount_segments(struct request_queue *, struct bio *);
-+extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
-+			      unsigned int, void __user *);
- extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
- 			  unsigned int, void __user *);
- extern int sg_scsi_ioctl(struct request_queue *, struct gendisk *, fmode_t,
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
+ 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
+ }
+ 
 
 
