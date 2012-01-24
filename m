@@ -1,170 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab2AXJJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 04:09:52 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60801 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283Ab2AXJJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 04:09:44 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 24 Jan 2012 18:08:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: vmscan: check mem cgroup over reclaimed
-Message-Id: <20120124180821.b499f75a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120124083347.GC1660@cmpxchg.org>
-References: <CAJd=RBBG5X8=vkdRTCZ1bvTaVxPAVun9O+yiX0SM6yDzrxDGDQ@mail.gmail.com>
-	<20120123104731.GA1707@cmpxchg.org>
-	<CAJd=RBDUK=LQVhQm_P3DO-bgWka=gK9cKUkm8esOaZs261EexA@mail.gmail.com>
-	<20120124083347.GC1660@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755611Ab2AXJKP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 04:10:15 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:65036 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755364Ab2AXJJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 04:09:46 -0500
+Date: Tue, 24 Jan 2012 10:09:42 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org, peppe.cavallaro@st.com,
+        netdev@vger.kernel.org
+Cc: giancarlo.asnaghi@st.com
+Subject: [PATCH 3/3] stmmac: remove kernel cmdline parsing
+Message-ID: <cccc8a7f01bf1a92d197336b9f2e2674d436993b.1327394751.git.rubini@gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+References: <cover.1327394750.git.rubini@gnudd.com>
+In-Reply-To: <cover.1327394750.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012 09:33:47 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+All configurable arguments are already there as module_param, and they
+work in the main command line as well, by saying
+e.g. "stmmac.phyaddr=1" (I do it on my board).
 
-> On Mon, Jan 23, 2012 at 08:30:42PM +0800, Hillf Danton wrote:
-> > On Mon, Jan 23, 2012 at 6:47 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > > On Mon, Jan 23, 2012 at 09:55:07AM +0800, Hillf Danton wrote:
-> > >> To avoid reduction in performance of reclaimee, checking overreclaim is added
-> > >> after shrinking lru list, when pages are reclaimed from mem cgroup.
-> > >>
-> > >> If over reclaim occurs, shrinking remaining lru lists is skipped, and no more
-> > >> reclaim for reclaim/compaction.
-> > >>
-> > >> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> > >> ---
-> > >>
-> > >> --- a/mm/vmscan.c     Mon Jan 23 00:23:10 2012
-> > >> +++ b/mm/vmscan.c     Mon Jan 23 09:57:20 2012
-> > >> @@ -2086,6 +2086,7 @@ static void shrink_mem_cgroup_zone(int p
-> > >>       unsigned long nr_reclaimed, nr_scanned;
-> > >>       unsigned long nr_to_reclaim = sc->nr_to_reclaim;
-> > >>       struct blk_plug plug;
-> > >> +     bool memcg_over_reclaimed = false;
-> > >>
-> > >>  restart:
-> > >>       nr_reclaimed = 0;
-> > >> @@ -2103,6 +2104,11 @@ restart:
-> > >>
-> > >>                               nr_reclaimed += shrink_list(lru, nr_to_scan,
-> > >>                                                           mz, sc, priority);
-> > >> +
-> > >> +                             memcg_over_reclaimed = !scanning_global_lru(mz)
-> > >> +                                     && (nr_reclaimed >= nr_to_reclaim);
-> > >> +                             if (memcg_over_reclaimed)
-> > >> +                                     goto out;
-> > >
-> > > Since this merge window, scanning_global_lru() is always false when
-> > > the memory controller is enabled, i.e. most common configurations and
-> > > distribution kernels.
-> > >
-> > > This will with quite likely have bad effects on zone balancing,
-> > > pressure balancing between anon/file lru etc, while you haven't shown
-> > > that any workloads actually benefit from this.
-> > >
-> > Hi Johannes
-> > 
-> > Thanks for your comment, first.
-> > 
-> > Impact on zone balance and lru-list balance is introduced actually, but I
-> > dont think the patch is totally responsible for the balance mentioned,
-> > because soft limit, embedded in mem cgroup, is setup by users according to
-> > whatever tastes they have.
-> > 
-> > Though there is room for the patch to be fine tuned in this direction or that,
-> > over reclaim should not be neglected entirely, but be avoided as much as we
-> > could, or users are enforced to set up soft limit with much care not to mess
-> > up zone balance.
-> 
-> Overreclaim is absolutely horrible with soft limits, but I think there
-> are more direct reasons than checking nr_to_reclaim only after a full
-> zone scan, for example, soft limit reclaim is invoked on zones that
-> are totally fine.
-> 
+Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   59 ---------------------
+ 1 files changed, 0 insertions(+), 59 deletions(-)
 
-
-IIUC..
- - Because zonelist is all visited by alloc_pages(), _all_ zones in zonelist
-   are in memory shortage.
- - taking care of zone/node balancing. 
-
-I know this 'full zone scan' affects latency of alloc_pages() if the number
-of node is big.
-
-IMHO, in case of direct-reclaim caused by memcg's limit, we should avoid
-full zone scan because the reclaim is not caused by any memory shortage in zonelist.
-
-In case of global memory reclaim, kswapd doesn't use zonelist.
-
-So, only global-direct-reclaim is a problem here.
-I think do-full-zone-scan will reduce the calls of try_to_free_pages() 
-in future and may reduce lock contention but adds a thread too much
-penalty.
-
-In typical case, considering 4-node x86/64 NUMA, GFP_HIGHUSER_MOVABLE
-allocation failure will reclaim 4*ZONE_NORMAL+ZONE_DMA32 = 160pages per scan.
-
-If 16-node, it will be 16*ZONE_NORMAL+ZONE_DMA32 = 544? pages per scan.
-
-32pages may be too small but don't we need to have some threshold to quit
-full-zone-scan ?
-
-Here, the topic is about softlimit reclaim. I think...
-
-1. follow up for following comment(*) is required.
-==
-                        nr_soft_scanned = 0;
-                        nr_soft_reclaimed = mem_cgroup_soft_limit_reclaim(zone,
-                                                sc->order, sc->gfp_mask,
-                                                &nr_soft_scanned);
-                        sc->nr_reclaimed += nr_soft_reclaimed;
-                        sc->nr_scanned += nr_soft_scanned;
-                        /* need some check for avoid more shrink_zone() */ <----(*)
-==
-
-2. some threshold for avoinding full zone scan may be good.
-   (But this may need deep discussion...)
-
-3. About the patch, I think it will not break zone-balancing if (*) is
-   handled in a good way.
-
-   This check is not good.
-
-+				memcg_over_reclaimed = !scanning_global_lru(mz)
-+					&& (nr_reclaimed >= nr_to_reclaim);
-
-   
-  I like following 
-
-  If (we-are-doing-softlimit-reclaim-for-global-direct-reclaim &&
-      res_counter_soft_limit_excess(memcg->res))
-       memcg_over_reclaimed = true;
-
-Then another memcg will be picked up and soft-limit-reclaim() will continue.
-
-Thanks,
--Kame
-
-
-
-
-
-
-
-
-
-
-
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 96fa2da..625d0d1 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -1981,65 +1981,6 @@ int stmmac_restore(struct net_device *ndev)
+ }
+ #endif /* CONFIG_PM */
+ 
+-#ifndef MODULE
+-static int __init stmmac_cmdline_opt(char *str)
+-{
+-	char *opt;
+-
+-	if (!str || !*str)
+-		return -EINVAL;
+-	while ((opt = strsep(&str, ",")) != NULL) {
+-		if (!strncmp(opt, "debug:", 6)) {
+-			if (strict_strtoul(opt + 6, 0, (unsigned long *)&debug))
+-				goto err;
+-		} else if (!strncmp(opt, "phyaddr:", 8)) {
+-			if (strict_strtoul(opt + 8, 0,
+-					   (unsigned long *)&phyaddr))
+-				goto err;
+-		} else if (!strncmp(opt, "dma_txsize:", 11)) {
+-			if (strict_strtoul(opt + 11, 0,
+-					   (unsigned long *)&dma_txsize))
+-				goto err;
+-		} else if (!strncmp(opt, "dma_rxsize:", 11)) {
+-			if (strict_strtoul(opt + 11, 0,
+-					   (unsigned long *)&dma_rxsize))
+-				goto err;
+-		} else if (!strncmp(opt, "buf_sz:", 7)) {
+-			if (strict_strtoul(opt + 7, 0,
+-					   (unsigned long *)&buf_sz))
+-				goto err;
+-		} else if (!strncmp(opt, "tc:", 3)) {
+-			if (strict_strtoul(opt + 3, 0, (unsigned long *)&tc))
+-				goto err;
+-		} else if (!strncmp(opt, "watchdog:", 9)) {
+-			if (strict_strtoul(opt + 9, 0,
+-					   (unsigned long *)&watchdog))
+-				goto err;
+-		} else if (!strncmp(opt, "flow_ctrl:", 10)) {
+-			if (strict_strtoul(opt + 10, 0,
+-					   (unsigned long *)&flow_ctrl))
+-				goto err;
+-		} else if (!strncmp(opt, "pause:", 6)) {
+-			if (strict_strtoul(opt + 6, 0, (unsigned long *)&pause))
+-				goto err;
+-#ifdef CONFIG_STMMAC_TIMER
+-		} else if (!strncmp(opt, "tmrate:", 7)) {
+-			if (strict_strtoul(opt + 7, 0,
+-					   (unsigned long *)&tmrate))
+-				goto err;
+-#endif
+-		}
+-	}
+-	return 0;
+-
+-err:
+-	pr_err("%s: ERROR broken module parameter conversion", __func__);
+-	return -EINVAL;
+-}
+-
+-__setup("stmmaceth=", stmmac_cmdline_opt);
+-#endif
+-
+ MODULE_DESCRIPTION("STMMAC 10/100/1000 Ethernet device driver");
+ MODULE_AUTHOR("Giuseppe Cavallaro <peppe.cavallaro@st.com>");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.7.2
