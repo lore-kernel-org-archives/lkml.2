@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2AXGBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 01:01:25 -0500
-Received: from ozlabs.org ([203.10.76.45]:35765 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832Ab2AXGBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 01:01:24 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tony Lindgren <tony@atomide.com>,
+	id S1753899Ab2AXGMR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 01:12:17 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:38107 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751235Ab2AXGMQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 01:12:16 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAF5LHk95LElR/2dsb2JhbABCrimBBoFyAQEEATocIwULCAMYLhQlAyETh3wIuEATjBMElReSYg
+Date: Tue, 24 Jan 2012 17:12:11 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Brian Swetland <swetland@google.com>
-Subject: Re: Linux 3.3-1 out - merge window closed
-In-Reply-To: <201201231518.26158.arnd@arndb.de>
-References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com> <CADMYwHxhyExw8jzAVT6PEdfXT-vCSLxg_eGbbqCwRNh0q3Q6eQ@mail.gmail.com> <20120123131808.GC23571@ponder.secretlab.ca> <201201231518.26158.arnd@arndb.de>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 24 Jan 2012 11:02:00 +1030
-Message-ID: <87y5sydjpb.fsf@rustcorp.com.au>
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+Message-ID: <20120124061211.GK15102@dastard>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
+ <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
+ <20120116160136.GC16431@quack.suse.cz>
+ <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+ <20120117003613.GA28571@dastard>
+ <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
+ <20120123030422.GE15102@dastard>
+ <20120123214709.GB17974@thunk.org>
+ <CA+55aFxggjW6FKhf7KSCRMD-4YF9ymsxDQ+EMtUTThX16r-8tw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxggjW6FKhf7KSCRMD-4YF9ymsxDQ+EMtUTThX16r-8tw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jan 2012 15:18:25 +0000, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 23 January 2012, Grant Likely wrote:
-> > On Mon, Jan 23, 2012 at 11:17:46AM +0200, Ohad Ben-Cohen wrote:
+On Mon, Jan 23, 2012 at 03:49:39PM -0800, Linus Torvalds wrote:
+> On Mon, Jan 23, 2012 at 1:47 PM, Ted Ts'o <tytso@mit.edu> wrote:
 > >
-> > > I realize there's a slim chance to get it merged at this point, but I
-> > > do think that both remoteproc and rpmsg are not so scary:
-> > > 
-> > > * The code is completely self contained, and the only few external
-> > > places it changes amount to grabbing a new virtio id (which is
-> > > Acked-by Rusty) and some OMAP init platform code (which is Acked-by
-> > > Tony). People who aren't explicitly using it won't notice it's there;
-> > > even its Kconfig entries get selected automatically when relevant
-> > > (i.e. only on OMAP4 at this point) and would never show up otherwise.
-> > 
-> > Hi Linus,
-> > 
-> > I'd also like to see this merged.  Rather than going off and inventing
-> > something completely new, Ohad has built on the existing virtio
-> > infrastructure to implement IPC between CPUs and DSPs running
-> > different operating environments.  This is a strong step in the
-> > RightDirection(tm) in my opinion and such behaviour should be
-> > encouraged.  :-)
-> > 
+> > So how does XFS decide whether a write should fail and shutdown the
+> > file system, or just "try forever"?
 > 
-> Agreed. I had reviewed earlier versions of this and they looked very
-> good.
+> Why would it bother? XFS tends to be a filesystem that you'd only use
+> for core files in environments where you have a system manager that
+> knows what he is doing.
 
-Plus I don't think delay will help in any way; it'll just go in as-is,
-one merge window later...
+Oh, man, what a troll.
 
-Thanks,
-Rusty.
+Even my *TV* uses XFS. First google reference:
+
+http://settorezero.blogspot.com/2010/10/xfs-filesystem-and-samsung-ledtvs.html
+
+You won't find a more hostile "pull-the-drive-without-unmounting"
+environment than a TV. XFS handles this sort of stuff just fine and
+it has for a long time.
+
+> So there, maybe "try forever" is the right
+> thing to do.
+
+You still haven't grasped that there are many different
+classes of IO errors and that some require different handling to
+others. :/
+
+> Things are a bit different with some random unreliable USB stick FAT32
+> filesystem that just died on you, with a normal user that just removes
+> the thing or doesn't even notice that the stick is now dead. There the
+> "try forever" is totally the wrong thing to do.
+
+I'm not saying that "try forever" is how all errors should be
+handled. You are completely focussed on that as the only possible
+error handling technique that can be used. Stop being stupid!
+
+I'm saying that the dirty, uptodate, errored buffer should
+be handled back to the filesystem so that it can decide what to do
+with it.  For filesystems that can differentiate the types of
+errors, let them choose how to handle the problem. Those that are
+unable to handle the error can do the invalidation themselves. One
+size does not fit all...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
