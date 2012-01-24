@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab2AXC61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:58:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50480 "EHLO mx2.suse.de"
+	id S932614Ab2AXCrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:47:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50463 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932622Ab2AXCrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:47:08 -0500
+	id S932520Ab2AXCq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:46:58 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:32 2012
-Message-Id: <20120124023932.183532284@clark.kroah.org>
+Message-Id: <20120124023931.950516050@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:13 -0800
+Date: Mon, 23 Jan 2012 18:35:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [093/129] proc: clean up and fix /proc/<pid>/mem handling
+        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [090/129] block: add and use scsi_blk_cmd_ioctl
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,269 +26,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 6373
-Lines: 262
+Content-Length: 5210
+Lines: 146
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit e268337dfe26dfc7efd422a804dbb27977a3cccc upstream.
+commit 577ebb374c78314ac4617242f509e2f5e7156649 upstream.
 
-Jüri Aedla reported that the /proc/<pid>/mem handling really isn't very
-robust, and it also doesn't match the permission checking of any of the
-other related files.
+Introduce a wrapper around scsi_cmd_ioctl that takes a block device.
 
-This changes it to do the permission checks at open time, and instead of
-tracking the process, it tracks the VM at the time of the open.  That
-simplifies the code a lot, but does mean that if you hold the file
-descriptor open over an execve(), you'll continue to read from the _old_
-VM.
+The function will then be enhanced to detect partition block devices
+and, in that case, subject the ioctls to whitelisting.
 
-That is different from our previous behavior, but much simpler.  If
-somebody actually finds a load where this matters, we'll need to revert
-this commit.
-
-I suspect that nobody will ever notice - because the process mapping
-addresses will also have changed as part of the execve.  So you cannot
-actually usefully access the fd across a VM change simply because all
-the offsets for IO would have changed too.
-
-Reported-by: Jüri Aedla <asd@ut.ee>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: James Bottomley <JBottomley@parallels.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/base.c |  145 +++++++++++++++------------------------------------------
- 1 file changed, 39 insertions(+), 106 deletions(-)
+ block/scsi_ioctl.c             |    7 +++++++
+ drivers/block/cciss.c          |    6 +++---
+ drivers/block/ub.c             |    3 +--
+ drivers/block/virtio_blk.c     |    4 ++--
+ drivers/cdrom/cdrom.c          |    3 +--
+ drivers/ide/ide-floppy_ioctl.c |    3 +--
+ drivers/scsi/sd.c              |    2 +-
+ include/linux/blkdev.h         |    2 ++
+ 8 files changed, 18 insertions(+), 12 deletions(-)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -194,65 +194,7 @@ static int proc_root_link(struct inode *
- 	return result;
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -690,6 +690,13 @@ int scsi_cmd_ioctl(struct request_queue
  }
+ EXPORT_SYMBOL(scsi_cmd_ioctl);
  
--static struct mm_struct *__check_mem_permission(struct task_struct *task)
--{
--	struct mm_struct *mm;
--
--	mm = get_task_mm(task);
--	if (!mm)
--		return ERR_PTR(-EINVAL);
--
--	/*
--	 * A task can always look at itself, in case it chooses
--	 * to use system calls instead of load instructions.
--	 */
--	if (task == current)
--		return mm;
--
--	/*
--	 * If current is actively ptrace'ing, and would also be
--	 * permitted to freshly attach with ptrace now, permit it.
--	 */
--	if (task_is_stopped_or_traced(task)) {
--		int match;
--		rcu_read_lock();
--		match = (ptrace_parent(task) == current);
--		rcu_read_unlock();
--		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
--			return mm;
--	}
--
--	/*
--	 * No one else is allowed.
--	 */
--	mmput(mm);
--	return ERR_PTR(-EPERM);
--}
--
--/*
-- * If current may access user memory in @task return a reference to the
-- * corresponding mm, otherwise ERR_PTR.
-- */
--static struct mm_struct *check_mem_permission(struct task_struct *task)
--{
--	struct mm_struct *mm;
--	int err;
--
--	/*
--	 * Avoid racing if task exec's as we might get a new mm but validate
--	 * against old credentials.
--	 */
--	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
--	if (err)
--		return ERR_PTR(err);
--
--	mm = __check_mem_permission(task);
--	mutex_unlock(&task->signal->cred_guard_mutex);
--
--	return mm;
--}
--
--struct mm_struct *mm_for_maps(struct task_struct *task)
-+static struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
- {
- 	struct mm_struct *mm;
- 	int err;
-@@ -263,7 +205,7 @@ struct mm_struct *mm_for_maps(struct tas
- 
- 	mm = get_task_mm(task);
- 	if (mm && mm != current->mm &&
--			!ptrace_may_access(task, PTRACE_MODE_READ)) {
-+			!ptrace_may_access(task, mode)) {
- 		mmput(mm);
- 		mm = ERR_PTR(-EACCES);
- 	}
-@@ -272,6 +214,11 @@ struct mm_struct *mm_for_maps(struct tas
- 	return mm;
- }
- 
-+struct mm_struct *mm_for_maps(struct task_struct *task)
++int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
++		       unsigned int cmd, void __user *arg)
 +{
-+	return mm_access(task, PTRACE_MODE_READ);
++	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
 +}
++EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
 +
- static int proc_pid_cmdline(struct task_struct *task, char * buffer)
+ static int __init blk_scsi_ioctl_init(void)
  {
- 	int res = 0;
-@@ -816,38 +763,39 @@ static const struct file_operations proc
+ 	blk_set_cmd_filter_defaults(&blk_default_cmd_filter);
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1735,7 +1735,7 @@ static int cciss_ioctl(struct block_devi
+ 	case CCISS_BIG_PASSTHRU:
+ 		return cciss_bigpassthru(h, argp);
  
- static int mem_open(struct inode* inode, struct file* file)
+-	/* scsi_cmd_ioctl handles these, below, though some are not */
++	/* scsi_cmd_blk_ioctl handles these, below, though some are not */
+ 	/* very meaningful for cciss.  SG_IO is the main one people want. */
+ 
+ 	case SG_GET_VERSION_NUM:
+@@ -1746,9 +1746,9 @@ static int cciss_ioctl(struct block_devi
+ 	case SG_EMULATED_HOST:
+ 	case SG_IO:
+ 	case SCSI_IOCTL_SEND_COMMAND:
+-		return scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
++		return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 
+-	/* scsi_cmd_ioctl would normally handle these, below, but */
++	/* scsi_cmd_blk_ioctl would normally handle these, below, but */
+ 	/* they aren't a good fit for cciss, as CD-ROMs are */
+ 	/* not supported, and we don't have any bus/target/lun */
+ 	/* which we present to the kernel. */
+--- a/drivers/block/ub.c
++++ b/drivers/block/ub.c
+@@ -1744,12 +1744,11 @@ static int ub_bd_release(struct gendisk
+ static int ub_bd_ioctl(struct block_device *bdev, fmode_t mode,
+     unsigned int cmd, unsigned long arg)
  {
--	file->private_data = (void*)((long)current->self_exec_id);
-+	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
-+	struct mm_struct *mm;
-+
-+	if (!task)
-+		return -ESRCH;
-+
-+	mm = mm_access(task, PTRACE_MODE_ATTACH);
-+	put_task_struct(task);
-+
-+	if (IS_ERR(mm))
-+		return PTR_ERR(mm);
-+
- 	/* OK to pass negative loff_t, we can catch out-of-range */
- 	file->f_mode |= FMODE_UNSIGNED_OFFSET;
-+	file->private_data = mm;
-+
- 	return 0;
- }
+-	struct gendisk *disk = bdev->bd_disk;
+ 	void __user *usermem = (void __user *) arg;
+ 	int ret;
  
- static ssize_t mem_read(struct file * file, char __user * buf,
- 			size_t count, loff_t *ppos)
- {
--	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
-+	int ret;
- 	char *page;
- 	unsigned long src = *ppos;
--	int ret = -ESRCH;
--	struct mm_struct *mm;
-+	struct mm_struct *mm = file->private_data;
+ 	mutex_lock(&ub_mutex);
+-	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, usermem);
++	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, usermem);
+ 	mutex_unlock(&ub_mutex);
  
--	if (!task)
--		goto out_no_task;
-+	if (!mm)
-+		return 0;
- 
--	ret = -ENOMEM;
- 	page = (char *)__get_free_page(GFP_TEMPORARY);
- 	if (!page)
--		goto out;
--
--	mm = check_mem_permission(task);
--	ret = PTR_ERR(mm);
--	if (IS_ERR(mm))
--		goto out_free;
--
--	ret = -EIO;
-- 
--	if (file->private_data != (void*)((long)current->self_exec_id))
--		goto out_put;
-+		return -ENOMEM;
- 
- 	ret = 0;
-  
-@@ -874,13 +822,7 @@ static ssize_t mem_read(struct file * fi
- 	}
- 	*ppos = src;
- 
--out_put:
--	mmput(mm);
--out_free:
- 	free_page((unsigned long) page);
--out:
--	put_task_struct(task);
--out_no_task:
  	return ret;
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -243,8 +243,8 @@ static int virtblk_ioctl(struct block_de
+ 	if (!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_SCSI))
+ 		return -ENOTTY;
+ 
+-	return scsi_cmd_ioctl(disk->queue, disk, mode, cmd,
+-			      (void __user *)data);
++	return scsi_cmd_blk_ioctl(bdev, mode, cmd,
++				  (void __user *)data);
  }
  
-@@ -889,27 +831,15 @@ static ssize_t mem_write(struct file * f
+ /* We provide getgeo only to please some old bootloader/partitioning tools */
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2747,12 +2747,11 @@ int cdrom_ioctl(struct cdrom_device_info
  {
- 	int copied;
- 	char *page;
--	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
- 	unsigned long dst = *ppos;
--	struct mm_struct *mm;
-+	struct mm_struct *mm = file->private_data;
+ 	void __user *argp = (void __user *)arg;
+ 	int ret;
+-	struct gendisk *disk = bdev->bd_disk;
  
--	copied = -ESRCH;
--	if (!task)
--		goto out_no_task;
-+	if (!mm)
-+		return 0;
+ 	/*
+ 	 * Try the generic SCSI command ioctl's first.
+ 	 */
+-	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
++	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 	if (ret != -ENOTTY)
+ 		return ret;
  
--	copied = -ENOMEM;
- 	page = (char *)__get_free_page(GFP_TEMPORARY);
- 	if (!page)
--		goto out_task;
--
--	mm = check_mem_permission(task);
--	copied = PTR_ERR(mm);
--	if (IS_ERR(mm))
--		goto out_free;
--
--	copied = -EIO;
--	if (file->private_data != (void *)((long)current->self_exec_id))
--		goto out_mm;
-+		return -ENOMEM;
+--- a/drivers/ide/ide-floppy_ioctl.c
++++ b/drivers/ide/ide-floppy_ioctl.c
+@@ -292,8 +292,7 @@ int ide_floppy_ioctl(ide_drive_t *drive,
+ 	 * and CDROM_SEND_PACKET (legacy) ioctls
+ 	 */
+ 	if (cmd != CDROM_SEND_PACKET && cmd != SCSI_IOCTL_SEND_COMMAND)
+-		err = scsi_cmd_ioctl(bdev->bd_disk->queue, bdev->bd_disk,
+-				mode, cmd, argp);
++		err = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
  
- 	copied = 0;
- 	while (count > 0) {
-@@ -933,13 +863,7 @@ static ssize_t mem_write(struct file * f
- 	}
- 	*ppos = dst;
- 
--out_mm:
--	mmput(mm);
--out_free:
- 	free_page((unsigned long) page);
--out_task:
--	put_task_struct(task);
--out_no_task:
- 	return copied;
- }
- 
-@@ -959,11 +883,20 @@ loff_t mem_lseek(struct file *file, loff
- 	return file->f_pos;
- }
- 
-+static int mem_release(struct inode *inode, struct file *file)
-+{
-+	struct mm_struct *mm = file->private_data;
-+
-+	mmput(mm);
-+	return 0;
-+}
-+
- static const struct file_operations proc_mem_operations = {
- 	.llseek		= mem_lseek,
- 	.read		= mem_read,
- 	.write		= mem_write,
- 	.open		= mem_open,
-+	.release	= mem_release,
- };
- 
- static ssize_t environ_read(struct file *file, char __user *buf,
+ 	if (err == -ENOTTY)
+ 		err = generic_ide_ioctl(drive, bdev, cmd, arg);
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1096,7 +1096,7 @@ static int sd_ioctl(struct block_device
+ 			error = scsi_ioctl(sdp, cmd, p);
+ 			break;
+ 		default:
+-			error = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, p);
++			error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
+ 			if (error != -ENOTTY)
+ 				break;
+ 			error = scsi_ioctl(sdp, cmd, p);
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -675,6 +675,8 @@ extern int blk_insert_cloned_request(str
+ 				     struct request *rq);
+ extern void blk_delay_queue(struct request_queue *, unsigned long);
+ extern void blk_recount_segments(struct request_queue *, struct bio *);
++extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
++			      unsigned int, void __user *);
+ extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+ 			  unsigned int, void __user *);
+ extern int sg_scsi_ioctl(struct request_queue *, struct gendisk *, fmode_t,
 
 
