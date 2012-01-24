@@ -1,44 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab2AXKze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 05:55:34 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59803 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755912Ab2AXKzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755983Ab2AXKzd (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Jan 2012 05:55:33 -0500
-Date: Tue, 24 Jan 2012 10:55:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: Hang up at .prepare( )
-Message-ID: <20120124105528.GA20519@opensource.wolfsonmicro.com>
-References: <CANKRQngqJaAq7ucg3VzCMs+-KFXTSuJG=uq4d0kQ95gEMFfB4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANKRQngqJaAq7ucg3VzCMs+-KFXTSuJG=uq4d0kQ95gEMFfB4w@mail.gmail.com>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Received: from merlin.infradead.org ([205.233.59.134]:44935 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755677Ab2AXKzb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 05:55:31 -0500
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
+ condition
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Yasunori Goto <y-goto@jp.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1327400349.2614.10.camel@laptop>
+References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com>
+	 <1326721082.2442.234.camel@twins>
+	 <20120117174031.3118.E1E9C6FF@jp.fujitsu.com>
+	 <20120117090605.GD7612@elte.hu> <20120117151242.GA13290@redhat.com>
+	 <20120118094219.GE5842@elte.hu>  <20120118142005.GB10105@redhat.com>
+	 <1327400349.2614.10.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Jan 2012 11:55:27 +0100
+Message-ID: <1327402527.2614.17.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 06:38:45PM +0900, Tomoya MORINAGA wrote:
+On Tue, 2012-01-24 at 11:19 +0100, Peter Zijlstra wrote:
+> On Wed, 2012-01-18 at 15:20 +0100, Oleg Nesterov wrote:
+> > do_exit() is different because it can not handle the spurious wakeup.
+> > Well, may be we can? we can simply do
+> > 
+> >                 for (;;) {
+> >                         tsk->state = TASK_DEAD;
+> >                         schedule();
+> >                 }
+> > 
+> > __schedule() can't race with ttwu() once it takes rq->lock. If the
+> > exiting task is deactivated, finish_task_switch() will see EXIT_DEAD.
+> 
+> TASK_DEAD, right?
+> 
+> > Unless I missed something, the only problem is preempt_disable(),
+> > but schedule_debug() checks ->exit_state.
+> > 
+> > OTOH, if we fix this race then probably schedule_debug() should
+> > check state == EXIT_DEAD instead. 
+> 
+> Hmm, interesting. On the up side that removes the need for that inf loop
+> after BUG, down side is of course that we loose the BUG itself too. Now
+> I'm not too sure we actually care about that, a task spinning at 100% in
+> x state should be fairly obvious borkage and its not like we hit this
+> thing very often.
 
-> I've faced issue when installing these drivers,
-> system becomes hang up at async_synchronize_full_domain() of
-> dapm_power_widgets()
-> in .prepare().
+Something like so, right? schedule_debug() already tests
+prev->exit_state so it should DTRT afaict.
 
-> Do you have any information about this hang up ?
+Also, while going over this again, I think Yasunori-San's patch isn't
+sufficient, note how the p->state = TASK_RUNNING in ttwu_do_wakeup() can
+happen outside of p->pi_lock when the task gets queued on a remote cpu.
 
-> I show details below.
+---
+ kernel/exit.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-What efforts have you made to debug this yourself?  Clearly this is not
-happening for other people, perhaps it is related to something you have
-in your drivers - have you addressed the issues raised with them?
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 294b170..ccd4f84 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1039,13 +1039,18 @@ void do_exit(long code)
+ 		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
+ 	exit_rcu();
+ 	/* causes final put_task_struct in finish_task_switch(). */
+-	tsk->state = TASK_DEAD;
+ 	tsk->flags |= PF_NOFREEZE;	/* tell freezer to ignore us */
+-	schedule();
+-	BUG();
+-	/* Avoid "noreturn function does return".  */
+-	for (;;)
+-		cpu_relax();	/* For when BUG is null */
++	for (;;) {
++		/*
++		 * A spurious wakeup, eg. generated by rwsem when down()'s call
++		 * to schedule() doesn't happen but the wakeup from the
++		 * previous owner's up() did, can stomp on our ->state.
++		 *
++		 * This loop also avoids "noreturn functions does return"
++		 */
++		tsk->state = TASK_DEAD;
++		schedule();
++	}
+ }
+ 
+ EXPORT_SYMBOL_GPL(do_exit);
+
+
