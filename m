@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab2AXCoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:44:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50138 "EHLO mx2.suse.de"
+	id S1756568Ab2AXCny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:43:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50099 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756687Ab2AXCoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:44:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:25 2012
-Message-Id: <20120124023925.362271439@clark.kroah.org>
+	id S1756394Ab2AXCnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:43:52 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:24 2012
+Message-Id: <20120124023924.757650903@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:33:56 -0800
+Date: Mon, 23 Jan 2012 18:33:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [016/129] ALSA: hda - Fix the lost power-setup of seconary pins after PM resume
+        alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [009/129] ALSA: HDA: Fix master control for Cirrus Logic 421X
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,92 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2789
-Lines: 85
+Content-Length: 1409
+Lines: 51
 
-From: Takashi Iwai <tiwai@suse.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit f2cbba7602383cd9cdd21f0a5d0b8bd1aad47b33 upstream.
+commit 40d03e63e91af8ddccdfd5a536cc2a6e51433e1d upstream.
 
-When multiple headphone or other detectable output pins are present,
-the power-map has to be updated after resume appropriately, but the
-current driver doesn't check all pins but only the first pin (since
-it's enough to check it for the mute-behavior).  This resulted in the
-silent output from the secondary outputs after PM resume.
+The control name "HP/Speakers" is non-standard, and since there is
+only one DAC on this chip there is no need for a virtual master
+anyway.
 
-This patch fixes the problem by checking all pins at (re-)init time.
-
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=740347
-
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   36 +++++++++++++++++++++++-------------
- 1 file changed, 23 insertions(+), 13 deletions(-)
+ sound/pci/hda/patch_cirrus.c |   13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -4326,6 +4326,27 @@ static void stac_store_hints(struct hda_
- 	}
- }
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -1771,30 +1771,19 @@ static int build_cs421x_output(struct hd
+ 	struct auto_pin_cfg *cfg = &spec->autocfg;
+ 	struct snd_kcontrol *kctl;
+ 	int err;
+-	char *name = "HP/Speakers";
++	char *name = "Master";
  
-+static void stac_issue_unsol_events(struct hda_codec *codec, int num_pins,
-+				    const hda_nid_t *pins)
-+{
-+	while (num_pins--)
-+		stac_issue_unsol_event(codec, *pins++);
-+}
-+
-+/* fake event to set up pins */
-+static void stac_fake_hp_events(struct hda_codec *codec)
-+{
-+	struct sigmatel_spec *spec = codec->spec;
-+
-+	if (spec->autocfg.hp_outs)
-+		stac_issue_unsol_events(codec, spec->autocfg.hp_outs,
-+					spec->autocfg.hp_pins);
-+	if (spec->autocfg.line_outs &&
-+	    spec->autocfg.line_out_pins[0] != spec->autocfg.hp_pins[0])
-+		stac_issue_unsol_events(codec, spec->autocfg.line_outs,
-+					spec->autocfg.line_out_pins);
-+}
-+
- static int stac92xx_init(struct hda_codec *codec)
- {
- 	struct sigmatel_spec *spec = codec->spec;
-@@ -4376,10 +4397,7 @@ static int stac92xx_init(struct hda_code
- 		stac92xx_auto_set_pinctl(codec, spec->autocfg.line_out_pins[0],
- 				AC_PINCTL_OUT_EN);
- 		/* fake event to set up pins */
--		if (cfg->hp_pins[0])
--			stac_issue_unsol_event(codec, cfg->hp_pins[0]);
--		else if (cfg->line_out_pins[0])
--			stac_issue_unsol_event(codec, cfg->line_out_pins[0]);
-+		stac_fake_hp_events(codec);
- 	} else {
- 		stac92xx_auto_init_multi_out(codec);
- 		stac92xx_auto_init_hp_out(codec);
-@@ -5028,19 +5046,11 @@ static void stac927x_proc_hook(struct sn
- #ifdef CONFIG_PM
- static int stac92xx_resume(struct hda_codec *codec)
- {
--	struct sigmatel_spec *spec = codec->spec;
--
- 	stac92xx_init(codec);
- 	snd_hda_codec_resume_amp(codec);
- 	snd_hda_codec_resume_cache(codec);
- 	/* fake event to set up pins again to override cached values */
--	if (spec->hp_detect) {
--		if (spec->autocfg.hp_pins[0])
--			stac_issue_unsol_event(codec, spec->autocfg.hp_pins[0]);
--		else if (spec->autocfg.line_out_pins[0])
--			stac_issue_unsol_event(codec,
--					       spec->autocfg.line_out_pins[0]);
+ 	fix_volume_caps(codec, dac);
+-	if (!spec->vmaster_sw) {
+-		err = add_vmaster(codec, dac);
+-		if (err < 0)
+-			return err;
 -	}
-+	stac_fake_hp_events(codec);
- 	return 0;
- }
  
+ 	err = add_mute(codec, name, 0,
+ 			HDA_COMPOSE_AMP_VAL(dac, 3, 0, HDA_OUTPUT), 0, &kctl);
+ 	if (err < 0)
+ 		return err;
+-	err = snd_ctl_add_slave(spec->vmaster_sw, kctl);
+-	if (err < 0)
+-		return err;
+ 
+ 	err = add_volume(codec, name, 0,
+ 			HDA_COMPOSE_AMP_VAL(dac, 3, 0, HDA_OUTPUT), 0, &kctl);
+ 	if (err < 0)
+ 		return err;
+-	err = snd_ctl_add_slave(spec->vmaster_vol, kctl);
+-	if (err < 0)
+-		return err;
+ 
+ 	if (cfg->speaker_outs) {
+ 		err = snd_hda_ctl_add(codec, 0,
 
 
