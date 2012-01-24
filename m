@@ -1,251 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab2AXSPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 13:15:25 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:34946 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757304Ab2AXSPY (ORCPT
+	id S932116Ab2AXSSA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 13:18:00 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:60194 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab2AXSR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 13:15:24 -0500
-Message-ID: <4F1F02E5.3000605@xenotime.net>
-Date: Tue, 24 Jan 2012 11:13:41 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 24 Jan 2012 13:17:58 -0500
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
-        benh@kernel.crashing.org, Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFCv2 01/14] irq_domain: add documentation and MAINTAINERS entry.
-References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca> <1327352870-14687-2-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1327352870-14687-2-git-send-email-grant.likely@secretlab.ca>
+From: Sagar Borikar <sagar.borikar@gmail.com>
+Date: Tue, 24 Jan 2012 10:17:37 -0800
+Message-ID: <CAFwMWxt084yU1ddXNkidtaaZEpOiaae9BO0Xdz7H9vizR7ccYw@mail.gmail.com>
+Subject: BUG: soft lockup in kernel
+To: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2012 01:07 PM, Grant Likely wrote:
-> Documentation for irq_domain library which will be created in subsequent
-> patches.
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  Documentation/IRQ-domain.txt |  113 ++++++++++++++++++++++++++++++++++++++++++
->  MAINTAINERS                  |    9 +++
->  2 files changed, 122 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/IRQ-domain.txt
-> 
-> diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
-> new file mode 100644
-> index 0000000..247f32a
-> --- /dev/null
-> +++ b/Documentation/IRQ-domain.txt
-> @@ -0,0 +1,113 @@
-> +irq_domain interrupt number mapping library
-> +
-> +The current design of the Linux kernel uses a single large number
-> +space where each separate IRQ source is assigned a different number.
-> +This is simple when there is only one interrupt controller, but in
-> +systems with controllers the kernel must ensure that each one does not
+Hi,
 
-           with multiple interrupt controllers,
+Before I get started, pardon me for the pretty old kernel i.e. 2.6.23
+but this is in the field now so can't upgrade right away.
+This is x86_64 system
 
-> +get assigned overlapping allocations of Linux irq numbers.
+This issue happens intermittently when the faulting cpu is in the
+interrupt context.
 
-                                                 IRQ
+Here is the bug trace:
 
-> +
-> +The irq_alloc_desc*() and irq_free_desc*() API provides allocation of
+11798 (E3)[     35423.211033] BUG: soft lockup - CPU#16 stuck for 21s!
+[swapper:0]
+11799 (E4)[     35423.211057] CPU 16:
+11800 (E4)[     35423.211060] Modules linked in: ipv6 mptctl 8021q
+ipmi_si ipmi_devintf ipmi_msghandler usbcore dd_raid_driver(P) bnx2x
+zlib_inflate tg3_115j dm_round_robin dm_e
+11801 (E4)[     35423.211089] Pid: 0, comm: swapper Tainted: P
+2.6.23-ddr279999 #1
+11802 (E4)[     35423.211091] RIP: 0010:[<ffffffff80253663>]
+[<ffffffff80253663>] handle_IRQ_event+0x1a/0x55
+11803 (E4)[     35423.211099] RSP: 0018:ffffc2001832bf38  EFLAGS: 00000246
+11804 (E4)[     35423.211101] RAX: ffff8129dd133400 RBX:
+0000000000002038 RCX: ffffc2001f68005a
+11805 (E4)[     35423.211103] RDX: 0000000000000005 RSI:
+ffff8129cf31cc40 RDI: 0000000000002038
+11806 (E4)[     35423.211105] RBP: ffffc2001832beb0 R08:
+0000000000000002 R09: 0000000000000087
+11807 (E4)[     35423.211114] R10: 0000000000000000 R11:
+ffffffff80b7af50 R12: ffffffff8020c946
+11808 (E4)[     35423.211117] R13: ffffc2001832beb0 R14:
+ffff8129cf31cc40 R15: 0000000000000002
+11809 (E4)[     35423.211119] FS:  0000000000000000(0000)
+GS:ffff8117d29014c0(0000) knlGS:0000000000000000
+11810 (E4)[     35423.211122] CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+11811 (E4)[     35423.211123] CR2: 00002acc8f8fe0e0 CR3:
+0000000000201000 CR4: 00000000000006e0
+11812 (E4)[     35423.211125] DR0: 0000000000000000 DR1:
+0000000000000000 DR2: 0000000000000000
+11813 (E4)[     35423.211127] DR3: 0000000000000000 DR6:
+00000000ffff0ff0 DR7: 0000000000000400
+11814 (E4)[     35423.211129]
+11815 (E4)[     35423.211129] Call Trace:
+11816 (E4)[     35423.211132]  <IRQ>
+11817 (E4)[     35423.211138]  [<ffffffff80254b2a>] handle_edge_irq+0xe1/0x129
+11818 (E4)[     35423.211142]  [<ffffffff8020cf0c>] call_softirq+0x1c/0x28
+11819 (E4)[     35423.211146]  [<ffffffff8020e18b>] do_IRQ+0x96/0x147
+11820 (E4)[     35423.211149]  [<ffffffff8020a046>] default_idle+0x0/0x3d
+11821 (E4)[     35423.211152]  [<ffffffff8020c1b1>] ret_from_intr+0x0/0xa
+11822 (E4)[     35423.211153]  <EOI>
+11823 (E4)[     35423.211156]  [<ffffffff8020a004>] mwait_idle+0x0/0x42
+11824 (E4)[     35423.211159]  [<ffffffff8020a043>] mwait_idle+0x3f/0x42
+11825 (E4)[     35423.211162]  [<ffffffff8020a303>] cpu_idle+0x53/0x72
 
-I would say:                                  APIs provide
-
-> +irq numbers, but it doesn't provide any support for reverse mapping of
-
-   IRQ numbers, but they don't provide
-
-
-> +the controller-local irq (hwirq) number into the Linux irq number
-
-                        IRQ                               IRQ
-
-> +space.
-> +
-> +The irq_domain library adds mapping between hwirq and irq numbers on
-
-                                                         IRQ
-
-> +top of the irq_alloc_desc*() API.  An irq_domain to manage mapping is
-> +preferred over interrupt controller drivers open coding their own
-> +reverse mapping scheme.
-> +
-> +irq_domain also implements translation from Device Tree interrupt
-> +specifiers to hwirq numbers, and can be easily extended to support
-> +other irq topology data sources.
-
-         IRQ
-
-> +
-> +=== irq_domain usage ===
-> +An interrupt controller driver creates and registers an irq_domain by
-> +calling one of the irq_domain_add_*() functions (each mapping method
-> +has a different allocator function, more on that later).  The function
-> +will return a pointer to the irq_domain on success.  It must provide
-
-                                                        "It" ?  The caller ?
-
-> +the allocator function with an irq_domain_ops structure with the .map
-> +callback populated as a minimum.
-> +
-> +In most cases, the irq_domain will begin empty without any mappings
-> +between hwirq and irq numbers.  Mappings are added to the irq_domain
-
-                     IRQ
-
-> +by calling irq_create_mapping() which accepts the irq_domain and a
-> +hwirq number as arguments.  If a mapping for the hwirq doesn't already
-> +exist then it will allocate a new linux irq_desc, associate it with
-
-                                     Linux
-
-> +the hwirq, and call the .map() callback so the driver can perform any
-> +required hardware setup.
-> +
-> +When an interrupt is received, irq_find_mapping() function should
-> +be used to find the Linux irq number from the hwirq number.
-
-                             IRQ
-
-> +
-> +If the driver has the Linux irq number or the irq_data pointer, and
-
-                               IRQ
-
-> +needs to know the associated hwirq number (such as in the irq_chip
-> +callbacks) then it can be directly obtained from irq_data->hwirq.
-> +
-> +=== Types of irq_domain mappings ===
-> +There are several mechanisms available for reverse mapping from hwirq
-> +to Linux irq, and each mechanism uses a different allocation function
-
-            IRQ,
-.
-> +Which reverse map type should be used depends on the use case.  Each
-> +of the reverse map types are described below:
-> +
-> +==== Linear ====
-> +irq_domain_add_linear()
-> +
-> +The linear reverse map maintains a fixed size table indexed by the
-> +hwirq number.  When a hwirq is mapped, an irq_desc is allocated for
-> +the hwirq, and the irq number is stored in the table.
-
-                      IRQ
-
-> +
-> +The Linear map is a good choice when the maximum number of hwirqs is
-> +fixed and a relatively small number (~ < 256).  The advantages of this
-> +map are fixed time lookup for irq numbers, and irq_descs are only
-
-                                 IRQ
-
-> +allocated for in-use irqs.  The disadvantage is that the table must be
-> +as large as the largest possible hwirq number.
-> +
-> +The majority of drivers should use the linear map.
-> +
-> +==== Tree ====
-> +irq_domain_add_tree()
-> +
-> +The irq_domain maintains a radix tree map from hwirq numbers to linux
-
-                                                                   Linux
-
-> +irqs.  When an hwirq is mapped, and irq_desc is allocated and the
-
-   IRQs.  When a hwirq             an
-
-> +hwirq is used as the lookup key for the radix tree.
-> +
-> +The tree map is a good choice if the hwirq number can be very large
-> +since it doesn't need to allocate a table as large as the largest
-> +hwirq number.  The disadvantage is that hwirq to irq number lookup is
-
-                                                    IRQ
-
-> +dependent on how many entries are in the table.
-> +
-> +Very few drivers should need this mapping.  At the moment, powerpc
-> +iseries is the only user.
-> +
-> +==== No Map ===-
-> +irq_domain_add_nomap()
-> +
-> +The No Map mapping is to be used when the hwirq number is
-> +programmable in the hardware.  In this case it is best to program the
-> +Linux irq number into the hardware itself so that no mapping is
-
-         IRQ
-
-> +required.  Calling irq_create_direct_mapping() will allocate a linux
-
-                                                                  Linux
-
-> +irq number and call the .map() callback so that driver can program the
-
-   IRQ
-
-> +Linux irq number into the hardware.
-
-         IRQ
-
-> +
-> +Most drivers cannot use this mapping.
-> +
-> +==== Legacy ====
-> +irq_domain_add_legacy()
-> +irq_domain_add_legacy_isa()
-> +
-> +The Legacy mapping is a special case for drivers that already have a
-> +range of irq_descs allocated for the hwirqs.  It is used when the
-> +driver cannot be immediately converted to use the linear mapping, such
-> +as when the driver is used in a system with fixed irq number
-
-                                                     IRQ
-
-> +assignments, as is typical in many embedded system board files.
-> +
-> +The legacy map assumes a contiguous range of irq numbers has already
-
-                                                IRQ
-
-> +been allocated for the controller and that the irq number can be
-
-                                                  IRQ
-
-> +calculated by adding a fixed offset to the hwirq number, and
-> +visa-versa.  The disadvantage is that it requires the interrupt
-> +controller to manage irq allocations and it requires an irq_desc to be
-
-                        IRQ
-
-> +allocated for every hwirq, even if it is unused.
-> +
-> +Drivers should only use the legacy map if they have fixed irq mappings
-
-                                                             IRQ
-
-> +(#define IRQ_* in embedded board files).  For example, ISA controllers
-> +mapped to Linux irqs 0-15 would use the legacy map.
-
-                   IRQs
+cpu 16 has following stats:
 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+259 $21 = {
+260   pcurrent = 0xffff8117d290c700,
+261   data_offset = 18446604437888671744,
+262   kernelstack = 18446604641154777048,
+263   oldrsp = 0,
+264   irqcount = 1, --------------------------> already in interrupt context.
+265   cpunumber = 16,
+266   irqstackptr = 0xffffc2001832bfc0 "",
+267   nodenumber = 0,
+268   __softirq_pending = 106, ----------------------> soft irqs are
+not serviced for long
+269   __nmi_count = 4056,
+270   mmu_state = 2,
+271   isidle = 0,
+272   active_mm = 0xffff8129da963040,
+273   apic_timer_irqs = 30131629
+274 }
+
+Added few variables to check the number of interrupts serviced on this
+cpu and the count is unusually high
+
+
+kernel stat for cpu 16:
+
+struct kernel_stat {
+  cpustat = {
+    user = 812750,
+    nice = 0,
+    system = 530976,
+    softirq = 1640,
+    irq = 49125,
+    idle = 28617557,
+    iowait = 119581,
+    steal = 0
+  },
+  irqs = {4027, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0...},
+  softlkup_touchtime = {0, 0, 3, 13961, 6, 0, 1, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  soft_lkup_wdog_time = {
+    soft_lkup_wdog_after_rec_thresh = 1,
+    soft_lkup_wdog_rec_thresh = 0
+  },
+  sft_lkup_wdog_last_queued = 35400678034425,
+  sft_lkup_wdog_cur_time = 35400678035927,
+  do_irq_count = 707196, -------------------------------> Note the
+number of interrupts serviced on this cpu
+  softirq_count = 3134,
+  do_softirq_tot_count = 2040
+
+this number is high compared to other cpus at the time of lockup.
+
+Strangely, at the time of lockup, the irq stack frame says that cpu_idle
+routine was getting executed.
+
+The CPU 16 stack trace is as below:
+
+
+ 49 CPU 16 IRQ STACK:
+  50
+  51   KERNEL-MODE EXCEPTION FRAME AT: ffffc2001832bbf8
+  52     [exception RIP: handle_IRQ_event+26]
+  53     RIP: ffffffff80253663  RSP: ffffc2001832bf38  RFLAGS: 00000246
+  54     RAX: ffff8129dd133400  RBX: 0000000000002038  RCX: ffffc2001f68005a
+  55     RDX: 0000000000000005  RSI: ffff8129cf31cc40  RDI: 0000000000002038
+  56     RBP: ffffc2001832beb0   R8: 0000000000000002   R9: 0000000000000087
+  57     R10: 0000000000000000  R11: ffffffff80b7af50  R12: ffffffff8020c946
+  58     R13: ffffc2001832beb0  R14: ffff8129cf31cc40  R15: 0000000000000002
+  59     ORIG_RAX: ffffffffffffff10  CS: 0010  SS: 0018
+  60
+  61   KERNEL-MODE EXCEPTION FRAME AT: ffffc2001832be88
+  62     [exception RIP: handle_IRQ_event+26]
+  63     RIP: ffffffff80253663  RSP: ffffc2001832bf38  RFLAGS: 00000246
+  64     RAX: ffff8129dd133400  RBX: 0000000000002038  RCX: ffffc2001f68005a
+  65     RDX: 0000000000000005  RSI: ffff8129cf31cc40  RDI: 0000000000002038
+  66     RBP: ffffc2001832beb0   R8: 0000000000000002   R9: 0000000000000087
+  67     R10: 0000000000000000  R11: ffffffff80b7af50  R12: ffffffff8020c946
+  68     R13: ffffc2001832beb0  R14: ffff8129cf31cc40  R15: 0000000000000002
+  69     ORIG_RAX: ffffffffffffff10  CS: 0010  SS: 0018
+
+The crash tool doesn't provide the correct stack dump:
+On CPU 16:
+
+ #1 [ffffc2001832be20] softlockup_tick at ffffffff802531c6
+ #2 [ffffc2001832be50] update_process_times at ffffffff8023a2e1
+ #3 [ffffc2001832be70] smp_local_timer_interrupt at ffffffff8021b56d
+ #4 [ffffc2001832be80] smp_apic_timer_interrupt at ffffffff8021b657
+ #5 [ffffc2001832bea0] apic_timer_interrupt at ffffffff8020c946
+ #6 [ffffc2001832bf08] handle_IRQ_event at ffffffff80253663
+ #7 [ffffc2001832bf60] handle_edge_irq at ffffffff80254b2a
+ #8 [ffffc2001832bf90] do_IRQ at ffffffff8020e18b
+--- <IRQ stack> ---
+ #9 [ffff812fd41a3eb0] ret_from_intr at ffffffff8020c1b1
+    [exception RIP: cpu_idle+83]
+    RIP: ffffffff8020a303  RSP: 0000000000000000  RFLAGS: 00000000
+    RAX: ffffffffffffff20  RBX: 0000000000000000  RCX: ffffffff8020a043
+    RDX: 0000000000000010  RSI: 0000000000000246  RDI: ffff812fd41a3f30
+    RBP: 0000000000000000   R8: 0000000000000000   R9: 0000000000000001
+    R10: 0000000000000000  R11: 0000000000000000  R12: 0000000000000000
+    R13: 000000004351ccd8  R14: 0000000000000206  R15: ffffffff8020a004
+    ORIG_RAX: 0000000000000018  CS: 0000  SS: 0000
+bt: WARNING: possibly bogus exception frame --------------------->
+Don't know what is happening here.
+
+
+Whereas nmi exception stack refers to tg3 driver context.
+
+
+ 668   KERNEL-MODE EXCEPTION FRAME AT: ffff812fd41b0f58
+ 669     [exception RIP: tg3_msi_1shot+62]
+ 670     RIP: ffffffff881a1ee4  RSP: ffffc2001832bf28  RFLAGS: 00000203
+ 671     RAX: 0000000000000026  RBX: ffff8129cf31cc40  RCX: ffff81115f2c0000
+ 672     RDX: ffff812fabe7c740  RSI: ffff812fabe7c7c0  RDI: ffff812fabe7c000
+ 673     RBP: 0000000000000000   R8: 0000000000000002   R9: 0000000000000087
+ 674     R10: 0000000000000000  R11: ffffffff80b7af80  R12: 0000000000000000
+ 675     R13: 0000000000002038  R14: 0000000000000000  R15: 0000000000000000
+ 676     ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+
+I don't know whether this is correct backtrace but don't know what is
+going wrong here. None of the dump refers to any clue at least to me
+:)
+Any ideas?
+
+Thanks
+Sagar
