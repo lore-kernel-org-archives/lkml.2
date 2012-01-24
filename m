@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab2AXUU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 15:20:28 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:41538 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756481Ab2AXUU1 (ORCPT
+	id S1756775Ab2AXUUt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 15:20:49 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56374 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756356Ab2AXUUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 15:20:27 -0500
-Date: Tue, 24 Jan 2012 15:19:06 -0500 (EST)
-Message-Id: <20120124.151906.1600710663231922646.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: romieu@fr.zoreil.com, pavel@ucw.cz, alan@lxorguk.ukuu.org.uk,
-        torne@google.com, nic_swsd@realtek.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] r8169: Randomise invalid MAC addresses
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1327430853.2568.4.camel@bwh-desktop>
-References: <20120124171546.GA32184@atrey.karlin.mff.cuni.cz>
-	<20120124182826.GA24128@electric-eye.fr.zoreil.com>
-	<1327430853.2568.4.camel@bwh-desktop>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 Jan 2012 12:19:09 -0800 (PST)
+	Tue, 24 Jan 2012 15:20:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120124084823.GF29735@moon>
+References: <20120123142036.025893883@openvz.org> <20120123142436.258631438@openvz.org>
+ <20120124111655.b29264d2.kamezawa.hiroyu@jp.fujitsu.com> <20120124064719.GA29735@moon>
+ <4F1E57F3.6020607@zytor.com> <20120124071716.GC29735@moon>
+ <20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com> <20120124073842.GE29735@moon>
+ <20120124164008.aa1714bd.kamezawa.hiroyu@jp.fujitsu.com> <20120124084823.GF29735@moon>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 24 Jan 2012 15:20:26 -0500
+Message-ID: <CAHGf_=r=zwj4=yjCekYZVRsTwjohJ8F8cP4rnZx6UL9kKNTc+g@mail.gmail.com>
+Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Tue, 24 Jan 2012 18:47:33 +0000
+>> please do as you like.
+>
+> So it should be something like below I think...
 
-> None of the push-back from netdev is going to have any effect on the
-> embedded system developers who are failing to program MAC addresses
-> properly; it's only going to hurt those adventurous users.
+Looks ok this version to me. So, if you fix other developers pointed
+issue, I'll ack this.
 
-The implementation of denying interface bringup until a valid MAC is
-configured is actually helping these adventurous users if the embedded
-guys (which in the Intel situation, was the case) put the hack into
-userspace to set the MAC address before bringing the interface up.
-
-And this is really the only solution I think is warranted.
+thanks.
