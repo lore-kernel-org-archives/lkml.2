@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab2AXVyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 16:54:25 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47443 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751040Ab2AXVyY (ORCPT
+	id S1751530Ab2AXVyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 16:54:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38088 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab2AXVyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 16:54:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120120161733.21955.57648.stgit@kaulin.local>
-References: <20120120161610.21955.25082.stgit@kaulin.local>
-	<20120120161733.21955.57648.stgit@kaulin.local>
-Date: Tue, 24 Jan 2012 22:54:23 +0100
-Message-ID: <CACRpkdaK7Tvk5yLTavQnsR_7G0gazfLqCyUJhMBZFOrAjxQzeg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] pinctrl: Fix some pinmux typos
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 24 Jan 2012 16:54:44 -0500
+Date: Tue, 24 Jan 2012 13:54:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] treewide: fix memory corruptions when TASK_COMM_LEN
+ != 16
+Message-Id: <20120124135443.2772d455.akpm@linux-foundation.org>
+In-Reply-To: <1327183785-27023-1-git-send-email-jengelh@medozas.de>
+References: <1327183785-27023-1-git-send-email-jengelh@medozas.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 5:17 PM, Tony Lindgren <tony@atomide.com> wrote:
+On Sat, 21 Jan 2012 23:09:44 +0100
+Jan Engelhardt <jengelh@medozas.de> wrote:
 
-> Fix some pinmux typos so implementing pinmux drivers
-> is a bit easier.
->
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
+> I found that the kernel BUG()s out, already during boot, when bumping
+> TASK_COMM_LEN to a value larger than 16
 
-Thanks for spotting these, patch applied.
+We can never increase TASK_COMM_LEN - it is part of the kernel ABI/API.
+Doing so would destroy existing userspace which uses 16-byte buffers.
 
-Yours,
-Linus Walleij
+> (and I can imagine the same
+> problem unfolding as well if it is set to something smaller).
+
+hm, that's a surprise.  Decreasing TASK_COMM_LEN is at least slightly
+possible but it's hard to see why we should do so.
+
+> Various places do insufficient length checks, simply assume certain
+> sizes or hardcode things. Even though e.g. get_task_comm clearly
+> documents that its buffer ought to be TASK_COMM_LEN long, I do believe
+> that an extra size parameter, such as added in this patch, is a lot
+> more robust than relying on callers getting the buffer size right.
+> 
+> With this patch, I no longer experience crashes, but that is not to
+> say that there are not any further places (e.g. in modules I never
+> use) with flakey ->comm handling.
+
+You do seem to have found a few warts around the task->comm handling. 
+But I don't believe that addressing them justifies adding new code
+(adding another argument to get_task_comm).
+
+If you're interested in working on this stuff I'd suggest that we
+confine ourselves to cleaning things up (without adding code) rather
+than permitting a different TASK_COMM_LEN.  Things like replacing "16"
+with TASK_COMM_LEN.
