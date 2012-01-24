@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab2AXMtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 07:49:53 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35823 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab2AXMtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 07:49:52 -0500
-Message-ID: <1327416561.32498.10.camel@lappy>
-Subject: Re: [PATCH] net: caif: Don't act on notification for non-caif
- devices
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Sjur =?ISO-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>
-Cc: davem@davemloft.net, davej@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 24 Jan 2012 09:49:21 -0500
-In-Reply-To: <CAJK669acbPLTxTDrk_uqdB2FmewcSA+HF0qEFADgT8YdfNMcpQ@mail.gmail.com>
-References: <1327390229-30170-1-git-send-email-levinsasha928@gmail.com>
-	 <CAJK669acbPLTxTDrk_uqdB2FmewcSA+HF0qEFADgT8YdfNMcpQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1756251Ab2AXMua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 07:50:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755990Ab2AXMt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 07:49:59 -0500
+Message-ID: <4F1EA8EE.9010007@redhat.com>
+Date: Tue, 24 Jan 2012 14:49:50 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
+References: <4F13EE3D.2070602@linux.vnet.ibm.com> <4F13EEC5.8050807@linux.vnet.ibm.com> <4F13F631.9010804@redhat.com> <4F14DD39.5000703@linux.vnet.ibm.com>
+In-Reply-To: <4F14DD39.5000703@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-24 at 11:52 +0100, Sjur Brændeland wrote:
-> 
-> Nack, we have to handle other device types than just ARPHDR_CAIF after
-> introducing
-> CAIF over USB/NCM. I'd rather fix this in netns by removing the BUG_ON
-> and return
-> NULL. How about this instead: 
-[snip]
+On 01/17/2012 04:30 AM, Xiao Guangrong wrote:
+> On 01/16/2012 06:04 PM, Avi Kivity wrote:
+>
+> > On 01/16/2012 11:32 AM, Xiao Guangrong wrote:
+> >> Add 'perf kvm-events' support to analyze kvm vmexit/mmio/ioport smartly
+> >>
+> >> Usage:
+> >> 	perf kvm-events record
+> > 
+> > Why not 'perf record -e kvm'?
+>
+>
+> It works, many perf tools have this style, like:
+> perf lock record,
+> perf sched record,
+> perf kmem record,
+>
+> I think the reason is that only enable the tracepoints we need to avoid
+> unnecessary overload so that the result is more exacter.
 
-I think that doing it this way is wrong for two reasons:
+Maybe a virtual event list:
 
-1. The code in net/ assumes net_generic is a trivial dereference and doesn't check that it's not NULL. This means that if anything goes wrong there you'll have a more dangerous NULL deref instead of a BUG().
+  perf record -e kvm-pio
 
-2. You'll need to add other device to that if() statement anyway, as it currently looks like this:
+This allows us to combine the event list with other events:
 
-	cfg = get_cfcnfg(dev_net(dev));
-	caifdevs = caif_device_list(dev_net(dev));
-	if (!cfg || !caifdevs)
-		return 0;
+  perf record -e kvm-pio -e timer
 
-	caifd = caif_get(dev);
-	if (caifd == NULL && dev->type != ARPHRD_CAIF)
-		return 0;
 
-What my patch did was simply move the type check to above the net_generic call, it didn't add any new checks - which according to what you said, you'll need to do anyway.
+> >> +
+> >> +	while (table_size--) {
+> >> +		if (table->exit_code == exit_code)
+> >> +			return table->reason;
+> > 
+> > ... table[exit_code] ...
+> > 
+>
+>
+> Actually, this array is not indexed by exit_code, it means:
+> table[exit_code].exit_code != exit_code.
+
+So make it indexed by exit code.
+
+
 
 -- 
-
-Sasha.
+error compiling committee.c: too many arguments to function
 
