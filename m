@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab2AXPBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 10:01:51 -0500
-Received: from natasha.panasas.com ([67.152.220.90]:41389 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2AXPBu (ORCPT
+	id S1753262Ab2AXPGC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 10:06:02 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35246 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab2AXPGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 10:01:50 -0500
-Message-ID: <4F1EC7C9.2020001@panasas.com>
-Date: Tue, 24 Jan 2012 17:01:29 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Tue, 24 Jan 2012 10:06:00 -0500
+Message-ID: <4F1EC8D5.5040102@suse.cz>
+Date: Tue, 24 Jan 2012 16:05:57 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120118 Thunderbird/10.0
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        <bfields@redhat.com>, <linux-nfs@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
-References: <20120120135646.2fc4fa61@tlielax.poochiereds.net> <4F1BCCD6.4020603@codeaurora.org> <20120123102311.4378b8c1@tlielax.poochiereds.net> <20120124074516.GC2420@redhat.com> <4F1E7F3F.3060703@panasas.com> <20120124073626.552bc31c@tlielax.poochiereds.net>
-In-Reply-To: <20120124073626.552bc31c@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
+Subject: PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2012 02:36 PM, Jeff Layton wrote:
-> 
-> No, I don't think the state would be undefined after
-> cancel_delayed_work_sync. In principle you could requeue that work
-> again if you like without needing to reinitialize it.
-> 
-> I think this is a problem in the debugobjects code. It doesn't have
-> any way to know that when the object is recycled out of the slab that
-> the work is already initialized.
-> 
+Hi,
 
-The only difference between your above example of requeue after
-cancel_delayed_work_sync, and this here is the visit back to the
-slab. Does the slab (Maybe in debug mode) stumps over some of the
-record memory?
+this is a freshly booted system. When I do s2dsk, I see:
+...
+Freezing remaining freezable tasks ... BUG: 'workqueue_freezing' is true!
+------------[ cut here ]------------
+kernel BUG at /l/latest/linux/kernel/workqueue.c:3659!
+invalid opcode: 0000 [#1] SMP
+CPU 0
+Modules linked in:
 
-If the memory is constant what is then the difference between the two
-cases?
+Pid: 2669, comm: s2disk Not tainted 3.3.0-rc1-next-20120124_64+ #1627
+Bochs Bochs
+RIP: 0010:[<ffffffff8107e365>]  [<ffffffff8107e365>]
+freeze_workqueues_begin+0x195/0x1a0
+RSP: 0018:ffff880046f01d68  EFLAGS: 00010292
+RAX: 0000000000000023 RBX: 0000000000000001 RCX: 00000000000000c9
+RDX: 0000000000000077 RSI: 0000000000000046 RDI: ffffffff81b51f7c
+RBP: ffff880046f01d98 R08: ffffffff81a9d760 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+R13: 00007fff579464dc R14: ffffffffffffffff R15: 0000000000000004
+FS:  00007f3c65d54700(0000) GS:ffff880049600000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f3c64f58c20 CR3: 0000000045b64000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process s2disk (pid: 2669, threadinfo ffff880046f00000, task
+ffff880047251980)
+Stack:
+ ffff880046f01d98 0000000000000001 0000000000000000 00007fff579464dc
+ ffffffffffffffff 0000000000000004 ffff880046f01e18 ffffffff81096cb9
+ 00000000ffff0124 0000000000000004 ffff880046f01e18 000000004f1ec7d1
+Call Trace:
+ [<ffffffff81096cb9>] try_to_freeze_tasks+0x1b9/0x2d0
+ [<ffffffff81096ed5>] freeze_kernel_threads+0x25/0x90
+ [<ffffffff81097b55>] hibernation_snapshot+0x75/0x2e0
+ [<ffffffff8109d724>] snapshot_ioctl+0x314/0x4e0
+ [<ffffffff81130856>] do_vfs_ioctl+0x96/0x550
+ [<ffffffff8111ff7b>] ? vfs_write+0x10b/0x180
+ [<ffffffff81130d5a>] sys_ioctl+0x4a/0x80
+ [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
+Code: c7 c6 0a a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 19 94 5a 00 0f 0b
+48 c7 c6 27 a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 02 94 5a 00 <0f> 0b
+66 0f 1f 84 00 00 00 00 00 55 48 c7 c7 82 4b b9 81 48 89
+RIP  [<ffffffff8107e365>] freeze_workqueues_begin+0x195/0x1a0
+ RSP <ffff880046f01d68>
+---[ end trace 632574abdc098963 ]---
 
-> Certainly it's simple enough to reinitialize the work every time we
-> allocate an inode here, but I don't think this is really a rpc_pipefs
-> bug per-se. 
+I wanted to reproduce a different crash which happens on 3.2.1. When
+there is not enough free swap, the kernel crashes (when s2disk is used).
+I will post more info after the one above is resolved and I can
+reproduce the latter :).
 
-That depends on the API intention. If an init is intended after
-SLAB free then yes if not then not. We should ask for the intention
-of this API.
-
-> I can send a patch that works around this problem, but
-> if there are plans to fix this in the debugobjects code, I won't
-> bother...
-> 
-
-You mean other fix then calling INIT_DELAYED_WORK? is that so
-bad that we need more code to avoid it?
-
-Thanks
-Boaz
+thanks,
+-- 
+js
+suse labs
