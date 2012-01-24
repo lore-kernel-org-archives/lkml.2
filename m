@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab2AXCtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:49:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50695 "EHLO mx2.suse.de"
+	id S932947Ab2AXCtU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:49:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50705 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932923Ab2AXCtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:49:07 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:35 2012
-Message-Id: <20120124023935.212305922@clark.kroah.org>
+	id S932933Ab2AXCtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:49:14 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:33 2012
+Message-Id: <20120124023932.950847544@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:35:47 -0800
+Date: Mon, 23 Jan 2012 18:35:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [127/129] iwlegacy: 3945: fix hw passive scan on radar channels
+        alan@lxorguk.ukuu.org.uk, x86@kernel.org,
+        Kurt Garloff <kurt@garloff.de>, Len Brown <len.brown@intel.com>
+Subject: [101/129] ACPI, x86: Use SRAT table rev to use 8bit or 32bit PXM fields (x86/x86-64)
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,60 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2218
-Lines: 53
+Content-Length: 1483
+Lines: 43
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Kurt Garloff <kurt@garloff.de>
 
-commit 68acc4afb040d98ddfd2cae0de09e2f4e1ee127f upstream.
+commit cd298f60a2451a16e0f077404bf69b62ec868733 upstream.
 
-Patch fix firmware error on "iw dev wlan0 scan passive" for
-hardware scanning (with disable_hw_scan=0 module parameter).
+In SRAT v1, we had 8bit proximity domain (PXM) fields; SRAT v2 provides
+32bits for these. The new fields were reserved before.
+According to the ACPI spec, the OS must disregrard reserved fields.
 
- iwl3945 0000:03:00.0: Microcode SW error detected. Restarting 0x82000008.
- iwl3945 0000:03:00.0: Loaded firmware version: 15.32.2.9
- iwl3945 0000:03:00.0: Start IWL Error Log Dump:
- iwl3945 0000:03:00.0: Status: 0x0002A2E4, count: 1
- iwl3945 0000:03:00.0: Desc       Time       asrtPC blink2 ilink1  nmiPC   Line
- iwl3945 0000:03:00.0: SYSASSERT     (0x5) 0041263900 0x13756 0x0031C 0x00000 764
- iwl3945 0000:03:00.0: Error Reply type 0x000002FC cmd C_SCAN (0x80) seq 0x443E ser 0x00340000
- iwl3945 0000:03:00.0: Command C_SCAN failed: FW Error
- iwl3945 0000:03:00.0: Can't stop Rx DMA.
+x86/x86-64 was rather inconsistent prior to this patch; it used 8 bits
+for the pxm field in cpu_affinity, but 32 bits in mem_affinity.
+This patch makes it consistent: Either use 8 bits consistently (SRAT
+rev 1 or lower) or 32 bits (SRAT rev 2 or higher).
 
-We have disable ability to change passive scanning to active on
-particular channel when traffic is detected on that channel. Otherwise
-firmware will report error, when we try to do passive scan on radar
-channels.
-
-Reported-and-debugged-by: Pedro Francisco <pedrogfrancisco@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+cc: x86@kernel.org
+Signed-off-by: Kurt Garloff <kurt@garloff.de>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlegacy/iwl3945-base.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ arch/x86/mm/srat.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
-@@ -2656,14 +2656,13 @@ int iwl3945_request_scan(struct iwl_priv
- 		IWL_WARN(priv, "Invalid scan band\n");
- 		return -EIO;
- 	}
--
- 	/*
--	 * If active scaning is requested but a certain channel
--	 * is marked passive, we can do active scanning if we
--	 * detect transmissions.
-+	 * If active scaning is requested but a certain channel is marked
-+	 * passive, we can do active scanning if we detect transmissions. For
-+	 * passive only scanning disable switching to active on any channel.
- 	 */
- 	scan->good_CRC_th = is_active ? IWL_GOOD_CRC_TH_DEFAULT :
--					IWL_GOOD_CRC_TH_DISABLED;
-+					IWL_GOOD_CRC_TH_NEVER;
- 
- 	len = iwl_legacy_fill_probe_req(priv, (struct ieee80211_mgmt *)scan->data,
- 					vif->addr, priv->scan_request->ie,
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -104,6 +104,8 @@ acpi_numa_processor_affinity_init(struct
+ 	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
+ 		return;
+ 	pxm = pa->proximity_domain_lo;
++	if (acpi_srat_revision >= 2)
++		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
+ 	node = setup_node(pxm);
+ 	if (node < 0) {
+ 		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+@@ -155,6 +157,8 @@ acpi_numa_memory_affinity_init(struct ac
+ 	start = ma->base_address;
+ 	end = start + ma->length;
+ 	pxm = ma->proximity_domain;
++	if (acpi_srat_revision <= 1)
++		pxm &= 0xff;
+ 	node = setup_node(pxm);
+ 	if (node < 0) {
+ 		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
 
 
