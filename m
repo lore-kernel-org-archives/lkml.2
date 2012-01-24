@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab2AXCoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:44:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50154 "EHLO mx2.suse.de"
+	id S932107Ab2AXCom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 21:44:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50177 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756745Ab2AXCo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:44:28 -0500
+	id S1756807Ab2AXCoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:44:39 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:28 2012
-Message-Id: <20120124023928.182633417@clark.kroah.org>
+Message-Id: <20120124023928.432983236@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:28 -0800
+Date: Mon, 23 Jan 2012 18:34:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [048/129] mac80211: fix rx->key NULL pointer dereference in promiscuous mode
+        alan@lxorguk.ukuu.org.uk, Ludwig Nussel <ludwig.nussel@suse.de>,
+        harvey.harrison@gmail.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [051/129] x86: Fix mmap random address range
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,52 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1479
-Lines: 45
+Content-Length: 1325
+Lines: 41
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Ludwig Nussel <ludwig.nussel@suse.de>
 
-commit 1140afa862842ac3e56678693050760edc4ecde9 upstream.
+commit 9af0c7a6fa860698d080481f24a342ba74b68982 upstream.
 
-Since:
+On x86_32 casting the unsigned int result of get_random_int() to
+long may result in a negative value.  On x86_32 the range of
+mmap_rnd() therefore was -255 to 255.  The 32bit mode on x86_64
+used 0 to 255 as intended.
 
-commit 816c04fe7ef01dd9649f5ccfe796474db8708be5
-Author: Christian Lamparter <chunkeey@googlemail.com>
-Date:   Sat Apr 30 15:24:30 2011 +0200
+The bug was introduced by 675a081 ("x86: unify mmap_{32|64}.c")
+in January 2008.
 
-    mac80211: consolidate MIC failure report handling
-
-is possible to that we dereference rx->key == NULL when driver set
-RX_FLAG_MMIC_STRIPPED and not RX_FLAG_IV_STRIPPED and we are in
-promiscuous mode. This happen with rt73usb and rt61pci at least.
-
-Before the commit we always check rx->key against NULL, so I assume
-fix should be done in mac80211 (also mic_fail path has similar check).
-
-References:
-https://bugzilla.redhat.com/show_bug.cgi?id=769766
-http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2012-January/004395.html
-
-Reported-by: Stuart D Gathman <stuart@gathman.org>
-Reported-by: Kai Wohlfahrt <kai.scorpio@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: harvey.harrison@gmail.com
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Harvey Harrison <harvey.harrison@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/201111152246.pAFMklOB028527@wpaz5.hot.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/wpa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/mmap.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/wpa.c
-+++ b/net/mac80211/wpa.c
-@@ -106,7 +106,7 @@ ieee80211_rx_h_michael_mic_verify(struct
- 		if (status->flag & RX_FLAG_MMIC_ERROR)
- 			goto mic_fail;
- 
--		if (!(status->flag & RX_FLAG_IV_STRIPPED))
-+		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key)
- 			goto update_iv;
- 
- 		return RX_CONTINUE;
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -75,9 +75,9 @@ static unsigned long mmap_rnd(void)
+ 	*/
+ 	if (current->flags & PF_RANDOMIZE) {
+ 		if (mmap_is_ia32())
+-			rnd = (long)get_random_int() % (1<<8);
++			rnd = get_random_int() % (1<<8);
+ 		else
+-			rnd = (long)(get_random_int() % (1<<28));
++			rnd = get_random_int() % (1<<28);
+ 	}
+ 	return rnd << PAGE_SHIFT;
+ }
 
 
