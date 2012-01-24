@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab2AXQcc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:32:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51761 "EHLO mx1.redhat.com"
+	id S1755524Ab2AXQcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:32:48 -0500
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:41863 "EHLO sabe.cs.wisc.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755403Ab2AXQca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:32:30 -0500
-Date: Tue, 24 Jan 2012 11:32:24 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 14/16] blkcg: don't allow or retain configuration of
- missing devices
-Message-ID: <20120124163224.GB17291@redhat.com>
-References: <1327360193-24679-1-git-send-email-tj@kernel.org>
- <1327360193-24679-15-git-send-email-tj@kernel.org>
- <20120124154224.GA17291@redhat.com>
- <20120124155309.GA12906@google.com>
+	id S1755176Ab2AXQcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 11:32:24 -0500
+Message-ID: <4F1EDD0F.1060104@cs.wisc.edu>
+Date: Tue, 24 Jan 2012 10:32:15 -0600
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120124155309.GA12906@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: JBottomley@parallels.com, Dave Jones <davej@redhat.com>,
+        open-iscsi@googlegroups.com, linux-scsi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] Hang (deadlock?) inside iscsi_if_rx
+References: <1327415447.15015.0.camel@lappy> <4F1EDC6D.1060102@cs.wisc.edu>
+In-Reply-To: <4F1EDC6D.1060102@cs.wisc.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 07:53:09AM -0800, Tejun Heo wrote:
-> On Tue, Jan 24, 2012 at 10:42:24AM -0500, Vivek Goyal wrote:
-> > On Mon, Jan 23, 2012 at 03:09:51PM -0800, Tejun Heo wrote:
-> > > +	disk = get_gendisk(dev, &part);
-> > > +
-> > > +	if ((!disk || part) && temp) {
-> > > +		ret = -ENODEV;
-> > > +		goto out;
-> > > +	}
-> > > +
-> > > +	rcu_read_lock();
-> > > +
-> > > +	if (disk && !part) {
-> > > +		spin_lock_irq(disk->queue->queue_lock);
-> > > +		blkg = blkg_lookup_create(blkcg, disk->queue, plid);
-> > > +		spin_unlock_irq(disk->queue->queue_lock);
-> > 
-> > If queue is in bypass mode, is group creation and linking allowed when
-> > somebody is trying to set per device rules. (/me is thinking if there are
-> > any potential races between elevator switch and rule setting in cgroup).
+On 01/24/2012 10:29 AM, Mike Christie wrote:
+> On 01/24/2012 08:30 AM, Sasha Levin wrote:
+>> Hi all,
+>>
+>> I got the following hang when running trinity under KVM tool:
+>>
+>> [ 2520.824250] INFO: task trinity:31986 blocked for more than 120 seconds.
+>> [ 2520.825513] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> [ 2520.826983] trinity         D 0000000000000000  5504 31986   2767 0x00000004
+>> [ 2520.828416]  ffff88000a21ba98 0000000000000086 ffff88000a3f8000 ffff88000a3f8000
+>> [ 2520.829892]  00000000001d4340 ffff88000a21bfd8 ffff88000a21a000 00000000001d4340
+>> [ 2520.831380]  00000000001d4340 00000000001d4340 ffff88000a21bfd8 00000000001d4340
+>> [ 2520.832838] Call Trace:
+>> [ 2520.837089]  [<ffffffff8265297a>] schedule+0x3a/0x50
+>> [ 2520.837983]  [<ffffffff82651049>] __mutex_lock_common+0x209/0x5b0
+>> [ 2520.839181]  [<ffffffff81af64f3>] ? iscsi_if_rx+0x23/0xa00
+>> [ 2520.840232]  [<ffffffff81053943>] ? sched_clock+0x13/0x20
+>> [ 2520.841242]  [<ffffffff81af64f3>] ? iscsi_if_rx+0x23/0xa00
+>> [ 2520.842271]  [<ffffffff82651430>] mutex_lock_nested+0x40/0x50
+>> [ 2520.843353]  [<ffffffff81af64f3>] iscsi_if_rx+0x23/0xa00
+>> [ 2520.844461]  [<ffffffff810dfffd>] ? sub_preempt_count+0x9d/0xd0
+>> [ 2520.845576]  [<ffffffff82654130>] ? _raw_read_unlock+0x30/0x60
+>> [ 2520.846705]  [<ffffffff8221632e>] netlink_unicast+0x1ae/0x1f0
+>> [ 2520.847790]  [<ffffffff82216ae7>] netlink_sendmsg+0x227/0x350
+>> [ 2520.848884]  [<ffffffff821a490d>] ? sock_update_netprioidx+0xdd/0x1b0
+>> [ 2520.850105]  [<ffffffff821a4882>] ? sock_update_netprioidx+0x52/0x1b0
+>> [ 2520.851282]  [<ffffffff8219e376>] sock_aio_write+0x166/0x180
+>> [ 2520.852317]  [<ffffffff810dfe51>] ? get_parent_ip+0x11/0x50
+>> [ 2520.853342]  [<ffffffff811d0b1a>] do_sync_write+0xda/0x120
+>> [ 2520.854347]  [<ffffffff81109c42>] ? lock_release_holdtime+0xb2/0x160
+>> [ 2520.855533]  [<ffffffff810dfe51>] ? get_parent_ip+0x11/0x50
+>> [ 2520.856569]  [<ffffffff817914e7>] ? security_file_permission+0x27/0xb0
+>> [ 2520.857756]  [<ffffffff811d0ccc>] vfs_write+0x16c/0x180
+>> [ 2520.858713]  [<ffffffff811d0dcf>] sys_write+0x4f/0xa0
+>> [ 2520.859680]  [<ffffffff826553f9>] system_call_fastpath+0x16/0x1b
+>> [ 2520.873039] 1 lock held by trinity/31986:
+>> [ 2520.873801]  #0:  (rx_queue_mutex){+.+...}, at: [<ffffffff81af64f3>] iscsi_if_rx+0x23/0xa00
+>> [ 2520.875587] Kernel panic - not syncing: hung_task: blocked tasks
+>>
+>> From looking at the logs, there were two instances of the fuzzer blocked on a write() to a netlink socket. There are no iSCSI targets anywhere on the network.
+>>
 > 
-> Yeap, there is.  Nice catch.  blkg_lookup_create() should be testing
-> blk_queue_bypass() instead of blk_queue_dead() and parse_and_set
-> should probably retry after a bit.  Will update.
+> What does the trinity test do? Does it write random junk to netlink
+> sockets to test the kernel handlers or were you actually stressing the
+> creation of targets. If the latter what driver were you trying to create
+> targets with (iscsi_tcp, bnx2i, etc)?
 
-So now group creation fails if queue is in bypass mode. So a per device
-rule setting will fail both for cfq and throttling logic while device
-is still around. So a user is supposed to retry? How would a user know 
-that elevator switch is happening and he should retry and till when should
-he retry.
 
-Thanks
-Vivek
+Oh yeah, for the random type of test, how much data does userspace write?
+
