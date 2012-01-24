@@ -1,306 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab2AXVW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 16:22:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37845 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756653Ab2AXVWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 16:22:24 -0500
-Date: Tue, 24 Jan 2012 13:22:22 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
-Message-Id: <20120124132222.d78bc0d4.akpm@linux-foundation.org>
-In-Reply-To: <20120124205039.GB2278@moon>
-References: <20120124064719.GA29735@moon>
-	<4F1E57F3.6020607@zytor.com>
-	<20120124071716.GC29735@moon>
-	<20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124073842.GE29735@moon>
-	<20120124164008.aa1714bd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124084823.GF29735@moon>
-	<CAHGf_=r=zwj4=yjCekYZVRsTwjohJ8F8cP4rnZx6UL9kKNTc+g@mail.gmail.com>
-	<20120124202606.GC2546@moon>
-	<m18vkwj0dw.fsf@fess.ebiederm.org>
-	<20120124205039.GB2278@moon>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757556Ab2AXVY1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 16:24:27 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:48493 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757531Ab2AXVY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 16:24:26 -0500
+Message-ID: <1327440010.2649.204.camel@groeck-laptop>
+Subject: Re: [PATCH] x86/platform: (TS-5500) revised ADC driver
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Date: Tue, 24 Jan 2012 13:20:10 -0800
+In-Reply-To: <20120124151616.5723934b@v0nbox>
+References: <1326930731-21215-5-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <1327103002-5834-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <20120121044631.GA4143@ericsson.com>	<20120122203619.22fabe79@lenov0n>
+	 <20120123043645.GA14660@ericsson.com>	<20120123155408.7d52e4da@v0nbox>
+	 <20120123173551.309af2eb@v0nbox>	<20120124004138.GA20363@ericsson.com>
+	 <20120124151616.5723934b@v0nbox>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jan 2012 00:50:39 +0400
-Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> This one should fit all requirements I guess.
-
-[wakes up]
-
-> While doing the checkpoint-restore in the userspace one need to determine
-> whether various kernel objects (like mm_struct-s of file_struct-s) are shared
-> between tasks and restore this state.
+On Tue, 2012-01-24 at 15:16 -0500, Vivien Didelot wrote:
+> Le Mon, 23 Jan 2012 16:41:38 -0800,
+> Guenter Roeck <guenter.roeck@ericsson.com> a écrit :
 > 
-> The 2nd step can be solved by using appropriate CLONE_ flags and the unshare
-> syscall, while there's currently no ways for solving the 1st one.
+> > On Mon, Jan 23, 2012 at 05:35:51PM -0500, Vivien Didelot wrote:
+> > > On Mon, 23 Jan 2012 15:54:08 -0500,
+> > > Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
+> > > 
+> > > > On Sun, 22 Jan 2012 20:36:46 -0800,
+> > > > Guenter Roeck <guenter.roeck@ericsson.com> wrote: 
+> > > > > > > Regarding the location, I'd really like to know from the
+> > > > > > > powers-that-be if arch/x86/platform/ts5500/
+> > > > > > > or
+> > > > > > > 	drivers/platform/x86
+> > > > > > > or
+> > > > > > > 	drivers/hwmon
+> > > > > > > 
+> > > > > > > would be the appropriate location for a driver like this. As
+> > > > > > > mentioned before, my strong preference is drivers/hwmon,
+> > > > > > > but I would like to hear from others.
+> > > > > > 
+> > > > > > We should either split every driver into corresponding
+> > > > > > subdirectories, or put everything in a common platform
+> > > > > > directory. My first RFC patches set has every driver
+> > > > > > separated. As they are really specific to the platform,
+> > > > > > people seem to agree with grouping them, mainly because they
+> > > > > > won't be shared. I changed that in the following patches
+> > > > > > sets, and X86 maintainers seemed to be ok with that.
+> > > > > > 
+> > > > > > I'm ok with both solutions, but we should all agree on one.
+> > > > > > Maybe we should have other maintainers view on this?
+> > > > > > 
+> > > > > That is what I had asked for. I thought the whole point of
+> > > > > per-module directories was to have all drivers there. If that
+> > > > > is no longer true, fine with me; who am I to argue about
+> > > > > something like that. I'd just like to know.
+> > > > > 
+> > > > > > > Also, I am not sure if the current approach is appropriate
+> > > > > > > to start with. Looking at the datasheet as well as into
+> > > > > > > existing kernel code, it appears quite likely that some
+> > > > > > > kind of more or less generic MAX197 driver exists
+> > > > > > > somewhere. The existence of is_max197_installed() - without
+> > > > > > > any calling code - is a strong indication that this is the
+> > > > > > > case, as well as the "static" platform data in your
+> > > > > > > original patch. It might be more appropriate to take this
+> > > > > > > more or less generic driver, move it to drivers/hwmon, and
+> > > > > > > provide - for example through platform data - a means to
+> > > > > > > read from and write to the chip on a per-platform basis, ie
+> > > > > > > with per-platform access functions.
+> > > > > > 
+> > > > > > You're right, it should be possible to create a generic max197
+> > > > > > driver and provide read/write functions through platform
+> > > > > > data. But we don't have a max197 right now... So it can stay
+> > > > > > as a compact TS-5500 ADC driver for the moment, and maybe we
+> > > > > > will split later. What do you think?
+> > > > > > 
+> > > > > I am lost. If you don't have a TS-5500 with max197, how do you
+> > > > > test the driver ?
+> > > > 
+> > > > Sorry, I wasn't clear. I meant the only max197 I have is the one
+> > > > behind the TS-5500 CPLD, I don't have any others to test
+> > > > independently.
+> > > > 
+> > > > > I had another look into the MAX197 and TS-5500 data sheets. In
+> > > > > my opinion, a generic MAX197 driver in drivers/hwmon combined
+> > > > > with a platform driver in the current location would be the way
+> > > > > to go. That driver would then also work for the other TS-5x00
+> > > > > systems. All you need is a single chip access function in the
+> > > > > platform code, since the chip is always accessed with a write
+> > > > > followed by a read.
+> > > > 
+> > > > I took a deeper look at the datasheets, and you're right, a MAX197
+> > > > driver seems to be a good choice. However, there are a number of
+> > > > differences between a direct usage of a MAX197 and the TS-5500
+> > > > mapped MAX197.
+> > > > 
+> > > > To start a conversion of a channel for a given range and
+> > > > polarity, it consists on both sides of a u8 outb() call on pins
+> > > > 7-14 (i.e. bits D7-D0). To be notified when the result is ready,
+> > > > we can either set an IRQ on INT pin (falling edge), or poll it.
+> > > > Then on the MAX197, you read the pins 7-14, set pin HBEN to 1, and
+> > > > read the same pins again to get the 4 remaining bits. On the
+> > > > TS-5500, only polling is available, and the 12 bits are mapped on
+> > > > 2 registers.
+> > > > 
+> > > > I propose to write a max197 driver with default read and write
+> > > > functions. A platform_data will be used to specify the base
+> > > > address (pins 7-14), and eventually a custom read function
+> > > > pointer, which will be used instead of the default one if it is
+> > > > different of NULL.
+> > > > 
+> > > > What do you think?
+> > > > 
+> > > > I will write a max197 driver with default read and write
+> > > > functions. A platform_data will be used to specify the base
+> > > > address (pins 7-14), and eventually a custom read function
+> > > > pointer, which will be used instead of the default, if it is not
+> > > > NULL.
+> > > > 
+> > > > What do you think? 
+> > > 
+> > Sounds like a plan to me.
+> > 
+> > > Sorry for the duplicate :)
+> > > 
+> > > BTW, I've added Jean Delvare and the lm-sensors mailing list in Cc,
+> > > in case they have an opinion on this.
+> > > 
+> > 
+> > Thanks,
+> > Guenter
 > 
-> One of the ways for checking whether two tasks share e.g. mm_struct is to
-> provide some mm_struct ID of a task to its proc file, but showing such
-> info considered to be not that good for security reasons.
+> Hi Guenter,
 > 
-> Thus after some debates we end up in conclusion that using that named
-> 'comparision' syscall might be the best candidate. So here is it --
-> __NR_kcmp.
+> There's another disadvantage with the generic driver.
+> Usually, the MAX197 is memory mapped, but on the TS-5500, the CPLD is
+> port mapped, so even the write function would be different.
+> It sounds like the amount of reusable lines of code is not that
+> significant.
 > 
-> It takes up to 5 agruments - the pids of the two tasks (which
-> characteristics should be compared), the comparision type and
-> (in case of comparision of files) two file descriptors.
+> Do you think it is still worthwhile?
 
-PIDs are not unique.  One wonders what happens in this syscall if the
-same pid appears in two namespaces.
+Points to a platform specific access function, as I had suggested
+earlier. The access function is just a small part of the driver; the
+entire hwmon/sysfs code is generic. Yes, I think it is worthwhile.
 
-<reads the code>
+Guenter
 
-Seems that it performs lookups only in the caller's PID namespace. 
-Maybe this is appropriate but it should be described and justified in
-the changelog and in code comments, please.  And in the forthcoming
-manpage ;)
 
-> At moment only x86 is supported.
-
-Presumably you have a test app.  Please let's include that app in
-tools/testing/selftests/ for arch maintainers and others to use and
-maintain.
-
->
-> ...
->
-> --- /dev/null
-> +++ linux-2.6.git/kernel/kcmp.c
-> @@ -0,0 +1,163 @@
-> +#include <linux/kernel.h>
-> +#include <linux/syscalls.h>
-> +#include <linux/fdtable.h>
-> +#include <linux/string.h>
-> +#include <linux/random.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/cache.h>
-> +#include <linux/bug.h>
-> +#include <linux/err.h>
-> +#include <linux/kcmp.h>
-> +
-> +#include <asm/unistd.h>
-> +
-> +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
-
-This reader of this code doesn't understand why all this cookie stuff
-is in here.  Please include code comments which explain the reason for
-the existence of this code.
-
-> +static long kptr_obfuscate(long v, int type)
-> +{
-> +	return (v ^ cookies[type][0]) * cookies[type][1];
-> +}
-> +
-> +/*
-> + * 0 - equal
-> + * 1 - less than
-> + * 2 - greater than
-> + * 3 - not equal but ordering unavailable
-
-what the heck does case 3 mean?  Why is it here?
-
-> + */
-> +static int kcmp_ptr(long v1, long v2, int type)
-> +{
-> +	long ret;
-> +
-> +	ret = kptr_obfuscate(v1, type) - kptr_obfuscate(v2, type);
-> +
-> +	return (ret < 0) | ((ret > 0) << 1);
-> +}
-> +
-> +#define KCMP_TASK_PTR(task1, task2, member, type)	\
-> +	kcmp_ptr((long)(task1)->member,			\
-> +		 (long)(task2)->member,			\
-> +		 type)
-> +
-> +#define KCMP_PTR(ptr1, ptr2, type)			\
-> +	kcmp_ptr((long)ptr1, (long)ptr2, type)
-
-ugh.  This:
-
-static long kptr_obfuscate(void *p, enum you_forgot_to_name_the_enum type)
-{
-	return ((long)p ^ cookies[type][0]) * cookies[type][1];
-}
-
-static int kcmp_task_pointers(void *task1, void *task2, size_t field_offset,
-				enum you_forgot_to_name_the_enum type)
-{
-	void **field1 = t1 + field_offset;	/* points to a pointer in the task_struct */
-	void **field2 = t1 + field_offset;
-	long diff;
-
-	diff = kptr_obfuscate(*field1, type) - kptr_obfuscate(*field2, type);
-	return (diff < 0) | ((diff > 0) << 1);
-}
-
-	...
-	ret = kcmp_task_pointers(task1, task2, offsetof(task_struct, mm),
-				KCMP_VM);
-	...
-
-see?  No nasty macros, it's type-correct and it uses only a single
-explicit typecast.
-
-> +/* A caller must be sure the task is presented in memory */
-
-"The caller must have pinned the task"
-
-> +static struct file *
-> +get_file_raw_ptr(struct task_struct *task, unsigned int idx)
-> +{
-> +	struct fdtable *fdt;
-> +	struct file *file;
-> +
-> +	spin_lock(&task->files->file_lock);
-> +	fdt = files_fdtable(task->files);
-> +	if (idx < fdt->max_fds)
-> +		file = fdt->fd[idx];
-> +	else
-> +		file = NULL;
-> +	spin_unlock(&task->files->file_lock);
-> +
-> +	return file;
-> +}
-> +
-> +SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
-> +		unsigned long, idx1, unsigned long, idx2)
-> +{
-> +	struct task_struct *task1;
-> +	struct task_struct *task2;
-> +	int ret = 0;
-> +
-> +	rcu_read_lock();
-> +
-> +	task1 = find_task_by_vpid(pid1);
-> +	if (!task1) {
-> +		rcu_read_unlock();
-> +		return -ESRCH;
-> +	}
-> +
-> +	task2 = find_task_by_vpid(pid2);
-> +	if (!task2) {
-> +		put_task_struct(task1);
-> +		rcu_read_unlock();
-> +		return -ESRCH;
-> +	}
-> +
-> +	get_task_struct(task1);
-> +	get_task_struct(task2);
-> +
-> +	rcu_read_unlock();
-> +
-> +	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
-> +	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
-
-Add a comment explaining this decision.
-
-> +		ret = -EACCES;
-> +		goto err;
-> +	}
-> +
-> +	/*
-> +	 * Note for all cases but the KCMP_FILE we
-> +	 * don't take any locks in a sake of speed.
-> +	 */
-> +
-> +	switch (type) {
-> +	case KCMP_FILE: {
-> +		struct file *filp1, *filp2;
-> +
-> +		filp1 = get_file_raw_ptr(task1, idx1);
-> +		filp2 = get_file_raw_ptr(task2, idx2);
-> +
-> +		if (filp1 && filp2)
-> +			ret = KCMP_PTR(filp1, filp2, KCMP_FILE);
-> +		else
-> +			ret = -ENOENT;
-> +		break;
-> +	}
-> +	case KCMP_VM:
-> +		ret = KCMP_TASK_PTR(task1, task2, mm, KCMP_VM);
-> +		break;
-> +	case KCMP_FILES:
-> +		ret = KCMP_TASK_PTR(task1, task2, files, KCMP_FILES);
-> +		break;
-> +	case KCMP_FS:
-> +		ret = KCMP_TASK_PTR(task1, task2, fs, KCMP_FS);
-> +		break;
-> +	case KCMP_SIGHAND:
-> +		ret = KCMP_TASK_PTR(task1, task2, sighand, KCMP_SIGHAND);
-> +		break;
-> +	case KCMP_IO:
-> +		ret = KCMP_TASK_PTR(task1, task2, io_context, KCMP_IO);
-> +		break;
-> +	case KCMP_SYSVSEM:
-> +#ifdef CONFIG_SYSVIPC
-> +		ret = KCMP_TASK_PTR(task1, task2, sysvsem.undo_list, KCMP_SYSVSEM);
-> +#else
-> +		ret = -ENOENT;
-
-ENOENT seems inappropriate here.
-
-> +		goto err;
-> +#endif
-> +		break;
-> +	default:
-> +		ret = -EINVAL;
-> +		goto err;
-> +	}
-> +
-> +err:
-> +	put_task_struct(task1);
-> +	put_task_struct(task2);
-> +
-> +	return ret;
-> +}
-> +
-> +static __init int kcmp_cookie_init(void)
-> +{
-> +	int i, j;
-> +
-> +	for (i = 0; i < KCMP_TYPES; i++) {
-> +		for (j = 0; j < 2; j++) {
-> +			get_random_bytes(&cookies[i][j],
-> +					 sizeof(cookies[i][j]));
-> +		}
-> +		cookies[i][1] |= (~(~0UL >>  1) | 1);
-
-hm, what's the point in writing a random number to cookies[i][1] and
-then immediately overwriting that with a constant?
-
-> +	}
-> +
-> +	return 0;
-> +}
-> +late_initcall(kcmp_cookie_init);
