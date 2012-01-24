@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2AXB1C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 20:27:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42453 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969Ab2AXB0t (ORCPT
+	id S1755344Ab2AXBfL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 20:35:11 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:49741 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755228Ab2AXBfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 20:26:49 -0500
-Date: Tue, 24 Jan 2012 02:26:42 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 3/8] ftrace: Add enable/disable ftrace_ops control
- interface
-Message-ID: <20120124012639.GC15643@somewhere.redhat.com>
-References: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
- <1324468136-3997-1-git-send-email-jolsa@redhat.com>
- <1324468136-3997-4-git-send-email-jolsa@redhat.com>
- <1324483293.5916.89.camel@gandalf.stny.rr.com>
+	Mon, 23 Jan 2012 20:35:09 -0500
+Message-ID: <4F1E187A.9080308@xenotime.net>
+Date: Mon, 23 Jan 2012 18:33:30 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324483293.5916.89.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jonathan McCrohan <jmccrohan@gmail.com>
+CC: linux-kernel@vger.kernel.org, "J.H." <warthog9@kernel.org>
+Subject: Re: linux-kernel-announce
+References: <4F1DEEEB.7000100@gmail.com>
+In-Reply-To: <4F1DEEEB.7000100@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 11:01:33AM -0500, Steven Rostedt wrote:
-> On Wed, 2011-12-21 at 12:48 +0100, Jiri Olsa wrote:
-> > +static int control_ops_is_disabled(struct ftrace_ops *ops)
-> > +{
-> > +	atomic_t *disabled = this_cpu_ptr(ops->disabled);
+On 01/23/2012 03:36 PM, Jonathan McCrohan wrote:
+> Hi,
 > 
-> Again, the use of "this_cpu_ptr" is wrong. Gah! We should nuke all of
-> that crap.
+> linux-kernel-announce hasn't posted since the kernel.org hacking. Does
+> anyone know who is responsible for this list, and would it be possible
+> for it to be reinstated?
 > 
+> I have contacted the vger.kernel.org postmaster, but they do not know
+> who is responsible for it.
 
-Is it? It includes the preemption check if CONFIG_DEBUG_PREEMPT, just
-like __get_cpu_var()
+some not-currently-working script was responsible for it.
 
-Just saying that because in a later version of this patch, Jiri used
-per_cpu_ptr(ops->disabled, cpu). And this is the wrong thing to do
-given that we always fetch the local pointer and per_cpu_ptr() doesn't
-check for preemption disabled.
+cc-ing warthog9 (John Hawley) as a reminder.
 
- 
-> > +	return atomic_read(disabled);
-> > +}
 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
