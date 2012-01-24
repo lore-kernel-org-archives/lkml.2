@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab2AXDDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 22:03:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50293 "EHLO mx2.suse.de"
+	id S932423Ab2AXDDn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:03:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50284 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932388Ab2AXCpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:45:41 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:27 2012
-Message-Id: <20120124023927.480510588@clark.kroah.org>
+	id S932347Ab2AXCpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:45:33 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:29 2012
+Message-Id: <20120124023929.751942311@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:20 -0800
+Date: Mon, 23 Jan 2012 18:34:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roberto Sassu <roberto.sassu@polito.it>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [040/129] ima: free duplicate measurement memory
+        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [066/129] svcrpc: fix double-free on shutdown of nfsd after changing pool mode
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,51 +23,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1475
-Lines: 44
+Content-Length: 1518
+Lines: 53
 
-From: Roberto Sassu <roberto.sassu@polito.it>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 45fae7493970d7c45626ccd96d4a74f5f1eea5a9 upstream.
+commit 61c8504c428edcebf23b97775a129c5b393a302b upstream.
 
-Info about new measurements are cached in the iint for performance.  When
-the inode is flushed from cache, the associated iint is flushed as well.
-Subsequent access to the inode will cause the inode to be re-measured and
-will attempt to add a duplicate entry to the measurement list.
+The pool_to and to_pool fields of the global svc_pool_map are freed on
+shutdown, but are initialized in nfsd startup only in the
+SVC_POOL_PERCPU and SVC_POOL_PERNODE cases.
 
-This patch frees the duplicate measurement memory, fixing a memory leak.
+They *are* initialized to zero on kernel startup.  So as long as you use
+only SVC_POOL_GLOBAL (the default), this will never be a problem.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+You're also OK if you only ever use SVC_POOL_PERCPU or SVC_POOL_PERNODE.
+
+However, the following sequence events leads to a double-free:
+
+	1. set SVC_POOL_PERCPU or SVC_POOL_PERNODE
+	2. start nfsd: both fields are initialized.
+	3. shutdown nfsd: both fields are freed.
+	4. set SVC_POOL_GLOBAL
+	5. start nfsd: the fields are left untouched.
+	6. shutdown nfsd: now we try to free them again.
+
+Step 4 is actually unnecessary, since (for some bizarre reason), nfsd
+automatically resets the pool mode to SVC_POOL_GLOBAL on shutdown.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/integrity/ima/ima_api.c   |    4 ++--
- security/integrity/ima/ima_queue.c |    1 +
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ net/sunrpc/svc.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -178,8 +178,8 @@ void ima_store_measurement(struct integr
- 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -167,6 +167,7 @@ svc_pool_map_alloc_arrays(struct svc_poo
  
- 	result = ima_store_template(entry, violation, inode);
--	if (!result)
-+	if (!result || result == -EEXIST)
- 		iint->flags |= IMA_MEASURED;
--	else
-+	if (result < 0)
- 		kfree(entry);
+ fail_free:
+ 	kfree(m->to_pool);
++	m->to_pool = NULL;
+ fail:
+ 	return -ENOMEM;
  }
---- a/security/integrity/ima/ima_queue.c
-+++ b/security/integrity/ima/ima_queue.c
-@@ -114,6 +114,7 @@ int ima_add_template_entry(struct ima_te
- 		memcpy(digest, entry->digest, sizeof digest);
- 		if (ima_lookup_digest_entry(digest)) {
- 			audit_cause = "hash_exists";
-+			result = -EEXIST;
- 			goto out;
- 		}
+@@ -287,7 +288,9 @@ svc_pool_map_put(void)
+ 	if (!--m->count) {
+ 		m->mode = SVC_POOL_DEFAULT;
+ 		kfree(m->to_pool);
++		m->to_pool = NULL;
+ 		kfree(m->pool_to);
++		m->pool_to = NULL;
+ 		m->npools = 0;
  	}
+ 
 
 
