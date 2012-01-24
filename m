@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab2AXCoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 21:44:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50118 "EHLO mx2.suse.de"
+	id S1756645Ab2AXDJO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:09:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50106 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756394Ab2AXCoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:44:09 -0500
+	id S1756577Ab2AXCn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 21:43:59 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:25 2012
-Message-Id: <20120124023925.179069692@clark.kroah.org>
+Message-Id: <20120124023924.942022485@clark.kroah.org>
 User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:33:54 -0800
+Date: Mon, 23 Jan 2012 18:33:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [014/129] ALSA: hda - Return the error from get_wcaps_type() for invalid NIDs
+        alan@lxorguk.ukuu.org.uk, Pavel Hofman <pavel.hofman@ivitera.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [011/129] ALSA: ice1724 - Check for ac97 to avoid kernel oops
 In-Reply-To: <20120124024041.GA18422@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,56 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1521
-Lines: 49
+Content-Length: 1062
+Lines: 32
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Pavel Hofman <pavel.hofman@ivitera.com>
 
-commit 3a90274de3548ebb2aabfbf488cea8e275a73dc6 upstream.
+commit e7848163aa2a649d9065f230fadff80dc3519775 upstream.
 
-When an invalid NID is given, get_wcaps() returns zero as the error,
-but get_wcaps_type() takes it as the normal value and returns a bogus
-AC_WID_AUD_OUT value.  This confuses the parser.
+Cards with identical PCI ids but no AC97 config in EEPROM do not have
+the ac97 field initialized. We must check for this case to avoid kernel oops.
 
-With this patch, get_wcaps_type() returns -1 when value 0 is given,
-i.e. an invalid NID is passed to get_wcaps().
-
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=740118
-
+Signed-off-by: Pavel Hofman <pavel.hofman@ivitera.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_local.h |    7 ++++++-
- sound/pci/hda/hda_proc.c  |    2 ++
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ sound/pci/ice1712/amp.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_local.h
-+++ b/sound/pci/hda/hda_local.h
-@@ -487,7 +487,12 @@ static inline u32 get_wcaps(struct hda_c
+--- a/sound/pci/ice1712/amp.c
++++ b/sound/pci/ice1712/amp.c
+@@ -68,8 +68,11 @@ static int __devinit snd_vt1724_amp_init
+ 
+ static int __devinit snd_vt1724_amp_add_controls(struct snd_ice1712 *ice)
+ {
+-	/* we use pins 39 and 41 of the VT1616 for left and right read outputs */
+-	snd_ac97_write_cache(ice->ac97, 0x5a, snd_ac97_read(ice->ac97, 0x5a) & ~0x8000);
++	if (ice->ac97)
++		/* we use pins 39 and 41 of the VT1616 for left and right
++		read outputs */
++		snd_ac97_write_cache(ice->ac97, 0x5a,
++			snd_ac97_read(ice->ac97, 0x5a) & ~0x8000);
+ 	return 0;
  }
  
- /* get the widget type from widget capability bits */
--#define get_wcaps_type(wcaps) (((wcaps) & AC_WCAP_TYPE) >> AC_WCAP_TYPE_SHIFT)
-+static inline int get_wcaps_type(unsigned int wcaps)
-+{
-+	if (!wcaps)
-+		return -1; /* invalid type */
-+	return (wcaps & AC_WCAP_TYPE) >> AC_WCAP_TYPE_SHIFT;
-+}
- 
- static inline unsigned int get_wcaps_channels(u32 wcaps)
- {
---- a/sound/pci/hda/hda_proc.c
-+++ b/sound/pci/hda/hda_proc.c
-@@ -54,6 +54,8 @@ static const char *get_wid_type_name(uns
- 		[AC_WID_BEEP] = "Beep Generator Widget",
- 		[AC_WID_VENDOR] = "Vendor Defined Widget",
- 	};
-+	if (wid_value == -1)
-+		return "UNKNOWN Widget";
- 	wid_value &= 0xf;
- 	if (names[wid_value])
- 		return names[wid_value];
 
 
