@@ -1,126 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab2AXOtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 09:49:12 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:50243 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646Ab2AXOtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 09:49:10 -0500
-Date: Tue, 24 Jan 2012 16:46:13 +0200
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: ext Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paolo Bonzini <pbonzini@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, James Bottomley <JBottomley@parallels>
-Subject: Re: [23/27] kernel.h: add printk_ratelimited and pr_<level>_rl
-Message-ID: <20120124144613.GD3180@pcarmody2.research.nokia.com>
-References: <20120123234224.GA19510@kroah.com>
- <20120123234203.649739932@clark.kroah.org>
+	id S1756898Ab2AXOvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 09:51:33 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:46283 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab2AXOvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 09:51:32 -0500
+Message-ID: <4F1EC56E.6040608@gmail.com>
+Date: Tue, 24 Jan 2012 15:51:26 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120118 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120123234203.649739932@clark.kroah.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Nokia-AV: Clean
+To: Chris Wilson <chris@chris-wilson.co.uk>, Jiri Slaby <jslaby@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        daniel@ffwll.ch
+Subject: new GPU hang [was: g33: GPU hangs]
+References: <4ED7735A.1020903@suse.cz> <d08817$2d9rsk@azsmga001.ch.intel.com> <4F16917E.1090401@gmail.com> <20120118114308.GA4002@phenom.ffwll.local>
+In-Reply-To: <20120118114308.GA4002@phenom.ffwll.local>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/01/12 15:41 -0800, ext Greg KH wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On 01/18/2012 12:43 PM, Daniel Vetter wrote:
+>>> From 2b76187d2f5fc2352e391914b1828f91f93bb356 Mon Sep 17 00:00:00 2001
+>>> From: Chris Wilson <chris@chris-wilson.co.uk>
+>>> Date: Tue, 29 Nov 2011 15:12:16 +0000
+>>> Subject: [PATCH] drm/i915: Only clear the GPU domains upon a successful
+>>>  finish
+>>
+>> Hi, do you plan to push this patch upstream? Or am I supposed to not use
+>> it anymore?
+> 
+> It's on track to get merged to drm-intel-next. I'll probably pick it up in a week
+> or so.
 
-This looks like an added feature with no users in .32 - does it really 
-belong in a stable tree?
-(But to be explicit, I have no issue with its contents at all.)
+OK, thanks.
 
-Phil
+Even though I use the patch, today another hang occurred:
+[drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+[drm] capturing error event; look for more information in
+/debug/dri/0/i915_error_state
+[drm:i915_wait_request] *ERROR* i915_wait_request returns -11 (awaiting
+910502 at 910475, next 910519)
+[drm:i915_reset] *ERROR* Failed to reset chip.
 
-> ------------------
-> 
-> 
-> From: Joe Perches <joe@perches.com>
-> 
-> commit 8a64f336bc1d4aa203b138d29d5a9c414a9fbb47 upstream.
-> 
-> Add a printk_ratelimited statement expression macro that uses a per-call
-> ratelimit_state so that multiple subsystems output messages are not
-> suppressed by a global __ratelimit state.
-> 
-> [akpm@linux-foundation.org: coding-style fixes]
-> [akpm@linux-foundation.org: s/_rl/_ratelimited/g]
-> Signed-off-by: Joe Perches <joe@perches.com>
-> Cc: Naohiro Ooiwa <nooiwa@miraclelinux.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  include/linux/kernel.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 44 insertions(+)
-> 
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -407,6 +407,50 @@ static inline char *pack_hex_byte(char *
->  #endif
->  
->  /*
-> + * ratelimited messages with local ratelimit_state,
-> + * no local ratelimit_state used in the !PRINTK case
-> + */
-> +#ifdef CONFIG_PRINTK
-> +#define printk_ratelimited(fmt, ...)  ({		\
-> +	static struct ratelimit_state _rs = {		\
-> +		.interval = DEFAULT_RATELIMIT_INTERVAL, \
-> +		.burst = DEFAULT_RATELIMIT_BURST,       \
-> +	};                                              \
-> +							\
-> +	if (!__ratelimit(&_rs))                         \
-> +		printk(fmt, ##__VA_ARGS__);		\
-> +})
-> +#else
-> +/* No effect, but we still get type checking even in the !PRINTK case: */
-> +#define printk_ratelimited printk
-> +#endif
-> +
-> +#define pr_emerg_ratelimited(fmt, ...) \
-> +	printk_ratelimited(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-> +#define pr_alert_ratelimited(fmt, ...) \
-> +	printk_ratelimited(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-> +#define pr_crit_ratelimited(fmt, ...) \
-> +	printk_ratelimited(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-> +#define pr_err_ratelimited(fmt, ...) \
-> +	printk_ratelimited(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-> +#define pr_warning_ratelimited(fmt, ...) \
-> +	printk_ratelimited(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-> +#define pr_notice_ratelimited(fmt, ...) \
-> +	printk_ratelimited(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-> +#define pr_info_ratelimited(fmt, ...) \
-> +	printk_ratelimited(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-> +/* no pr_cont_ratelimited, don't do that... */
-> +/* If you are writing a driver, please use dev_dbg instead */
-> +#if defined(DEBUG)
-> +#define pr_debug_ratelimited(fmt, ...) \
-> +	printk_ratelimited(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-> +#else
-> +#define pr_debug_ratelimited(fmt, ...) \
-> +	({ if (0) printk_ratelimited(KERN_DEBUG pr_fmt(fmt), \
-> +				     ##__VA_ARGS__); 0; })
-> +#endif
-> +
-> +/*
->   * General tracing related utility functions - trace_printk(),
->   * tracing_on/tracing_off and tracing_start()/tracing_stop
->   *
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I was cruising through a map at openstreetmaps.org. This was
+3.2.0-next-20120118_64+. FWIW I updated to 3.3.0-rc1-next-20120124_64+
+right now.
+
+Is it related to the bug I reported at:
+https://bugs.freedesktop.org/show_bug.cgi?id=43427
+?
+
+dmesg:
+http://www.fi.muni.cz/~xslaby/sklad/panics/915_error_state.dmesg
+
+error_state:
+http://www.fi.muni.cz/~xslaby/sklad/panics/915_error_state
+
+thanks,
+-- 
+js
