@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2AXA1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:27:42 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52211 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab2AXA1l (ORCPT
+	id S1754855Ab2AXA2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:28:53 -0500
+Received: from andromeda.dapyr.net ([206.212.254.10]:36871 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab2AXA2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 19:27:41 -0500
-X-AuditID: b753bd60-99661ba00000359c-63-4f1dfafa9faa
-X-AuditID: b753bd60-99661ba00000359c-63-4f1dfafa9faa
-Message-ID: <4F1DFAE0.5020103@hitachi.com>
-Date: Tue, 24 Jan 2012 09:27:12 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [TRIVIAL] perf probe usability related fixes.
-References: <20120120121354.GL15447@linux.vnet.ibm.com>
-In-Reply-To: <20120120121354.GL15447@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 23 Jan 2012 19:28:52 -0500
+Date: Mon, 23 Jan 2012 20:28:28 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: David Vrabel <dvrabel@cantab.net>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] x86: xen: size struct xen_spinlock to always fit in arch_spinlock_t
+Message-ID: <20120124002828.GA18635@andromeda.dapyr.net>
+References: <1327347145-16439-1-git-send-email-david.vrabel@citrix.com> <20120123195047.GA11002@phenom.dumpdata.com> <4F1DD4C1.2070704@cantab.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F1DD4C1.2070704@cantab.net>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/01/20 21:13), Srikar Dronamraju wrote:
-> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+On Mon, Jan 23, 2012 at 09:44:33PM +0000, David Vrabel wrote:
+> On 23/01/2012 19:50, Konrad Rzeszutek Wilk wrote:
+> >On Mon, Jan 23, 2012 at 07:32:25PM +0000, David Vrabel wrote:
+> >>From: David Vrabel<david.vrabel@citrix.com>
+> >>
+> >>If NR_CPUS<  256 then arch_spinlock_t is only 16 bits wide but struct
+> >>xen_spinlock is 32 bits.  When a spin lock is contended and
+> >>xl->spinners is modified the two bytes immediately after the spin lock
+> >>would be corrupted.
+> >>
+> >>This is a regression caused by 84eb950db13ca40a0572ce9957e14723500943d6
+> >>(x86, ticketlock: Clean up types and accessors) which reduced the size
+> >>of arch_spinlock_t.
+> >>
+> >>Fix this by making xl->spinners a u8 if NR_CPUS<  256.  A
+> >>BUILD_BUG_ON() is also added to check the sizes of the two structures
+> >>are compatible.
+> >>
+> >>In many cases this was not noticable as there would often be padding
+> >>bytes after the lock (e.g., if any of CONFIG_GENERIC_LOCKBREAK,
+> >>CONFIG_DEBUG_SPINLOCK, or CONFIG_DEBUG_LOCK_ALLOC were enabled).
+> >>
+> >>The bnx2 driver is affected. In struct bnx2, phy_lock and
+> >>indirect_lock may have no padding after them.  Contention on phy_lock
+> >>would corrupt indirect_lock making it appear locked and the driver
+> >>would deadlock.
+> >
+> >Nice find. I think it also affected the ahci driver, and some of the USB
+> >ones - at least those I saw starting to hang with:
 > 
-> Ingo pointed out few perf probe usability related errors during
-> his review of uprobes.
-> 
-> Since these issues are independent of uprobes, fixing them in a
-> separate patch.
-> 
-> Suggested-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> It's possible but keep in mind that this isn't a recent regression.  I 
+> think it's been around since 3.0 and maybe even earlier.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+konrad@phenom:~/work/linux.mm$ git tag --contains 84eb950db13ca40a0572ce9957e14723500943d6 | grep -v rc
+v3.2
 
-Thanks!
-
-> ---
->  tools/perf/util/probe-event.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index f6f5794..da38ec5 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -1825,7 +1825,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
->  	}
->  
->  	ret = 0;
-> -	printf("Add new event%s\n", (ntevs > 1) ? "s:" : ":");
-> +	printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
->  	for (i = 0; i < ntevs; i++) {
->  		tev = &tevs[i];
->  		if (pev->event)
-> @@ -1880,7 +1880,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
->  
->  	if (ret >= 0) {
->  		/* Show how to use the event. */
-> -		printf("\nYou can now use it on all perf tools, such as:\n\n");
-> +		printf("\nYou can now use it in all perf tools, such as:\n\n");
->  		printf("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
->  			 tev->event);
->  	}
-> @@ -2063,7 +2063,7 @@ static int __del_trace_probe_event(int fd, struct str_node *ent)
->  		goto error;
->  	}
->  
-> -	printf("Remove event: %s\n", ent->s);
-> +	printf("Removed event: %s\n", ent->s);
->  	return 0;
->  error:
->  	pr_warning("Failed to delete event: %s\n", strerror(-ret));
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+So since v3.2, hmm, I should double-check those serial logs
+to see if the problems I had were in 3.2 as well.
