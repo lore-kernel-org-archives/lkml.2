@@ -1,148 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab2AXHhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 02:37:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43276 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888Ab2AXHhp (ORCPT
+	id S1754912Ab2AXHi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 02:38:58 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62568 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab2AXHi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 02:37:45 -0500
-From: Tyler Hicks <tyhicks@canonical.com>
-To: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        john.johansen@canonical.com, dustin.kirkland@gazzang.com,
-        Cong Wang <xiyou.wangcong@gmail.com>, Li Wang <liwang@nudt.edu.cn>
-Subject: [PATCH 2/3 v2] eCryptfs: Check inode changes in setattr
-Date: Tue, 24 Jan 2012 01:37:32 -0600
-Message-Id: <1327390652-11627-1-git-send-email-tyhicks@canonical.com>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <20120124063246.GA5692@boyd>
-References: <20120124063246.GA5692@boyd>
+	Tue, 24 Jan 2012 02:38:57 -0500
+Date: Tue, 24 Jan 2012 11:38:42 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
+Message-ID: <20120124073842.GE29735@moon>
+References: <20120123142036.025893883@openvz.org>
+ <20120123142436.258631438@openvz.org>
+ <20120124111655.b29264d2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120124064719.GA29735@moon>
+ <4F1E57F3.6020607@zytor.com>
+ <20120124071716.GC29735@moon>
+ <20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most filesystems call inode_change_ok() very early in ->setattr(), but
-eCryptfs didn't call it at all. It allowed the lower filesystem to make
-the call in its ->setattr() function. Then, eCryptfs would copy the
-appropriate inode attributes from the lower inode to the eCryptfs inode.
+On Tue, Jan 24, 2012 at 04:20:31PM +0900, KAMEZAWA Hiroyuki wrote:
+...
+> > > 
+> > > That's not a reason to put it in arch/ ... that's possibly a reason to
+> > > not map the system call on other architectures yet.
+> > > 
+> > 
+> > Where it should live then? In kernel/ or mm/ ?
+> > 
+> 
+> kernel/checkpoint_restart ?
+> 
+> gathering related changes to a directory may help developpers joins later....
+> To me, this makes seeing git log easy ;)
+>  
 
-This patch changes that and actually calls inode_change_ok() on the
-eCryptfs inode, fairly early in ecryptfs_setattr(). Ideally, the call
-would happen earlier in ecryptfs_setattr(), but there are some possible
-inode initialization steps that must happen first.
+Such separate directory implies everything related to c/r should live there,
+it also implies (I think) that code which is under CHECKPOINT_RESTORE should
+be moved there as well, so I'm not sure, Kame ;) I guess mm/ will be a good
+place since these are operations with memory pointers.
 
-Since the call was already being made on the lower inode, the change in
-functionality should be minimal, except for the case of a file extending
-truncate call. In that case, inode_newsize_ok() was never being
-called on the eCryptfs inode. Rather than inode_newsize_ok() catching
-maximum file size errors early on, eCryptfs would encrypt zeroed pages
-and write them to the lower filesystem until the lower filesystem's
-write path caught the error in generic_write_checks(). This patch
-introduces a new function, called ecryptfs_inode_newsize_ok(), which
-checks if the new lower file size is within the appropriate limits when
-the truncate operation will be growing the lower file.
-
-In summary this change prevents eCryptfs truncate operations (and the
-resulting page encryptions), which would exceed the lower filesystem
-limits or FSIZE rlimits, from ever starting.
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Cc: <stable@vger.kernel.org>
----
-
-Linus, this is still in the out-for-comments stage. I'll be preparing a pull
-request soon.
-
-Changes from v1:
- - Added ecryptfs_inode_newsize_ok() to help with detecting when inode_newsize_ok()
-   needs to be called and to pass the appropriate offset parameter to that function
- - Minor touchups to the commit message
-
- fs/ecryptfs/inode.c |   48 ++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 36 insertions(+), 12 deletions(-)
-
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index 19a8ca4..19892d7 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -822,18 +822,6 @@ static int truncate_upper(struct dentry *dentry, struct iattr *ia,
- 		size_t num_zeros = (PAGE_CACHE_SIZE
- 				    - (ia->ia_size & ~PAGE_CACHE_MASK));
- 
--
--		/*
--		 * XXX(truncate) this should really happen at the begginning
--		 * of ->setattr.  But the code is too messy to that as part
--		 * of a larger patch.  ecryptfs is also totally missing out
--		 * on the inode_change_ok check at the beginning of
--		 * ->setattr while would include this.
--		 */
--		rc = inode_newsize_ok(inode, ia->ia_size);
--		if (rc)
--			goto out;
--
- 		if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
- 			truncate_setsize(inode, ia->ia_size);
- 			lower_ia->ia_size = ia->ia_size;
-@@ -883,6 +871,28 @@ out:
- 	return rc;
- }
- 
-+static int ecryptfs_inode_newsize_ok(struct inode *inode, loff_t offset)
-+{
-+	struct ecryptfs_crypt_stat *crypt_stat;
-+	loff_t lower_oldsize, lower_newsize;
-+
-+	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
-+	lower_oldsize = upper_size_to_lower_size(crypt_stat,
-+						 i_size_read(inode));
-+	lower_newsize = upper_size_to_lower_size(crypt_stat, offset);
-+	if (lower_newsize > lower_oldsize) {
-+		/*
-+		 * The eCryptfs inode and the new *lower* size are mixed here
-+		 * because we may not have the lower i_mutex held and/or it may
-+		 * not be appropriate to call inode_newsize_ok() with inodes
-+		 * from other filesystems.
-+		 */
-+		return inode_newsize_ok(inode, lower_newsize);
-+	}
-+
-+	return 0;
-+}
-+
- /**
-  * ecryptfs_truncate
-  * @dentry: The ecryptfs layer dentry
-@@ -899,6 +909,10 @@ int ecryptfs_truncate(struct dentry *dentry, loff_t new_length)
- 	struct iattr lower_ia = { .ia_valid = 0 };
- 	int rc;
- 
-+	rc = ecryptfs_inode_newsize_ok(dentry->d_inode, new_length);
-+	if (rc)
-+		return rc;
-+
- 	rc = truncate_upper(dentry, &ia, &lower_ia);
- 	if (!rc && lower_ia.ia_valid & ATTR_SIZE) {
- 		struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
-@@ -978,6 +992,16 @@ static int ecryptfs_setattr(struct dentry *dentry, struct iattr *ia)
- 		}
- 	}
- 	mutex_unlock(&crypt_stat->cs_mutex);
-+
-+	rc = inode_change_ok(inode, ia);
-+	if (rc)
-+		goto out;
-+	if (ia->ia_valid & ATTR_SIZE) {
-+		rc = ecryptfs_inode_newsize_ok(inode, ia->ia_size);
-+		if (rc)
-+			goto out;
-+	}
-+
- 	if (S_ISREG(inode->i_mode)) {
- 		rc = filemap_write_and_wait(inode->i_mapping);
- 		if (rc)
--- 
-1.7.8.3
-
+	Cyrill
