@@ -1,113 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab2AXWxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 17:53:07 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:45657 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752392Ab2AXWxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 17:53:05 -0500
-Message-ID: <1327445577.2568.8.camel@bwh-desktop>
-Subject: RE: [PATCH v5 03/12] x86/topology.c: Support functions for CPU0
- online/offline
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Date: Tue, 24 Jan 2012 22:52:57 +0000
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122003473E@ORSMSX105.amr.corp.intel.com>
-References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
-	 <1326301493-28760-4-git-send-email-fenghua.yu@intel.com>
-	 <1326735308.3065.29.camel@bwh-desktop>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122003473E@ORSMSX105.amr.corp.intel.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1752622Ab2AXWxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 17:53:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33003 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752392Ab2AXWxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 17:53:15 -0500
+Message-ID: <4F1F3630.4010404@zytor.com>
+Date: Tue, 24 Jan 2012 14:52:32 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18662.005
-X-TM-AS-Result: No--21.923700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
+References: <20120124064719.GA29735@moon> <4F1E57F3.6020607@zytor.com> <20120124071716.GC29735@moon> <20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com> <20120124073842.GE29735@moon> <20120124164008.aa1714bd.kamezawa.hiroyu@jp.fujitsu.com> <20120124084823.GF29735@moon> <CAHGf_=r=zwj4=yjCekYZVRsTwjohJ8F8cP4rnZx6UL9kKNTc+g@mail.gmail.com> <20120124202606.GC2546@moon> <m18vkwj0dw.fsf@fess.ebiederm.org> <20120124205039.GB2278@moon> <20120124132222.d78bc0d4.akpm@linux-foundation.org> <20120124134510.75f2c63f.akpm@linux-foundation.org> <4F1F26B7.2010209@zytor.com> <20120124140011.60b6488c.akpm@linux-foundation.org>
+In-Reply-To: <20120124140011.60b6488c.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-24 at 22:31 +0000, Yu, Fenghua wrote:
-> > On Wed, 2012-01-11 at 09:04 -0800, Fenghua Yu wrote:
-> > > From: Fenghua Yu <fenghua.yu@intel.com>
-> > >
-> > > If CONFIG_BOOTPARAM_HOTPLUG_CPU is turned on, CPU0 hotplug feature is
-> > enabled
-> > > by default.
-> > >
-> > > If CONFIG_BOOTPARAM_HOTPLUG_CPU is not turned on, CPU0 hotplug
-> > feature is not
-> > > enabled by default. The kernel parameter cpu0_hotplug can enable CPU0
-> > hotplug
-> > > feature at boot.
-> > [...]
-> > >  int __ref arch_register_cpu(int num)
-> > >  {
-> > >  	/*
-> > > -	 * CPU0 cannot be offlined due to several
-> > > -	 * restrictions and assumptions in kernel. This basically
-> > > -	 * doesn't add a control file, one cannot attempt to offline
-> > > -	 * BSP.
-> > > +	 * Two known BSP/CPU0 dependencies: Resume from suspend/hibernate
-> > > +	 * depends on BSP. PIC interrupts depend on BSP.
-> > >  	 *
-> > > -	 * Also certain PCI quirks require not to enable hotplug control
-> > > -	 * for all CPU's.
-> > > +	 * If the BSP depencies are under control, one can tell kernel to
-> > > +	 * enable BSP hotplug. This basically adds a control file and
-> > > +	 * one can attempt to offline BSP.
-> > >  	 */
-> > > -	if (num)
-> > > +	if (num || cpu0_hotpluggable)
-> > >  		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
-> > >
-> > >  	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
-> > 
-> > This change belongs at the end of the series.  It should not be
-> > possible
-> > to enable CPU0 hotplug until after the hotplug logic can do it
-> > correctly, and this might break bisection.
+On 01/24/2012 02:00 PM, Andrew Morton wrote:
+>>
+>> Arithmetic on void pointers?
 > 
-> Quote from https://www.linux.com/how-to-participate-in-the-linux-community
-> "It can be tempting to add a whole new infrastructure with a series of
-> patches, but to leave that infrastructure unused until the final patch
-> in the series enables the whole thing. This temptation should be
-> avoided if possible; if that series adds regressions, bisection will
-> finger the last patch as the one which caused the problem, even though
-> the real bug is elsewhere. Whenever possible, a patch which adds new
-> code should make that code active immediately."
-> 
-> So this patch currently is in the right place in the patch set unless
-> I miss something.
+> All the world is gcc!
 
-You're giving undue weight to that guidance.  It is far more important
-that you do not enable features that don't work!
+Even so, warnings are annoying...
 
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+	-hpa
