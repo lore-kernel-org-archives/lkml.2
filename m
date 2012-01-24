@@ -1,175 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750980Ab2AXVjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 16:39:39 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50218
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750754Ab2AXVjh (ORCPT
+	id S1751234Ab2AXVpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 16:45:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38030 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2AXVpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 16:39:37 -0500
-Date: Tue, 24 Jan 2012 16:39:36 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Kelbel Junior <jymmyjr@gmail.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: XFS problem
-Message-ID: <20120124213936.GA1505@infradead.org>
-References: <CAAA8XhOXuszcyCaMOcVWb-erGAJQdhBHCX-gsJ4KpH+Td7+bPQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAA8XhOXuszcyCaMOcVWb-erGAJQdhBHCX-gsJ4KpH+Td7+bPQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 24 Jan 2012 16:45:12 -0500
+Date: Tue, 24 Jan 2012 13:45:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
+Message-Id: <20120124134510.75f2c63f.akpm@linux-foundation.org>
+In-Reply-To: <20120124132222.d78bc0d4.akpm@linux-foundation.org>
+References: <20120124064719.GA29735@moon>
+	<4F1E57F3.6020607@zytor.com>
+	<20120124071716.GC29735@moon>
+	<20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120124073842.GE29735@moon>
+	<20120124164008.aa1714bd.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120124084823.GF29735@moon>
+	<CAHGf_=r=zwj4=yjCekYZVRsTwjohJ8F8cP4rnZx6UL9kKNTc+g@mail.gmail.com>
+	<20120124202606.GC2546@moon>
+	<m18vkwj0dw.fsf@fess.ebiederm.org>
+	<20120124205039.GB2278@moon>
+	<20120124132222.d78bc0d4.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 03:55:18PM -0200, Kelbel Junior wrote:
-> Hello again ...
-> 
-> So ... after changing the memory allocator SLUB to SLAB in the Linux
-> kernel and apply the patch mentioned below, the system was stable for
-> 3 days and today it happened again delay to deliver content on the
-> disc.
-> 
-> When I went to see if there was something wrong in /var/log/messages
-> appear several times this block:
+On Tue, 24 Jan 2012 13:22:22 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Can you try the patch below to make the extent indirection array
-reallocation more efficient?  It's still working around the symptoms,
-though.
+> static int kcmp_task_pointers(void *task1, void *task2, size_t field_offset,
+> 				enum you_forgot_to_name_the_enum type)
+> {
+> 	void **field1 = t1 + field_offset;	/* points to a pointer in the task_struct */
+> 	void **field2 = t1 + field_offset;
 
-What kind of workload are you running to get this extremely high number
-of extents?
+On reflection, this was being too cute.  It would be better to make the
+function type-safer and just put up with the local typecasts:
 
-Index: xfs/fs/xfs/kmem.c
-===================================================================
---- xfs.orig/fs/xfs/kmem.c	2011-10-17 09:28:57.159149025 +0200
-+++ xfs/fs/xfs/kmem.c	2012-01-24 21:04:50.405954910 +0100
-@@ -86,19 +86,22 @@ kmem_free(const void *ptr)
- }
- 
- void *
--kmem_realloc(const void *ptr, size_t newsize, size_t oldsize,
--	     unsigned int __nocast flags)
-+kmem_realloc(const void *old, size_t newsize, unsigned int __nocast flags)
- {
-+	gfp_t	lflags = kmem_flags_convert(flags);
-+	int	retries = 0;
- 	void	*new;
- 
--	new = kmem_alloc(newsize, flags);
--	if (ptr) {
--		if (new)
--			memcpy(new, ptr,
--				((oldsize < newsize) ? oldsize : newsize));
--		kmem_free(ptr);
--	}
--	return new;
-+	do {
-+		new = krealloc(old, newsize, lflags);
-+		if (new || (flags & (KM_MAYFAIL|KM_NOSLEEP)))
-+			return new;
-+		if (!(++retries % 100))
-+			xfs_err(NULL,
-+		"possible memory allocation deadlock in %s (mode:0x%x)",
-+					__func__, lflags);
-+		congestion_wait(BLK_RW_ASYNC, HZ/50);
-+	} while (1);
- }
- 
- void *
-Index: xfs/fs/xfs/kmem.h
-===================================================================
---- xfs.orig/fs/xfs/kmem.h	2011-12-18 23:35:30.893167926 +0100
-+++ xfs/fs/xfs/kmem.h	2012-01-24 21:00:07.865956600 +0100
-@@ -56,7 +56,7 @@ kmem_flags_convert(unsigned int __nocast
- 
- extern void *kmem_alloc(size_t, unsigned int __nocast);
- extern void *kmem_zalloc(size_t, unsigned int __nocast);
--extern void *kmem_realloc(const void *, size_t, size_t, unsigned int __nocast);
-+extern void *kmem_realloc(const void *, size_t, unsigned int __nocast);
- extern void  kmem_free(const void *);
- 
- static inline void *kmem_zalloc_large(size_t size)
-Index: xfs/fs/xfs/xfs_inode.c
-===================================================================
---- xfs.orig/fs/xfs/xfs_inode.c	2012-01-24 20:57:27.079290895 +0100
-+++ xfs/fs/xfs/xfs_inode.c	2012-01-24 21:02:48.145955643 +0100
-@@ -1826,7 +1826,6 @@ xfs_iroot_realloc(
- 		new_max = cur_max + rec_diff;
- 		new_size = (size_t)XFS_BMAP_BROOT_SPACE_CALC(new_max);
- 		ifp->if_broot = kmem_realloc(ifp->if_broot, new_size,
--				(size_t)XFS_BMAP_BROOT_SPACE_CALC(cur_max), /* old size */
- 				KM_SLEEP | KM_NOFS);
- 		op = (char *)XFS_BMAP_BROOT_PTR_ADDR(mp, ifp->if_broot, 1,
- 						     ifp->if_broot_bytes);
-@@ -1968,7 +1967,6 @@ xfs_idata_realloc(
- 				ifp->if_u1.if_data =
- 					kmem_realloc(ifp->if_u1.if_data,
- 							real_size,
--							ifp->if_real_bytes,
- 							KM_SLEEP | KM_NOFS);
- 			}
- 		} else {
-@@ -3254,8 +3252,7 @@ xfs_iext_realloc_direct(
- 		if (rnew_size != ifp->if_real_bytes) {
- 			ifp->if_u1.if_extents =
- 				kmem_realloc(ifp->if_u1.if_extents,
--						rnew_size,
--						ifp->if_real_bytes, KM_NOFS);
-+						rnew_size, KM_NOFS);
- 		}
- 		if (rnew_size > ifp->if_real_bytes) {
- 			memset(&ifp->if_u1.if_extents[ifp->if_bytes /
-@@ -3333,20 +3330,15 @@ xfs_iext_realloc_indirect(
- 	xfs_ifork_t	*ifp,		/* inode fork pointer */
- 	int		new_size)	/* new indirection array size */
- {
--	int		nlists;		/* number of irec's (ex lists) */
--	int		size;		/* current indirection array size */
--
- 	ASSERT(ifp->if_flags & XFS_IFEXTIREC);
--	nlists = ifp->if_real_bytes / XFS_IEXT_BUFSZ;
--	size = nlists * sizeof(xfs_ext_irec_t);
- 	ASSERT(ifp->if_real_bytes);
--	ASSERT((new_size >= 0) && (new_size != size));
-+	ASSERT(new_size >= 0);
-+
- 	if (new_size == 0) {
- 		xfs_iext_destroy(ifp);
- 	} else {
--		ifp->if_u1.if_ext_irec = (xfs_ext_irec_t *)
--			kmem_realloc(ifp->if_u1.if_ext_irec,
--				new_size, size, KM_NOFS);
-+		ifp->if_u1.if_ext_irec =
-+			kmem_realloc(ifp->if_u1.if_ext_irec, new_size, KM_NOFS);
- 	}
- }
- 
-Index: xfs/fs/xfs/xfs_log_recover.c
-===================================================================
---- xfs.orig/fs/xfs/xfs_log_recover.c	2011-12-18 23:35:30.906501259 +0100
-+++ xfs/fs/xfs/xfs_log_recover.c	2012-01-24 21:02:20.352622478 +0100
-@@ -1489,7 +1489,7 @@ xlog_recover_add_to_cont_trans(
- 	old_ptr = item->ri_buf[item->ri_cnt-1].i_addr;
- 	old_len = item->ri_buf[item->ri_cnt-1].i_len;
- 
--	ptr = kmem_realloc(old_ptr, len+old_len, old_len, 0u);
-+	ptr = kmem_realloc(old_ptr, len+old_len, KM_SLEEP);
- 	memcpy(&ptr[old_len], dp, len); /* d, s, l */
- 	item->ri_buf[item->ri_cnt-1].i_len += len;
- 	item->ri_buf[item->ri_cnt-1].i_addr = ptr;
-Index: xfs/fs/xfs/xfs_mount.c
-===================================================================
---- xfs.orig/fs/xfs/xfs_mount.c	2011-12-18 23:35:30.906501259 +0100
-+++ xfs/fs/xfs/xfs_mount.c	2012-01-24 21:05:29.699288013 +0100
-@@ -147,7 +147,6 @@ xfs_uuid_mount(
- 	if (hole < 0) {
- 		xfs_uuid_table = kmem_realloc(xfs_uuid_table,
- 			(xfs_uuid_table_size + 1) * sizeof(*xfs_uuid_table),
--			xfs_uuid_table_size  * sizeof(*xfs_uuid_table),
- 			KM_SLEEP);
- 		hole = xfs_uuid_table_size++;
- 	}
+static int kcmp_task_pointers(struct task_struct *task1,
+			struct task_struct *task2, size_t field_offset,
+			enum you_forgot_to_name_the_enum type)
+{
+	void **field1 = (void *)t1 + field_offset;
+	void **field2 = (void *)t2 + field_offset;
+
