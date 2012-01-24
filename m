@@ -1,155 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab2AXTlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 14:41:20 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14478 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab2AXTlS (ORCPT
+	id S1755269Ab2AXTly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 14:41:54 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:49168 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab2AXTlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 14:41:18 -0500
-Date: Tue, 24 Jan 2012 20:41:20 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-mmc@vger.kernel.org, linux-usb@vger.kernel.org
-cc: linux-kernel@vger.kernel.org,
-        Tony Olech <tony.olech@elandigitalsystems.com>,
-        Chris Ball <cjb@laptop.org>, Greg Kroah-Hartman <greg@kroah.com>
-Subject: [PATCH] MMC, vub300: Resolve mem leak in vub300_probe() and simplify
- the code a bit
-Message-ID: <alpine.LNX.2.00.1201242037270.27508@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 24 Jan 2012 14:41:52 -0500
+Date: Tue, 24 Jan 2012 11:41:40 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] RCU changes for v3.3
+Message-ID: <20120124194140.GB2381@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120105135432.GA31450@elte.hu>
+ <1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20120124165312.GG2531@linux.vnet.ibm.com>
+ <1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012419-7282-0000-0000-000005E45923
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/mmc/host/vub300.c::vub300_probe() we need both
-'command_out_urb' and 'command_res_urb'. Currently we fail to free the
-former if allocating the latter fails. Fix that (and simplify the code
-a bit at the same time) by just doing both allocations and if either
-fails then free both - usb_free_urb() deals gracefully with NULL
-pointers, so this is safe.
+On Tue, Jan 24, 2012 at 06:13:28PM +0100, Eric Dumazet wrote:
+> Le mardi 24 janvier 2012 à 08:53 -0800, Paul E. McKenney a écrit :
+> > On Tue, Jan 24, 2012 at 05:25:12PM +0100, Eric Dumazet wrote:
+> > > Le jeudi 05 janvier 2012 à 14:54 +0100, Ingo Molnar a écrit :
+> > > > Linus,
+> > > > 
+> > > > Please pull the latest core-rcu-for-linus git tree from:
+> > > > 
+> > > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-rcu-for-linus
+> > > > 
+> > > >  Thanks,
+> > > 
+> > > Hi guys
+> > > 
+> > > New lockdep warning here :
+> > 
+> > Hmmm...  Looks like tracing from within the inner idle loop.
+> > 
+> > Because RCU ignores CPUs in the inner idle loop (after the call to
+> > rcu_idle_enter()), RCU read-side critical sections are not legal there.
+> > 
+> > One approach would be to delay the call to rcu_idle_enter() until after
+> > the tracing is done, and to ensure that the call to rcu_idle_exit() happens
+> > before any tracing.  I am not seeing perf_trace_power(), so need to
+> > update and look again.  Or are you looking at -next rather than mainline?
+> > 
+> 
+> I am using mainline, not -next
+> 
+> It seems "powertop" triggers the warnings.
+> 
+> Check include/trace/events/power.h line 75 :
+> 
+> DECLARE_EVENT_CLASS(power,
+> 
+> This declares perf_trace_power()...
+> 
+> include/trace/ftrace.h line 718
+> 
+> #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)  \
+> static notrace void							\
+> perf_trace_##call(void *__data, proto) ...
 
-We also initialize 'retval' to '-ENOMEM' when we declare the variable,
-so there's no reason to re-set it to '-ENOMEM' before jumping to
-'error0:' when one of the initial usb_alloc_urb() calls fail().
+Thank you for the info!
 
-Also rename the 'error*:' labels to be just 'error0' and 'error1'
-rather than 'error[0145]'.
+Now I just need to find the call point.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Ah, I see...  I need to find one of trace_power_start(),
+trace_power_frequency(), or trace_power_end().  I would have to guess
+that this is either the trace_power_start() or the trace_power_end()
+called from drivers/cpuidle/cpuidle.c lines 97 and 102.  Those are
+within cpuidle_idle_call(), which are called from cpu_idle() in
+arch/x86/kernel/process_32.c and arch/x86/kernel/process_64.c, so this
+sounds plausible.
+
+And they are indeed busted -- RCU believes the CPU is idle at the point
+that cpuidle_idle_call() is invoked.
+
+A hacky patch is below.  Here are some of my concerns with it:
+
+1.	Is there a configuration in which the scheduler clock gets
+	turned off, but in which cpuidle_idle_call() always returns
+	zero?  If so, we either really need RCU to consider the entire
+	inner loop to be idle (thus needing to snapshot the value of
+	cpuidle_idle_call() in the outer loop) or we need explicit calls
+	to rcu_sched_qs() and friends.
+
+	Yes, we could momentarily exit RCU idleness mode, but I would
+	need to think that one through...
+
+2.	I am not totally confident that I have the order of operations
+	surrounding the call to pm_idle() correct.
+
+3.	This only addresses x86, and it looks like a few other architectures
+	have this same problem.
+
+4.	Probably other things that I haven't thought of.
+
+That said, the patch does seem to compile, at least on my 32-bit
+laptop...
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+idle: Avoid using RCU when RCU thinks the CPU is idle
+
+The x86 idle loops invoke cpuidle_idle_call() which uses tracing
+which uses RCU.  Unfortunately, these idle loops have already
+told RCU to ignore this CPU when they call it.  This patch hacks
+the idle loops to avoid this problem, but probably causing several
+other problems in the process.
+
+Not-yet-signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- drivers/mmc/host/vub300.c |   31 +++++++++++--------------------
- 1 files changed, 11 insertions(+), 20 deletions(-)
 
- Note:
-   I have no real way to actually test this patch, so it is compile tested 
-   only. Please review carefully before applying.
-
- Note2:
-   Please CC me on replies.
-
-diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
-index 3135a1a..dc34455 100644
---- a/drivers/mmc/host/vub300.c
-+++ b/drivers/mmc/host/vub300.c
-@@ -2116,23 +2116,16 @@ static int vub300_probe(struct usb_interface *interface,
- 		 udev->descriptor.idVendor, udev->descriptor.idProduct,
- 		 manufacturer, product, serial_number);
- 	command_out_urb = usb_alloc_urb(0, GFP_KERNEL);
--	if (!command_out_urb) {
--		retval = -ENOMEM;
--		dev_err(&udev->dev, "not enough memory for command_out_urb\n");
--		goto error0;
--	}
- 	command_res_urb = usb_alloc_urb(0, GFP_KERNEL);
--	if (!command_res_urb) {
--		retval = -ENOMEM;
--		dev_err(&udev->dev, "not enough memory for command_res_urb\n");
--		goto error1;
-+	if (!command_res_urb || !command_out_urb) {
-+		dev_err(&udev->dev, "not enough memory for command urbs\n");
-+		goto error0;
- 	}
- 	/* this also allocates memory for our VUB300 mmc host device */
- 	mmc = mmc_alloc_host(sizeof(struct vub300_mmc_host), &udev->dev);
- 	if (!mmc) {
--		retval = -ENOMEM;
- 		dev_err(&udev->dev, "not enough memory for the mmc_host\n");
--		goto error4;
-+		goto error0;
- 	}
- 	/* MMC core transfer sizes tunable parameters */
- 	mmc->caps = 0;
-@@ -2285,7 +2278,7 @@ static int vub300_probe(struct usb_interface *interface,
- 		dev_err(&vub300->udev->dev,
- 		    "Could not find two sets of bulk-in/out endpoint pairs\n");
- 		retval = -EINVAL;
--		goto error5;
-+		goto error1;
- 	}
- 	retval =
- 		usb_control_msg(vub300->udev, usb_rcvctrlpipe(vub300->udev, 0),
-@@ -2294,14 +2287,14 @@ static int vub300_probe(struct usb_interface *interface,
- 				0x0000, 0x0000, &vub300->hc_info,
- 				sizeof(vub300->hc_info), HZ);
- 	if (retval < 0)
--		goto error5;
-+		goto error1;
- 	retval =
- 		usb_control_msg(vub300->udev, usb_rcvctrlpipe(vub300->udev, 0),
- 				SET_ROM_WAIT_STATES,
- 				USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
- 				firmware_rom_wait_states, 0x0000, NULL, 0, HZ);
- 	if (retval < 0)
--		goto error5;
-+		goto error1;
- 	dev_info(&vub300->udev->dev,
- 		 "operating_mode = %s %s %d MHz %s %d byte USB packets\n",
- 		 (mmc->caps & MMC_CAP_SDIO_IRQ) ? "IRQs" : "POLL",
-@@ -2316,14 +2309,14 @@ static int vub300_probe(struct usb_interface *interface,
- 				0x0000, 0x0000, &vub300->system_port_status,
- 				sizeof(vub300->system_port_status), HZ);
- 	if (retval < 0) {
--		goto error4;
-+		goto error0;
- 	} else if (sizeof(vub300->system_port_status) == retval) {
- 		vub300->card_present =
- 			(0x0001 & vub300->system_port_status.port_flags) ? 1 : 0;
- 		vub300->read_only =
- 			(0x0010 & vub300->system_port_status.port_flags) ? 1 : 0;
- 	} else {
--		goto error4;
-+		goto error0;
- 	}
- 	usb_set_intfdata(interface, vub300);
- 	INIT_DELAYED_WORK(&vub300->pollwork, vub300_pollwork_thread);
-@@ -2351,17 +2344,15 @@ static int vub300_probe(struct usb_interface *interface,
- 			 interface_to_InterfaceNumber(interface));
- 	mmc_add_host(mmc);
- 	return 0;
--error5:
-+error1:
- 	mmc_free_host(mmc);
- 	/*
- 	 * and hence also frees vub300
- 	 * which is contained at the end of struct mmc
- 	 */
--error4:
-+error0:
- 	usb_free_urb(command_out_urb);
--error1:
- 	usb_free_urb(command_res_urb);
--error0:
- 	return retval;
- }
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 485204f..cc0f2e2 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -84,6 +84,8 @@ static inline void play_dead(void)
+  */
+ void cpu_idle(void)
+ {
++	bool pm_idle_ok;
++
+ 	int cpu = smp_processor_id();
  
--- 
-1.7.8.4
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+ 	/*
+@@ -100,7 +102,6 @@ void cpu_idle(void)
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+ 		tick_nohz_idle_enter();
+-		rcu_idle_enter();
+ 		while (!need_resched()) {
+ 
+ 			check_pgt_cache();
+@@ -113,11 +114,13 @@ void cpu_idle(void)
+ 			local_irq_disable();
+ 			/* Don't trace irqs off for idle */
+ 			stop_critical_timings();
+-			if (cpuidle_idle_call())
++			pm_idle_ok = cpuidle_idle_call();
++			rcu_idle_enter();
++			if (pm_idle_ok)
+ 				pm_idle();
++			rcu_idle_exit();
+ 			start_critical_timings();
+ 		}
+-		rcu_idle_exit();
+ 		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 9b9fe4a..f75de25 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -109,6 +109,8 @@ static inline void play_dead(void)
+  */
+ void cpu_idle(void)
+ {
++	bool pm_idle_ok;
++
+ 	current_thread_info()->status |= TS_POLLING;
+ 
+ 	/*
+@@ -140,10 +142,15 @@ void cpu_idle(void)
+ 			/* Don't trace irqs off for idle */
+ 			stop_critical_timings();
+ 
+-			/* enter_idle() needs rcu for notifiers */
++			pm_idle_ok = cpuidle_idle_call();
++
++			/*
++			 * Both enter_idle() and cpuidle_idle_call() need
++			 * RCU for notifiers
++			 */
+ 			rcu_idle_enter();
+ 
+-			if (cpuidle_idle_call())
++			if (pm_idle_ok)
+ 				pm_idle();
+ 
+ 			rcu_idle_exit();
 
