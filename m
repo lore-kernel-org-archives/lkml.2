@@ -1,212 +1,767 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab2AXQZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:25:18 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58743 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab2AXQZQ (ORCPT
+	id S1755253Ab2AXQ0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:26:00 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:34672 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab2AXQZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:25:16 -0500
-Message-ID: <1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [GIT PULL] RCU changes for v3.3
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 24 Jan 2012 17:25:12 +0100
-In-Reply-To: <20120105135432.GA31450@elte.hu>
-References: <20120105135432.GA31450@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 24 Jan 2012 11:25:59 -0500
+Date: Tue, 24 Jan 2012 08:25:54 -0800
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
+Subject: [PATCH UPDATED 13/16] blkcg: factor out blkio_group creation
+Message-ID: <20120124162554.GC12906@google.com>
+References: <1327360193-24679-1-git-send-email-tj@kernel.org>
+ <1327360193-24679-14-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327360193-24679-14-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 05 janvier 2012 à 14:54 +0100, Ingo Molnar a écrit :
-> Linus,
-> 
-> Please pull the latest core-rcu-for-linus git tree from:
-> 
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-rcu-for-linus
-> 
->  Thanks,
-> 
+blkio_group creation code in throtl_get_tg() and cfq_get_cfqg().  This
+patch factors out the common code.
 
-Hi guys
+* New plkio_policy_ops methods blkio_alloc_group_fn() and
+  blkio_link_group_fn added.  Both are transitional and will be
+  removed once the blkg management code is fully moved into
+  blk-cgroup.c.
 
-New lockdep warning here :
+* blkio_alloc_group_fn() allocates policy-specific blkg which is
+  usually a larger data structure with blkg as the first entry and
+  intiailizes it.  Note that initialization of blkg proper, including
+  percpu stats, is responsibility of blk-cgroup proper.
 
+  Note that default config (weight, bps...) initialization is done
+  from this method; otherwise, we end up violating locking order
+  between blkcg and q locks via blkcg_get_CONF() functions.
 
-[  850.464548] 
-[  850.464550] ===============================
-[  850.464553] [ INFO: suspicious RCU usage. ]
-[  850.464555] 3.3.0-rc1+ #569 Not tainted
-[  850.464557] -------------------------------
-[  850.464559] include/trace/events/power.h:102 suspicious rcu_dereference_check() usage!
-[  850.464562] 
-[  850.464562] other info that might help us debug this:
-[  850.464564] 
-[  850.464566] 
-[  850.464567] rcu_scheduler_active = 1, debug_locks = 1
-[  850.464569] RCU used illegally from extended quiescent state!
-[  850.464571] no locks held by swapper/1/0.
-[  850.464572] 
-[  850.464572] stack backtrace:
-[  850.464575] Pid: 0, comm: swapper/1 Not tainted 3.3.0-rc1+ #569
-[  850.464578] Call Trace:
-[  850.464584]  [<ffffffff81094a2a>] lockdep_rcu_suspicious+0xca/0xf0
-[  850.464588]  [<ffffffff8100abb9>] mwait_idle+0x499/0x4c0
-[  850.464592]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
-[  850.464597]  [<ffffffff8176bbae>] start_secondary+0x1df/0x1e3
-[  850.464765] ------------[ cut here ]------------
-[  850.464769] WARNING: at include/linux/rcupdate.h:242 __perf_event_overflow+0x27c/0x2c0()
-[  850.464771] Hardware name: ProLiant BL460c G6
-[  850.464772] Modules linked in: ipmi_devintf nfsd exportfs ipmi_si hpilo bnx2x crc32c libcrc32c mdio [last unloaded: scsi_wait_scan]
-[  850.464783] Pid: 0, comm: swapper/1 Not tainted 3.3.0-rc1+ #569
-[  850.464784] Call Trace:
-[  850.464788]  [<ffffffff81038f1f>] warn_slowpath_common+0x7f/0xc0
-[  850.464791]  [<ffffffff81038f7a>] warn_slowpath_null+0x1a/0x20
-[  850.464794]  [<ffffffff810f8f2c>] __perf_event_overflow+0x27c/0x2c0
-[  850.464797]  [<ffffffff8177126e>] ? printk+0x41/0x43
-[  850.464801]  [<ffffffff810a1ff6>] ? __module_text_address+0x16/0x80
-[  850.464804]  [<ffffffff810f9019>] perf_swevent_overflow+0xa9/0xc0
-[  850.464806]  [<ffffffff810f909f>] perf_swevent_event+0x6f/0x90
-[  850.464809]  [<ffffffff810f9136>] perf_tp_event+0x76/0xf0
-[  850.464813]  [<ffffffff810f153e>] perf_trace_power+0xbe/0xe0
-[  850.464816]  [<ffffffff8100ab2f>] ? mwait_idle+0x40f/0x4c0
-[  850.464818]  [<ffffffff8100ab2f>] mwait_idle+0x40f/0x4c0
-[  850.464821]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
-[  850.464824]  [<ffffffff8176bbae>] start_secondary+0x1df/0x1e3
-[  850.464826] ---[ end trace d3b6df8c2cde8681 ]---
-[  850.464828] ------------[ cut here ]------------
-[  850.464831] WARNING: at include/linux/rcupdate.h:242 perf_output_begin+0x2f6/0x330()
-[  850.464832] Hardware name: ProLiant BL460c G6
-[  850.464833] Modules linked in: ipmi_devintf nfsd exportfs ipmi_si hpilo bnx2x crc32c libcrc32c mdio [last unloaded: scsi_wait_scan]
-[  850.464842] Pid: 0, comm: swapper/1 Tainted: G        W    3.3.0-rc1+ #569
-[  850.464844] Call Trace:
-[  850.464846]  [<ffffffff81038f1f>] warn_slowpath_common+0x7f/0xc0
-[  850.464849]  [<ffffffff81038f7a>] warn_slowpath_null+0x1a/0x20
-[  850.464852]  [<ffffffff810fc2f6>] perf_output_begin+0x2f6/0x330
-[  850.464855]  [<ffffffff810769e5>] ? sched_clock_cpu+0xc5/0x120
-[  850.464858]  [<ffffffff8109378d>] ? trace_hardirqs_off+0xd/0x10
-[  850.464860]  [<ffffffff81076a8f>] ? local_clock+0x4f/0x60
-[  850.464863]  [<ffffffff810f223d>] ? __perf_event_header__init_id+0xad/0xf0
-[  850.464866]  [<ffffffff810f8c03>] ? perf_prepare_sample+0x63/0x110
-[  850.464869]  [<ffffffff810f8e3d>] __perf_event_overflow+0x18d/0x2c0
-[  850.464871]  [<ffffffff810f8df5>] ? __perf_event_overflow+0x145/0x2c0
-[  850.464874]  [<ffffffff8177126e>] ? printk+0x41/0x43
-[  850.464876]  [<ffffffff810f9019>] perf_swevent_overflow+0xa9/0xc0
-[  850.464879]  [<ffffffff810f909f>] perf_swevent_event+0x6f/0x90
-[  850.464881]  [<ffffffff810f9136>] perf_tp_event+0x76/0xf0
-[  850.464884]  [<ffffffff810f153e>] perf_trace_power+0xbe/0xe0
-[  850.464887]  [<ffffffff8100ab2f>] ? mwait_idle+0x40f/0x4c0
-[  850.464890]  [<ffffffff8100ab2f>] mwait_idle+0x40f/0x4c0
-[  850.464893]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
-[  850.464895]  [<ffffffff8176bbae>] start_secondary+0x1df/0x1e3
-[  850.464897] ---[ end trace d3b6df8c2cde8682 ]---
-[  850.464899] 
-[  850.464900] ===============================
-[  850.464901] [ INFO: suspicious RCU usage. ]
-[  850.464902] 3.3.0-rc1+ #569 Tainted: G        W   
-[  850.464904] -------------------------------
-[  850.464905] kernel/events/ring_buffer.c:120 suspicious rcu_dereference_check() usage!
-[  850.464907] 
-[  850.464907] other info that might help us debug this:
-[  850.464908] 
-[  850.464909] 
-[  850.464910] rcu_scheduler_active = 1, debug_locks = 1
-[  850.464911] RCU used illegally from extended quiescent state!
-[  850.464913] 2 locks held by swapper/1/0:
-[  850.464914]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff810f8df5>] __perf_event_overflow+0x145/0x2c0
-[  850.464920]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810fc03f>] perf_output_begin+0x3f/0x330
-[  850.464924] 
-[  850.464925] stack backtrace:
-[  850.464927] Pid: 0, comm: swapper/1 Tainted: G        W    3.3.0-rc1+ #569
-[  850.464928] Call Trace:
-[  850.464931]  [<ffffffff81094a2a>] lockdep_rcu_suspicious+0xca/0xf0
-[  850.464933]  [<ffffffff810fc268>] perf_output_begin+0x268/0x330
-[  850.464936]  [<ffffffff810fc03f>] ? perf_output_begin+0x3f/0x330
-[  850.464938]  [<ffffffff810769e5>] ? sched_clock_cpu+0xc5/0x120
-[  850.464941]  [<ffffffff8109378d>] ? trace_hardirqs_off+0xd/0x10
-[  850.464943]  [<ffffffff81076a8f>] ? local_clock+0x4f/0x60
-[  850.464946]  [<ffffffff810f223d>] ? __perf_event_header__init_id+0xad/0xf0
-[  850.464949]  [<ffffffff810f8c03>] ? perf_prepare_sample+0x63/0x110
-[  850.464952]  [<ffffffff810f8e3d>] __perf_event_overflow+0x18d/0x2c0
-[  850.464954]  [<ffffffff810f8df5>] ? __perf_event_overflow+0x145/0x2c0
-[  850.464957]  [<ffffffff8177126e>] ? printk+0x41/0x43
-[  850.464959]  [<ffffffff810f9019>] perf_swevent_overflow+0xa9/0xc0
-[  850.464962]  [<ffffffff810f909f>] perf_swevent_event+0x6f/0x90
-[  850.464964]  [<ffffffff810f9136>] perf_tp_event+0x76/0xf0
-[  850.464967]  [<ffffffff810f153e>] perf_trace_power+0xbe/0xe0
-[  850.464970]  [<ffffffff8100ab2f>] ? mwait_idle+0x40f/0x4c0
-[  850.464973]  [<ffffffff8100ab2f>] mwait_idle+0x40f/0x4c0
-[  850.464975]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
-[  850.464978]  [<ffffffff8176bbae>] start_secondary+0x1df/0x1e3
-[  850.464980] ------------[ cut here ]------------
-[  850.464983] WARNING: at include/linux/rcupdate.h:248 perf_output_end+0x5b/0x70()
-[  850.464984] Hardware name: ProLiant BL460c G6
-[  850.464985] Modules linked in: ipmi_devintf nfsd exportfs ipmi_si hpilo bnx2x crc32c libcrc32c mdio [last unloaded: scsi_wait_scan]
-[  850.464994] Pid: 0, comm: swapper/1 Tainted: G        W    3.3.0-rc1+ #569
-[  850.464995] Call Trace:
-[  850.464998]  [<ffffffff81038f1f>] warn_slowpath_common+0x7f/0xc0
-[  850.465001]  [<ffffffff81038f7a>] warn_slowpath_null+0x1a/0x20
-[  850.465003]  [<ffffffff810fc38b>] perf_output_end+0x5b/0x70
-[  850.465006]  [<ffffffff810f8edc>] __perf_event_overflow+0x22c/0x2c0
-[  850.465008]  [<ffffffff810f8df5>] ? __perf_event_overflow+0x145/0x2c0
-[  850.465011]  [<ffffffff810f9019>] perf_swevent_overflow+0xa9/0xc0
-[  850.465014]  [<ffffffff810f909f>] perf_swevent_event+0x6f/0x90
-[  850.465016]  [<ffffffff810f9136>] perf_tp_event+0x76/0xf0
-[  850.465019]  [<ffffffff810f153e>] perf_trace_power+0xbe/0xe0
-[  850.465022]  [<ffffffff8100ab2f>] ? mwait_idle+0x40f/0x4c0
-[  850.465025]  [<ffffffff8100ab2f>] mwait_idle+0x40f/0x4c0
-[  850.465027]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
-[  850.465030]  [<ffffffff8176bbae>] start_secondary+0x1df/0x1e3
-[  850.465032] ---[ end trace d3b6df8c2cde8683 ]---
-[  850.465033] ------------[ cut here ]------------
-[  850.465036] WARNING: at include/linux/rcupdate.h:248 __perf_event_overflow+0x2a6/0x2c0()
-[  850.465037] Hardware name: ProLiant BL460c G6
-[  850.465038] Modules linked in: ipmi_devintf nfsd exportfs ipmi_si hpilo bnx2x crc32c libcrc32c mdio [last unloaded: scsi_wait_scan]
-[  850.465047] Pid: 0, comm: swapper/1 Tainted: G        W    3.3.0-rc1+ #569
-[  850.465048] Call Trace:
-[  850.465051]  [<ffffffff81038f1f>] warn_slowpath_common+0x7f/0xc0
-[  850.465054]  [<ffffffff81038f7a>] warn_slowpath_null+0x1a/0x20
-[  850.465056]  [<ffffffff810f8f56>] __perf_event_overflow+0x2a6/0x2c0
-[  850.465059]  [<ffffffff810f8df5>] ? __perf_event_overflow+0x145/0x2c0
-[  850.465061]  [<ffffffff810f9019>] perf_swevent_overflow+0xa9/0xc0
-[  850.465064]  [<ffffffff810f909f>] perf_swevent_event+0x6f/0x90
-[  850.465066]  [<ffffffff810f9136>] perf_tp_event+0x76/0xf0
-[  850.465069]  [<ffffffff810f153e>] perf_trace_power+0xbe/0xe0
-[  850.465072]  [<ffffffff8100ab2f>] ? mwait_idle+0x40f/0x4c0
-[  850.465075]  [<ffffffff8100ab2f>] mwait_idle+0x40f/0x4c0
-[  850.465077]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
-[  850.465080]  [<ffffffff8176bbae>] start_secondary+0x1df/0x1e3
-[  850.465082] ---[ end trace d3b6df8c2cde8684 ]---
-[  850.467615] 
-[  850.467617] ===============================
-[  850.467619] [ INFO: suspicious RCU usage. ]
-[  850.467621] 3.3.0-rc1+ #569 Tainted: G        W   
-[  850.467624] -------------------------------
-[  850.467626] include/trace/events/power.h:127 suspicious rcu_dereference_check() usage!
-[  850.467629] 
-[  850.467629] other info that might help us debug this:
-[  850.467630] 
-[  850.467632] 
-[  850.467632] rcu_scheduler_active = 1, debug_locks = 1
-[  850.467634] RCU used illegally from extended quiescent state!
-[  850.467636] no locks held by swapper/1/0.
-[  850.467637] 
-[  850.467638] stack backtrace:
-[  850.467640] Pid: 0, comm: swapper/1 Tainted: G        W    3.3.0-rc1+ #569
-[  850.467642] Call Trace:
-[  850.467646]  [<ffffffff81094a2a>] lockdep_rcu_suspicious+0xca/0xf0
-[  850.467650]  [<ffffffff8100a9cd>] mwait_idle+0x2ad/0x4c0
-[  850.467653]  [<ffffffff810011e6>] cpu_idle+0x96/0xe0
-[  850.467656]  [<ffffffff8176bbae>] start_secondary+0x1df/0x1e3
+* blkio_link_group_fn() is called under queue_lock and responsible for
+  linking the blkg to the queue.  blkcg side is handled by blk-cgroup
+  proper.
 
+* The common blkg creation function is named blkg_lookup_create() and
+  blkiocg_lookup_group() is renamed to blkg_lookup() for consistency.
+  Also, throtl / cfq related functions are similarly [re]named for
+  consistency.
 
+* Code to fill cfqg->blkg.dev is open coded in cfq_find_alloc_queue().
+  This is transitional and will be removed soon.
+
+This simplifies blkcg policy implementations and enables further
+cleanup.
+
+-v2: Vivek noticed that blkg_lookup_create() incorrectly tested
+     blk_queue_dead() instead of blk_queue_bypass() leading a user of
+     the function ending up creating a new blkg on bypassing queue.
+     This is a bug introduced while relocating bypass patches before
+     this one.  Fixed.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-cgroup.c   |  115 +++++++++++++++++++++++++++++-----------
+ block/blk-cgroup.h   |   29 ++++------
+ block/blk-throttle.c |  144 ++++++++++++++-------------------------------------
+ block/cfq-iosched.c  |  134 ++++++++++++-----------------------------------
+ block/cfq.h          |    8 --
+ 5 files changed, 173 insertions(+), 257 deletions(-)
+
+Index: work/block/blk-cgroup.h
+===================================================================
+--- work.orig/block/blk-cgroup.h
++++ work/block/blk-cgroup.h
+@@ -204,6 +204,10 @@ extern unsigned int blkcg_get_read_iops(
+ extern unsigned int blkcg_get_write_iops(struct blkio_cgroup *blkcg,
+ 				     dev_t dev);
+ 
++typedef struct blkio_group *(blkio_alloc_group_fn)(struct request_queue *q,
++						   struct blkio_cgroup *blkcg);
++typedef void (blkio_link_group_fn)(struct request_queue *q,
++			struct blkio_group *blkg);
+ typedef void (blkio_unlink_group_fn)(struct request_queue *q,
+ 			struct blkio_group *blkg);
+ typedef bool (blkio_clear_queue_fn)(struct request_queue *q);
+@@ -219,6 +223,8 @@ typedef void (blkio_update_group_write_i
+ 			struct blkio_group *blkg, unsigned int write_iops);
+ 
+ struct blkio_policy_ops {
++	blkio_alloc_group_fn *blkio_alloc_group_fn;
++	blkio_link_group_fn *blkio_link_group_fn;
+ 	blkio_unlink_group_fn *blkio_unlink_group_fn;
+ 	blkio_clear_queue_fn *blkio_clear_queue_fn;
+ 	blkio_update_group_weight_fn *blkio_update_group_weight_fn;
+@@ -308,14 +314,13 @@ static inline void blkiocg_set_start_emp
+ extern struct blkio_cgroup blkio_root_cgroup;
+ extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
+ extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
+-extern void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+-	struct blkio_group *blkg, struct request_queue *q, dev_t dev,
+-	enum blkio_policy_id plid);
+-extern int blkio_alloc_blkg_stats(struct blkio_group *blkg);
+ extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
+-extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
+-						struct request_queue *q,
+-						enum blkio_policy_id plid);
++extern struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
++				       struct request_queue *q,
++				       enum blkio_policy_id plid);
++struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
++				       struct request_queue *q,
++				       enum blkio_policy_id plid);
+ void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+ 					unsigned long time,
+ 					unsigned long unaccounted_time);
+@@ -336,17 +341,11 @@ cgroup_to_blkio_cgroup(struct cgroup *cg
+ static inline struct blkio_cgroup *
+ task_blkio_cgroup(struct task_struct *tsk) { return NULL; }
+ 
+-static inline void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+-		struct blkio_group *blkg, void *key, dev_t dev,
+-		enum blkio_policy_id plid) {}
+-
+-static inline int blkio_alloc_blkg_stats(struct blkio_group *blkg) { return 0; }
+-
+ static inline int
+ blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
+ 
+-static inline struct blkio_group *
+-blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
++static inline struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
++					      void *key) { return NULL; }
+ static inline void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+ 						unsigned long time,
+ 						unsigned long unaccounted_time)
+Index: work/block/blk-throttle.c
+===================================================================
+--- work.orig/block/blk-throttle.c
++++ work/block/blk-throttle.c
+@@ -181,17 +181,25 @@ static void throtl_put_tg(struct throtl_
+ 	call_rcu(&tg->rcu_head, throtl_free_tg);
+ }
+ 
+-static void throtl_init_group(struct throtl_grp *tg)
++static struct blkio_group *throtl_alloc_blkio_group(struct request_queue *q,
++						    struct blkio_cgroup *blkcg)
+ {
++	struct throtl_grp *tg;
++
++	tg = kzalloc_node(sizeof(*tg), GFP_ATOMIC, q->node);
++	if (!tg)
++		return NULL;
++
+ 	INIT_HLIST_NODE(&tg->tg_node);
+ 	RB_CLEAR_NODE(&tg->rb_node);
+ 	bio_list_init(&tg->bio_lists[0]);
+ 	bio_list_init(&tg->bio_lists[1]);
+ 	tg->limits_changed = false;
+ 
+-	/* Practically unlimited BW */
+-	tg->bps[0] = tg->bps[1] = -1;
+-	tg->iops[0] = tg->iops[1] = -1;
++	tg->bps[READ] = blkcg_get_read_bps(blkcg, tg->blkg.dev);
++	tg->bps[WRITE] = blkcg_get_write_bps(blkcg, tg->blkg.dev);
++	tg->iops[READ] = blkcg_get_read_iops(blkcg, tg->blkg.dev);
++	tg->iops[WRITE] = blkcg_get_write_iops(blkcg, tg->blkg.dev);
+ 
+ 	/*
+ 	 * Take the initial reference that will be released on destroy
+@@ -200,14 +208,8 @@ static void throtl_init_group(struct thr
+ 	 * exit or cgroup deletion path depending on who is exiting first.
+ 	 */
+ 	atomic_set(&tg->ref, 1);
+-}
+ 
+-/* Should be called with rcu read lock held (needed for blkcg) */
+-static void
+-throtl_add_group_to_td_list(struct throtl_data *td, struct throtl_grp *tg)
+-{
+-	hlist_add_head(&tg->tg_node, &td->tg_list);
+-	td->nr_undestroyed_grps++;
++	return &tg->blkg;
+ }
+ 
+ static void
+@@ -246,46 +248,20 @@ throtl_tg_fill_dev_details(struct throtl
+ 	spin_unlock_irq(td->queue->queue_lock);
+ }
+ 
+-static void throtl_init_add_tg_lists(struct throtl_data *td,
+-			struct throtl_grp *tg, struct blkio_cgroup *blkcg)
++static void throtl_link_blkio_group(struct request_queue *q,
++				    struct blkio_group *blkg)
+ {
+-	__throtl_tg_fill_dev_details(td, tg);
+-
+-	/* Add group onto cgroup list */
+-	blkiocg_add_blkio_group(blkcg, &tg->blkg, td->queue,
+-				tg->blkg.dev, BLKIO_POLICY_THROTL);
+-
+-	tg->bps[READ] = blkcg_get_read_bps(blkcg, tg->blkg.dev);
+-	tg->bps[WRITE] = blkcg_get_write_bps(blkcg, tg->blkg.dev);
+-	tg->iops[READ] = blkcg_get_read_iops(blkcg, tg->blkg.dev);
+-	tg->iops[WRITE] = blkcg_get_write_iops(blkcg, tg->blkg.dev);
+-
+-	throtl_add_group_to_td_list(td, tg);
+-}
+-
+-/* Should be called without queue lock and outside of rcu period */
+-static struct throtl_grp *throtl_alloc_tg(struct throtl_data *td)
+-{
+-	struct throtl_grp *tg = NULL;
+-	int ret;
+-
+-	tg = kzalloc_node(sizeof(*tg), GFP_ATOMIC, td->queue->node);
+-	if (!tg)
+-		return NULL;
+-
+-	ret = blkio_alloc_blkg_stats(&tg->blkg);
++	struct throtl_data *td = q->td;
++	struct throtl_grp *tg = tg_of_blkg(blkg);
+ 
+-	if (ret) {
+-		kfree(tg);
+-		return NULL;
+-	}
++	__throtl_tg_fill_dev_details(td, tg);
+ 
+-	throtl_init_group(tg);
+-	return tg;
++	hlist_add_head(&tg->tg_node, &td->tg_list);
++	td->nr_undestroyed_grps++;
+ }
+ 
+ static struct
+-throtl_grp *throtl_find_tg(struct throtl_data *td, struct blkio_cgroup *blkcg)
++throtl_grp *throtl_lookup_tg(struct throtl_data *td, struct blkio_cgroup *blkcg)
+ {
+ 	struct throtl_grp *tg = NULL;
+ 
+@@ -296,69 +272,29 @@ throtl_grp *throtl_find_tg(struct throtl
+ 	if (blkcg == &blkio_root_cgroup)
+ 		tg = td->root_tg;
+ 	else
+-		tg = tg_of_blkg(blkiocg_lookup_group(blkcg, td->queue,
+-						     BLKIO_POLICY_THROTL));
++		tg = tg_of_blkg(blkg_lookup(blkcg, td->queue,
++					    BLKIO_POLICY_THROTL));
+ 
+ 	__throtl_tg_fill_dev_details(td, tg);
+ 	return tg;
+ }
+ 
+-static struct throtl_grp *throtl_get_tg(struct throtl_data *td,
+-					struct blkio_cgroup *blkcg)
++static struct throtl_grp *throtl_lookup_create_tg(struct throtl_data *td,
++						  struct blkio_cgroup *blkcg)
+ {
+-	struct throtl_grp *tg = NULL, *__tg = NULL;
+ 	struct request_queue *q = td->queue;
++	struct throtl_grp *tg = NULL;
++	struct blkio_group *blkg;
+ 
+-	/* no throttling for dead queue */
+-	if (unlikely(blk_queue_bypass(q)))
+-		return NULL;
+-
+-	tg = throtl_find_tg(td, blkcg);
+-	if (tg)
+-		return tg;
+-
+-	if (!css_tryget(&blkcg->css))
+-		return NULL;
+-
+-	/*
+-	 * Need to allocate a group. Allocation of group also needs allocation
+-	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
+-	 * we need to drop rcu lock and queue_lock before we call alloc.
+-	 */
+-	spin_unlock_irq(q->queue_lock);
+-	rcu_read_unlock();
+-
+-	tg = throtl_alloc_tg(td);
+-
+-	/* Group allocated and queue is still alive. take the lock */
+-	rcu_read_lock();
+-	spin_lock_irq(q->queue_lock);
+-	css_put(&blkcg->css);
+-
+-	/* Make sure @q is still alive */
+-	if (unlikely(blk_queue_bypass(q))) {
+-		kfree(tg);
+-		return NULL;
+-	}
+-
+-	/*
+-	 * If some other thread already allocated the group while we were
+-	 * not holding queue lock, free up the group
+-	 */
+-	__tg = throtl_find_tg(td, blkcg);
+-
+-	if (__tg) {
+-		kfree(tg);
+-		return __tg;
+-	}
++	blkg = blkg_lookup_create(blkcg, q, BLKIO_POLICY_THROTL);
+ 
+-	/* Group allocation failed. Account the IO to root group */
+-	if (!tg) {
++	/* if %NULL and @q is alive, fall back to root_tg */
++	if (blkg)
++		tg = tg_of_blkg(blkg);
++	else if (!blk_queue_dead(q))
+ 		tg = td->root_tg;
+-		return tg;
+-	}
+ 
+-	throtl_init_add_tg_lists(td, tg, blkcg);
++	__throtl_tg_fill_dev_details(td, tg);
+ 	return tg;
+ }
+ 
+@@ -1107,6 +1043,8 @@ static void throtl_shutdown_wq(struct re
+ 
+ static struct blkio_policy_type blkio_policy_throtl = {
+ 	.ops = {
++		.blkio_alloc_group_fn = throtl_alloc_blkio_group,
++		.blkio_link_group_fn = throtl_link_blkio_group,
+ 		.blkio_unlink_group_fn = throtl_unlink_blkio_group,
+ 		.blkio_clear_queue_fn = throtl_clear_queue,
+ 		.blkio_update_group_read_bps_fn =
+@@ -1141,7 +1079,7 @@ bool blk_throtl_bio(struct request_queue
+ 	 */
+ 	rcu_read_lock();
+ 	blkcg = task_blkio_cgroup(current);
+-	tg = throtl_find_tg(td, blkcg);
++	tg = throtl_lookup_tg(td, blkcg);
+ 	if (tg) {
+ 		throtl_tg_fill_dev_details(td, tg);
+ 
+@@ -1157,7 +1095,7 @@ bool blk_throtl_bio(struct request_queue
+ 	 * IO group
+ 	 */
+ 	spin_lock_irq(q->queue_lock);
+-	tg = throtl_get_tg(td, blkcg);
++	tg = throtl_lookup_create_tg(td, blkcg);
+ 	if (unlikely(!tg))
+ 		goto out_unlock;
+ 
+@@ -1262,13 +1200,14 @@ int blk_throtl_init(struct request_queue
+ 	td->limits_changed = false;
+ 	INIT_DELAYED_WORK(&td->throtl_work, blk_throtl_work);
+ 
+-	/* alloc and Init root group. */
++	q->td = td;
+ 	td->queue = q;
+ 
++	/* alloc and init root group. */
+ 	rcu_read_lock();
+ 	spin_lock_irq(q->queue_lock);
+ 
+-	td->root_tg = throtl_get_tg(td, &blkio_root_cgroup);
++	td->root_tg = throtl_lookup_create_tg(td, &blkio_root_cgroup);
+ 
+ 	spin_unlock_irq(q->queue_lock);
+ 	rcu_read_unlock();
+@@ -1277,9 +1216,6 @@ int blk_throtl_init(struct request_queue
+ 		kfree(td);
+ 		return -ENOMEM;
+ 	}
+-
+-	/* Attach throtl data to request queue */
+-	q->td = td;
+ 	return 0;
+ }
+ 
+Index: work/block/blk-cgroup.c
+===================================================================
+--- work.orig/block/blk-cgroup.c
++++ work/block/blk-cgroup.c
+@@ -465,38 +465,89 @@ void blkiocg_update_io_merged_stats(stru
+ }
+ EXPORT_SYMBOL_GPL(blkiocg_update_io_merged_stats);
+ 
+-/*
+- * This function allocates the per cpu stats for blkio_group. Should be called
+- * from sleepable context as alloc_per_cpu() requires that.
+- */
+-int blkio_alloc_blkg_stats(struct blkio_group *blkg)
+-{
+-	/* Allocate memory for per cpu stats */
+-	blkg->stats_cpu = alloc_percpu(struct blkio_group_stats_cpu);
+-	if (!blkg->stats_cpu)
+-		return -ENOMEM;
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(blkio_alloc_blkg_stats);
++struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
++				       struct request_queue *q,
++				       enum blkio_policy_id plid)
++	__releases(q->queue_lock) __acquires(q->queue_lock)
++{
++	struct blkio_policy_type *pol = blkio_policy[plid];
++	struct blkio_group *blkg = NULL;
++	struct blkio_group *new_blkg = NULL;
+ 
+-void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+-		struct blkio_group *blkg, struct request_queue *q, dev_t dev,
+-		enum blkio_policy_id plid)
+-{
+-	unsigned long flags;
++	WARN_ON_ONCE(!rcu_read_lock_held());
++	lockdep_assert_held(q->queue_lock);
+ 
+-	spin_lock_irqsave(&blkcg->lock, flags);
+-	spin_lock_init(&blkg->stats_lock);
+-	rcu_assign_pointer(blkg->q, q);
+-	blkg->blkcg_id = css_id(&blkcg->css);
++	/*
++	 * This could be the first entry point of blkcg implementation and
++	 * we shouldn't allow anything to go through for a bypassing queue.
++	 * The following can be removed if blkg lookup is guaranteed to
++	 * fail on a bypassing queue.
++	 */
++	if (unlikely(blk_queue_bypass(q)))
++		return NULL;
++
++	blkg = blkg_lookup(blkcg, q, plid);
++	if (blkg)
++		return blkg;
++
++	if (!css_tryget(&blkcg->css))
++		return NULL;
++
++	/*
++	 * Allocate and initialize.
++	 *
++	 * FIXME: The following is broken.  Percpu memory allocation
++	 * requires %GFP_KERNEL context and can't be performed from IO
++	 * path.  Allocation here should inherently be atomic and the
++	 * following lock dancing can be removed once the broken percpu
++	 * allocation is fixed.
++	 */
++	spin_unlock_irq(q->queue_lock);
++	rcu_read_unlock();
++
++	new_blkg = pol->ops.blkio_alloc_group_fn(q, blkcg);
++	if (new_blkg) {
++		new_blkg->stats_cpu = alloc_percpu(struct blkio_group_stats_cpu);
++
++		spin_lock_init(&new_blkg->stats_lock);
++		rcu_assign_pointer(new_blkg->q, q);
++		new_blkg->blkcg_id = css_id(&blkcg->css);
++		new_blkg->plid = plid;
++		cgroup_path(blkcg->css.cgroup, new_blkg->path,
++			    sizeof(new_blkg->path));
++	}
++
++	rcu_read_lock();
++	spin_lock_irq(q->queue_lock);
++	css_put(&blkcg->css);
++
++	/* did bypass get turned on inbetween? */
++	if (unlikely(blk_queue_bypass(q)))
++		goto out;
++
++	/* did someone beat us to it? */
++	blkg = blkg_lookup(blkcg, q, plid);
++	if (unlikely(blkg))
++		goto out;
++
++	/* did alloc fail? */
++	if (unlikely(!new_blkg || !new_blkg->stats_cpu))
++		goto out;
++
++	/* insert */
++	spin_lock(&blkcg->lock);
++	swap(blkg, new_blkg);
+ 	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
+-	blkg->plid = plid;
+-	spin_unlock_irqrestore(&blkcg->lock, flags);
+-	/* Need to take css reference ? */
+-	cgroup_path(blkcg->css.cgroup, blkg->path, sizeof(blkg->path));
+-	blkg->dev = dev;
++	pol->ops.blkio_link_group_fn(q, blkg);
++	spin_unlock(&blkcg->lock);
++out:
++	if (new_blkg) {
++		free_percpu(new_blkg->stats_cpu);
++		kfree(new_blkg);
++	}
++	return blkg;
+ }
+-EXPORT_SYMBOL_GPL(blkiocg_add_blkio_group);
++EXPORT_SYMBOL_GPL(blkg_lookup_create);
+ 
+ static void __blkiocg_del_blkio_group(struct blkio_group *blkg)
+ {
+@@ -533,9 +584,9 @@ int blkiocg_del_blkio_group(struct blkio
+ EXPORT_SYMBOL_GPL(blkiocg_del_blkio_group);
+ 
+ /* called under rcu_read_lock(). */
+-struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
+-					 struct request_queue *q,
+-					 enum blkio_policy_id plid)
++struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
++				struct request_queue *q,
++				enum blkio_policy_id plid)
+ {
+ 	struct blkio_group *blkg;
+ 	struct hlist_node *n;
+@@ -545,7 +596,7 @@ struct blkio_group *blkiocg_lookup_group
+ 			return blkg;
+ 	return NULL;
+ }
+-EXPORT_SYMBOL_GPL(blkiocg_lookup_group);
++EXPORT_SYMBOL_GPL(blkg_lookup);
+ 
+ static void blkio_reset_stats_cpu(struct blkio_group *blkg)
+ {
+Index: work/block/cfq-iosched.c
+===================================================================
+--- work.orig/block/cfq-iosched.c
++++ work/block/cfq-iosched.c
+@@ -1048,10 +1048,12 @@ static void cfq_update_blkio_group_weigh
+ 	cfqg->needs_update = true;
+ }
+ 
+-static void cfq_init_add_cfqg_lists(struct cfq_data *cfqd,
+-			struct cfq_group *cfqg, struct blkio_cgroup *blkcg)
++static void cfq_link_blkio_group(struct request_queue *q,
++				 struct blkio_group *blkg)
+ {
+-	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
++	struct cfq_data *cfqd = q->elevator->elevator_data;
++	struct backing_dev_info *bdi = &q->backing_dev_info;
++	struct cfq_group *cfqg = cfqg_of_blkg(blkg);
+ 	unsigned int major, minor;
+ 
+ 	/*
+@@ -1062,34 +1064,26 @@ static void cfq_init_add_cfqg_lists(stru
+ 	 */
+ 	if (bdi->dev) {
+ 		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+-		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg,
+-					cfqd->queue, MKDEV(major, minor));
+-	} else
+-		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg,
+-					cfqd->queue, 0);
++		blkg->dev = MKDEV(major, minor);
++	}
+ 
+ 	cfqd->nr_blkcg_linked_grps++;
+-	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
+ 
+ 	/* Add group on cfqd list */
+ 	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
+ }
+ 
+-/*
+- * Should be called from sleepable context. No request queue lock as per
+- * cpu stats are allocated dynamically and alloc_percpu needs to be called
+- * from sleepable context.
+- */
+-static struct cfq_group * cfq_alloc_cfqg(struct cfq_data *cfqd)
++static struct blkio_group *cfq_alloc_blkio_group(struct request_queue *q,
++						 struct blkio_cgroup *blkcg)
+ {
+ 	struct cfq_group *cfqg;
+-	int ret;
+ 
+-	cfqg = kzalloc_node(sizeof(*cfqg), GFP_ATOMIC, cfqd->queue->node);
++	cfqg = kzalloc_node(sizeof(*cfqg), GFP_ATOMIC, q->node);
+ 	if (!cfqg)
+ 		return NULL;
+ 
+ 	cfq_init_cfqg_base(cfqg);
++	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
+ 
+ 	/*
+ 	 * Take the initial reference that will be released on destroy
+@@ -1099,91 +1093,20 @@ static struct cfq_group * cfq_alloc_cfqg
+ 	 */
+ 	cfqg->ref = 1;
+ 
+-	ret = blkio_alloc_blkg_stats(&cfqg->blkg);
+-	if (ret) {
+-		kfree(cfqg);
+-		return NULL;
+-	}
+-
+-	return cfqg;
+-}
+-
+-static struct cfq_group *
+-cfq_find_cfqg(struct cfq_data *cfqd, struct blkio_cgroup *blkcg)
+-{
+-	struct cfq_group *cfqg = NULL;
+-	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+-	unsigned int major, minor;
+-
+-	/*
+-	 * This is the common case when there are no blkio cgroups.
+-	 * Avoid lookup in this case
+-	 */
+-	if (blkcg == &blkio_root_cgroup)
+-		cfqg = cfqd->root_group;
+-	else
+-		cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, cfqd->queue,
+-							 BLKIO_POLICY_PROP));
+-
+-	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+-		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+-		cfqg->blkg.dev = MKDEV(major, minor);
+-	}
+-
+-	return cfqg;
++	return &cfqg->blkg;
+ }
+ 
+ /*
+  * Search for the cfq group current task belongs to. request_queue lock must
+  * be held.
+  */
+-static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd,
+-				      struct blkio_cgroup *blkcg)
++static struct cfq_group *cfq_lookup_create_cfqg(struct cfq_data *cfqd,
++						struct blkio_cgroup *blkcg)
+ {
+-	struct cfq_group *cfqg = NULL, *__cfqg = NULL;
+-	struct request_queue *q = cfqd->queue;
++	struct blkio_group *blkg;
+ 
+-	cfqg = cfq_find_cfqg(cfqd, blkcg);
+-	if (cfqg)
+-		return cfqg;
+-
+-	if (!css_tryget(&blkcg->css))
+-		return NULL;
+-
+-	/*
+-	 * Need to allocate a group. Allocation of group also needs allocation
+-	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
+-	 * we need to drop rcu lock and queue_lock before we call alloc.
+-	 *
+-	 * Not taking any queue reference here and assuming that queue is
+-	 * around by the time we return. CFQ queue allocation code does
+-	 * the same. It might be racy though.
+-	 */
+-	rcu_read_unlock();
+-	spin_unlock_irq(q->queue_lock);
+-
+-	cfqg = cfq_alloc_cfqg(cfqd);
+-
+-	spin_lock_irq(q->queue_lock);
+-	rcu_read_lock();
+-	css_put(&blkcg->css);
+-
+-	/*
+-	 * If some other thread already allocated the group while we were
+-	 * not holding queue lock, free up the group
+-	 */
+-	__cfqg = cfq_find_cfqg(cfqd, blkcg);
+-
+-	if (__cfqg) {
+-		kfree(cfqg);
+-		return __cfqg;
+-	}
+-
+-	if (!cfqg)
+-		cfqg = cfqd->root_group;
+-
+-	cfq_init_add_cfqg_lists(cfqd, cfqg, blkcg);
+-	return cfqg;
++	blkg = blkg_lookup_create(blkcg, cfqd->queue, BLKIO_POLICY_PROP);
++	return cfqg_of_blkg(blkg);
+ }
+ 
+ static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
+@@ -1295,8 +1218,8 @@ static bool cfq_clear_queue(struct reque
+ }
+ 
+ #else /* GROUP_IOSCHED */
+-static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd,
+-				      struct blkio_cgroup *blkcg)
++static struct cfq_group *cfq_lookup_create_cfqg(struct cfq_data *cfqd,
++						struct blkio_cgroup *blkcg)
+ {
+ 	return cfqd->root_group;
+ }
+@@ -2885,6 +2808,7 @@ static struct cfq_queue *
+ cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
+ 		     struct io_context *ioc, gfp_t gfp_mask)
+ {
++	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+ 	struct blkio_cgroup *blkcg;
+ 	struct cfq_queue *cfqq, *new_cfqq = NULL;
+ 	struct cfq_io_cq *cic;
+@@ -2895,7 +2819,19 @@ retry:
+ 
+ 	blkcg = task_blkio_cgroup(current);
+ 
+-	cfqg = cfq_get_cfqg(cfqd, blkcg);
++	/* avoid lookup for the common case where there's no blkio cgroup */
++	if (blkcg == &blkio_root_cgroup)
++		cfqg = cfqd->root_group;
++	else
++		cfqg = cfq_lookup_create_cfqg(cfqd, blkcg);
++
++	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
++		unsigned int major, minor;
++
++		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
++		cfqg->blkg.dev = MKDEV(major, minor);
++	}
++
+ 	cic = cfq_cic_lookup(cfqd, ioc);
+ 	/* cic always exists here */
+ 	cfqq = cic_to_cfqq(cic, is_sync);
+@@ -3718,7 +3654,7 @@ static int cfq_init_queue(struct request
+ 	rcu_read_lock();
+ 	spin_lock_irq(q->queue_lock);
+ 
+-	cfqd->root_group = cfq_get_cfqg(cfqd, &blkio_root_cgroup);
++	cfqd->root_group = cfq_lookup_create_cfqg(cfqd, &blkio_root_cgroup);
+ 
+ 	spin_unlock_irq(q->queue_lock);
+ 	rcu_read_unlock();
+@@ -3904,6 +3840,8 @@ static struct elevator_type iosched_cfq 
+ #ifdef CONFIG_CFQ_GROUP_IOSCHED
+ static struct blkio_policy_type blkio_policy_cfq = {
+ 	.ops = {
++		.blkio_alloc_group_fn =		cfq_alloc_blkio_group,
++		.blkio_link_group_fn =		cfq_link_blkio_group,
+ 		.blkio_unlink_group_fn =	cfq_unlink_blkio_group,
+ 		.blkio_clear_queue_fn = cfq_clear_queue,
+ 		.blkio_update_group_weight_fn =	cfq_update_blkio_group_weight,
+Index: work/block/cfq.h
+===================================================================
+--- work.orig/block/cfq.h
++++ work/block/cfq.h
+@@ -67,12 +67,6 @@ static inline void cfq_blkiocg_update_co
+ 				direction, sync);
+ }
+ 
+-static inline void cfq_blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+-		struct blkio_group *blkg, struct request_queue *q, dev_t dev)
+-{
+-	blkiocg_add_blkio_group(blkcg, blkg, q, dev, BLKIO_POLICY_PROP);
+-}
+-
+ static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
+ {
+ 	return blkiocg_del_blkio_group(blkg);
+@@ -105,8 +99,6 @@ static inline void cfq_blkiocg_update_di
+ 				uint64_t bytes, bool direction, bool sync) {}
+ static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg, uint64_t start_time, uint64_t io_start_time, bool direction, bool sync) {}
+ 
+-static inline void cfq_blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+-		struct blkio_group *blkg, struct request_queue *q, dev_t dev) {}
+ static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
+ {
+ 	return 0;
