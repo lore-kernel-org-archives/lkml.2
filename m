@@ -1,219 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab2AXOKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 09:10:12 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:49895 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755055Ab2AXOKK (ORCPT
+	id S1756675Ab2AXOKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 09:10:53 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60722 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055Ab2AXOKv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 09:10:10 -0500
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX19foq88n+Zf1iMMobLR00oNi0ONxBAi0+LTRvFJju
-	kIWl7MxMvTh9/V
-From: Sven Joachim <svenjoac@gmx.de>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [091/129] block: fail SCSI passthrough ioctls on partition devices
-References: <20120124023932.023409422@clark.kroah.org>
-	<1327410067-5957-1-git-send-email-pbonzini@redhat.com>
-Date: Tue, 24 Jan 2012 15:10:05 +0100
-In-Reply-To: <1327410067-5957-1-git-send-email-pbonzini@redhat.com> (Paolo
-	Bonzini's message of "Tue, 24 Jan 2012 14:01:06 +0100")
-Message-ID: <87sjj5b39e.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
+	Tue, 24 Jan 2012 09:10:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20120122184325.74528207@garik>
+References: <20120122184325.74528207@garik>
+Date: Tue, 24 Jan 2012 09:10:50 -0500
+Message-ID: <CADnq5_PhFi1p9D2wOXwfwvtwZMccD8RFb2qqgaxyJSz+0Mb-ug@mail.gmail.com>
+Subject: Re: [PATCH 1/2] drm/radeon: fix invalid memory access in radeon_atrm_get_bios()
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Igor Murzov <intergalactic.anonymous@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+        Igor Murzov <e-mail@date.by>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Sergey V <sftp.mtuci@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-24 14:01 +0100, Paolo Bonzini wrote:
+On Sun, Jan 22, 2012 at 9:43 AM, Igor Murzov
+<intergalactic.anonymous@gmail.com> wrote:
+> From 77c912ea1eca50a93a34d5be69f9dc96a8bef0d8 Mon Sep 17 00:00:00 2001
+> From: Igor Murzov <e-mail@date.by>
+> Date: Sun, 22 Jan 2012 19:02:27 +0400
+> Subject: [PATCH 1/2] drm/radeon: fix invalid memory access in radeon_atrm_get_bios()
+>
+> At a boot time I observed following bug:
+>
+>  BUG: unable to handle kernel paging request at ffff8800a4244000
+>  IP: [<ffffffff81275b5b>] memcpy+0xb/0x120
+>  PGD 1816063 PUD 1fe7d067 PMD 1ff9f067 PTE 80000000a4244160
+>  Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+>  CPU 0
+>  Modules linked in: btusb bluetooth brcmsmac brcmutil crc8 cordic b43 radeon(+)
+>  mac80211 cfg80211 ttm ohci_hcd drm_kms_helper rfkill drm ssb agpgart mmc_core
+>  sp5100_tco video battery ac thermal processor rtc_cmos thermal_sys snd_hda_codec_hdmi
+>  joydev snd_hda_codec_conexant button bcma pcmcia snd_hda_intel snd_hda_codec
+>  snd_hwdep snd_pcm shpchp pcmcia_core k8temp snd_timer atl1c snd psmouse hwmon
+>  i2c_piix4 i2c_algo_bit soundcore evdev i2c_core ehci_hcd sg serio_raw snd_page_alloc
+>  loop btrfs
+>
+>  Pid: 1008, comm: modprobe Not tainted 3.3.0-rc1 #21 LENOVO 20046                           /AMD CRB
+>  RIP: 0010:[<ffffffff81275b5b>]  [<ffffffff81275b5b>] memcpy+0xb/0x120
+>  RSP: 0018:ffff8800aa72db00  EFLAGS: 00010246
+>  RAX: ffff8800a4150000 RBX: 0000000000001000 RCX: 0000000000000087
+>  RDX: 0000000000000000 RSI: ffff8800a4244000 RDI: ffff8800a4150bc8
+>  RBP: ffff8800aa72db78 R08: 0000000000000010 R09: ffffffff8174bbec
+>  R10: ffffffff812ee010 R11: 0000000000000001 R12: 0000000000001000
+>  R13: 0000000000010000 R14: ffff8800a4140000 R15: ffff8800aaba1800
+>  FS:  00007ff9a3bd4720(0000) GS:ffff8800afa00000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>  CR2: ffff8800a4244000 CR3: 00000000a9c18000 CR4: 00000000000006f0
+>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  Process modprobe (pid: 1008, threadinfo ffff8800aa72c000, task ffff8800aa0e4000)
+>  Stack:
+>  ffffffffa04e7c7b 0000000000000001 0000000000010000 ffff8800aa72db28
+>  ffffffff00000001 0000000000001000 ffffffff8113cbef 0000000000000020
+>  ffff8800a4243420 ffff880000000002 ffff8800aa72db08 ffff8800a9d42000
+>  Call Trace:
+>  [<ffffffffa04e7c7b>] ? radeon_atrm_get_bios_chunk+0x8b/0xd0 [radeon]
+>  [<ffffffff8113cbef>] ? kmalloc_order_trace+0x3f/0xb0
+>  [<ffffffffa04a9298>] radeon_get_bios+0x68/0x2f0 [radeon]
+>  [<ffffffffa04c7a30>] rv770_init+0x40/0x280 [radeon]
+>  [<ffffffffa047d740>] radeon_device_init+0x560/0x600 [radeon]
+>  [<ffffffffa047ef4f>] radeon_driver_load_kms+0xaf/0x170 [radeon]
+>  [<ffffffffa043cdde>] drm_get_pci_dev+0x18e/0x2c0 [drm]
+>  [<ffffffffa04e7e95>] radeon_pci_probe+0xad/0xb5 [radeon]
+>  [<ffffffff81296c5f>] local_pci_probe+0x5f/0xd0
+>  [<ffffffff81297418>] pci_device_probe+0x88/0xb0
+>  [<ffffffff813417aa>] ? driver_sysfs_add+0x7a/0xb0
+>  [<ffffffff813418d8>] really_probe+0x68/0x180
+>  [<ffffffff81341be5>] driver_probe_device+0x45/0x70
+>  [<ffffffff81341cb3>] __driver_attach+0xa3/0xb0
+>  [<ffffffff81341c10>] ? driver_probe_device+0x70/0x70
+>  [<ffffffff813400ce>] bus_for_each_dev+0x5e/0x90
+>  [<ffffffff8134172e>] driver_attach+0x1e/0x20
+>  [<ffffffff81341298>] bus_add_driver+0xc8/0x280
+>  [<ffffffff813422c6>] driver_register+0x76/0x140
+>  [<ffffffff812976d6>] __pci_register_driver+0x66/0xe0
+>  [<ffffffffa043d021>] drm_pci_init+0x111/0x120 [drm]
+>  [<ffffffff8133c67a>] ? vga_switcheroo_register_handler+0x3a/0x60
+>  [<ffffffffa0229000>] ? 0xffffffffa0228fff
+>  [<ffffffffa02290ec>] radeon_init+0xec/0xee [radeon]
+>  [<ffffffff810002f2>] do_one_initcall+0x42/0x180
+>  [<ffffffff8109d8d2>] sys_init_module+0x92/0x1e0
+>  [<ffffffff815407a9>] system_call_fastpath+0x16/0x1b
+>  Code: 58 2a 43 50 88 43 4e 48 83 c4 08 5b c9 c3 66 90 e8 cb fd ff ff eb
+>  e6 90 90 90 90 90 90 90 90 90 48 89 f8 89 d1 c1 e9 03 83 e2 07 <f3> 48
+>  a5 89 d1 f3 a4 c3 20 48 83 ea 20 4c 8b 06 4c 8b 4e 08 4c
+>  RIP  [<ffffffff81275b5b>] memcpy+0xb/0x120
+>  RSP <ffff8800aa72db00>
+>  CR2: ffff8800a4244000
+>  ---[ end trace fcffa1599cf56382 ]---
+>
+> Call to acpi_evaluate_object() not always returns 4096 bytes chunks,
+> on my system it can return 2048 bytes chunk, so pass the length of
+> retrieved chunk to memcpy(), not the length of the recieving buffer.
+>
+> Signed-off-by: Igor Murzov <e-mail@date.by>
 
-> You need to return -ENOTTY from scsi_verify_blk_ioctl and -ENOIOCTLCMD from
-> sd_compat_ioctl, because -ENOIOCTLCMD will not be handled correctly by
-> block/ioctl.c.  This would break BLKROSET and BLKFLSBUF done by non-root
-> but with the appropriate capabilities.
+Both patches are:
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 
-I assume this is the reason why I suddenly got lots of ioctl32 warnings
-in dmesg with 3.2.2-rc1?
-
-,----
-| $ dmesg | grep ioctl | head
-| [    0.815394] ioctl32(blkid:150): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda1
-| [    0.815812] ioctl32(blkid:154): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda6
-| [    0.816184] ioctl32(blkid:151): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda5
-| [    0.816559] ioctl32(blkid:155): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda9
-| [    0.816997] ioctl32(blkid:157): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda8
-| [    0.817371] ioctl32(blkid:153): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda3
-| [    0.817692] ioctl32(blkid:156): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda2
-| [    0.818063] ioctl32(blkid:152): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda7
-| [    2.824909] ioctl32(findfs:204): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda6
-| [    5.545235] ioctl32(blkid:435): Unknown cmd fd(3) cmd(00005331){t:'S';sz:0} arg(00000000) on /dev/sda3
-`----
-
-> Fixed patch follows.  If you prefer that I send an interdiff, let me know.
-
-Going to try that.
-
-> Paolo
->
-> -------- 8< ---------
-> From: Paolo Bonzini <pbonzini@redhat.com>
-> Subject: [PATCH] block: fail SCSI passthrough ioctls on partition devices
->
-> commit 0bfc96cb77224736dfa35c3c555d37b3646ef35e upstream.
->
-> Linux allows executing the SG_IO ioctl on a partition or LVM volume, and
-> will pass the command to the underlying block device.  This is
-> well-known, but it is also a large security problem when (via Unix
-> permissions, ACLs, SELinux or a combination thereof) a program or user
-> needs to be granted access only to part of the disk.
->
-> This patch lets partitions forward a small set of harmless ioctls;
-> others are logged with printk so that we can see which ioctls are
-> actually sent.  In my tests only CDROM_GET_CAPABILITY actually occurred.
-> Of course it was being sent to a (partition on a) hard disk, so it would
-> have failed with ENOTTY and the patch isn't changing anything in
-> practice.  Still, I'm treating it specially to avoid spamming the logs.
->
-> In principle, this restriction should include programs running with
-> CAP_SYS_RAWIO.  If for example I let a program access /dev/sda2 and
-> /dev/sdb, it still should not be able to read/write outside the
-> boundaries of /dev/sda2 independent of the capabilities.  However, for
-> now programs with CAP_SYS_RAWIO will still be allowed to send the
-> ioctls.  Their actions will still be logged.
->
-> This patch does not affect the non-libata IDE driver.  That driver
-> however already tests for bd != bd->bd_contains before issuing some
-> ioctl; it could be restricted further to forbid these ioctls even for
-> programs running with CAP_SYS_ADMIN/CAP_SYS_RAWIO.
->
-> Cc: linux-scsi@vger.kernel.org
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: James Bottomley <JBottomley@parallels.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> [ Make it also print the command name when warning - Linus ]
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->
-> [ Changes with respect to 3.3: return -ENOTTY from scsi_verify_blk_ioctl
->   and -ENOIOCTLCMD from sd_compat_ioctl. ]
->
 > ---
->  block/scsi_ioctl.c     |   45 +++++++++++++++++++++++++++++++++++++++++++++
->  drivers/scsi/sd.c      |   11 +++++++++--
->  include/linux/blkdev.h |    1 +
->  3 files changed, 55 insertions(+), 2 deletions(-)
+>  drivers/gpu/drm/radeon/radeon_atpx_handler.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> --- a/block/scsi_ioctl.c
-> +++ b/block/scsi_ioctl.c
-> @@ -24,6 +24,7 @@
->  #include <linux/capability.h>
->  #include <linux/completion.h>
->  #include <linux/cdrom.h>
-> +#include <linux/ratelimit.h>
->  #include <linux/slab.h>
->  #include <linux/times.h>
->  #include <asm/uaccess.h>
-> @@ -690,9 +691,53 @@ int scsi_cmd_ioctl(struct request_queue
->  }
->  EXPORT_SYMBOL(scsi_cmd_ioctl);
->  
-> +int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
-> +{
-> +       if (bd && bd == bd->bd_contains)
-> +               return 0;
-> +
-> +       /* Actually none of these is particularly useful on a partition,
-> +        * but they are safe.
-> +        */
-> +       switch (cmd) {
-> +       case SCSI_IOCTL_GET_IDLUN:
-> +       case SCSI_IOCTL_GET_BUS_NUMBER:
-> +       case SCSI_IOCTL_GET_PCI:
-> +       case SCSI_IOCTL_PROBE_HOST:
-> +       case SG_GET_VERSION_NUM:
-> +       case SG_SET_TIMEOUT:
-> +       case SG_GET_TIMEOUT:
-> +       case SG_GET_RESERVED_SIZE:
-> +       case SG_SET_RESERVED_SIZE:
-> +       case SG_EMULATED_HOST:
-> +               return 0;
-> +       case CDROM_GET_CAPABILITY:
-> +               /* Keep this until we remove the printk below.  udev sends it
-> +                * and we do not want to spam dmesg about it.   CD-ROMs do
-> +                * not have partitions, so we get here only for disks.
-> +                */
-> +               return -ENOTTY;
-> +       default:
-> +               break;
-> +       }
-> +
-> +       /* In particular, rule out all resets and host-specific ioctls.  */
-> +       printk_ratelimited(KERN_WARNING
-> +                          "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
-> +
-> +       return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
-> +}
-> +EXPORT_SYMBOL(scsi_verify_blk_ioctl);
-> +
->  int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
->                        unsigned int cmd, void __user *arg)
->  {
-> +       int ret;
-> +
-> +       ret = scsi_verify_blk_ioctl(bd, cmd);
-> +       if (ret < 0)
-> +               return ret;
-> +
->         return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
->  }
->  EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -1074,6 +1074,10 @@ static int sd_ioctl(struct block_device
->         SCSI_LOG_IOCTL(1, sd_printk(KERN_INFO, sdkp, "sd_ioctl: disk=%s, "
->                                     "cmd=0x%x\n", disk->disk_name, cmd));
->  
-> +       error = scsi_verify_blk_ioctl(bdev, cmd);
-> +       if (error < 0)
-> +               return error;
-> +
->         /*
->          * If we are in the middle of error recovery, don't let anyone
->          * else try and use this device.  Also, if error recovery fails, it
-> @@ -1266,6 +1270,11 @@ static int sd_compat_ioctl(struct block_
->                            unsigned int cmd, unsigned long arg)
->  {
->         struct scsi_device *sdev = scsi_disk(bdev->bd_disk)->device;
-> +       int ret;
-> +
-> +       ret = scsi_verify_blk_ioctl(bdev, cmd);
-> +       if (ret < 0)
-> +               return -ENOIOCTLCMD;
->  
->         /*
->          * If we are in the middle of error recovery, don't let anyone
-> @@ -1277,8 +1286,6 @@ static int sd_compat_ioctl(struct block_
->                 return -ENODEV;
->                
->         if (sdev->host->hostt->compat_ioctl) {
-> -               int ret;
-> -
->                 ret = sdev->host->hostt->compat_ioctl(sdev, cmd, (void __user *)arg);
->  
->                 return ret;
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -675,6 +675,7 @@ extern int blk_insert_cloned_request(str
->                                      struct request *rq);
->  extern void blk_delay_queue(struct request_queue *, unsigned long);
->  extern void blk_recount_segments(struct request_queue *, struct bio *);
-> +extern int scsi_verify_blk_ioctl(struct block_device *, unsigned int);
->  extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
->                               unsigned int, void __user *);
->  extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+> diff --git a/drivers/gpu/drm/radeon/radeon_atpx_handler.c b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+> index 9d95792..c666a5b 100644
+> --- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+> +++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+> @@ -58,7 +58,7 @@ static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
+>        }
+>
+>        obj = (union acpi_object *)buffer.pointer;
+> -       memcpy(bios+offset, obj->buffer.pointer, len);
+> +       memcpy(bios+offset, obj->buffer.pointer, obj->buffer.length);
+>        kfree(buffer.pointer);
+>        return len;
+>  }
+> --
+> 1.7.5.1
+>
