@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab2AXXqy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 18:46:54 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:43750 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab2AXXqx (ORCPT
+	id S1754093Ab2AXXuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 18:50:44 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:59122 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab2AXXum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 18:46:53 -0500
-Message-ID: <1327448809.14373.6.camel@edumazet-laptop>
-Subject: Re: [GIT PULL] RCU changes for v3.3
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 25 Jan 2012 00:46:49 +0100
-In-Reply-To: <20120124232911.GA11327@linux.vnet.ibm.com>
-References: <20120105135432.GA31450@elte.hu>
-	 <1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20120124165312.GG2531@linux.vnet.ibm.com>
-	 <1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20120124194140.GB2381@linux.vnet.ibm.com>
-	 <1327435069.2767.1.camel@edumazet-laptop>
-	 <20120124211137.GD2381@linux.vnet.ibm.com>
-	 <20120124232911.GA11327@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 24 Jan 2012 18:50:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJd=RBAuDABE7u1wyc+45ZGoVos5PnxMe6P=ET-CHf-LChTpgw@mail.gmail.com>
+References: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
+	<20120123130221.GA15113@tiehlicka.suse.cz>
+	<CALWz4izWYb=_svn=UJ1C--pWXv59H2ahn6EJEnTpJv-dT6WGsw@mail.gmail.com>
+	<CAJd=RBAuDABE7u1wyc+45ZGoVos5PnxMe6P=ET-CHf-LChTpgw@mail.gmail.com>
+Date: Tue, 24 Jan 2012 15:50:40 -0800
+Message-ID: <CALWz4iwa=d_CDgUmsWB=xaS-7-X+r+2riD7HM3yxHWRTyResOg@mail.gmail.com>
+Subject: Re: [PATCH] mm: memcg: fix over reclaiming mem cgroup
+From: Ying Han <yinghan@google.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 24 janvier 2012 à 15:29 -0800, Paul E. McKenney a écrit :
+On Mon, Jan 23, 2012 at 7:26 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> Hi all
+>
+> On Tue, Jan 24, 2012 at 3:14 AM, Ying Han <yinghan@google.com> wrote:
+>> On Mon, Jan 23, 2012 at 5:02 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>>> On Sat 21-01-12 22:49:23, Hillf Danton wrote:
+>>>> In soft limit reclaim, overreclaim occurs when pages are reclaimed from mem
+>>>> group that is under its soft limit, or when more pages are reclaimd than the
+>>>> exceeding amount, then performance of reclaimee goes down accordingly.
+>>>
+>>> First of all soft reclaim is more a help for the global memory pressure
+>>> balancing rather than any guarantee about how much we reclaim for the
+>>> group.
+>>> We need to do more changes in order to make it a guarantee.
+>>> For example you implementation will cause severe problems when all
+>>> cgroups are soft unlimited (default conf.) or when nobody is above the
+>>> limit but the total consumption triggers the global reclaim. Therefore
+>>> nobody is in excess and you would skip all groups and only bang on the
+>>> root memcg.
+>
+> If soft limits are set to be limited and there are no excessors,
+> who are consuming physical pages? The consumers maybe those with soft
+> unlimited. If so, they should be punished first, based on the assumption that
+> the unlimited is treated with no guarantee. Then soft limit guarantee could
+> be assured without changes in the current default setting of soft limit, no?
 
-> And here is another version of the patch.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> x86: Avoid invoking RCU when CPU is idle
-> 
-> The idle loop is a quiscent state for RCU, which means that RCU ignores
-> CPUs that have told RCU that they are idle via rcu_idle_enter().  There
-> are nevertheless quite a few places where idle CPUs use RCU, most commonly
-> indirectly via tracing.  This patch fixes these problems for x86.
-> 
-> Many of these bugs have been in the kernel for quite some time, but
-> Frederic's recent change now gives warnings.
-> 
-> This patch takes the straightforward approach of pushing the
-> rcu_idle_enter()/rcu_idle_exit() pair further down into the core
-> of the idle loop.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
+The current code set the softlimit default to be RESOURCE_MAX, but we
+do have plan to change it to 0. Then every cgroup will be eligible for
+soft limit reclaim unless we set it otherwise. Not sure if that will
+answer some of the questions?
 
-Oh well, just when I decided to sleep a bit, you send a new patch :)
+>
+> With soft limit available, victims are only selected from excessors, I think.
+>
+>>>
+>>> Ying Han has a patch which basically skips all cgroups which are under
+>>> its limit until we reach a certain reclaim priority but even for this we
+>>> need some additional changes - e.g. reverse the current default setting
+>>> of the soft limit.
+>>>
+>>> Anyway, I like the nr_to_reclaim reduction idea because we have to do
+>>> this in some way because the global reclaim starts with ULONG
+>>> nr_to_scan.
+>>
+>> Agree with Michal where there are quite a lot changes we need to get
+>> in for soft limit before any further optimization.
+>>
+>> Hillf, please refer to the patch from Johannes
+>> https://lkml.org/lkml/2012/1/13/99 which got quite a lot recent
+>> discussions. I am expecting to get that in before further soft limit
+>> changes.
+>>
+>
+> Johannes did great cleanup, why barriered?
 
-This seems to remove the warnings at least on my x86_64 server, thanks !
+Not sure about the barriered here. As far as I can tell, some changes
+we are talking about here would be easier to be applied after that
+cleanup.
 
-Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-
-
+--Ying
+>
+> Thanks
+> Hillf
