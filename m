@@ -1,114 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2AXFbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 00:31:42 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:55052 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab2AXFbS (ORCPT
+	id S1753414Ab2AXFgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 00:36:10 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33310 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab2AXFgH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 00:31:18 -0500
-From: Sasha Levin <levinsasha928@gmail.com>
-To: sjur.brandeland@stericsson.com, davem@davemloft.net, davej@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] net: caif: Don't act on notification for non-caif devices
-Date: Tue, 24 Jan 2012 02:30:29 -0500
-Message-Id: <1327390229-30170-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.3
+	Tue, 24 Jan 2012 00:36:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzP4xEbcNmZ+MS0SQ3LrULzSq+dBiT_X9U-bPpR-Ukgrw@mail.gmail.com>
+References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
+	<1327139539-14301-7-git-send-email-yinghai@kernel.org>
+	<CA+55aFzP4xEbcNmZ+MS0SQ3LrULzSq+dBiT_X9U-bPpR-Ukgrw@mail.gmail.com>
+Date: Mon, 23 Jan 2012 21:36:07 -0800
+X-Google-Sender-Auth: luq7M0LCusDHUV8aVd_oKNUg86Y
+Message-ID: <CAE9FiQVWtqinNYLRo34VNtUavYm6ifq_tp2f3Rr9+Pyc59DEnQ@mail.gmail.com>
+Subject: Re: [PATCH 6/7] pciehp: Add Disable/enable link functions
+From: Yinghai Lu <yinghai@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we assume every notification happens within a network namespace
-in which CAIF was already initialized. This is not true when we're copying
-the namespace and the notifier is being called before the initialization
-code runs.
+On Mon, Jan 23, 2012 at 8:13 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sat, Jan 21, 2012 at 1:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> +
+>> +       retval = pciehp_readw(ctrl, PCI_EXP_LNKCTL, &lnk_ctrl);
+>> +       if (retval) {
+>> +               ctrl_err(ctrl, "Cannot read LNKCTRL register\n");
+>> +               return retval;
+>> +       }
+>
+> Is there really any point at all in checking the return value of that
+> readw() function?
+>
+> Nobody actually ever sets it. We should stop even bothering to pretend
+> to care. There is no return value in real life.
+>
+> If the device doesn't exist or the read fails, you will never ever get
+> an error *anyway*. You'll likely get 0xffff, and possibly a machine
+> check exception. And that is unlikely to ever change - even if the
+> hardware were to do it, it's insane to do error checking on an
+> individual IO level. It causes more problems than it could possibly
+> ever solve - error checking has to be done at a different level than
+> on some random individual access.
+>
+> We should make the return type of pci_read_config_word() be 'void',
+> instead of having code like this that looks like it is careful, but in
+> actual fact in reality is just totally pointless.
 
-Since the list of CAIF devices is stored in the net generic struct in each
-net namespace, which is not initialized at that point, we see the following
-BUG():
+looks like
 
-[  200.752016] kernel BUG at include/net/netns/generic.h:40!
-[  200.752016] invalid opcode: 0000 [#1] PREEMPT SMP
-[  200.752016] CPU 0
-[  200.752016] Pid: 18013, comm: trinity Not tainted 3.3.0-rc1-next-20120123-sasha-dirty #134
-[  200.752016] RIP: 0010:[<ffffffff825c3dd6>]  [<ffffffff825c3dd6>] get_cfcnfg+0x126/0x180
-[  200.752016] RSP: 0018:ffff88000fbabb00  EFLAGS: 00010202
-[  200.752016] RAX: 0000000000000001 RBX: 0000000000000016 RCX: 0000000000000000
-[  200.752016] RDX: 0000000000000001 RSI: ffffffff8323c620 RDI: 0000000000000286
-[  200.752016] RBP: ffff88000fbabb20 R08: 0000000000000003 R09: 0000000000000001
-[  200.752016] R10: 0000000000000000 R11: 0000000000000001 R12: ffff88000502b480
-[  200.752016] R13: ffffffff836b9440 R14: 0000000000000000 R15: 0000000000000010
-[  200.752016] FS:  00007f6c3af86700(0000) GS:ffff880013a00000(0000) knlGS:0000000000000000
-[  200.752016] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  200.752016] CR2: 00007f7a60186f60 CR3: 000000000fb3b000 CR4: 00000000000406f0
-[  200.752016] DR0: ffffffff810ab5e0 DR1: 0000000000000000 DR2: 0000000000000000
-[  200.752016] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000600
-[  200.752016] Process trinity (pid: 18013, threadinfo ffff88000fbaa000, task ffff880005002000)
-[  200.752016] Stack:
-[  200.752016]  ffffffff825c3cea ffffffff821cf0b0 ffff88000504d000 00000000ffffffd2
-[  200.752016]  ffff88000fbabb80 ffffffff825c41be ffff88000fbabb80 0000000000000001
-[  200.752016]  0000000000000001 ffff880005002000 ffff88000fbabb80 ffff88000504d000
-[  200.752016] Call Trace:
-[  200.752016]  [<ffffffff825c3cea>] ? get_cfcnfg+0x3a/0x180
-[  200.752016]  [<ffffffff821cf0b0>] ? lockdep_rtnl_is_held+0x10/0x20
-[  200.752016]  [<ffffffff825c41be>] caif_device_notify+0x2e/0x530
-[  200.752016]  [<ffffffff810d61b7>] notifier_call_chain+0x67/0x110
-[  200.752016]  [<ffffffff810d67c1>] raw_notifier_call_chain+0x11/0x20
-[  200.752016]  [<ffffffff821bae82>] call_netdevice_notifiers+0x32/0x60
-[  200.752016]  [<ffffffff821c2b26>] register_netdevice+0x196/0x300
-[  200.752016]  [<ffffffff821c2ca9>] register_netdev+0x19/0x30
-[  200.752016]  [<ffffffff81c1c67a>] loopback_net_init+0x4a/0xa0
-[  200.752016]  [<ffffffff821b5e62>] ops_init+0x42/0x180
-[  200.752016]  [<ffffffff821b600b>] setup_net+0x6b/0x100
-[  200.752016]  [<ffffffff821b6466>] copy_net_ns+0x86/0x110
-[  200.752016]  [<ffffffff810d5789>] create_new_namespaces+0xd9/0x190
-[  200.752016]  [<ffffffff810d5964>] copy_namespaces+0x84/0xc0
-[  200.752016]  [<ffffffff810aab0f>] copy_process+0xa2f/0x14c0
-[  200.752016]  [<ffffffff810d54de>] ? up_read+0x1e/0x40
-[  200.752016]  [<ffffffff810ab653>] do_fork+0x73/0x340
-[  200.752016]  [<ffffffff8265f5fc>] ? __mutex_unlock_slowpath+0x10c/0x200
-[  200.752016]  [<ffffffff8110c7bd>] ? trace_hardirqs_on+0xd/0x10
-[  200.752016]  [<ffffffff82662add>] ? retint_swapgs+0x13/0x1b
-[  200.752016]  [<ffffffff810554b3>] sys_clone+0x23/0x30
-[  200.752016]  [<ffffffff82663743>] stub_clone+0x13/0x20
-[  200.752016]  [<ffffffff826633b9>] ? system_call_fastpath+0x16/0x1b
-[  200.752016] Code: dc 82 c6 05 71 b1 32 02 01 e8 47 dc b4 fe e9 6c ff ff ff 66 90 48 c7 c7 20 c6 23 83 e8 14 9e b4 fe 85 c0 0f 85 56 ff ff ff eb c4 <0f> 0b 80 3d 45 b1 32 02 01 90 0f 84 04 ff ff ff be f2 00 00 00
-[  200.752016] RIP  [<ffffffff825c3dd6>] get_cfcnfg+0x126/0x180
-[  200.752016]  RSP <ffff88000fbabb00>
+#define PCI_OP_READ(size,type,len) \
+int pci_bus_read_config_##size \
+        (struct pci_bus *bus, unsigned int devfn, int pos, type *value) \
+{                                                                       \
+        int res;                                                        \
+        unsigned long flags;                                            \
+        u32 data = 0;                                                   \
+        if (PCI_##size##_BAD) return PCIBIOS_BAD_REGISTER_NUMBER;       \
+        raw_spin_lock_irqsave(&pci_lock, flags);                        \
+        res = bus->ops->read(bus, devfn, pos, len, &data);              \
+        *value = (type)data;                                            \
+        raw_spin_unlock_irqrestore(&pci_lock, flags);           \
+        return res;                                                     \
+}
 
-Instead, we'll first check if the device in the notification is a CAIF device:
- - If it is - the net generic struct in that namespace must have been already
-initialized.
- - If not - just ignore it as we don't care about other devices.
+will check register number. like we can not pass 0x01 but want to read
+word and dword.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- net/caif/caif_dev.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+also bus ops read/write like pci_mmcfg_read/write will double check if
+passed bus/dev/fn/reg
+ranges.
 
-diff --git a/net/caif/caif_dev.c b/net/caif/caif_dev.c
-index 673728a..75b9803 100644
---- a/net/caif/caif_dev.c
-+++ b/net/caif/caif_dev.c
-@@ -372,13 +372,16 @@ static int caif_device_notify(struct notifier_block *me, unsigned long what,
- 	int head_room = 0;
- 	struct caif_device_entry_list *caifdevs;
- 
-+	if (dev->type != ARPHRD_CAIF)
-+		return 0;
-+
- 	cfg = get_cfcnfg(dev_net(dev));
- 	caifdevs = caif_device_list(dev_net(dev));
- 	if (!cfg || !caifdevs)
- 		return 0;
- 
- 	caifd = caif_get(dev);
--	if (caifd == NULL && dev->type != ARPHRD_CAIF)
-+	if (caifd == NULL)
- 		return 0;
- 
- 	switch (what) {
--- 
-1.7.8.3
+Thanks
 
+Yinghai
