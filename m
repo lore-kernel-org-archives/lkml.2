@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab2AXU0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 15:26:15 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61493 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756262Ab2AXU0N (ORCPT
+	id S1756892Ab2AXUaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 15:30:11 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:41640 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645Ab2AXUaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 15:26:13 -0500
-Date: Wed, 25 Jan 2012 00:26:06 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v4
-Message-ID: <20120124202606.GC2546@moon>
-References: <20120123142436.258631438@openvz.org>
- <20120124111655.b29264d2.kamezawa.hiroyu@jp.fujitsu.com>
- <20120124064719.GA29735@moon>
- <4F1E57F3.6020607@zytor.com>
- <20120124071716.GC29735@moon>
- <20120124162031.a3956058.kamezawa.hiroyu@jp.fujitsu.com>
- <20120124073842.GE29735@moon>
- <20120124164008.aa1714bd.kamezawa.hiroyu@jp.fujitsu.com>
- <20120124084823.GF29735@moon>
- <CAHGf_=r=zwj4=yjCekYZVRsTwjohJ8F8cP4rnZx6UL9kKNTc+g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=r=zwj4=yjCekYZVRsTwjohJ8F8cP4rnZx6UL9kKNTc+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Jan 2012 15:30:09 -0500
+Date: Tue, 24 Jan 2012 15:29:52 -0500 (EST)
+Message-Id: <20120124.152952.59640686729726715.davem@davemloft.net>
+To: florian@openwrt.org
+Cc: rubini@gnudd.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        giancarlo.asnaghi@st.com, peppe.cavallaro@st.com
+Subject: Re: stmmac: fix phy naming inconsistency
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F1E90B6.6090106@openwrt.org>
+References: <20120124092648.GA26380@mail.gnudd.com>
+	<4F1E90B6.6090106@openwrt.org>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 Jan 2012 12:29:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 03:20:26PM -0500, KOSAKI Motohiro wrote:
-> >> please do as you like.
-> >
-> > So it should be something like below I think...
+From: Florian Fainelli <florian@openwrt.org>
+Date: Tue, 24 Jan 2012 12:06:30 +0100
+
+> Hello Alessandro,
 > 
-> Looks ok this version to me. So, if you fix other developers pointed
-> issue, I'll ack this.
+> On 01/24/12 10:26, Alessandro Rubini wrote:
+>> After commit "db8857b stmmac: use an unique MDIO bus name" my
+>> device stopped being probed because two different names were being
+>> used in different places. This fixes the inconsistency.
+>>
+>> Signed-off-by: Alessandro Rubini<rubini@gnudd.com>
+>> Acked-by: Giancarlo Asnaghi<giancarlo.asnaghi@st.com>
+>> Cc: Giuseppe Cavallaro<peppe.cavallaro@st.com>
+>> Cc: Florian Fainelli<florian@openwrt.org>
 > 
+> Acked-by: Florian Fainelli <florian@openwrt.org>
 
-Thanks!
-
-Eric, so mm/ would be fine or I still should move it to kernel/
-instead? I've addressed other issues I hope.
-
-	Cyrill
+Applied, thanks.
