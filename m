@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab2AXDEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 22:04:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50275 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932154Ab2AXCp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 21:45:26 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 18:39:29 2012
-Message-Id: <20120124023929.562607352@clark.kroah.org>
-User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 18:34:44 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>
-Subject: [064/129] kconfig/streamline-config.pl: Simplify backslash line concatination
-In-Reply-To: <20120124024041.GA18422@kroah.com>
+	id S932542Ab2AXDET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 22:04:19 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:57750 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932385Ab2AXDEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 22:04:13 -0500
+X-Sasl-enc: RvwT9bjcjdymma0Jq/a1b2z1+DyURV1JaZ/EZlrJhqVJ 1327374252
+Date: Mon, 23 Jan 2012 19:03:35 -0800
+From: Greg KH <greg@kroah.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org, gwingerde@gmail.com,
+        larry.finger@lwfinger.net, davem@davemloft.net,
+        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] drivers: misc: Remove MISC_DEVICES config option
+Message-ID: <20120124030335.GA15514@kroah.com>
+References: <1325796541-11402-1-git-send-email-festevam@gmail.com>
+ <CAOMZO5BQhcxViN3KnjhzF9hL1w04egkmb9njc7sDUB0GFdgBog@mail.gmail.com>
+ <20120106050355.GA7633@kroah.com>
+ <201201061200.44183.arnd@arndb.de>
+ <CAOMZO5A9qpgAhL9NZXL3uYqSVjDPchdmBMySzjD=uenndjY4bw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5A9qpgAhL9NZXL3uYqSVjDPchdmBMySzjD=uenndjY4bw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jan 24, 2012 at 12:57:36AM -0200, Fabio Estevam wrote:
+> Hi Greg,
+> 
+> On Fri, Jan 6, 2012 at 10:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > I think that is true for the majority of stuff we have under drivers/misc
+> > anyway. I had done the same patch that Fabio sent a couple of months ago
+> > but then forgot about it, so here is a wholehearted
+> >
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> >
+> > for the new patch. It fixes a real problem, and we applied a similar patch
+> > in drivers/mfd as 8a0a8e8e already. We probably still want to find a better
+> > home for drivers that frequently get selected by other subsystems as you
+> > said, but that is an independent issue. I don't see why anyone would
+> > need a way to disable all MISC drivers at once, when the only thing that
+> > (in theory) connects them is that they are all different from everything
+> > else.
+> 
+> Do you have any objections about this patch?
 
-------------------
-Content-Length: 1564
-Lines: 61
+Yes, I said my problems with it, I don't recall it being resent
+afterward, with any changes.
 
-From: Steven Rostedt <srostedt@redhat.com>
-
-commit d060d963e88f3e990cec2fe5214de49de9a49eca upstream.
-
-Simplify the way lines ending with backslashes (continuation) in Makefiles
-is parsed. This is needed to implement a necessary fix.
-
-Tested-by: Thomas Lange <thomas-lange2@gmx.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- scripts/kconfig/streamline_config.pl |   25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
-
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -253,17 +253,22 @@ if ($kconfig) {
- # Read all Makefiles to map the configs to the objects
- foreach my $makefile (@makefiles) {
- 
--    my $cont = 0;
-+    my $line = "";
- 
-     open(MIN,$makefile) || die "Can't open $makefile";
-     while (<MIN>) {
--	my $objs;
--
--	# is this a line after a line with a backslash?
--	if ($cont && /(\S.*)$/) {
--	    $objs = $1;
-+	# if this line ends with a backslash, continue
-+	chomp;
-+	if (/^(.*)\\$/) {
-+	    $line .= $1;
-+	    next;
- 	}
--	$cont = 0;
-+
-+	$line .= $_;
-+	$_ = $line;
-+	$line = "";
-+
-+	my $objs;
- 
- 	# collect objects after obj-$(CONFIG_FOO_BAR)
- 	if (/obj-\$\((CONFIG_[^\)]*)\)\s*[+:]?=\s*(.*)/) {
-@@ -271,12 +276,6 @@ foreach my $makefile (@makefiles) {
- 	    $objs = $2;
- 	}
- 	if (defined($objs)) {
--	    # test if the line ends with a backslash
--	    if ($objs =~ m,(.*)\\$,) {
--		$objs = $1;
--		$cont = 1;
--	    }
--
- 	    foreach my $obj (split /\s+/,$objs) {
- 		$obj =~ s/-/_/g;
- 		if ($obj =~ /(.*)\.o$/) {
-
-
+greg k-h
