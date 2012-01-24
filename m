@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2AXAGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jan 2012 19:06:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42358 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755472Ab2AWXrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jan 2012 18:47:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Jan 23 15:40:23 2012
-Message-Id: <20120123234023.332777619@clark.kroah.org>
-User-Agent: quilt/0.50-11.1
-Date: Mon, 23 Jan 2012 15:38:50 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [04/90] mtd: tests: stresstest: bail out if device has not enough eraseblocks
-In-Reply-To: <20120123234211.GA19504@kroah.com>
+	id S1755713Ab2AXAGT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jan 2012 19:06:19 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51665 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755415Ab2AXAGP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jan 2012 19:06:15 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-mips@linux-mips.org
+Subject: [PATCH 3/3] clocksource: Convert mips pnx8550 to use clocksource_register_hz
+Date: Mon, 23 Jan 2012 16:05:50 -0800
+Message-Id: <1327363550-19952-4-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
+References: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012400-7282-0000-0000-000005DDD2CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This patch converts the registration to use clocksource_register_hz()
+but is clearly broken, as the pnx_clocksource doesn't seem to set a
+proper mult/shift pair.
 
-------------------
-
-From: Wolfram Sang <w.sang@pengutronix.de>
-
-commit 2f4478ccff7df845dc9c0f8996a96373122c4417 upstream.
-
-stresstest needs at least two eraseblocks. Bail out gracefully if that
-condition is not met. Fixes the following 'division by zero' OOPS:
-
-[  619.100000] mtd_stresstest: MTD device size 131072, eraseblock size 131072, page size 2048, count of eraseblocks 1, pages per eraseblock 64, OOB size 64
-[  619.120000] mtd_stresstest: scanning for bad eraseblocks
-[  619.120000] mtd_stresstest: scanned 1 eraseblocks, 0 are bad
-[  619.130000] mtd_stresstest: doing operations
-[  619.130000] mtd_stresstest: 0 operations done
-[  619.140000] Division by zero in kernel.
-...
-
-caused by
-
-        /* Read or write up 2 eraseblocks at a time - hence 'ebcnt - 1' */
-        eb %= (ebcnt - 1);
-
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+CC: Ralf Baechle <ralf@linux-mips.org>
+CC: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-mips@linux-mips.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/mtd/tests/mtd_stresstest.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/mips/pnx8550/common/time.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
---- a/drivers/mtd/tests/mtd_stresstest.c
-+++ b/drivers/mtd/tests/mtd_stresstest.c
-@@ -277,6 +277,12 @@ static int __init mtd_stresstest_init(vo
- 	       (unsigned long long)mtd->size, mtd->erasesize,
- 	       pgsize, ebcnt, pgcnt, mtd->oobsize);
+diff --git a/arch/mips/pnx8550/common/time.c b/arch/mips/pnx8550/common/time.c
+index 831d6b3..006ac88 100644
+--- a/arch/mips/pnx8550/common/time.c
++++ b/arch/mips/pnx8550/common/time.c
+@@ -104,7 +104,12 @@ __init void plat_time_init(void)
  
-+	if (ebcnt < 2) {
-+		printk(PRINT_PREF "error: need at least 2 eraseblocks\n");
-+		err = -ENOSPC;
-+		goto out_put_mtd;
-+	}
-+
- 	/* Read or write up 2 eraseblocks at a time */
- 	bufsize = mtd->erasesize * 2;
+ 	pnx8xxx_clockevent.cpumask = cpu_none_mask;
+ 	clockevents_register_device(&pnx8xxx_clockevent);
+-	clocksource_register(&pnx_clocksource);
++	
++	/*
++	 * XXX - Nothing seems to set pnx_clocksource mult/shift! 
++	 * So I don't know what freq to use here. Help! -johnstul
++	 */
++	clocksource_register_hz(&pnx_clocksource, 0);
  
-@@ -315,6 +321,7 @@ out:
- 	kfree(bbt);
- 	vfree(writebuf);
- 	vfree(readbuf);
-+out_put_mtd:
- 	put_mtd_device(mtd);
- 	if (err)
- 		printk(PRINT_PREF "error %d occurred\n", err);
-
+ 	/* Timer 1 start */
+ 	configPR = read_c0_config7();
+-- 
+1.7.3.2.146.gca209
 
