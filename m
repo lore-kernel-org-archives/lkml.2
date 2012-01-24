@@ -1,191 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab2AXNUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 08:20:08 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:24325 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab2AXNUG (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 24 Jan 2012 08:20:06 -0500
-Message-ID: <4F1EAFE9.5000306@suse.com>
-Date: Tue, 24 Jan 2012 18:49:37 +0530
-From: Suresh Jayaraman <sjayaraman@suse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
+	id S1756484Ab2AXNYb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 08:24:31 -0500
+Received: from jcz.nl ([213.196.18.5]:53520 "EHLO jcz.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754741Ab2AXNYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 08:24:30 -0500
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jan 2012 08:24:29 EST
+Message-ID: <4F1EAF68.8030807@jcz.nl>
+Date: Tue, 24 Jan 2012 14:17:28 +0100
+From: Jaap Crezee <jaap@jcz.nl>
+Reply-To: jaap@jcz.nl
+Organization: JCZ-Automatisering
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Slab corruption in floppy driver module
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org
+Subject: hald-addon-stor oops on removing USB storage device
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms030901070605080205020101"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is a cryptographically signed message in MIME format.
 
-Got a spew of slab corruption messages during boot on 3.2 vanilla
-kernel with DEBUG_SLAB enabled.
+--------------ms030901070605080205020101
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---- cut-here ---
-[    9.643858] pciehp: PCI Express Hot Plug Controller Driver version: 0.4
-[   10.792691] Slab corruption: blkdev_queue start=ffff88042407e088, len=2104
-[   10.799280] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-[   10.805825] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
-[   10.812404] 4e0: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-jkkkkkkkkkkkkkkk
-[   10.818984] Single bit error detected. Probably bad RAM.
-[   10.825554] Run memtest86+ or a similar memory test tool.
-[   10.832125] Next obj: start=ffff88042407e8d8, len=2104
-[   10.838656] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-[   10.845168] Last user: [<          (null)>](0x0)
-[   10.851646] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-kkkkkkkkkkkkkkkk
-[   10.858222] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-kkkkkkkkkkkkkkkk
-[   10.865320] loop: module loaded
-[   10.896232] kjournald starting.  Commit interval 5 seconds
-[   10.896368] EXT3-fs (sda5): using internal journal
-[   10.896373] EXT3-fs (sda5): mounted filesystem with ordered data mode
-[   10.915290] kjournald starting.  Commit interval 5 seconds
-[   10.915385] EXT3-fs (sda3): using internal journal
-[   10.915388] EXT3-fs (sda3): mounted filesystem with ordered data mode
-[   12.361444] fuse init (API version 7.17)
-[   15.776067] Slab corruption: blkdev_queue start=ffff880424d72148, len=2104
-[   15.776074] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-[   15.776076] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
-[   15.776087] 4e0: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-jkkkkkkkkkkkkkkk
-[   15.776092] Single bit error detected. Probably bad RAM.
-[   15.776095] Run memtest86+ or a similar memory test tool.
-[   15.776100] Next obj: start=ffff880424d72998, len=2104
-[   15.776103] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-[   15.776106] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
-[   15.776111] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-kkkkkkkkkkkkkkkk
-[   15.776116] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-kkkkkkkkkkkkkkkk
-[   15.776122] Slab corruption: blkdev_queue start=ffff880424d72998, len=2104
-[   15.776126] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-[   15.776128] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
-[   15.776133] 4e0: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-jkkkkkkkkkkkkkkk
-[   15.776137] Single bit error detected. Probably bad RAM.
-[   15.776139] Run memtest86+ or a similar memory test tool.
-[   15.776144] Prev obj: start=ffff880424d72148, len=2104
-[   15.776146] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-[   15.776150] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
-[   15.776155] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-kkkkkkkkkkkkkkkk
-[   15.776159] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-kkkkkkkkkkkkkkkk
-[   15.776164] Next obj: start=ffff880424d731e8, len=2104
-[   15.776168] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-[   15.776170] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
-[   15.776175] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-kkkkkkkkkkkkkkkk
-[   15.776178] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-kkkkkkkkkkkkkkkk
-[   15.776185] Slab corruption: blkdev_queue start=ffff880424d731e8, len=2104
-[   15.776188] Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-[   15.776190] Last user: [<ffffffff812c6580>](kobject_cleanup+0x80/0x1d0)
-[   15.776195] 4e0: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 
-jkkkkkkkkkkkkkkk
-[   15.776199] Single bit error detected. Probably bad RAM.
-[   15.776202] Run memtest86+ or a similar memory test tool.
-[   15.776206] Prev obj: start=ffff880424d72998, len=2104
---- cut-here ---
+Hello all,
 
-After enabling DEBUG_PAGEALLOC the box oopsed and I was able to see the
-problem.
+I sometimes (1 out of 10, maybe 20) get the following oops on removing a =
+usb stick after running umount & sync (and waiting for them to complete).=
 
---- cut-here ---
-[   33.228029] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[   33.228029] CPU 5
-[   33.228029] Modules linked in: dcdbas i5k_amb bnx2 i5000_edac vhost_net
-iTCO_wdt edac_core macvtap macvlan tun ses enclosure kvm_intel
-iTCO_vendor_support shpchp kvm pci_hotplug sg serio_raw sr_mod cdrom button
-rtc_cmos pcspkr floppy(+) usbhid hid radeon ttm drm_kms_helper drm i2c_algo_bit
-i2c_core uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif processor
-thermal_sys hwmon ext3 mbcache jbd ata_generic ata_piix libata megaraid_sas
-scsi_mod
-[   33.228029] Supported: Yes
-[   33.228029]
-[   33.228029] Pid: 1161, comm: modprobe Tainted: G           N  3.2.0-1-debug
-#2 Dell Inc. PowerEdge 2950/0H603H
-[   33.228029] RIP: 0010:[<ffffffff81275371>]  [<ffffffff81275371>]
-kobject_put+0x11/0x60
-[   33.228029] RSP: 0018:ffff88041dd9bda8  EFLAGS: 00010286
-[   33.228029] RAX: 0000000000000000 RBX: ffff88041d986c60 RCX:
-ffff88043fd40000
-[   33.228029] RDX: 000000000000e1ac RSI: 0000000000000286 RDI:
-ffff88041d986c60
-[   33.228029] RBP: ffff88041dd9bdb8 R08: 0000000000000000 R09:
-0000000000000009
-[   33.228029] R10: 0000000000000028 R11: 0000000000000000 R12:
-ffff88041da9bc58
-[   33.228029] R13: 0000000000000000 R14: 0000000000000008 R15:
-00000000ffffffed
-[   33.228029] FS:  00007f86dd2ba700(0000) GS:ffff88043fd40000(0000)
-knlGS:0000000000000000
-[   33.228029] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   33.228029] CR2: ffff88041d986c9c CR3: 0000000424796000 CR4:
-00000000000006e0
-[   33.228029] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[   33.228029] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[   33.228029] Process modprobe (pid: 1161, threadinfo ffff88041dd9a000, task
-ffff88041d998680)
-[   33.228029] Stack:
-[   33.228029]  ffff88041da9bbf0 ffff88041da9bbf0 ffff88041dd9bdc8
-ffffffff81243a15
-[   33.372026]  ffff88041dd9bde8 ffffffff8124d4ff 0000000000000000
-ffffffff81a794e0
-[   33.372026]  ffff88041dd9be08 ffffffff8134f517 ffff88041dd9be28
-ffff88041da9bc68
-[   33.372026] Call Trace:
-[   33.372026]  [<ffffffff81243a15>] blk_put_queue+0x15/0x20
-[   33.372026]  [<ffffffff8124d4ff>] disk_release+0x8f/0xd0
-[   33.372026]  [<ffffffff8134f517>] device_release+0x27/0xa0
-[   33.372026]  [<ffffffff812754fd>] kobject_cleanup+0x6d/0x1b0
-[   33.372026]  [<ffffffff8127564d>] kobject_release+0xd/0x10
-[   33.372026]  [<ffffffff81276b17>] kref_put+0x37/0x70
-[   33.372026]  [<ffffffff81275387>] kobject_put+0x27/0x60
-[   33.372026]  [<ffffffff8124dbf7>] put_disk+0x17/0x20
-[   33.372026]  [<ffffffffa00fa92c>] floppy_init+0x1c1/0x675 [floppy]
-[   33.372026]  [<ffffffffa00fae37>] floppy_module_init+0x57/0x220 [floppy]
-[   33.372026]  [<ffffffff810001d3>] do_one_initcall+0x43/0x180
-[   33.372026]  [<ffffffff810a526d>] sys_init_module+0xcd/0x240
-[   33.372026]  [<ffffffff8148d4c2>] system_call_fastpath+0x16/0x1b
-[   33.372026]  [<00007f86dce3406a>] 0x7f86dce34069
-[   33.372026] Code: eb cc 48 89 fe 31 c0 48 c7 c7 60 aa 7a 81 e8 26 c4 20 00
-e8 92 c1 20 00 eb 8e 55 48 89 e5 53 48 89 fb 48 83 ec 08 48 85 ff 74 16 <f6> 47
-3c 01 74 19 48 8d 7b 38 48 c7 c6 40 56 27 81 e8 59 17 00
-[   33.372026] RIP  [<ffffffff81275371>] kobject_put+0x11/0x60
-[   33.372026]  RSP <ffff88041dd9bda8>
-[   33.372026] CR2: ffff88041d986c9c
-[   33.372026] ---[ end trace f624c17dc6e4672a ]---
---- cut-here ---
+I am running linux 3.2.1. Is this a known issue of some kind? It looks as=
+ if this behauviour was not present in kernel versions prior to 2.6.39 bu=
+t I have no exact clue...
+3.x.y all had the same problem over here.
 
-What seems to be happening is after commit f992ae80, add_disk takes a
-extra reference to the queue which is supposed to be put in disk_release().
-In floppy_init() when there were "no floppy controllers found" the control
-goes to out_flush_work. Note that add_disk() is not being called at all and
-so extra reference not taken. We try to put_disk() and the call sequence is
-  put_disk()
-   kobject_put()
-    kref_put()
-     kobject_release()
-      kobject_cleanup()
-       device_release()
-        disk_release()
-         blk_put_queue()  <-- put without a get
-          kobject_put()
+Jan 24 14:02:33 jaaplaptop kernel: [24025.754785] Oops: 0000 [#1] PREEMPT=
+ SMP
+Jan 24 14:02:33 jaaplaptop kernel: [24025.754813] CPU 0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.754824] Modules linked in: ipaq=
+ pl2303 ftdi_sio usbserial nls_cp437 vfat fat usb_storage uas tun nfsd ex=
+portfs nfs nfs_acl lockd auth_rpcgss fscache sunrpc
+ipv6 ext3 jbd snd_hda_codec_hdmi snd_hda_codec_idt joydev hid_microsoft u=
+sbhid hid btusb bluetooth arc4 iwlwifi snd_hda_intel snd_hda_codec snd_hw=
+dep snd_pcm snd_page_alloc snd_timer mac80211 snd
+cfg80211 pcmcia i915 drm_kms_helper dell_wmi sparse_keymap ppdev evdev dr=
+m parport_pc firewire_ohci sdhci_pci yenta_socket rfkill intel_agp sdhci =
+pcmcia_rsrc firewire_core iTCO_wdt pcmcia_core
+crc_itu_t iTCO_vendor_support psmouse e1000e serio_raw i2c_i801 i2c_algo_=
+bit wmi processor ac parport intel_gtt mmc_core intel_ips soundcore butto=
+n battery video kvm_intel kvm synaptics_i2c i2c_core
+coretemp vboxnetflt(O) vboxdrv(O) ext4 mbcache jbd2 crc16 sr_mod cdrom sd=
+_mod ahci libahci libata scsi_mod ehci_hcd usbcore usb_common [last unloa=
+ded: ftdi_sio]
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755480]
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755491] Pid: 19567, comm: hald-=
+addon-stor Tainted: G           O 3.2.1-1-ARCH #1 Dell Inc. Latitude E651=
+0/02K3Y4
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755533] RIP: 0010:[<ffffffffa00=
+710e5>]  [<ffffffffa00710e5>] sd_revalidate_disk+0x35/0x1c90 [sd_mod]
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755572] RSP: 0018:ffff880210413=
+a28  EFLAGS: 00010246
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755592] RAX: 0000000000000000 R=
+BX: 0000000000000000 RCX: 0000000000000002
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755617] RDX: 0000000000000000 R=
+SI: ffff8800cd8b6400 RDI: ffff8801f0989400
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755642] RBP: ffff880210413ae8 R=
+08: 0000000800000000 R09: 00000008ffffffff
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755672] R10: 0000000000000001 R=
+11: ffffc90000808000 R12: ffff8801f0989400
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755704] R13: 00000000ffffff85 R=
+14: ffff880210138718 R15: ffff8801f0989400
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755738] FS:  00007f286a6bd700(0=
+000) GS:ffff88021fc00000(0000) knlGS:0000000000000000
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755779] CS:  0010 DS: 0000 ES: =
+0000 CR0: 000000008005003b
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755812] CR2: 0000000000000008 C=
+R3: 00000001f0a3a000 CR4: 00000000000006f0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755847] DR0: 0000000000000000 D=
+R1: 0000000000000000 DR2: 0000000000000000
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755883] DR3: 0000000000000000 D=
+R6: 00000000ffff0ff0 DR7: 0000000000000400
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755920] Process hald-addon-stor=
+ (pid: 19567, threadinfo ffff880210412000, task ffff8801bfda63c0)
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755965] Stack:
+Jan 24 14:02:33 jaaplaptop kernel: [24025.755979]  ffff880210413a78 fffff=
+fff811817a4 ffff880210413a78 ffffffff8119d700
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756023]  ffff8801f098d020 ffff8=
+801f0989448 0000000000000000 00000000ffffff85
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756072]  ffff880210413a98 fffff=
+fff81169423 ffff8801f0989400 ffff8802101387f8
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756121] Call Trace:
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756144]  [<ffffffff811817a4>] ?=
+ iget5_locked+0x94/0x1f0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756173]  [<ffffffff8119d700>] ?=
+ bdev_test+0x20/0x20
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756200]  [<ffffffff81169423>] ?=
+ get_super+0x73/0xd0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756224]  [<ffffffff81181948>] ?=
+ iput+0x48/0x210
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756252]  [<ffffffff811d359a>] r=
+escan_partitions+0xaa/0x4d0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756292]  [<ffffffff8119f06e>] _=
+_blkdev_get+0x2ce/0x430
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756324]  [<ffffffff8117a120>] ?=
+ poll_freewait+0xe0/0xe0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756356]  [<ffffffff8119f223>] b=
+lkdev_get+0x53/0x310
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756384]  [<ffffffff8119f53d>] b=
+lkdev_open+0x5d/0x80
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756418]  [<ffffffff81165060>] _=
+_dentry_open+0x310/0x3f0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756449]  [<ffffffff8119f4e0>] ?=
+ blkdev_get+0x310/0x310
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756482]  [<ffffffff81172f60>] ?=
+ do_lookup+0x50/0x3d0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756515]  [<ffffffff81166371>] n=
+ameidata_to_filp+0x71/0x80
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756551]  [<ffffffff81176575>] d=
+o_last+0x185/0x970
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756582]  [<ffffffff81176e72>] p=
+ath_openat+0xd2/0x3c0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756614]  [<ffffffff81177282>] d=
+o_filp_open+0x42/0xa0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756649]  [<ffffffff811839ac>] ?=
+ alloc_fd+0xec/0x140
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756683]  [<ffffffff81166477>] d=
+o_sys_open+0xf7/0x1d0
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756717]  [<ffffffff81166570>] s=
+ys_open+0x20/0x30
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756751]  [<ffffffff814290c2
+Jan 24 14:02:33 jaaplaptop kernel: [24025.756787]
+Jan 24 14:02:33 jaaplaptop kernel: [24025.757094] RIP  [<ffffffffa00710e5=
+>] sd_revalidate_disk+0x35/0x1c90 [sd_mod]
+Jan 24 14:02:33 jaaplaptop kernel: [24
+Jan 24 14:02:33 jaaplaptop kernel: [24025.757171] CR2: 0000000000000008
+Jan 24 14:02:33 jaaplaptop kernel: [24025.880389] ---[ end trace 57e76
 
 
-Reverting f992ae80 makes the oops and the slab corruption messages disappear.
-The "no floppy controllers found" message was found in the dmesg.
+Kind regards,
+
+Jaap Crezee
 
 
-Thanks
-Suresh
+--------------ms030901070605080205020101
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIFbTCC
+BWkwggNRoAMCAQICAwnAGTANBgkqhkiG9w0BAQUFADB5MRAwDgYDVQQKEwdSb290IENBMR4w
+HAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmlu
+ZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZzAeFw0xMTAx
+MjgwODEzMDZaFw0xMzAxMjcwODEzMDZaMGIxHjAcBgNVBAMTFUphY29iIEJlbmphbWluIENy
+ZXplZTEaMBgGCSqGSIb3DQEJARYLamFhcEBqY3oubmwxJDAiBgkqhkiG9w0BCQEWFWphYXAu
+Y3JlemVlQGltdGVjaC5ubDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANnfQCy6
+Zrxwlai9XI3qiMDrGK1fFs1OrFjujjwfGCddd/WoXA+5F0dLUtfSxO1YrqTrxRL3WUI/q4Zi
+B6AqoPDsp0BcytjTkfILUxwzV2oBkJ29Ksz76fuaroK1IaeOzRujNSzoqKUJNiykISxyIuQM
+odYWpuZxMifCKoRUNtMYzOJH1N8dd4IpY1DK7pfTqm9Z/ToY7J7zNlgsC9DYKat1iNGO1HN2
+hhjPRAqT9Obc/1Bj9BtbObVi7aa88kzbnzNyenkDH+JmfY75I06SHZXOp37ErQcV3SUBeHWS
+uftf/xyKekrhDWL4JM3ELaj9r0+TdhbyV4S1bG03D5IU0zMCAwEAAaOCAQ8wggELMAwGA1Ud
+EwEB/wQCMAAwVgYJYIZIAYb4QgENBEkWR1RvIGdldCB5b3VyIG93biBjZXJ0aWZpY2F0ZSBm
+b3IgRlJFRSBoZWFkIG92ZXIgdG8gaHR0cDovL3d3dy5DQWNlcnQub3JnMEAGA1UdJQQ5MDcG
+CCsGAQUFBwMEBggrBgEFBQcDAgYKKwYBBAGCNwoDBAYKKwYBBAGCNwoDAwYJYIZIAYb4QgQB
+MDIGCCsGAQUFBwEBBCYwJDAiBggrBgEFBQcwAYYWaHR0cDovL29jc3AuY2FjZXJ0Lm9yZzAt
+BgNVHREEJjAkgQtqYWFwQGpjei5ubIEVamFhcC5jcmV6ZWVAaW10ZWNoLm5sMA0GCSqGSIb3
+DQEBBQUAA4ICAQB8quzWe1GvQwx1HFBCwMbB+0hthvbmDJP3eJRp2ADumRonhrmuRWaH4pqr
+wLmT6V65n56WPmO3Vb1FaZuzSP3sozBYJttwZCtptVny1SCI2E1zTpwii+I0+dmFMD3p5WE6
+s+p0pzqdi6uFgKAPtsMh5ZtR/eiSXpzT7MJ892c/t6WvEdNIZHhUan7QhyJfaebrfvdcgdVp
+26TYc0AkcLYUrQHNGG9qGykB78VJsPxF25qli2N+p0lQXJNcO4bUE5o7TxF3Q1BwGrVR+Z0C
+CLg1HVXUwUNQc/nClhNjy3MFyy0FsvEBERgAtIpm6XZ2qE7IyiwUcXwQlmP1BrOqgXPpoxhn
+KuYwNlbn08vxPsNo6/HZx3S8gMQNmcDQ7d/r4Zl8FmDxULHu3I+w83tUq8WfsfbJvry69MMR
+Y2OXtd84vai4Bv2Af6cXCBLZtz2aU57EFiIai8dgfa3fbQm5PJPt5u6DYmYR80GVV4P+oN8Q
+/EKOGH27VQQmgJq/CYrwFW1Dac5r0/kZP6z8lKtSRWdq6O6RRK5WpiRieOKnJBm0p0/cB5Om
+ytuZkW/wkSRXokbGedKhHRO4Ws/Lr0n9Z7yByVKVkWMGvQiFqv34cfTdduAv0xi55v/zL91u
+HsS1rSlnVWxLHxVeAOgk8KKaeYiIAquyk4n5xOWIBUdEGNUJ8zGCA5QwggOQAgEBMIGAMHkx
+EDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0Lm9yZzEiMCAG
+A1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJARYSc3VwcG9y
+dEBjYWNlcnQub3JnAgMJwBkwCQYFKw4DAhoFAKCCAegwGAYJKoZIhvcNAQkDMQsGCSqGSIb3
+DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwMTI0MTMxNzI4WjAjBgkqhkiG9w0BCQQxFgQUKoVR
+gvVDagEm93Q02kkgZfDrdzgwXwYJKoZIhvcNAQkPMVIwUDALBglghkgBZQMEAQIwCgYIKoZI
+hvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3
+DQMCAgEoMIGRBgkrBgEEAYI3EAQxgYMwgYAweTEQMA4GA1UEChMHUm9vdCBDQTEeMBwGA1UE
+CxMVaHR0cDovL3d3dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcgQXV0
+aG9yaXR5MSEwHwYJKoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcCAwnAGTCBkwYLKoZI
+hvcNAQkQAgsxgYOggYAweTEQMA4GA1UEChMHUm9vdCBDQTEeMBwGA1UECxMVaHR0cDovL3d3
+dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcgQXV0aG9yaXR5MSEwHwYJ
+KoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcCAwnAGTANBgkqhkiG9w0BAQEFAASCAQCG
+bIUe1Gk4jjJGVeXgUJdCM87g4f79O2MVah7IJcXY5oXUCABxq6UORXB1r/LjNnNR8t/BD7tZ
+H3TleXxRdMSowj+NON7N3v17W/eK2KdAbCBh9Dhr2CTWfa8tWn4GtSbCklXoyOXfYGjn/SmY
+yAPA+wNTaVlTyGmUfcGJSz2FRPdbuM7arm4zs5dAiCj2hP5/pBnGacQ0nj5LPmZ46PNOZHdG
+j2Q9psJhWzhMjHPYubTePaK40Bf//phFLUd4LGKv73Qfn7HW94Ie4G+aQs4YriJRi6jgj8OF
+vTHEgziBwaumtPUTYxXtg0rkPG7CF/e6gGR2TD6MorB09KtjUa7lAAAAAAAA
+--------------ms030901070605080205020101--
