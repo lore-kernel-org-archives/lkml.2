@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab2AXQhE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 11:37:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:1289 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755186Ab2AXQhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 11:37:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="115628685"
-Date: Tue, 24 Jan 2012 08:36:59 -0800
-From: Jesse Barnes <jesse.barnes@intel.com>
-To: "Kay, Allen M" <allen.m.kay@intel.com>
-Cc: "linux-pci-owner@vger.kernel.org" <linux-pci-owner@vger.kernel.org>,
-        "matt.wilcox@intel.com" <matt.wilcox@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jean.guyader@eu.citrix.com" <jean.guyader@eu.citrix.com>
-Subject: Re: [RFC][PATCH 1/1] check for pci bar restore completion and retry
-Message-ID: <20120124083659.0e2302b1@jbarnes-desktop>
-In-Reply-To: <1327362955-4137-1-git-send-email-allen.m.kay@intel.com>
-References: <1327362955-4137-1-git-send-email-allen.m.kay@intel.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	id S1755740Ab2AXQhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 11:37:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63859 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755691Ab2AXQhR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 11:37:17 -0500
+Subject: [PATCH] sched: Remove sched_switch completely from runqueue
+ structure.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: mingo@elte.hu, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Jan 2012 22:33:56 +0600
+Message-ID: <1327422836.27181.5.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_//71JbOe2e1uowBSzpplDG72"; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_//71JbOe2e1uowBSzpplDG72
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Currently we don't utilize sched_switch field properly for counting context switch numbers. We can remove it.
+But, simply removing sched_switch field from sched_stat output will break ABI integrity. So, we make sure 
+/proc/sched_stat output remains as it is by hardcoding zero in place of sched_switch field's output and remove
+sched_switch from sched_debug output too. And update scheduler-stat documentation accordingly.
 
-On Mon, 23 Jan 2012 15:55:55 -0800
-"Kay, Allen M" <allen.m.kay@intel.com> wrote:
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
 
-> On some OEM systems, pci_restore_state() is called while FLR has not yet
-> completed.  As a result, PCI BAR register restore is not successful.  Thi=
-s fix
-> reads back the restored value and compares it with saved value and re-tri=
-es
-> 10 times before giving up.
+diff --git a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
+index 1cd5d51..8259b34 100644
+--- a/Documentation/scheduler/sched-stats.txt
++++ b/Documentation/scheduler/sched-stats.txt
+@@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
+      1) # of times sched_yield() was called
+ 
+ Next three are schedule() statistics:
+-     2) # of times we switched to the expired queue and reused it
++     2) This field is a legacy array expiration count field used in the O(1)
++	scheduler. We kept it for ABI compatibility, but it is always set to zero.
+      3) # of times schedule() was called
+      4) # of times schedule() left the processor idle
+ 
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 2a075e1..09acaa1 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -288,7 +288,6 @@ static void print_cpu(struct seq_file *m, int cpu)
+ 
+ 	P(yld_count);
+ 
+-	P(sched_switch);
+ 	P(sched_count);
+ 	P(sched_goidle);
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 98c0c26..8a2c768 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -462,7 +462,6 @@ struct rq {
+ 	unsigned int yld_count;
+ 
+ 	/* schedule() stats */
+-	unsigned int sched_switch;
+ 	unsigned int sched_count;
+ 	unsigned int sched_goidle;
+ 
+diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
+index 2a581ba..903ffa9e 100644
+--- a/kernel/sched/stats.c
++++ b/kernel/sched/stats.c
+@@ -32,9 +32,9 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 
+ 		/* runqueue-specific stats */
+ 		seq_printf(seq,
+-		    "cpu%d %u %u %u %u %u %u %llu %llu %lu",
++		    "cpu%d %u 0 %u %u %u %u %llu %llu %lu",
+ 		    cpu, rq->yld_count,
+-		    rq->sched_switch, rq->sched_count, rq->sched_goidle,
++		    rq->sched_count, rq->sched_goidle,
+ 		    rq->ttwu_count, rq->ttwu_local,
+ 		    rq->rq_cpu_time,
+ 		    rq->rq_sched_info.run_delay, rq->rq_sched_info.pcount);
 
-But shouldn't we be doing this wait in the FLR code instead?
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
 
---Sig_//71JbOe2e1uowBSzpplDG72
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPHt4rAAoJEIEoDkX4Qk9hHXsP/RgEzqkU1LpqQkgfRJs9lf0G
-rFM6UhvZAx1WetyddEaC2ASJXVhzjnFLceJJTnUYOfF/FfrcefnXwQzxMn25jptW
-SPeQ2WjMaMZ7PDligIW75mDOu9IBWCg377hxvUXFno+xAFeVit3866iglD7hNZ22
-vI55ZyhyaVyWTlyhksEAmkmepfCv2ONHI9hRdpaWR1rypWNtDPkmkuQW8ubAZYFc
-ouX40xEwJx2zphPLNFZXDeChR2Dsl4zwNARhbIlTO9P0IaJINSX5q5t07jfoXJpB
-+AZn1Uiyz+3gd+igFydyjabN7q0tPTGbSs+ESzSVyhS8BCWoz8zMtywhzv2zfIp+
-+FZpHuHZonKwNnNmeXjnsU8A4zGNg1GjtLh0fRqsF/6ikTbnda3mBdrTyPIOXes7
-BuHL8v07IYvnb8hDkKVi3V8untb32h51R8zQHGb549CgUOGER3CJuuWso+Fsig2y
-dcXznpbMehN/vssOxsiJsu6DVysLzvRY9BL46yoMJInitlTEp530Jj1KWKc4WNNs
-W27iPJIrUBf6+PTCpZbs2iPLcEtsIZ3sjQIBK3og6vSzFyHyTGBjHcIpRJgiacU/
-OBqTZv3Xwvt6uxy3YF3WAL63ruSjs3dHx2Q6tjS7N20Ajci6n9PD9K9Xq2ZbW0Mo
-b/6ra4z92sMXfoFic21E
-=oZlF
------END PGP SIGNATURE-----
-
---Sig_//71JbOe2e1uowBSzpplDG72--
