@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab2AYJz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 04:55:56 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:38225 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab2AYJzu (ORCPT
+	id S1755367Ab2AYJ64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 04:58:56 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43608 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755070Ab2AYJ6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 04:55:50 -0500
-Date: Wed, 25 Jan 2012 10:55:49 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH v2 2/2] regulator: add device tree support for max8997
-In-reply-to: <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, kgene.kim@samsung.com,
-        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, dg77.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>
-Message-id: <4F1FD1A5.1060305@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
- <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
+	Wed, 25 Jan 2012 04:58:55 -0500
+MIME-Version: 1.0
+X-Originating-IP: [46.30.80.210]
+From: Stefan Seidel <stefans@android-x86.org>
+Date: Wed, 25 Jan 2012 10:58:32 +0100
+X-Google-Sender-Auth: CMK7R3g4n1gPRYfIqRINLWUYJg4
+Message-ID: <CACcUPpa5FydvemAX7idTOi9dU3+UYs_cra_YNq1bbQc47jr0Yw@mail.gmail.com>
+Subject: Emulating unsupported x86 opcodes in software
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.01.2012 08:35, Thomas Abraham wrote:
-> Add device tree based discovery support for max8997.
+Hello,
 
-> +static int max8997_pmic_dt_parse_pdata(struct max8997_dev *iodev,
-> +					struct max8997_platform_data *pdata)
-> +{
+I'm looking for advice regarding the emulation of CPU instructions
+which the current processor doesn't support. Specifically, I want to
+emulate SSE3 instructions on non-SSE3-capable CPUs. The OSx86
+project[1] has developed an SSE3 emulation based on SSE2 instructions.
 
-> +	pdata->regulators = rdata;
-> +	for_each_child_of_node(regulators_np, reg_np) {
-> +		for (i = 0; i<  ARRAY_SIZE(regulators); i++)
-> +			if (!of_node_cmp(reg_np->name, regulators[i].name))
-> +				break;
-> +		rdata->id = i;
-> +		rdata->initdata = of_get_regulator_init_data(
-> +						iodev->dev, reg_np);
+The general idea is:
+ - install a "stage 1" trap handler for INT 6h (invalid opcode)
+ - "stage 1" handler returns the address of the "stage 2" handler, the
+actual emulation routine
+ - "stage 2" handler runs in user-mode, reads the invalid (SSE3)
+instruction and operands and emulates it
+ - "stage 2" handler stores the result in the correct destination
+(register or memory) and restores all dirty registers to their
+original state
+More in-depth description is available as PDF[2].
 
-One more thing - of_get_regulator_init_data() will set apply_uV to 1 so 
-we need to reset it for BUCK6, which doesn't provide set_voltage() ops, 
-like:
+Now it is not a problem to replace the INT 6h handler, but these are
+my open questions:
+1. How can I have the stage 2 handler run in user-mode (ring 3)
+2. How do I allocate/obtain the address of the code segment containing
+the stage 2 handler OR
+3. Is it even possible to for code which is implemented in the kernel
+to be called and executed in user-mode, and if not, what is the
+alternative.
 
-	if (rdata->initdata && regulators[i].id == MAX8997_BUCK6)
-		rdata->initdata->constraints.apply_uV = 0;
+Both stage 1 and 2 handlers are available as binary (currently, I'm
+trying to contact the original author for the source code).
 
-Thanks
+Thank you very much for any help.
+
+Stefan Seidel
+P.S.: CC'ing me in your answer would be appreciated.
+
+[1] http://code.google.com/p/xnu-dev/
+[2] http://code.google.com/p/xnu-dev/downloads/detail?name=SSE3%20Emulator.pdf
