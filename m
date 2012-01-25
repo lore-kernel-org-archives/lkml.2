@@ -1,104 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab2AYSJh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 13:09:37 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1751723Ab2AYSLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 13:11:49 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab2AYSJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 13:09:35 -0500
+	id S1750968Ab2AYSLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 13:11:48 -0500
 From: Richard Weinberger <richard@nod.at>
-To: dwmw2@infradead.org
-Cc: kyungmin.park@samsung.com, artem.bityutskiy@linux.intel.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] MTD: Refine HAS_IOMEM dependency
-Date: Wed, 25 Jan 2012 18:21:42 +0100
-Message-Id: <1327512102-22447-1-git-send-email-richard@nod.at>
+To: user-mode-linux-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 2/2] um: Serve io_remap_pfn_range()
+Date: Wed, 25 Jan 2012 18:23:54 +0100
+Message-Id: <1327512234-22578-2-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1327512234-22578-1-git-send-email-richard@nod.at>
+References: <1327512234-22578-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Making the entire mtd subsystem depend on HAS_IOMEM is a bit overkill.
-HAS_IOMEM is only needed for real devices drivers.
-nandsim and friends are perfectly usable on systems without IO memory.
-
-I'm my case I'm using nandsim on UML to do some UBI and JFFS2 development.
+At some places io_remap_pfn_range() is needed.
+UML has to serve it like all other archs do.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/Kconfig         |    1 -
- drivers/mtd/devices/Kconfig |    1 +
- drivers/mtd/maps/Kconfig    |    1 +
- drivers/mtd/nand/Kconfig    |    2 ++
- drivers/mtd/onenand/Kconfig |    1 +
- 5 files changed, 5 insertions(+), 1 deletions(-)
+ arch/um/include/asm/pgtable.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
-index 1be6218..bfbd62c 100644
---- a/drivers/mtd/Kconfig
-+++ b/drivers/mtd/Kconfig
-@@ -1,6 +1,5 @@
- menuconfig MTD
- 	tristate "Memory Technology Device (MTD) support"
--	depends on HAS_IOMEM
- 	help
- 	  Memory Technology Devices are flash, RAM and similar chips, often
- 	  used for solid state file systems on embedded devices. This option
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 37b05c3..8d3dac4 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -1,5 +1,6 @@
- menu "Self-contained MTD device drivers"
- 	depends on MTD!=n
-+	depends on HAS_IOMEM
+diff --git a/arch/um/include/asm/pgtable.h b/arch/um/include/asm/pgtable.h
+index 41474fb..6a3f984 100644
+--- a/arch/um/include/asm/pgtable.h
++++ b/arch/um/include/asm/pgtable.h
+@@ -69,6 +69,8 @@ extern unsigned long end_iomem;
+ #define PAGE_KERNEL	__pgprot(_PAGE_PRESENT | _PAGE_RW | _PAGE_DIRTY | _PAGE_ACCESSED)
+ #define PAGE_KERNEL_EXEC	__pgprot(__PAGE_KERNEL_EXEC)
  
- config MTD_PMC551
- 	tristate "Ramix PMC551 PCI Mezzanine RAM card support"
-diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
-index 6c5c431..8af67cf 100644
---- a/drivers/mtd/maps/Kconfig
-+++ b/drivers/mtd/maps/Kconfig
-@@ -1,5 +1,6 @@
- menu "Mapping drivers for chip access"
- 	depends on MTD!=n
-+	depends on HAS_IOMEM
- 
- config MTD_COMPLEX_MAPPINGS
- 	bool "Support non-linear mappings of flash chips"
-diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-index 31b034b..80de7b3 100644
---- a/drivers/mtd/nand/Kconfig
-+++ b/drivers/mtd/nand/Kconfig
-@@ -246,6 +246,7 @@ config MTD_NAND_BCM_UMI_HWCS
- config MTD_NAND_DISKONCHIP
- 	tristate "DiskOnChip 2000, Millennium and Millennium Plus (NAND reimplementation) (EXPERIMENTAL)"
- 	depends on EXPERIMENTAL
-+	depends on HAS_IOMEM
- 	select REED_SOLOMON
- 	select REED_SOLOMON_DEC16
- 	help
-@@ -431,6 +432,7 @@ config MTD_NAND_GPMI_NAND
- 
- config MTD_NAND_PLATFORM
- 	tristate "Support for generic platform NAND driver"
-+	depends on HAS_IOMEM
- 	help
- 	  This implements a generic NAND driver for on-SOC platform
- 	  devices. You will need to provide platform-specific functions
-diff --git a/drivers/mtd/onenand/Kconfig b/drivers/mtd/onenand/Kconfig
-index 772ad29..91467bb 100644
---- a/drivers/mtd/onenand/Kconfig
-+++ b/drivers/mtd/onenand/Kconfig
-@@ -1,6 +1,7 @@
- menuconfig MTD_ONENAND
- 	tristate "OneNAND Device Support"
- 	depends on MTD
-+	depends on HAS_IOMEM
- 	help
- 	  This enables support for accessing all type of OneNAND flash
- 	  devices. For further information see
++#define io_remap_pfn_range	remap_pfn_range
++
+ /*
+  * The i386 can't do page protection for execute, and considers that the same
+  * are read.
 -- 
 1.7.7
 
