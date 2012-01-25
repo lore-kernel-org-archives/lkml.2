@@ -1,259 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751131Ab2AYWIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 17:08:31 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18066 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab2AYWIa (ORCPT
+	id S1751237Ab2AYWLD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 17:11:03 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43904 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab2AYWLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 17:08:30 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19CaAb2QLu76gZDDn6kd01Q
-Date: Wed, 25 Jan 2012 14:08:24 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 3/4] pinctrl: Add checks for empty names in
- pinmux_search_function
-Message-ID: <20120125220824.GW22818@atomide.com>
-References: <20120120161610.21955.25082.stgit@kaulin.local>
- <20120120161730.21955.40332.stgit@kaulin.local>
- <74CDBE0F657A3D45AFBB94109FB122FF1780DAB384@HQMAIL01.nvidia.com>
- <20120120174157.GQ22818@atomide.com>
+	Wed, 25 Jan 2012 17:11:01 -0500
+Date: Wed, 25 Jan 2012 23:11:00 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Lubos Kolouch <lubos.kolouch@gmail.com>
+Subject: Re: [Intel-gfx] [PATCH 2/2] drm/i915: Select DP BPC at mode set,
+ rather than mode validate
+Message-ID: <20120125221100.GK3896@phenom.ffwll.local>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org,
+	Lubos Kolouch <lubos.kolouch@gmail.com>
+References: <1327508186-26704-1-git-send-email-keithp@keithp.com>
+ <1327508186-26704-3-git-send-email-keithp@keithp.com>
 MIME-Version: 1.0
+In-Reply-To: <1327508186-26704-3-git-send-email-keithp@keithp.com>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120120174157.GQ22818@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [120120 09:09]:
-> * Stephen Warren <swarren@nvidia.com> [120120 08:28]:
-> > Tony Lindgren wrote at Friday, January 20, 2012 9:18 AM:
-> > > Otherwise we can get the following when dealing with
-> > > buggy data in a pinmux driver:
-> > > 
-> > > Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> > 
-> > > diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-> > > index 06b8943..ffe633d 100644
-> > > --- a/drivers/pinctrl/pinmux.c
-> > > +++ b/drivers/pinctrl/pinmux.c
-> > > @@ -584,6 +584,13 @@ static int pinmux_search_function(struct pinctrl_dev *pctldev,
-> > >  							   selector);
-> > >  		int ret;
-> > > 
-> > > +		if (!fname) {
-> > > +			pr_warning("no name for function%i\n",
-> > > +				   selector);
-> > > +			selector++;
-> > > +			continue;
-> > > +		}
-> > > +
-> > >  		if (!strcmp(map->function, fname)) {
-> > >  			/* Found the function, check pin group */
-> > >  			ret = pinmux_check_pin_group(pctldev, selector,
-> > 
-> > Shouldn't this be BUG_ON(!fname)?
-> >
-> > There are lots of other places that pmxops->get_function_name() is
-> > called. Wouldn't it be better to enhance e.g. pinmux_check_ops() to
-> > validate that all functions have a name during pinctrl registration?
+On Wed, Jan 25, 2012 at 08:16:26AM -0800, Keith Packard wrote:
+> The DP configuration must match the pipe configuration, and until mode
+> set we don't know what BPC will be used. Delay all decisions about BPC
+> until mode set, computing the target BPC in both intel_dp_mode_fixup
+> and either i9xx_crtc_mode_set or ironlake_crtc_mode_set. It might be
+> slightly better to compute this only once, but storing the value
+> between those two calls would be a pain.
 > 
-> Maybe yeah. I'll take a look next week when I'm back home.
+> Cc: Lubos Kolouch <lubos.kolouch@gmail.com>
+> Cc: Adam Jackson <ajax@redhat.com>
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+>  drivers/gpu/drm/i915/intel_display.c |   27 +++++-------
+>  drivers/gpu/drm/i915/intel_dp.c      |   77 +++++++++++++++++++++++++++-------
+>  drivers/gpu/drm/i915/intel_drv.h     |    6 ++-
+>  3 files changed, 78 insertions(+), 32 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index b3b51c4..d613676 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -4850,9 +4850,9 @@ static inline bool intel_panel_use_ssc(struct drm_i915_private *dev_priv)
+>   * Dithering requirement (i.e. false if display bpc and pipe bpc match,
+>   * true if they don't match).
+>   */
+> -static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+> -					 unsigned int *pipe_bpp,
+> -					 struct drm_display_mode *mode)
+> +bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+> +				  unsigned int *pipe_bpp,
+> +				  struct drm_display_mode *mode)
+>  {
+>  	struct drm_device *dev = crtc->dev;
+>  	struct drm_i915_private *dev_priv = dev->dev_private;
+> @@ -4883,13 +4883,13 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+>  			continue;
+>  		}
+>  
+> -		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
+> -			/* Use VBT settings if we have an eDP panel */
+> -			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
+> +		if (intel_encoder->type == INTEL_OUTPUT_EDP ||
+> +		    intel_encoder->type == INTEL_OUTPUT_DISPLAYPORT) {
+> +			unsigned int dp_bpc = intel_dp_max_bpp(&intel_encoder->base, mode);
+>  
+> -			if (edp_bpc < display_bpc) {
+> -				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
+> -				display_bpc = edp_bpc;
+> +			if (dp_bpc < display_bpc) {
+> +				DRM_DEBUG_KMS("clamping display bpc (was %d) to DP (%d)\n", display_bpc, dp_bpc);
+> +				display_bpc = dp_bpc;
+>  			}
+>  			continue;
+>  		}
 
-There's a little bit of a init order issue here to add checking for
-the function names during registration. That's because we don't allocate
-pctldev until after pinmux_check_ops() in pinctrl_register. This means
-we can't currently call ops->list_functions until unless we change the
-init order.
+I'm a bit unhappy how generic code in intel_display.c calls function out
+of intel_dp.c. And choose_pipe_bpp_dither already has special cases for
+quite a few other encoders ... Could we add an ->adjust_bpc function to
+intel_encoder to separate this in a cleaner fashion?
 
-To fix this we need to allocate pctldev earlier, and then change the
-*_check_ops functions to use pctldev, see below.
+I know that this isn't really the only layering violation in
+intel_display.c, but functions in that file have an uncanny ability to
+grow without bounds ;-)
 
-Regards,
+> @@ -4923,11 +4923,6 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+>  		}
+>  	}
+>  
+> -	if (mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
+> -		DRM_DEBUG_KMS("Dithering DP to 6bpc\n");
+> -		display_bpc = 6;
+> -	}
+> -
+>  	/*
+>  	 * We could just drive the pipe at the highest bpc all the time and
+>  	 * enable dithering as needed, but that costs bandwidth.  So choose
+> @@ -4990,6 +4985,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+>  	int ret;
+>  	u32 temp;
+>  	u32 lvds_sync = 0;
+> +	int dp_max_bpp = 0;
+>  
+>  	list_for_each_entry(encoder, &mode_config->encoder_list, base.head) {
+>  		if (encoder->base.crtc != crtc)
+> @@ -5016,6 +5012,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+>  			break;
+>  		case INTEL_OUTPUT_DISPLAYPORT:
+>  			is_dp = true;
+> +			dp_max_bpp = intel_dp_max_bpp(&encoder->base, mode);
+>  			break;
+>  		}
+>  
+> @@ -5192,7 +5189,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+>  	/* default to 8bpc */
+>  	pipeconf &= ~(PIPECONF_BPP_MASK | PIPECONF_DITHER_EN);
+>  	if (is_dp) {
+> -		if (mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
+> +		if (dp_max_bpp <= 18) {
+>  			pipeconf |= PIPECONF_BPP_6 |
+>  				    PIPECONF_DITHER_EN |
+>  				    PIPECONF_DITHER_TYPE_SP;
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 94f860c..2482796 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -219,14 +219,51 @@ intel_dp_max_data_rate(int max_link_clock, int max_lanes)
+>  	return (max_link_clock * max_lanes * 8) / 10;
+>  }
+>  
+> +/*
+> + * For the specified encoder, return the maximum bpp that can be used
+> + * for the specified mode.
+> + */
+> +
+> +static const int dp_supported_bpc[] = { 6, 8, 10, 12, 16 };
+> +
+> +#define NUM_DP_SUPPORTED_BPC (sizeof dp_supported_bpc/sizeof dp_supported_bpc[0])
+> +
+> +int
+> +intel_dp_max_bpp(struct drm_encoder *encoder, struct drm_display_mode *mode)
+> +{
+> +	struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
+> +	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
+> +	int max_lanes = intel_dp_max_lane_count(intel_dp);
+> +	int max_rate, mode_rate;
+> +	int i;
+> +
+> +	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
+> +	for (i = NUM_DP_SUPPORTED_BPC - 1; i >= 0; i--) {
+> +		int bpp = dp_supported_bpc[i] * 3;	/* 3 channels of data (RGB) */
+> +
+> +		mode_rate = intel_dp_link_required(mode->clock, bpp);
+> +		if (mode_rate <= max_rate) {
+> +
+> +			/* Limit EDP bpp to panel ability */
+> +			if (intel_dp->base.type == INTEL_OUTPUT_EDP) {
+> +				struct drm_device *dev = encoder->dev;
+> +				struct drm_i915_private *dev_priv = dev->dev_private;
+> +				int edp_bpp = dev_priv->edp.bpp;
+> +
+> +				if (bpp > edp_bpp)
+> +					bpp = edp_bpp;
+> +			}
+> +			return bpp;
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+>  static int
+>  intel_dp_mode_valid(struct drm_connector *connector,
+>  		    struct drm_display_mode *mode)
+>  {
+>  	struct intel_dp *intel_dp = intel_attached_dp(connector);
+> -	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
+> -	int max_lanes = intel_dp_max_lane_count(intel_dp);
+> -	int max_rate, mode_rate;
+>  
+>  	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+>  		if (mode->hdisplay > intel_dp->panel_fixed_mode->hdisplay)
+> @@ -236,16 +273,8 @@ intel_dp_mode_valid(struct drm_connector *connector,
+>  			return MODE_PANEL;
+>  	}
+>  
+> -	mode_rate = intel_dp_link_required(mode->clock, 24);
+> -	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
+> -
+> -	if (mode_rate > max_rate) {
+> -			mode_rate = intel_dp_link_required(mode->clock, 18);
+> -			if (mode_rate > max_rate)
+> -				return MODE_CLOCK_HIGH;
+> -			else
+> -				mode->private_flags |= INTEL_MODE_DP_FORCE_6BPC;
+> -	}
+> +	if (intel_dp_max_bpp(&intel_dp->base.base, mode) == 0)
+> +		return MODE_CLOCK_HIGH;
+>  
+>  	if (mode->clock < 10000)
+>  		return MODE_CLOCK_LOW;
+> @@ -673,9 +702,26 @@ intel_dp_mode_fixup(struct drm_encoder *encoder, struct drm_display_mode *mode,
+>  	int lane_count, clock;
+>  	int max_lane_count = intel_dp_max_lane_count(intel_dp);
+>  	int max_clock = intel_dp_max_link_bw(intel_dp) == DP_LINK_BW_2_7 ? 1 : 0;
+> -	int bpp = mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
+> +	unsigned int bpp;
+>  	static int bws[2] = { DP_LINK_BW_1_62, DP_LINK_BW_2_7 };
+>  
+> +	if (HAS_PCH_SPLIT(dev))
+> +		(void) intel_choose_pipe_bpp_dither(intel_dp->base.base.crtc, &bpp, mode);
+> +	else {
+> +		bpp = intel_dp_max_bpp(encoder, mode);
+> +		if (bpp > 24)
+> +			bpp = 24;
+> +	}
 
-Tony
+As you've already said in another mail, this PCH_SPLIT here looks a bit
+strange. Could we unify these two paths here a bit?
 
+Otherwise I couldn't poke holes into it.
+-Daniel
 
-From: Tony Lindgren <tony@atomide.com>
-Date: Tue, 24 Jan 2012 16:28:08 -0800
-Subject: [PATCH] pinctrl: Add checks for empty function names
+> +
+> +	DRM_DEBUG_KMS("encoder assuming bpp %d (bpc %d)\n",
+> +		      bpp, bpp / 3);
+> +
+> +	if (bpp == 0) {
+> +		DRM_DEBUG_KMS("Display port cannot support requested clock %d\n",
+> +			      mode->clock);
+> +		return false;
+> +	}
+> +
+>  	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+>  		intel_fixed_panel_mode(intel_dp->panel_fixed_mode, adjusted_mode);
+>  		intel_pch_panel_fitting(dev, DRM_MODE_SCALE_FULLSCREEN,
+> @@ -691,8 +737,7 @@ intel_dp_mode_fixup(struct drm_encoder *encoder, struct drm_display_mode *mode,
+>  		for (clock = 0; clock <= max_clock; clock++) {
+>  			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
+>  
+> -			if (intel_dp_link_required(mode->clock, bpp)
+> -					<= link_avail) {
+> +			if (intel_dp_link_required(mode->clock, bpp) <= link_avail) {
+>  				intel_dp->link_bw = bws[clock];
+>  				intel_dp->lane_count = lane_count;
+>  				adjusted_mode->clock = intel_dp_link_clock(intel_dp->link_bw);
+> diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+> index 1348705..03b4595 100644
+> --- a/drivers/gpu/drm/i915/intel_drv.h
+> +++ b/drivers/gpu/drm/i915/intel_drv.h
+> @@ -104,7 +104,6 @@
+>  /* drm_display_mode->private_flags */
+>  #define INTEL_MODE_PIXEL_MULTIPLIER_SHIFT (0x0)
+>  #define INTEL_MODE_PIXEL_MULTIPLIER_MASK (0xf << INTEL_MODE_PIXEL_MULTIPLIER_SHIFT)
+> -#define INTEL_MODE_DP_FORCE_6BPC (0x10)
+>  
+>  static inline void
+>  intel_mode_set_pixel_multiplier(struct drm_display_mode *mode,
+> @@ -303,11 +302,16 @@ extern void intel_dp_init(struct drm_device *dev, int dp_reg);
+>  void
+>  intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>  		 struct drm_display_mode *adjusted_mode);
+> +extern int intel_dp_max_bpp(struct drm_encoder *encoder, struct drm_display_mode *mode);
+>  extern bool intel_dpd_is_edp(struct drm_device *dev);
+>  extern void intel_edp_link_config(struct intel_encoder *, int *, int *);
+>  extern bool intel_encoder_is_pch_edp(struct drm_encoder *encoder);
+>  extern int intel_plane_init(struct drm_device *dev, enum pipe pipe);
+>  
+> +bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+> +				  unsigned int *pipe_bpp,
+> +				  struct drm_display_mode *mode);
+> +
+>  /* intel_panel.c */
+>  extern void intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
+>  				   struct drm_display_mode *adjusted_mode);
+> -- 
+> 1.7.8.3
+> 
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
-This is needed as otherwise we can get the following when dealing
-with buggy data in a pinmux driver for pinmux_search_function:
-
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-...
-PC is at strcmp+0xc/0x34
-LR is at pinmux_get+0x350/0x8f4
-...
-
-As we need pctldev initialized to call ops->list_functions, let's
-initialize it before check_ops calls and pass the pctldev to the
-check_ops functions. Do this for both pinmux and pinconf check_ops
-functions.
-
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -583,40 +583,40 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
- 	if (pctldesc->name == NULL)
- 		return NULL;
- 
-+	pctldev = kzalloc(sizeof(struct pinctrl_dev), GFP_KERNEL);
-+	if (pctldev == NULL)
-+		return NULL;
-+
-+	/* Initialize pin control device struct */
-+	pctldev->owner = pctldesc->owner;
-+	pctldev->desc = pctldesc;
-+	pctldev->driver_data = driver_data;
-+	INIT_RADIX_TREE(&pctldev->pin_desc_tree, GFP_KERNEL);
-+	spin_lock_init(&pctldev->pin_desc_tree_lock);
-+	INIT_LIST_HEAD(&pctldev->gpio_ranges);
-+	mutex_init(&pctldev->gpio_ranges_lock);
-+	pctldev->dev = dev;
-+
- 	/* If we're implementing pinmuxing, check the ops for sanity */
- 	if (pctldesc->pmxops) {
--		ret = pinmux_check_ops(pctldesc->pmxops);
-+		ret = pinmux_check_ops(pctldev);
- 		if (ret) {
- 			pr_err("%s pinmux ops lacks necessary functions\n",
- 			       pctldesc->name);
--			return NULL;
-+			goto out_err;
- 		}
- 	}
- 
- 	/* If we're implementing pinconfig, check the ops for sanity */
- 	if (pctldesc->confops) {
--		ret = pinconf_check_ops(pctldesc->confops);
-+		ret = pinconf_check_ops(pctldev);
- 		if (ret) {
- 			pr_err("%s pin config ops lacks necessary functions\n",
- 			       pctldesc->name);
--			return NULL;
-+			goto out_err;
- 		}
- 	}
- 
--	pctldev = kzalloc(sizeof(struct pinctrl_dev), GFP_KERNEL);
--	if (pctldev == NULL)
--		return NULL;
--
--	/* Initialize pin control device struct */
--	pctldev->owner = pctldesc->owner;
--	pctldev->desc = pctldesc;
--	pctldev->driver_data = driver_data;
--	INIT_RADIX_TREE(&pctldev->pin_desc_tree, GFP_KERNEL);
--	spin_lock_init(&pctldev->pin_desc_tree_lock);
--	INIT_LIST_HEAD(&pctldev->gpio_ranges);
--	mutex_init(&pctldev->gpio_ranges_lock);
--	pctldev->dev = dev;
--
- 	/* Register all the pins */
- 	pr_debug("try to register %d pins on %s...\n",
- 		 pctldesc->npins, pctldesc->name);
---- a/drivers/pinctrl/pinconf.c
-+++ b/drivers/pinctrl/pinconf.c
-@@ -205,8 +205,10 @@ int pin_config_group_set(const char *dev_name, const char *pin_group,
- }
- EXPORT_SYMBOL(pin_config_group_set);
- 
--int pinconf_check_ops(const struct pinconf_ops *ops)
-+int pinconf_check_ops(struct pinctrl_dev *pctldev)
- {
-+	const struct pinconf_ops *ops = pctldev->desc->confops;
-+
- 	/* We must be able to read out pin status */
- 	if (!ops->pin_config_get && !ops->pin_config_group_get)
- 		return -EINVAL;
---- a/drivers/pinctrl/pinconf.h
-+++ b/drivers/pinctrl/pinconf.h
-@@ -13,7 +13,7 @@
- 
- #ifdef CONFIG_PINCONF
- 
--int pinconf_check_ops(const struct pinconf_ops *ops);
-+int pinconf_check_ops(struct pinctrl_dev *pctldev);
- void pinconf_init_device_debugfs(struct dentry *devroot,
- 				 struct pinctrl_dev *pctldev);
- int pin_config_get_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
-@@ -23,7 +23,7 @@ int pin_config_set_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
- 
- #else
- 
--static inline int pinconf_check_ops(const struct pinconf_ops *ops)
-+static inline int pinconf_check_ops(struct pinctrl_dev *pctldev)
- {
- 	return 0;
- }
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -904,8 +904,11 @@ void pinmux_disable(struct pinmux *pmx)
- }
- EXPORT_SYMBOL_GPL(pinmux_disable);
- 
--int pinmux_check_ops(const struct pinmux_ops *ops)
-+int pinmux_check_ops(struct pinctrl_dev *pctldev)
- {
-+	const struct pinmux_ops *ops = pctldev->desc->pmxops;
-+	unsigned selector = 0;
-+
- 	/* Check that we implement required operations */
- 	if (!ops->list_functions ||
- 	    !ops->get_function_name ||
-@@ -914,6 +917,18 @@ int pinmux_check_ops(const struct pinmux_ops *ops)
- 	    !ops->disable)
- 		return -EINVAL;
- 
-+	/* Check that all functions registered have names */
-+	while (ops->list_functions(pctldev, selector) >= 0) {
-+		const char *fname = ops->get_function_name(pctldev,
-+							   selector);
-+		if (!fname) {
-+			pr_err("pinmux ops has no name for function%u\n",
-+				selector);
-+			return -EINVAL;
-+		}
-+		selector++;
-+	}
-+
- 	return 0;
- }
- 
---- a/drivers/pinctrl/pinmux.h
-+++ b/drivers/pinctrl/pinmux.h
-@@ -12,7 +12,7 @@
-  */
- #ifdef CONFIG_PINMUX
- 
--int pinmux_check_ops(const struct pinmux_ops *ops);
-+int pinmux_check_ops(struct pinctrl_dev *pctldev);
- void pinmux_init_device_debugfs(struct dentry *devroot,
- 				struct pinctrl_dev *pctldev);
- void pinmux_init_debugfs(struct dentry *subsys_root);
-@@ -21,7 +21,7 @@ void pinmux_unhog_maps(struct pinctrl_dev *pctldev);
- 
- #else
- 
--static inline int pinmux_check_ops(const struct pinmux_ops *ops)
-+static inline int pinmux_check_ops(struct pinctrl_dev *pctldev)
- {
- 	return 0;
- }
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
