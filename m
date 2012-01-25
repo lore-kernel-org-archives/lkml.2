@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab2AYMCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 07:02:30 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:64059 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab2AYMC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 07:02:29 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Date: Wed, 25 Jan 2012 13:02:29 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH v2 2/2] regulator: add device tree support for max8997
-In-reply-to: <20120125112602.GB2991@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, kgene.kim@samsung.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>
-Message-id: <4F1FEF55.8030604@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
- <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
- <4F1FD1A5.1060305@samsung.com>
- <20120125112602.GB2991@opensource.wolfsonmicro.com>
+	id S1752744Ab2AYMEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 07:04:34 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58277 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752658Ab2AYMEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 07:04:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="110585754"
+Message-ID: <1327493196.26648.18.camel@sauron.fi.intel.com>
+Subject: Re: Linux 3.3-1 out - merge window closed
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Carlos Chinea <carlos.chinea@nokia.com>,
+        ext Linus Walleij <linus.walleij@linaro.org>,
+        ext Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "peter_henn@gmx.de" <peter_henn@gmx.de>,
+        "sjur.brandeland@stericsson.com" <sjur.brandeland@stericsson.com>,
+        "govindraj.ti@gmail.com" <govindraj.ti@gmail.com>,
+        "pawel.szyszuk@stericsson.com" <pawel.szyszuk@stericsson.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Andras Domokos <andras.domokos@nokia.com>,
+        ext Shubhrajyoti <shubhrajyoti@ti.com>,
+        ext Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 25 Jan 2012 14:06:36 +0200
+In-Reply-To: <CAOJsxLHLZTCqiK_jpoYeJvKmeK13xkLMCzQ0tyd9bKRAurzWvg@mail.gmail.com>
+References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
+	 <1327331183.10335.26.camel@groo>
+	 <CACRpkdYcBjhRo=NcfDbxJrNn6QtpV1LWdeuiy1yGPosocngV-A@mail.gmail.com>
+	 <1327431476.10335.69.camel@groo>
+	 <1327491326.26648.10.camel@sauron.fi.intel.com>
+	 <CAOJsxLHLZTCqiK_jpoYeJvKmeK13xkLMCzQ0tyd9bKRAurzWvg@mail.gmail.com>
+Organization: Intel OTC
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-yPzLr6+y4FhW31952WP0"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.01.2012 12:26, Mark Brown wrote:
-> On Wed, Jan 25, 2012 at 10:55:49AM +0100, Karol Lewandowski wrote:
->> On 12.01.2012 08:35, Thomas Abraham wrote:
->>> Add device tree based discovery support for max8997.
->>
->>> +	pdata->regulators = rdata;
->>> +	for_each_child_of_node(regulators_np, reg_np) {
->>> +		for (i = 0; i<   ARRAY_SIZE(regulators); i++)
->>> +			if (!of_node_cmp(reg_np->name, regulators[i].name))
->>> +				break;
->>> +		rdata->id = i;
->>> +		rdata->initdata = of_get_regulator_init_data(
->>> +						iodev->dev, reg_np);
->
->> One more thing - of_get_regulator_init_data() will set apply_uV to 1
->> so we need to reset it for BUCK6, which doesn't provide
->> set_voltage() ops, like:
->
->> 	if (rdata->initdata&&  regulators[i].id == MAX8997_BUCK6)
->> 		rdata->initdata->constraints.apply_uV = 0;
->
-> So, over in the other thready you were referring to mailing list posts
-> you made in the past few moments as examples of past issues.  Please at
-> least mention that there hasn't been any actual discussion when doing
-> this...
 
-Sorry if this caused confusion.  I'll be more cautious next time.
+--=-yPzLr6+y4FhW31952WP0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> I don't see a problem here, if the device can't set the voltage then
-> setting constraints to allow the voltage to be changed is silly and the
-> user just shouldn't do that.
+On Wed, 2012-01-25 at 13:47 +0200, Pekka Enberg wrote:
+> On Wed, Jan 25, 2012 at 1:35 PM, Artem Bityutskiy
+> <artem.bityutskiy@linux.intel.com> wrote:
+> >> There is a signed tag (hsi_for_3.3), but said it so is true that my ke=
+y
+> >> was signed only by one person. Today I've managed to meet Artem
+> >> Bityutskiy and he has now also signed the key. However, It is my
+> >> understanding that's not enough :(
+> >
+> > You may try to approach Pekka Enberg <penberg@kernel.org>
+>=20
+> I pretty much don't sign keys for people I don't know personally, sorry.
 
-Agreed.  I've assumed that old platform code done right thing when it 
-set buck6 voltage constraints [1].
+I did not suggest that, of course. I meant that you are also in Helsinki
+and if Carlos knows you he could approach you.
 
-However, I still find it little problematic that dt and non-dt versions 
-behave differently when given the same set of parameters (previously 
-apply_uV wasn't the default and required explicit flag).
+--=20
+Best Regards,
+Artem Bityutskiy
 
+--=-yPzLr6+y4FhW31952WP0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Thomas, would you mind adding small note to pmic's bindings 
-documentation stating that Buck6 is basically on/off switch? (Thus, no 
-voltage should nor can be specified).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-[1] http://lxr.linux.no/linux+v3.2.1/arch/arm/mach-exynos/mach-nuri.c#L802
+iQIcBAABAgAGBQJPH/BMAAoJECmIfjd9wqK06NMP/29kNN86YEmbu7bZbs+c3Jk6
+/Ds4ZiiLGIgOO+MHLNZwk4rMu5cTK4YRpMQDIZXVToJWeuu+MmwTjX4kQ23qXvlY
+83i36TTVuIFP742Q6JvJ4eOV654BkXnnSoJ0tsEPnMs2WFxenSatXy+UjwpMBuTw
+rZEq+jD8V+k2RGFWvPTPMwOed8M0BLXwWN9CWWV/InqQEGJQktxiw7diGVtYHpCg
+3eZjaHprOnLuF2CC2Fot2Bb5rMz9XKTVp9gYAzDMSZt4G9KyaAjpquKf4uA82OlY
+vT7//HN6YGAUk5wB3uUNDyuUKpwjUt+uiLbsDslBxKHvXlN8b9yfwqVi+sot/aEw
+G8X1Fomobnd6PKS7PwUGE41lUHpRfxJLS6KhMMz/4Fytn6vxCi5HyY6AKT666BlV
+b2yxgP/Z9Dnp7lhKCemcDFHcODKL2AfIFsfLCQEEsGFXHd6d+dVzyDDFXYARDeFb
+W9FmUrHXwxW4xUb1I8HimTkLsRaCY42vqMF7qM/FlVCJNB14jDgaPmPJGgOeK/07
+0eKo/zeWQGe2ZztPU6l9uu6FwRJebeTErXHXG06cjP+Muo0tHWxwd2y1gii28GVb
+JsDOV3lZXMgSzrlW8vVZ2WDCYcqw9kcn70VW6DiR/Fm4j6jBCKJJSlaOyF0DVzEO
+PUG1SrQuxJQOXgnnEe6V
+=yPgr
+-----END PGP SIGNATURE-----
 
-Regards,
--- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+--=-yPzLr6+y4FhW31952WP0--
+
