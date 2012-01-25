@@ -1,121 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab2AYJxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 04:53:30 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:42383 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754925Ab2AYJx2 (ORCPT
+	id S1755176Ab2AYJzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 04:55:36 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:54347 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab2AYJzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 04:53:28 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Viresh Kumar <viresh.kumar@st.com>,
-        Chris Blair <chris.blair@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v2] gpio/stmpe: support no-irq mode
-Date: Wed, 25 Jan 2012 10:53:09 +0100
-Message-ID: <1327485189-15522-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	Wed, 25 Jan 2012 04:55:35 -0500
+X-IronPort-AV: E=Sophos;i="4.71,567,1320624000"; 
+   d="scan'208";a="10267552"
+Subject: Re: Regressions in v3.3-rc1 introduced by "xen/granttable: Grant
+ tables V2 implementation"
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "annie.li@oracle.com" <annie.li@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Date: Wed, 25 Jan 2012 09:55:33 +0000
+In-Reply-To: <20120125051253.GA15501@phenom.dumpdata.com>
+References: <20120125044949.GB29759@phenom.dumpdata.com>
+	 <20120125051253.GA15501@phenom.dumpdata.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1327485333.24561.232.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Blair <chris.blair@stericsson.com>
+On Wed, 2012-01-25 at 05:12 +0000, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jan 24, 2012 at 11:49:49PM -0500, Konrad Rzeszutek Wilk wrote:
+> > When I try to bootup a PVonHVM guest with Xen 4.1 I get this:
+> 
+> .. snip..
+> > 
+> > and with this little patch I can get it to work:
+> 
+> I get the domU to boot but the network stops being responsive.
+> I see this in the Dom0:
 
-Adds support for boards which have an STMPE GPIO device without the
-interrupt pin connected. This means that no interrupt can be received
-but the GPIO pins can still be driven and read.
+Your original patch would set the version to two in the hypervisor and
+then ignore that and continue to use v1 so that isn't surprising.
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: Viresh Kumar <viresh.kumar@st.com>
-Tested-by: Michel Jaouen <michel.jaouen@stericsson.com>
-Signed-off-by: Chris Blair <chris.blair@stericsson.com>
----
-This depends on the previous patch to the MFD code so should
-better be merged into the MFD tree with the previous patch.
----
- drivers/gpio/gpio-stmpe.c |   40 ++++++++++++++++++++++++----------------
- 1 files changed, 24 insertions(+), 16 deletions(-)
+> (XEN) grant_table.c:362:d0 Bad flags (0) or dom (0). (expected dom 0, flags 103)
+> [ 6834.488816] vif vif-12-0: 1 mapping in shared page 768 from domain 12
+> [ 6834.490235] vif vif-12-0: 1 mapping shared-frames 768/769 port 15
+> 
+> Replacing the patch with:
+> 
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index 1cd94da..b4d4eac 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -948,9 +948,12 @@ static void gnttab_request_version(void)
+>  	int rc;
+>  	struct gnttab_set_version gsv;
+>  
+> -	gsv.version = 2;
+> +	if (xen_hvm_domain())
+> +		gsv.version = 1;
+> +	else
+> +		gsv.version = 2;
+>  	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
+> -	if (rc == 0) {
+> +	if (rc == 0 && gsv.version == 2) {
+>  		grant_table_version = 2;
+>  		gnttab_interface = &gnttab_v2_ops;
+>  	} else if (grant_table_version == 2) {
+> 
+> Gets me back to how it worked in Linux v3.2.
+> 
+> But that is just a band-aid fix...
 
-diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-index 87a68a8..c747929 100644
---- a/drivers/gpio/gpio-stmpe.c
-+++ b/drivers/gpio/gpio-stmpe.c
-@@ -307,13 +307,15 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
- 	struct stmpe_gpio_platform_data *pdata;
- 	struct stmpe_gpio *stmpe_gpio;
- 	int ret;
--	int irq;
-+	int irq = 0;
- 
- 	pdata = stmpe->pdata->gpio;
- 
--	irq = platform_get_irq(pdev, 0);
--	if (irq < 0)
--		return irq;
-+	if (!stmpe->pdata->no_irq) {
-+		irq = platform_get_irq(pdev, 0);
-+		if (irq < 0)
-+			return irq;
-+	}
- 
- 	stmpe_gpio = kzalloc(sizeof(struct stmpe_gpio), GFP_KERNEL);
- 	if (!stmpe_gpio)
-@@ -336,15 +338,17 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto out_free;
- 
--	ret = stmpe_gpio_irq_init(stmpe_gpio);
--	if (ret)
--		goto out_disable;
-+	if (!stmpe->pdata->no_irq) {
-+		ret = stmpe_gpio_irq_init(stmpe_gpio);
-+		if (ret)
-+			goto out_disable;
- 
--	ret = request_threaded_irq(irq, NULL, stmpe_gpio_irq, IRQF_ONESHOT,
--				   "stmpe-gpio", stmpe_gpio);
--	if (ret) {
--		dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
--		goto out_removeirq;
-+		ret = request_threaded_irq(irq, NULL, stmpe_gpio_irq,
-+				IRQF_ONESHOT, "stmpe-gpio", stmpe_gpio);
-+		if (ret) {
-+			dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
-+			goto out_removeirq;
-+		}
- 	}
- 
- 	ret = gpiochip_add(&stmpe_gpio->chip);
-@@ -361,9 +365,11 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
- 	return 0;
- 
- out_freeirq:
--	free_irq(irq, stmpe_gpio);
-+	if (!stmpe->pdata->no_irq)
-+		free_irq(irq, stmpe_gpio);
- out_removeirq:
--	stmpe_gpio_irq_remove(stmpe_gpio);
-+	if (!stmpe->pdata->no_irq)
-+		stmpe_gpio_irq_remove(stmpe_gpio);
- out_disable:
- 	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
- out_free:
-@@ -391,8 +397,10 @@ static int __devexit stmpe_gpio_remove(struct platform_device *pdev)
- 
- 	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
- 
--	free_irq(irq, stmpe_gpio);
--	stmpe_gpio_irq_remove(stmpe_gpio);
-+	if (!stmpe->pdata->no_irq) {
-+		free_irq(irq, stmpe_gpio);
-+		stmpe_gpio_irq_remove(stmpe_gpio);
-+	}
- 	platform_set_drvdata(pdev, NULL);
- 	kfree(stmpe_gpio);
- 
--- 
-1.7.8
+The real bug is presumably either that the Linux v2 code is buggy for
+use in an HVM guest or that Xen's support for v2 in HVM guests is either
+buggy or explicitly disabled (in which case set_version should fail for
+version=2).
+
+Is the set_version with version=1 succeeding or failing? Likewise for
+the version=2 call?
+
+The original error was an "unable to handle kernel NULL pointer
+dereference at" gnttab_end_foreign_access_ref_v2+0x29/0x40. The only
+plausible candidates for such an error are the array access into to
+either the gnttab_shared or grstatus arrays. Do you know which one the
+IP corresponds to?
+
+On HVM for gnttab_shared we make an add_to_physmap call with
+XENMAPSPACE_grant_table (in gnttab_map). I don't see any support call to
+do something similar for the status array though and I don't see a
+XENMAPSPACE_* specifically for that case either in the hypervisor
+either.
+
+Ian.
 
