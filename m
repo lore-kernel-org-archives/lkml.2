@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab2AYLFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 06:05:31 -0500
-Received: from mga06.intel.com ([134.134.136.21]:9641 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751180Ab2AYLF3 convert rfc822-to-8bit (ORCPT
+	id S1751708Ab2AYLUe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 06:20:34 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19935 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab2AYLUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 06:05:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120121011243.GC23916@ZenIV.linux.org.uk>
-References: <20120121011243.GC23916@ZenIV.linux.org.uk>
-Date: Wed, 25 Jan 2012 13:05:28 +0200
-Message-ID: <CALLzPKZ8iR0TumBc5wa+BLTFZeo7ABv47O4P4d=sv8MaSzeTLA@mail.gmail.com>
-Subject: Re: sparc32 vs lib/mpi
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jan 2012 06:20:33 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 25 Jan 2012 03:20:33 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: ccross@android.com, olof@lixom.net, swarren@nvidia.com,
+        linux@arm.linux.org.uk
+Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
+Date: Wed, 25 Jan 2012 16:49:38 +0530
+Message-Id: <1327490378-10904-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 3:12 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->        I realize that very few people care about sparc32 these days,
-> but...
->        a) __clz_tab[] is defined (with identical contents) in
-> lib/mpi/mpi-bit.c and arch/sparc/lib/divdi3.S.  Linker is unhappy,
-> of course...
->        b) the same thing ends up using __udiv_qrnnd(), which simply
-> does not exist on sparc32.  There's a Cthulhu-scaring cascade of
-> ifdefs in lib/mpi/longlong.h, with several variants of udiv_qrnnd()
-> for sparc.  Unfortunately, it falls back on use of __udiv_qrnnd()...
-> Note that arch/sparc/math-emu/sfp-util_32.h has a definition of
-> udiv_qrnnd() which might match one of inline assembly variants in
+Allow the transfer size to vary in each DMA request,
+rather than assuming all requests to be the same size
+as the first request made.
 
-Would need to test it and see how it works...
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/mach-tegra/dma.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-> lib/mpi/longlong.h.  Or not.  BTW, what the hell is LONGLONG_STANDALONE?
->
+diff --git a/arch/arm/mach-tegra/dma.c b/arch/arm/mach-tegra/dma.c
+index abea4f6..81a7459 100644
+--- a/arch/arm/mach-tegra/dma.c
++++ b/arch/arm/mach-tegra/dma.c
+@@ -423,6 +423,7 @@ static void tegra_dma_update_hw_partial(struct tegra_dma_channel *ch,
+ {
+ 	u32 apb_ptr;
+ 	u32 ahb_ptr;
++	u32 csr;
+ 
+ 	if (req->to_memory) {
+ 		apb_ptr = req->source_addr;
+@@ -434,6 +435,15 @@ static void tegra_dma_update_hw_partial(struct tegra_dma_channel *ch,
+ 	writel(apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
+ 	writel(ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
+ 
++	if (ch->mode & TEGRA_DMA_MODE_CONTINOUS)
++		ch->req_transfer_count = (req->size >> 3) - 1;
++	else
++		ch->req_transfer_count = (req->size >> 2) - 1;
++	csr = readl(ch->addr + APB_DMA_CHAN_CSR);
++	csr &= ~CSR_WCOUNT_MASK;
++	csr |= ch->req_transfer_count << CSR_WCOUNT_SHIFT;
++	writel(csr, ch->addr + APB_DMA_CHAN_CSR);
++
+ 	req->status = TEGRA_DMA_REQ_INFLIGHT;
+ 	return;
+ }
+-- 
+1.7.1.1
 
-i see that it comes from gnupg code as it is, but do not see any
-scripts which might define it.
-
->        Could somebody who might remember still remember that stuff
-> come up with comments?  For now I'm disabling everything from
-> INTEGRITY_SIGNATURE down to MPILIB on sparc32 cross-build, but it
-> would be nice to get it at least somewhat sorted out...
