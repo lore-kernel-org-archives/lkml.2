@@ -1,56 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab2AYP1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:27:51 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:52938
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752541Ab2AYP1u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:27:50 -0500
-X-SpamScore: -5
-X-BigFish: PS-5(zzbb2dI9371I98dKzz1202hzz8275dhz2fhc1bhc31hc1ah2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:207.46.4.139;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0602HT005.namprd06.prod.outlook.com;RD:none;EFVD:NLI
-Message-ID: <4F201F6E.9020201@ixiacom.com>
-Date: Wed, 25 Jan 2012 07:27:42 -0800
-From: Earl Chew <echew@ixiacom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1754284Ab2AYP2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:28:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753055Ab2AYP2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 10:28:31 -0500
+Message-ID: <4F201F60.8080808@redhat.com>
+Date: Wed, 25 Jan 2012 10:27:28 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <adobriyan@gmail.com>
-Subject: Re: [PATCH] Support single byte reads from integers published in
- procfs by kernel/sysctl.c
-References: <4F1C5995.3060806@ixiacom.com> <m1fwf6pjal.fsf@fess.ebiederm.org> <4F1D8180.9030509@ixiacom.com> <m1mx9enzr0.fsf@fess.ebiederm.org> <4F1D8F37.6020806@ixiacom.com> <20120124145037.f8223e37.akpm@linux-foundation.org>
-In-Reply-To: <20120124145037.f8223e37.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Mel Gorman <mel@csn.ul.ie>
+CC: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Subject: Re: [PATCH v2 -mm 1/3] mm: reclaim at order 0 when compaction is
+ enabled
+References: <20120124131822.4dc03524@annuminas.surriel.com> <20120124132136.3b765f0c@annuminas.surriel.com> <20120125150016.GB3901@csn.ul.ie>
+In-Reply-To: <20120125150016.GB3901@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [216.23.154.50]
-X-MS-Exchange-CrossPremises-AuthSource: SN2PRD0602HT005.namprd06.prod.outlook.com
-X-MS-Exchange-CrossPremises-AuthAs: Internal
-X-MS-Exchange-CrossPremises-AuthMechanism: 06
-X-MS-Exchange-CrossPremises-Rules-Execution-History: Support - Juniper
-X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
-X-OrganizationHeadersPreserved: SN2PRD0602HT005.namprd06.prod.outlook.com
-X-OriginatorOrg: ixiacom.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/01/2012 2:50 PM, Andrew Morton wrote:
-> We fixed an instance of this in procfs a while ago (maybe a year ago?).
-> But I forget where it was.  It is surprising that a bug of this nature
-> survived so long.
+On 01/25/2012 10:00 AM, Mel Gorman wrote:
+> On Tue, Jan 24, 2012 at 01:21:36PM -0500, Rik van Riel wrote:
+>> When built with CONFIG_COMPACTION, kswapd does not try to free
+>> contiguous pages.
+>
+> balance_pgdat() gets its order from wakeup_kswapd(). This does not apply
+> to THP because kswapd does not get woken for THP but it should be woken
+> up for allocations like jumbo frames or order-1.
 
-Also related to procfs, I posted the following fix for pread() and seq_file but
-haven't received any feedback.
+In the kernel I run at home, I wake up kswapd for THP
+as well. This is a larger change, which Andrea asked
+me to delay submitting upstream for a bit.
 
-	https://lkml.org/lkml/2012/1/22/61
+So far there seem to be no ill effects. I'll continue
+watching for them.
 
-Would you take a look ?
+> As kswapd does no memory compaction itself, this patch still makes
+> sense but I found the changelog misleading.
 
-Earl
+Fair enough.  I will adjust the changelog.
+
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index 2880396..0398fab 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -1512,6 +1512,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+>>   	unsigned long nr_writeback = 0;
+>>   	isolate_mode_t reclaim_mode = ISOLATE_INACTIVE;
+>>   	struct zone *zone = mz->zone;
+>> +	int order = 0;
+>>
+>>   	while (unlikely(too_many_isolated(zone, file, sc))) {
+>>   		congestion_wait(BLK_RW_ASYNC, HZ/10);
+>> @@ -1522,8 +1523,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+>>   	}
+>>
+>>   	set_reclaim_mode(priority, sc, false);
+>> -	if (sc->reclaim_mode&  RECLAIM_MODE_LUMPYRECLAIM)
+>> +	if (sc->reclaim_mode&  RECLAIM_MODE_LUMPYRECLAIM) {
+>>   		reclaim_mode |= ISOLATE_ACTIVE;
+>> +		order = sc->order;
+>> +	}
+>>
+>>   	lru_add_drain();
+>>
+>
+> This is a nit-pick but I would far prefer if you did not bypass
+> sc->order like this and instead changes isolate_lru_pages to do a
+>
+> if (!order || !(sc->reclaim_mode&  RECLAIM_MODE_LUMPYRECLAIM))
+> 	continue;
+>
+> That would very clearly mark where LUMPYRECLAIM takes effect in
+> isolate_lru_pages() and makes deleting LUMPYRECLAIM easier in the
+> future.
+
+OK, I will do things that way instead.
+
+> The second effect of this change is a non-obvious side-effect. kswapd
+> will now isolate fewer pages per cycle because it will isolate
+> SWAP_CLUSTER_MAX pages instead of SWAP_CLUSTER_MAX<<order which it
+> potentially does currently. This is not wrong as such and may be
+> desirable to limit how much reclaim kswapd does but potentially it
+> impacts success rates for compaction. As this does not apply to THP,
+> it will be difficult to detect but bear in mind if we see an increase
+> in high-order allocation failures after this patch is merged. I am
+> not suggesting a change here but it would be nice to note in the
+> changelog if there is a new version of this patch.
+
+Good point.  I am running with THP waking up kswapd, and
+things seem to behave (and compaction seems to succeed),
+but we might indeed want to change balance_pgdat to free
+more pages for higher order allocations.
+
+Maybe this is the place to check (in balanced_pgdat) ?
+
+                 /*
+                  * We do this so kswapd doesn't build up large 
+priorities for
+                  * example when it is freeing in parallel with 
+allocators. It
+                  * matches the direct reclaim path behaviour in terms 
+of impact
+                  * on zone->*_priority.
+                  */
+                 if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
+                         break;
+
+>> @@ -2922,8 +2939,6 @@ out:
+>>
+>>   			/* If balanced, clear the congested flag */
+>>   			zone_clear_flag(zone, ZONE_CONGESTED);
+>> -			if (i<= *classzone_idx)
+>> -				balanced += zone->present_pages;
+>>   		}
+>
+> Why is this being deleted? It is still used by pgdat_balanced().
+
+This is outside of the big while loop and is not used again
+in the function.  This final for loop does not appear to
+use the variable balanced at all, except for incrementing
+it.
 
