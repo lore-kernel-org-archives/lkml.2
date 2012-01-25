@@ -1,96 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133Ab2AYTFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 14:05:14 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:45615 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964Ab2AYTFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 14:05:12 -0500
-Date: Wed, 25 Jan 2012 19:05:10 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1201251902590.12477@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751975Ab2AYTQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 14:16:18 -0500
+Received: from straum.hexapodia.org ([207.7.131.186]:58500 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab2AYTQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 14:16:17 -0500
+Date: Wed, 25 Jan 2012 11:16:17 -0800
+From: Andy Isaacson <adi@hexapodia.org>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: Re: e1000e: repeated eth0: Error reading PHY register
+Message-ID: <20120125191616.GJ21370@hexapodia.org>
+References: <20120125092101.GA10626@hexapodia.org>
+ <804857E1F29AAC47BF68C404FC60A1842437C3@ORSMSX102.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <804857E1F29AAC47BF68C404FC60A1842437C3@ORSMSX102.amr.corp.intel.com>
+X-Old-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Fingerprint: A5FC 6141 F76D B6B1 C81F  0FB7 AFA0 A45F ED3D 116D
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 25, 2012 at 05:00:29PM +0000, Allan, Bruce W wrote:
+> >On my Thinkpad X201s running 3.3-rc1 I'm seeing bursts of these:
+> >
+> >[ 1270.207370] e1000e 0000:00:19.0: eth0: Error reading PHY register
+> 
+> Please file a bug with this information at
+> http://sourceforge.net/tracker/?group_id=42302&atid=447449
 
-Hi Linus,
+Man sourceforge sure has jumped the shark; their signup form requires
+"job title" and "company size".  I wonder how many other CEOs of 20,000+
+employee companies bother to report ethernet driver bugs.
 
-bunch of regression fixes since TTM rework and radeon initialisation, 
-modesetting fixes for Alex to fix some black screens on kms start type 
-issues, and two radeon ACPI fixes that make some laptops no oops on 
-startup.
+And we don't have "bugs", we have "artifacts".  Sigh.
 
-I think Intel have some -fixes coming soon which I'll send in a separate 
-pull.
+Anyways, here you go:
+https://sourceforge.net/tracker/?func=detail&aid=3479714&group_id=42302&atid=447449
 
-Dave.
-
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
-
-  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
-
-are available in the git repository at:
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-Alan Cox (1):
-      gma500: Fix shmem mapping
-
-Alex Deucher (7):
-      drm/radeon/kms: Add an MSI quirk for Dell RS690
-      drm/radeon/kms: add some missing semaphore init
-      drm/radeon/kms: move disp eng pll setup to init path
-      drm/radeon/kms: move panel mode setup into encoder mode set
-      drm/radeon/kms: rework modeset sequence for DCE41 and DCE5
-      drm/radeon/kms: use drm_detect_hdmi_monitor for picking encoder mode
-      drm/radeon/kms: refine TMDS dual link checks
-
-Ben Skeggs (1):
-      drm/ttm: fix two regressions since move_notify changes
-
-Igor Murzov (2):
-      drm/radeon: fix invalid memory access in radeon_atrm_get_bios()
-      drm/radeon: finish getting bios earlier
-
-Jerome Glisse (2):
-      drm/radeon: silence out possible lock dependency warning
-      drm/radeon: avoid deadlock if GPU lockup is detected in ib_pool_get
-
-Jesper Juhl (1):
-      gpu, drm, sis: Don't return uninitialized variable from sis_driver_load()
-
-Thomas Hellstrom (1):
-      drm: Fix authentication kernel crash
-
- drivers/gpu/drm/drm_auth.c                   |    6 ++-
- drivers/gpu/drm/drm_fops.c                   |    5 ++
- drivers/gpu/drm/gma500/gtt.c                 |    5 +-
- drivers/gpu/drm/nouveau/nouveau_bo.c         |    4 +
- drivers/gpu/drm/radeon/atombios_crtc.c       |   60 +++++++++---------
- drivers/gpu/drm/radeon/atombios_dp.c         |   22 +++----
- drivers/gpu/drm/radeon/atombios_encoders.c   |   89 +++++++++++++-------------
- drivers/gpu/drm/radeon/evergreen.c           |    1 +
- drivers/gpu/drm/radeon/evergreend.h          |    1 +
- drivers/gpu/drm/radeon/ni.c                  |    1 +
- drivers/gpu/drm/radeon/nid.h                 |    1 +
- drivers/gpu/drm/radeon/radeon.h              |   84 ++++++++++++------------
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |    4 +-
- drivers/gpu/drm/radeon/radeon_bios.c         |    2 +-
- drivers/gpu/drm/radeon/radeon_device.c       |    8 ++-
- drivers/gpu/drm/radeon/radeon_display.c      |    6 +-
- drivers/gpu/drm/radeon/radeon_encoders.c     |   77 ++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon_irq_kms.c      |    6 ++
- drivers/gpu/drm/radeon/radeon_mode.h         |    8 ++
- drivers/gpu/drm/radeon/radeon_ring.c         |   37 ++++++-----
- drivers/gpu/drm/sis/sis_drv.c                |    3 +-
- drivers/gpu/drm/ttm/ttm_bo.c                 |   17 ++++-
- include/drm/drmP.h                           |    1 +
- 23 files changed, 285 insertions(+), 163 deletions(-)
+-andy
