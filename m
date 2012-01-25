@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab2AYUyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 15:54:07 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:35787 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752310Ab2AYUyF (ORCPT
+	id S1752519Ab2AYVBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 16:01:54 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33653 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab2AYVBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 15:54:05 -0500
-Message-ID: <4F20798C.4040205@xenotime.net>
-Date: Wed, 25 Jan 2012 13:52:12 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 25 Jan 2012 16:01:52 -0500
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -next] uwb & wusb: fix kconfig error
-References: <20120125141938.c1a9460d56948e1c7b26d3f8@canb.auug.org.au>
-In-Reply-To: <20120125141938.c1a9460d56948e1c7b26d3f8@canb.auug.org.au>
+In-Reply-To: <20120125085712.524b65a8@nehalam.linuxnetplumber.net>
+References: <18947389.2811326843064500.JavaMail.root@5-MeO-DMT.ynet.sk>
+ <3900291.2831326843194846.JavaMail.root@5-MeO-DMT.ynet.sk> <20120125085712.524b65a8@nehalam.linuxnetplumber.net>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
+Date: Wed, 25 Jan 2012 22:01:08 +0100
+X-Google-Sender-Auth: KFcTb9YUsKgpKlO6LxejT8rahMA
+Message-ID: <CAGsizzKAvAV771vSo0TGx_sU5qXgjOOqVRooK9vOf=XEi1NtXA@mail.gmail.com>
+Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
-
-Fix UWB/WUSB kconfig error by changing 'select' to 'depends on'.
-
-drivers/usb/wusbcore/Kconfig:4:error: recursive dependency detected!
-drivers/usb/wusbcore/Kconfig:4:	symbol USB_WUSB is selected by USB_HWA_HCD
-drivers/usb/host/Kconfig:559:	symbol USB_HWA_HCD depends on UWB
-drivers/uwb/Kconfig:5:	symbol UWB is selected by USB_WUSB
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/usb/wusbcore/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20120125.orig/drivers/usb/wusbcore/Kconfig
-+++ linux-next-20120125/drivers/usb/wusbcore/Kconfig
-@@ -6,7 +6,7 @@ config USB_WUSB
- 	depends on EXPERIMENTAL
- 	depends on USB
- 	depends on PCI
--        select UWB
-+	depends on UWB
-         select CRYPTO
-         select CRYPTO_BLKCIPHER
-         select CRYPTO_CBC
+2012/1/25 Stephen Hemminger <shemminger@vyatta.com>:
+> On Wed, 18 Jan 2012 00:33:14 +0100 (CET)
+> Stefan Gula <steweg@ynet.sk> wrote:
+>
+>> From: Stefan Gula <steweg@gmail.com>
+>>
+>> This patch is an extension for current Ethernet over GRE
+>> implementation, which allows user to create virtual bridge (multipoint
+>> VPN) and forward traffic based on Ethernet MAC address information in
+>> it. It simulates the Bridge behavior learning mechanism, but instead
+>> of learning port ID from which given MAC address comes, it learns IP
+>> address of peer which encapsulated given packet. Multicast, Broadcast
+>> and unknown-multicast traffic is send over network as multicast
+>> encapsulated GRE packet, so one Ethernet multipoint GRE tunnel can be
+>> represented as one single virtual switch on logical level and be also
+>> represented as one multicast IPv4 address on network level.
+>>
+>> Signed-off-by: Stefan Gula <steweg@gmail.com>
+>
+> Will this break normal usages of GRE?
+> Compile time options are not acceptable for a standard distribution if
+> it will break it for the other case. It is fine to add the additional data
+> structure elements, but the code in the receive path might get broken?
+>
+>
+No, if you don't decide to compile with given kernel option.. nothing
+happens and original GRE code is leaved intact.
