@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab2AYHih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 02:38:37 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45024 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab2AYHig convert rfc822-to-8bit (ORCPT
+	id S1752675Ab2AYHjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 02:39:37 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43701 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab2AYHjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 02:38:36 -0500
+	Wed, 25 Jan 2012 02:39:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
-References: <20120123.134352.1621146585245670953.davem@davemloft.net>
- <CAGsizzJnQ6b6eSC0ZnAtFguU7_xDfWFPSY6L4DWXc24F+Ts2XQ@mail.gmail.com>
- <CAOzFzEjE7b-Y+_vOWeBKbHDkURRcYXomSTcwB91vKHVWQxBVsg@mail.gmail.com>
- <20120124.230203.1478271172075708903.davem@davemloft.net> <CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Wed, 25 Jan 2012 08:38:15 +0100
-X-Google-Sender-Auth: 5UxLyViQ7e_81gjU94JdVaS3sDg
-Message-ID: <CAGsizzJqNgos89pp-0ivw6ZmUd3+SehwdAnPY7FuGG+xvPWxAg@mail.gmail.com>
-Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: Jesse Gross <jesse@nicira.com>
-Cc: David Miller <davem@davemloft.net>, joseph.glanville@orionvm.com.au,
-        eric.dumazet@gmail.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+Date: Wed, 25 Jan 2012 08:39:35 +0100
+Message-ID: <CADkCAutiOaeJitJ-8xCWRJGaxD=m7a+2oNc-xqKJu9t+JdZYQw@mail.gmail.com>
+Subject: Add NULL pointer checks to regulator_enable() et. al?
+From: Bill Gatliff <bgat@billgatliff.com>
+To: linux-kernel@vger.kernel.org
+Cc: lrg@slimlogic.co.uk
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/25 Jesse Gross <jesse@nicira.com>:
-> On Tue, Jan 24, 2012 at 8:02 PM, David Miller <davem@davemloft.net> wrote:
->> From: Joseph Glanville <joseph.glanville@orionvm.com.au>
->> Date: Wed, 25 Jan 2012 14:48:37 +1100
->>
->>> The reason why this patch is useful is that it stands to be the only
->>> true mulitpoint L2 VPN with a kernel space forwarding plane.
->>
->> So what you're telling me is that I added this huge openvswitch
->> thing essentially for nothing?
->
-> I think it's actually the opposite - Open vSwitch can be used to
-> implement this type of thing as well as for many other use cases.  On
-> the other hand, even when implementing a multipoint L2 solution it can
-> be useful to have additional levels of control but you can't do that
-> with this patch because it essentially statically glues together
-> tunneling and bridging.
-Yes, those methods are glued together. If you are speaking about
-additional level of controls. What kind of control is missing?
+Guys:
 
-As if I compare it to standard bridge, it is missing:
--  STP code, which is not relevant here as the topology inside the
-gretap bridge never reaches loops - it represent more one shared link
-than box with multiple links from STP point of view. On the other hand
-STP can be tunneled inside of that tunnel by putting gretap interface
-as part of some bridge e.g. "brctl addif br0 gretap0".
-- IGMP/MLD snooping. IGMP/MLD snooping are useful features, but due
-the encapsulation rules, the only one optimalization can be done and
-that's if in ONLY ONE gretap enabled nodes requires to join some
-multicast group inside the gretap and one node has source behind. In
-that case those frames can be forwarded to only that gretap node. In
-case of two or more, the encapsulation process will result in using
-multicast as underlying technology so any one of the gretap nodes will
-received the frames regardless of state if IGMP/MLD. On the other hand
-such multicast optimalizations are missing from whole GRE tunnels code
-(PIM/MLD/IGMP snooping, using something like cisco Multicast Domain
-Trees/MDT....), so if somebody wants to optimize that feel free, but
-don't blame this patch for missing those.
-- did I miss something?
+
+(Please CC me on replies).
+
+
+I have this pattern coming up a LOT in my code:
+
+   struct regulator *reg;
+
+   /* probe() */
+   reg = regulator_get(dev, "VLOGIC");
+
+   /* elsewhere() */
+   if (!IS_ERR_OR_NULL(reg))
+     ret = regulator_enable(reg);
+
+   /* remove() */
+   if (!IS_ERR_OR_NULL(reg))
+      regulator_put(reg);
+
+It comes up particularly often in drivers that are doing aggressive
+runtime power management.
+
+Unlike other kernel API, a NULL pointer from regulator_get() isn't a
+true "error": it just means that there is no regulator associated with
+the requested pin and device.  It seems natural, therefore, for
+regulator_enable() and friends to not consider a NULL regulator
+pointer to be an error--- and definitely not something OOPS-worthy.
+But if I forget even ONE check in the above code, that's exactly what
+I get: an OOPS.  But all those checks seem to be just tedium and noise
+in this case.
+
+Is there something truly objectionable in the following patch?  If
+not, then I'm happy to post a more complete one.
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 5b2328d..b6e303a 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1482,9 +1482,16 @@ static int _regulator_enable(struct regulator_dev *rdev)
+  */
+ int regulator_enable(struct regulator *regulator)
+ {
+-	struct regulator_dev *rdev = regulator->rdev;
++	struct regulator_dev *rdev;
+ 	int ret = 0;
+
++	if (unlikely(!regulator))
++		return 0;
++	if (unlikely(IS_ERR(regulator)))
++		return PTR_ERR(regulator);
++
++	rdev = regulator->rdev;
++
+ 	mutex_lock(&rdev->mutex);
+
+ 	if (!regulator_check_voltage_update(rdev)) {
+
+
+Note that I'm not arguing for such treatment all over the kernel---
+just certain places in the regulator framework!
+
+
+Kindest regards,
+
+
+b.g.
+-- 
+Bill Gatliff
+bgat@billgatliff.com
