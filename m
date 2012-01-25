@@ -1,134 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab2AYN5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 08:57:18 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:48591 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755065Ab2AYN5R convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 08:57:17 -0500
+	id S1755876Ab2AYOEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:04:34 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:45013 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754313Ab2AYOEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 09:04:32 -0500
+Message-ID: <4F200BE2.2070301@free.fr>
+Date: Wed, 25 Jan 2012 15:04:18 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <201201201423.46858.laurent.pinchart@ideasonboard.com>
-References: <1324891397-10877-1-git-send-email-sumit.semwal@ti.com>
- <1324891397-10877-2-git-send-email-sumit.semwal@ti.com> <201201201423.46858.laurent.pinchart@ideasonboard.com>
-From: "Semwal, Sumit" <sumit.semwal@ti.com>
-Date: Wed, 25 Jan 2012 19:26:52 +0530
-Message-ID: <CAB2ybb98BT8L569G_728x1ZXdFNaQCDZzW2+kB0ZNeFak5_g+Q@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 1/3] dma-buf: Introduce dma buffer sharing mechanism
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        arnd@arndb.de, airlied@redhat.com, linux@arm.linux.org.uk,
-        patches@linaro.org, jesse.barker@linaro.org, daniel@ffwll.ch
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Colin Cross <ccross@android.com>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 0/3] coupled cpuidle state support
+References: <1324426147-16735-1-git-send-email-ccross@android.com> <4F1929E9.7070707@linaro.org> <CAMbhsRTbVqV6p0py9NGZrpFPf2yvp-B0dr+o-m7qbdja_-Lfzw@mail.gmail.com>
+In-Reply-To: <CAMbhsRTbVqV6p0py9NGZrpFPf2yvp-B0dr+o-m7qbdja_-Lfzw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 6:53 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Summit,
->
-> Sorry for the late review. I know that this code is now in mainline, but I
-> still have a couple of comments. I'll send patches if you agree with them.
-Hi Laurent,
-
-Thanks for your review; apologies for being late in replying - I was
-OoO for last couple of days.
->
-> On Monday 26 December 2011 10:23:15 Sumit Semwal wrote:
-<snip>
+On 01/20/2012 09:40 PM, Colin Cross wrote:
+> On Fri, Jan 20, 2012 at 12:46 AM, Daniel Lezcano
+> <daniel.lezcano@linaro.org>  wrote:
+>> Hi Colin,
 >>
->
-> [snip]
->
->> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
->> new file mode 100644
->> index 0000000..e38ad24
->> --- /dev/null
->> +++ b/drivers/base/dma-buf.c
->> @@ -0,0 +1,291 @@
->
-> [snip]
->
->> +/**
->> + * dma_buf_export - Creates a new dma_buf, and associates an anon file
->> + * with this buffer, so it can be exported.
->> + * Also connect the allocator specific data and ops to the buffer.
->> + *
->> + * @priv:    [in]    Attach private data of allocator to this buffer
->> + * @ops:     [in]    Attach allocator-defined dma buf ops to the new buffer.
->> + * @size:    [in]    Size of the buffer
->> + * @flags:   [in]    mode flags for the file.
->> + *
->> + * Returns, on success, a newly created dma_buf object, which wraps the
->> + * supplied private data and operations for dma_buf_ops. On either missing
->> + * ops, or error in allocating struct dma_buf, will return negative error.
->> + *
->> + */
->> +struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops,
->> +                             size_t size, int flags)
->> +{
->> +     struct dma_buf *dmabuf;
->> +     struct file *file;
->> +
->> +     if (WARN_ON(!priv || !ops
->> +                       || !ops->map_dma_buf
->> +                       || !ops->unmap_dma_buf
->> +                       || !ops->release)) {
->> +             return ERR_PTR(-EINVAL);
->> +     }
->> +
->> +     dmabuf = kzalloc(sizeof(struct dma_buf), GFP_KERNEL);
->> +     if (dmabuf == NULL)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     dmabuf->priv = priv;
->> +     dmabuf->ops = ops;
->
-> dmabuf->ops will never but NULL, but (see below)
->
-<snip>
->> +struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
->> +                                       struct device *dev)
->> +{
->> +     struct dma_buf_attachment *attach;
->> +     int ret;
->> +
->> +     if (WARN_ON(!dmabuf || !dev || !dmabuf->ops))
->
-> you still check dmabuf->ops here, as well as in several places below.
-> Shouldn't these checks be removed ?
-You're right - these can be removed.
->
->> +             return ERR_PTR(-EINVAL);
->> +
->> +     attach = kzalloc(sizeof(struct dma_buf_attachment), GFP_KERNEL);
->> +     if (attach == NULL)
->> +             goto err_alloc;
->
-> What about returning ERR_PTR(-ENOMEM) directly here ?
->
-Right; we can do that.
->> +
->> +     mutex_lock(&dmabuf->lock);
->> +
->> +     attach->dev = dev;
->> +     attach->dmabuf = dmabuf;
->
-> These two lines can be moved before mutex_lock().
->
-:) Yes - thanks for catching this.
-<snip>
-> --
-> Regards,
->
-> Laurent Pinchart
+>> this patchset could be interesting to resolve in a generic way the cpu
+>> dependencies.
+>> What is the status of this patchset ?
+> I can't do much with it right now, because I don't have any devices
+> that can do SMP idle with a v3.2 kernel.  I've started working on an
+> updated version that avoids the spinlock, but it might be a while
+> before I can test and post it.  I'm mostly looking for feedback on the
+> approach taken in this patch, and whether it will be useful for other
+> SoCs besides Tegra and OMAP4.
 
-Let me know if you'd send patches for these, or should I just go ahead
-and correct.
+Hi Colin,
 
-Best regards,
-~Sumit.
+I will be happy to test your patchset. Do you have a pointer to a more 
+recent kernel ?
+
+
+>> Did you have the opportunity to measure the power consumption with and
+>> without this patchset ?
+> Power consumption will be very dependent on the specific SoC in
+> question.  The most important factors are the power savings of the
+> independent cpuidle state (normally WFI) vs. the hotplug state
+> (normally 1 cpu in OFF), and the workload being tested.
+>
+> On a very idle system, these patches result in the same total power as
+> hotplugging one cpu and letting the other idle normally.  On a 25%
+> busy system, you might see a slight increase in power, as the best
+> independent cpuidle state might be WFI, vs 1 cpu in OFF mode in
+> hotplug.  On OMAP4, that difference is small, on the order of 10 mW.
+> Once you hit the threshold where a hotplug governor would have
+> hotplugged in the second cpu (lets say 40%), the savings from these
+> patches are enormous, as you can hit the lowest power state up to 60%
+> of the time, where the hotplug solution would never be going below WFI
+> on both cpus.  On OMAP4, that can be well over 100 mW.
+
+Interesting.
+
+
+Thanks
+
+   -- Daniel
+
