@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab2AYSvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 13:51:14 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52540 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab2AYSvL (ORCPT
+	id S1751725Ab2AYSyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 13:54:09 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64141 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab2AYSyI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 13:51:11 -0500
-Message-ID: <4F204F1C.70908@gmail.com>
-Date: Wed, 25 Jan 2012 12:51:08 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	Wed, 25 Jan 2012 13:54:08 -0500
 MIME-Version: 1.0
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        Milton Miller <miltonm@bga.com>, benh@kernel.crashing.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [RFCv2 00/14]
-References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca> <4F1DD6DF.4080706@gmail.com> <4F200DFD.7070407@ti.com>
-In-Reply-To: <4F200DFD.7070407@ti.com>
+In-Reply-To: <20120124084133.GD1660@cmpxchg.org>
+References: <20120119161445.b3a8a9d2.kamezawa.hiroyu@jp.fujitsu.com>
+	<CALWz4ixufzgi2kDRgTMAzty-S2AKMmPfqdGc1sBRNFJxf-WTAQ@mail.gmail.com>
+	<20120124084133.GD1660@cmpxchg.org>
+Date: Wed, 25 Jan 2012 10:54:06 -0800
+Message-ID: <CALWz4iyoRCFG9=aiySFzQb3HsM33yW7tZB4N6xee6qUvO6L2-g@mail.gmail.com>
+Subject: Re: [PATCH] memcg: remove unnecessary thp check at page stat accounting
+From: Ying Han <yinghan@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 08:13 AM, Cousson, Benoit wrote:
-> On 1/23/2012 10:53 PM, Rob Herring wrote:
->> On 01/23/2012 03:07 PM, Grant Likely wrote:
->>>
->>> Hey everyone,
->>>
->>> Here's the second RFC for the irq_domain patches.  I could use some
->>> help testing now.  I still expect there will be a few bugs.  The
->>> series is based on v3.3-rc1, and I've pushed it out to my git server:
->>>
->>> git://git.secretlab.ca/git/linux-2.6.git irqdomain/next
+On Tue, Jan 24, 2012 at 12:41 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Mon, Jan 23, 2012 at 12:11:11PM -0800, Ying Han wrote:
+>> On Wed, Jan 18, 2012 at 11:14 PM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > Thank you very much for reviewing previous RFC series.
+>> > This is a patch against memcg-devel and linux-next (can by applied without HUNKs).
+>> >
+>> > ==
+>> >
+>> > From 64641b360839b029bb353fbd95f7554cc806ed05 Mon Sep 17 00:00:00 2001
+>> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> > Date: Thu, 12 Jan 2012 16:08:33 +0900
+>> > Subject: [PATCH] memcg: remove unnecessary thp check in mem_cgroup_update_page_stat()
+>> >
+>> > commit 58b318ecf(memcg-devel)
+>> >    memcg: make mem_cgroup_split_huge_fixup() more efficient
+>> > removes move_lock_page_cgroup() in thp-split path.
+>> >
+>> > So, We do not have to check PageTransHuge in mem_cgroup_update_page_stat
+>> > and fallback into the locked accounting because both move charge and thp
+>> > split up are done with compound_lock so they cannot race. update vs.
+>> > move is protected by the mem_cgroup_stealed sufficiently.
 >>
->> Can you post to linux-arm-kernel too so people are aware of this work
->> and stop posting dead-end irqdomain patches.
-> 
-> Good point, I have two pending series that are using the
-> irq_domain_add() so far, so it will be good to have that branch pulled
-> in arm-soc.
-> 
->> I tested what you had as of this morning and it works fine for me. Looks
->> like the only diff is the VExpress code. I'm working on rebasing my
->> domain support for generic irqchip now.
-> 
-> In fact your generic irqchip should even avoid us to use
-> irq_domain_add_legacy() since both GPIO and OMAP3 intc are already using
-> the irqchip.
-> 
-> I guess you are not going to change the interface so the patches I did
-> on your previous branch to try them should be good already, isn't it?
+>> Sorry, i don't see we changed the "move charge" to "move account" ?
+>
+> move_account() moves charges.  IMO, it's the function that is a
+> misnomer and "moving charges" is less ambiguous since we account
+> several different things in the memory controller.
 
-I've got it rebased on top of Grant's tree. I will send it out soon.
+Hmm, that works then.
 
-One problem that still remains is it breaks x86 and any platform using
-generic irq chip, but not selecting IRQ_DOMAIN. Grant, do you plan to
-enable IRQ_DOMAIN for x86 in your series? MIPS may also need fixing.
+Acked-by: Ying Han<yinghan@google.com>
 
-Rob
+--Ying
