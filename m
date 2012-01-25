@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab2AYMLu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 07:11:50 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:34698 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab2AYMLs convert rfc822-to-8bit (ORCPT
+	id S1752800Ab2AYMLh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 07:11:37 -0500
+Received: from unicorn.mansr.com ([78.86.181.103]:55769 "EHLO
+	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab2AYMLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 07:11:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F1FD2AA.9020708@broadcom.com>
-References: <CAC9WiBgpBCWZVjAQkJWSpXhC_dK1KKPfAHZvxVgaLV8BUsc41Q@mail.gmail.com>
-	<4F1FBAA9.4040405@broadcom.com>
-	<CAC9WiBjpsLuJhzw+vZsPC2bA73mad444Gq32DRL_gCri2MqaMw@mail.gmail.com>
-	<4F1FD2AA.9020708@broadcom.com>
-Date: Wed, 25 Jan 2012 07:11:46 -0500
-Message-ID: <CA+5PVA73WHfnurWiyY4w9f4_mw=vUdpaNmAavHZtt+xYfo8Kcw@mail.gmail.com>
-Subject: Re: kernel 3.2.1: BUG: scheduling while atomic: swapper/0/0/0x10000100
-From: Josh Boyer <jwboyer@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Francis Moreau <francis.moro@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jan 2012 07:11:36 -0500
+From: Mans Rullgard <mans.rullgard@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Javi Merino <javi.merino@arm.com>, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jaswinder.singh@linaro.org>, linux-kernel@vger.kernel.org,
+        Boojin Kim <boojin.kim@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Subject: [PATCH] DMA: pl330: fix null pointer dereference in pl330_chan_ctrl()
+Date: Wed, 25 Jan 2012 12:11:32 +0000
+Message-Id: <1327493492-31274-1-git-send-email-mans.rullgard@linaro.org>
+X-Mailer: git-send-email 1.7.8.4
+In-Reply-To: <4F11F963.4050900@ru.mvista.com>
+References: <4F11F963.4050900@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 5:00 AM, Arend van Spriel <arend@broadcom.com> wrote:
-> On 01/25/2012 09:35 AM, Francis Moreau wrote:
->> Hi Arend,
->>
->> On Wed, Jan 25, 2012 at 9:17 AM, Arend van Spriel <arend@broadcom.com> wrote:
->>> On 01/24/2012 04:59 PM, Francis Moreau wrote:
->>>> Hi,
->>>>
->>>> Just in case someone is interested, I've been hit by this:
->>>>
->>>> [  236.734640] BUG: scheduling while atomic: swapper/0/0/0x10000100
->>>
->>> I hit that problem yesterday as well on 3.3.0-rc1. I suspected it came
->>> from my development changes on brcmfmac, but you are not using that.
->>
->> I'm not sure it's related to the brcmfmac, because the RFKILL switch
->> was off when it happened.
->>
->> Were you writting/reading from/to a SD card by any chances when it did trigger ?
->>
->
-> Nope. It was a USB device driver. Maybe it was conincidental that it
-> happened shortly after loading the driver, but I tend to mistrust my own
-> stuff ;-). I posted a question in my issue yesterday (see [1]).
+This fixes the thrd->req_running field being accessed before thrd
+is checked for null.  The error was introduced in abb959f
+(ARM: 7237/1: PL330: Fix driver freeze).
 
-We've had a few similar issues reported in Fedora yesterday after we
-rebased to 3.2.1.
-I've not found a common trend yet, but there is definitely an issue on
-some hardware in
-3.2.1
+Signed-off-by: Mans Rullgard <mans.rullgard@linaro.org>
+---
+ drivers/dma/pl330.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-josh
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index add07e0..6278443 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -1568,12 +1568,13 @@ static int pl330_chan_ctrl(void *ch_id, enum pl330_chan_op op)
+ 	struct pl330_thread *thrd = ch_id;
+ 	struct pl330_dmac *pl330;
+ 	unsigned long flags;
+-	int ret = 0, active = thrd->req_running;
++	int ret = 0, active;
+ 
+ 	if (!thrd || thrd->free || thrd->dmac->state == DYING)
+ 		return -EINVAL;
+ 
+ 	pl330 = thrd->dmac;
++	active = thrd->req_running;
+ 
+ 	spin_lock_irqsave(&pl330->lock, flags);
+ 
+-- 
+1.7.8.4
+
