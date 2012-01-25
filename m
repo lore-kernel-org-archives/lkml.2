@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab2AYP4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:56:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46373 "EHLO mx1.redhat.com"
+	id S1754991Ab2AYP7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:59:35 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:51552 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752904Ab2AYP4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:56:08 -0500
-Message-ID: <4F2025D9.9050409@redhat.com>
-Date: Wed, 25 Jan 2012 10:55:05 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752892Ab2AYP7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 10:59:34 -0500
+From: James Bottomley <jbottomley@parallels.com>
+To: Greg KH <gregkh@suse.de>
+CC: Christoph Hellwig <hch@infradead.org>, KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>
+Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Index: AQHM0W763o2pXZK11UadxuudCK0AbpYMmkCA//+5EwCAA1dLgIANnEvAgACMXQCAAAJOgIAAAkoA
+Date: Wed, 25 Jan 2012 15:59:26 +0000
+Message-ID: <1327507166.2776.32.camel@dabdike.int.hansenpartnership.com>
+References: <1326402943-14031-1-git-send-email-kys@microsoft.com>
+	 <20120114164228.GB9682@infradead.org>
+	 <6E21E5352C11B742B20C142EB499E0481B6F0307@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	 <20120116152951.GA9720@infradead.org>
+	 <6E21E5352C11B742B20C142EB499E0481B6FE0E2@TK5EX14MBXC122.redmond.corp.microsoft.com>
+	 <20120125154300.GA19509@infradead.org> <20120125155115.GA3608@suse.de>
+In-Reply-To: <20120125155115.GA3608@suse.de>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [76.243.235.53]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <D5AB611CF0262F43A9FD308C89B2E951@sw.swsoft.com>
 MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH v2 -mm 3/3] mm: only defer compaction for failed order
- and higher
-References: <20120124131822.4dc03524@annuminas.surriel.com> <20120124132332.0c18d346@annuminas.surriel.com> <20120125154108.GD3901@csn.ul.ie>
-In-Reply-To: <20120125154108.GD3901@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0PFxhFu004856
 
-On 01/25/2012 10:41 AM, Mel Gorman wrote:
+On Wed, 2012-01-25 at 07:51 -0800, Greg KH wrote:
+> On Wed, Jan 25, 2012 at 10:43:00AM -0500, Christoph Hellwig wrote:
+> > On Wed, Jan 25, 2012 at 03:29:05PM +0000, KY Srinivasan wrote:
+> > > James,
+> > > Any updates here? 
+> > 
+> > Given that this is a new driver without external dependencies it seems
+> > fine even for a 3.3 merge to me.
+> 
+> Fine with me as well.
 
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -673,9 +673,18 @@ static int __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
->>   		INIT_LIST_HEAD(&cc->freepages);
->>   		INIT_LIST_HEAD(&cc->migratepages);
->>
->> -		if (cc->order<  0 || !compaction_deferred(zone))
->> +		if (cc->order<  0 || !compaction_deferred(zone, cc->order))
->>   			compact_zone(zone, cc);
->>
->> +		if (cc->order>  0) {
->> +			int ok = zone_watermark_ok(zone, cc->order,
->> +						low_wmark_pages(zone), 0, 0);
->> +			if (ok&&  cc->order>  zone->compact_order_failed)
->> +				zone->compact_order_failed = cc->order + 1;
->> +			else if (!ok&&  cc->sync)
->> +				defer_compaction(zone, cc->order);
->> +		}
->> +
->
-> That needs a comment. I think what you're trying to do is reset
-> compat_order_failed once compaction is successful.
->
-> The "!ok&&  cc->sync" check may be broken. __compact_pgdat() is
-> called from kswapd, not direct compaction so cc->sync will not be true.
+OK, so what I need to linux-scsi is an applyable patch moving it out of
+staging.
 
-The problem with doing that is that we would be deferring
-synchronous compaction (by allocators), just because
-asynchronous compaction from kswapd failed...
+James
 
-That is the reason the code is like it is above.  And
-indeed, it will not defer compaction from this code path
-right now.
-
-Then again, neither does async compaction from page
-allocators defer compaction - only sync compaction does.
-
-If it turns out we need a separate compaction deferral
-for async compaction, we can always introduce that later,
-and this code will be ready for it.
-
-If you prefer, I can replace the whole "else if" bit with
-a big fat comment explaining why we cannot currently
-defer compaction from this point.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
