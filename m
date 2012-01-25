@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab2AYXSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 18:18:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35863 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab2AYXSi convert rfc822-to-8bit (ORCPT
+	id S1751925Ab2AYXYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 18:24:14 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:21371 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2AYXYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 18:18:38 -0500
+	Wed, 25 Jan 2012 18:24:12 -0500
+Message-ID: <4F208E73.3070103@oracle.com>
+Date: Wed, 25 Jan 2012 15:21:23 -0800
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <CAGsizzJnRy74ni-HH=5q1VR4g6sfDPg9SFw4UKgSjJjkSR8OJA@mail.gmail.com>
-References: <CAOzFzEjE7b-Y+_vOWeBKbHDkURRcYXomSTcwB91vKHVWQxBVsg@mail.gmail.com>
-	<20120124.230203.1478271172075708903.davem@davemloft.net>
-	<CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
-	<20120125.165548.596418893115900979.davem@davemloft.net>
-	<CAGsizzJnRy74ni-HH=5q1VR4g6sfDPg9SFw4UKgSjJjkSR8OJA@mail.gmail.com>
-Date: Thu, 26 Jan 2012 00:18:37 +0100
-Message-ID: <CAA93jw5Juvb91wWt8=KbrxAW7nOdAUX82q+syMwv-+XJwgeSwA@mail.gmail.com>
-Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-From: Dave Taht <dave.taht@gmail.com>
-To: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Cc: David Miller <davem@davemloft.net>, jesse@nicira.com,
-        joseph.glanville@orionvm.com.au, eric.dumazet@gmail.com,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+CC: Wim Van Sebroeck <wim@iguana.be>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        dann frazier <dannf@hp.com>
+Subject: Re: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
+References: <1326686570-19303-1-git-send-email-maxim.uvarov@oracle.com> <1326686570-19303-2-git-send-email-maxim.uvarov@oracle.com> <CA+55aFxzfCxwYUcRbSyf+U7nr5GPjH4Qfine_TcY6Oxj8WQrWw@mail.gmail.com> <20120124203738.GA27296@infomag.iguana.be> <9774516974AF5F4C8A2C3C69CD3412332032E846@G9W0755.americas.hpqcorp.net>
+In-Reply-To: <9774516974AF5F4C8A2C3C69CD3412332032E846@G9W0755.americas.hpqcorp.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090201.4F208F12.00B8,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/25 Štefan Gula <steweg@ynet.sk>:
-> 2012/1/25 David Miller <davem@davemloft.net>:
->> From: Jesse Gross <jesse@nicira.com>
->> Date: Tue, 24 Jan 2012 23:11:06 -0800
->>
->>> On Tue, Jan 24, 2012 at 8:02 PM, David Miller <davem@davemloft.net> wrote:
->>>> From: Joseph Glanville <joseph.glanville@orionvm.com.au>
->>>> Date: Wed, 25 Jan 2012 14:48:37 +1100
->>>>
->>>>> The reason why this patch is useful is that it stands to be the only
->>>>> true mulitpoint L2 VPN with a kernel space forwarding plane.
->>>>
->>>> So what you're telling me is that I added this huge openvswitch
->>>> thing essentially for nothing?
->>>
->>> I think it's actually the opposite - Open vSwitch can be used to
->>> implement this type of thing as well as for many other use cases.
->>
->> Then openvswitch is exactly where you should be prototyping and
->> implementing support for this sort of stuff.
->>
->> And only if you cannot obtain reasonable performance using openvswitch
->> should you be even entertaining the notion of a static implementation.
->>
->> That's the whole premise behind putting openvswitch into the tree, so
->> that guys like you can play around in userspace without having to make
->> any kernel changes at all.
->>
->> I am not applying these patches, the more things you say the more I am
->> convinced they are not appropriate.
->>
-> The performance is one of the most critical thing why I have chosen to
-> build kernel patch in the first place instead of some user-space app.
+Thomas, will you be able to test patch accoring to  Linus's nr_page note?
 
-I am very interested in testing this patch, for the kinds of environments
-I care about (embedded, cpe, etc)
+Maxim.
 
-but I won't be able to get around to it for a week or so.
+On 01/24/2012 01:05 PM, Mingarelli, Thomas wrote:
+> Yes I agree that Maxim's patch is correct. The original set_memory_x call for 64 bit was done correctly and the newer calls are wrong.
+>
+> The 2 pages for the BIOS SD is a known value so it should be safe to use as is.
+>
+>
+>
+> Tom
+> -----Original Message-----
+> From: Wim Van Sebroeck [mailto:wim@iguana.be]
+> Sent: Tuesday, January 24, 2012 2:38 PM
+> To: Linus Torvalds
+> Cc: Maxim Uvarov; linux-kernel@vger.kernel.org; akpm@linux-foundation.org; stable@vger.kernel.org; Mingarelli, Thomas; dann frazier
+> Subject: Re: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
+>
+> Hi Linus,
+>
+>> So I don't know who is supposed to be handling this (Wim?), but the
+>> patch itself looks suspicious.
+>
+> I asked Tom to look at Maxim's patch and see what it does. Tom was going to look at the patch and
+> I'm waiting on feedback from him first. (That's why I din't sent it upstream yet).
+>
+>> On Sun, Jan 15, 2012 at 8:02 PM, Maxim Uvarov<maxim.uvarov@oracle.com>  wrote:
+>>> -       set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
+>>> +       set_memory_x((unsigned long)bios32_entrypoint&  PAGE_MASK, 2);
+>>
+>> If it wasn't page-aligned to begin with, then maybe it needs three pages now?
+>>
+>>> -                               set_memory_x((unsigned long)cru_rom_addr, cru_length);
+>>> +                               set_memory_x((unsigned long)cru_rom_addr&  PAGE_MASK, cru_length>>  PAGE_SHIFT);
+>>
+>> Same here. If we align the start address down, we should fix up the
+>> length. And should we not align the number of pages up?
+>>
+>> In general, a "start/length" conversion to a "page/nr" model needs to be roughly
+>>
+>>     len += start&  ~PAGE_MASK;
+>>     start&= PAGE_MASK;
+>>     nr_pages = (len + PAGE_SIZE - 1)>>  PAGE_SHIFT;
+>>
+>> to do things right. But I don't know where those magic numbers come
+>> from. Maybe the "2" is already due to the code possibly traversing a
+>> page boundary, and has already been fixed up. Somebody who knows the
+>> driver and the requirements should take a look at this.
+>
+> Valid comments indeed. Tom please take Linus comments with you when you look at the patch.
+>
+> Dan: I put you in Cc: also so that you can have a look at it also.
+>
+> Kind regards,
+> Wim.
+>
+>
 
-I found the overall simplicity of this approach vs the
-complexity of the alternatives, appealing, and the
-performance numbers also.
-
--- 
-Dave Täht
-SKYPE: davetaht
-US Tel: 1-239-829-5608
-FR Tel: 0638645374
-http://www.bufferbloat.net
