@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab2AYPcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:32:32 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60159 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727Ab2AYPcb convert rfc822-to-8bit (ORCPT
+	id S1753841Ab2AYPgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:36:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59976 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab2AYPgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:32:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAK1hOcO3pz+zBLQKfdty3UwQG8zxXwBWo9euFaE+zKawiqTE2g@mail.gmail.com>
-References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
- <20120110114831.17610.88468.sendpatchset@srdronam.in.ibm.com> <CAK1hOcO3pz+zBLQKfdty3UwQG8zxXwBWo9euFaE+zKawiqTE2g@mail.gmail.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 25 Jan 2012 16:32:08 +0100
-Message-ID: <CAK1hOcMeYDrLpgbyQXFAkrqk3Le-rLkoVwCN3wjkT61YJg0G6Q@mail.gmail.com>
-Subject: Re: [PATCH v9 3.2 1/9] uprobes: Install and remove breakpoints.
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jan 2012 10:36:31 -0500
+Subject: Re: [RFC PATCH v1 1/2] sched: unified sched_powersavings sysfs
+ tunable
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Indan Zupancic <indan@nul.nu>, Youquan Song <youquan.song@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4F201BE4.6000503@linux.intel.com>
+References: <20120116161740.29759.4679.stgit@localhost>
+	 <20120116162241.29759.13220.stgit@localhost>
+	 <1327504213.2614.78.camel@laptop>  <4F201BE4.6000503@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Jan 2012 16:36:28 +0100
+Message-ID: <1327505788.2614.81.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 4:13 PM, Denys Vlasenko
-<vda.linux@googlemail.com> wrote:
->> +       /*
->> +        * Convert from rip-relative addressing to indirect addressing
->> +        * via a scratch register.  Change the r/m field from 0x5 (%rip)
->> +        * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
->> +        */
->> +       reg = MODRM_REG(insn);
->> +       if (reg == 0) {
->> +               /*
->> +                * The register operand (if any) is either the A register
->> +                * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
->> +                * REX prefix) %r8.  In any case, we know the C register
->> +                * is NOT the register operand, so we use %rcx (register
->> +                * #1) for the scratch register.
->> +                */
->> +               uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
->> +               /* Change modrm from 00 000 101 to 00 000 001. */
->> +               *cursor = 0x1;
+On Wed, 2012-01-25 at 07:12 -0800, Arjan van de Ven wrote:
+> On 1/25/2012 7:10 AM, Peter Zijlstra wrote:
+> 
+> 
+> btw... any reason why this feature is a config option with tons of
+> ifdefs... why not just have this available all the time?
+> it shouldn't be all that much code in the first place.
 
-Hmm. I think we have a bug here.
+I guess its because SCHED_SMT and SCHED_MC also indicate the
+availability of the topology functions like cpu_coregroup_mask() etc.
 
-What if this instruction has REX.B = 1? Granted, REX.B = 1 has no effect on
-rip-relative addressing and therefore normally won't be generated by gcc/as,
-but still. If you replace md and r/m fields as above, you are trying to convert
-0x12345678(%rip) reference to (%rcx), but if REX.B = 1, then you in fact
-converted it to (%r9)!
+The whole powersave stuff got intermixed with all that.
 
--- 
-vda
+But yes, I agree, we should kill all that and sort the topology stuff
+differently.
+
