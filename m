@@ -1,75 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab2AYB6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 20:58:13 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:54916 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755786Ab2AYB6M convert rfc822-to-8bit (ORCPT
+	id S1755878Ab2AYB7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 20:59:42 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:55991 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755605Ab2AYB7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 20:58:12 -0500
-X-WSS-ID: 0LYC04W-0A-3W1-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Linus Walleij" <linus.walleij@linaro.org>
-cc: "shreshthakumar.sahu@stericsson.com" 
-	<shreshthakumar.sahu@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
-Date: Tue, 24 Jan 2012 17:57:35 -0800
-Subject: RE: [PATCH 3/7] leds-lm3530: add 'is_vin_always_on' in the
- lm3530_platform_data
-Thread-Topic: [PATCH 3/7] leds-lm3530: add 'is_vin_always_on' in the
- lm3530_platform_data
-Thread-Index: AczaBZnhmOVkXEMmSQCoeTS8KdImaQA/rqEw
-Message-ID: <B567DBAB974C0544994013492B949F8E3812CD3E47@EXMAIL03.scwf.nsc.com>
-References: <AczXFZjmtQHOiXDCSJi9Lr1dSJlaCQ==>
- <B567DBAB974C0544994013492B949F8E3812C6D0CD@EXMAIL03.scwf.nsc.com>
- <CACRpkdbyK3eevSu3JeTzWguhJkSAm+8vmxymV03UhxhNQUtVsw@mail.gmail.com>
- <20120123193122.GB26409@opensource.wolfsonmicro.com>
-In-Reply-To: <20120123193122.GB26409@opensource.wolfsonmicro.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
+	Tue, 24 Jan 2012 20:59:40 -0500
+References: <Pine.LNX.4.44L0.1201241258510.1200-100000@iolanthe.rowland.org>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <Pine.LNX.4.44L0.1201241258510.1200-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-WSS-ID: 6301BE1B1LS9908754-02-01
 Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/5] Driver core: driver_find() drops reference before returning
+From: Andy Walls <awalls@md.metrocast.net>
+Date: Tue, 24 Jan 2012 20:59:23 -0500
+To: Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Message-ID: <1f5c0d44-d633-4a53-9c1d-83b00285f7da@email.android.com>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.211,0.0.0000
+ definitions=2012-01-25_01:2012-01-24,2012-01-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1012030000 definitions=main-1201240328
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, I see. I'll try to follow design patterns for the regulator.
-Thanks a lot for your comment.
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-Best Regards,
-Milo -
+>As part of the removal of get_driver()/put_driver(), this patch
+>(as1510) changes driver_find(); it now drops the reference it acquires
+>before returning.  The patch also adjusts all the callers of
+>driver_find() to remove the now unnecessary calls to put_driver().
+>
+>In addition, the patch adds a warning to driver_find(): Callers must
+>make sure the driver they are searching for does not get unloaded
+>while they are using it.  This has always been the case; driver_find()
+>has never prevented a driver from being unregistered or unloaded.
+>Hence the patch will not introduce any new bugs.  The existing callers
+>all seem to be okay in this respect, however I don't understand the
+>video drivers well enough to be certain about them.
+>
+>Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+>CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>CC: Kyungmin Park <kyungmin.park@samsung.com>
+>CC: Andy Walls <awalls@md.metrocast.net>
+>CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+>
+>---
+>
+> drivers/base/driver.c                       |    7 +++++--
+> drivers/input/gameport/gameport.c           |    1 -
+> drivers/input/serio/serio.c                 |    1 -
+> drivers/media/video/cx18/cx18-alsa-main.c   |    1 -
+> drivers/media/video/ivtv/ivtvfb.c           |    2 --
+> drivers/media/video/s5p-fimc/fimc-mdevice.c |    5 +----
+> drivers/media/video/s5p-tv/mixer_video.c    |    1 -
+> drivers/s390/net/smsgiucv_app.c             |    9 ++++-----
+> 8 files changed, 10 insertions(+), 17 deletions(-)
+>
+>Index: usb-3.3/drivers/base/driver.c
+>===================================================================
+>--- usb-3.3.orig/drivers/base/driver.c
+>+++ usb-3.3/drivers/base/driver.c
+>@@ -234,7 +234,6 @@ int driver_register(struct device_driver
+> 
+> 	other = driver_find(drv->name, drv->bus);
+> 	if (other) {
+>-		put_driver(other);
+> 		printk(KERN_ERR "Error: Driver '%s' is already registered, "
+> 			"aborting...\n", drv->name);
+> 		return -EBUSY;
+>@@ -275,7 +274,9 @@ EXPORT_SYMBOL_GPL(driver_unregister);
+>  * Call kset_find_obj() to iterate over list of drivers on
+>  * a bus to find driver by name. Return driver if found.
+>  *
+>- * Note that kset_find_obj increments driver's reference count.
+>+ * This routine provides no locking to prevent the driver it returns
+>+ * from being unregistered or unloaded while the caller is using it.
+>+ * The caller is responsible for preventing this.
+>  */
+>struct device_driver *driver_find(const char *name, struct bus_type
+>*bus)
+> {
+>@@ -283,6 +284,8 @@ struct device_driver *driver_find(const
+> 	struct driver_private *priv;
+> 
+> 	if (k) {
+>+		/* Drop reference added by kset_find_obj() */
+>+		kobject_put(k);
+> 		priv = to_driver(k);
+> 		return priv->driver;
+> 	}
+>Index: usb-3.3/drivers/input/gameport/gameport.c
+>===================================================================
+>--- usb-3.3.orig/drivers/input/gameport/gameport.c
+>+++ usb-3.3/drivers/input/gameport/gameport.c
+>@@ -449,7 +449,6 @@ static ssize_t gameport_rebind_driver(st
+> 	} else if ((drv = driver_find(buf, &gameport_bus)) != NULL) {
+> 		gameport_disconnect_port(gameport);
+> 		error = gameport_bind_driver(gameport, to_gameport_driver(drv));
+>-		put_driver(drv);
+> 	} else {
+> 		error = -EINVAL;
+> 	}
+>Index: usb-3.3/drivers/input/serio/serio.c
+>===================================================================
+>--- usb-3.3.orig/drivers/input/serio/serio.c
+>+++ usb-3.3/drivers/input/serio/serio.c
+>@@ -441,7 +441,6 @@ static ssize_t serio_rebind_driver(struc
+> 	} else if ((drv = driver_find(buf, &serio_bus)) != NULL) {
+> 		serio_disconnect_port(serio);
+> 		error = serio_bind_driver(serio, to_serio_driver(drv));
+>-		put_driver(drv);
+> 		serio_remove_duplicate_events(serio, SERIO_RESCAN_PORT);
+> 	} else {
+> 		error = -EINVAL;
+>Index: usb-3.3/drivers/media/video/cx18/cx18-alsa-main.c
+>===================================================================
+>--- usb-3.3.orig/drivers/media/video/cx18/cx18-alsa-main.c
+>+++ usb-3.3/drivers/media/video/cx18/cx18-alsa-main.c
+>@@ -285,7 +285,6 @@ static void __exit cx18_alsa_exit(void)
+> 
+> 	drv = driver_find("cx18", &pci_bus_type);
+>	ret = driver_for_each_device(drv, NULL, NULL,
+>cx18_alsa_exit_callback);
+>-	put_driver(drv);
+> 
+> 	cx18_ext_init = NULL;
+> 	printk(KERN_INFO "cx18-alsa: module unload complete\n");
+>Index: usb-3.3/drivers/media/video/ivtv/ivtvfb.c
+>===================================================================
+>--- usb-3.3.orig/drivers/media/video/ivtv/ivtvfb.c
+>+++ usb-3.3/drivers/media/video/ivtv/ivtvfb.c
+>@@ -1293,7 +1293,6 @@ static int __init ivtvfb_init(void)
+> 
+> 	drv = driver_find("ivtv", &pci_bus_type);
+>	err = driver_for_each_device(drv, NULL, &registered,
+>ivtvfb_callback_init);
+>-	put_driver(drv);
+> 	if (!registered) {
+> 		printk(KERN_ERR "ivtvfb:  no cards found\n");
+> 		return -ENODEV;
+>@@ -1310,7 +1309,6 @@ static void ivtvfb_cleanup(void)
+> 
+> 	drv = driver_find("ivtv", &pci_bus_type);
+>	err = driver_for_each_device(drv, NULL, NULL,
+>ivtvfb_callback_cleanup);
+>-	put_driver(drv);
+> }
+> 
+> module_init(ivtvfb_init);
+>Index: usb-3.3/drivers/media/video/s5p-fimc/fimc-mdevice.c
+>===================================================================
+>--- usb-3.3.orig/drivers/media/video/s5p-fimc/fimc-mdevice.c
+>+++ usb-3.3/drivers/media/video/s5p-fimc/fimc-mdevice.c
+>@@ -344,16 +344,13 @@ static int fimc_md_register_platform_ent
+> 		return -ENODEV;
+> 	ret = driver_for_each_device(driver, NULL, fmd,
+> 				     fimc_register_callback);
+>-	put_driver(driver);
+> 	if (ret)
+> 		return ret;
+> 
+> 	driver = driver_find(CSIS_DRIVER_NAME, &platform_bus_type);
+>-	if (driver) {
+>+	if (driver)
+> 		ret = driver_for_each_device(driver, NULL, fmd,
+> 					     csis_register_callback);
+>-		put_driver(driver);
+>-	}
+> 	return ret;
+> }
+> 
+>Index: usb-3.3/drivers/media/video/s5p-tv/mixer_video.c
+>===================================================================
+>--- usb-3.3.orig/drivers/media/video/s5p-tv/mixer_video.c
+>+++ usb-3.3/drivers/media/video/s5p-tv/mixer_video.c
+>@@ -58,7 +58,6 @@ static struct v4l2_subdev *find_and_regi
+> 	}
+> 
+> done:
+>-	put_driver(drv);
+> 	return sd;
+> }
+> 
+>Index: usb-3.3/drivers/s390/net/smsgiucv_app.c
+>===================================================================
+>--- usb-3.3.orig/drivers/s390/net/smsgiucv_app.c
+>+++ usb-3.3/drivers/s390/net/smsgiucv_app.c
+>@@ -168,7 +168,7 @@ static int __init smsgiucv_app_init(void
+> 	rc = dev_set_name(smsg_app_dev, KMSG_COMPONENT);
+> 	if (rc) {
+> 		kfree(smsg_app_dev);
+>-		goto fail_put_driver;
+>+		goto fail;
+> 	}
+> 	smsg_app_dev->bus = &iucv_bus;
+> 	smsg_app_dev->parent = iucv_root;
+>@@ -177,7 +177,7 @@ static int __init smsgiucv_app_init(void
+> 	rc = device_register(smsg_app_dev);
+> 	if (rc) {
+> 		put_device(smsg_app_dev);
+>-		goto fail_put_driver;
+>+		goto fail;
+> 	}
+> 
+> 	/* convert sender to uppercase characters */
+>@@ -191,12 +191,11 @@ static int __init smsgiucv_app_init(void
+> 	rc = smsg_register_callback(SMSG_PREFIX, smsg_app_callback);
+> 	if (rc) {
+> 		device_unregister(smsg_app_dev);
+>-		goto fail_put_driver;
+>+		goto fail;
+> 	}
+> 
+> 	rc = 0;
+>-fail_put_driver:
+>-	put_driver(smsgiucv_drv);
+>+fail:
+> 	return rc;
+> }
+> module_init(smsgiucv_app_init);
 
 
------Original Message-----
-From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com] 
-Sent: Tuesday, January 24, 2012 4:31 AM
-To: Linus Walleij
-Cc: Kim, Milo; shreshthakumar.sahu@stericsson.com; linux-kernel@vger.kernel.org; rpurdie@rpsys.net
-Subject: Re: [PATCH 3/7] leds-lm3530: add 'is_vin_always_on' in the lm3530_platform_data
+For the cx18-alsa and ivtvfb changes:
 
-On Mon, Jan 23, 2012 at 08:13:18PM +0100, Linus Walleij wrote:
+Acked-by: Andy Walls <awalls@md.metrocast.net>
 
-> As far as I know we want to get rid of different design patterns
-> avoiding the regulator interface. The way forward for this is
-> either:
+These modules simply add an additional interface for userspace to access the functions provided by the video cards.  Users of these particular modules know to unload them first, before unloading the cx18 or ivtv module.
 
-> (A) Provide a fixed voltage regulator in your platform for this
->   device (AFAIK the voltage does not even have to be correct)
-> (B) Enable dummy regulators in your platform
-
-> (A) is more elegant.
-
-Yeah, regulator usage should essentially never be conditional at a
-driver level unless there's actual optional supplies in the hardware.
-The situation has never been any different to that.
-
+Regards,
+Andy
