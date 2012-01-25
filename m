@@ -1,132 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab2AYUQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 15:16:49 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58696 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab2AYUQr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 15:16:47 -0500
-Message-ID: <1327522599.2605.14.camel@edumazet-laptop>
-Subject: Re: [PATCH net] amd/lance.c: dev_alloc_skb to netdev_alloc_skb
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 25 Jan 2012 21:16:39 +0100
-In-Reply-To: <CA+Dx6Ha4dnqnkR_Pc+dFZ+Ef_mxRNN_Jk44vJ_R0viuHd0JGHw@mail.gmail.com>
-References: <1327517188-14088-1-git-send-email-netdev@pradeepdalvi.com>
-	 <1327517706.2605.7.camel@edumazet-laptop>
-	 <CA+Dx6Ha4dnqnkR_Pc+dFZ+Ef_mxRNN_Jk44vJ_R0viuHd0JGHw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1752242Ab2AYUWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 15:22:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65337 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101Ab2AYUWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 15:22:12 -0500
+Message-ID: <4F206420.5080200@redhat.com>
+Date: Wed, 25 Jan 2012 20:20:48 +0000
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
+        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com> <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com> <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com> <20120125193635.GA30311@redhat.com>
+In-Reply-To: <20120125193635.GA30311@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 26 janvier 2012 à 01:31 +0530, Pradeep A. Dalvi a écrit :
-
-> Thanks Eric! Even if we try to skip NET_SKB_PAD i.e. max of 32 or
-> L1_CACHE_BYTES, SKB_DATA_ALIGN is anyway going to add some additional
-> bytes for the same reason.
+On 01/25/2012 07:36 PM, Oleg Nesterov wrote:
 > 
-> And towards the end, as from my current understanding regarding skb
-> allocations, for MTU including alignments < 2048, there is not much to
-> worry about. As long as, it doesn't cross the boundary.
-> 
-> (And in fact, this driver doesn't even get compiled with current
-> configs, even after forcefully adding CONFIG_ISA & CONFIG_LANCE, of
-> course along with CONFIG_ISA_DMA_API. Had to change the Makefile)
+> Not sure this is really better, but there is another idea. Currently we
+> have PTRACE_O_TRACESYSGOOD to avoid the confusion with the real SIGTRAP.
+> Perhaps we can add PTRACE_O_TRACESYS_VERY_GOOD (or we can look at
+> PT_SEIZED instead) and report TS_COMPAT via ptrace_report_syscall ?
 
-Point is we dont need skbs at all, and we dont need NET_SKB_PAD padding
-either.
+May I beg to don't rely on PTRACE_SYSCALL for anything new?
+You can't PTRACE_SINGLESTEP and PTRACE_SYSCALL simultaneously.  Think of
+gdb single-stepping all the way for some reason (software watchpoints, for ex.),
+while at the same time wanting to catch syscalls.
 
-Also a big blob of DMA memory (rx_buffs) is allocated but never used.
+As Roland suggested, replacing PTRACE_SYSCALL with PTRACE_O_TRACE_SYSCALL_{ENTRY,EXIT}
+and PTRACE_EVENT_SYSCALL_{ENTRY,EXIT} would be superior, syscall tracing wise.
 
-Best is to not touch this, since this driver is probably not anymore
-used. 
-
-Dont bother.
-
-diff --git a/drivers/net/ethernet/amd/lance.c b/drivers/net/ethernet/amd/lance.c
-index a6e2e84..aa2c6cd 100644
---- a/drivers/net/ethernet/amd/lance.c
-+++ b/drivers/net/ethernet/amd/lance.c
-@@ -240,9 +240,8 @@ struct lance_private {
- 	const char *name;
- 	/* The saved address of a sent-in-place packet/buffer, for skfree(). */
- 	struct sk_buff* tx_skbuff[TX_RING_SIZE];
--	/* The addresses of receive-in-place skbuffs. */
--	struct sk_buff* rx_skbuff[RX_RING_SIZE];
--	unsigned long rx_buffs;		/* Address of Rx and Tx buffers. */
-+	/* The addresses of receive-in-place buffers. */
-+	void		*rx_buff[RX_RING_SIZE];
- 	/* Tx low-memory "bounce buffer" address. */
- 	char (*tx_bounce_buffs)[PKT_BUF_SZ];
- 	int cur_rx, cur_tx;			/* The next free ring entry */
-@@ -364,7 +363,6 @@ static void cleanup_card(struct net_device *dev)
- 		free_dma(dev->dma);
- 	release_region(dev->base_addr, LANCE_TOTAL_SIZE);
- 	kfree(lp->tx_bounce_buffs);
--	kfree((void*)lp->rx_buffs);
- 	kfree(lp);
- }
- 
-@@ -552,10 +550,6 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int
- 	if (lance_debug > 6) printk(" (#0x%05lx)", (unsigned long)lp);
- 	dev->ml_priv = lp;
- 	lp->name = chipname;
--	lp->rx_buffs = (unsigned long)kmalloc(PKT_BUF_SZ*RX_RING_SIZE,
--						  GFP_DMA | GFP_KERNEL);
--	if (!lp->rx_buffs)
--		goto out_lp;
- 	if (lance_need_isa_bounce_buffers) {
- 		lp->tx_bounce_buffs = kmalloc(PKT_BUF_SZ*TX_RING_SIZE,
- 						  GFP_DMA | GFP_KERNEL);
-@@ -739,8 +733,6 @@ out_dma:
- out_tx:
- 	kfree(lp->tx_bounce_buffs);
- out_rx:
--	kfree((void*)lp->rx_buffs);
--out_lp:
- 	kfree(lp);
- 	return err;
- }
-@@ -842,11 +834,9 @@ lance_purge_ring(struct net_device *dev)
- 
- 	/* Free all the skbuffs in the Rx and Tx queues. */
- 	for (i = 0; i < RX_RING_SIZE; i++) {
--		struct sk_buff *skb = lp->rx_skbuff[i];
--		lp->rx_skbuff[i] = NULL;
-+		kfree(lp->rx_buff[i]);
-+		lp->rx_buff[i] = NULL;
- 		lp->rx_ring[i].base = 0;		/* Not owned by LANCE chip. */
--		if (skb)
--			dev_kfree_skb_any(skb);
- 	}
- 	for (i = 0; i < TX_RING_SIZE; i++) {
- 		if (lp->tx_skbuff[i]) {
-@@ -868,16 +858,9 @@ lance_init_ring(struct net_device *dev, gfp_t gfp)
- 	lp->dirty_rx = lp->dirty_tx = 0;
- 
- 	for (i = 0; i < RX_RING_SIZE; i++) {
--		struct sk_buff *skb;
--		void *rx_buff;
--
--		skb = alloc_skb(PKT_BUF_SZ, GFP_DMA | gfp);
--		lp->rx_skbuff[i] = skb;
--		if (skb) {
--			skb->dev = dev;
--			rx_buff = skb->data;
--		} else
--			rx_buff = kmalloc(PKT_BUF_SZ, GFP_DMA | gfp);
-+		void *rx_buff = kmalloc(PKT_BUF_SZ, GFP_DMA | gfp);
-+
-+		lp->rx_buff[i] = rx_buff;
- 		if (rx_buff == NULL)
- 			lp->rx_ring[i].base = 0;
- 		else
-
-
+-- 
+Pedro Alves
