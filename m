@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab2AYOGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 09:06:15 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:37367
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753412Ab2AYOGO (ORCPT
+	id S1755956Ab2AYOIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:08:06 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10589 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab2AYOIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 09:06:14 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-Cc: standby24x7@gmail.com, trivial@kernel.org
-Subject: [PATCH] [trivial] perf: Fix typo in evsel.c
-Date: Wed, 25 Jan 2012 23:05:12 +0900
-Message-Id: <1327500312-9520-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Wed, 25 Jan 2012 09:08:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 25 Jan 2012 06:08:00 -0800
+Message-ID: <4F200C93.30502@nvidia.com>
+Date: Wed, 25 Jan 2012 19:37:15 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>, "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2] regulator: tps65910: Sleep control through external
+ inputs
+References: <1327489068-9460-1-git-send-email-ldewangan@nvidia.com> <20120125124250.GH3687@opensource.wolfsonmicro.com> <4F1FF9EF.9000004@nvidia.com> <20120125125020.GI3687@opensource.wolfsonmicro.com>
+In-Reply-To: <20120125125020.GI3687@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "unsuported" to "unsupported" in
-tools/peft/util/evsel.c
+On Wednesday 25 January 2012 06:20 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Jan 25, 2012 at 06:17:43PM +0530, Laxman Dewangan wrote:
+>> On Wednesday 25 January 2012 06:12 PM, Mark Brown wrote:
+>>> This really isn't what the set_mode() API is for - especially the fact
+>>> that it supports turning the regulator off which really isn't what
+>>> set_mode() is supposed to do.  A generic driver using this API isn't
+>>> going to play too well.
+>> Then what should be the method? Is it through the macro similar to
+>> patch V1 where LOW_POWER mode option come from platform data? The
+>> idea  is to set the regulator in OFF or low power mode based on
+>> external control.
+> Like I said we've got the various suspend callbacks for setting the
+> behaviour in suspend mode.
+Then in this case, I will implement the
+set_suspend_enable() and put the device in low power mode.
+set_suspend_disable() and put the device in full power, normal mode.
+set_suspend_mode(): based on mode and external control, either it will 
+call existing set_mode() if it is not externally controlled otherwise 
+set the mode locally for the case of externally controlled.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- tools/perf/util/evsel.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The board file will set the regulator_state accordingly for a given 
+requirements through the constraints.
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 667f3b7..dcfefab 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -535,7 +535,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 	}
- 
- 	if (type & PERF_SAMPLE_READ) {
--		fprintf(stderr, "PERF_SAMPLE_READ is unsuported for now\n");
-+		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
- 		return -1;
- 	}
- 
--- 
-1.7.6.5
+Does it make sense?
+
+
+> * Unknown Key
+> * 0x6E30FDDD
 
