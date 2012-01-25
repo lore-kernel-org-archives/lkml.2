@@ -1,142 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab2AYABk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 19:01:40 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49843 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab2AYABi (ORCPT
+	id S1754513Ab2AYABw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 19:01:52 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52086 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754453Ab2AYABt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 19:01:38 -0500
-Message-ID: <1327449689.11738.34.camel@work-vm>
-Subject: Re: [PATCH] hrtimers, timers: eliminate some jiffies-backed code
-From: john stultz <johnstul@us.ibm.com>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Steve Glendinning <steve.glendinning@smsc.com>,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Date: Tue, 24 Jan 2012 16:01:29 -0800
-In-Reply-To: <1327333258-20734-1-git-send-email-dmitry.antipov@linaro.org>
-References: <1327333258-20734-1-git-send-email-dmitry.antipov@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jan 2012 19:01:49 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 25 Jan 2012 09:00:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH v4] memcg: remove PCG_CACHE page_cgroup flag
+Message-Id: <20120125090025.6d24cd0f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120124180842.GA18372@tiehlicka.suse.cz>
+References: <20120119181711.8d697a6b.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120120122658.1b14b512.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120120084545.GC9655@tiehlicka.suse.cz>
+	<20120124121636.115f1cf0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120124111644.GE1660@cmpxchg.org>
+	<20120124145411.GF1660@cmpxchg.org>
+	<20120124160140.GH26289@tiehlicka.suse.cz>
+	<20120124164449.GH1660@cmpxchg.org>
+	<20120124172308.GI26289@tiehlicka.suse.cz>
+	<20120124180842.GA18372@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012500-3270-0000-0000-000003781B20
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-23 at 19:40 +0400, Dmitry Antipov wrote:
-> This patch provides an attempt to get away from jiffies in msleep()
-> and msleep_interruptible() to hrtimers-backed usleep_range() and
-> usleep_range_interruptible(). Both of the latter now returns an amount
-> of microseconds really spent in sleep; another rationale for this
-> was to convert msleep()-based wait-for-hardware loops to usleep_range(),
-> like this:
+On Tue, 24 Jan 2012 19:09:47 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
+
+> On Tue 24-01-12 18:23:08, Michal Hocko wrote:
+> > On Tue 24-01-12 17:44:49, Johannes Weiner wrote:
+> > > On Tue, Jan 24, 2012 at 05:01:40PM +0100, Michal Hocko wrote:
+> > > > On Tue 24-01-12 15:54:11, Johannes Weiner wrote:
+> > > > > Hold on, I think this patch is still not complete: end_migration()
+> > > > > directly uses __mem_cgroup_uncharge_common() with the FORCE charge
+> > > > > type.  This will uncharge all migrated anon pages as cache, when it
+> > > > > should decide based on PageAnon(used), which is the page where
+> > > > > ->mapping is intact after migration.
+> > > > 
+> > > > You are right, I've missed that one as well. Anyway
+> > > > MEM_CGROUP_CHARGE_TYPE_FORCE is used only in mem_cgroup_end_migration
+> > > > these days and it got out of sync with its documentation (used by
+> > > > force_empty) quite some time ago (f817ed48). What about something like
+> > > > the following on top of the previous patch?
+> > > > --- 
+> > > > Should be foldet into the previous patch with the updated changelog:
+> > > > 
+> > > > Mapping of the unused page is not touched during migration (see
+> > > 
+> > > used one, not unused.  unused->mapping is globbered during migration.
+> > 
+> > Yes, you are right:
 > 
-> unsigned long timeout = jiffies + msecs_to_jiffies(1000);
-> while (hw_is_not_ready()) {
-> 	if (time_after(jiffies, timeout))
-> 		return -ETIMEDOUT;
-> 	msleep(1);
-> }
+> Sorry I haven't sent the most recent update. Here we go:
+> ---
+> Should be folded into the previous patch with the updated changelog:
 > 
-> to:
+Thanks, I'll fold this into v5.
+-Kame
+
+
+> Mapping of the used page is not touched during migration (see
+> page_remove_rmap) so we can rely on it and push the correct charge type
+> down to __mem_cgroup_uncharge_common from end_migration for unused page.
+> The force flag was misleading was abused for skipping the needless
+> page_mapped() / PageCgroupMigration() check, as we know the unused page
+> is no longer mapped and cleared the migration flag just a few lines
+> up.  But doing the checks is no biggie and it's not worth adding another
+> flag just to skip them.  But I guess this should be mentioned in the
+> changelog.
+> ---
+>  mm/memcontrol.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
 > 
-> unsigned long timeout = 0;
-> while (hw_is_not_ready()) {
->       if (timeout > USEC_PER_SEC)
-> 	      return -ETIMEDOUT;
->       timeout += usleep_range(500, 1500);
-> }
-> 
-> Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
-
-So I'm still a little foggy on what actual benefit this change brings.
-
-Why do you want to move loops like the above from jiffies based timeouts
-to hrtimers?
-
-Is there an actual need for sub-jiffy granularity in these sorts of
-timeouts?
-
-Or is this really just a "getting away from using jiffies" cleanup?
-
-
-> diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-> index fd0dc30..01d782b 100644
-> --- a/include/linux/hrtimer.h
-> +++ b/include/linux/hrtimer.h
-> @@ -126,6 +126,7 @@ struct hrtimer {
->   * task is set to NULL, when the timer expires.
->   */
->  struct hrtimer_sleeper {
-> +	ktime_t kt;
-
-kt? Please use a better name here, as the function of that value is
-opaque on initial reading.
-
->  	struct hrtimer timer;
->  	struct task_struct *task;
->  };
-> @@ -428,9 +429,10 @@ extern long hrtimer_nanosleep_restart(struct restart_block *restart_block);
->  extern void hrtimer_init_sleeper(struct hrtimer_sleeper *sl,
->  				 struct task_struct *tsk);
-> 
-> -extern int schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
-> -						const enum hrtimer_mode mode);
-> -extern int schedule_hrtimeout_range_clock(ktime_t *expires,
-> +extern int schedule_hrtimeout_range(ktime_t *expires, ktime_t *elapsed,
-> +				    unsigned long delta,
-> +				    const enum hrtimer_mode mode);
-
-Another silly nit, but is it just me, or does having elapsed as the
-second argument in-between the expiration and the slack seem awkward?
-
-
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index ae34bf5..8642c3f 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -1475,6 +1475,12 @@ static enum hrtimer_restart hrtimer_wakeup(struct hrtimer *timer)
->  	struct hrtimer_sleeper *t =
->  		container_of(timer, struct hrtimer_sleeper, timer);
->  	struct task_struct *task = t->task;
-> +	struct hrtimer_clock_base *base;
-> +	unsigned long flags;
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 4d655ee..869744a 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3195,6 +3195,7 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+>  {
+>  	struct page *used, *unused;
+>  	struct page_cgroup *pc;
+> +	bool anon;
+>  
+>  	if (!memcg)
+>  		return;
+> @@ -3207,6 +3208,7 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+>  		used = newpage;
+>  		unused = oldpage;
+>  	}
 > +
-> +	base = lock_hrtimer_base(timer, &flags);
-> +	t->kt = ktime_sub(base->get_time(), t->kt);
-> +	unlock_hrtimer_base(timer, &flags);
-
-
-Calling get_time() again on each hrtimer_wakeup isn't free. 
-
-With this we end up when the irq fires, calling hrtimer_interrupt, which
-reads the time and goes through the timer list running expired timers,
-which then runs the sleeper's timer which then reads the time again!
-Additinoally, this extra overhead is done even no one wants the elapsed
-time.
-
-Personally, given the above, I'm not sure what the benefit of of your
-implementation over just doing something like the following where
-necessary:
-
-u64 now = ktime_get();
-u64 timeout = ktime_to_ns(now) + NSEC_PER_SEC;
-while (hw_is_not_ready()) {
-	if (now > timeout)
-		return -ETIMEDOUT;
-	usleep_range(500, 1500);
-	now = ktime_get();
-}
-
-If you could rework it so you're not calling gettime any additional
-times, but still providing the same elapsed sleep time, then it would
-atleast have the benefit of an improvement over my example here.
-
-thanks
--john
+>  	/*
+>  	 * We disallowed uncharge of pages under migration because mapcount
+>  	 * of the page goes down to zero, temporarly.
+> @@ -3217,7 +3219,10 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+>  	ClearPageCgroupMigration(pc);
+>  	unlock_page_cgroup(pc);
+>  
+> -	__mem_cgroup_uncharge_common(unused, MEM_CGROUP_CHARGE_TYPE_FORCE);
+> +	anon = PageAnon(used);
+> +	__mem_cgroup_uncharge_common(unused,
+> +			anon ? MEM_CGROUP_CHARGE_TYPE_MAPPED
+> +			: MEM_CGROUP_CHARGE_TYPE_CACHE);
+>  
+>  	/*
+>  	 * If a page is a file cache, radix-tree replacement is very atomic
+> @@ -3227,7 +3232,7 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+>  	 * and USED bit check in mem_cgroup_uncharge_page() will do enough
+>  	 * check. (see prepare_charge() also)
+>  	 */
+> -	if (PageAnon(used))
+> +	if (anon)
+>  		mem_cgroup_uncharge_page(used);
+>  	/*
+>  	 * At migration, we may charge account against cgroup which has no
+> -- 
+> 1.7.8.3
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9    
+> Czech Republic
+> 
 
