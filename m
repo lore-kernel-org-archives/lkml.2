@@ -1,252 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2AYXsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 18:48:14 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50457 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab2AYXsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 18:48:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Jiri Slaby <jirislaby@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [linux-pm] PM: cannot hibernate -- BUG 
- =?iso-8859-1?q?at=09kernel/workqueue=2Ec=3A3659?=
-Date: Thu, 26 Jan 2012 00:51:44 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Baohua.Song@csr.com, "pavel@ucw.cz" <pavel@ucw.cz>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <4F1EC8D5.5040102@suse.cz> <4F202721.6050900@linux.vnet.ibm.com> <4F204D90.7010105@linux.vnet.ibm.com>
-In-Reply-To: <4F204D90.7010105@linux.vnet.ibm.com>
+	id S1752484Ab2AYX6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 18:58:07 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:35096 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751401Ab2AYX6F convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 18:58:05 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201260051.45000.rjw@sisk.pl>
+In-Reply-To: <CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+	<CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+	<CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+	<CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
+	<CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
+	<CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
+	<CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
+	<CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
+	<CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
+	<CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
+	<CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
+Date: Wed, 25 Jan 2012 21:58:04 -0200
+X-Google-Sender-Auth: UwRH0uI1r4TXFgFVkIIvPobj6os
+Message-ID: <CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Another update:
 
-On Wednesday, January 25, 2012, Srivatsa S. Bhat wrote:
-> > 
-> 
-> > Commit 2aede851 (PM / Hibernate: Freeze kernel threads after preallocating
-> > memory) split up the freezing phase and moved the freezing of kernel threads
-> > to hibernation_snapshot() function.
-> > (This is a pretty old commit btw, I think it came in sometime around 3.2).
-> > 
-> > And there is a BUG_ON() in freeze_workqueues_begin() which complains if
-> > this function is called when the kernel threads are already frozen.
-> > 
-> > Now, coming to the userspace utility:
-> > 
-> >> In suspend.c inside the suspend-utils userspace package, I see a loop such
-> >> as:
-> >>
-> >>         error = freeze(snapshot_fd);
-> >> 	...
-> >>         attempts = 2;
-> >>         do {
-> >>                 if (set_image_size(snapshot_fd, image_size)) {
-> >>                         error = errno;
-> >>                         break;
-> >>                 }
-> >>                 if (atomic_snapshot(snapshot_fd, &in_suspend)) {
-> >                         ^^^ 
-> >         This ends up in the call to hibernation_snapshot().
-> > 
-> >>                         error = errno;
-> >>                         break;
-> >>                 }
-> >>                 if (!in_suspend) {
-> >>                         /* first unblank the console, see console_codes(4) */
-> >>                         printf("\e[13]");
-> >>                         printf("%s: returned to userspace\n", my_name);
-> >>                         free_snapshot(snapshot_fd);
-> >>                         break;
-> >>                 }
-> >>
-> >>                 error = write_image(snapshot_fd, resume_fd, -1);
-> >>                 if (error) {
-> > 
-> >         Since swap space is limited, we come here.
-> > 
-> >>                         free_swap_pages(snapshot_fd);
-> >>                         free_snapshot(snapshot_fd);
-> 
-> 				^^^
-> 	This function makes the ioctl call SNAPSHOT_FREE.
-> 
-> >>                         image_size = 0;
-> >>                         error = -error;
-> >>                         if (error != ENOSPC)
-> >>                                 break;
-> > 
-> > 
-> > 
-> > 
-> >         And because of the above 'if' condition, we don't break here.
-> >         IOW, we will run the loop a second time.
-> > 
-> >>                 } else {
-> >>                         splash.progress(100);
-> >> #ifdef CONFIG_BOTH
-> >>                         if (s2ram_kms || s2ram) {
-> >>                                 /* If we die (and allow system to continue)
-> >>                                  * between now and reset_signature(), very bad
-> >>                                  * things will happen. */
-> >>                                 error = suspend_to_ram(snapshot_fd);
-> >>                                 if (error)
-> >>                                         goto Shutdown;
-> >>                                 reset_signature(resume_fd);
-> >>                                 free_swap_pages(snapshot_fd);
-> >>                                 free_snapshot(snapshot_fd);
-> >>                                 if (!s2ram_kms)
-> >>                                         s2ram_resume();
-> >>                                 goto Unfreeze;
-> >>                         }
-> >> Shutdown:
-> >> #endif
-> >>                         close(resume_fd);
-> >>                         suspend_shutdown(snapshot_fd);
-> >>                 }
-> >>         } while (--attempts);
-> >>
-> >> ...
-> >> Unfreeze:
-> >>         unfreeze(snapshot_fd);
-> >>
-> >>
-> > 
-> > 
-> > So, since the loop is run a second time if not enough space was available,
-> > we end up calling hibernation_snapshot(), IOW freeze_workqueues_begin() a
-> > second time - and this is what makes the BUG_ON() to fire!
-> > 
-> 
-> 
-> SNAPSHOT_CREATE_IMAGE has a check for data->ready such as:
-> 
->         if (data->mode != O_RDONLY || !data->frozen  || data->ready) {
->                 error = -EPERM;
->                 break;
->         }
-> 
-> data->ready would be set to 1 only under SNAPSHOT_CREATE_IMAGE. However,
-> SNAPSHOT_FREE (invoked at the place shown above) will reset the value to 0.
-> This makes it possible for hibernation_snapshot() and hence
-> freeze_workqueues_begin() to be called a second time, which is unfortunate.
+On Wed, Jan 25, 2012 at 00:39, Rogério Brito <rbrito@ime.usp.br> wrote:
+> On Wed, Jan 25, 2012 at 00:33, Rogério Brito <rbrito@ime.usp.br> wrote:
+>> Unfortunately, it died with a kernel panic and didn't reach the point
+>> of X firing up.
+>
+> Update: X *does* start and the panic occurs when GNOME is loading. I
+> will try next to run a kernel with the nvidia tco thing blacklisted
+> *but* with the transparent bridging resizing thing on to see if the
+> notebook is at least usable (as I suspect that nouveau may be having a
+> hard time with the current status of the PCI rework).
 
-Yes, I obviously forgot about that code path when I was working on the commit
-that introduced the problem. :-(
+The kernel panic is indeed there when I compile nouveau in, *after*
+some time that X is loaded.
 
-Thanks a lot for the great analysis, it's really helpful!
+Wild thoughts: I just saw that nouveau calls some ACPI stuff to get
+EDID information and, as ACPI is broken on this notebook, could that
+be a potential reason for the panic that I'm seeing? (Yes, I can take
+a photo of the screen).
 
-> And actually, the patch I posted in my previous mail is not really the right
-> long-term fix, though it might fix the particular issue that Jiri is facing..
-> 
-> Because, allowing hibernation_snapshot() to get called a second time while
-> kernel threads are still frozen brings us to the same situation that commit
-> 2aede851 (PM / Hibernate: Freeze kernel threads after preallocating memory)
-> tried to prevent! IOW, a call to hibernate_preallocate_memory() would be
-> done inside hibernation_snapshot(), when kernel threads are frozen.. which
-> is known to break XFS, to give one example as mentioned in the changelog
-> of the above commit.
+I'm simply curious about what knowledgeable people would think.
 
-That's exactly right.
 
-> So, the right way to fix this IMHO, would be to split up thaw_processes()
-> just like freezing phase:
-> 
-> /* freezes or thaws user space processes */
-> freeze_processes() - thaw_processes()
-> 
-> /* freezes or thaws kernel threads */
-> freeze_kernel_threads() - thaw_kernel_threads()
-> 
-> We have to insert this thaw_kernel_threads() at appropriate places in such a
-> way as to not require another ioctl if possible... Then things would be
-> more symmetric (and hence more easy to understand) and we can avoid getting
-> into strange situations as discussed here.
-> 
-> But before we venture into that, it would be good to know if the patch posted
-> in the previous mail fixes the particular problem reported in this thread,
-> atleast just to see if there are other problems lurking that we aren't aware
-> of yet..
+Regards,
 
-Jiri has already said that the patch works.
-
-I think we could avoid the issue entirely by introducing thaw_kernel_threads
-and making SNAPSHOT_FREE call it.  No other changes should be necessary.
-
-IOW, Jiri, does the patch below help?
-
-[BTW, the freeze_tasks()'s kerneldoc seems to be outdated.  Tejun?]
-
----
- include/linux/freezer.h |    2 ++
- kernel/power/process.c  |   19 +++++++++++++++++++
- kernel/power/user.c     |    1 +
- 3 files changed, 22 insertions(+)
-
-Index: linux/include/linux/freezer.h
-===================================================================
---- linux.orig/include/linux/freezer.h
-+++ linux/include/linux/freezer.h
-@@ -39,6 +39,7 @@ extern bool __refrigerator(bool check_kt
- extern int freeze_processes(void);
- extern int freeze_kernel_threads(void);
- extern void thaw_processes(void);
-+extern void thaw_kernel_threads(void);
- 
- static inline bool try_to_freeze(void)
- {
-@@ -174,6 +175,7 @@ static inline bool __refrigerator(bool c
- static inline int freeze_processes(void) { return -ENOSYS; }
- static inline int freeze_kernel_threads(void) { return -ENOSYS; }
- static inline void thaw_processes(void) {}
-+static inline void thaw_kernel_threads(void) {}
- 
- static inline bool try_to_freeze(void) { return false; }
- 
-Index: linux/kernel/power/process.c
-===================================================================
---- linux.orig/kernel/power/process.c
-+++ linux/kernel/power/process.c
-@@ -188,3 +188,22 @@ void thaw_processes(void)
- 	printk("done.\n");
- }
- 
-+void thaw_kernel_threads(void)
-+{
-+	struct task_struct *g, *p;
-+
-+	pm_nosig_freezing = false;
-+	printk("Restarting kernel threads ... ");
-+
-+	thaw_workqueues();
-+
-+	read_lock(&tasklist_lock);
-+	do_each_thread(g, p) {
-+		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
-+			__thaw_task(p);
-+	} while_each_thread(g, p);
-+	read_unlock(&tasklist_lock);
-+
-+	schedule();
-+	printk("done.\n");
-+}
-Index: linux/kernel/power/user.c
-===================================================================
---- linux.orig/kernel/power/user.c
-+++ linux/kernel/power/user.c
-@@ -274,6 +274,7 @@ static long snapshot_ioctl(struct file *
- 		swsusp_free();
- 		memset(&data->handle, 0, sizeof(struct snapshot_handle));
- 		data->ready = 0;
-+		thaw_kernel_threads();
- 		break;
- 
- 	case SNAPSHOT_PREF_IMAGE_SIZE:
+-- 
+Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
+http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
+DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
