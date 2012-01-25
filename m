@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab2AYTBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 14:01:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37213 "EHLO mga01.intel.com"
+	id S1752011Ab2AYTBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 14:01:38 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:45563 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842Ab2AYTBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 14:01:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="110709550"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Van De Ven, Arjan" <arjan@linux.intel.com>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: RE: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
- save mtrr
-Thread-Topic: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
- save mtrr
-Thread-Index: AQHM0IXtchbg6t0dpEylW7Itt3XhjJYJMbWAgAV5GACADsrlsA==
-Date: Wed, 25 Jan 2012 19:01:02 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712200349E1@ORSMSX105.amr.corp.intel.com>
-References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
- <1326301493-28760-11-git-send-email-fenghua.yu@intel.com>
- <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
- <4F136A50.80203@zytor.com>
-In-Reply-To: <4F136A50.80203@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1751200Ab2AYTBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 14:01:36 -0500
+Date: Wed, 25 Jan 2012 19:01:35 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: Michal Kubecek <mkubecek@suse.cz>, JBeulich@suse.com
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] agp: fix scratch page cleanup
+In-Reply-To: <20120125161350.82538402A7@alaris.suse.cz>
+Message-ID: <alpine.DEB.2.00.1201251900330.12477@skynet.skynet.ie>
+References: <20120125161350.82538402A7@alaris.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0PJ1QGZ005723
 
-On 01/12/2012 04:33 AM, Brian Gerst wrote:
-> On Wed, Jan 11, 2012 at 12:04 PM, Fenghua Yu <fenghua.yu@intel.com> wrote:
->> From: Fenghua Yu <fenghua.yu@intel.com>
->>
->> Ask the first online CPU to save mtrr instead of asking BSP. BSP
-could be
->> offline when mtrr_save_state() is called.
->
-> If you can use any non-boot cpu to save the MTRRs why not just use the
-> current cpu?  They should all be in sync anyways.
 
-The current cpu can not be used to save the MTRRs because its MTRRs are not initialized yet at this point. Later on, set_mtrr() will be called to initialize MTRRs on the current CPU (and all booted CPUs).
+> In error cleanup of agp_backend_initialize() and in agp_backend_cleanup(),
+> agp_destroy_page() is passed virtual address of the scratch page. This
+> leads to a kernel warning if the initialization fails (or upon regular
+> cleanup) as pointer to struct page should be passed instead.
 
-Thanks.
+Jan can you check and ack this if okay? since you wrote this chunk 
+originally?
 
--Fenghua
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Dave.
+
+> 
+> Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+> ---
+>  drivers/char/agp/backend.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/char/agp/backend.c b/drivers/char/agp/backend.c
+> index 4b71647..317c28c 100644
+> --- a/drivers/char/agp/backend.c
+> +++ b/drivers/char/agp/backend.c
+> @@ -194,10 +194,10 @@ static int agp_backend_initialize(struct agp_bridge_data *bridge)
+>  
+>  err_out:
+>  	if (bridge->driver->needs_scratch_page) {
+> -		void *va = page_address(bridge->scratch_page_page);
+> +		struct page *page = bridge->scratch_page_page;
+>  
+> -		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_UNMAP);
+> -		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_FREE);
+> +		bridge->driver->agp_destroy_page(page, AGP_PAGE_DESTROY_UNMAP);
+> +		bridge->driver->agp_destroy_page(page, AGP_PAGE_DESTROY_FREE);
+>  	}
+>  	if (got_gatt)
+>  		bridge->driver->free_gatt_table(bridge);
+> @@ -221,10 +221,10 @@ static void agp_backend_cleanup(struct agp_bridge_data *bridge)
+>  
+>  	if (bridge->driver->agp_destroy_page &&
+>  	    bridge->driver->needs_scratch_page) {
+> -		void *va = page_address(bridge->scratch_page_page);
+> +		struct page *page = bridge->scratch_page_page;
+>  
+> -		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_UNMAP);
+> -		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_FREE);
+> +		bridge->driver->agp_destroy_page(page, AGP_PAGE_DESTROY_UNMAP);
+> +		bridge->driver->agp_destroy_page(page, AGP_PAGE_DESTROY_FREE);
+>  	}
+>  }
+>  
+> 
