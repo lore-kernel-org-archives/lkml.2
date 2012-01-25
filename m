@@ -1,99 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536Ab2AYSgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 13:36:47 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45377 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab2AYSgp (ORCPT
+	id S1751480Ab2AYSop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 13:44:45 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:53202 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab2AYSon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 13:36:45 -0500
-Date: Wed, 25 Jan 2012 19:36:37 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <gregkh@suse.de>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH v4] serial/efm32: add new driver
-Message-ID: <20120125183637.GM6305@pengutronix.de>
-References: <20120124220522.GA10590@kroah.com>
- <1327478704-4233-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20120125155258.GB3608@suse.de>
+	Wed, 25 Jan 2012 13:44:43 -0500
+Message-ID: <4F204D90.7010105@linux.vnet.ibm.com>
+Date: Thu, 26 Jan 2012 00:14:32 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120125155258.GB3608@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Baohua.Song@csr.com, Tejun Heo <tj@kernel.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at	kernel/workqueue.c:3659
+References: <4F1EC8D5.5040102@suse.cz> <201201250002.37916.rjw@sisk.pl> <4F1F4717.2090704@gmail.com> <201201250110.44360.rjw@sisk.pl> <4F20204F.6040606@linux.vnet.ibm.com> <4F202721.6050900@linux.vnet.ibm.com>
+In-Reply-To: <4F202721.6050900@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12012518-9574-0000-0000-0000011B2FB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
-
-On Wed, Jan 25, 2012 at 07:52:58AM -0800, Greg KH wrote:
-> On Wed, Jan 25, 2012 at 09:05:04AM +0100, Uwe Kleine-König wrote:
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> > changes since v3 (id:1326127447-20284-1-git-send-email-u.kleine-koenig@pengutronix.de)
-> >  - increase number of ports to support UART additionally to USART ports
-> >  - implement choosing route location
-> >  - implement setting stopbit config
-> >    (before one stop bit was configured and CSTOPB was set unconditionally which
-> >    is wrong. Spotted by Russell King.)
-> >  - implement break, sysrq and overflow detection
-> >  - drop unrelated changing to make patch apply on v3.3-rc1
-> > 
-> > Hello Greg,
-> > 
-> > On Tue, Jan 24, 2012 at 02:05:22PM -0800, Greg KH wrote:
-> > > On Mon, Jan 09, 2012 at 05:44:07PM +0100, Uwe Kleine-König wrote:
-> > > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > > ---
-> > > > Hello,
-> > > > 
-> > > > changes since v2:
-> > > > - use {read,write}l_relaxed
-> > > > - rename driver to efm32-uart as USARTs and UARTs can be handled both
-> > > >   with it
-> > > > - disable TX in .stop_tx (which needs some changes related to
-> > > >   USARTn_IF_TXC)
-> > > > 
-> > > > Best regards
-> > > > Uwe
-> > > > 
-> > > >  .../devicetree/bindings/tty/serial/efm32-uart.txt  |   14 +
-> > > >  arch/arm/boot/dts/efm32gg-dk3750.dts               |    2 +-
-> > > >  arch/arm/mach-efm32/devices/pdev-efm32-usart.c     |    6 +-
-> > > 
-> > > This file isn't in 3.3-rc1, so I can't apply this patch :(
-> > > 
-> > > What tree is it supposed to be against?
-> > Sorry, I messed this up, it bases on my private development tree. These
-> > two changes should go independant of the driver patch via an ARM tree
-> > (if at all).
-> > 
-> > I added a few more features in the meantime, so the options are:
-> >  - take v3 simply droping the hunks changing
-> >    arch/arm/boot/dts/efm32gg-dk3750.dts and
-> >    arch/arm/mach-efm32/devices/pdev-efm32-usart.c
-> >  - take this for 3.3
-> >  - take this for 3.4
-> > 
-> > My preference would be of course the second option, but for me the other two
-> > would be OK if you don't like taking the update that late, too.
 > 
-> I was going to take this for the 3.4 merge, adding it to my tree now.
-> It should be ok to drop those hunks, right?
-Yeah, but if you were taking v4 then you wouldn't need to drop these hunks.
 
-Best regards
-Uwe
+> Commit 2aede851 (PM / Hibernate: Freeze kernel threads after preallocating
+> memory) split up the freezing phase and moved the freezing of kernel threads
+> to hibernation_snapshot() function.
+> (This is a pretty old commit btw, I think it came in sometime around 3.2).
+> 
+> And there is a BUG_ON() in freeze_workqueues_begin() which complains if
+> this function is called when the kernel threads are already frozen.
+> 
+> Now, coming to the userspace utility:
+> 
+>> In suspend.c inside the suspend-utils userspace package, I see a loop such
+>> as:
+>>
+>>         error = freeze(snapshot_fd);
+>> 	...
+>>         attempts = 2;
+>>         do {
+>>                 if (set_image_size(snapshot_fd, image_size)) {
+>>                         error = errno;
+>>                         break;
+>>                 }
+>>                 if (atomic_snapshot(snapshot_fd, &in_suspend)) {
+>                         ^^^ 
+>         This ends up in the call to hibernation_snapshot().
+> 
+>>                         error = errno;
+>>                         break;
+>>                 }
+>>                 if (!in_suspend) {
+>>                         /* first unblank the console, see console_codes(4) */
+>>                         printf("\e[13]");
+>>                         printf("%s: returned to userspace\n", my_name);
+>>                         free_snapshot(snapshot_fd);
+>>                         break;
+>>                 }
+>>
+>>                 error = write_image(snapshot_fd, resume_fd, -1);
+>>                 if (error) {
+> 
+>         Since swap space is limited, we come here.
+> 
+>>                         free_swap_pages(snapshot_fd);
+>>                         free_snapshot(snapshot_fd);
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+				^^^
+	This function makes the ioctl call SNAPSHOT_FREE.
+
+>>                         image_size = 0;
+>>                         error = -error;
+>>                         if (error != ENOSPC)
+>>                                 break;
+> 
+> 
+> 
+> 
+>         And because of the above 'if' condition, we don't break here.
+>         IOW, we will run the loop a second time.
+> 
+>>                 } else {
+>>                         splash.progress(100);
+>> #ifdef CONFIG_BOTH
+>>                         if (s2ram_kms || s2ram) {
+>>                                 /* If we die (and allow system to continue)
+>>                                  * between now and reset_signature(), very bad
+>>                                  * things will happen. */
+>>                                 error = suspend_to_ram(snapshot_fd);
+>>                                 if (error)
+>>                                         goto Shutdown;
+>>                                 reset_signature(resume_fd);
+>>                                 free_swap_pages(snapshot_fd);
+>>                                 free_snapshot(snapshot_fd);
+>>                                 if (!s2ram_kms)
+>>                                         s2ram_resume();
+>>                                 goto Unfreeze;
+>>                         }
+>> Shutdown:
+>> #endif
+>>                         close(resume_fd);
+>>                         suspend_shutdown(snapshot_fd);
+>>                 }
+>>         } while (--attempts);
+>>
+>> ...
+>> Unfreeze:
+>>         unfreeze(snapshot_fd);
+>>
+>>
+> 
+> 
+> So, since the loop is run a second time if not enough space was available,
+> we end up calling hibernation_snapshot(), IOW freeze_workqueues_begin() a
+> second time - and this is what makes the BUG_ON() to fire!
+> 
+
+
+SNAPSHOT_CREATE_IMAGE has a check for data->ready such as:
+
+        if (data->mode != O_RDONLY || !data->frozen  || data->ready) {
+                error = -EPERM;
+                break;
+        }
+
+data->ready would be set to 1 only under SNAPSHOT_CREATE_IMAGE. However,
+SNAPSHOT_FREE (invoked at the place shown above) will reset the value to 0.
+This makes it possible for hibernation_snapshot() and hence
+freeze_workqueues_begin() to be called a second time, which is unfortunate.
+
+And actually, the patch I posted in my previous mail is not really the right
+long-term fix, though it might fix the particular issue that Jiri is facing..
+
+Because, allowing hibernation_snapshot() to get called a second time while
+kernel threads are still frozen brings us to the same situation that commit
+2aede851 (PM / Hibernate: Freeze kernel threads after preallocating memory)
+tried to prevent! IOW, a call to hibernate_preallocate_memory() would be
+done inside hibernation_snapshot(), when kernel threads are frozen.. which
+is known to break XFS, to give one example as mentioned in the changelog
+of the above commit.
+
+So, the right way to fix this IMHO, would be to split up thaw_processes()
+just like freezing phase:
+
+/* freezes or thaws user space processes */
+freeze_processes() - thaw_processes()
+
+/* freezes or thaws kernel threads */
+freeze_kernel_threads() - thaw_kernel_threads()
+
+We have to insert this thaw_kernel_threads() at appropriate places in such a
+way as to not require another ioctl if possible... Then things would be
+more symmetric (and hence more easy to understand) and we can avoid getting
+into strange situations as discussed here.
+
+But before we venture into that, it would be good to know if the patch posted
+in the previous mail fixes the particular problem reported in this thread,
+atleast just to see if there are other problems lurking that we aren't aware
+of yet..
+
+Regards,
+Srivatsa S. Bhat
+
