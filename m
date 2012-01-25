@@ -1,134 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab2AYKKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 05:10:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57695 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab2AYKKi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 05:10:38 -0500
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
- condition
-From: Peter Zijlstra <peterz@infradead.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4EFB8523.6080708@gmail.com>
-References: <1324633794.24803.48.camel@twins>
-	 <20111223154137.GA27901@redhat.com>
-	 <20111226172357.CE4D.E1E9C6FF@jp.fujitsu.com>
-	 <20111226171151.GA4472@redhat.com>  <4EFB8523.6080708@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Jan 2012 11:10:24 +0100
-Message-ID: <1327486224.2614.45.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751356Ab2AYKOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 05:14:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30675 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab2AYKOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 05:14:31 -0500
+Date: Wed, 25 Jan 2012 08:12:09 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Ronen Hod <rhod@redhat.com>
+Cc: leonid.moiseichuk@nokia.com, penberg@kernel.org, riel@redhat.com,
+        minchan@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
+        kosaki.motohiro@gmail.com, hannes@cmpxchg.org,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC 1/3] /dev/low_mem_notify
+Message-ID: <20120125101209.GB29167@amt.cnet>
+References: <4F175706.8000808@redhat.com>
+ <alpine.LFD.2.02.1201190922390.3033@tux.localdomain>
+ <4F17DCED.4020908@redhat.com>
+ <CAOJsxLG3x_R5xq85hh5RvPoD+nhgYbHJfbLW=YMxCZockAXJqw@mail.gmail.com>
+ <4F17E058.8020008@redhat.com>
+ <84FF21A720B0874AA94B46D76DB9826904559D46@008-AM1MPN1-003.mgdnok.nokia.com>
+ <20120124153835.GA10990@amt.cnet>
+ <4F1ED77F.4090900@redhat.com>
+ <20120124181034.GA19186@amt.cnet>
+ <4F1FC2C8.10103@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F1FC2C8.10103@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-28 at 16:07 -0500, KOSAKI Motohiro wrote:
+On Wed, Jan 25, 2012 at 10:52:24AM +0200, Ronen Hod wrote:
+> On 01/24/2012 08:10 PM, Marcelo Tosatti wrote:
+> >On Tue, Jan 24, 2012 at 06:08:31PM +0200, Ronen Hod wrote:
+> >>On 01/24/2012 05:38 PM, Marcelo Tosatti wrote:
+> >>>On Thu, Jan 19, 2012 at 10:53:29AM +0000, leonid.moiseichuk@nokia.com wrote:
+> >>>>>-----Original Message-----
+> >>>>>From: ext Ronen Hod [mailto:rhod@redhat.com]
+> >>>>>Sent: 19 January, 2012 11:20
+> >>>>>To: Pekka Enberg
+> >>>>...
+> >>>>>>>>Isn't
+> >>>>>>>>
+> >>>>>>>>/proc/sys/vm/min_free_kbytes
+> >>>>>>>>
+> >>>>>>>>pretty much just that?
+> >>>>>>>Would you suggest to use min_free_kbytes as the threshold for sending
+> >>>>>>>low_memory_notifications to applications, and separately as a target
+> >>>>>>>value for the applications' memory giveaway?
+> >>>>>>I'm not saying that the kernel should use it directly but it seems
+> >>>>>>like the kind of "ideal number of free pages" threshold you're
+> >>>>>>suggesting. So userspace can read that value and use it as the "number
+> >>>>>>of free pages" threshold for VM events, no?
+> >>>>>Yes, I like it. The rules of the game are simple and consistent all over, be it the
+> >>>>>alert threshold, voluntary poling by the apps, and for concurrent work by
+> >>>>>several applications.
+> >>>>>Well, as long as it provides a good indication for low_mem_pressure.
+> >>>>For me it doesn't look that have much sense. min_free_kbytes could be set from user-space (or auto-tuned by kernel) to keep some amount
+> >>>>of memory available for GFP_ATOMIC allocations.  In case situation comes under pointed level kernel will reclaim memory from e.g. caches.
+> >>>>
+> >>>>> From potential user point of view the proposed API has number of lacks which would be nice to have implemented:
+> >>>>1. rename this API from low_mem_pressure to something more related to notification and memory situation in system: memory_pressure, memnotify, memory_level etc. The word "low" is misleading here
+> >>>>2. API must use deferred timers to prevent use-time impact. Deferred timer will be triggered only in case HW event or non-deferrable timer, so if device sleeps timer might be skipped and that is what expected for user-space
+> >>>Having userspace specify the "sample period" for low memory notification
+> >>>makes no sense. The frequency of notifications is a function of the
+> >>>memory pressure.
+> >>>
+> >>>>3. API should be tunable for propagate changes when level is Up or Down, maybe both ways.
+> >>>>4. to avoid triggering too much events probably has sense to filter according to amount of change but that is optional. If subscriber set timer to 1s the amount of events should not be very big.
+> >>>>5. API must provide interface to request parameters e.g. available swap or free memory just to have some base.
+> >>>It would make the interface easier to use if it provided the number of
+> >>>pages to free, in the notification (kernel can calculate that as the
+> >>>delta between current_free_pages ->   comfortable_free_pages relative to
+> >>>process RSS).
+> >>If you rely on the notification's argument you lose several features:
+> >>  - Handling of notifications by several applications in parallel
+> >Each application has its argument built in a custom fashion
+> >(pages_to_free = delta between current_free_pages ->
+> >comfortable_free_pages relative to process RSS), or something to that
+> >effect. It is compatible with parallel notifications.
 > 
-> CPU0                    CPU1
-> --------------------------------------------------------
-> deactivate_task()
->                         task->state = TASK_UNINTERRUPTIBLE;
-> activate_task()
->    rq->nr_uninterruptible--;
+> Not sure that I got it. Do you suggest to ask all the applications to free say 3% of their memory?. 
+> Some may be able to free more, and some cannot free any. Isn't it more practical to just notify them, and let each app contribute its part to the global moving target?
+
+The problem is, how is each process supposed to know how much memory
+it should free for each notification received, that is, its part?
+
+Its easier if there is a goal, a hint of how many pages the process
+should release.
+
+> >>  - Voluntary application's decisions, such as cleanup or avoiding allocations, at the application's convenience.
+> >I am suggesting an additional field in the notification data so that the
+> >freeing routine has a goal. But it is not mandatory.
 > 
->                         schedule()
->                           deactivate_task()
->                             rq->nr_uninterruptible++;
+> If you do want to support voluntary (notification less) app decisions, based on the current status, then why not satisfy with this API and only use the notifications to trigger this procedure?
 > 
+> >
+> >>- Iterative release loops, until there are enough free pages.
+> >What is the advantage versus releasing the necessary amount of
+> >memory in a given moment?
 > 
-
-Hmm, I think you're right, when CPU0 does __sched_setscheduler() on the
-task running on CPU1 and CPU1's @task is current.
-
-I think only __sched_setscheduler() is really a problem, the other
-activate/deactivate users not schedule or wakeup are __migrate_task()
-and normalize_task().
-
-__migrate_task() will only run on tasks that aren't actually running
-anywhere so the above scenario can't happen, normalize_task() is never
-used on normal systems (sysrq-n).
-
-So I guess the below cures things and cleans up a bit.. no?
-
----
- kernel/sched/core.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index df00cb0..e067df1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -723,9 +723,6 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
- 	p->sched_class->dequeue_task(rq, p, flags);
- }
- 
--/*
-- * activate_task - move a task to the runqueue.
-- */
- void activate_task(struct rq *rq, struct task_struct *p, int flags)
- {
- 	if (task_contributes_to_load(p))
-@@ -734,9 +731,6 @@ void activate_task(struct rq *rq, struct task_struct *p, int flags)
- 	enqueue_task(rq, p, flags);
- }
- 
--/*
-- * deactivate_task - remove a task from the runqueue.
-- */
- void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
- {
- 	if (task_contributes_to_load(p))
-@@ -4134,7 +4128,7 @@ static int __sched_setscheduler(struct task_struct *p, int policy,
- 	on_rq = p->on_rq;
- 	running = task_current(rq, p);
- 	if (on_rq)
--		deactivate_task(rq, p, 0);
-+		dequeue_task(rq, p, 0);
- 	if (running)
- 		p->sched_class->put_prev_task(rq, p);
- 
-@@ -4147,7 +4141,7 @@ static int __sched_setscheduler(struct task_struct *p, int policy,
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
- 	if (on_rq)
--		activate_task(rq, p, 0);
-+		enqueue_task(rq, p, 0);
- 
- 	check_class_changed(rq, p, prev_class, oldprio);
- 	task_rq_unlock(rq, p, &flags);
-@@ -4998,9 +4992,9 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
- 	 * placed properly.
- 	 */
- 	if (p->on_rq) {
--		deactivate_task(rq_src, p, 0);
-+		dequeue_task(rq_src, p, 0);
- 		set_task_cpu(p, dest_cpu);
--		activate_task(rq_dest, p, 0);
-+		enqueue_task(rq_dest, p, 0);
- 		check_preempt_curr(rq_dest, p, 0);
- 	}
- done:
-@@ -7032,10 +7026,10 @@ static void normalize_task(struct rq *rq, struct task_struct *p)
- 
- 	on_rq = p->on_rq;
- 	if (on_rq)
--		deactivate_task(rq, p, 0);
-+		dequeue_task(rq, p, 0);
- 	__setscheduler(rq, p, SCHED_NORMAL, 0);
- 	if (on_rq) {
--		activate_task(rq, p, 0);
-+		enqueue_task(rq, p, 0);
- 		resched_task(rq->curr);
- 	}
- 
-
-
+> The cleanup logic may be unaware of the page-level effects of its alloc and free, more so when freeing complex internal data structures (such as cached web pages), and this way you let it free until things settle down.
+> 
+> Ronen.
+> 
+> >
+> >>I believe that the notification should only serve as a trigger to run the cleanup.
+> >Agree.
+> >
+> >
