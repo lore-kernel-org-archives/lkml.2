@@ -1,40 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab2AYUZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 15:25:22 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:48260 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751301Ab2AYUZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 15:25:21 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.3-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20120125202519.907DB426DA7@whiskey.americas.sgi.com>
-Date: Wed, 25 Jan 2012 14:25:19 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1752329Ab2AYUeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 15:34:04 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43234 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab2AYUeC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 15:34:02 -0500
+From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+To: levinsasha928@gmail.com, netdev@vger.kernel.org, davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com, sjurbren@gmail.com,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCH net] caif: Fix crash due to uninitialized net name-space.
+Date: Wed, 25 Jan 2012 21:33:51 +0100
+Message-Id: <1327523631-3480-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>
+References: <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>
+References: <CA+1xoqdZapYjS4gPf_uGwEdFQQdZ525mASr7iFKPXJdCBdRLKA@mail.gmail.com> <1327444045-1033-1-git-send-email-sjur.brandeland@stericsson.com> <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+net_generic() calls BUG_ON() if called with uninitialized
+network name-space. Add check if net is initialized before
+calling net_generic(). This fixes the following oops:
 
-   Please pull in the following bugfix for xfs.  We forgot to drop a lock on
-   error in xfs_readlink.  It hasn't been through -next yet, but there is no
-   -next tree tomorrow.  The fix is clear so I'm sending this request today.
+[  200.752016] kernel BUG at include/net/netns/generic.h:40!
+...
+[  200.752016]  [<ffffffff825c3cea>] ? get_cfcnfg+0x3a/0x180
+[  200.752016]  [<ffffffff821cf0b0>] ? lockdep_rtnl_is_held+0x10/0x20
+[  200.752016]  [<ffffffff825c41be>] caif_device_notify+0x2e/0x530
+[  200.752016]  [<ffffffff810d61b7>] notifier_call_chain+0x67/0x110
+[  200.752016]  [<ffffffff810d67c1>] raw_notifier_call_chain+0x11/0x20
+[  200.752016]  [<ffffffff821bae82>] call_netdevice_notifiers+0x32/0x60
+[  200.752016]  [<ffffffff821c2b26>] register_netdevice+0x196/0x300
+[  200.752016]  [<ffffffff821c2ca9>] register_netdev+0x19/0x30
+[  200.752016]  [<ffffffff81c1c67a>] loopback_net_init+0x4a/0xa0
+[  200.752016]  [<ffffffff821b5e62>] ops_init+0x42/0x180
+[  200.752016]  [<ffffffff821b600b>] setup_net+0x6b/0x100
+[  200.752016]  [<ffffffff821b6466>] copy_net_ns+0x86/0x110
+[  200.752016]  [<ffffffff810d5789>] create_new_namespaces+0xd9/0x190
+
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
+
+---
+
+Hi Sasha and Dave,
+
+[Sasha]
+>Works for me.
+Thank you Sasha for reporting this bug and testing my patch,
+I appreciate it.
+
+[Dave]
+>Please post all networking patches CC:'d
+Sorry, I missed the obvious.
+I'm resending the same patch as yesterday, this time to:netdev
+and with "Tested-by: Sasha". Please apply to net.
 
 Thanks,
-	Ben
+Sjur
 
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
-  Linus Torvalds (1):
-        Linux 3.3-rc1
+ net/caif/caif_dev.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-are available in the git repository at:
+diff --git a/net/caif/caif_dev.c b/net/caif/caif_dev.c
+index 673728a..6110ade 100644
+--- a/net/caif/caif_dev.c
++++ b/net/caif/caif_dev.c
+@@ -371,6 +371,14 @@ static int caif_device_notify(struct notifier_block *me, unsigned long what,
+ 	struct cflayer *layer, *link_support;
+ 	int head_room = 0;
+ 	struct caif_device_entry_list *caifdevs;
++	int len;
++
++	rcu_read_lock();
++	len = rcu_dereference(dev_net(dev)->gen)->len;
++	rcu_read_unlock();
++
++	if (caif_net_id == 0 || caif_net_id > len)
++		return 0;
+ 
+ 	cfg = get_cfcnfg(dev_net(dev));
+ 	caifdevs = caif_device_list(dev_net(dev));
+-- 
+1.7.0.4
 
-  git://oss.sgi.com/xfs/xfs.git for-linus
-
-Jan Kara (1):
-      xfs: Fix missing xfs_iunlock() on error recovery path in xfs_readlink()
-
- fs/xfs/xfs_vnodeops.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
