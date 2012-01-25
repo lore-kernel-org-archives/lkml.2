@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab2AYPvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:51:49 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:43563 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895Ab2AYPvs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:51:48 -0500
-X-IronPort-AV: E=Sophos;i="4.71,568,1320624000"; 
-   d="scan'208";a="10285768"
-Subject: RE: [Xen-devel] Regressions in v3.3-rc1 introduced by
- "xen/granttable: Grant tables V2 implementation"
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "annie.li@oracle.com" <annie.li@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Jan 2012 15:51:46 +0000
-In-Reply-To: <45B8991A987A4149B40F1A061BF49097CBE27F2A88@LONPMAILBOX01.citrite.net>
-References: <20120125044949.GB29759@phenom.dumpdata.com>
-	 <20120125051253.GA15501@phenom.dumpdata.com>
-	 <1327485333.24561.232.camel@zakaz.uk.xensource.com>
-	 <291EDFCB1E9E224A99088639C4762022C80E2F0F20@LONPMAILBOX01.citrite.net>
-	 <45B8991A987A4149B40F1A061BF49097CBE27F2A88@LONPMAILBOX01.citrite.net>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1327506706.24561.338.camel@zakaz.uk.xensource.com>
+	id S1754916Ab2AYPwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:52:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752918Ab2AYPwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 10:52:15 -0500
+Date: Wed, 25 Jan 2012 16:45:47 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Yasunori Goto <y-goto@jp.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
+	condition
+Message-ID: <20120125154547.GA6671@redhat.com>
+References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com> <1326721082.2442.234.camel@twins> <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <20120117090605.GD7612@elte.hu> <20120117151242.GA13290@redhat.com> <20120118094219.GE5842@elte.hu> <20120118142005.GB10105@redhat.com> <1327400349.2614.10.camel@laptop> <1327402527.2614.17.camel@laptop>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327402527.2614.17.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-25 at 15:47 +0000, Ian Campbell wrote:
-> On Wed, 2012-01-25 at 15:16 +0000, Paul Durrant wrote:
-> > > -----Original Message-----
-> > > 
-> > > On HVM for gnttab_shared we make an add_to_physmap call with
-> > > XENMAPSPACE_grant_table (in gnttab_map). I don't see any support call to
-> > > do something similar for the status array though and I don't see a
-> > > XENMAPSPACE_* specifically for that case either in the hypervisor either.
-> > > 
-> > 
-> > There is no map-space for the status pages. To map them you use the
-> > standard map space but OR a bit (top bit IIRC) into in the idx. It's a
-> > bit icky, but that's how it is.
-> 
-> I can't see that happening anywhere in the current Linux tree, there's
-> only one call to XENMAPSPACE_grant_table and it doesn't set the top bit,
-> so presumably this is at least part of the problem.
-> 
-> I hope that "top bit" is consistent for 32 and 64 bit domains....
+On 01/24, Peter Zijlstra wrote:
+>
+> On Tue, 2012-01-24 at 11:19 +0100, Peter Zijlstra wrote:
+> > On Wed, 2012-01-18 at 15:20 +0100, Oleg Nesterov wrote:
+> > > do_exit() is different because it can not handle the spurious wakeup.
+> > > Well, may be we can? we can simply do
+> > >
+> > >                 for (;;) {
+> > >                         tsk->state = TASK_DEAD;
+> > >                         schedule();
+> > >                 }
+> > >
+> > > __schedule() can't race with ttwu() once it takes rq->lock. If the
+> > > exiting task is deactivated, finish_task_switch() will see EXIT_DEAD.
+> >
+> > TASK_DEAD, right?
 
-#define XENMAPIDX_grant_table_status 0x80000000
+Yes, but... I simply can't understand what I was thinking about.
+And probably I missed something again, but I think this can't work.
 
-...so yes
+Afaics, this can only help to prevent the race with ttwu_remote()
+doing ttwu_do_wakeup() under rq->lock.
 
-Ian.
+But we still can race with the !p->on_rq case which sets TASK_WAKING.
+It can do this after finish_task_switch() observes TASK_DEAD and does
+put_task_struct().
+
+> I think Yasunori-San's patch isn't
+> sufficient, note how the p->state = TASK_RUNNING in ttwu_do_wakeup() can
+> happen outside of p->pi_lock when the task gets queued on a remote cpu.
+
+Hmm, really? I am not sure, but I do not trust myself.
+
+To simplify, you mean that
+
+	mb();
+	unlock_wait(pi_lock);
+
+	tsk->state = TASK_DEAD;
+
+can change ->state from TASK_WAKING to TASK_DEAD, right? Is this really
+possible? ttwu() ensures p->on_rq == F in this case.
+
+Oleg.
 
