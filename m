@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab2AYHL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 02:11:28 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:32876 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2AYHL1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 02:11:27 -0500
+	id S1752346Ab2AYHRc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 02:17:32 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:55964 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751436Ab2AYHRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 02:17:31 -0500
+Date: Wed, 25 Jan 2012 08:17:16 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: memcg: fix over reclaiming mem cgroup
+Message-ID: <20120125071715.GA7694@cmpxchg.org>
+References: <CAJd=RBAbFd=MFZZyCKN-Si-Zt=C6dKVUaG-C7s5VKoTWfY00nA@mail.gmail.com>
+ <20120123130221.GA15113@tiehlicka.suse.cz>
+ <CALWz4izWYb=_svn=UJ1C--pWXv59H2ahn6EJEnTpJv-dT6WGsw@mail.gmail.com>
+ <CAJd=RBAuDABE7u1wyc+45ZGoVos5PnxMe6P=ET-CHf-LChTpgw@mail.gmail.com>
+ <20120124082352.GA26289@tiehlicka.suse.cz>
+ <CAJd=RBDj5mtWJG0Byi=97Kuu6LnkwdndDO-AUpeYSCTBEy0P5A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120124.230203.1478271172075708903.davem@davemloft.net>
-References: <20120123.134352.1621146585245670953.davem@davemloft.net>
- <CAGsizzJnQ6b6eSC0ZnAtFguU7_xDfWFPSY6L4DWXc24F+Ts2XQ@mail.gmail.com>
- <CAOzFzEjE7b-Y+_vOWeBKbHDkURRcYXomSTcwB91vKHVWQxBVsg@mail.gmail.com> <20120124.230203.1478271172075708903.davem@davemloft.net>
-From: Jesse Gross <jesse@nicira.com>
-Date: Tue, 24 Jan 2012 23:11:06 -0800
-Message-ID: <CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
-Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: David Miller <davem@davemloft.net>
-Cc: joseph.glanville@orionvm.com.au, steweg@ynet.sk, eric.dumazet@gmail.com,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBDj5mtWJG0Byi=97Kuu6LnkwdndDO-AUpeYSCTBEy0P5A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 8:02 PM, David Miller <davem@davemloft.net> wrote:
-> From: Joseph Glanville <joseph.glanville@orionvm.com.au>
-> Date: Wed, 25 Jan 2012 14:48:37 +1100
->
->> The reason why this patch is useful is that it stands to be the only
->> true mulitpoint L2 VPN with a kernel space forwarding plane.
->
-> So what you're telling me is that I added this huge openvswitch
-> thing essentially for nothing?
+On Wed, Jan 25, 2012 at 09:55:01AM +0800, Hillf Danton wrote:
+> On Tue, Jan 24, 2012 at 4:23 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > Barriered?
+> >
+> pushed out for 3.3-rc2 last night?
 
-I think it's actually the opposite - Open vSwitch can be used to
-implement this type of thing as well as for many other use cases.  On
-the other hand, even when implementing a multipoint L2 solution it can
-be useful to have additional levels of control but you can't do that
-with this patch because it essentially statically glues together
-tunneling and bridging.
+New features are only merged during the merge window (between 3.2 and
+3.3-rc1), from then on it's only bugfixes to stabilize for release.
+
+My soft limit patch missed this merge window, so the earliest target
+is 3.4.  And that's fine, there are still things that need to be
+evaluated, like kswapd now reclaiming with priority 0 and
+nr_to_reclaim at ULONG_MAX, which Michal pointed out.  Or KAME's
+concerns regarding direct soft reclaim and numa setups.
