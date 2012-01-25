@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab2AYG40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 01:56:26 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63149 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547Ab2AYG4Z convert rfc822-to-8bit (ORCPT
+	id S1752004Ab2AYHG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 02:06:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44028 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2AYHG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 01:56:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327472968.14373.41.camel@edumazet-laptop>
-References: <12446987.2261327416407141.JavaMail.root@5-MeO-DMT.ynet.sk>
- <25119746.2341327416953583.JavaMail.root@5-MeO-DMT.ynet.sk>
- <20120124.230354.1696063062900108959.davem@davemloft.net> <CAGsizzLHT6jK8zJn+5eJkTUt5NBdpK9uNHJTzDCPrbCcPBvBNA@mail.gmail.com>
- <1327472968.14373.41.camel@edumazet-laptop>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Wed, 25 Jan 2012 07:56:04 +0100
-X-Google-Sender-Auth: vq8lM0tAo5Ohk6-hgM35eYgjbjM
-Message-ID: <CAGsizzJc0EWuCf+zLBGJbfuMcKKcnnswCvid1pOVpUgJqTY43w@mail.gmail.com>
-Subject: Re: [patch v3, kernel version 3.2.1] Source mode for macvlan interface
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, kaber@trash.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jan 2012 02:06:56 -0500
+Date: Tue, 24 Jan 2012 23:12:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [patch 3/4] c/r: procfs: add arg_start/end, env_start/end and
+ exit_code members to /proc/$pid/stat
+Message-Id: <20120124231245.e4c68f90.akpm@linux-foundation.org>
+In-Reply-To: <20120125065450.GC2005@moon>
+References: <20120123142036.025893883@openvz.org>
+	<20120123142436.336126707@openvz.org>
+	<20120124155941.4f7453d4.akpm@linux-foundation.org>
+	<20120125065450.GC2005@moon>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dňa 25. januára 2012 7:29, Eric Dumazet <eric.dumazet@gmail.com> napísal/a:
-> Le mercredi 25 janvier 2012 à 07:22 +0100, Štefan Gula a écrit :
->
->> It's a result of need to have enough space allocated for sk_buff
->> struct before called macvlan_fill_info. I know that it looks somehow
->> messy. BUt before the macvlan_fill_info is called there is only one
->> procedure calcit. The problem of calcit is that it doesn't have access
->> to struct net_device *dev int it. It has only access to struct sk_buff
->> *skb, so from that point it cannot be called directly (whole parsing
->> code had to be copied there to get the *dev a calling
->> if_nlmsg_size(dev) from it. On the other hand calcit returns global
->> static value of min_ifinfo_dump_size and that is shared among all
->> interfaces and modifying like this do the job properly. There was
->> another different way and that was creating and registering a whole
->> new PF_MACLVAN netlink group resulting in copying almost 95% percent
->> of given code and modified it somehow to do the same.
->>
->> If it should be result of separate commitment than ok, but it was
->> result apparently of need only for use of macvlan that's why it was
->> included in my patch.
->>
->> So how should I proceed with it?
->
-> A separate patch for this part, as David said ?
->
-> The intent is to catch people attention on a particular point, instead
-> of unnoticed code in some huge unrelated patch.
->
->
->
-Ok
+On Wed, 25 Jan 2012 10:54:50 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+
+> > > +		(mm && permitted) ? mm->start_brk : 0,
+> > > +		(mm && permitted) ? mm->arg_start : 0,
+> > > +		(mm && permitted) ? mm->arg_end : 0,
+> > > +		(mm && permitted) ? mm->env_start : 0,
+> > > +		(mm && permitted) ? mm->env_end : 0,
+> > > +		task->exit_code);
+> > >  	if (mm)
+> > >  		mmput(mm);
+> > >  	return 0;
+> > 
+> > /proc/pid/stat is getting out of control.  People are now sending patches
+> > because reading from this thing already takes too long.
+
+err, actually, that was /proc/stat/
+
+> > The problem is that if you only want one field, you have to incur the
+> > cost of preparing all the fields.  The magnitude of this problem
+> > increases exponentially over time!
+> > 
+> > I'm unsure what to do about it really.  Perhaps add a new
+> > /proc/pid/mmstat for MM-specific things.  We could put the above six
+> > fields in there, as long as we move quickly.
+> > 
+> 
+> I can add prctl PR_GET_MM with subcodes, since PR_SET_MM is already here
+> and wrapped with CHECKPOINT_RESTORE. Would this be better?
+
+mm, not really - /proc is the logical/expected place for it.
+
+I'm thinking that perhaps we should start again with all of this and
+export all this information in brand new, well-designed procfs files. 
+We'd still maintain /proc/stat and /proc/pid/stat but people should
+migrate off them.  Eventually (10 years?) everyone will be setting their
+CONFIG_PROC_[PID_]STAT to 'n' and perhaps we can retire the things.
+
+Meanwhile, I suppose you may as well continue to make /proc/pid/stat
+even crazier :(  It isn't as bad as /proc/stat!
+
+
+btw, do we really need to do "(mm && permitted)" so many times?  ie,
+can we split that seq_printf up and do
+
+	if (mm && permitted) {
+		seq_printf(m + offset, "%lu", mm->start_data);
+		...
+	} else {
+		seq_printf(m + offset, "0 0 0 0 0 0 0 0 0");
+	}
+
+?  Although this probably won't help much.
