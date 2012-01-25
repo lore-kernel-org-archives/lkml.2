@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab2AYC0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 21:26:47 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:56168 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755817Ab2AYC0q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 21:26:46 -0500
-X-WSS-ID: 0LYC1GJ-0A-46C-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Linus Walleij" <linus.walleij@linaro.org>
-cc: "shreshthakumar.sahu@stericsson.com" 
-	<shreshthakumar.sahu@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
-Date: Tue, 24 Jan 2012 18:26:34 -0800
-Subject: RE: [PATCH 2/7] leds-lm3530: add 'name' in lm3530_platform_data
-Thread-Topic: [PATCH 2/7] leds-lm3530: add 'name' in
- lm3530_platform_data
-Thread-Index: AczaAonkPZz5TK/ZS7evWF8UGByRKgBAufdQ
-Message-ID: <B567DBAB974C0544994013492B949F8E3812CD3E61@EXMAIL03.scwf.nsc.com>
-References: <AczXFXB5tuUxDiyyTP+0MvKxJb7yTg==>
- <B567DBAB974C0544994013492B949F8E3812C6D0CA@EXMAIL03.scwf.nsc.com>
- <CACRpkdb577CTML0MvXAyYdHqM1LfqMv-x27SQwhwsLvBOLpAtg@mail.gmail.com>
-In-Reply-To: <CACRpkdb577CTML0MvXAyYdHqM1LfqMv-x27SQwhwsLvBOLpAtg@mail.gmail.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
-MIME-Version: 1.0
-X-WSS-ID: 6301B7D71LS9909176-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	id S1755991Ab2AYCcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 21:32:14 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:40805 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751999Ab2AYCcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 21:32:12 -0500
+Date: Wed, 25 Jan 2012 13:32:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tyler Hicks <tyhicks@canonical.com>
+Subject: linux-next: manual merge of the kmap_atomic tree with the ecryptfs
+ tree
+Message-Id: <20120125133201.faa14529e7f872d38a714fb5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__25_Jan_2012_13_32_01_+1100_I2=/mfBDAuHuC9qx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__25_Jan_2012_13_32_01_+1100_I2=/mfBDAuHuC9qx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
------Original Message-----
-From: Linus Walleij [mailto:linus.walleij@linaro.org] 
-Sent: Tuesday, January 24, 2012 4:09 AM
-To: Kim, Milo
-Cc: shreshthakumar.sahu@stericsson.com; linux-kernel@vger.kernel.org; rpurdie@rpsys.net
-Subject: Re: [PATCH 2/7] leds-lm3530: add 'name' in lm3530_platform_data
+Hi Cong,
 
-On Fri, Jan 20, 2012 at 2:47 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
+Today's linux-next merge of the kmap_atomic tree got a conflict in
+fs/ecryptfs/read_write.c between commit f28b7904d455 ("eCryptfs: Remove
+unused ecryptfs_read()") from the ecryptfs tree and commit 27de090e3326
+("ecryptfs: remove the second argument of k[un]map_atomic()") from the
+kmap_atomic tree.
 
->> The led device name can be configurable.
+The former just removed the entire ecryptfs_read() function that was
+modified as part of the latter, so I did that.
 
-> OK, why?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-For example, there are two platforms with the lm3530.
-In project A, the name of led is used as 'lcd-backlight'.
-And in project B, the led name is set to 'lcd-bl'.
-If an user-space accesses different name each project/platform, then lm3530 led name should be changed.
+--Signature=_Wed__25_Jan_2012_13_32_01_+1100_I2=/mfBDAuHuC9qx
+Content-Type: application/pgp-signature
 
-If the name can be configurable in the platform data, then no driver change needed.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks & BR
-Milo -
+iQIcBAEBCAAGBQJPH2mhAAoJEECxmPOUX5FEMyMP/A6DX80NKZeozZ+Yk8WFOTuF
+kN8hhMzE47KkmXpN1882+wC2jCsC1GmBHRelhWwzTApkvOCwS2vjwZQeYnIwxmg6
++2+d2N23D5iZJLF++ntNEQQFQMas8GoKexHHULLR6S94psLfQYs7UiK3wXlcHf/C
+qiK/SY5e3cKcdostCvB9I5icD6pIo3liVEXja7MRKvYRhC70JSFRZi3LXcsFbhtb
+xvBzRSmUsbGCIiMOi55lrNQjPbaLWgphc1kzjCGlpFJT3lJ6GQKYsQqU8wa7ssBi
+UQlAKPNzl4YP90FJHkbyPTzQEWQZU65FeRJQ1ItgCaIgSlRGTywJC1iNfhz7y4d3
+igVepc1pZ0NCidIU6h2QeeS28KP7sJhXay0X0Y5kSgZ/XyYsOu+lQioQ1CbV/5jk
+MSG+23vaxXU/SP4YgEN1panfUi3FjslbLT/WRto0Wx0s5mSaYRCZ4mCftRUN8eMc
+PAZyOiynjBvtOGt1qg2Lu7xI153T44iWUTMb1WBqyqs6aOjf7loIGakIzui5RSWO
+g7cD9pYjSJeX6ZXrj+hH31NUT0ymA344El8qa/OY71TvkYops55AuDiUV62VOJEX
+BuRMcVlCrJF1S6BhI6Q15kSDB2SSx6PNLZDpku3drsxBTB8E58G0YQUXqOa3aVLW
+gKP0mnNefVBc82vaL6+o
+=NmOT
+-----END PGP SIGNATURE-----
 
+--Signature=_Wed__25_Jan_2012_13_32_01_+1100_I2=/mfBDAuHuC9qx--
