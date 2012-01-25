@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab2AYUtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 15:49:15 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:25065 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab2AYUtN (ORCPT
+	id S1752420Ab2AYUvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 15:51:23 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:42215 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751072Ab2AYUvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 15:49:13 -0500
-Date: Wed, 25 Jan 2012 15:46:52 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "annie.li@oracle.com" <annie.li@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: Regressions in v3.3-rc1 introduced by "xen/granttable: Grant
- tables V2 implementation"
-Message-ID: <20120125204652.GA21284@phenom.dumpdata.com>
-References: <20120125044949.GB29759@phenom.dumpdata.com>
- <20120125051253.GA15501@phenom.dumpdata.com>
- <1327485333.24561.232.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327485333.24561.232.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F206AC6.00AD,ss=1,re=0.000,fgs=0
+	Wed, 25 Jan 2012 15:51:22 -0500
+Date: Wed, 25 Jan 2012 12:51:16 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Lubos Kolouch <lubos.kolouch@gmail.com>
+Subject: Re: [Intel-gfx] [PATCH 1/2] drm/i915: Force explicit bpp selection
+ for intel_dp_link_required
+Message-ID: <20120125125116.5cea2c4b@jbarnes-desktop>
+In-Reply-To: <1327508186-26704-2-git-send-email-keithp@keithp.com>
+References: <1327508186-26704-1-git-send-email-keithp@keithp.com>
+	<1327508186-26704-2-git-send-email-keithp@keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/EFUvum3PebDF2QUdr8xB6Es"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 09:55:33AM +0000, Ian Campbell wrote:
-> On Wed, 2012-01-25 at 05:12 +0000, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Jan 24, 2012 at 11:49:49PM -0500, Konrad Rzeszutek Wilk wrote:
-> > > When I try to bootup a PVonHVM guest with Xen 4.1 I get this:
-> > 
-> > .. snip..
-> > > 
-> > > and with this little patch I can get it to work:
-> > 
-> > I get the domU to boot but the network stops being responsive.
-> > I see this in the Dom0:
-> 
-> Your original patch would set the version to two in the hypervisor and
-> then ignore that and continue to use v1 so that isn't surprising.
-> 
-> > (XEN) grant_table.c:362:d0 Bad flags (0) or dom (0). (expected dom 0, flags 103)
-> > [ 6834.488816] vif vif-12-0: 1 mapping in shared page 768 from domain 12
-> > [ 6834.490235] vif vif-12-0: 1 mapping shared-frames 768/769 port 15
-> > 
-> > Replacing the patch with:
-> > 
-> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> > index 1cd94da..b4d4eac 100644
-> > --- a/drivers/xen/grant-table.c
-> > +++ b/drivers/xen/grant-table.c
-> > @@ -948,9 +948,12 @@ static void gnttab_request_version(void)
-> >  	int rc;
-> >  	struct gnttab_set_version gsv;
-> >  
-> > -	gsv.version = 2;
-> > +	if (xen_hvm_domain())
-> > +		gsv.version = 1;
-> > +	else
-> > +		gsv.version = 2;
-> >  	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
-> > -	if (rc == 0) {
-> > +	if (rc == 0 && gsv.version == 2) {
-> >  		grant_table_version = 2;
-> >  		gnttab_interface = &gnttab_v2_ops;
-> >  	} else if (grant_table_version == 2) {
-> > 
-> > Gets me back to how it worked in Linux v3.2.
-> > 
-> > But that is just a band-aid fix...
-> 
-> The real bug is presumably either that the Linux v2 code is buggy for
-> use in an HVM guest or that Xen's support for v2 in HVM guests is either
-> buggy or explicitly disabled (in which case set_version should fail for
-> version=2).
-> 
-> Is the set_version with version=1 succeeding or failing? Likewise for
-> the version=2 call?
+--Sig_/EFUvum3PebDF2QUdr8xB6Es
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Both return 0. But version=2 returns the error in the hypervisor:
+On Wed, 25 Jan 2012 08:16:25 -0800
+Keith Packard <keithp@keithp.com> wrote:
 
- (XEN) grant_table.c:362:d0 Bad flags (0) or dom (0). (expected dom 0, flags 103)
+> It is never correct to use intel_crtc->bpp in intel_dp_link_required,
+> so instead pass an explicit bpp in to this function. This patch
+> only supports 18bpp and 24bpp modes, which means that 10bpc modes will
+> be computed incorrectly. Fixing that will require more extensive
+> changes, and so must be addressed separately from this bugfix.
+>=20
+> intel_dp_link_required is called from intel_dp_mode_valid and
+> intel_dp_mode_fixup.
+>=20
+> * intel_dp_mode_valid is called to list supported modes; in this case,
+>   the current crtc values cannot be relevant as the modes in question
+>   may never be selected. Thus, using intel_crtc->bpp is never right.
+>=20
+> * intel_dp_mode_fixup is called during mode setting, but it is run
+>   well before ironlake_crtc_mode_set is called to set intel_crtc->bpp,
+>   so using intel_crtc-bpp in this path can only ever get a stale
+>   value.
 
-> 
-> The original error was an "unable to handle kernel NULL pointer
-> dereference at" gnttab_end_foreign_access_ref_v2+0x29/0x40. The only
-> plausible candidates for such an error are the array access into to
-> either the gnttab_shared or grstatus arrays. Do you know which one the
-> IP corresponds to?
+Yeah, looks like I got this wrong when I added the pipe bpp field.
+Wonder if there's a good way to catch this sort of bug with an assert
+so we don't get the order mixed up again...
 
-Didn't look deeper into this than just enought to send this hastily crafted
-email. Will check shortly.
-> 
-> On HVM for gnttab_shared we make an add_to_physmap call with
-> XENMAPSPACE_grant_table (in gnttab_map). I don't see any support call to
-> do something similar for the status array though and I don't see a
-> XENMAPSPACE_* specifically for that case either in the hypervisor
-> either.
-> 
-> Ian.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The big downside here is that we'll be very pessimistic about the link
+bw requirements for say 16 or 8bpp modes.
+
+I see you have another patch to address some of this, but I wonder if
+we have enough info to calculate the bpp at prepare time so it's set
+early on for use by both the crtc and encoder code?
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/EFUvum3PebDF2QUdr8xB6Es
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPIGtEAAoJEIEoDkX4Qk9hjk0QAMn6dWl+WgcLvocQqD64ZkqS
+ulvSnSB4b8xBYNbMU+sUEMyJXF15L13Lgs56NPvc86AZHLt+g0L7psNKfc92MHcM
+U7aIJVJ+d3xK/IOmoMGqo6V0DKXsW2zI7ylUROfsyxq6LjnjWMU7TldV+Cd29t4w
+jqkmkXyTwNFn+ccWaE3CtPFcDLUO86h1fAniKbU8djOjK7qXeEX6HYaYec93F1DI
+fYRnDY5RQq51b9htxcgMw4nsHE+Ed9pJgsOKZgfzfJdEmcDEeA2N5oO9LDDQYxjP
+Sja+gRfnYYen24nQyya9fqqQ5fORzWx7XaeXaUGoUnj3LluXsvgIG6bTSoaSHNNx
+ERRMgk/by5To+kItOb/RXaibzCswX1u+LD4YmjJS5hb/VvwhnSGWo9G2cMX4fEwU
+4DI/nvr7AhwSKa/YcVHxe/aL7OQQ7H6OVhbx5IesrqyYIeKilEjLLESNMCEsanwk
+PghzESPKP2A+S0THJoHhH2AKdXQGClSGi+zF/QdXcH5aw9+HNDScUC8jY/UWJ9GO
+c+2uVNakKJJksE9IgC/7aVU27rxIQkAU0I6rs6NgCcjDdkILJTxhUwO+RggN9zN2
+uP2Rxa1HfQBE3hF2Qg5koFmwGTehIRJLcrJdm8JqA/YxBBg7e8zUcbnU7EZiUccO
+kb95Un8WJm/p00NBunIS
+=OTc/
+-----END PGP SIGNATURE-----
+
+--Sig_/EFUvum3PebDF2QUdr8xB6Es--
