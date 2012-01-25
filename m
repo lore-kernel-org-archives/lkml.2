@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab2AYOFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 09:05:12 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59975 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab2AYOFK (ORCPT
+	id S1755922Ab2AYOGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:06:15 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:37367
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753412Ab2AYOGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 09:05:10 -0500
-Date: Wed, 25 Jan 2012 15:05:03 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jeff Layton <jlayton@redhat.com>
-cc: Boaz Harrosh <bharrosh@panasas.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        bfields@redhat.com, linux-nfs@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: WARNING: at lib/debugobjects.c:262
- debug_print_object+0x8c/0xb0()
-In-Reply-To: <20120124124353.7148b827@tlielax.poochiereds.net>
-Message-ID: <alpine.LFD.2.02.1201251502210.2716@ionos>
-References: <20120120135646.2fc4fa61@tlielax.poochiereds.net> <4F1BCCD6.4020603@codeaurora.org> <20120123102311.4378b8c1@tlielax.poochiereds.net> <20120124074516.GC2420@redhat.com> <4F1E7F3F.3060703@panasas.com> <20120124073626.552bc31c@tlielax.poochiereds.net>
- <4F1EC7C9.2020001@panasas.com> <20120124113234.26c47969@tlielax.poochiereds.net> <20120124124353.7148b827@tlielax.poochiereds.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 25 Jan 2012 09:06:14 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+Cc: standby24x7@gmail.com, trivial@kernel.org
+Subject: [PATCH] [trivial] perf: Fix typo in evsel.c
+Date: Wed, 25 Jan 2012 23:05:12 +0900
+Message-Id: <1327500312-9520-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012, Jeff Layton wrote:
-> > Still, I wonder if there are other problems like this around. The slab
-> > allocators seem to call debug_check_no_obj_freed() on kmem_cache_free,
-> > but parts of the objects themselves (like the timer in the work object
-> > here) get initialized in other places and aren't necessarily
-> > reinitialized when they're recycled out of the slab...
-> > 
-> 
-> On second thought...getting rid of the ctor function here might be
-> problematic. We have to call inode_init_once, etc...
-> 
-> Almost all of the inode slabs have one, so I've settled for just moving
-> the INIT_DELAYED_WORK call out of init_once and into rpc_alloc_inode. I
-> sent a patch to Trond and linux-nfs to do that. That will fix this
-> case, but I do wonder if there are other places in the kernel that have
-> similar problems with debugobject initialization.
+Correct spelling "unsuported" to "unsupported" in
+tools/peft/util/evsel.c
 
-The problem is that debugobject requires that a newly allocated object
-is reinitialized and made available to the debugobjects code again
-simply because we remove it from the debugobjects core on
-kmem_cache_free(). 
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ tools/perf/util/evsel.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The real question is why the heck kmem_cache_alloc() does not call the
-ctor on each allocation and just expects the previously used and freed
-object to be in a consistent initialiazed state.
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 667f3b7..dcfefab 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -535,7 +535,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_READ) {
+-		fprintf(stderr, "PERF_SAMPLE_READ is unsuported for now\n");
++		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
+ 		return -1;
+ 	}
+ 
+-- 
+1.7.6.5
 
-Thanks,
-
-	tglx
