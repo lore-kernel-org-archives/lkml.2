@@ -1,410 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab2AYIwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 03:52:23 -0500
-Received: from 5-meo-dmt.ynet.sk ([147.175.167.220]:51375 "EHLO
-	5-meo-dmt.ynet.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2AYIwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 03:52:22 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.499
-Date: Wed, 25 Jan 2012 09:48:54 +0100 (CET)
-From: Stefan Gula <steweg@ynet.sk>
-To: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <32686570.751327481334943.JavaMail.root@5-MeO-DMT.ynet.sk>
-In-Reply-To: <25353423.731327481250682.JavaMail.root@5-MeO-DMT.ynet.sk>
-Subject: [patch v4, kernel version 3.2.1] Source mode for macvlan interface
+	id S1754291Ab2AYIxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 03:53:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59626 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753952Ab2AYIxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 03:53:07 -0500
+Message-ID: <4F1FC2C8.10103@redhat.com>
+Date: Wed, 25 Jan 2012 10:52:24 +0200
+From: Ronen Hod <rhod@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: leonid.moiseichuk@nokia.com, penberg@kernel.org, riel@redhat.com,
+        minchan@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
+        kosaki.motohiro@gmail.com, hannes@cmpxchg.org,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC 1/3] /dev/low_mem_notify
+References: <CAOJsxLG4hMrAdsyOg6QUe71SPqEBq3eZXvRvaKFZQo8HS1vphQ@mail.gmail.com> <84FF21A720B0874AA94B46D76DB982690455978C@008-AM1MPN1-003.mgdnok.nokia.com> <4F175706.8000808@redhat.com> <alpine.LFD.2.02.1201190922390.3033@tux.localdomain> <4F17DCED.4020908@redhat.com> <CAOJsxLG3x_R5xq85hh5RvPoD+nhgYbHJfbLW=YMxCZockAXJqw@mail.gmail.com> <4F17E058.8020008@redhat.com> <84FF21A720B0874AA94B46D76DB9826904559D46@008-AM1MPN1-003.mgdnok.nokia.com> <20120124153835.GA10990@amt.cnet> <4F1ED77F.4090900@redhat.com> <20120124181034.GA19186@amt.cnet>
+In-Reply-To: <20120124181034.GA19186@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [15.195.185.76]
-X-Mailer: Zimbra 5.0.8_GA_2462.UBUNTU6 (ZimbraWebClient - FF3.0 (Win)/5.0.8_GA_2462.UBUNTU6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Gula <steweg@gmail.com>
+On 01/24/2012 08:10 PM, Marcelo Tosatti wrote:
+> On Tue, Jan 24, 2012 at 06:08:31PM +0200, Ronen Hod wrote:
+>> On 01/24/2012 05:38 PM, Marcelo Tosatti wrote:
+>>> On Thu, Jan 19, 2012 at 10:53:29AM +0000, leonid.moiseichuk@nokia.com wrote:
+>>>>> -----Original Message-----
+>>>>> From: ext Ronen Hod [mailto:rhod@redhat.com]
+>>>>> Sent: 19 January, 2012 11:20
+>>>>> To: Pekka Enberg
+>>>> ...
+>>>>>>>> Isn't
+>>>>>>>>
+>>>>>>>> /proc/sys/vm/min_free_kbytes
+>>>>>>>>
+>>>>>>>> pretty much just that?
+>>>>>>> Would you suggest to use min_free_kbytes as the threshold for sending
+>>>>>>> low_memory_notifications to applications, and separately as a target
+>>>>>>> value for the applications' memory giveaway?
+>>>>>> I'm not saying that the kernel should use it directly but it seems
+>>>>>> like the kind of "ideal number of free pages" threshold you're
+>>>>>> suggesting. So userspace can read that value and use it as the "number
+>>>>>> of free pages" threshold for VM events, no?
+>>>>> Yes, I like it. The rules of the game are simple and consistent all over, be it the
+>>>>> alert threshold, voluntary poling by the apps, and for concurrent work by
+>>>>> several applications.
+>>>>> Well, as long as it provides a good indication for low_mem_pressure.
+>>>> For me it doesn't look that have much sense. min_free_kbytes could be set from user-space (or auto-tuned by kernel) to keep some amount
+>>>> of memory available for GFP_ATOMIC allocations.  In case situation comes under pointed level kernel will reclaim memory from e.g. caches.
+>>>>
+>>>>>  From potential user point of view the proposed API has number of lacks which would be nice to have implemented:
+>>>> 1. rename this API from low_mem_pressure to something more related to notification and memory situation in system: memory_pressure, memnotify, memory_level etc. The word "low" is misleading here
+>>>> 2. API must use deferred timers to prevent use-time impact. Deferred timer will be triggered only in case HW event or non-deferrable timer, so if device sleeps timer might be skipped and that is what expected for user-space
+>>> Having userspace specify the "sample period" for low memory notification
+>>> makes no sense. The frequency of notifications is a function of the
+>>> memory pressure.
+>>>
+>>>> 3. API should be tunable for propagate changes when level is Up or Down, maybe both ways.
+>>>> 4. to avoid triggering too much events probably has sense to filter according to amount of change but that is optional. If subscriber set timer to 1s the amount of events should not be very big.
+>>>> 5. API must provide interface to request parameters e.g. available swap or free memory just to have some base.
+>>> It would make the interface easier to use if it provided the number of
+>>> pages to free, in the notification (kernel can calculate that as the
+>>> delta between current_free_pages ->   comfortable_free_pages relative to
+>>> process RSS).
+>> If you rely on the notification's argument you lose several features:
+>>   - Handling of notifications by several applications in parallel
+> Each application has its argument built in a custom fashion
+> (pages_to_free = delta between current_free_pages ->
+> comfortable_free_pages relative to process RSS), or something to that
+> effect. It is compatible with parallel notifications.
 
-New mode of macvlan interface called "source" allows one to set a list
-of allowed mac address, which is used to match against source mac
-address from received frames on underlying interface. This allows
-creating mac based VLAN associations, instead of standard port or tag
-based. The feature is useful to deploy 802.1x mac based behavior,
-where drivers of underlying interfaces doesn't allows that.
-Configuration is done through the netlink interface using e.g.:
- ip link add link eth0 name macvlan0 type macvlan mode source
- ip link add link eth0 name macvlan1 type macvlan mode source
- ip link set link macvlan0 type macvlan macaddr add 00:11:11:11:11:11
- ip link set link macvlan0 type macvlan macaddr add 00:22:22:22:22:22
- ip link set link macvlan0 type macvlan macaddr add 00:33:33:33:33:33
- ip link set link macvlan1 type macvlan macaddr add 00:33:33:33:33:33
- ip link set link macvlan1 type macvlan macaddr add 00:44:44:44:44:44
-This allows clients with MAC addresses 00:11:11:11:11:11,
-00:22:22:22:22:22 to be part of only VLAN associated with macvlan0
-interface. Clients with MAC addresses 00:44:44:44:44:44 with only VLAN
-associated with macvlan1 interface. And client with MAC address
-00:33:33:33:33:33 to be associated with both VLANs.
+Not sure that I got it. Do you suggest to ask all the applications to free say 3% of their memory?. Some may be able to free more, and some cannot free any. Isn't it more practical to just notify them, and let each app contribute its part to the global moving target?
 
-Signed-off-by: Stefan Gula <steweg@gmail.com>
+>>   - Voluntary application's decisions, such as cleanup or avoiding allocations, at the application's convenience.
+> I am suggesting an additional field in the notification data so that the
+> freeing routine has a goal. But it is not mandatory.
 
----
+If you do want to support voluntary (notification less) app decisions, based on the current status, then why not satisfy with this API and only use the notifications to trigger this procedure?
 
-V4 changes:
- - moved rtnetlink.c lines to separate patch - this patch needs that one 
-   be applied before this one works
+>
+>> - Iterative release loops, until there are enough free pages.
+> What is the advantage versus releasing the necessary amount of
+> memory in a given moment?
 
-diff -uprN -X linux/Documentation/dontdiff linux-3.2.1-orig/drivers/net/macvlan.c linux/drivers/net/macvlan.c
---- linux-3.2.1-orig/drivers/net/macvlan.c	2012-01-12 20:42:45.000000000 +0100
-+++ linux/drivers/net/macvlan.c	2012-01-24 14:25:38.176220426 +0100
-@@ -40,6 +40,7 @@ struct macvlan_port {
- 	struct rcu_head		rcu;
- 	bool 			passthru;
- 	int			count;
-+	struct hlist_head	vlan_source_hash[MACVLAN_HASH_SIZE];
- };
- 
- static void macvlan_port_destroy(struct net_device *dev);
-@@ -155,6 +156,114 @@ static void macvlan_broadcast(struct sk_
- 	}
- }
- 
-+struct macvlan_source_list {
-+	struct hlist_node	hlist;
-+	struct macvlan_dev	*vlan;
-+	unsigned char		addr[ETH_ALEN];
-+	struct rcu_head		rcu;
-+};
-+
-+static struct macvlan_source_list *macvlan_hash_lookup_sources_list(
-+	const struct macvlan_dev *vlan,
-+	const unsigned char *addr)
-+{
-+	struct macvlan_source_list *list;
-+	struct hlist_node *n;
-+
-+	hlist_for_each_entry_rcu(list, n,
-+		&vlan->port->vlan_source_hash[addr[5]], hlist) {
-+		if (!compare_ether_addr_64bits(list->addr, addr) &&
-+			list->vlan == vlan)
-+			return list;
-+	}
-+	return NULL;
-+}
-+
-+static int macvlan_hash_add_sources(struct macvlan_dev *vlan,
-+				const unsigned char *addr)
-+{
-+	struct macvlan_port *port = vlan->port;
-+	struct macvlan_source_list *list;
-+
-+	list = macvlan_hash_lookup_sources_list(vlan, addr);
-+	if (!list) {
-+		list = kmalloc(sizeof(*list), GFP_KERNEL);
-+		if (list) {
-+			memcpy(list->addr, addr, ETH_ALEN);
-+			list->vlan = vlan;
-+			hlist_add_head_rcu(&list->hlist,
-+				&port->vlan_source_hash[addr[5]]);
-+		} else
-+			return -ENOMEM;
-+	}
-+	return 0;
-+}
-+
-+static void macvlan_hash_del_sources(struct macvlan_source_list *list)
-+{
-+	hlist_del_rcu(&list->hlist);
-+	kfree_rcu(list, rcu);
-+}
-+
-+static void macvlan_flush_sources(struct macvlan_port *port,
-+				struct macvlan_dev *vlan)
-+{
-+	int i;
-+
-+	for (i = 0; i < MACVLAN_HASH_SIZE; i++) {
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_safe(h, n, &port->vlan_source_hash[i]) {
-+			struct macvlan_source_list *list
-+				= hlist_entry(h, struct macvlan_source_list,
-+						hlist);
-+			if (list->vlan == vlan)
-+				macvlan_hash_del_sources(list);
-+		}
-+	}
-+}
-+
-+static void macvlan_forward_sources_one(struct sk_buff *skb,
-+					struct macvlan_dev *vlan)
-+{
-+	struct sk_buff *nskb;
-+	struct net_device *dev;
-+	int len;
-+	int ret;
-+
-+	dev = vlan->dev;
-+	if (unlikely(!(dev->flags & IFF_UP)))
-+		return;
-+
-+	nskb = skb_clone(skb, GFP_ATOMIC);
-+	if (!nskb)
-+		return;
-+
-+	len = nskb->len + ETH_HLEN;
-+	nskb->dev = dev;
-+	nskb->pkt_type = PACKET_HOST;
-+	ret = vlan->receive(nskb);
-+	macvlan_count_rx(vlan, len, ret == NET_RX_SUCCESS, 0);
-+}
-+
-+static void macvlan_forward_sources(struct sk_buff *skb,
-+	const struct macvlan_port *port,
-+	const unsigned char *addr)
-+{
-+	struct macvlan_source_list *list;
-+	struct hlist_node *n;
-+
-+	hlist_for_each_entry_rcu(list, n, &port->vlan_source_hash[addr[5]],
-+				hlist) {
-+		if (!compare_ether_addr_64bits(list->addr, addr))
-+			if (list->vlan->dev->flags & IFF_UP)
-+				macvlan_forward_sources_one(skb, list->vlan);
-+	}
-+	return;
-+}
-+
-+
-+
- /* called under rcu_read_lock() from netif_receive_skb */
- static rx_handler_result_t macvlan_handle_frame(struct sk_buff **pskb)
- {
-@@ -172,6 +281,8 @@ static rx_handler_result_t macvlan_handl
- 		skb = ip_check_defrag(skb, IP_DEFRAG_MACVLAN);
- 		if (!skb)
- 			return RX_HANDLER_CONSUMED;
-+
-+		macvlan_forward_sources(skb, port, eth->h_source);
- 		src = macvlan_hash_lookup(port, eth->h_source);
- 		if (!src)
- 			/* frame comes from an external address */
-@@ -202,6 +313,7 @@ static rx_handler_result_t macvlan_handl
- 		return RX_HANDLER_PASS;
- 	}
- 
-+	macvlan_forward_sources(skb, port, eth->h_source);
- 	if (port->passthru)
- 		vlan = list_first_entry(&port->vlans, struct macvlan_dev, list);
- 	else
-@@ -474,6 +586,7 @@ static void macvlan_uninit(struct net_de
- 
- 	free_percpu(vlan->pcpu_stats);
- 
-+	macvlan_flush_sources(port, vlan);
- 	port->count -= 1;
- 	if (!port->count)
- 		macvlan_port_destroy(port->dev);
-@@ -615,7 +728,8 @@ static int macvlan_port_create(struct ne
- 	INIT_LIST_HEAD(&port->vlans);
- 	for (i = 0; i < MACVLAN_HASH_SIZE; i++)
- 		INIT_HLIST_HEAD(&port->vlan_hash[i]);
--
-+	for (i = 0; i < MACVLAN_HASH_SIZE; i++)
-+		INIT_HLIST_HEAD(&port->vlan_source_hash[i]);
- 	err = netdev_rx_handler_register(dev, macvlan_handle_frame, port);
- 	if (err)
- 		kfree(port);
-@@ -648,11 +762,31 @@ static int macvlan_validate(struct nlatt
- 		case MACVLAN_MODE_VEPA:
- 		case MACVLAN_MODE_BRIDGE:
- 		case MACVLAN_MODE_PASSTHRU:
-+		case MACVLAN_MODE_SOURCE:
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (data && data[IFLA_MACVLAN_MACADDR_MODE]) {
-+		switch (nla_get_u32(data[IFLA_MACVLAN_MACADDR_MODE])) {
-+		case MACVLAN_MACADDR_ADD:
-+		case MACVLAN_MACADDR_DEL:
- 			break;
- 		default:
- 			return -EINVAL;
- 		}
- 	}
-+
-+	if (data && data[IFLA_MACVLAN_MACADDR]) {
-+		if (nla_len(data[IFLA_MACVLAN_MACADDR]) != ETH_ALEN)
-+			return -EINVAL;
-+
-+		if (!is_valid_ether_addr(nla_data(data[IFLA_MACVLAN_MACADDR])))
-+			return -EADDRNOTAVAIL;
-+	}
-+
- 	return 0;
- }
- 
-@@ -749,6 +883,8 @@ void macvlan_dellink(struct net_device *
- {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 
-+	if (vlan->mode == MACVLAN_MODE_SOURCE)
-+		macvlan_flush_sources(vlan->port, vlan);
- 	list_del(&vlan->list);
- 	unregister_netdevice_queue(dev, head);
- }
-@@ -758,30 +894,120 @@ static int macvlan_changelink(struct net
- 		struct nlattr *tb[], struct nlattr *data[])
- {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
--	if (data && data[IFLA_MACVLAN_MODE])
-+
-+	if (data && data[IFLA_MACVLAN_MODE]) {
-+		if (vlan->mode == MACVLAN_MODE_SOURCE &&
-+			vlan->mode != nla_get_u32(data[IFLA_MACVLAN_MODE]))
-+			macvlan_flush_sources(vlan->port, vlan);
- 		vlan->mode = nla_get_u32(data[IFLA_MACVLAN_MODE]);
-+	}
-+
-+	if (data && data[IFLA_MACVLAN_MACADDR_MODE] &&
-+		data[IFLA_MACVLAN_MACADDR]) {
-+		if (vlan->mode == MACVLAN_MODE_SOURCE) {
-+			if ((nla_get_u32(data[IFLA_MACVLAN_MACADDR_MODE]) ==
-+				MACVLAN_MACADDR_ADD))
-+				return macvlan_hash_add_sources(vlan,
-+					nla_data(data[IFLA_MACVLAN_MACADDR]));
-+
-+			else if (nla_get_u32(data[IFLA_MACVLAN_MACADDR_MODE]) ==
-+				MACVLAN_MACADDR_DEL) {
-+				struct macvlan_source_list *list;
-+
-+				list = macvlan_hash_lookup_sources_list(vlan,
-+					nla_data(data[IFLA_MACVLAN_MACADDR]));
-+				if (list)
-+					macvlan_hash_del_sources(list);
-+			} else
-+				return -EINVAL;
-+		} else
-+			return -EINVAL;
-+	}
-+
- 	return 0;
- }
- 
- static size_t macvlan_get_size(const struct net_device *dev)
- {
--	return nla_total_size(4);
-+	struct macvlan_dev *vlan = netdev_priv(dev);
-+	u16 source_size = 0;
-+	int count = 0;
-+
-+	if (vlan->mode == MACVLAN_MODE_SOURCE) {
-+		int i;
-+		for (i = 0; i < MACVLAN_HASH_SIZE; i++) {
-+			struct hlist_node *n;
-+			struct macvlan_source_list *list;
-+
-+			hlist_for_each_entry_rcu(list, n,
-+				&vlan->port->vlan_source_hash[i], hlist) {
-+				if (list->vlan == vlan)
-+					count++;
-+			}
-+		}
-+		if (count)
-+			source_size = nla_total_size(sizeof(struct nlattr))
-+				+ nla_total_size(sizeof(u8) * ETH_ALEN) * count;
-+	}
-+
-+	return nla_total_size(4) + source_size;
-+}
-+
-+static int macvlan_fill_nested(struct sk_buff *skb, const char *addr)
-+{
-+	NLA_PUT(skb, IFLA_MACVLAN_MACADDR, ETH_ALEN, addr);
-+
-+	return 0;
-+
-+nla_put_failure:
-+	return -EMSGSIZE;
- }
- 
- static int macvlan_fill_info(struct sk_buff *skb,
- 				const struct net_device *dev)
- {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
-+	struct nlattr *adt;
- 
- 	NLA_PUT_U32(skb, IFLA_MACVLAN_MODE, vlan->mode);
-+
-+	if (vlan->mode == MACVLAN_MODE_SOURCE) {
-+		int i;
-+
-+		adt = nla_nest_start(skb, IFLA_MACVLAN_MACADDR_DATA);
-+		if (!adt)
-+			goto nla_put_failure;
-+
-+		for (i = 0; i < MACVLAN_HASH_SIZE; i++) {
-+			struct hlist_node *n;
-+			struct macvlan_source_list *list;
-+
-+			hlist_for_each_entry_rcu(list, n,
-+				&vlan->port->vlan_source_hash[i], hlist) {
-+				if (list->vlan == vlan)
-+					if (macvlan_fill_nested(skb,
-+						list->addr))
-+						goto nla_nested_failure;
-+			}
-+		}
-+		nla_nest_end(skb, adt);
-+	}
-+
- 	return 0;
- 
-+nla_nested_failure:
-+	nla_nest_end(skb, adt);
-+	return -EMSGSIZE;
-+
- nla_put_failure:
- 	return -EMSGSIZE;
- }
- 
- static const struct nla_policy macvlan_policy[IFLA_MACVLAN_MAX + 1] = {
- 	[IFLA_MACVLAN_MODE] = { .type = NLA_U32 },
-+	[IFLA_MACVLAN_MACADDR_MODE] = { .type = NLA_U32 },
-+	[IFLA_MACVLAN_MACADDR] = { .type = NLA_BINARY, .len = MAX_ADDR_LEN },
-+	[IFLA_MACVLAN_MACADDR_DATA] = { .type = NLA_NESTED },
- };
- 
- int macvlan_link_register(struct rtnl_link_ops *ops)
-diff -uprN -X linux/Documentation/dontdiff linux-3.2.1-orig/include/linux/if_link.h linux/include/linux/if_link.h
---- linux-3.2.1-orig/include/linux/if_link.h	2012-01-12 20:42:45.000000000 +0100
-+++ linux/include/linux/if_link.h	2012-01-24 12:36:51.885312680 +0100
-@@ -252,6 +252,9 @@ struct ifla_vlan_qos_mapping {
- enum {
- 	IFLA_MACVLAN_UNSPEC,
- 	IFLA_MACVLAN_MODE,
-+	IFLA_MACVLAN_MACADDR_MODE,
-+	IFLA_MACVLAN_MACADDR,
-+	IFLA_MACVLAN_MACADDR_DATA,
- 	__IFLA_MACVLAN_MAX,
- };
- 
-@@ -262,6 +265,12 @@ enum macvlan_mode {
- 	MACVLAN_MODE_VEPA    = 2, /* talk to other ports through ext bridge */
- 	MACVLAN_MODE_BRIDGE  = 4, /* talk to bridge ports directly */
- 	MACVLAN_MODE_PASSTHRU = 8,/* take over the underlying device */
-+	MACVLAN_MODE_SOURCE  = 16,/* use source MAC address list to assign */
-+};
-+
-+enum macvlan_macaddr_mode {
-+	MACVLAN_MACADDR_ADD,
-+	MACVLAN_MACADDR_DEL,
- };
- 
- /* SR-IOV virtual function management section */
+The cleanup logic may be unaware of the page-level effects of its alloc and free, more so when freeing complex internal data structures (such as cached web pages), and this way you let it free until things settle down.
 
- 
+Ronen.
+
+>
+>> I believe that the notification should only serve as a trigger to run the cleanup.
+> Agree.
+>
+>
+
