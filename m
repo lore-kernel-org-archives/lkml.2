@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab2AYEFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 23:05:00 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:44846 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754846Ab2AYEE6 (ORCPT
+	id S1755146Ab2AYEa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 23:30:27 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:41888 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab2AYEa0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 23:04:58 -0500
-Date: Tue, 24 Jan 2012 23:03:54 -0500 (EST)
-Message-Id: <20120124.230354.1696063062900108959.davem@davemloft.net>
-To: steweg@ynet.sk
-Cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v3, kernel version 3.2.1] Source mode for macvlan
- interface
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <25119746.2341327416953583.JavaMail.root@5-MeO-DMT.ynet.sk>
-References: <12446987.2261327416407141.JavaMail.root@5-MeO-DMT.ynet.sk>
-	<25119746.2341327416953583.JavaMail.root@5-MeO-DMT.ynet.sk>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 24 Jan 2012 20:03:56 -0800 (PST)
+	Tue, 24 Jan 2012 23:30:26 -0500
+X-SpamScore: -10
+X-BigFish: VPS-10(zz9371I936eK1432N98dKzz1202hzz8275dhz2dhc1bhc31hc1ah2a8h668h839h8e2h8e3h944hbe9k)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: mfd regmap irq to handle some cases
+Thread-Topic: mfd regmap irq to handle some cases
+Thread-Index: AQHM2eIHcWS+3/sK4UalWoOv01AmyZYce8yV
+Date: Wed, 25 Jan 2012 04:28:29 +0000
+Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED1FDCFDBC@KCHJEXMB01.kpit.com>
+References: <C3AE124F08223B42BC95AEB82F0F6CED1FDCFCAF@KCHJEXMB01.kpit.com>
+ <1327325611.23929.15.camel@dhruva>,<20120123151830.GA21857@opensource.wolfsonmicro.com>
+In-Reply-To: <20120123151830.GA21857@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [117.199.208.129]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Gula <steweg@ynet.sk>
-Date: Tue, 24 Jan 2012 15:55:53 +0100 (CET)
 
-> diff -uprN -X linux/Documentation/dontdiff linux-3.2.1-orig/net/core/rtnetlink.c linux/net/core/rtnetlink.c
-> --- linux-3.2.1-orig/net/core/rtnetlink.c	2012-01-12 20:42:45.000000000 +0100
-> +++ linux/net/core/rtnetlink.c	2012-01-24 14:26:58.083219352 +0100
-> @@ -1506,6 +1506,9 @@ errout:
->  
->  	if (send_addr_notify)
->  		call_netdevice_notifiers(NETDEV_CHANGEADDR, dev);
-> +	min_ifinfo_dump_size = max_t(u16, if_nlmsg_size(dev),
-> +					min_ifinfo_dump_size);
-> +
+________________________________________
+From: Mark Brown [broonie@opensource.wolfsonmicro.com]
+Sent: Monday, January 23, 2012 8:48 PM
+To: Ashish Jangam
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: mfd regmap irq to handle some cases
 
-What is this?  And whatever it is why isn't it 1) described in the
-commit message and why isn't it 2) in a seperate patch if it's
-unrelated to this macvlan change?
+On Mon, Jan 23, 2012 at 07:03:31PM +0530, Ashish Jangam wrote:
+> On Mon, 2012-01-23 at 19:02 +0530, Ashish Jangam wrote:
 
-I'm not apply this patch as it is right now, it needs some sort of
-change.
+> > > > approach for some variants of DA9052 and DA9053 when event is cleared
+> > > > a spurious interrupt gets generated therefore in earlier release of
+> > > > DA9052/53 MFD module a delay was added. Therefore we need to think on
+> > > > how to handle such cases in regmap irq.
+
+> > > What are the consequences of the spurious interrupt?
+
+> There will processing of false events which is undesirable.
+
+But what actually happens?  RTC interrupts aren't going to be high
+volume, if we get the odd spurious interrupt and handle it gracefully
+I'm not sure we really care.
+
+( As I'm traveling so please ignore the mail format)
+spurious interrupt we get on clearing event and event can be from any
+mfd children. But since now, deferring event clear is not the approach
+we can ignore about the spurious interrupt.
+Now looking at the old issue of determining the RTC type (periodic or tick)
+on event clearing this info (RTC type) gets lost for the register since in regmap_irq
+we first clear and then process the event.
+
 
