@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab2AYQQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 11:16:33 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:55074 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab2AYQQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 11:16:32 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: Kconfig option for compile time build coverage (Was: Re: [PATCH] serial/efm32: add new driver)
-Date: Wed, 25 Jan 2012 16:16:26 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, kernel@pengutronix.de,
-        linux-serial@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <20111221202847.4ffeba10@bob.linux.org.uk> <20111223204428.GI24496@pengutronix.de> <20120109095903.GC14252@pengutronix.de>
-In-Reply-To: <20120109095903.GC14252@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201201251616.27019.arnd@arndb.de>
-X-Provags-ID: V02:K0:ohk2lyK5YaX2gIS4PZ0PJYS0FMGeYyUenxRqM47hZFi
- 4HOTBlFfnbvIRrHPw9KsyTo6wnt+PFBR1xcNJQ94pvCdezT9Gq
- epNIxv/fpD0HsiQwATpdn34Kaely3yAw8OLXo7KN8Gsa0JDNJG
- /EZGlAHCzBmIkC+SoUN2nyWVkDILba8nER7OTctx9CztyOk8NE
- C4T0AbMRCO/alu13ljK6ay6JlJgybcnV9l2Ejo9uw0xS/cQchp
- 8M/Cg3JmkF4org4/5fIwSJLl3XOy1K99ASW+pAYQB2kimrEjjS
- 17kGlTuecjT/BN5kfouKf22uneCOgM7DESa3y2JA8pluFKwbg0
- RxozQewAFr5Di8vKbsv8=
+	id S1755610Ab2AYQQn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 11:16:43 -0500
+Received: from home.keithp.com ([63.227.221.253]:33806 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752904Ab2AYQQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 11:16:41 -0500
+From: Keith Packard <keithp@keithp.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>,
+        Lubos Kolouch <lubos.kolouch@gmail.com>,
+        Adam Jackson <ajax@redhat.com>
+Subject: [PATCH 1/2] drm/i915: Force explicit bpp selection for intel_dp_link_required
+Date: Wed, 25 Jan 2012 08:16:25 -0800
+Message-Id: <1327508186-26704-2-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1327508186-26704-1-git-send-email-keithp@keithp.com>
+References: <1327508186-26704-1-git-send-email-keithp@keithp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 January 2012, Uwe Kleine-König wrote:
-> On Fri, Dec 23, 2011 at 09:44:28PM +0100, Uwe Kleine-König wrote:
-> > On Fri, Dec 23, 2011 at 10:35:22AM +0000, Arnd Bergmann wrote:
-> > > On Thursday 22 December 2011, Uwe Kleine-König wrote:
-> > > > [...]
-> > > > +config SERIAL_EFM32_USART
-> > > > + bool "EFM32 USART port."
-> > > > + depends on ARCH_EFM32
-> > > > + select SERIAL_CORE
-> > [...]
-> > > I would generally prefer not to make the driver depend on the
-> > > platform, so we can get better compile time coverage. I think a better
-> > > set of dependencies would be
-> > > 
-> > >     depends on HAVE_CLK
-> > >     depends on OF
-> > >     default ARCH_EFM32
-> > I'd prefer something like:
-> > 
-> >       depends on HAVE_CLK
-> >       depends on ARCH_EFM32 || I_DO_BUILD_COVERAGE_TESTING
-> > 
-> > This would make it easier for Joe User to pick the right options for his
-> > kernel (assuming he found out to better keep I_DO_BUILD_COVERAGE_TESTING
-> > disabled). [...]
->
-> What do you think about this I_DO_BUILD_COVERAGE_TESTING option? It
-> would allow testers to get all possible options enabled (though there
-> will never be an EFM32 USART port on a non-EFM32 machine I guess) and
-> still users and distribution packagers would easily keep the option off
-> even without cluttering .config and {menu,n,x,whatever}config.
+It is never correct to use intel_crtc->bpp in intel_dp_link_required,
+so instead pass an explicit bpp in to this function. This patch
+only supports 18bpp and 24bpp modes, which means that 10bpc modes will
+be computed incorrectly. Fixing that will require more extensive
+changes, and so must be addressed separately from this bugfix.
 
-Sorry for the late reply. The same topic has been discussed a lot of
-times. We have different ways to handle this in the kernel, but the
-way most common way is to use defconfig to decide which drivers to
-use on a given machine but give the user the freedom to both enable
-and disable any driver whereever possible, even if that would be
-a silly thing to do. What we do require normally is that anything
-that can be enabled is also able to be built without errors. A lot
-of drivers have dependencies on platform specific header files
-or other interfaces, so they require that platform to be enabled.
+intel_dp_link_required is called from intel_dp_mode_valid and
+intel_dp_mode_fixup.
 
-For all others I would not make such a restriction and I would always
-recommend to be specific in the dependencies, e.g depending on HAVE_CLK
-when you use the clock interfaces, instead of depending on other options
-that implicitly enable HAVE_CLK.
+* intel_dp_mode_valid is called to list supported modes; in this case,
+  the current crtc values cannot be relevant as the modes in question
+  may never be selected. Thus, using intel_crtc->bpp is never right.
 
-	Arnd
+* intel_dp_mode_fixup is called during mode setting, but it is run
+  well before ironlake_crtc_mode_set is called to set intel_crtc->bpp,
+  so using intel_crtc-bpp in this path can only ever get a stale
+  value.
+
+Cc: Lubos Kolouch <lubos.kolouch@gmail.com>
+Cc: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+---
+ drivers/gpu/drm/i915/intel_dp.c |   20 +++++---------------
+ 1 files changed, 5 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index db3b461..94f860c 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -208,17 +208,8 @@ intel_dp_link_clock(uint8_t link_bw)
+  */
+ 
+ static int
+-intel_dp_link_required(struct intel_dp *intel_dp, int pixel_clock, int check_bpp)
++intel_dp_link_required(int pixel_clock, int bpp)
+ {
+-	struct drm_crtc *crtc = intel_dp->base.base.crtc;
+-	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+-	int bpp = 24;
+-
+-	if (check_bpp)
+-		bpp = check_bpp;
+-	else if (intel_crtc)
+-		bpp = intel_crtc->bpp;
+-
+ 	return (pixel_clock * bpp + 9) / 10;
+ }
+ 
+@@ -245,12 +236,11 @@ intel_dp_mode_valid(struct drm_connector *connector,
+ 			return MODE_PANEL;
+ 	}
+ 
+-	mode_rate = intel_dp_link_required(intel_dp, mode->clock, 0);
++	mode_rate = intel_dp_link_required(mode->clock, 24);
+ 	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
+ 
+ 	if (mode_rate > max_rate) {
+-			mode_rate = intel_dp_link_required(intel_dp,
+-							   mode->clock, 18);
++			mode_rate = intel_dp_link_required(mode->clock, 18);
+ 			if (mode_rate > max_rate)
+ 				return MODE_CLOCK_HIGH;
+ 			else
+@@ -683,7 +673,7 @@ intel_dp_mode_fixup(struct drm_encoder *encoder, struct drm_display_mode *mode,
+ 	int lane_count, clock;
+ 	int max_lane_count = intel_dp_max_lane_count(intel_dp);
+ 	int max_clock = intel_dp_max_link_bw(intel_dp) == DP_LINK_BW_2_7 ? 1 : 0;
+-	int bpp = mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 0;
++	int bpp = mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
+ 	static int bws[2] = { DP_LINK_BW_1_62, DP_LINK_BW_2_7 };
+ 
+ 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+@@ -701,7 +691,7 @@ intel_dp_mode_fixup(struct drm_encoder *encoder, struct drm_display_mode *mode,
+ 		for (clock = 0; clock <= max_clock; clock++) {
+ 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
+ 
+-			if (intel_dp_link_required(intel_dp, mode->clock, bpp)
++			if (intel_dp_link_required(mode->clock, bpp)
+ 					<= link_avail) {
+ 				intel_dp->link_bw = bws[clock];
+ 				intel_dp->lane_count = lane_count;
+-- 
+1.7.8.3
+
