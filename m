@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751343Ab2AYWRH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 17:17:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35574 "EHLO mx1.redhat.com"
+	id S1751301Ab2AYW3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 17:29:16 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:50345 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab2AYWRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 17:17:05 -0500
-Date: Wed, 25 Jan 2012 23:16:32 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH v2 -mm 1/3] mm: reclaim at order 0 when compaction is
- enabled
-Message-ID: <20120125221632.GL30782@redhat.com>
-References: <20120124131822.4dc03524@annuminas.surriel.com>
- <20120124132136.3b765f0c@annuminas.surriel.com>
- <20120125150016.GB3901@csn.ul.ie>
- <4F201F60.8080808@redhat.com>
+	id S1750772Ab2AYW3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 17:29:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [Announce] linux-pm tree changes
+Date: Wed, 25 Jan 2012 23:32:48 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201201242356.04244.rjw@sisk.pl> <CAP=VYLo90FANL8tX5VPvL+3wKB0CDF3Ryz1Lsw6ECVpcT9nesQ@mail.gmail.com>
+In-Reply-To: <CAP=VYLo90FANL8tX5VPvL+3wKB0CDF3Ryz1Lsw6ECVpcT9nesQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F201F60.8080808@redhat.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201252332.48993.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 10:27:28AM -0500, Rik van Riel wrote:
-> On 01/25/2012 10:00 AM, Mel Gorman wrote:
-> > On Tue, Jan 24, 2012 at 01:21:36PM -0500, Rik van Riel wrote:
-> >> When built with CONFIG_COMPACTION, kswapd does not try to free
-> >> contiguous pages.
+On Wednesday, January 25, 2012, Paul Gortmaker wrote:
+> On Tue, Jan 24, 2012 at 5:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Hi,
 > >
-> > balance_pgdat() gets its order from wakeup_kswapd(). This does not apply
-> > to THP because kswapd does not get woken for THP but it should be woken
-> > up for allocations like jumbo frames or order-1.
+> > I'd like you to know some workflow changes regarding the linux-pm tree.
+> >
+> > Since it's now possible to create signed tags for Linus to pull from, I won't
+> > need the 'pm-for-linus' branch any more and it's gone.  The 'pm-fixes' branch
+> > is gone too and replaced by the 'fixes' branch (which currently contains the
+> > same material as master).
+> >
+> > The idea is that the main development is going to happen in the 'master'
+> > branch, which is not going to be rebased and the Linus' tree will be merged
+> > into it from time to time (most of the time when the 'master' branch can be
+> > fast-forwarded to it).  The 'fixes' branch will be used for pushing urgent
 > 
-> In the kernel I run at home, I wake up kswapd for THP
-> as well. This is a larger change, which Andrea asked
-> me to delay submitting upstream for a bit.
+> Not sure what you have in mind for "from time to time",
+
+Something like once in a development cycle (right after a merge window),
+but there may be exceptions.
+
+> but random merges
+> without a clear reason (i.e. "merge Linus to get access to new files X Y Z")
+> are probably going to get you in hot water.
+
+I know.
+
+> Also, once you stack on your 1st PM commit onto your master, none of
+> your future merges of Linus' tree will be fast forward.
+
+Until Linus pulls from my tree.  Then I can do a fast forward and start over.
+
+> Here is an
+> example, where I simulate a local change, followed by "time to time"
+> merges of Linus tree.  Note each creates a merge, not just the 1st one.
 > 
-> So far there seem to be no ill effects. I'll continue
-> watching for them.
+> -----------------------------
+> linux-head$git checkout -b crap v3.1
+> Checking out files: 100% (17551/17551), done.
+> Switched to a new branch 'crap'
+> linux-head$echo foo > foo ; git add foo ; git commit -m '1st pm commit'
+> [crap 1675da3] 1st pm commit
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>  create mode 100644 foo
+> linux-head$git merge v3.2-rc1 2>&1 |grep 'Merge\|Fast'
+> Merge made by recursive.
+> linux-head$git merge v3.2-rc2 2>&1 |grep 'Merge\|Fast'
+> Merge made by recursive.
+> linux-head$git merge v3.2-rc3 2>&1 |grep 'Merge\|Fast'
+> Merge made by recursive.
+> linux-head$git show -m |head -n5
+> commit 3cbd041875960361ffde72612afadc6c68e94654 (from
+> 6f6028bdbbc63dc71b408da8976f154a2e6a70ee)
+> Merge: 6f6028b caca6a0
+> Author: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Date:   Wed Jan 25 13:45:55 2012 -0500
+> linux-head$
+> ----------------
+> 
+> Having lots of these kinds of pointless merge commits are
+> what will most likely get you in hot water when you ask for
+> it to be pulled.
+> 
+> Maybe I'm just misinterpreting what your plan is.
 
-The only problem we had last time when we managed to add compaction in
-kswapd upstream, was a problem of that too high kswapd wakeup
-frequency that kept kswapd spinning at 100% load and destroying
-specsfs performance. It may have been a fundamental problem of
-compaction not being worthwhile to run to generate jumbo frames
-because the cost of migrating memory, copying, flushing ptes, is
-significantly higher than the benefit of doing the network DMA in
-larger chunks and saving a few interrupts. This is why the logic need
-to be tested with specsfs on nfs and stuff that triggers jumbo frames
-heavily and does an huge network traffic.
+Please see above. :-)
 
-About THP, it may not give problems for THP because the allocation
-rate is much slower.
-
-OTOH THP pages are bigger so that would make life harder for
-compaction than for the smaller order requested by the jumbo
-frames.
-
-The main reason why THP don't strictly need this, is that all these
-allocations can block and so THP can run compaction in direct reclaim.
-The jumbo frames can't wait instead so they absolutely need kswapd if
-we ever intend them to benefit from compaction.
-
-I think the idea is sound, we just need to know if maybe we need to
-enable it selectively and tell jumbo frames to use
-__GFP_NO_KSWAPD_COMPACTION or something to only disable compaction but
-to still free memory as we'll fallback with a 4k allocation in the nic
-driver. (but if we'd need that, that would question if this is
-worthwhile as they were the ones intended to benefit, most other
-order > 0 allocations don't run in atomic context)
-
-I'm still quite afraid that compaction in kswapd waken by jumbo frames
-may not work well, but I'm happy that you try this again to be sure of
-what's the best direction to take, there wasn't enough time to
-investigate this properly last time, so we quickly backed it out to be
-safe. Just running specsfs on nfs with a nic using jumbo frames is
-enough to tell if this works or not, so good thing is there's no risk
-of regression if that thing works fine.
+Thanks,
+Rafael
