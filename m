@@ -1,162 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab2AYQlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 11:41:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52948 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756008Ab2AYQlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 11:41:14 -0500
-Date: Wed, 25 Jan 2012 17:40:45 +0100
-From: Petr Holasek <pholasek@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Anton Arapov <anton@redhat.com>
-Subject: Re: KSM: numa awareness sysfs knob
-Message-ID: <20120125164037.GA21071@dhcp-27-244.brq.redhat.com>
-References: <1327314568-13942-1-git-send-email-pholasek@redhat.com>
- <20120124160350.17b6e92b.akpm@linux-foundation.org>
+	id S1756124Ab2AYQlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 11:41:36 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:44792 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab2AYQlf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 11:41:35 -0500
+Date: Wed, 25 Jan 2012 11:39:10 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: =?utf-8?B?0JzQsNGA0Log0JrQvtGA0LXQvdCx0LXRgNCz?= 
+	<socketpair@gmail.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: Fwd: BUG in linux+v3.2.1/drivers/xen/xen-pciback/pci_stub.c
+Message-ID: <20120125163910.GC23999@phenom.dumpdata.com>
+References: <CAEmTpZHkKB29FLWqs0R=uD1zXBOJkfSstGgMM=8bA1VVXGT+wQ@mail.gmail.com>
+ <CAEmTpZH+OeQO=RNBFh_+j_QCmPa8sGhV_OOqqsiKUMmjhBwESw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120124160350.17b6e92b.akpm@linux-foundation.org>
+In-Reply-To: <CAEmTpZH+OeQO=RNBFh_+j_QCmPa8sGhV_OOqqsiKUMmjhBwESw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090201.4F2030BA.0055,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012, Andrew Morton wrote:
-> On Mon, 23 Jan 2012 11:29:28 +0100
-> Petr Holasek <pholasek@redhat.com> wrote:
-> 
-> > This patch is based on RFC
-> > 
-> > https://lkml.org/lkml/2011/11/30/91
-> > 
-> > Introduces new sysfs binary knob /sys/kernel/mm/ksm/merge_nodes
-> 
-> It's not binary - it's ascii text!  "boolean" is a better term here ;)
-> 
+On Wed, Jan 25, 2012 at 04:20:26PM +0600, Марк Коренберг wrote:
+> First, maintainer's addresses (Ryan Wilson <hap9@epoch.ncsc.mil>,
+> Chris Bookholt <hap10@epoch.ncsc.mil>) are wrong (users unknown to
+> remote mailsystem), so posting to you:
 
-Of course, I'll fix it :)
-
-> > which control merging pages across different numa nodes.
-> > When it is set to zero only pages from the same node are merged,
-> > otherwise pages from all nodes can be merged together (default behavior).
-> > 
-> > Typical use-case could be a lot of KVM guests on NUMA machine
-> > where cpus from more distant nodes would have significant increase
-> > of access latency to the merged ksm page. Switching merge_nodes
-> > to 1 will result into these steps:
-> > 
-> > 	1) unmerging all ksm pages
-> > 	2) re-merging all pages from VM_MERGEABLE vmas only within
-> > 		their NUMA nodes.
-> > 	3) lower average access latency to merged pages at the
-> > 	   expense of higher memory usage.
-> > 
-> > Every numa node has its own stable & unstable trees because
-> > of faster searching and inserting. Changing of merge_nodes
-> > value breaks COW on all current ksm pages.
-> > 
-> 
-> How useful is this code?  Do you have any performance testing results
-> to help make the case for merging it?
-
-I didn't any no performance testing, but number of nodes is still the same, 
-the only difference is that they are distributed among more trees, 
-so searching is faster within specified numa node. Every node includes pointer
-to the tree's root, but I assume it is quite small payload for faster searching.
-Or not?
+Those are the authors ones.. If you do:
+konrad@phenom:~/work/linux$ scripts/get_maintainer.pl -f drivers/xen/xen-pciback/pci_stub.c
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> (supporter:XEN HYPERVISOR IN...,commit_signer:11/11=100%)
+Jeremy Fitzhardinge <jeremy@goop.org> (supporter:XEN HYPERVISOR IN...,commit_signer:2/11=18%)
+Jan Beulich <jbeulich@suse.com> (commit_signer:1/11=9%)
+xen-devel@lists.xensource.com (open list:XEN HYPERVISOR IN...)
+virtualization@lists.linux-foundation.org (open list:XEN HYPERVISOR IN...)
+linux-kernel@vger.kernel.org (open list)
 
 > 
-> Should the unmerged case be made permanent and not configurable?  IOW,
-> what is the argument for continuing to permit the user to merge across
-> nodes?
+> PCI bus format strings are wrong.
 > 
-> Should the code bother doing this unmerge when
-> /sys/kernel/mm/ksm/merge_nodes is written to?  It would be simpler to
-> expect the user to configure /sys/kernel/mm/ksm/merge_nodes prior to
-> using KSM at all?
+> "%04x:%02x:%02x.%d"
+> 
+> should be used instead of
+> 
+> "%04x:%02x:%02x.%1x"
 
-The only reason for this feature is being more user-friendly. But if 
-we find some issue in doing merging/unmerging interactively, forcing user
-to set merge_nodes value before first ksm run will be more safe.
+Oh? Would you be willing to come up with a patch with your SOB, please?
 
 > 
-> > @@ -58,6 +58,9 @@ sleep_millisecs  - how many milliseconds ksmd should sleep before next scan
-> >                     e.g. "echo 20 > /sys/kernel/mm/ksm/sleep_millisecs"
-> >                     Default: 20 (chosen for demonstration purposes)
-> >  
-> > +merge_nodes      - specifies if pages from different numa nodes can be merged
-> > +                   Default: 1
+> (in many places of linux+v3.2.1/drivers/xen/xen-pciback/pci_stub.c)
 > 
-> This documentation would be better if it informed the user about how to
-> use merge_nodes.  What are the effects of altering it and why might
-> they wish to do this?
-> 
-> >
-> > ...
-> >
-> > +static ssize_t merge_nodes_store(struct kobject *kobj,
-> > +				   struct kobj_attribute *attr,
-> > +				   const char *buf, size_t count)
-> > +{
-> > +	int err;
-> > +	long unsigned int knob;
-> 
-> Plain old "unsigned long" is more usual.
-> 
-> Better would be to make this "unsigned", to match ksm_merge_nodes.  Use
-> kstrtouint() below.
-> 
-> >
-> > ...
-> >
-> > @@ -1987,6 +2070,9 @@ static struct attribute *ksm_attrs[] = {
-> >  	&pages_unshared_attr.attr,
-> >  	&pages_volatile_attr.attr,
-> >  	&full_scans_attr.attr,
-> > +#ifdef CONFIG_NUMA
-> > +	&merge_nodes_attr.attr,
-> > +#endif
-> 
-> One might think that with CONFIG_NUMA=n, we just added a pile of
-> useless codebloat to vmlinux.  But gcc is sneaky and removes the
-> unreferenced functions.
-> 
-> However while doing so, gcc shows that it reads
-> Documentation/SubmitChecklist, section 2:
-> 
-> mm/ksm.c:2017: warning: 'merge_nodes_attr' defined but not used
-> 
-> So...
-> 
-> diff -puN mm/ksm.c~ksm-numa-awareness-sysfs-knob-fix mm/ksm.c
-> --- a/mm/ksm.c~ksm-numa-awareness-sysfs-knob-fix
-> +++ a/mm/ksm.c
-> @@ -1973,6 +1973,7 @@ static ssize_t run_store(struct kobject 
->  }
->  KSM_ATTR(run);
->  
-> +#ifdef CONFIG_NUMA
->  static ssize_t merge_nodes_show(struct kobject *kobj,
->  				struct kobj_attribute *attr, char *buf)
->  {
-> @@ -2015,6 +2016,7 @@ static ssize_t merge_nodes_store(struct 
->  	return count;
->  }
->  KSM_ATTR(merge_nodes);
-> +#endif
->  
->  static ssize_t pages_shared_show(struct kobject *kobj,
->  				 struct kobj_attribute *attr, char *buf)
-> _
-> 
-
-Apologize, I overlooked that. I'll fix it and other issues you pointed out
-above in next version. 
-
-Many thanks for reviewing!
+> -- 
+> Segmentation fault
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
