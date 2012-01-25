@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab2AYR6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 12:58:19 -0500
-Received: from mga14.intel.com ([143.182.124.37]:45129 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751449Ab2AYR6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 12:58:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="59937102"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: RE: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
- save mtrr
-Thread-Topic: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
- save mtrr
-Thread-Index: AQHM0IXtchbg6t0dpEylW7Itt3XhjJYJMbWAgAV5GACADsipEA==
-Date: Wed, 25 Jan 2012 17:58:11 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712200349AE@ORSMSX105.amr.corp.intel.com>
-References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
- <1326301493-28760-11-git-send-email-fenghua.yu@intel.com>
- <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
- <4F136A50.80203@zytor.com>
-In-Reply-To: <4F136A50.80203@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1752669Ab2AYR7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 12:59:46 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56568 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab2AYR7p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 12:59:45 -0500
 MIME-Version: 1.0
+In-Reply-To: <CACxGe6s3R0fcBSf_YHTpXp15gtEBHRQg5-YM=cDO5UfY9cRGrQ@mail.gmail.com>
+References: <1327450719-25590-1-git-send-email-grant.likely@secretlab.ca>
+ <4F1F5FE0.9090901@gmail.com> <CACxGe6s3R0fcBSf_YHTpXp15gtEBHRQg5-YM=cDO5UfY9cRGrQ@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 25 Jan 2012 10:59:25 -0700
+X-Google-Sender-Auth: G4RFYxzchXHVi1uWRODKUyfukKA
+Message-ID: <CACxGe6tgGqQSThzVVEzwOdtYkjKHT1uQhZBOkCTwkutyKXDCAg@mail.gmail.com>
+Subject: Re: [RFC 1/2] irq_domain: Create common xlate functions that device
+ drivers can use
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0PHwWCa005383
 
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> Sent: Sunday, January 15, 2012 4:08 PM
-> On 01/12/2012 04:33 AM, Brian Gerst wrote:
-> > On Wed, Jan 11, 2012 at 12:04 PM, Fenghua Yu <fenghua.yu@intel.com>
-> wrote:
-> >> From: Fenghua Yu <fenghua.yu@intel.com>
-> >>
-> >> Ask the first online CPU to save mtrr instead of asking BSP. BSP
-> could be
-> >> offline when mtrr_save_state() is called.
-> >
-> > If you can use any non-boot cpu to save the MTRRs why not just use
-> the
-> > current cpu?  They should all be in sync anyways.
-> >
-> 
-> A much bigger question: why do we ever bother saving the MTRR state per
-> se?  We examine the MTRR state -- we have to -- during boot, and it
-> should never diverge from the state set by the OS from that point on --
-> we'll need to set it back to that.  So we should just keep track of
-> what
-> the correct MTRR state is at all times.
+On Tue, Jan 24, 2012 at 10:35 PM, Grant Likely
+<grant.likely@secretlab.ca> wrote:
+> On Tue, Jan 24, 2012 at 6:50 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>
+>>
+>> On 01/24/2012 06:18 PM, Grant Likely wrote:
+>>> Rather than having each interrupt controller driver creating its own barely
+>>> unique .xlate function for irq_domain, create a library of translators which
+>>> any driver can use directly.
+>>>
+>>> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+>>> index e7379a3..5e497a0 100644
+>>> --- a/include/linux/irqdomain.h
+>>> +++ b/include/linux/irqdomain.h
+>>> @@ -110,6 +110,9 @@ struct irq_domain {
+>>>       void *host_data;
+>>>       irq_hw_number_t inval_irq;
+>>>
+>>> +     /* Data for common irq xlate functions */
+>>> +     unsigned int xlate_type;
+>>> +
+>>
+>> How does this get set? Do we want interrupt controllers messing with the
+>> domain struct directly long term?
+>
+> It defaults to IRQ_TYPE_NONE in the alloc function and drivers can
+> override it.  Alternately it could be made part of the
+> irq_domain_add() arguments, but I'm not thrilled with adding a whole
+> bunch of arguments to the function prototype.
 
-The fixed MTRR state is saved when each CPU is up:
-        /*
-         * Save current MTRR state in case it was changed since early boot
-         * (e.g. by the ACPI SMI) to initialize new CPUs with MTRRs in sync:
-         */
-        mtrr_save_state();
-It's saved because MTRR state could be changed since early boot according to the above comment. I haven't found other info source except the comment. If that's true, we may need to save the state, right?
+Do you like this better (built on top of this patch)?
 
-Thanks.
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index ef2b1fe..7856c04 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -701,12 +701,10 @@ int irq_domain_xlate_onecell(struct irq_domain
+*d, struct device_node *ctrlr,
+ 			     const u32 *intspec, unsigned int intsize,
+ 			     unsigned long *out_hwirq, unsigned int *out_type)
+ {
+-	if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
+-		 ctrlr->full_name, intsize))
++	if (WARN_ON(intsize < 1))
+ 		return -EINVAL;
+-	*out_hwirq = intspec[0];
+-	*out_type = d->xlate_type;
+-	return 0;
++	return irq_domain_xlate_onetwocell(d, ctrlr, intspec, 1,
++					   out_hwirq, out_type);
+ }
+ EXPORT_SYMBOL_GPL(irq_domain_xlate_onecell);
 
--Fenghua
+@@ -721,12 +719,10 @@ int irq_domain_xlate_twocell(struct irq_domain
+*d, struct device_node *ctrlr,
+ 			const u32 *intspec, unsigned int intsize,
+ 			irq_hw_number_t *out_hwirq, unsigned int *out_type)
+ {
+-	if (WARN(intsize < 2, "Bad intspec for %s: intsize=%i < 2\n",
+-		 ctrlr->full_name, intsize))
++	if (WARN_ON(intsize < 2))
+ 		return -EINVAL;
+-	*out_hwirq = intspec[0];
+-	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
+-	return 0;
++	return irq_domain_xlate_onetwocell(d, ctrlr, intspec, intsize,
++					   out_hwirq, out_type);
+ }
+ EXPORT_SYMBOL_GPL(irq_domain_xlate_twocell);
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+@@ -746,8 +742,7 @@ int irq_domain_xlate_onetwocell(struct irq_domain *d,
+ 				const u32 *intspec, unsigned int intsize,
+ 				unsigned long *out_hwirq, unsigned int *out_type)
+ {
+-	if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
+-		 ctrlr->full_name, intsize))
++	if (WARN_ON(intsize < 1))
+ 		return -EINVAL;
+ 	*out_hwirq = intspec[0];
+ 	*out_type = d->xlate_type;
