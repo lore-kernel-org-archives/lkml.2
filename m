@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab2AYTou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 14:44:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751089Ab2AYToq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 14:44:46 -0500
-Date: Wed, 25 Jan 2012 20:36:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-Message-ID: <20120125193635.GA30311@redhat.com>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com> <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com> <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+	id S1752153Ab2AYTrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 14:47:15 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:53405 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab2AYTrO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 14:47:14 -0500
+Date: Wed, 25 Jan 2012 20:45:49 +0100
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg KH <gregkh@suse.de>, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [000/129] 3.2.2-stable review
+Message-ID: <20120125194549.GA6491@fancy-poultry.org>
+References: <20120124024041.GA18422@kroah.com>
+ <4F1E5B88.50801@compulab.co.il>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F1E5B88.50801@compulab.co.il>
+Organization: private site
+X-OpenPGP-KeyID: 0x898F89DE
+X-OpenPGP-Fingerprint: 0815 20AD E896 A2B7 488F  4659 4C7B 8951 898F 89DE
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+52 (c26dbc7021f4) (2011-07-01)
+X-Provags-ID: V02:K0:KCOS+Ra1T+57JuQEsie5Xi7TPpev6SiWHl4WjUpqa/V
+ O8xped3povH9C6s5QtSX7/LQ9dR/Oc/qgDBtPGocySj+yzyW6i
+ aJY9D9h8luo57e0tvdPxi3DRQB90XOrrmP1pppyg/Zm4qNacbW
+ Xx4A6DX3gbTUuOJNgNExYaq22NpsQZdT3c3pbhWH4E0s7B0kjy
+ Y/qnguZc70uarp95jBRHR9g3bqcdzcAY4KJ6qFAc43ZoXuFuU3
+ 04KG1ha5+oYwVn0OqFb6gu/+a3INF+AqR6tOSw4HeBFO73nWna
+ h6WS0WvukW3JxxOxZh/sMkBLI7mDtO1Ht5EGtGAfmCHEVBAYoH
+ i8SSHYb/U3MnaVYtqSRahQ2YZilsUaji+9/ifnbRq
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18, Linus Torvalds wrote:
->
-> Using the high bits of 'eflags' might work.
+On 24.01.2012, Igor Grinberg wrote: 
 
-I thought about changing eflags too, this looks very natural to me.
+> This is not exactly true...
+> I'm (and I think I'm not the only one) going through the diffstat
+> to see if there are any files of my interest involved,
 
-But I do not understand the result of this discussion, are you going
-to apply this change?
-
-If not...
-
-Not sure this is really better, but there is another idea. Currently we
-have PTRACE_O_TRACESYSGOOD to avoid the confusion with the real SIGTRAP.
-Perhaps we can add PTRACE_O_TRACESYS_VERY_GOOD (or we can look at
-PT_SEIZED instead) and report TS_COMPAT via ptrace_report_syscall ?
-
-IOW. Currently ptrace_report_syscall() does
-
-	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
-
-We can add the new events,
-
-	PTRACE_EVENT_SYSCALL_ENTRY
-	PTRACE_EVENT_SYSCALL_COMPAT_ENTRY
-	PTRACE_EVENT_SYSCALL_EXIT
-	PTRACE_EVENT_SYSCALL_COMPAT_EXIT
-
-and change ptrace_report_syscall() to do
-
-	if (PT_SEIZED) /* or PT_TRACESYS_VERY_GOOD? */ {
-		int event = entry ? PTRACE_EVENT_SYSCALL_ENTRY : EXIT;
-		if (is_compat_task(current))
-			event++;
-		ptrace_notify((event << 8) | SIGTRAP);
-	} else {
-		ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
-	}
-
-This also allows to distinguish entry/exit.
+Right, me too. I find it very useful.
 
 
-However. The change in get_flags() also allows to know the state of
-TIF_IA32 bit bit outside of syscall entry/exit reports, perhaps there
-is a reason why do we want this?
-
-Oleg.
 
