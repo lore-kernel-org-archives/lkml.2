@@ -1,106 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab2AYRuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 12:50:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47013 "EHLO mx1.redhat.com"
+	id S1752431Ab2AYR6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 12:58:19 -0500
+Received: from mga14.intel.com ([143.182.124.37]:45129 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756429Ab2AYRuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 12:50:08 -0500
-Date: Wed, 25 Jan 2012 18:43:30 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
-	condition
-Message-ID: <20120125174330.GA23303@redhat.com>
-References: <1326721082.2442.234.camel@twins> <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <20120117090605.GD7612@elte.hu> <20120117151242.GA13290@redhat.com> <20120118094219.GE5842@elte.hu> <20120118142005.GB10105@redhat.com> <1327400349.2614.10.camel@laptop> <1327402527.2614.17.camel@laptop> <20120125154547.GA6671@redhat.com> <1327510290.2614.95.camel@laptop>
+	id S1751449Ab2AYR6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 12:58:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="59937102"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
+ save mtrr
+Thread-Topic: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
+ save mtrr
+Thread-Index: AQHM0IXtchbg6t0dpEylW7Itt3XhjJYJMbWAgAV5GACADsipEA==
+Date: Wed, 25 Jan 2012 17:58:11 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712200349AE@ORSMSX105.amr.corp.intel.com>
+References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
+ <1326301493-28760-11-git-send-email-fenghua.yu@intel.com>
+ <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
+ <4F136A50.80203@zytor.com>
+In-Reply-To: <4F136A50.80203@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327510290.2614.95.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0PHwWCa005383
 
-On 01/25, Peter Zijlstra wrote:
->
-> On Wed, 2012-01-25 at 16:45 +0100, Oleg Nesterov wrote:
-> > > > >
-> > > > >                 for (;;) {
-> > > > >                         tsk->state = TASK_DEAD;
-> > > > >                         schedule();
-> > > > >                 }
-> > > > >
-> > > > > __schedule() can't race with ttwu() once it takes rq->lock. If the
-> > > > > exiting task is deactivated, finish_task_switch() will see EXIT_DEAD.
-> > > >
-> > > > TASK_DEAD, right?
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Sunday, January 15, 2012 4:08 PM
+> On 01/12/2012 04:33 AM, Brian Gerst wrote:
+> > On Wed, Jan 11, 2012 at 12:04 PM, Fenghua Yu <fenghua.yu@intel.com>
+> wrote:
+> >> From: Fenghua Yu <fenghua.yu@intel.com>
+> >>
+> >> Ask the first online CPU to save mtrr instead of asking BSP. BSP
+> could be
+> >> offline when mtrr_save_state() is called.
 > >
-> > Yes, but... I simply can't understand what I was thinking about.
-> > And probably I missed something again, but I think this can't work.
->
-> Oh man, total confusion. :-) Every time I look at this bug I see
-> different shadows on the wall.
-
-Same here ;)
-
-And this time I do not understand your reply.
-
-> > Afaics, this can only help to prevent the race with ttwu_remote()
-> > doing ttwu_do_wakeup() under rq->lock.
->
-> ttwu_do_wakeup() must always be called with rq->lock held.
-
-Yes sure. I meant the code above can't race with p->on_rq == T case.
-
-> > But we still can race with the !p->on_rq case which sets TASK_WAKING.
-> > It can do this after finish_task_switch() observes TASK_DEAD and does
-> > put_task_struct().
->
-> <random scribbling that got erased>
->
-> No, see below !p->on_rq isn't possible and thus pi_lock is indeed
-> sufficient.
-
-Which pi_lock? __schedule() doesn't take it. Hmm, see below...
-
-> > > I think Yasunori-San's patch isn't
-> > > sufficient, note how the p->state = TASK_RUNNING in ttwu_do_wakeup() can
-> > > happen outside of p->pi_lock when the task gets queued on a remote cpu.
+> > If you can use any non-boot cpu to save the MTRRs why not just use
+> the
+> > current cpu?  They should all be in sync anyways.
 > >
-> > Hmm, really? I am not sure, but I do not trust myself.
-> >
-> > To simplify, you mean that
-> >
-> > 	mb();
-> > 	unlock_wait(pi_lock);
-> >
-> > 	tsk->state = TASK_DEAD;
-> >
-> > can change ->state from TASK_WAKING to TASK_DEAD, right? Is this really
-> > possible? ttwu() ensures p->on_rq == F in this case.
->
-> Ahhh.. hold on, p->on_rq must be true, since we disabled preemption
-> before setting TASK_DEAD, so the thing cannot be scheduled out.
+> 
+> A much bigger question: why do we ever bother saving the MTRR state per
+> se?  We examine the MTRR state -- we have to -- during boot, and it
+> should never diverge from the state set by the OS from that point on --
+> we'll need to set it back to that.  So we should just keep track of
+> what
+> the correct MTRR state is at all times.
 
-Why? __schedule() checks "preempt_count() & PREEMPT_ACTIVE". And it
-should be scheduled out, in general this task struct will be freed soon.
+The fixed MTRR state is saved when each CPU is up:
+        /*
+         * Save current MTRR state in case it was changed since early boot
+         * (e.g. by the ACPI SMI) to initialize new CPUs with MTRRs in sync:
+         */
+        mtrr_save_state();
+It's saved because MTRR state could be changed since early boot according to the above comment. I haven't found other info source except the comment. If that's true, we may need to save the state, right?
 
-> Does this mean that both Yasunori-San's solution and yours work again?
+Thanks.
 
-I think that Yasunori-San's solution should work.
+-Fenghua
 
-But,
-
-> /me goes in search of a fresh mind.. shees!
-
-Yes! I need the fresh head too. Probably just to realize I was completely
-wrong again.
-
-Oleg.
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
