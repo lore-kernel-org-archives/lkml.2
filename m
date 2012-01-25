@@ -1,72 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab2AYAPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 19:15:11 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59714 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585Ab2AYAPJ (ORCPT
+	id S1754837Ab2AYASt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 19:18:49 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:32815 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab2AYASs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 19:15:09 -0500
-Message-ID: <1327450499.11738.45.camel@work-vm>
-Subject: Re: [RFC][PATCH 2/3] clocksource: scx200_hrt: Convert scx200 to use
- clocksource_register_hz
-From: John Stultz <john.stultz@linaro.org>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jan 2012 16:14:59 -0800
-In-Reply-To: <CAJfuBxw6M7LB_-GpmTxem-aqWz35CDDaaBv+8oqQ_R_SR7r_tQ@mail.gmail.com>
-References: <1327363550-19952-1-git-send-email-john.stultz@linaro.org>
-	 <1327363550-19952-3-git-send-email-john.stultz@linaro.org>
-	 <CAJfuBxwBfB7V_gikW44rTNAYvxKZwORwzdRrvyZM19feFwcwDQ@mail.gmail.com>
-	 <1327446024.11738.4.camel@work-vm>
-	 <CAJfuBxw6M7LB_-GpmTxem-aqWz35CDDaaBv+8oqQ_R_SR7r_tQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012500-2398-0000-0000-000003A928F7
+	Tue, 24 Jan 2012 19:18:48 -0500
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [RFC 1/2] irq_domain: Create common xlate functions that device drivers can use
+Date: Tue, 24 Jan 2012 17:18:38 -0700
+Message-Id: <1327450719-25590-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-24 at 16:51 -0700, Jim Cromie wrote:
-> On Tue, Jan 24, 2012 at 4:00 PM, John Stultz <john.stultz@linaro.org> wrote:
-> > On Tue, 2012-01-24 at 11:53 -0700, Jim Cromie wrote:
-> >> very nice.  Tested with mhz27 too.
-> >>
-> >> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> >
-> > I assume you mean Acked-by:/Tested-by: ?  Or are you going to push this
-> > upstream?
-> >
-> 
-> huh - I thought SOB was appropriate since Im maintainer of scx200_hrt.
-> That said, youre maintainer of TIMEKEEPING, and author of the patch,
-> so I consider you upstream.  Lets make it instead:
-> 
-> Acked-by: Jim Cromie <jim.cromie@gmail.com>
-> Tested-by: Jim Cromie <jim.cromie@gmail.com>
+Rather than having each interrupt controller driver creating its own barely
+unique .xlate function for irq_domain, create a library of translators which
+any driver can use directly.
 
-Thanks for clarifying. It might be good to review section 12-14 here (I
-have to re-read it periodically myself):
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob_plain;f=Documentation/SubmittingPatches
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
 
-If you're planning on distributing the patch yourself (pushing it up
-towards Linus or giving it to someone else via a git tree or something),
-then adding the signed-off-by would be appropriate (although not
-necessarily in an email reply - usually just better to tell folks you've
-queued it) before sending it onward.
+This builds on top of my irq_domain series and will be included with it when
+I post v3.  Rob, does this serve your needs for generic irq controller DT
+support?
 
-Otherwise if you're not in the distribution path, an Acked-by: would be
-more appropriate.
+g.
 
-> Can you also push that trivial s/then/than/ patch I attached,
-> and/or should I resend it inline, with git-send-email ?
+ include/linux/irqdomain.h |   15 ++++++++++
+ kernel/irq/irqdomain.c    |   69 +++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 76 insertions(+), 8 deletions(-)
 
-Yep. I've just queued it into my tree. Thanks for that!
-
-thanks
--john
-
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index e7379a3..5e497a0 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -110,6 +110,9 @@ struct irq_domain {
+ 	void *host_data;
+ 	irq_hw_number_t inval_irq;
+ 
++	/* Data for common irq xlate functions */
++	unsigned int xlate_type;
++
+ 	/* Optional device node pointer */
+ 	struct device_node *of_node;
+ };
+@@ -163,6 +166,18 @@ extern unsigned int irq_linear_revmap(struct irq_domain *host,
+ 				      irq_hw_number_t hwirq);
+ 
+ extern struct irq_domain_ops irq_domain_simple_ops;
++
++/* stock xlate functions */
++int irq_domain_xlate_onecell(struct irq_domain *d, struct device_node *ctrlr,
++			const u32 *intspec, unsigned int intsize,
++			irq_hw_number_t *out_hwirq, unsigned int *out_type);
++int irq_domain_xlate_twocell(struct irq_domain *d, struct device_node *ctrlr,
++			const u32 *intspec, unsigned int intsize,
++			irq_hw_number_t *out_hwirq, unsigned int *out_type);
++int irq_domain_xlate_onetwocell(struct irq_domain *d, struct device_node *ctrlr,
++			const u32 *intspec, unsigned int intsize,
++			irq_hw_number_t *out_hwirq, unsigned int *out_type);
++
+ #if defined(CONFIG_OF_IRQ)
+ extern void irq_domain_generate_simple(const struct of_device_id *match,
+ 					u64 phys_base, unsigned int irq_start);
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index def8e7b..df80205 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -53,6 +53,7 @@ static struct irq_domain *irq_domain_alloc(struct device_node *of_node,
+ 	domain->ops = ops;
+ 	domain->host_data = host_data;
+ 	domain->of_node = of_node_get(of_node);
++	domain->xlate_type = IRQ_TYPE_NONE;
+ 
+ 	if (domain->ops->match == NULL)
+ 		domain->ops->match = default_irq_domain_match;
+@@ -690,25 +691,77 @@ int irq_domain_simple_map(struct irq_domain *d, unsigned int irq,
+ 	return 0;
+ }
+ 
+-int irq_domain_simple_xlate(struct irq_domain *d,
+-			    struct device_node *controller,
+-			    const u32 *intspec, unsigned int intsize,
+-			    unsigned long *out_hwirq, unsigned int *out_type)
++/**
++ * irq_domain_xlate_onecell() - Generic xlate for direct one cell bindings
++ *
++ * Device Tree IRQ specifier translation function which works with one cell
++ * bindings where the cell value maps directly to the hwirq number.
++ */
++int irq_domain_xlate_onecell(struct irq_domain *d, struct device_node *ctrlr,
++			     const u32 *intspec, unsigned int intsize,
++			     unsigned long *out_hwirq, unsigned int *out_type)
++{
++	if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
++		 ctrlr->full_name, intsize))
++		return -EINVAL;
++	*out_hwirq = intspec[0];
++	*out_type = d->xlate_type;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(irq_domain_xlate_onecell);
++
++/**
++ * irq_domain_xlate_twocell() - Generic xlate for direct two cell bindings
++ *
++ * Device Tree IRQ specifier translation function which works with two cell
++ * bindings where the cell values map directly to the hwirq number
++ * and linux irq flags.
++ */
++int irq_domain_xlate_twocell(struct irq_domain *d, struct device_node *ctrlr,
++			const u32 *intspec, unsigned int intsize,
++			irq_hw_number_t *out_hwirq, unsigned int *out_type)
+ {
+-	if (d->of_node != controller)
++	if (WARN(intsize < 2, "Bad intspec for %s: intsize=%i < 2\n",
++		 ctrlr->full_name, intsize))
++		return -EINVAL;
++	if (intsize < 2)
+ 		return -EINVAL;
+-	if (intsize < 1)
++	*out_hwirq = intspec[0];
++	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(irq_domain_xlate_twocell);
++
++/**
++ * irq_domain_xlate_onetwocell() - Generic xlate for one or two cell bindings
++ *
++ * Device Tree IRQ specifier translation function which works with either one
++ * or two cell bindings where the cell values map directly to the hwirq number
++ * and linux irq flags.
++ *
++ * Note: don't use this function unless your interrupt controller explicitly
++ * supports both one and two cell bindings.  For the majority of controllers
++ * the _onecell() or _twocell() variants above should be used.
++ */
++int irq_domain_xlate_onetwocell(struct irq_domain *d,
++				struct device_node *ctrlr,
++				const u32 *intspec, unsigned int intsize,
++				unsigned long *out_hwirq, unsigned int *out_type)
++{
++	if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
++		 ctrlr->full_name, intsize))
+ 		return -EINVAL;
+ 	*out_hwirq = intspec[0];
+-	*out_type = IRQ_TYPE_NONE;
++	*out_type = d->xlate_type;
+ 	if (intsize > 1)
+ 		*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(irq_domain_xlate_onetwocell);
+ 
+ struct irq_domain_ops irq_domain_simple_ops = {
+ 	.map = irq_domain_simple_map,
+-	.xlate = irq_domain_simple_xlate,
++	.xlate = irq_domain_xlate_onetwocell,
+ };
+ EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
+ 
+-- 
+1.7.5.4
 
