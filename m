@@ -1,204 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab2AYVYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 16:24:37 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28431 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab2AYVYg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 16:24:36 -0500
-Date: Wed, 25 Jan 2012 16:22:14 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: =?utf-8?B?0JzQsNGA0Log0JrQvtGA0LXQvdCx0LXRgNCz?= 
-	<socketpair@gmail.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: Fwd: BUG in linux+v3.2.1/drivers/xen/xen-pciback/pci_stub.c
-Message-ID: <20120125212214.GA29571@phenom.dumpdata.com>
-References: <CAEmTpZHkKB29FLWqs0R=uD1zXBOJkfSstGgMM=8bA1VVXGT+wQ@mail.gmail.com>
- <CAEmTpZH+OeQO=RNBFh_+j_QCmPa8sGhV_OOqqsiKUMmjhBwESw@mail.gmail.com>
- <20120125163910.GC23999@phenom.dumpdata.com>
+	id S1752638Ab2AYVf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 16:35:29 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:56980 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990Ab2AYVf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 16:35:28 -0500
+Date: Wed, 25 Jan 2012 13:34:50 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steffen Persvold <sp@numascale.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: RCU qsmask !=0 warnings on large-SMP...
+Message-ID: <20120125213450.GJ2849@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4F1FCF02.9060209@numascale-asia.com>
+ <20120125140029.GA2534@linux.vnet.ibm.com>
+ <4F200F4D.5000201@numascale.com>
+ <20120125181441.GD2849@linux.vnet.ibm.com>
+ <4F2070B9.2000104@numascale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120125163910.GC23999@phenom.dumpdata.com>
+In-Reply-To: <4F2070B9.2000104@numascale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090201.4F207311.005E,ss=1,re=0.000,fgs=0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012521-5930-0000-0000-0000046BFD54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 11:39:10AM -0500, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jan 25, 2012 at 04:20:26PM +0600, Марк Коренберг wrote:
-> > First, maintainer's addresses (Ryan Wilson <hap9@epoch.ncsc.mil>,
-> > Chris Bookholt <hap10@epoch.ncsc.mil>) are wrong (users unknown to
-> > remote mailsystem), so posting to you:
+On Wed, Jan 25, 2012 at 10:14:33PM +0100, Steffen Persvold wrote:
+> On 1/25/2012 19:14, Paul E. McKenney wrote:
+> []
+> > 
+> > So, it would be very interesting to add the values rdp->mynode->gpnum
+> > and rdp->mynode->completed to your list, perhaps labeling them something
+> > like "rng" and "rnc" respectively.
+> > 
 > 
-> Those are the authors ones.. If you do:
-> konrad@phenom:~/work/linux$ scripts/get_maintainer.pl -f drivers/xen/xen-pciback/pci_stub.c
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> (supporter:XEN HYPERVISOR IN...,commit_signer:11/11=100%)
-> Jeremy Fitzhardinge <jeremy@goop.org> (supporter:XEN HYPERVISOR IN...,commit_signer:2/11=18%)
-> Jan Beulich <jbeulich@suse.com> (commit_signer:1/11=9%)
-> xen-devel@lists.xensource.com (open list:XEN HYPERVISOR IN...)
-> virtualization@lists.linux-foundation.org (open list:XEN HYPERVISOR IN...)
-> linux-kernel@vger.kernel.org (open list)
+> I added them to the printout. This time I ran with NR_CPUS=512 so there's only two levels but we see more qsmask bits set on the root node :
 > 
-> > 
-> > PCI bus format strings are wrong.
-> > 
-> > "%04x:%02x:%02x.%d"
-> > 
-> > should be used instead of
-> > 
-> > "%04x:%02x:%02x.%1x"
+> [  738.329672] CPU 48, treason uncloaked, rsp @ ffffffff81a1cd80 (rcu_sched), gpnum=10568, completed=10567, n_force_qs=69, n_force_qs_lh=0, n_force_qs_ngp=0, rnp @ ffffffff81a1cd80, qsmask=0x1f
+> [  738.330137]   0 ffff8803f840d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=66 ql=1 qs=..W. b=10 ci=158068 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  12 ffff880bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=1 ri=0 ql=0 qs=.... b=10 ci=715 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  24 ffff8813d040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=0 ql=0 qs=.... b=10 ci=484 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  36 ffff881bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=1 ri=0 ql=0 qs=.... b=10 ci=369 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  48 ffff8823d040d660 c=10567 g=10567 pq=1 pgp=10567 qp=0 of=0 ri=0 ql=28 qs=.RWD b=10 ci=9292 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  60 ffff882bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=1 ql=0 qs=.... b=10 ci=32 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  72 ffff8833d040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=0 ql=0 qs=.... b=10 ci=43 co=0 ca=0 rng=10568 rnc=10567
+
+Yow!!!  This is the message from the root rcu_node, right?
+
+One way to check is to print (rnp - &rsp->node[0]), which will be zero
+for the root node.
+
+So this is very very strange.  This error is happening out of
+rcu_start_gp(), which updates rsp->gpnum, and then updates each rnp->gpnum
+in rcu_node array order.  When you get the error on the root rcu_node
+structure, the new ->gpnum value should not have yet propagated to the
+leaf rcu_node structures.  Or is the error print happening asynchronously?
+
+If it is happening asynchronously, so that the actual printing of the
+first set of messages above isn't happening until after initialization
+is complete, could you please copy the relevant values out so that the
+printout is consistent with the state at the time of the error?
+
+							Thanx, Paul
+
+> [  738.330137] ------------[ cut here ]------------
+> [  738.330137] WARNING: at kernel/rcutree_plugin.h:1011 rcu_preempt_check_blocked_tasks+0x27/0x30()
+> [  738.330137] Hardware name: H8QI6
+> [  738.330137] Modules linked in: rcutorture
+> [  738.330137] Pid: 4611, comm: rcu_torture_rea Not tainted 3.2.1-numaconnect10+ #68
+> [  738.330137] Call Trace:
+> [  738.330137]  <IRQ>  [<ffffffff810bb327>] ? rcu_preempt_check_blocked_tasks+0x27/0x30
+> [  738.330137]  [<ffffffff8106f47b>] warn_slowpath_common+0x8b/0xc0
+> [  738.330137]  [<ffffffff8106f4c5>] warn_slowpath_null+0x15/0x20
+> [  738.330137]  [<ffffffff810bb327>] rcu_preempt_check_blocked_tasks+0x27/0x30
+> [  738.330137]  [<ffffffff810bb43d>] rcu_start_gp+0x10d/0x1b0
+> [  738.330137]  [<ffffffff810bc04b>] __rcu_process_callbacks+0x8b/0xd0
+> [  738.330137]  [<ffffffff810bc8b0>] rcu_process_callbacks+0x20/0x40
+> [  738.330137]  [<ffffffff810757fd>] __do_softirq+0x9d/0x140
+> [  738.330137]  [<ffffffffa0001510>] ? rcu_torture_shuffle+0x80/0x80 [rcutorture]
+> [  738.330137]  [<ffffffff815d982c>] call_softirq+0x1c/0x30
+> [  738.330137]  [<ffffffff8103451a>] do_softirq+0x4a/0x80
+> [  738.330137]  [<ffffffff81075b73>] irq_exit+0x43/0x60
+> [  738.330137]  [<ffffffff8104aee5>] smp_apic_timer_interrupt+0x45/0x60
+> [  738.330137]  [<ffffffffa0001c60>] ? rcu_sync_torture_deferred_free+0xd0/0xd0 [rcutorture]
+> [  738.330137]  [<ffffffff815d834b>] apic_timer_interrupt+0x6b/0x70
+> [  738.330137]  <EOI>  [<ffffffff815d4d79>] ? __schedule+0x349/0x710
+> [  738.330137]  [<ffffffff810618d5>] ? update_curr+0x85/0xd0
+> [  738.330137]  [<ffffffff8107b816>] ? lock_timer_base+0x36/0x70
+> [  738.330137]  [<ffffffff8107ba92>] ? mod_timer+0xf2/0x1d0
+> [  738.330137]  [<ffffffffa0001510>] ? rcu_torture_shuffle+0x80/0x80 [rcutorture]
+> [  738.330137]  [<ffffffff815d541a>] schedule+0x3a/0x60
+> [  738.330137]  [<ffffffffa0001640>] rcu_torture_reader+0x130/0x230 [rcutorture]
+> [  738.330137]  [<ffffffffa0001dc0>] ? rcu_torture_writer+0x160/0x160 [rcutorture]
+> [  738.330137]  [<ffffffffa0001510>] ? rcu_torture_shuffle+0x80/0x80 [rcutorture]
+> [  738.330137]  [<ffffffff8108a716>] kthread+0x96/0xa0
+> [  738.330137]  [<ffffffff815d9734>] kernel_thread_helper+0x4/0x10
+> [  738.330137]  [<ffffffff8108a680>] ? kthread_stop+0x70/0x70
+> [  738.330137]  [<ffffffff815d9730>] ? gs_change+0xb/0xb
+> [  738.330137] ---[ end trace e8e520cce35c7626 ]---
+> [  738.330137] CPU 48, treason uncloaked, rsp @ ffffffff81a1cd80 (rcu_sched), gpnum=10568, completed=10567, n_force_qs=70, n_force_qs_lh=250, n_force_qs_ngp=0, rnp @ ffffffff81a1d180, qsmask=0x1
+> [  738.330137]   0 ffff8803f840d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=67 ql=1 qs=..W. b=10 ci=158068 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  12 ffff880bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=1 ri=1 ql=1 qs=N... b=10 ci=715 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  24 ffff8813d040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=1 ql=1 qs=N... b=10 ci=484 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  36 ffff881bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=1 ri=1 ql=1 qs=N... b=10 ci=369 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  48 ffff8823d040d660 c=10567 g=10567 pq=1 pgp=10567 qp=0 of=0 ri=0 ql=28 qs=.RWD b=10 ci=9292 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  60 ffff882bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=1 ql=0 qs=.... b=10 ci=32 co=0 ca=0 rng=10568 rnc=10567
+> [  738.330137]  72 ffff8833d040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=0 ql=0 qs=.... b=10 ci=43 co=0 ca=0 rng=10568 rnc=10567
 > 
-> Oh? Would you be willing to come up with a patch with your SOB, please?
-
-Actually I think it is something like this: But we still need something for the
-protocol..
-
->From e7d7514133427134d186b58b842ecd6beda3bf03 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 25 Jan 2012 16:00:00 -0500
-Subject: [PATCH] xen/pci[front|back]: Use %d instead of %1x for displaying
- PCI devfn.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-.. as the rest of the kernel is using that format.
-
-Suggested-by: Марк Коренберг <socketpair@gmail.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/pci/xen-pcifront.c         |   10 +++++-----
- drivers/xen/xen-pciback/pci_stub.c |    8 ++++----
- drivers/xen/xen-pciback/xenbus.c   |    7 ++++---
- 3 files changed, 13 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index 7cf3d2f..1620088 100644
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -189,7 +189,7 @@ static int pcifront_bus_read(struct pci_bus *bus, unsigned int devfn,
- 
- 	if (verbose_request)
- 		dev_info(&pdev->xdev->dev,
--			 "read dev=%04x:%02x:%02x.%01x - offset %x size %d\n",
-+			 "read dev=%04x:%02x:%02x.%d - offset %x size %d\n",
- 			 pci_domain_nr(bus), bus->number, PCI_SLOT(devfn),
- 			 PCI_FUNC(devfn), where, size);
- 
-@@ -228,7 +228,7 @@ static int pcifront_bus_write(struct pci_bus *bus, unsigned int devfn,
- 
- 	if (verbose_request)
- 		dev_info(&pdev->xdev->dev,
--			 "write dev=%04x:%02x:%02x.%01x - "
-+			 "write dev=%04x:%02x:%02x.%d - "
- 			 "offset %x size %d val %x\n",
- 			 pci_domain_nr(bus), bus->number,
- 			 PCI_SLOT(devfn), PCI_FUNC(devfn), where, size, val);
-@@ -432,7 +432,7 @@ static int __devinit pcifront_scan_bus(struct pcifront_device *pdev,
- 		d = pci_scan_single_device(b, devfn);
- 		if (d)
- 			dev_info(&pdev->xdev->dev, "New device on "
--				 "%04x:%02x:%02x.%02x found.\n", domain, bus,
-+				 "%04x:%02x:%02x.%d found.\n", domain, bus,
- 				 PCI_SLOT(devfn), PCI_FUNC(devfn));
- 	}
- 
-@@ -1041,7 +1041,7 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
- 		pci_dev = pci_get_slot(pci_bus, PCI_DEVFN(slot, func));
- 		if (!pci_dev) {
- 			dev_dbg(&pdev->xdev->dev,
--				"Cannot get PCI device %04x:%02x:%02x.%02x\n",
-+				"Cannot get PCI device %04x:%02x:%02x.%d\n",
- 				domain, bus, slot, func);
- 			continue;
- 		}
-@@ -1049,7 +1049,7 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
- 		pci_dev_put(pci_dev);
- 
- 		dev_dbg(&pdev->xdev->dev,
--			"PCI device %04x:%02x:%02x.%02x removed.\n",
-+			"PCI device %04x:%02x:%02x.%d removed.\n",
- 			domain, bus, slot, func);
- 	}
- 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index 6f63b9d..097e536 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -919,7 +919,7 @@ static inline int str_to_quirk(const char *buf, int *domain, int *bus, int
- 	int err;
- 
- 	err =
--	    sscanf(buf, " %04x:%02x:%02x.%1x-%08x:%1x:%08x", domain, bus, slot,
-+	    sscanf(buf, " %04x:%02x:%02x.%d-%08x:%1x:%08x", domain, bus, slot,
- 		   func, reg, size, mask);
- 	if (err == 7)
- 		return 0;
-@@ -939,7 +939,7 @@ static int pcistub_device_id_add(int domain, int bus, int slot, int func)
- 	pci_dev_id->bus = bus;
- 	pci_dev_id->devfn = PCI_DEVFN(slot, func);
- 
--	pr_debug(DRV_NAME ": wants to seize %04x:%02x:%02x.%01x\n",
-+	pr_debug(DRV_NAME ": wants to seize %04x:%02x:%02x.%d\n",
- 		 domain, bus, slot, func);
- 
- 	spin_lock_irqsave(&device_ids_lock, flags);
-@@ -969,7 +969,7 @@ static int pcistub_device_id_remove(int domain, int bus, int slot, int func)
- 
- 			err = 0;
- 
--			pr_debug(DRV_NAME ": removed %04x:%02x:%02x.%01x from "
-+			pr_debug(DRV_NAME ": removed %04x:%02x:%02x.%d from "
- 				 "seize list\n", domain, bus, slot, func);
- 		}
- 	}
-@@ -1064,7 +1064,7 @@ static ssize_t pcistub_slot_show(struct device_driver *drv, char *buf)
- 			break;
- 
- 		count += scnprintf(buf + count, PAGE_SIZE - count,
--				   "%04x:%02x:%02x.%01x\n",
-+				   "%04x:%02x:%02x.%d\n",
- 				   pci_dev_id->domain, pci_dev_id->bus,
- 				   PCI_SLOT(pci_dev_id->devfn),
- 				   PCI_FUNC(pci_dev_id->devfn));
-diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-index d5dcf8d..9b2f705 100644
---- a/drivers/xen/xen-pciback/xenbus.c
-+++ b/drivers/xen/xen-pciback/xenbus.c
-@@ -206,8 +206,9 @@ static int xen_pcibk_publish_pci_dev(struct xen_pcibk_device *pdev,
- 		goto out;
- 	}
- 
-+	/* TODO: implement feature-use-decimal-for-devfn */
- 	err = xenbus_printf(XBT_NIL, pdev->xdev->nodename, str,
--			    "%04x:%02x:%02x.%02x", domain, bus,
-+			    "%04x:%02x:%02x.%1x", domain, bus,
- 			    PCI_SLOT(devfn), PCI_FUNC(devfn));
- 
- out:
-@@ -229,7 +230,7 @@ static int xen_pcibk_export_device(struct xen_pcibk_device *pdev,
- 		err = -EINVAL;
- 		xenbus_dev_fatal(pdev->xdev, err,
- 				 "Couldn't locate PCI device "
--				 "(%04x:%02x:%02x.%01x)! "
-+				 "(%04x:%02x:%02x.%d)! "
- 				 "perhaps already in-use?",
- 				 domain, bus, slot, func);
- 		goto out;
-@@ -274,7 +275,7 @@ static int xen_pcibk_remove_device(struct xen_pcibk_device *pdev,
- 	if (!dev) {
- 		err = -EINVAL;
- 		dev_dbg(&pdev->xdev->dev, "Couldn't locate PCI device "
--			"(%04x:%02x:%02x.%01x)! not owned by this domain\n",
-+			"(%04x:%02x:%02x.%d)! not owned by this domain\n",
- 			domain, bus, slot, func);
- 		goto out;
- 	}
--- 
-1.7.7.5
+> Kind regards,
+> -- 
+> Steffen Persvold, Chief Architect NumaChip
+> Numascale AS - www.numascale.com
+> Tel: +47 92 49 25 54 Skype: spersvold
+> 
 
