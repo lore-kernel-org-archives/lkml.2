@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab2AYPJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:09:12 -0500
-Received: from mail.nudt.edu.cn ([61.187.54.11]:59431 "HELO eyou.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751274Ab2AYPJK convert rfc822-to-8bit (ORCPT
+	id S1752827Ab2AYPKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:10:19 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59475 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab2AYPKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:09:10 -0500
-X-EYOU-SPAMVALUE: 0
-X-EYOU-DEALDRC: 
-X-EMDG-VER: 2011-01-28
-Message-ID: <527503333.04197@eyou.net>
-X-EYOUMAIL-SMTPAUTH: liwang@nudt.edu.cn
-From: "Li Wang" <liwang@nudt.edu.cn>
-To: "Tyler Hicks" <tyhicks@canonical.com>
-Cc: <ecryptfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] eCryptfs: write optimization
-Date: Wed, 25 Jan 2012 23:08:58 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook, Build 11.0.5510
-Thread-Index: Aczbc0M2E3m8UKvGRPe2U2OeTB49wQ==
-X-MimeOLE: Produced By Microsoft MimeOLE V6.1.7600.16807
+	Wed, 25 Jan 2012 10:10:16 -0500
+Subject: Re: [RFC PATCH v1 1/2] sched: unified sched_powersavings sysfs
+ tunable
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Indan Zupancic <indan@nul.nu>, Youquan Song <youquan.song@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120116162241.29759.13220.stgit@localhost>
+References: <20120116161740.29759.4679.stgit@localhost>
+	 <20120116162241.29759.13220.stgit@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Jan 2012 16:10:13 +0100
+Message-ID: <1327504213.2614.78.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  ecryptfs_write_begin() grabs a page from page cache for writing. 
-If the page does not contain valid data, or the data are older than 
-the counterpart on the disk, eCryptfs will read out the corresponding data 
-from the disk into the eCryptfs page cache, decrypt them, 
-then perform writing. However, for current page, if the length of 
-the data to be written into is equal to page size, that means the whole 
-page of data will be overwritten, in which case, it does not matter whatever 
-the data were before, it is beneficial to perform writing directly.
+On Mon, 2012-01-16 at 21:52 +0530, Vaidyanathan Srinivasan wrote:
+> @@ -6150,10 +6150,8 @@ SD_INIT_FUNC(CPU)
+>   SD_INIT_FUNC(ALLNODES)
+>   SD_INIT_FUNC(NODE)
+>  #endif
+> -#ifdef CONFIG_SCHED_SMT
+> +#ifdef CONFIG_SCHED_POWERSAVE
+>   SD_INIT_FUNC(SIBLING)
+> -#endif
+> -#ifdef CONFIG_SCHED_MC
+>   SD_INIT_FUNC(MC)
+>  #endif
+>  #ifdef CONFIG_SCHED_BOOK
+> @@ -6250,7 +6248,7 @@ static void claim_allocations(int cpu, struct sched_domain *sd)
+>                 *per_cpu_ptr(sdd->sgp, cpu) = NULL;
+>  }
+>  
+> -#ifdef CONFIG_SCHED_SMT
+> +#ifdef CONFIG_SCHED_POWERSAVE
+>  static const struct cpumask *cpu_smt_mask(int cpu)
+>  {
+>         return topology_thread_cpumask(cpu);
+> @@ -6261,10 +6259,8 @@ static const struct cpumask *cpu_smt_mask(int cpu)
+>   * Topology list, bottom-up.
+>   */
+>  static struct sched_domain_topology_level default_topology[] = {
+> -#ifdef CONFIG_SCHED_SMT
+> +#ifdef CONFIG_SCHED_POWERSAVE
+>         { sd_init_SIBLING, cpu_smt_mask, },
+> -#endif
+> -#ifdef CONFIG_SCHED_MC
+>         { sd_init_MC, cpu_coregroup_mask, },
+>  #endif
+>  #ifdef CONFIG_SCHED_BOOK 
 
-This is useful while using eCryptfs in backup situation, user copies file
-out from eCryptfs folder, modifies, and copies the revised file back to
-replace the original one. 
+I don't like this either, SCHED_{MC,SMT} here have nothing to do with
+powersavings, its topology support.
 
-With this optimization, according to our test, iozone 'write' operation on an existing 
-file with write size being multiple of page size will enjoy a steady 3x speedup.
 
-Signed-off-by: Li Wang <liwang@nudt.edu.cn>
-		Yunchuan Wen <wenyunchuan@kylinos.com.cn>
-
----
-
- fs/ecryptfs/mmap.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-index 6a44148..9724ef2 100644
---- a/fs/ecryptfs/mmap.c
-+++ b/fs/ecryptfs/mmap.c
-@@ -346,7 +346,8 @@ static int ecryptfs_write_begin(struct file *file,
- 			if (prev_page_end_size
- 			    >= i_size_read(page->mapping->host)) {
- 				zero_user(page, 0, PAGE_CACHE_SIZE);
--			} else {
-+				SetPageUptodate(page);
-+			} else if (len < PAGE_CACHE_SIZE) {
- 				rc = ecryptfs_decrypt_page(page);
- 				if (rc) {
- 					printk(KERN_ERR "%s: Error decrypting "
-@@ -356,8 +357,8 @@ static int ecryptfs_write_begin(struct file *file,
- 					ClearPageUptodate(page);
- 					goto out;
- 				}
-+				SetPageUptodate(page);
- 			}
--			SetPageUptodate(page);
- 		}
- 	}
- 	/* If creating a page or more of holes, zero them out via truncate.  
 
