@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab2AYW3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 17:29:16 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50345 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab2AYW3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 17:29:14 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [Announce] linux-pm tree changes
-Date: Wed, 25 Jan 2012 23:32:48 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201201242356.04244.rjw@sisk.pl> <CAP=VYLo90FANL8tX5VPvL+3wKB0CDF3Ryz1Lsw6ECVpcT9nesQ@mail.gmail.com>
-In-Reply-To: <CAP=VYLo90FANL8tX5VPvL+3wKB0CDF3Ryz1Lsw6ECVpcT9nesQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1751396Ab2AYWai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 17:30:38 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:36522 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab2AYWah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 17:30:37 -0500
+X-IronPort-AV: E=Sophos;i="4.71,570,1320624000"; 
+   d="scan'208";a="10292480"
+Message-ID: <1327530635.856.6.camel@dagon.hellion.org.uk>
+Subject: Re: Regressions in v3.3-rc1 introduced by "xen/granttable: Grant
+ tables V2 implementation"
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "annie.li@oracle.com" <annie.li@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Date: Wed, 25 Jan 2012 22:30:35 +0000
+In-Reply-To: <20120125204652.GA21284@phenom.dumpdata.com>
+References: <20120125044949.GB29759@phenom.dumpdata.com>
+	 <20120125051253.GA15501@phenom.dumpdata.com>
+	 <1327485333.24561.232.camel@zakaz.uk.xensource.com>
+	 <20120125204652.GA21284@phenom.dumpdata.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201252332.48993.rjw@sisk.pl>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 25, 2012, Paul Gortmaker wrote:
-> On Tue, Jan 24, 2012 at 5:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Hi,
-> >
-> > I'd like you to know some workflow changes regarding the linux-pm tree.
-> >
-> > Since it's now possible to create signed tags for Linus to pull from, I won't
-> > need the 'pm-for-linus' branch any more and it's gone.  The 'pm-fixes' branch
-> > is gone too and replaced by the 'fixes' branch (which currently contains the
-> > same material as master).
-> >
-> > The idea is that the main development is going to happen in the 'master'
-> > branch, which is not going to be rebased and the Linus' tree will be merged
-> > into it from time to time (most of the time when the 'master' branch can be
-> > fast-forwarded to it).  The 'fixes' branch will be used for pushing urgent
+On Wed, 2012-01-25 at 20:46 +0000, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jan 25, 2012 at 09:55:33AM +0000, Ian Campbell wrote:
+> > On Wed, 2012-01-25 at 05:12 +0000, Konrad Rzeszutek Wilk wrote:
+> > > On Tue, Jan 24, 2012 at 11:49:49PM -0500, Konrad Rzeszutek Wilk wrote:
+> > > > When I try to bootup a PVonHVM guest with Xen 4.1 I get this:
+> > > 
+> > > .. snip..
+> > > > 
+> > > > and with this little patch I can get it to work:
+> > > 
+> > > I get the domU to boot but the network stops being responsive.
+> > > I see this in the Dom0:
+> > 
+> > Your original patch would set the version to two in the hypervisor and
+> > then ignore that and continue to use v1 so that isn't surprising.
+> > 
+> > > (XEN) grant_table.c:362:d0 Bad flags (0) or dom (0). (expected dom 0, flags 103)
+> > > [ 6834.488816] vif vif-12-0: 1 mapping in shared page 768 from domain 12
+> > > [ 6834.490235] vif vif-12-0: 1 mapping shared-frames 768/769 port 15
+> > > 
+> > > Replacing the patch with:
+> > > 
+> > > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> > > index 1cd94da..b4d4eac 100644
+> > > --- a/drivers/xen/grant-table.c
+> > > +++ b/drivers/xen/grant-table.c
+> > > @@ -948,9 +948,12 @@ static void gnttab_request_version(void)
+> > >  	int rc;
+> > >  	struct gnttab_set_version gsv;
+> > >  
+> > > -	gsv.version = 2;
+> > > +	if (xen_hvm_domain())
+> > > +		gsv.version = 1;
+> > > +	else
+> > > +		gsv.version = 2;
+> > >  	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
+> > > -	if (rc == 0) {
+> > > +	if (rc == 0 && gsv.version == 2) {
+> > >  		grant_table_version = 2;
+> > >  		gnttab_interface = &gnttab_v2_ops;
+> > >  	} else if (grant_table_version == 2) {
+> > > 
+> > > Gets me back to how it worked in Linux v3.2.
+> > > 
+> > > But that is just a band-aid fix...
+> > 
+> > The real bug is presumably either that the Linux v2 code is buggy for
+> > use in an HVM guest or that Xen's support for v2 in HVM guests is either
+> > buggy or explicitly disabled (in which case set_version should fail for
+> > version=2).
+> > 
+> > Is the set_version with version=1 succeeding or failing? Likewise for
+> > the version=2 call?
 > 
-> Not sure what you have in mind for "from time to time",
-
-Something like once in a development cycle (right after a merge window),
-but there may be exceptions.
-
-> but random merges
-> without a clear reason (i.e. "merge Linus to get access to new files X Y Z")
-> are probably going to get you in hot water.
-
-I know.
-
-> Also, once you stack on your 1st PM commit onto your master, none of
-> your future merges of Linus' tree will be fast forward.
-
-Until Linus pulls from my tree.  Then I can do a fast forward and start over.
-
-> Here is an
-> example, where I simulate a local change, followed by "time to time"
-> merges of Linus tree.  Note each creates a merge, not just the 1st one.
+> Both return 0. But version=2 returns the error in the hypervisor:
 > 
-> -----------------------------
-> linux-head$git checkout -b crap v3.1
-> Checking out files: 100% (17551/17551), done.
-> Switched to a new branch 'crap'
-> linux-head$echo foo > foo ; git add foo ; git commit -m '1st pm commit'
-> [crap 1675da3] 1st pm commit
->  1 files changed, 1 insertions(+), 0 deletions(-)
->  create mode 100644 foo
-> linux-head$git merge v3.2-rc1 2>&1 |grep 'Merge\|Fast'
-> Merge made by recursive.
-> linux-head$git merge v3.2-rc2 2>&1 |grep 'Merge\|Fast'
-> Merge made by recursive.
-> linux-head$git merge v3.2-rc3 2>&1 |grep 'Merge\|Fast'
-> Merge made by recursive.
-> linux-head$git show -m |head -n5
-> commit 3cbd041875960361ffde72612afadc6c68e94654 (from
-> 6f6028bdbbc63dc71b408da8976f154a2e6a70ee)
-> Merge: 6f6028b caca6a0
-> Author: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Date:   Wed Jan 25 13:45:55 2012 -0500
-> linux-head$
-> ----------------
-> 
-> Having lots of these kinds of pointless merge commits are
-> what will most likely get you in hot water when you ask for
-> it to be pulled.
-> 
-> Maybe I'm just misinterpreting what your plan is.
+>  (XEN) grant_table.c:362:d0 Bad flags (0) or dom (0). (expected dom 0, flags 103)
 
-Please see above. :-)
+This was with your first (buggy) patch, right?
 
-Thanks,
-Rafael
+I think this error is because your first version of the patch switched
+to v2 but then ignored that and continued to use the v1 data structures
+-- hence there is a disagreement between the kernel and the hypervisor
+about where the flags actually are and you get errors like the above.
+
+Ian.
+
