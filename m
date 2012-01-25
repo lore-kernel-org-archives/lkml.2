@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab2AYONC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 09:13:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37245 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab2AYONA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 09:13:00 -0500
+	id S1752051Ab2AYONc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:13:32 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49746 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab2AYONb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 09:13:31 -0500
+Message-ID: <4F200DFD.7070407@ti.com>
+Date: Wed, 25 Jan 2012 15:13:17 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Date: Wed, 25 Jan 2012 15:13:00 +0100
-Message-ID: <CADkCAuuV7Q1+MjEhFPKCwYXiy4RtdB9-vJ5f3rZpP6pcig4OvA@mail.gmail.com>
-Subject: [PATCH/RFC] regulator: pass voltage to notifiers
-From: Bill Gatliff <bgat@billgatliff.com>
-To: lrg@slimlogic.co.uk, lkml <linux-kernel@vger.kernel.org>
-Cc: Ryan Kuester <rkuester@insymbols.com>,
-        John Marland <johnwmarland@gmail.com>
-Content-Type: multipart/mixed; boundary=14dae9340f9d75995b04b75adcac
+To: Rob Herring <robherring2@gmail.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Milton Miller <miltonm@bga.com>, <benh@kernel.crashing.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFCv2 00/14]
+References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca> <4F1DD6DF.4080706@gmail.com>
+In-Reply-To: <4F1DD6DF.4080706@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae9340f9d75995b04b75adcac
-Content-Type: text/plain; charset=ISO-8859-1
+On 1/23/2012 10:53 PM, Rob Herring wrote:
+> On 01/23/2012 03:07 PM, Grant Likely wrote:
+>>
+>> Hey everyone,
+>>
+>> Here's the second RFC for the irq_domain patches.  I could use some
+>> help testing now.  I still expect there will be a few bugs.  The
+>> series is based on v3.3-rc1, and I've pushed it out to my git server:
+>>
+>> git://git.secretlab.ca/git/linux-2.6.git irqdomain/next
+>
+> Can you post to linux-arm-kernel too so people are aware of this work
+> and stop posting dead-end irqdomain patches.
 
-Guys:
+Good point, I have two pending series that are using the 
+irq_domain_add() so far, so it will be good to have that branch pulled 
+in arm-soc.
 
+> I tested what you had as of this morning and it works fine for me. Looks
+> like the only diff is the VExpress code. I'm working on rebasing my
+> domain support for generic irqchip now.
 
-The attached patch file passes the new regulator voltage forward to
-notifiers in the *data argument.  This eliminates the need for a
-schedule_work() in situations where the notifier needs to know what
-the new voltage is.
+In fact your generic irqchip should even avoid us to use 
+irq_domain_add_legacy() since both GPIO and OMAP3 intc are already using 
+the irqchip.
 
-I apologize for sending it outside of git send-email, but I am behind
-a firewall at the moment and wanted to get this out now rather than
-waiting.  Will re-send if necessary.
+I guess you are not going to change the interface so the patches I did 
+on your previous branch to try them should be good already, isn't it?
 
-Also, this is against linux-3.0.8, but I am happy to rebase if
-upstream is interested.
-
-
-Kindest regards,
-
-
-b.g.
--- 
-Bill Gatliff
-bgat@billgatliff.com
-
---14dae9340f9d75995b04b75adcac
-Content-Type: application/octet-stream; 
-	name="0001-regulator-pass-voltage-to-notifiers.patch"
-Content-Disposition: attachment; 
-	filename="0001-regulator-pass-voltage-to-notifiers.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gxufmjhf0
-
-RnJvbSBjNDZlOTdlNTc0ZmFlNTU0MTEyYWNkOTMxNTY1ZmM1YWE0YjUxMWQ2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBCaWxsIEdhdGxpZmYgPGJpbGwuZ2F0bGlmZkBzb255ZXJpY3Nz
-b24uY29tPgpEYXRlOiBXZWQsIDI1IEphbiAyMDEyIDE0OjU5OjEzICswMTAwClN1YmplY3Q6IFtQ
-QVRDSF0gcmVndWxhdG9yOiBwYXNzIHZvbHRhZ2UgdG8gbm90aWZpZXJzCgpUaGUgcmVndWxhdG9y
-IEFQSSBnb2VzIHRvIGdyZWF0IGxlbmd0aHMgdG8gc3RheSBzeW5jaHJvbml6ZWQgd2l0aApyZWd1
-bGF0b3Igc3RhdGVzLCBidXQgdGhlbiB0aHJvd3MgYWxsIHRoYXQgaGFyZCB3b3JrIGF3YXkgYnkg
-bm90CnBhc2luZyB0aGUgY3VycmVudCByZWd1bGF0b3Igdm9sdGFnZSB0byBub3RpZmllcnMuICBU
-aGlzIGZvcmNlcwpub3RpZmllcnMgdG8gZG8gYSBzY2hlZHVsZV93b3JrKCkgb3Igc2ltaWxhciB0
-byB0YWtlIGFjdGlvbiBiYXNlZCBvbgpyZWd1bGF0b3Igdm9sdGFnZSwgc2luY2UgdGhleSBjYW5u
-b3QgY2FsbCByZWd1bGF0b3JfZ2V0X3ZvbHRhZ2UoKSBpbgp0aGUgbm90aWZpZXIgZnVuY3Rpb24g
-aXRzZWxmLiAgVGhpcyB1bi1zeW5jaHJvbml6ZXMgdGhlbSBmcm9tCnJlZ3VsYXRvciBzdGF0ZSBj
-aGFuZ2VzLgoKVGhlIGVuY2xvc2VkIHBhdGNoIHBhc3NlcyB0aGUgbmV3IHJlZ3VsYXRvciB2b2x0
-YWdlIGZvcndhcmQgdG8Kbm90aWZpZXJzLCBhbGxvd2luZyB0aGVtIHRvIHN0YXkgc3luY2hyb25p
-emVkIHdpdGggdGhlIHJlZ3VsYXRvciBpZgp0aGF0IGlzIHRoZSBvbmx5IGluZm9ybWF0aW9uIHRo
-ZXkgbmVlZC4KCkNoYW5nZS1JZDogSTlkNmRmZTgyYzQ2NGEyODM0YWMxNDkyNzVmNmQ3ZjBjZGY4
-YTgxNjcKClNpZ25lZC1vZmYtYnk6IEJpbGwgR2F0bGlmZiA8YmlsbC5nYXRsaWZmQHNvbnllcmlj
-c3Nvbi5jb20+Ci0tLQogZHJpdmVycy9yZWd1bGF0b3IvY29yZS5jIHwgICAxMCArKysrKystLS0t
-CiAxIGZpbGVzIGNoYW5nZWQsIDYgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCmRpZmYg
-LS1naXQgYS9kcml2ZXJzL3JlZ3VsYXRvci9jb3JlLmMgYi9kcml2ZXJzL3JlZ3VsYXRvci9jb3Jl
-LmMKaW5kZXggNWIyMzI4ZC4uOWE1N2VlNiAxMDA2NDQKLS0tIGEvZHJpdmVycy9yZWd1bGF0b3Iv
-Y29yZS5jCisrKyBiL2RyaXZlcnMvcmVndWxhdG9yL2NvcmUuYwpAQCAtNjQzLDcgKzY0Myw4IEBA
-IHN0YXRpYyBpbnQgdXBkYXRlX3ZvbHRhZ2Uoc3RydWN0IHJlZ3VsYXRvciAqcmVndWxhdG9yLCBp
-bnQgbWluX3VWLCBpbnQgbWF4X3VWKQogCWlmICghcmV0KQogCQlnb3RvIG91dDsKIAotCV9ub3Rp
-Zmllcl9jYWxsX2NoYWluKHJkZXYsIFJFR1VMQVRPUl9FVkVOVF9WT0xUQUdFX0NIQU5HRSwgTlVM
-TCk7CisJX25vdGlmaWVyX2NhbGxfY2hhaW4ocmRldiwgUkVHVUxBVE9SX0VWRU5UX1ZPTFRBR0Vf
-Q0hBTkdFLAorCQkJICAgICAodm9pZCopX3JlZ3VsYXRvcl9nZXRfdm9sdGFnZShyZGV2KSk7CiAK
-IG91dDoKIAlyZXR1cm4gcmV0OwpAQCAtNjcwLDcgKzY3MSw4IEBAIHN0YXRpYyBpbnQgdXBkYXRl
-X3ZvbHRhZ2VfcHJldihzdHJ1Y3QgcmVndWxhdG9yX2RldiAqcmRldikKIAlpZiAoIXJldCkKIAkJ
-cmV0dXJuIHJldDsKIAotCV9ub3RpZmllcl9jYWxsX2NoYWluKHJkZXYsIFJFR1VMQVRPUl9FVkVO
-VF9WT0xUQUdFX0NIQU5HRSwgTlVMTCk7CisJX25vdGlmaWVyX2NhbGxfY2hhaW4ocmRldiwgUkVH
-VUxBVE9SX0VWRU5UX1ZPTFRBR0VfQ0hBTkdFLAorCQkJICAgICAodm9pZCopX3JlZ3VsYXRvcl9n
-ZXRfdm9sdGFnZShyZGV2KSk7CiAKIAlyZXR1cm4gcmV0OwogfQpAQCAtMTg1Miw3ICsxODU0LDcg
-QEAgc3RhdGljIGludCBfcmVndWxhdG9yX2RvX3NldF92b2x0YWdlKHN0cnVjdCByZWd1bGF0b3Jf
-ZGV2ICpyZGV2LAogCiAJaWYgKHJldCA9PSAwKQogCQlfbm90aWZpZXJfY2FsbF9jaGFpbihyZGV2
-LCBSRUdVTEFUT1JfRVZFTlRfVk9MVEFHRV9DSEFOR0UsCi0JCQkJICAgICBOVUxMKTsKKwkJCQkg
-ICAgICh2b2lkKilfcmVndWxhdG9yX2dldF92b2x0YWdlKHJkZXYpKTsKIAogCXRyYWNlX3JlZ3Vs
-YXRvcl9zZXRfdm9sdGFnZV9jb21wbGV0ZShyZGV2X2dldF9uYW1lKHJkZXYpLCBzZWxlY3Rvcik7
-CiAKQEAgLTIzNDIsNyArMjM0NCw3IEBAIHN0YXRpYyB2b2lkIF9ub3RpZmllcl9jYWxsX2NoYWlu
-KHN0cnVjdCByZWd1bGF0b3JfZGV2ICpyZGV2LAogCXN0cnVjdCByZWd1bGF0b3JfZGV2ICpfcmRl
-djsKIAogCS8qIGNhbGwgcmRldiBjaGFpbiBmaXJzdCAqLwotCWJsb2NraW5nX25vdGlmaWVyX2Nh
-bGxfY2hhaW4oJnJkZXYtPm5vdGlmaWVyLCBldmVudCwgTlVMTCk7CisJYmxvY2tpbmdfbm90aWZp
-ZXJfY2FsbF9jaGFpbigmcmRldi0+bm90aWZpZXIsIGV2ZW50LCBkYXRhKTsKIAogCS8qIG5vdyBu
-b3RpZnkgcmVndWxhdG9yIHdlIHN1cHBseSAqLwogCWxpc3RfZm9yX2VhY2hfZW50cnkoX3JkZXYs
-ICZyZGV2LT5zdXBwbHlfbGlzdCwgc2xpc3QpIHsKLS0gCjEuNy41LjQKCg==
---14dae9340f9d75995b04b75adcac--
+Thanks,
+Benoit
