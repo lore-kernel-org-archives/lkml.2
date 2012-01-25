@@ -1,128 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab2AYUfX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 15:35:23 -0500
-Received: from cpanel23.proisp.no ([88.87.44.74]:46919 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab2AYUfW (ORCPT
+	id S1752349Ab2AYUlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 15:41:13 -0500
+Received: from sargas.telkomsa.net ([196.25.211.69]:53262 "EHLO
+	sargas.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab2AYUlM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 15:35:22 -0500
-Message-ID: <4F206783.2050901@numascale.com>
-Date: Wed, 25 Jan 2012 21:35:15 +0100
-From: Steffen Persvold <sp@numascale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 25 Jan 2012 15:41:12 -0500
+Date: Wed, 25 Jan 2012 22:41:05 +0200 (SAST)
+From: online445428@telkomsa.net
+Message-ID: <276133671.408487.1327524065152.JavaMail.root@zimbra3-vm1.telkomsa.net>
+Subject: New  Year  Promo  To  Our  Beneficiary!!!
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Daniel J Blueman <daniel@numascale-asia.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: RCU qsmask !=0 warnings on large-SMP...
-References: <4F1FCF02.9060209@numascale-asia.com> <20120125140029.GA2534@linux.vnet.ibm.com> <4F200F4D.5000201@numascale.com> <20120125181441.GD2849@linux.vnet.ibm.com>
-In-Reply-To: <20120125181441.GD2849@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.16.42]
+X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/25/2012 19:14, Paul E. McKenney wrote:
-[]
->> CONFIG_NO_HZ is not set, so it should not happen. We see that the behavior is the same with CONFIG_NO_HZ=y though, but it takes longer to reproduce usually.
->
-> OK, the CONFIG_NO_HZ=n has the least code involved, so it would be best
-> for debugging.
+Dear Beneficiary,
+ 
+We are here to notify you that the sum of  $250,000 U.S.Dollars was generated and awarded to you by the Western Union Foundation in conjunction with the African Union Foundation.This award was been selected through the internet, where your e-mail address was indicated and notified.The Western Union  Foundation, All the email addresses of the people that are active online,among the millions of our customers who use Western Union in their business transactions.Four people are selected Every year  to benefit from this promotion and you are one of the Selected Winners.
 
-Good, that was my thought also when looking at the code. I'm reducing 
-NR_CPUS to 512 now to get two levels just for simpler debugging (the 
-issue is still present).
+To avoid misappropriation of funds, proper verifications must be carried out before the fund is transferred. We require the details below for verification so that the transfer can be carried out.
 
-[]
->> Because the RCU tree is 3 levels, the printout function we added in the patch gets called 3 times each time with the same RDP but with different RNPs (in rcu_start_gp()).
->
-> Ah, good point.  Hmmm...
->
-> Looking back at Daniel's original email, we have the root rcu_node
-> structure with ->qsmask=0x1 (indicating first descendent), the next
-> level having ->qsmask=0x8 (indicating fourth descendent) and the last
-> level having ->qsmask=0x1, again indicating first descendent.  So,
-> zero, 16, 32, 48.  Which agrees with the CPU number below that has not
-> yet caught up to the current grace period.
->
-> Another really odd thing...  If we are starting the new grace period,
-> we should have incremented rsp->gpnum.  And in fact, we do have
-> rsp->gpnum being one larger than rsp->completed, as expected.  But
-> if we have only initialized the root rcu_node structures, how can
-> the per-CPU rcudata structures know about the new grace period yet?
->
-> There was a time when the CPUs could find out early, but I think that
-> was a long time ago.  Yes, check_for_new_grace_period() does compare
-> rdp->gpnum against rsp->gpnum, but it calls note_new_gpnum() which
-> acquires the rnp->lock(), and nothing happens unless __note_new_gpnum()
-> sees that rnp->gpnum is different rdp->gpnum.
->
-> So, it would be very interesting to add the values rdp->mynode->gpnum
-> and rdp->mynode->completed to your list, perhaps labeling them something
-> like "rng" and "rnc" respectively.
+1. Receiver's Full Name:
+2. Receiver's Address:
+3. Receiver's Country:
+4. Receiver's Telephone Number:
+5. Receiver's Occupation:
 
-I will add this to the printout.
+  Send the above details to us via the email addresses stated below:
+ 
+Western Union District Manager (Mr. Mike Moris)
+Website:www.westernunion.com
+E-mail: westernoffice79@yahoo.com.hk
 
->
-> Of course, CPU 48 should not have decided that it was done with the
-> old grace period before clearing its bit.  For that matter, some
-> CPU somewhere decided that the grace period was done despite the
-> root rcu_node's ->qsmask being non-zero, which should be prevented
-> by the:
->
-> 	if (rnp->qsmask != 0 || rcu_preempt_blocked_readers_cgp(rnp)) {
->
-> line in rcu_report_qs_rnp().
->
-> 3.2 has some event tracing that would be extremely helpful in tracking
-> this down.  Are you able to run 3.2?
+Note: You were selected as a winner on this promotion and I personally advise that you use the funds wisely. However, we need your information as stated above to commence the transaction due process.
 
-Yes, 3.2.1 is our debug target right now.
+As soon as these details are received and verified, the fund will be transferred to you.
 
-[]
->>> Same here, but most of the ql= values are larger.  Later printout?
->>
->> The loop in rcu_start_gp() releases the node lock between each time it gets a new level in the RCU tree (it has to) :
->>
->> 	rcu_for_each_node_breadth_first(rsp, rnp) {
->> 		raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
->> 		rcu_debug_print(rsp, rnp);
->>
->> so I guess this allows ql= values to increase maybe, no ?
->
-> The ql= levels can increase anyway -- those queues are only accessed by
-> the corresponding CPU or from stop_machine context.  The small increases
-> are entirely consistent with your having bits set at all levels of the
-> rcu_node tree.  The reason I was surprised is that my earlier bugs (as
-> in before the code hit mainline) only ever resulted in a single level
-> having a stray bit.
-
-Ok.
-
-[]
->>
->> Thanks for looking into this Paul, we'd be more than happy to test out theories and patches.
->
-> The event tracing, particularly the "rcu_grace_period" set, would be
-> very helpful.
-
-Are you talking about the data from /sys/kernel/debug/rcu/ ? I have 
-CONFIG_RCU_TRACE (and consequently CONFIG_TREE_RCU_TRACE) set, is this 
-enough to get the event data you want ?
-
-Cheers,
--- 
-Steffen Persvold, Chief Architect NumaChip
-Numascale AS - www.numascale.com
-Tel: +47 92 49 25 54 Skype: spersvold
+Copyright © 2001-2011 The Western Union Company , All Rights Reserved.
