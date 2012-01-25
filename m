@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab2AYLdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 06:33:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:39942 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab2AYLdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 06:33:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="100370754"
-Message-ID: <1327491326.26648.10.camel@sauron.fi.intel.com>
-Subject: Re: Linux 3.3-1 out - merge window closed
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Carlos Chinea <carlos.chinea@nokia.com>
-Cc: ext Linus Walleij <linus.walleij@linaro.org>,
-        ext Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "peter_henn@gmx.de" <peter_henn@gmx.de>,
-        "sjur.brandeland@stericsson.com" <sjur.brandeland@stericsson.com>,
-        "govindraj.ti@gmail.com" <govindraj.ti@gmail.com>,
-        "pawel.szyszuk@stericsson.com" <pawel.szyszuk@stericsson.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Andras Domokos <andras.domokos@nokia.com>,
-        ext Shubhrajyoti <shubhrajyoti@ti.com>,
-        ext Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Date: Wed, 25 Jan 2012 13:35:26 +0200
-In-Reply-To: <1327431476.10335.69.camel@groo>
-References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
-	 <1327331183.10335.26.camel@groo>
-	 <CACRpkdYcBjhRo=NcfDbxJrNn6QtpV1LWdeuiy1yGPosocngV-A@mail.gmail.com>
-	 <1327431476.10335.69.camel@groo>
-Organization: Intel OTC
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-N/OoYX608kwOf2cVw6IN"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
+	id S1752384Ab2AYLf5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 06:35:57 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:48358 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab2AYLf4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 06:35:56 -0500
+Date: Wed, 25 Jan 2012 12:35:38 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: [PATCH/RFC] regulator: Reverse the disable sequence in
+ regulator_bulk_disable()
+To: broonie@opensource.wolfsonmicro.com, lrg@ti.com
+Cc: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Steve Glendinning <steve.glendinning@smsc.com>,
+        Richard Purdie <rpurdie@rpsys.net>, Timur Tabi <timur@freescale.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <1327491338-18817-1-git-send-email-s.nawrocki@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.7.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Often there is a need for disabling a set of regulators in order opposite
+to the enable order. Currently the function regulator_bulk_disable() walks
+list of regulators in same order as regulator_bulk_enable(). This may cause
+trouble, especially for devices with mixed analogue and digital circuits.
+So reverse the disabling sequence of regulator_bulk_disable().
+While at it, also correct the comment.
 
---=-N/OoYX608kwOf2cVw6IN
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Steve Glendinning <steve.glendinning@smsc.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Timur Tabi <timur@freescale.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+The alternatives to directly modifying regulator_bulk_disable() could be:
 
-On Tue, 2012-01-24 at 20:57 +0200, Carlos Chinea wrote:
-> > > Several people have shown interest for this to be integrated in the
-> > > kernel to help development.The framework is already in use in Nokia
-> > > products like N9.
-> >=20
-> > We (ST-Ericsson) also use this framework and we have a driver
-> > for it in the works and submitted to the list at one time I think.
-> > I am sorry if I have not ACK:ed all patches but I have my ack on
-> > the big one.
-> >=20
-> > That said I suspect it mightn't have been pulled because
-> > Torvalds cannot verify who you are, and/or that there is no signed
-> > tag on it? GPG keys are getting mandatory, though it's sad if it's
-> > becoming a barrier to entry.
-> >=20
->=20
-> There is a signed tag (hsi_for_3.3), but said it so is true that my key
-> was signed only by one person. Today I've managed to meet Artem
-> Bityutskiy and he has now also signed the key. However, It is my
-> understanding that's not enough :(
+ - re-implement it in modules that need the order reversed; it is not
+   really helpful in practice since such code would have to be repeated
+   in multiple modules;
 
-You may try to approach Pekka Enberg <penberg@kernel.org>
+ - create new function, e.g. regulator_bulk_disable_reversed() with the
+   order reversed - not sure if it is not an overkill though;
+---
+ drivers/regulator/core.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
---=20
-
-Best Regards,
-Artem Bityutskiy
-
---=-N/OoYX608kwOf2cVw6IN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPH+j+AAoJECmIfjd9wqK0qpYQAKcKUQEPEhp6VMBYnlbp+k6w
-Zlg2fmGO7j0UQiwwAo/0DpLJy1WTMvI/etHm+BGjYArbVP+yo+URDnOTdf4ve72U
-D7RsGqplqWxARh7waO5Pz9C8HFkpqC1WYOMX+nOShlTEZ/bLsYCQ7Kzgk/LsNZE2
-CrM7C1hs51Ku4Xa/0ZqsD5ZGI5yybgGzg9I/6kkmMaeFwV+oy5rEKYfVPKoUH+fn
-nIf0712xoK0xTidf6ctX/UvwcqwkBWwsDUy/XrSfbs0qeUhBrDtFqN7F9lSZaY5w
-f28oUlsEf3P7Ynintyr9XMVMWCzJfTK6h1kuoanukj3AVpN8KLwhv2rz5fFhFHpW
-UHTY/N/yeJPX+WIeqXb8nZw4/Gi1+QwQ0UxSnoN9aj8AKmsT+XkQ//jhd1YHsFva
-/IY2hi1y1XCpuLrkVISn7x0HZzuMjHo71+s3FNPGtPXcSQa1XF8CWgLPtzqa5bbG
-TrVe5Dy2Il7Ul8u3mULjm57NyJnfmjWYXVtqEAFh0+rSJwaXQFdiv1G4b3bPQWn3
-4b84dCzOKnk1kNUBLEa5bnc7MGmICSIyyiY3nK8xOomNlN/KgGdoWlP4cVrSbsI9
-BL9SoQ2PyLkwAUctZ9UzaOrExTlGxYgoR9qU/xqpHCMJ8FJSxnx2LE3/r8Z1C+yi
-GQdwPSjLzEzIn0CsNdVR
-=Nhle
------END PGP SIGNATURE-----
-
---=-N/OoYX608kwOf2cVw6IN--
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index e9a83f8..67db4a6 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2463,8 +2463,8 @@ EXPORT_SYMBOL_GPL(regulator_bulk_enable);
+  * @return         0 on success, an errno on failure
+  *
+  * This convenience API allows consumers to disable multiple regulator
+- * clients in a single API call.  If any consumers cannot be enabled
+- * then any others that were disabled will be disabled again prior to
++ * clients in a single API call.  If any consumers cannot be disabled
++ * then any others that were disabled will be enabled again prior to
+  * return.
+  */
+ int regulator_bulk_disable(int num_consumers,
+@@ -2473,7 +2473,7 @@ int regulator_bulk_disable(int num_consumers,
+ 	int i;
+ 	int ret;
+ 
+-	for (i = 0; i < num_consumers; i++) {
++	for (i = num_consumers - 1; i >= 0; --i) {
+ 		ret = regulator_disable(consumers[i].consumer);
+ 		if (ret != 0)
+ 			goto err;
+@@ -2483,7 +2483,7 @@ int regulator_bulk_disable(int num_consumers,
+ 
+ err:
+ 	pr_err("Failed to disable %s: %d\n", consumers[i].supply, ret);
+-	for (--i; i >= 0; --i)
++	for (++i; i < num_consumers; ++i)
+ 		regulator_enable(consumers[i].consumer);
+ 
+ 	return ret;
+-- 
+1.7.8.3
 
