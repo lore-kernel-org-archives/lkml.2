@@ -1,207 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab2AYBuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 20:50:40 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62806 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab2AYBuh (ORCPT
+	id S1755706Ab2AYBvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 20:51:23 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:51578 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755570Ab2AYBvU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 20:50:37 -0500
-Message-ID: <4F1F5FE0.9090901@gmail.com>
-Date: Tue, 24 Jan 2012 19:50:24 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Tue, 24 Jan 2012 20:51:20 -0500
+X-WSS-ID: 0LYBZTD-0A-3R4-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Linus Walleij" <linus.walleij@linaro.org>
+cc: "shreshthakumar.sahu@stericsson.com" 
+	<shreshthakumar.sahu@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "Lars-Peter Clausen" <lars@metafoo.de>
+Date: Tue, 24 Jan 2012 17:51:07 -0800
+Subject: [PATCH v2 2/2] leds-lm3530: replace 'pltfm' with 'pdata'
+Thread-Topic: [PATCH v2 2/2] leds-lm3530: replace 'pltfm' with 'pdata'
+Thread-Index: AczbA84Vcxz76DzXTj6x/xCe5jub9w==
+Message-ID: <B567DBAB974C0544994013492B949F8E3812CD3E38@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC 1/2] irq_domain: Create common xlate functions that device
- drivers can use
-References: <1327450719-25590-1-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1327450719-25590-1-git-send-email-grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 6301BF871LS9908656-02-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use 'pdata' rather than 'pltfm' in lm3530_init_registers().
+
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/leds/leds-lm3530.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
+index 7005a5f..a7f24f7 100644
+--- a/drivers/leds/leds-lm3530.c
++++ b/drivers/leds/leds-lm3530.c
+@@ -153,11 +153,11 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 	u8 als_imp_sel = 0;
+ 	u8 brightness;
+ 	u8 reg_val[LM3530_REG_MAX];
+-	struct lm3530_platform_data *pltfm = drvdata->pdata;
++	struct lm3530_platform_data *pdata = drvdata->pdata;
+ 	struct i2c_client *client = drvdata->client;
+ 
+-	gen_config = (pltfm->brt_ramp_law << LM3530_RAMP_LAW_SHIFT) |
+-			((pltfm->max_current & 7) << LM3530_MAX_CURR_SHIFT);
++	gen_config = (pdata->brt_ramp_law << LM3530_RAMP_LAW_SHIFT) |
++			((pdata->max_current & 7) << LM3530_MAX_CURR_SHIFT);
+ 
+ 	if (drvdata->mode == LM3530_BL_MODE_MANUAL ||
+ 	    drvdata->mode == LM3530_BL_MODE_ALS)
+@@ -165,27 +165,27 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 
+ 	if (drvdata->mode == LM3530_BL_MODE_ALS) {
+ 		als_config =
+-			(pltfm->als_avrg_time << LM3530_ALS_AVG_TIME_SHIFT) |
++			(pdata->als_avrg_time << LM3530_ALS_AVG_TIME_SHIFT) |
+ 			(LM3530_ENABLE_ALS) |
+-			(pltfm->als_input_mode << LM3530_ALS_SEL_SHIFT);
++			(pdata->als_input_mode << LM3530_ALS_SEL_SHIFT);
+ 
+ 		als_imp_sel =
+-			(pltfm->als1_resistor_sel << LM3530_ALS1_IMP_SHIFT) |
+-			(pltfm->als2_resistor_sel << LM3530_ALS2_IMP_SHIFT);
++			(pdata->als1_resistor_sel << LM3530_ALS1_IMP_SHIFT) |
++			(pdata->als2_resistor_sel << LM3530_ALS2_IMP_SHIFT);
+ 	}
+ 
+ 	if (drvdata->mode == LM3530_BL_MODE_PWM)
+ 		gen_config |= (LM3530_ENABLE_PWM) |
+-				(pltfm->pwm_pol_hi << LM3530_PWM_POL_SHIFT) |
++				(pdata->pwm_pol_hi << LM3530_PWM_POL_SHIFT) |
+ 				(LM3530_ENABLE_PWM_SIMPLE);
+ 
+-	brt_ramp = (pltfm->brt_ramp_fall << LM3530_BRT_RAMP_FALL_SHIFT) |
+-			(pltfm->brt_ramp_rise << LM3530_BRT_RAMP_RISE_SHIFT);
++	brt_ramp = (pdata->brt_ramp_fall << LM3530_BRT_RAMP_FALL_SHIFT) |
++			(pdata->brt_ramp_rise << LM3530_BRT_RAMP_RISE_SHIFT);
+ 
+ 	if (drvdata->brightness)
+ 		brightness = drvdata->brightness;
+ 	else
+-		brightness = drvdata->brightness = pltfm->brt_val;
++		brightness = drvdata->brightness = pdata->brt_val;
+ 
+ 	if (brightness > drvdata->led_dev.max_brightness)
+ 		brightness = drvdata->led_dev.max_brightness;
+-- 
+1.7.4.1
 
 
-On 01/24/2012 06:18 PM, Grant Likely wrote:
-> Rather than having each interrupt controller driver creating its own barely
-> unique .xlate function for irq_domain, create a library of translators which
-> any driver can use directly.
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
-> 
-> This builds on top of my irq_domain series and will be included with it when
-> I post v3.  Rob, does this serve your needs for generic irq controller DT
-> support?
-> 
+Best Regards,
+Milo (Woogyom) Kim
+Texas Instruments Incorporated
 
-Yes, but comments below.
 
-> g.
-> 
->  include/linux/irqdomain.h |   15 ++++++++++
->  kernel/irq/irqdomain.c    |   69 +++++++++++++++++++++++++++++++++++++++-----
->  2 files changed, 76 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> index e7379a3..5e497a0 100644
-> --- a/include/linux/irqdomain.h
-> +++ b/include/linux/irqdomain.h
-> @@ -110,6 +110,9 @@ struct irq_domain {
->  	void *host_data;
->  	irq_hw_number_t inval_irq;
->  
-> +	/* Data for common irq xlate functions */
-> +	unsigned int xlate_type;
-> +
-
-How does this get set? Do we want interrupt controllers messing with the
-domain struct directly long term?
-
->  	/* Optional device node pointer */
->  	struct device_node *of_node;
->  };
-> @@ -163,6 +166,18 @@ extern unsigned int irq_linear_revmap(struct irq_domain *host,
->  				      irq_hw_number_t hwirq);
->  
->  extern struct irq_domain_ops irq_domain_simple_ops;
-> +
-> +/* stock xlate functions */
-> +int irq_domain_xlate_onecell(struct irq_domain *d, struct device_node *ctrlr,
-> +			const u32 *intspec, unsigned int intsize,
-> +			irq_hw_number_t *out_hwirq, unsigned int *out_type);
-> +int irq_domain_xlate_twocell(struct irq_domain *d, struct device_node *ctrlr,
-> +			const u32 *intspec, unsigned int intsize,
-> +			irq_hw_number_t *out_hwirq, unsigned int *out_type);
-> +int irq_domain_xlate_onetwocell(struct irq_domain *d, struct device_node *ctrlr,
-> +			const u32 *intspec, unsigned int intsize,
-> +			irq_hw_number_t *out_hwirq, unsigned int *out_type);
-> +
->  #if defined(CONFIG_OF_IRQ)
->  extern void irq_domain_generate_simple(const struct of_device_id *match,
->  					u64 phys_base, unsigned int irq_start);
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index def8e7b..df80205 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -53,6 +53,7 @@ static struct irq_domain *irq_domain_alloc(struct device_node *of_node,
->  	domain->ops = ops;
->  	domain->host_data = host_data;
->  	domain->of_node = of_node_get(of_node);
-> +	domain->xlate_type = IRQ_TYPE_NONE;
->  
->  	if (domain->ops->match == NULL)
->  		domain->ops->match = default_irq_domain_match;
-> @@ -690,25 +691,77 @@ int irq_domain_simple_map(struct irq_domain *d, unsigned int irq,
->  	return 0;
->  }
->  
-> -int irq_domain_simple_xlate(struct irq_domain *d,
-> -			    struct device_node *controller,
-> -			    const u32 *intspec, unsigned int intsize,
-> -			    unsigned long *out_hwirq, unsigned int *out_type)
-> +/**
-> + * irq_domain_xlate_onecell() - Generic xlate for direct one cell bindings
-> + *
-> + * Device Tree IRQ specifier translation function which works with one cell
-> + * bindings where the cell value maps directly to the hwirq number.
-> + */
-> +int irq_domain_xlate_onecell(struct irq_domain *d, struct device_node *ctrlr,
-> +			     const u32 *intspec, unsigned int intsize,
-> +			     unsigned long *out_hwirq, unsigned int *out_type)
-> +{
-> +	if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
-> +		 ctrlr->full_name, intsize))
-> +		return -EINVAL;
-> +	*out_hwirq = intspec[0];
-> +	*out_type = d->xlate_type;
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(irq_domain_xlate_onecell);
-> +
-> +/**
-> + * irq_domain_xlate_twocell() - Generic xlate for direct two cell bindings
-> + *
-> + * Device Tree IRQ specifier translation function which works with two cell
-> + * bindings where the cell values map directly to the hwirq number
-> + * and linux irq flags.
-> + */
-> +int irq_domain_xlate_twocell(struct irq_domain *d, struct device_node *ctrlr,
-> +			const u32 *intspec, unsigned int intsize,
-> +			irq_hw_number_t *out_hwirq, unsigned int *out_type)
->  {
-> -	if (d->of_node != controller)
-> +	if (WARN(intsize < 2, "Bad intspec for %s: intsize=%i < 2\n",
-> +		 ctrlr->full_name, intsize))
-> +		return -EINVAL;
-> +	if (intsize < 2)
-
-You've already checked this...
-
->  		return -EINVAL;
-> -	if (intsize < 1)
-> +	*out_hwirq = intspec[0];
-> +	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(irq_domain_xlate_twocell);
-> +
-> +/**
-> + * irq_domain_xlate_onetwocell() - Generic xlate for one or two cell bindings
-> + *
-> + * Device Tree IRQ specifier translation function which works with either one
-> + * or two cell bindings where the cell values map directly to the hwirq number
-> + * and linux irq flags.
-> + *
-> + * Note: don't use this function unless your interrupt controller explicitly
-> + * supports both one and two cell bindings.  For the majority of controllers
-> + * the _onecell() or _twocell() variants above should be used.
-
-This comment is confusing since you turn around and use it for simple
-ops below.
-
-> + */
-> +int irq_domain_xlate_onetwocell(struct irq_domain *d,
-> +				struct device_node *ctrlr,
-> +				const u32 *intspec, unsigned int intsize,
-> +				unsigned long *out_hwirq, unsigned int *out_type)
-> +{
-> +	if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
-> +		 ctrlr->full_name, intsize))
->  		return -EINVAL;
-
-Isn't this check redundant with the check in of_irq_map_raw:
-
-	if (ointsize != intsize)
-		return -EINVAL;
-
-The only diff in these functions is really checking the size. So I
-really don't think we need 3 versions if that can be factored out where
-you know value of #interrupt-cells.
-
-Rob
-
->  	*out_hwirq = intspec[0];
-> -	*out_type = IRQ_TYPE_NONE;
-> +	*out_type = d->xlate_type;
->  	if (intsize > 1)
->  		*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
->  	return 0;
->  }
-> +EXPORT_SYMBOL_GPL(irq_domain_xlate_onetwocell);
->  
->  struct irq_domain_ops irq_domain_simple_ops = {
->  	.map = irq_domain_simple_map,
-> -	.xlate = irq_domain_simple_xlate,
-> +	.xlate = irq_domain_xlate_onetwocell,
->  };
->  EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
->  
