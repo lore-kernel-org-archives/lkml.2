@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab2AYPyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:54:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43086 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755075Ab2AYPyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:54:22 -0500
-Date: Wed, 25 Jan 2012 07:52:58 -0800
-From: Greg KH <gregkh@suse.de>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH v4] serial/efm32: add new driver
-Message-ID: <20120125155258.GB3608@suse.de>
-References: <20120124220522.GA10590@kroah.com>
- <1327478704-4233-1-git-send-email-u.kleine-koenig@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1327478704-4233-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755109Ab2AYPzj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:55:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39157 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab2AYPzi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 10:55:38 -0500
+Subject: Re: [PATCH v2] sched: Accelerate "pick_next_entity" under special
+ condition
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4F14E54E.80904@linux.vnet.ibm.com>
+References: <4F13EFBE.1030002@linux.vnet.ibm.com>
+	 <1326707503.2442.219.camel@twins>	<4F14DEAE.60702@linux.vnet.ibm.com>
+	 <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com>
+	 <4F14E54E.80904@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Jan 2012 16:55:34 +0100
+Message-ID: <1327506934.2614.87.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 09:05:04AM +0100, Uwe Kleine-König wrote:
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
-> changes since v3 (id:1326127447-20284-1-git-send-email-u.kleine-koenig@pengutronix.de)
->  - increase number of ports to support UART additionally to USART ports
->  - implement choosing route location
->  - implement setting stopbit config
->    (before one stop bit was configured and CSTOPB was set unconditionally which
->    is wrong. Spotted by Russell King.)
->  - implement break, sysrq and overflow detection
->  - drop unrelated changing to make patch apply on v3.3-rc1
+On Tue, 2012-01-17 at 11:04 +0800, Michael Wang wrote:
 > 
-> Hello Greg,
+> > Then what if condition 1 is true now?
 > 
-> On Tue, Jan 24, 2012 at 02:05:22PM -0800, Greg KH wrote:
-> > On Mon, Jan 09, 2012 at 05:44:07PM +0100, Uwe Kleine-König wrote:
-> > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > ---
-> > > Hello,
-> > > 
-> > > changes since v2:
-> > > - use {read,write}l_relaxed
-> > > - rename driver to efm32-uart as USARTs and UARTs can be handled both
-> > >   with it
-> > > - disable TX in .stop_tx (which needs some changes related to
-> > >   USARTn_IF_TXC)
-> > > 
-> > > Best regards
-> > > Uwe
-> > > 
-> > >  .../devicetree/bindings/tty/serial/efm32-uart.txt  |   14 +
-> > >  arch/arm/boot/dts/efm32gg-dk3750.dts               |    2 +-
-> > >  arch/arm/mach-efm32/devices/pdev-efm32-usart.c     |    6 +-
-> > 
-> > This file isn't in 3.3-rc1, so I can't apply this patch :(
-> > 
-> > What tree is it supposed to be against?
-> Sorry, I messed this up, it bases on my private development tree. These
-> two changes should go independant of the driver patch via an ARM tree
-> (if at all).
+> We can see in original code, even condition 1 is true, we
+> still will use value3 if condition3 is true, like this:
 > 
-> I added a few more features in the meantime, so the options are:
->  - take v3 simply droping the hunks changing
->    arch/arm/boot/dts/efm32gg-dk3750.dts and
->    arch/arm/mach-efm32/devices/pdev-efm32-usart.c
->  - take this for 3.3
->  - take this for 3.4
+> original:
 > 
-> My preference would be of course the second option, but for me the other two
-> would be OK if you don't like taking the update that late, too.
+> condition1      condition3      result
+> true            true            value3
+> true            false           value1
+> 
+> That means if condition3 is true, we don't care whether
+> condition1 is true or not because we will finally use value3.
 
-I was going to take this for the 3.4 merge, adding it to my tree now.
-It should be ok to drop those hunks, right?
+Right, so from the original 8 possible states we used to evaluate 3*8 =
+24 conditionals. The new code will reduce this to 1*4 + 2*2 + 2*3 = 14.
 
-greg k-h
+Now I guess the question is if it matters for the modal or average
+state.
+
+I've applied the patch since it can't be worse, but I've no idea if it
+matters or not in practice.
+
