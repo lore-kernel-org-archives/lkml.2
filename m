@@ -1,95 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470Ab2AYWeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 17:34:04 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:15161 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab2AYWeC (ORCPT
+	id S1751539Ab2AYWgZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 17:36:25 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:57693 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750806Ab2AYWgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 17:34:02 -0500
-X-IronPort-AV: E=Sophos;i="4.71,570,1320624000"; 
-   d="scan'208";a="10292513"
-Message-ID: <1327530840.856.9.camel@dagon.hellion.org.uk>
-Subject: Re: [Xen-devel] Regressions in v3.3-rc1 introduced by
- "xen/granttable: Grant tables V2 implementation"
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Paul Durrant <Paul.Durrant@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "ANNIE LI (annie.li@oracle.com)" <annie.li@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Jan 2012 22:34:00 +0000
-In-Reply-To: <20120125205043.GB21284@phenom.dumpdata.com>
-References: <20120125044949.GB29759@phenom.dumpdata.com>
-	 <20120125051253.GA15501@phenom.dumpdata.com>
-	 <1327485333.24561.232.camel@zakaz.uk.xensource.com>
-	 <291EDFCB1E9E224A99088639C4762022C80E2F0F23@LONPMAILBOX01.citrite.net>
-	 <20120125205043.GB21284@phenom.dumpdata.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jan 2012 17:36:23 -0500
+X-Sasl-enc: gE3IP/A3vOrnYil1KyaeFAlgV58IIc4WFEZOP5o+yUJY 1327530981
+Date: Wed, 25 Jan 2012 14:34:34 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.32.55
+Message-ID: <20120125223434.GA31647@kroah.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-25 at 20:50 +0000, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jan 25, 2012 at 03:23:28PM +0000, Paul Durrant wrote:
-> > > -----Original Message-----
-> > > From: Paul Durrant
-> > > Sent: 25 January 2012 07:17
-> > > To: Ian Campbell; Konrad Rzeszutek Wilk
-> > > Cc: annie.li@oracle.com; xen-devel@lists.xensource.com; linux-
-> > > kernel@vger.kernel.org
-> > > Subject: RE: [Xen-devel] Regressions in v3.3-rc1 introduced by
-> > > "xen/granttable: Grant tables V2 implementation"
-> > > 
-> > > > -----Original Message-----
-> > > >
-> > > > On HVM for gnttab_shared we make an add_to_physmap call with
-> > > > XENMAPSPACE_grant_table (in gnttab_map). I don't see any support call
-> > > > to do something similar for the status array though and I don't see a
-> > > > XENMAPSPACE_* specifically for that case either in the hypervisor either.
-> > > >
-> > > 
-> > > There is no map-space for the status pages. To map them you use the
-> > > standard map space but OR a bit (top bit IIRC) into in the idx. It's a bit icky,
-> > > but that's how it is.
-> > > 
-> > 
-> > I fixed a bug in xen-unstable a few weeks back that prevented
-> mapping of the status frames so I guess the bug is possibly due to
-> trying to use gnttab 2 on 4.1, where this bug would hit, but failing
-> to check the return code from the status mapping hypercall?
-> 
-> changeset:   24428:5b4b7e565ab8
-> user:        Paul Durrant <paul.durrant@citrix.com>
-> date:        Sun Dec 18 14:39:14 2011 +0000
-> summary:     Fix grant_table v2 status mapping.
-> 
-> changeset:   24427:931bf1105730
-> user:        Paul Durrant <paul.durrant@citrix.com>
-> date:        Sun Dec 18 14:38:32 2011 +0000
-> summary:     Allow VMs to query their own grant table version.
-> 
-> 
-> Looks like c/s 24427 needs to be in the hypervior. Hm, but that exists
-> in 4.1 too as 23204. Will try back-porting cs 24428 in Xen 4.1 and seeing
-> if that does it.
 
-I think this bug is a red herring -- the current code in Linux will
-never get anywhere near triggering it because it never even tries to map
-the status pages into the p2m.
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-IOW the call to XENMEM_add_to_physmap in
-drivers/xen/grant-table.c:gnttab_map() needs to be done for the status
-pages too or there is no chance of v2 grant tables working for HVM
-guests.
+I'm announcing the release of the 2.6.32.55 kernel.
 
-I think the best bet is to disable v2 for HVM guests for now (something
-like your second patch) and implement it for 3.4.
+All users of the 2.6.32 kernel series must upgrade.
 
-Ian.
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-2.6.32.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsh=
+ortlog;h=3Drefs/heads/linux-2.6.32.y
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                            |    2 -
+ arch/score/kernel/entry.S           |    2 -
+ arch/x86/mm/mmap.c                  |    4 +--
+ block/scsi_ioctl.c                  |    7 +++++
+ drivers/block/cciss.c               |    6 ++--
+ drivers/block/ub.c                  |    3 --
+ drivers/block/virtio_blk.c          |    4 +--
+ drivers/cdrom/cdrom.c               |    3 --
+ drivers/hid/hid-core.c              |    2 -
+ drivers/i2c/busses/i2c-ali1535.c    |   11 +++++----
+ drivers/i2c/busses/i2c-nforce2.c    |    2 -
+ drivers/i2c/busses/i2c-sis5595.c    |    4 +--
+ drivers/i2c/busses/i2c-sis630.c     |    6 ++++
+ drivers/i2c/busses/i2c-viapro.c     |    7 ++++-
+ drivers/ide/ide-floppy_ioctl.c      |    3 --
+ drivers/media/video/v4l2-ioctl.c    |    6 ++++
+ drivers/mtd/ubi/cdev.c              |    3 ++
+ drivers/mtd/ubi/wl.c                |    7 +++--
+ drivers/pci/msi.c                   |   10 ++++++++
+ drivers/pnp/quirks.c                |   42 +++++++++++++++++++++++++++++++=
++++
+ drivers/scsi/sd.c                   |    2 -
+ drivers/scsi/sym53c8xx_2/sym_glue.c |    4 +++
+ drivers/usb/class/cdc-wdm.c         |    4 +--
+ drivers/xen/xenbus/xenbus_xs.c      |    6 ++++
+ fs/ext4/super.c                     |    7 ++---
+ fs/nfsd/export.c                    |    2 -
+ fs/proc/uptime.c                    |    9 +++++--
+ include/linux/blkdev.h              |    2 +
+ include/linux/kernel.h              |   44 +++++++++++++++++++++++++++++++=
++++++
+ include/linux/pci_regs.h            |    2 -
+ include/linux/sunrpc/svcsock.h      |    2 -
+ include/linux/videodev2.h           |    1=20
+ include/xen/interface/io/xs_wire.h  |    3 ++
+ kernel/kprobes.c                    |    2 -
+ net/sunrpc/svc.c                    |   10 +++-----
+ net/sunrpc/svc_xprt.c               |   11 ++++++++-
+ security/integrity/ima/ima_api.c    |    4 +--
+ security/integrity/ima/ima_queue.c  |    1=20
+ sound/pci/hda/hda_local.h           |    7 ++++-
+ sound/pci/hda/hda_proc.c            |    2 +
+ sound/pci/hda/patch_sigmatel.c      |    2 -
+ sound/pci/ice1712/amp.c             |    7 ++++-
+ sound/usb/usx2y/usb_stream.c        |    6 +---
+ 43 files changed, 215 insertions(+), 59 deletions(-)
+
+Alex Williamson (1):
+      PCI: Fix PCI_EXP_TYPE_RC_EC value
+
+Ananth N Mavinakayanahalli (1):
+      kprobes: initialize before using a hlist
+
+Artem Bityutskiy (1):
+      UBI: fix use-after-free on error path
+
+Bjorn Helgaas (1):
+      PNP: work around Dell 1536/1546 BIOS MMCONFIG bug that breaks USB
+
+Chase Douglas (1):
+      HID: bump maximum global item tag report size to 96 bytes
+
+Dan Carpenter (1):
+      V4L/DVB: v4l2-ioctl: integer overflow in video_usercopy()
+
+Dan Rosenberg (1):
+      score: fix off-by-one index into syscall table
+
+David Henningsson (1):
+      ALSA: HDA: Fix internal microphone on Dell Studio 16 XPS 1645
+
+David Sterba (1):
+      USB: cdc-wdm: fix misuse of logical operation in place of bitop
+
+Eric W. Biederman (1):
+      PCI: msi: Disable msi interrupts when we initialize a pci device
+
+Greg Kroah-Hartman (1):
+      Linux 2.6.32.55
+
+Ian Campbell (1):
+      xen/xenbus: Reject replies with payload > XENSTORE_PAYLOAD_MAX.
+
+J. Bruce Fields (2):
+      svcrpc: fix double-free on shutdown of nfsd after changing pool mode
+      svcrpc: destroy server sockets all at once
+
+Jean Delvare (1):
+      i2c: Fix error value returned by several bus drivers
+
+Joe Perches (1):
+      kernel.h: add printk_ratelimited and pr_<level>_rl
+
+Karsten Wiese (1):
+      ALSA: snd-usb-us122l: Delete calls to preempt_disable
+
+Ludwig Nussel (1):
+      x86: Fix mmap random address range
+
+Martin Schwidefsky (1):
+      fix cputime overflow in uptime_proc_show
+
+Paolo Bonzini (1):
+      block: add and use scsi_blk_cmd_ioctl
+
+Pavel Hofman (1):
+      ALSA: ice1724 - Check for ac97 to avoid kernel oops
+
+Richard Weinberger (1):
+      UBI: fix nameless volumes handling
+
+Robert Lukassen (1):
+      USB: Fix 'bad dma' problem on WDM device disconnect
+
+Roberto Sassu (1):
+      ima: free duplicate measurement memory
+
+Sasha Levin (1):
+      nfsd: Fix oops when parsing a 0 length export
+
+Stratos Psomadakis (1):
+      sym53c8xx: Fix NULL pointer dereference in slave_destroy
+
+Takashi Iwai (1):
+      ALSA: hda - Return the error from get_wcaps_type() for invalid NIDs
+
+Xi Wang (1):
+      ext4: fix undefined behavior in ext4_fill_flex_info()
 
 
+--Nq2Wo0NMKNjxTN9z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPIIN6AAoJEDjbvchgkmk+NuQQAKibWkLWexJ69e5/CCpOfI2t
+NY3IzwdBeL9pmhtmkKWKO+sHOm1x7LBek+PNHD4yW7DDKl8Yv5yk11uZFprud3pR
+miOJpw92Ep+BKqocpaowylKuTsqP7nwImNqOLfuh4jlY2mpt6vze+oBIKBgKyOSj
+AWIyP/Ncbr9o8uWRbFxe00KukmvO2NcIBw784WQfVk+/zCxvEo0QqW0MUa44cPRp
+FS+TgbuzBCcTB01/RvhzoHTd0zgE6lECCslYZCKxQfEWvDv7MjMrE116LLI/VYPf
+H0yu7atmVblx0Gp+C2CzkxZxHhN2udVYzNyW4wAc7xdVkkNnxX4kWBIfMyOTvg9/
+kZaHXq7glvcYbmv83JIN1YIecsyLJbCKyhXNiwvk1XxDkdZHrP/ap5Eypg4LZSX9
+t4q9vkA4MgM4wYi+ESQ9MEcRyLKUAqTxmMs93v5Fxx8FP+U+IOvCWRm7R1816XFr
+yxKFRY6D804cNGz6EzVL9iWo+Bnu/OO9AQVRWPwBJ+T2K9pFisPlHN8R7aJ5cq/C
+y89rtb70EXcCUCAA6vzFZk5bZ8FiOPCgg/GmyfPuoR3OijTBHKmP3tiq8pkARsd2
+qr7nN9ZsIOhZ7LzhDxbHxoFTVoVQtsyVY9UyMPUYGTsKodL2SsOHLhuhvW/uts+n
+2GYY+W9EpA0mJPXXUyet
+=CBUg
+-----END PGP SIGNATURE-----
+
+--Nq2Wo0NMKNjxTN9z--
