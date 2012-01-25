@@ -1,238 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab2AYKw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 05:52:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52812 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab2AYKwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 05:52:54 -0500
-From: Ludwig Nussel <ludwig.nussel@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net> (maintainer:DOCUMENTATION),
-        Greg Kroah-Hartman <gregkh@suse.de> (supporter:DRIVER CORE, KOBJ...
-	,commit_signer:2/4=50%),
-        Alessandro Rubini <rubini@gnudd.com> (commit_signer:1/4=25%),
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com> (commit_signer:1/4=25%),
-        Akinobu Mita <akinobu.mita@gmail.com> (commit_signer:1/4=25%),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH] debugfs: add mode, uid and gid options
-Date: Wed, 25 Jan 2012 11:52:28 +0100
-Message-Id: <1327488751-6022-1-git-send-email-ludwig.nussel@suse.de>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <20120124235734.GA28585@kroah.com>
-References: <20120124235734.GA28585@kroah.com>
+	id S1752168Ab2AYK7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 05:59:20 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14842 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2AYK7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 05:59:19 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 25 Jan 2012 02:59:18 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: lrg@ti.com, broonie@opensource.wolfsonmicro.com, jedu@slimlogic.co.uk,
+        sameo@linux.intel.com, gg@slimlogic.co.uk
+Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        ldewangan@nvidia.com
+Subject: [PATCH V2] regulator: tps65910: Sleep control through external inputs
+Date: Wed, 25 Jan 2012 16:27:48 +0530
+Message-Id: <1327489068-9460-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cautious admins may want to restrict access to debugfs. Currently a
-manual chown/chmod e.g. in an init script is needed to achieve that.
-Distributions that want to make the mount options configurable need
-to add extra config files. By allowing to set the root inode's uid,
-gid and mode via mount options no such hacks are needed anymore.
-Instead configuration becomes straight forward via fstab.
+Add support for sleep controls of different rails through
+external inputs EN1, EN2 or EN3.
+Each regulator's output will be active when its external
+input is high and turns to OFF/Low power mode when its
+external input is low.
+The configuration parameters for sleep control is provided through
+board specific platform data.
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- Documentation/filesystems/debugfs.txt |    5 +-
- fs/debugfs/inode.c                    |  149 ++++++++++++++++++++++++++++++++-
- 2 files changed, 152 insertions(+), 2 deletions(-)
+Changes from patch V1:
+- Put checks to make sure multiple external controls are not set.
+- More details in the function shutdown.
+- Remove LOW_POWER selection through platform data and move this to
+  set mode.
 
-compared to previous patch:
-- adjug debugfs_show_options to new api
-- mention mount options in docu
+ drivers/regulator/tps65910-regulator.c |  229 ++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65910.h           |    8 +
+ 2 files changed, 237 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/filesystems/debugfs.txt b/Documentation/filesystems/debugfs.txt
-index 6872c91..4e25758 100644
---- a/Documentation/filesystems/debugfs.txt
-+++ b/Documentation/filesystems/debugfs.txt
-@@ -14,7 +14,10 @@ Debugfs is typically mounted with a command like:
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index 1d13cf9..75ed6bd 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -26,6 +26,9 @@
+ #include <linux/mfd/tps65910.h>
  
-     mount -t debugfs none /sys/kernel/debug
+ #define TPS65910_SUPPLY_STATE_ENABLED	0x1
++#define EXT_SLEEP_CONTROL (TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1 |	\
++			TPS65910_SLEEP_CONTROL_EXT_INPUT_EN2 |		\
++			TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3)
  
--(Or an equivalent /etc/fstab line). 
-+(Or an equivalent /etc/fstab line).
-+The debugfs root directory is accessible by anyone by default. To
-+restrict access to the tree the "uid", "gid" and "mode" mount
-+options can be used.
+ /* supported VIO voltages in milivolts */
+ static const u16 VIO_VSEL_table[] = {
+@@ -252,6 +255,39 @@ static struct tps_info tps65911_regs[] = {
+ 	},
+ };
  
- Note that the debugfs API is exported GPL-only to modules.
- 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index 956d5dd..b80bc84 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -23,9 +23,13 @@
- #include <linux/debugfs.h>
- #include <linux/fsnotify.h>
- #include <linux/string.h>
-+#include <linux/seq_file.h>
-+#include <linux/parser.h>
- #include <linux/magic.h>
- #include <linux/slab.h>
- 
-+#define DEBUGFS_DEFAULT_MODE	0755
-+
- static struct vfsmount *debugfs_mount;
- static int debugfs_mount_count;
- static bool debugfs_registered;
-@@ -125,11 +129,154 @@ static inline int debugfs_positive(struct dentry *dentry)
- 	return dentry->d_inode && !d_unhashed(dentry);
- }
- 
-+struct debugfs_mount_opts {
-+	uid_t uid;
-+	gid_t gid;
-+	umode_t mode;
++#define EXT_CONTROL_REG_BITS(id, regs_offs, bits) (((regs_offs) << 8) | (bits))
++static unsigned int tps65910_ext_sleep_control[] = {
++	0,
++	EXT_CONTROL_REG_BITS(VIO,    1, 0),
++	EXT_CONTROL_REG_BITS(VDD1,   1, 1),
++	EXT_CONTROL_REG_BITS(VDD2,   1, 2),
++	EXT_CONTROL_REG_BITS(VDD3,   1, 3),
++	EXT_CONTROL_REG_BITS(VDIG1,  0, 1),
++	EXT_CONTROL_REG_BITS(VDIG2,  0, 2),
++	EXT_CONTROL_REG_BITS(VPLL,   0, 6),
++	EXT_CONTROL_REG_BITS(VDAC,   0, 7),
++	EXT_CONTROL_REG_BITS(VAUX1,  0, 3),
++	EXT_CONTROL_REG_BITS(VAUX2,  0, 4),
++	EXT_CONTROL_REG_BITS(VAUX33, 0, 5),
++	EXT_CONTROL_REG_BITS(VMMC,   0, 0),
 +};
 +
-+enum {
-+	Opt_uid,
-+	Opt_gid,
-+	Opt_mode,
-+	Opt_err
++static unsigned int tps65911_ext_sleep_control[] = {
++	0,
++	EXT_CONTROL_REG_BITS(VIO,     1, 0),
++	EXT_CONTROL_REG_BITS(VDD1,    1, 1),
++	EXT_CONTROL_REG_BITS(VDD2,    1, 2),
++	EXT_CONTROL_REG_BITS(VDDCTRL, 1, 3),
++	EXT_CONTROL_REG_BITS(LDO1,    0, 1),
++	EXT_CONTROL_REG_BITS(LDO2,    0, 2),
++	EXT_CONTROL_REG_BITS(LDO3,    0, 7),
++	EXT_CONTROL_REG_BITS(LDO4,    0, 6),
++	EXT_CONTROL_REG_BITS(LDO5,    0, 3),
++	EXT_CONTROL_REG_BITS(LDO6,    0, 0),
++	EXT_CONTROL_REG_BITS(LDO7,    0, 5),
++	EXT_CONTROL_REG_BITS(LDO8,    0, 4),
 +};
 +
-+static const match_table_t tokens = {
-+	{Opt_uid, "uid=%u"},
-+	{Opt_gid, "gid=%u"},
-+	{Opt_mode, "mode=%o"},
-+	{Opt_err, NULL}
-+};
+ struct tps65910_reg {
+ 	struct regulator_desc *desc;
+ 	struct tps65910 *mfd;
+@@ -261,6 +297,9 @@ struct tps65910_reg {
+ 	int num_regulators;
+ 	int mode;
+ 	int  (*get_ctrl_reg)(int);
++	unsigned int *ext_sleep_control;
++	unsigned int board_ext_control[TPS65910_NUM_REGS];
++	unsigned int regulator_mode[TPS65910_NUM_REGS];
+ };
+ 
+ static inline int tps65910_read(struct tps65910_reg *pmic, u8 reg)
+@@ -450,6 +489,29 @@ static int tps65910_set_mode(struct regulator_dev *dev, unsigned int mode)
+ 	struct tps65910 *mfd = pmic->mfd;
+ 	int reg, value, id = rdev_get_id(dev);
+ 
++	/*
++	 * If regulator is controlled through external control then
++	 * mode can be identified by the input level of EN1/EN2/EN3.
++	 * If it is HIGH then regulators is on, full power.
++	 * If it is LOW then:
++	 *       - the regulator is set off if its corresponding Control
++	 *         bit = 0 in SLEEP_KEEP_XXX_ON.
++	 *       - the regulator is set in low-power mode if its corresponding
++	 *         control bit = 1 in SLEEP_KEEP_XXX_ON register.
++	 */
++	if (pmic->board_ext_control[id]) {
++		u8 regoffs = (pmic->ext_sleep_control[id] >> 8) & 0xFF;
++		u8 bit_pos = (1 << pmic->ext_sleep_control[id] & 0xFF);
++		int ret = 0;
++		if ((mode == REGULATOR_MODE_IDLE) ||
++			(mode == REGULATOR_MODE_STANDBY))
++			ret = tps65910_set_bits(mfd,
++				TPS65910_SLEEP_KEEP_LDO_ON + regoffs, bit_pos);
++		if (!ret)
++			pmic->regulator_mode[id] = mode;
++		return ret;
++	}
 +
-+struct debugfs_fs_info {
-+	struct debugfs_mount_opts mount_opts;
-+};
+ 	reg = pmic->get_ctrl_reg(id);
+ 	if (reg < 0)
+ 		return reg;
+@@ -473,6 +535,14 @@ static unsigned int tps65910_get_mode(struct regulator_dev *dev)
+ 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
+ 	int reg, value, id = rdev_get_id(dev);
+ 
++	/*
++	 * There is no way to know the states of the controls input EN1/E2/EN3
++	 * in device and so returning the last states set on device if
++	 * regulator is configured for externally control.
++	 */
++	if (pmic->board_ext_control[id])
++		return pmic->regulator_mode[id];
 +
-+static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
+ 	reg = pmic->get_ctrl_reg(id);
+ 	if (reg < 0)
+ 		return reg;
+@@ -861,6 +931,121 @@ static struct regulator_ops tps65911_ops = {
+ 	.list_voltage		= tps65911_list_voltage,
+ };
+ 
++static int tps65910_set_ext_sleep_config(struct tps65910_reg *pmic,
++		int id, int ext_sleep_config)
 +{
-+	substring_t args[MAX_OPT_ARGS];
-+	int option;
-+	int token;
-+	char *p;
++	struct tps65910 *mfd = pmic->mfd;
++	u8 regoffs = (pmic->ext_sleep_control[id] >> 8) & 0xFF;
++	u8 bit_pos = (1 << pmic->ext_sleep_control[id] & 0xFF);
++	int ret;
 +
-+	opts->mode = DEBUGFS_DEFAULT_MODE;
-+
-+	while ((p = strsep(&data, ",")) != NULL) {
-+		if (!*p)
-+			continue;
-+
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case Opt_uid:
-+			if (match_int(&args[0], &option))
-+				return -EINVAL;
-+			opts->uid = option;
-+			break;
-+		case Opt_gid:
-+			if (match_octal(&args[0], &option))
-+				return -EINVAL;
-+			opts->gid = option;
-+			break;
-+		case Opt_mode:
-+			if (match_octal(&args[0], &option))
-+				return -EINVAL;
-+			opts->mode = option & S_IALLUGO;
-+			break;
-+		/*
-+		 * We might like to report bad mount options here;
-+		 * but traditionally debugfs has ignored all mount options
-+		 */
++	/*
++	 * Regulator can not be control from multiple external input EN1, EN2
++	 * and EN3 together.
++	 */
++	if (ext_sleep_config & EXT_SLEEP_CONTROL) {
++		int en_count;
++		en_count = ((ext_sleep_config &
++				TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1) != 0);
++		en_count += ((ext_sleep_config &
++				TPS65910_SLEEP_CONTROL_EXT_INPUT_EN2) != 0);
++		en_count += ((ext_sleep_config &
++				TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3) != 0);
++		if (en_count > 1) {
++			dev_err(mfd->dev,
++				"External sleep control flag is not proper\n");
++			return -EINVAL;
 +		}
 +	}
 +
-+	return 0;
-+}
++	pmic->board_ext_control[id] = ext_sleep_config;
 +
-+static int debugfs_apply_options(struct super_block *sb)
-+{
-+	struct debugfs_fs_info *fsi = sb->s_fs_info;
-+	struct inode *inode = sb->s_root->d_inode;
-+	struct debugfs_mount_opts *opts = &fsi->mount_opts;
-+
-+	inode->i_mode &= ~S_IALLUGO;
-+	inode->i_mode |= opts->mode;
-+
-+	inode->i_uid = opts->uid;
-+	inode->i_gid = opts->gid;
-+
-+	return 0;
-+}
-+
-+static int debugfs_remount(struct super_block *sb, int *flags, char *data)
-+{
-+	int err;
-+	struct debugfs_fs_info *fsi = sb->s_fs_info;
-+
-+	err = debugfs_parse_options(data, &fsi->mount_opts);
-+	if (err)
-+		goto fail;
-+
-+	debugfs_apply_options(sb);
-+
-+fail:
-+	return err;
-+}
-+
-+static int debugfs_show_options(struct seq_file *m, struct dentry *root)
-+{
-+	struct debugfs_fs_info *fsi = root->d_sb->s_fs_info;
-+	struct debugfs_mount_opts *opts = &fsi->mount_opts;
-+
-+	if (opts->uid != 0)
-+		seq_printf(m, ",uid=%u", opts->uid);
-+	if (opts->gid != 0)
-+		seq_printf(m, ",gid=%u", opts->gid);
-+	if (opts->mode != DEBUGFS_DEFAULT_MODE)
-+		seq_printf(m, ",mode=%o", opts->mode);
-+
-+	return 0;
-+}
-+
-+static const struct super_operations debugfs_super_operations = {
-+	.statfs		= simple_statfs,
-+	.remount_fs	= debugfs_remount,
-+	.show_options	= debugfs_show_options,
-+};
-+
- static int debug_fill_super(struct super_block *sb, void *data, int silent)
- {
- 	static struct tree_descr debug_files[] = {{""}};
-+	struct debugfs_fs_info *fsi;
-+	int err;
-+
-+	save_mount_options(sb, data);
-+
-+	fsi = kzalloc(sizeof(struct debugfs_fs_info), GFP_KERNEL);
-+	sb->s_fs_info = fsi;
-+	if (!fsi) {
-+		err = -ENOMEM;
-+		goto fail;
++	/* External EN1 control */
++	if (ext_sleep_config & TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1)
++		ret = tps65910_set_bits(mfd,
++				TPS65910_EN1_LDO_ASS + regoffs, bit_pos);
++	else
++		ret = tps65910_clear_bits(mfd,
++				TPS65910_EN1_LDO_ASS + regoffs, bit_pos);
++	if (ret < 0) {
++		dev_err(mfd->dev,
++			"Error in configuring external control EN1\n");
++		return ret;
 +	}
 +
-+	err = debugfs_parse_options(data, &fsi->mount_opts);
-+	if (err)
-+		goto fail;
++	/* External EN2 control */
++	if (ext_sleep_config & TPS65910_SLEEP_CONTROL_EXT_INPUT_EN2)
++		ret = tps65910_set_bits(mfd,
++				TPS65910_EN2_LDO_ASS + regoffs, bit_pos);
++	else
++		ret = tps65910_clear_bits(mfd,
++				TPS65910_EN2_LDO_ASS + regoffs, bit_pos);
++	if (ret < 0) {
++		dev_err(mfd->dev,
++			"Error in configuring external control EN2\n");
++		return ret;
++	}
 +
-+	err  =  simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
-+	if (err)
-+		goto fail;
++	/* External EN3 control for TPS65910 LDO only */
++	if ((tps65910_chip_id(mfd) == TPS65910) &&
++			(id >= TPS65910_REG_VDIG1)) {
++		if (ext_sleep_config & TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3)
++			ret = tps65910_set_bits(mfd,
++				TPS65910_EN3_LDO_ASS + regoffs, bit_pos);
++		else
++			ret = tps65910_clear_bits(mfd,
++				TPS65910_EN3_LDO_ASS + regoffs, bit_pos);
++		if (ret < 0) {
++			dev_err(mfd->dev,
++				"Error in configuring external control EN3\n");
++			return ret;
++		}
++	}
 +
-+	sb->s_op = &debugfs_super_operations;
++	/* Return if no external control is selected */
++	if (!(ext_sleep_config & EXT_SLEEP_CONTROL))
++		return ret;
 +
-+	debugfs_apply_options(sb);
++	/*
++	 * For regulator that has separate operational and sleep register make
++	 * sure that operational is used and clear sleep register to turn
++	 * regulator off when external control is inactive
++	 */
++	if ((id == TPS65910_REG_VDD1) ||
++		(id == TPS65910_REG_VDD2) ||
++			((id == TPS65911_REG_VDDCTRL) &&
++				(tps65910_chip_id(mfd) == TPS65911))) {
++		int op_reg_add = pmic->get_ctrl_reg(id) + 1;
++		int sr_reg_add = pmic->get_ctrl_reg(id) + 2;
++		int opvsel = tps65910_reg_read(pmic, op_reg_add);
++		int srvsel = tps65910_reg_read(pmic, sr_reg_add);
++		if (opvsel & VDD1_OP_CMD_MASK) {
++			u8 reg_val = srvsel & VDD1_OP_SEL_MASK;
++			ret = tps65910_reg_write(pmic, op_reg_add, reg_val);
++			if (ret < 0) {
++				dev_err(mfd->dev,
++					"Error in configuring op register\n");
++				return ret;
++			}
++		}
++		ret = tps65910_reg_write(pmic, sr_reg_add, 0);
++		if (ret < 0) {
++			dev_err(mfd->dev, "Error in settting sr register\n");
++			return ret;
++		}
++	}
 +
-+	return 0;
++	ret = tps65910_clear_bits(mfd,
++			TPS65910_SLEEP_KEEP_LDO_ON + regoffs, bit_pos);
++	if (!ret)
++		ret = tps65910_set_bits(mfd,
++			TPS65910_SLEEP_SET_LDO_OFF + regoffs, bit_pos);
++	if (ret < 0)
++		dev_err(mfd->dev, "Error in configuring SLEEP register\n");
++
++	return ret;
++}
++
+ static __devinit int tps65910_probe(struct platform_device *pdev)
+ {
+ 	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
+@@ -891,11 +1076,13 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 	case TPS65910:
+ 		pmic->get_ctrl_reg = &tps65910_get_ctrl_register;
+ 		pmic->num_regulators = ARRAY_SIZE(tps65910_regs);
++		pmic->ext_sleep_control = tps65910_ext_sleep_control;
+ 		info = tps65910_regs;
+ 		break;
+ 	case TPS65911:
+ 		pmic->get_ctrl_reg = &tps65911_get_ctrl_register;
+ 		pmic->num_regulators = ARRAY_SIZE(tps65911_regs);
++		pmic->ext_sleep_control = tps65911_ext_sleep_control;
+ 		info = tps65911_regs;
+ 		break;
+ 	default:
+@@ -958,6 +1145,16 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 				pmic->desc[i].ops = &tps65911_ops;
+ 		}
  
--	return simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
-+fail:
-+	kfree(fsi);
-+	sb->s_fs_info = NULL;
-+	return err;
++		err = tps65910_set_ext_sleep_config(pmic, i,
++				pmic_plat_data->regulator_ext_sleep_control[i]);
++		/*
++		 * Failing on regulator for configuring externally control
++		 * is not a serious issue, just throw warning.
++		 */
++		if (err < 0)
++			dev_warn(tps65910->dev,
++				"Failed to initialise ext control config\n");
++
+ 		pmic->desc[i].type = REGULATOR_VOLTAGE;
+ 		pmic->desc[i].owner = THIS_MODULE;
+ 
+@@ -973,6 +1170,7 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 
+ 		/* Save regulator for cleanup */
+ 		pmic->rdev[i] = rdev;
++		pmic->regulator_mode[i] = REGULATOR_MODE_NORMAL;
+ 	}
+ 	return 0;
+ 
+@@ -1004,6 +1202,36 @@ static int __devexit tps65910_remove(struct platform_device *pdev)
+ 	return 0;
  }
  
- static struct dentry *debug_mount(struct file_system_type *fs_type,
++static void tps65910_shutdown(struct platform_device *pdev)
++{
++	struct tps65910_reg *pmic = platform_get_drvdata(pdev);
++	int i;
++
++	/*
++	 * Before bootloader jumps to kernel, it makes sure that required
++	 * external control signals are in desired state so that given rails
++	 * can be configure accordingly.
++	 * If rails are configured to be controlled from external control
++	 * then before shutting down/rebooting the system, the external
++	 * control configuration need to be remove from the rails so that
++	 * its output will be available as per register programming even
++	 * if external controls are removed. This is require when the POR
++	 * value of the control signals are not in active state and before
++	 * bootloader initializes it, the system requires the rail output
++	 * to be active for booting.
++	 */
++	for (i = 0; i < pmic->num_regulators; i++) {
++		int err;
++		if (!pmic->rdev[i])
++			continue;
++
++		err = tps65910_set_ext_sleep_config(pmic, i, 0);
++		if (err < 0)
++			dev_err(&pdev->dev,
++				"Error in clearing external control\n");
++	}
++}
++
+ static struct platform_driver tps65910_driver = {
+ 	.driver = {
+ 		.name = "tps65910-pmic",
+@@ -1011,6 +1239,7 @@ static struct platform_driver tps65910_driver = {
+ 	},
+ 	.probe = tps65910_probe,
+ 	.remove = __devexit_p(tps65910_remove),
++	.shutdown = tps65910_shutdown,
+ };
+ 
+ static int __init tps65910_init(void)
+diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+index d0cb12e..fa6c6bf 100644
+--- a/include/linux/mfd/tps65910.h
++++ b/include/linux/mfd/tps65910.h
+@@ -768,6 +768,13 @@
+ /* Max number of TPS65910/11 regulators */
+ #define TPS65910_NUM_REGS				13
+ 
++/* External sleep controls through EN1/EN2/EN3 inputs*/
++#define TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1		0x1
++#define TPS65910_SLEEP_CONTROL_EXT_INPUT_EN2		0x2
++#define TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3		0x4
++/* TPS65911 names the EN3 signal as SLEEP */
++#define TPS65911_SLEEP_CONTROL_EXT_INPUT_SLEEP		0x4
++
+ /**
+  * struct tps65910_board
+  * Board platform data may be used to initialize regulators.
+@@ -779,6 +786,7 @@ struct tps65910_board {
+ 	int irq_base;
+ 	int vmbch_threshold;
+ 	int vmbch2_threshold;
++	unsigned long regulator_ext_sleep_control[TPS65910_NUM_REGS];
+ 	struct regulator_init_data *tps65910_pmic_init_data[TPS65910_NUM_REGS];
+ };
+ 
 -- 
-1.7.7
+1.7.1.1
 
