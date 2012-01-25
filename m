@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab2AYKtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 05:49:50 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56298 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab2AYKtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 05:49:49 -0500
-Subject: Re: [RFCv3 0/9] perf tool: parser generator for events parsing
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Greg KH <greg@kroah.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20120125005342.GA24662@kroah.com>
-References: <20120109152855.GA1597@m.brq.redhat.com>
-	 <1326717103-10287-1-git-send-email-jolsa@redhat.com>
-	 <1327422364.2446.75.camel@twins>  <20120125005342.GA24662@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Jan 2012 11:49:33 +0100
-Message-ID: <1327488573.2614.59.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752150Ab2AYKvt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 05:51:49 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:38504 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751151Ab2AYKvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 05:51:48 -0500
+Date: Wed, 25 Jan 2012 10:51:38 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Adrian Drzewieki <z@drze.net>
+Subject: Re: [PATCH v4 -mm] make swapin readahead skip over holes
+Message-ID: <20120125105138.GA3901@csn.ul.ie>
+References: <20120124131351.05309a2a@annuminas.surriel.com>
+ <20120124141400.6d33b7c4@annuminas.surriel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120124141400.6d33b7c4@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-24 at 16:53 -0800, Greg KH wrote:
+On Tue, Jan 24, 2012 at 02:14:00PM -0500, Rik van Riel wrote:
+> Ever since abandoning the virtual scan of processes, for scalability
+> reasons, swap space has been a little more fragmented than before.
+> This can lead to the situation where a large memory user is killed,
+> swap space ends up full of "holes" and swapin readahead is totally
+> ineffective.
+> 
+> On my home system, after killing a leaky firefox it took over an
+> hour to page just under 2GB of memory back in, slowing the virtual
+> machines down to a crawl.
+> 
+> This patch makes swapin readahead simply skip over holes, instead
+> of stopping at them.  This allows the system to swap things back in
+> at rates of several MB/second, instead of a few hundred kB/second.
+> 
+> The checks done in valid_swaphandles are already done in 
+> read_swap_cache_async as well, allowing us to remove a fair amount
+> of code.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-> Well, what's to keep someone from exploding one of those files to go
-> over the buffer size without knowing it?
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-The content is known at compile time, we could put checks in. But yeah
-4k isn't that much text..
-
-> Even after reading the above link, I can't really understand what this
-> is being used for.  As it's sysfs files, why aren't Documentation/ABI/
-> files also being created with the patch explaining it all?
-
-Ah, yeah, documentation, wasn't that written in C :-)
-
-But fair enough... Anyway, the purpose is to describe the magic bits
-that go into perf_event_attr::config[012] for a particular pmu.
-
-Basically they're the 'hardware' bitmasks we want to export, so that
-userspace can deal with sane name/value pairs.
-
-> Again, if at all possible, sysfs should be one value per file.  Please
-> NEVER create a sysfs file that requires a parser to determine what is
-> going on in it.  It should be a simple 'read the value' type thing.
-
-The whole purpose was to drive a parser :-) Anyway, is:
-"config:0-7,32-35" acceptable for a single file?
-
-This means, the 'config' member of struct perf_event_attr bits 0-7,32-35
-form a bitfield whose name is then given by the filename that has this
-content.
-
-> So yes, multiple sysfs files do make sense, the resource load should be
-> almost non-existant for new ones.
-
-Surely all these attribute objects take more space than a few lines of
-text, but ok, I guess multiple files it is.
-
+-- 
+Mel Gorman
+SUSE Labs
