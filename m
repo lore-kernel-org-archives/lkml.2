@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab2AYCdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 21:33:19 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:53559 "EHLO
+	id S1756038Ab2AYCj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 21:39:28 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:35871 "EHLO
 	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751999Ab2AYCdR convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1752336Ab2AYCj0 convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 21:33:17 -0500
+	Tue, 24 Jan 2012 21:39:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
+In-Reply-To: <CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
 References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
 	<20120108221342.GA7058@ime.usp.br>
 	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
@@ -35,9 +35,10 @@ References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
 	<CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
 	<CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
 	<CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
-Date: Wed, 25 Jan 2012 00:33:17 -0200
-X-Google-Sender-Auth: j9VkZUmGThyxoe3Yl4rVQRKboqo
-Message-ID: <CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
+	<CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
+Date: Wed, 25 Jan 2012 00:39:25 -0200
+X-Google-Sender-Auth: 8RDkP24gZOnoOqQQH3U08eA-dsk
+Message-ID: <CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
 Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
 From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
 To: Yinghai Lu <yinghai@kernel.org>
@@ -55,30 +56,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there, Yinghai, Linus, Bjorn and others.
+On Wed, Jan 25, 2012 at 00:33, Rogério Brito <rbrito@ime.usp.br> wrote:
+> I started ripping things apart, first with the whole ACPI subsystem,
+> then with PM, with sound and I noticed that things always hung with
+> the nvidia watchdog/TCO module. So, I disabled it and the boot doesn't
+> hang there anymore. In fact, it goes further, and, for the first time
+> since I got my mother's notebook, the nouveau module was loaded.
+>
+> Unfortunately, it died with a kernel panic and didn't reach the point
+> of X firing up.
 
-On Tue, Jan 24, 2012 at 23:55, Rogério Brito <rbrito@ime.usp.br> wrote:
-> The next thing that I'm doing is recording a video of how the computer
-> boots when that transparent sizing bridge patch is reverted, so that
-> you can have that as a reference. Then, I will rip apart the ACPI
-> stuff from the configuration of the kernel to see if it is ACPI that
-> is getting in the way of something here.
-
-I started ripping things apart, first with the whole ACPI subsystem,
-then with PM, with sound and I noticed that things always hung with
-the nvidia watchdog/TCO module. So, I disabled it and the boot doesn't
-hang there anymore. In fact, it goes further, and, for the first time
-since I got my mother's notebook, the nouveau module was loaded.
-
-Unfortunately, it died with a kernel panic and didn't reach the point
-of X firing up.
-
-So, there is something fishy indeed with these things.
-
-Still open to sugestions. I will now compile a vanilla kernel from
-Linus's tree gradually putting things in, but from what I already
-talked with Bjorn, I think that ACPI will be a barrier (and it is sad
-that so many things *don't* work with ACPI disabled).
+Update: X *does* start and the panic occurs when GNOME is loading. I
+will try next to run a kernel with the nvidia tco thing blacklisted
+*but* with the transparent bridging resizing thing on to see if the
+notebook is at least usable (as I suspect that nouveau may be having a
+hard time with the current status of the PCI rework).
 
 
 Regards,
