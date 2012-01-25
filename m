@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725Ab2AYSyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 13:54:09 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64141 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab2AYSyI convert rfc822-to-8bit (ORCPT
+	id S1751896Ab2AYSzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 13:55:12 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46231 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab2AYSzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 13:54:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120124084133.GD1660@cmpxchg.org>
-References: <20120119161445.b3a8a9d2.kamezawa.hiroyu@jp.fujitsu.com>
-	<CALWz4ixufzgi2kDRgTMAzty-S2AKMmPfqdGc1sBRNFJxf-WTAQ@mail.gmail.com>
-	<20120124084133.GD1660@cmpxchg.org>
-Date: Wed, 25 Jan 2012 10:54:06 -0800
-Message-ID: <CALWz4iyoRCFG9=aiySFzQb3HsM33yW7tZB4N6xee6qUvO6L2-g@mail.gmail.com>
-Subject: Re: [PATCH] memcg: remove unnecessary thp check at page stat accounting
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jan 2012 13:55:10 -0500
+Message-ID: <1327517706.2605.7.camel@edumazet-laptop>
+Subject: Re: [PATCH net] amd/lance.c: dev_alloc_skb to netdev_alloc_skb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 25 Jan 2012 19:55:06 +0100
+In-Reply-To: <1327517188-14088-1-git-send-email-netdev@pradeepdalvi.com>
+References: <1327517188-14088-1-git-send-email-netdev@pradeepdalvi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 12:41 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Mon, Jan 23, 2012 at 12:11:11PM -0800, Ying Han wrote:
->> On Wed, Jan 18, 2012 at 11:14 PM, KAMEZAWA Hiroyuki
->> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> > Thank you very much for reviewing previous RFC series.
->> > This is a patch against memcg-devel and linux-next (can by applied without HUNKs).
->> >
->> > ==
->> >
->> > From 64641b360839b029bb353fbd95f7554cc806ed05 Mon Sep 17 00:00:00 2001
->> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> > Date: Thu, 12 Jan 2012 16:08:33 +0900
->> > Subject: [PATCH] memcg: remove unnecessary thp check in mem_cgroup_update_page_stat()
->> >
->> > commit 58b318ecf(memcg-devel)
->> >    memcg: make mem_cgroup_split_huge_fixup() more efficient
->> > removes move_lock_page_cgroup() in thp-split path.
->> >
->> > So, We do not have to check PageTransHuge in mem_cgroup_update_page_stat
->> > and fallback into the locked accounting because both move charge and thp
->> > split up are done with compound_lock so they cannot race. update vs.
->> > move is protected by the mem_cgroup_stealed sufficiently.
->>
->> Sorry, i don't see we changed the "move charge" to "move account" ?
->
-> move_account() moves charges.  IMO, it's the function that is a
-> misnomer and "moving charges" is less ambiguous since we account
-> several different things in the memory controller.
+Le jeudi 26 janvier 2012 Ã  00:16 +0530, Pradeep A. Dalvi a Ã©crit :
+> Replaced deprecating dev_alloc_skb with netdev_alloc_skb for amd/lance.c
+>   - Removed extra skb->dev = dev
+> 
+> Signed-off-by: Pradeep A. Dalvi <netdev@pradeepdalvi.com>
+> ---
+>  drivers/net/ethernet/amd/lance.c |    9 ++++-----
+>  1 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/amd/lance.c b/drivers/net/ethernet/amd/lance.c
+> index a6e2e84..a8a6b45 100644
+> --- a/drivers/net/ethernet/amd/lance.c
+> +++ b/drivers/net/ethernet/amd/lance.c
+> @@ -871,12 +871,11 @@ lance_init_ring(struct net_device *dev, gfp_t gfp)
+>  		struct sk_buff *skb;
+>  		void *rx_buff;
+>  
+> -		skb = alloc_skb(PKT_BUF_SZ, GFP_DMA | gfp);
+> +		skb = __netdev_alloc_skb(dev, PKT_BUF_SZ, GFP_DMA | gfp);
 
-Hmm, that works then.
+Nack
 
-Acked-by: Ying Han<yinghan@google.com>
+As I already explained, alloc_skb() and netdev_alloc_skb() are
+different.
 
---Ying
+Why do you repost this ?
+
+nedev_alloc_skb() adds NET_SKB_PAD bytes.
+
+This driver doesnt need this extra space.
+
+(In fact it could use kmalloc(), since the skb themselves are not used
+at all : At RX time, we perform a copybreak)
+
+
+
