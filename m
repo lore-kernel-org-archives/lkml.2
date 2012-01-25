@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab2AYJIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 04:08:50 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39097 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab2AYJIq (ORCPT
+	id S1754557Ab2AYJRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 04:17:48 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:64989 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752664Ab2AYJRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 04:08:46 -0500
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] If init dies, log a signal which killed it, if any.
-Date: Wed, 25 Jan 2012 10:08:42 +0100
-User-Agent: KMail/1.8.2
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
-References: <1327097836-8485-1-git-send-email-vda.linux@googlemail.com> <20120124162016.08a37b2f.akpm@linux-foundation.org>
-In-Reply-To: <20120124162016.08a37b2f.akpm@linux-foundation.org>
+	Wed, 25 Jan 2012 04:17:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201201251008.42120.vda.linux@googlemail.com>
+In-Reply-To: <1327480624.14373.51.camel@edumazet-laptop>
+References: <20120123.134352.1621146585245670953.davem@davemloft.net>
+ <CAGsizzJnQ6b6eSC0ZnAtFguU7_xDfWFPSY6L4DWXc24F+Ts2XQ@mail.gmail.com>
+ <CAOzFzEjE7b-Y+_vOWeBKbHDkURRcYXomSTcwB91vKHVWQxBVsg@mail.gmail.com>
+ <20120124.230203.1478271172075708903.davem@davemloft.net> <CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
+ <1327480624.14373.51.camel@edumazet-laptop>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
+Date: Wed, 25 Jan 2012 10:17:24 +0100
+X-Google-Sender-Auth: dJ5_BFMSBWhCvyFZseYfO5AlJMY
+Message-ID: <CAGsizz+n0HHCNdC-WKaBcrRn=yF3aLcMKeTt0OryA8TDAsHqkA@mail.gmail.com>
+Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jesse Gross <jesse@nicira.com>, David Miller <davem@davemloft.net>,
+        joseph.glanville@orionvm.com.au, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0P9IIU0002434
 
-On Wednesday 25 January 2012 01:20, Andrew Morton wrote:
-> It's a bit user-hostile to print a hex number in such a context without
-> the leading 0x.  The %08 does provide a hint - users are unlikely to
-> interpret 00000011 as 11.  But still, I think...
-> 
-> --- a/kernel/exit.c~kernel-exitc-if-init-dies-log-a-signal-which-killed-it-if-any-fix
-> +++ a/kernel/exit.c
-> @@ -711,7 +711,7 @@ static struct task_struct *find_new_reap
->  	if (unlikely(pid_ns->child_reaper == father)) {
->  		write_unlock_irq(&tasklist_lock);
->  		if (unlikely(pid_ns == &init_pid_ns)) {
-> -			panic("Attempted to kill init! exitcode=%08x\n",
-> +			panic("Attempted to kill init! exitcode=0x%08x\n",
->  				father->signal->group_exit_code ?:
->  					father->exit_code);
->  		}
-> _
-
-Looks good to me.
-
-> Or maybe we should use %d.  Does anyone use hex for exit codes?
-
-I guess hex is better, considering that normal (non-signal) exit code
-is stored in bits 8-15. It's more readable to see exit code 3 as 0x300
-then as 768.
-
--- 
-vda
+2012/1/25 Eric Dumazet <eric.dumazet@gmail.com>:
+> Le mardi 24 janvier 2012 à 23:11 -0800, Jesse Gross a écrit :
+>
+>> I think it's actually the opposite - Open vSwitch can be used to
+>> implement this type of thing as well as for many other use cases.  On
+>> the other hand, even when implementing a multipoint L2 solution it can
+>> be useful to have additional levels of control but you can't do that
+>> with this patch because it essentially statically glues together
+>> tunneling and bridging.
+>
+> Unless you can provide a working solution in a very short time, this
+> patch is a pragmatic one.
+>
+> Code is not perfect and could be improved (for example using a helper
+> function to keep ipgre_rcv() shorter and reduce indentation level)
+>
+> Stefan, could you move this code out of ipgre_rcv() ?
+>
+>
+> +#ifdef CONFIG_NET_IPGRE_BRIDGE
+> +                       if (ipv4_is_multicast(tunnel->parms.iph.daddr)) {
+> +                               tethhdr = eth_hdr(skb);
+> +                               if (!is_multicast_ether_addr(
+> +                                       tethhdr->h_source)) {
+> +                                       head = &tunnel->hash[
+> +                                               ipgre_tap_bridge_hash(
+> +                                                       tethhdr->h_source)];
+> +                                       entry = ipgre_tap_bridge_find_rcu(head,
+> +                                               tethhdr->h_source);
+> +                                       if (likely(entry)) {
+> +                                               entry->raddr = orig_source;
+> +                                               entry->updated = jiffies;
+> +                                       } else {
+> +                                         spin_lock(&tunnel->hash_lock);
+> +                                         if (!ipgre_tap_bridge_find(head,
+> +                                               tethhdr->h_source))
+> +                                               ipgre_tap_bridge_create(
+> +                                                       head,
+> +                                                       orig_source,
+> +                                                       tethhdr->h_source);
+> +                                         spin_unlock(&tunnel->hash_lock);
+> +                                       }
+> +                               }
+> +                       }
+> +#endif
+>
+>
+>
+Ok
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
