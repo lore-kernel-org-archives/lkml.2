@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab2AYSzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 13:55:12 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46231 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab2AYSzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 13:55:10 -0500
-Message-ID: <1327517706.2605.7.camel@edumazet-laptop>
-Subject: Re: [PATCH net] amd/lance.c: dev_alloc_skb to netdev_alloc_skb
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 25 Jan 2012 19:55:06 +0100
-In-Reply-To: <1327517188-14088-1-git-send-email-netdev@pradeepdalvi.com>
-References: <1327517188-14088-1-git-send-email-netdev@pradeepdalvi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1751880Ab2AYTBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 14:01:17 -0500
+Received: from mga01.intel.com ([192.55.52.88]:37213 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750842Ab2AYTBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 14:01:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="110709550"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Van De Ven, Arjan" <arjan@linux.intel.com>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
+ save mtrr
+Thread-Topic: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
+ save mtrr
+Thread-Index: AQHM0IXtchbg6t0dpEylW7Itt3XhjJYJMbWAgAV5GACADsrlsA==
+Date: Wed, 25 Jan 2012 19:01:02 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712200349E1@ORSMSX105.amr.corp.intel.com>
+References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
+ <1326301493-28760-11-git-send-email-fenghua.yu@intel.com>
+ <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
+ <4F136A50.80203@zytor.com>
+In-Reply-To: <4F136A50.80203@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0PJ1QGZ005723
 
-Le jeudi 26 janvier 2012 Ã  00:16 +0530, Pradeep A. Dalvi a Ã©crit :
-> Replaced deprecating dev_alloc_skb with netdev_alloc_skb for amd/lance.c
->   - Removed extra skb->dev = dev
-> 
-> Signed-off-by: Pradeep A. Dalvi <netdev@pradeepdalvi.com>
-> ---
->  drivers/net/ethernet/amd/lance.c |    9 ++++-----
->  1 files changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/amd/lance.c b/drivers/net/ethernet/amd/lance.c
-> index a6e2e84..a8a6b45 100644
-> --- a/drivers/net/ethernet/amd/lance.c
-> +++ b/drivers/net/ethernet/amd/lance.c
-> @@ -871,12 +871,11 @@ lance_init_ring(struct net_device *dev, gfp_t gfp)
->  		struct sk_buff *skb;
->  		void *rx_buff;
->  
-> -		skb = alloc_skb(PKT_BUF_SZ, GFP_DMA | gfp);
-> +		skb = __netdev_alloc_skb(dev, PKT_BUF_SZ, GFP_DMA | gfp);
+On 01/12/2012 04:33 AM, Brian Gerst wrote:
+> On Wed, Jan 11, 2012 at 12:04 PM, Fenghua Yu <fenghua.yu@intel.com> wrote:
+>> From: Fenghua Yu <fenghua.yu@intel.com>
+>>
+>> Ask the first online CPU to save mtrr instead of asking BSP. BSP
+could be
+>> offline when mtrr_save_state() is called.
+>
+> If you can use any non-boot cpu to save the MTRRs why not just use the
+> current cpu?  They should all be in sync anyways.
 
-Nack
+The current cpu can not be used to save the MTRRs because its MTRRs are not initialized yet at this point. Later on, set_mtrr() will be called to initialize MTRRs on the current CPU (and all booted CPUs).
 
-As I already explained, alloc_skb() and netdev_alloc_skb() are
-different.
+Thanks.
 
-Why do you repost this ?
-
-nedev_alloc_skb() adds NET_SKB_PAD bytes.
-
-This driver doesnt need this extra space.
-
-(In fact it could use kmalloc(), since the skb themselves are not used
-at all : At RX time, we perform a copybreak)
-
-
-
+-Fenghua
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
