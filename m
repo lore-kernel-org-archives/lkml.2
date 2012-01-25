@@ -1,109 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab2AYR7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 12:59:46 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56568 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890Ab2AYR7p convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 12:59:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6s3R0fcBSf_YHTpXp15gtEBHRQg5-YM=cDO5UfY9cRGrQ@mail.gmail.com>
-References: <1327450719-25590-1-git-send-email-grant.likely@secretlab.ca>
- <4F1F5FE0.9090901@gmail.com> <CACxGe6s3R0fcBSf_YHTpXp15gtEBHRQg5-YM=cDO5UfY9cRGrQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 25 Jan 2012 10:59:25 -0700
-X-Google-Sender-Auth: G4RFYxzchXHVi1uWRODKUyfukKA
-Message-ID: <CACxGe6tgGqQSThzVVEzwOdtYkjKHT1uQhZBOkCTwkutyKXDCAg@mail.gmail.com>
-Subject: Re: [RFC 1/2] irq_domain: Create common xlate functions that device
- drivers can use
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751824Ab2AYSGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 13:06:20 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59151 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750885Ab2AYSGS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 13:06:18 -0500
+References: <CADDb1s2w9ZwMXn38n8TcxhFNrUsXN1Gnxq-suAP2-M+R7YhFsg@mail.gmail.com> <4F202F2E.9000608@redhat.com>
+In-Reply-To: <4F202F2E.9000608@redhat.com>
+Mime-Version: 1.0 (1.0)
+Content-Type: text/plain;
+	charset=utf-8
+Message-Id: <D5446EEA-D3AF-43BB-B862-6C9A741B0DC9@gmail.com>
 Content-Transfer-Encoding: 8BIT
+Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ChristophHellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>
+X-Mailer: iPhone Mail (9A405)
+From: Andreas Dilger <aedilger@gmail.com>
+Subject: Re: Does Ext4 support parallel write similar to XFS?
+Date: Wed, 25 Jan 2012 11:06:29 -0700
+To: Eric Sandeen <sandeen@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 10:35 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> On Tue, Jan 24, 2012 at 6:50 PM, Rob Herring <robherring2@gmail.com> wrote:
->>
->>
->> On 01/24/2012 06:18 PM, Grant Likely wrote:
->>> Rather than having each interrupt controller driver creating its own barely
->>> unique .xlate function for irq_domain, create a library of translators which
->>> any driver can use directly.
->>>
->>> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
->>> index e7379a3..5e497a0 100644
->>> --- a/include/linux/irqdomain.h
->>> +++ b/include/linux/irqdomain.h
->>> @@ -110,6 +110,9 @@ struct irq_domain {
->>>       void *host_data;
->>>       irq_hw_number_t inval_irq;
->>>
->>> +     /* Data for common irq xlate functions */
->>> +     unsigned int xlate_type;
->>> +
->>
->> How does this get set? Do we want interrupt controllers messing with the
->> domain struct directly long term?
->
-> It defaults to IRQ_TYPE_NONE in the alloc function and drivers can
-> override it.  Alternately it could be made part of the
-> irq_domain_add() arguments, but I'm not thrilled with adding a whole
-> bunch of arguments to the function prototype.
+On 2012-01-25, at 9:34, Eric Sandeen <sandeen@redhat.com> wrote:
+> On 1/24/12 11:19 PM, Amit Sahrawat wrote:
+>> In XFS we can write parallel (i.,e we can make use of allocation
+>> groups for writing process). If the files are kept in individual
+>> directories, there is a possibility that first the blocks for that
+>> files be used from individual allocation groups. If I start â€˜4â€™
+>> writing process(cp 100MB_file /<dirnum>/) â€“ after writing is finished
+>> â€“ if I check the bmap â€“ it does shows that initial allocation was from
+>> individual allocation groups.
+>> Even though in Ext4 also we do have groups â€“ but I am not able to get
+>> behavior similar to XFS.
+>> If I check the file extents â€“ the extents are in mixed form, the
+>> allocation pattern is also very fragmented.
+>> 
+>> Please share more on this. Also, if there is a possible exact test
+>> case to check for parallel writes support.
+> 
+> It seems that you are asking more about allocation policy than parallelism
+> in general?  With either filesystem, you could use preallocation to wind
+> up with more contiguous files when you write them in parallel, though
+> that requires some idea of the file size ahead of time.
+> 
+> ext4 doesn't have that exact dir::group heuristic that xfs uses,
+> but it does have other mechanisms and heuristics to try to get good
+> file and directory layout.
+> 
+> In general, ext4 tries to put new root directories into new groups, see
+> comments above find_group_orlov().  Other directories tend to stay near
+> their parent directory.  So it's really the roots of dir trees that
+> get spread across the disk in general.  New non-dir inodes also tend to
+> stay close to their parent.  (I think I have that all right ...)
 
-Do you like this better (built on top of this patch)?
+Note that this policy of new subdirectory placement (and indirectly the placement of files created therein) can be tuned by userspace by setting the "topdir" flag via setattr on the parent directory. 
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index ef2b1fe..7856c04 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -701,12 +701,10 @@ int irq_domain_xlate_onecell(struct irq_domain
-*d, struct device_node *ctrlr,
- 			     const u32 *intspec, unsigned int intsize,
- 			     unsigned long *out_hwirq, unsigned int *out_type)
- {
--	if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
--		 ctrlr->full_name, intsize))
-+	if (WARN_ON(intsize < 1))
- 		return -EINVAL;
--	*out_hwirq = intspec[0];
--	*out_type = d->xlate_type;
--	return 0;
-+	return irq_domain_xlate_onetwocell(d, ctrlr, intspec, 1,
-+					   out_hwirq, out_type);
- }
- EXPORT_SYMBOL_GPL(irq_domain_xlate_onecell);
+This will push new subdirs created in that dir to a new group, which would In turn allow the files to allocate from that group. It is intended to be set on directories like /home where files within the subdirs are unrelated.
 
-@@ -721,12 +719,10 @@ int irq_domain_xlate_twocell(struct irq_domain
-*d, struct device_node *ctrlr,
- 			const u32 *intspec, unsigned int intsize,
- 			irq_hw_number_t *out_hwirq, unsigned int *out_type)
- {
--	if (WARN(intsize < 2, "Bad intspec for %s: intsize=%i < 2\n",
--		 ctrlr->full_name, intsize))
-+	if (WARN_ON(intsize < 2))
- 		return -EINVAL;
--	*out_hwirq = intspec[0];
--	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
--	return 0;
-+	return irq_domain_xlate_onetwocell(d, ctrlr, intspec, intsize,
-+					   out_hwirq, out_type);
- }
- EXPORT_SYMBOL_GPL(irq_domain_xlate_twocell);
+Whether that is enough for your usage is unclear. 
 
-@@ -746,8 +742,7 @@ int irq_domain_xlate_onetwocell(struct irq_domain *d,
- 				const u32 *intspec, unsigned int intsize,
- 				unsigned long *out_hwirq, unsigned int *out_type)
- {
--	if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
--		 ctrlr->full_name, intsize))
-+	if (WARN_ON(intsize < 1))
- 		return -EINVAL;
- 	*out_hwirq = intspec[0];
- 	*out_type = d->xlate_type;
+> The test you describe above does result in more contiguous allocation on
+> xfs than on ext4, though - a quick check on kernel 3.2 yielded 2-3
+> extents per file on ext4, 1 extent per file for xfs.
+> 
+> -Eric
+> 
+>> Thanks & Regards,
+>> Amit Sahrawat
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
