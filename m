@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab2AYWxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 17:53:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab2AYWxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 17:53:37 -0500
-Subject: Re: [RFCv2 00/14]
-From: Mark Salter <msalter@redhat.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
-        benh@kernel.crashing.org, Rob Herring <rob.herring@calxeda.com>
-Date: Wed, 25 Jan 2012 17:53:29 -0500
-In-Reply-To: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
-References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1327532011.24169.6.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1751792Ab2AYWzj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 17:55:39 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:19600 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750832Ab2AYWzi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 17:55:38 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EAKKHIE95LElR/2dsb2JhbABChQmpO4EGgXIBAQUjDwEjIxAIAQIYAgImAgIUJQMhE64+kVUTgRyHYAEGBgkFBAMHAhAGBQcFg1kBBQQFEAaCH4EWBJUdkmY
+Date: Thu, 26 Jan 2012 09:55:35 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: Does Ext4 support parallel write similar to XFS?
+Message-ID: <20120125225535.GU15102@dastard>
+References: <CADDb1s2w9ZwMXn38n8TcxhFNrUsXN1Gnxq-suAP2-M+R7YhFsg@mail.gmail.com>
+ <4F202F2E.9000608@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F202F2E.9000608@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-23 at 14:07 -0700, Grant Likely wrote:
-> Hey everyone,
+On Wed, Jan 25, 2012 at 10:34:54AM -0600, Eric Sandeen wrote:
+> On 1/24/12 11:19 PM, Amit Sahrawat wrote:
+> > In XFS we can write parallel (i.,e we can make use of allocation
+> > groups for writing process). If the files are kept in individual
+> > directories, there is a possibility that first the blocks for that
+> > files be used from individual allocation groups. If I start ‘4’
+> > writing process(cp 100MB_file /<dirnum>/) – after writing is finished
+> > – if I check the bmap – it does shows that initial allocation was from
+> > individual allocation groups.
+> > Even though in Ext4 also we do have groups – but I am not able to get
+> > behavior similar to XFS.
+> > If I check the file extents – the extents are in mixed form, the
+> > allocation pattern is also very fragmented.
+> > 
+> > Please share more on this. Also, if there is a possible exact test
+> > case to check for parallel writes support.
 > 
-> Here's the second RFC for the irq_domain patches.  I could use some
-> help testing now.  I still expect there will be a few bugs.  The
-> series is based on v3.3-rc1, and I've pushed it out to my git server:
+> It seems that you are asking more about allocation policy than parallelism
+> in general?  With either filesystem, you could use preallocation to wind
+> up with more contiguous files when you write them in parallel, though
+> that requires some idea of the file size ahead of time.
+> 
+> ext4 doesn't have that exact dir::group heuristic that xfs uses,
+> but it does have other mechanisms and heuristics to try to get good
+> file and directory layout.
 
-Hi Grant,
+XFs has different allocation policies according to mount options
+used.  inode32 (default for > 1TB), inode64 (default for <1TB) and
+filestreams. Each will give you different layouts for the same test
+depending on the size of your filesystem and the amount of free
+space you have available in it.
 
-I converted arch/c6x over to the generic irq_domain support and have not
-had any problems in testing. The c6x virtual irq support was a nearly
-identical copy of the powerpc code, so the patch I ended up with mostly
-copied what you did in arch/powerpc. The c6x patch is on the tip of:
+If XFS does what you want, then use it. There is no good reason for
+trying to make ext4 do everything XFS does because it simply can't.
+Especially when it comes to allocation strategies and policies...
 
-  git@linux-c6x.org:/git/projects/linux-c6x-upstreaming irq-testing
+Cheers,
 
-I think this probably belongs in your series, but I can push it
-separately if not.
-
---Mark
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
