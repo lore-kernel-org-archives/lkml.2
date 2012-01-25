@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab2AYNrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 08:47:43 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:2002 "EHLO relay.sw.ru"
+	id S1755619Ab2AYNtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 08:49:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24179 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755610Ab2AYNrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 08:47:41 -0500
-Subject: [PATCH 4/4] SUNRPC: service shutdown function in network namespace
- context introduced
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Wed, 25 Jan 2012 17:47:34 +0400
-Message-ID: <20120125134734.13662.40246.stgit@localhost6.localdomain6>
-In-Reply-To: <20120125134132.13662.83447.stgit@localhost6.localdomain6>
-References: <20120125134132.13662.83447.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1754267Ab2AYNtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 08:49:14 -0500
+Message-ID: <4F200847.3040806@redhat.com>
+Date: Wed, 25 Jan 2012 11:48:55 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "Semwal, Sumit" <sumit.semwal@ti.com>, Robert Morell <rmorell@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "sumit.semwal@linaro.org" <sumit.semwal@linaro.org>
+Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie> <1326845297-6233-1-git-send-email-rmorell@nvidia.com> <1326845297-6233-2-git-send-email-rmorell@nvidia.com> <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com> <20120120180457.GE29824@morell.nvidia.com> <20120121173207.GF3821@phenom.ffwll.local> <CAB2ybb8YepvuKDAMBH1REYERuajmczHZvsv=ENX0SFcuagXm=Q@mail.gmail.com> <20120125123036.70b28393@pyramind.ukuu.org.uk> <4F2007A8.2080301@redhat.com>
+In-Reply-To: <4F2007A8.2080301@redhat.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is enough for releasing resources, allocated for network
-namespace context, in case of sharing service between them.
-IOW, each service "user" (LockD, NFSd, etc), which wants to share service
-between network namespaces, have to release related resources by the function,
-introduced in this patch, instead of performing service shutdown (of course in
-case the service is shared already to the moment of release).
+Em 25-01-2012 11:46, Mauro Carvalho Chehab escreveu:
+> Em 25-01-2012 10:30, Alan Cox escreveu:
+>>> Technically speaking, is there no way that the EXPORT_SYMBOL_GPLed
+>>> symbols can be used by the binary blobs, possibly with an open-sourced
+>>> shim which provides the buffer-sharing interface to the binary blobs?
+>>> Are there any reasons to not consider this approach?
+>>
+>> The GPL requires all the code of a work is source. All of it, no shims no
+>> magic glue. EXPORT_SYMBOL isn't an indication you can use it for binary
+>> modules. The GPL licence is quite clear on what is covered.
+> 
+> Agreed. Such patch won't change anything. The discussions, patch reviews,
+> etc were under the assumption that the code will be GPL'd, plus the
+> subsystems that are exposed by this interface also assumes that.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>  Any trials to circumvent it seem to violate Kernel owner's rights.
 
----
- net/sunrpc/svc.c |   33 ++++++++++++++++++++-------------
- 1 files changed, 20 insertions(+), 13 deletions(-)
+In time, let me rephrase it:
 
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 279bbd8..3adfd26 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -510,6 +510,24 @@ svc_create_pooled(struct svc_program *prog, unsigned int bufsize,
- }
- EXPORT_SYMBOL_GPL(svc_create_pooled);
- 
-+void svc_shutdown_net(struct svc_serv *serv, struct net *net)
-+{
-+	/*
-+	 * The set of xprts (contained in the sv_tempsocks and
-+	 * sv_permsocks lists) is now constant, since it is modified
-+	 * only by accepting new sockets (done by service threads in
-+	 * svc_recv) or aging old ones (done by sv_temptimer), or
-+	 * configuration changes (excluded by whatever locking the
-+	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
-+	 * safe to traverse those lists and shut everything down:
-+	 */
-+	svc_close_net(serv, net);
-+
-+	if (serv->sv_shutdown)
-+		serv->sv_shutdown(serv, net);
-+}
-+EXPORT_SYMBOL_GPL(svc_shutdown_net);
-+
- /*
-  * Destroy an RPC service. Should be called with appropriate locking to
-  * protect the sv_nrthreads, sv_permsocks and sv_tempsocks.
-@@ -532,23 +550,12 @@ svc_destroy(struct svc_serv *serv)
- 		printk("svc_destroy: no threads for serv=%p!\n", serv);
- 
- 	del_timer_sync(&serv->sv_temptimer);
--	/*
--	 * The set of xprts (contained in the sv_tempsocks and
--	 * sv_permsocks lists) is now constant, since it is modified
--	 * only by accepting new sockets (done by service threads in
--	 * svc_recv) or aging old ones (done by sv_temptimer), or
--	 * configuration changes (excluded by whatever locking the
--	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
--	 * safe to traverse those lists and shut everything down:
--	 */
--	svc_close_net(serv, net);
-+
-+	svc_shutdown_net(serv, net);
- 
- 	BUG_ON(!list_empty(&serv->sv_permsocks));
- 	BUG_ON(!list_empty(&serv->sv_tempsocks));
- 
--	if (serv->sv_shutdown)
--		serv->sv_shutdown(serv, net);
--
- 	cache_clean_deferred(serv);
- 
- 	if (svc_serv_is_pooled(serv))
+Any trial to circumvent it seems to be an attempt to violate Kernel owner's rights.
+
+> 
+>> Since you've asked this I'm advised by my lawyer to respond to all such
+>> assumptions of legality of binary modules...
+>>
+>> For a Linux kernel containing any code I own the code is under the GNU
+>> public license v2 (in some cases or later), I have never given permission
+>> for that code to be used as part of a combined or derivative work which
+>> contains binary chunks. I have never said that modules are somehow
+>> magically outside the GPL and I am doubtful that in most cases a work
+>> containing binary modules for a Linux kernel is compatible with the
+>> licensing, although I accept there may be some cases that it is.
+>>
+>> Alan
+> 
+> I second Alan:
+> 	For a Linux kernel containing any code I own the code is under the GNU
+> 	public license v2 (in a few cases, where explicitly said GPLv2 or later 
+> 	or dual GNU/BSD), I have never given permission for that code to be
+> 	used as part of a combined or derivative work which contains binary chunks.
+> 
+> Regards,
+> Mauro.
 
