@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab2AYRAc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 12:00:32 -0500
-Received: from mga02.intel.com ([134.134.136.20]:40747 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753513Ab2AYRAb convert rfc822-to-8bit (ORCPT
+	id S1756266Ab2AYRCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 12:02:06 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33593 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756157Ab2AYRCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 12:00:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="102594106"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: Andy Isaacson <adi@hexapodia.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: RE: e1000e: repeated eth0: Error reading PHY register
-Thread-Topic: e1000e: repeated eth0: Error reading PHY register
-Thread-Index: AQHM20Pq3/agjhTAsEu2qej2y2Qd/JYdTmtA
-Date: Wed, 25 Jan 2012 17:00:29 +0000
-Message-ID: <804857E1F29AAC47BF68C404FC60A1842437C3@ORSMSX102.amr.corp.intel.com>
-References: <20120125092101.GA10626@hexapodia.org>
-In-Reply-To: <20120125092101.GA10626@hexapodia.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jan 2012 12:02:05 -0500
+X-Sasl-enc: ali8GBiCVANMvWE5CtJHmtMoCjjm+Csmj611DTBnz/wz 1327510923
+Date: Wed, 25 Jan 2012 09:01:51 -0800
+From: Greg KH <greg@kroah.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFCv3 0/9] perf tool: parser generator for events parsing
+Message-ID: <20120125170151.GB5311@kroah.com>
+References: <20120109152855.GA1597@m.brq.redhat.com>
+ <1326717103-10287-1-git-send-email-jolsa@redhat.com>
+ <1327422364.2446.75.camel@twins>
+ <20120125005342.GA24662@kroah.com>
+ <1327488573.2614.59.camel@laptop>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327488573.2614.59.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->owner@vger.kernel.org] On Behalf Of Andy Isaacson
->Sent: Wednesday, January 25, 2012 1:21 AM
->To: linux-kernel@vger.kernel.org; netdev@vger.kernel.org; e1000-
->devel@lists.sourceforge.net
->Subject: e1000e: repeated eth0: Error reading PHY register
->
->On my Thinkpad X201s running 3.3-rc1 I'm seeing bursts of these:
->
->[ 1270.207370] e1000e 0000:00:19.0: eth0: Error reading PHY register
->[ 1271.003042] e1000e 0000:00:19.0: eth0: Error reading PHY register
->[ 1271.798896] e1000e 0000:00:19.0: eth0: Error reading PHY register
->[ 1272.595324] e1000e 0000:00:19.0: eth0: Error reading PHY register
->
->I've been seeing these messages for a few kernel versions, but
->unfortunately due to a hardware failure I don't have kernels further
->back than 3.0.  I'm pretty sure this didn't happen on 2.6.38.
->
->There are nearly always exactly 12 messages (I have one log sequence
->where there are only 5, out of 110 occurrences), and they come every 300
->seconds during some period, then they go away for a long time, then come
->back with no clear cause.
->
->% dmesg | grep PHY | uniq -w4 -c
-> 25 [    1.253783] e1000e 0000:00:19.0: eth0: MAC: 9, PHY: 10, PBA No: A002FF-
->0FF
-> 12 [  370.314165] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> 12 [  670.201544] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> 12 [  970.045374] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> 12 [ 1270.207370] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> 12 [ 1570.031407] e1000e 0000:00:19.0: eth0: Error reading PHY register
->
->(the clock is currently at 3636.)
->
->The machine is on and off of AC power, and suspended with "sudo
->pm-suspend" then resumed, on a regular basis; there doesn't seem to be
->any clear correlation.
->
->There's nothing plugged into the ethernet jack when this happens.  (I
->don't use wired ethernet often enough to be sure if it happens when the
->wire is connected; there doesn't seem to be any impact on
->functionality on the rare occasion I do use it.)
->
->% sudo ethtool eth0
->Settings for eth0:
->        Supported ports: [ TP ]
->        Supported link modes:   10baseT/Half 10baseT/Full
->                                100baseT/Half 100baseT/Full
->                                1000baseT/Full
->        Supported pause frame use: No
->        Supports auto-negotiation: Yes
->        Advertised link modes:  10baseT/Half 10baseT/Full
->                                100baseT/Half 100baseT/Full
->                                1000baseT/Full
->        Advertised pause frame use: No
->        Advertised auto-negotiation: Yes
->        Speed: Unknown!
->        Duplex: Unknown! (255)
->        Port: Twisted Pair
->        PHYAD: 2
->        Transceiver: internal
->        Auto-negotiation: on
->        MDI-X: Unknown
->        Supports Wake-on: pumbg
->        Wake-on: d
->        Current message level: 0x00000001 (1)
->                               drv
->        Link detected: no
->
->% sudo lspci -vvvs 0:19
->00:19.0 Ethernet controller: Intel Corporation 82577LM Gigabit Network
->Connection (rev 06)
->        Subsystem: Lenovo Device 2153
->        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
->Stepping- SERR+ FastB2B- DisINTx+
->        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-><MAbort- >SERR- <PERR- INTx-
->        Latency: 0
->        Interrupt: pin A routed to IRQ 40
->        Region 0: Memory at f2500000 (32-bit, non-prefetchable) [size=128K]
->        Region 1: Memory at f2525000 (32-bit, non-prefetchable) [size=4K]
->        Region 2: I/O ports at 1820 [size=32]
->        Capabilities: [c8] Power Management version 2
->                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-
->,D3hot+,D3cold+)
->                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
->        Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
->                Address: 00000000fee0f00c  Data: 4149
->        Capabilities: [e0] PCI Advanced Features
->                AFCap: TP+ FLR+
->                AFCtrl: FLR-
->                AFStatus: TP-
->        Kernel driver in use: e1000e
->
->
->Full dmesg at http://web.hexapodia.org/~adi/snow/dmesg-3.3.0-rc1
->
->Thanks,
->-andy
+On Wed, Jan 25, 2012 at 11:49:33AM +0100, Peter Zijlstra wrote:
+> On Tue, 2012-01-24 at 16:53 -0800, Greg KH wrote:
+> 
+> > Well, what's to keep someone from exploding one of those files to go
+> > over the buffer size without knowing it?
+> 
+> The content is known at compile time, we could put checks in. But yeah
+> 4k isn't that much text..
+> 
+> > Even after reading the above link, I can't really understand what this
+> > is being used for.  As it's sysfs files, why aren't Documentation/ABI/
+> > files also being created with the patch explaining it all?
+> 
+> Ah, yeah, documentation, wasn't that written in C :-)
+> 
+> But fair enough... Anyway, the purpose is to describe the magic bits
+> that go into perf_event_attr::config[012] for a particular pmu.
+> 
+> Basically they're the 'hardware' bitmasks we want to export, so that
+> userspace can deal with sane name/value pairs.
+> 
+> > Again, if at all possible, sysfs should be one value per file.  Please
+> > NEVER create a sysfs file that requires a parser to determine what is
+> > going on in it.  It should be a simple 'read the value' type thing.
+> 
+> The whole purpose was to drive a parser :-) Anyway, is:
+> "config:0-7,32-35" acceptable for a single file?
+> 
+> This means, the 'config' member of struct perf_event_attr bits 0-7,32-35
+> form a bitfield whose name is then given by the filename that has this
+> content.
 
-Please file a bug with this information at
-http://sourceforge.net/tracker/?group_id=42302&atid=447449
+Yes, that would be fine.
 
+> > So yes, multiple sysfs files do make sense, the resource load should be
+> > almost non-existant for new ones.
+> 
+> Surely all these attribute objects take more space than a few lines of
+> text, but ok, I guess multiple files it is.
+
+Great, thanks for asking.
+
+greg k-h
