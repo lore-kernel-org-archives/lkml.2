@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab2AYA4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 19:56:20 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:56304 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755138Ab2AYA4T (ORCPT
+	id S1755335Ab2AYA5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 19:57:24 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63400 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab2AYA5W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 19:56:19 -0500
-X-Sasl-enc: V9psROEqOcR5L2msAOXjw4ZSlWwIfFQPPOXw/LKRU3RS 1327452978
-Date: Tue, 24 Jan 2012 16:53:42 -0800
-From: Greg KH <greg@kroah.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFCv3 0/9] perf tool: parser generator for events parsing
-Message-ID: <20120125005342.GA24662@kroah.com>
-References: <20120109152855.GA1597@m.brq.redhat.com>
- <1326717103-10287-1-git-send-email-jolsa@redhat.com>
- <1327422364.2446.75.camel@twins>
+	Tue, 24 Jan 2012 19:57:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327422364.2446.75.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+	<CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+	<CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+	<CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
+	<CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
+	<CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
+	<CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
+Date: Tue, 24 Jan 2012 16:57:22 -0800
+X-Google-Sender-Auth: bOX6-1MqY-lXe9y0tbRqNQHlS3U
+Message-ID: <CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: Yinghai Lu <yinghai@kernel.org>
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 05:26:04PM +0100, Peter Zijlstra wrote:
-> On Mon, 2012-01-16 at 13:31 +0100, Jiri Olsa wrote:
-> > Here's new version of event parsing patchset. To summarize:
-> >  - adding event parser bison/flex generator
-> >  - the event syntax stays as it was
-> >  - adding event format file sysfs attribute
-> >    for pmu device
-> 
-> Added Greg to CC, please also see: https://lkml.org/lkml/2012/1/16/148
-> 
-> Right, lets hope we can convince the sysfs people that a few lines are
-> ok.. if not we need to find another way to represent all this muck, one
-> alternative is exploding the whole thing into a sysfs hierarchy like:
-> 
-> 
-> format/event: config:0-7
-> ...
-> 
-> format/config: config:0-63
-> format/config1: config1:0-63
-> format/config2: config2:0-63
-> 
-> that will of course consume loads more resources but if that's what it
-> takes :-(
+2012/1/24 Yinghai Lu <yinghai@kernel.org>:
+> 2012/1/24 Rogério Brito <rbrito@ime.usp.br>:
+>>> it seems not related. or could be ioremap etc have problem?
+>>>
+>>> So can you try to boot with nopat?
+>>
+>> I have experimented with Linux 3.3.0-rc1-00080-g16111ea, which is a merge of:
+>>
+>> * yinghai's usb_smi_disable_early branch with HEAD = a3a6c096
+>> * linus's master branch with HEAD = 4a7cbb56
+>>
+>> I have booted the kernel as above, configured, as Yinghai asked, with
+>> OHCI disabled, but no other changes from the previous times.  I
+>> registered in video two boots with only a slight change in options
+>> passed to the kernel, with:
 
-Well, what's to keep someone from exploding one of those files to go
-over the buffer size without knowing it?
+you really need disable_cardbus_mem1_pref.patch that i sent out before.
 
-Even after reading the above link, I can't really understand what this
-is being used for.  As it's sysfs files, why aren't Documentation/ABI/
-files also being created with the patch explaining it all?
+also please try to boot with
+pci=nobios
 
-Again, if at all possible, sysfs should be one value per file.  Please
-NEVER create a sysfs file that requires a parser to determine what is
-going on in it.  It should be a simple 'read the value' type thing.
+it will disable pci bios32 probing.
 
-So yes, multiple sysfs files do make sense, the resource load should be
-almost non-existant for new ones.
+Thanks
 
-thanks,
-
-greg k-h
+Yinghai
