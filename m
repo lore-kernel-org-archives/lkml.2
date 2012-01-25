@@ -1,34 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab2AYA6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 19:58:01 -0500
-Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:25888 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab2AYA6A (ORCPT
+	id S1755387Ab2AYBDb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 20:03:31 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:59403 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755138Ab2AYBDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 19:58:00 -0500
-Message-ID: <99542464f25a7c7e834618b8269c3b21@mwinf5d63.me-wanadoo.net>
+	Tue, 24 Jan 2012 20:03:30 -0500
+Date: Tue, 24 Jan 2012 20:03:24 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: NFS auth_rpcgss client crash in 3.3-rc1+ (regression)
+Message-ID: <20120125010323.GA11366@elliptictech.com>
+References: <20120124041251.GA16952@elliptictech.com>
+ <20120124164144.GA19315@elliptictech.com>
+ <20120124182903.GA10964@fieldses.org>
 MIME-Version: 1.0
- 	charset="windows-1251";
- 	reply-type=original
-From: "hilda" <hutchinsn@shinko.com>
-Subject: Looking for someone to cherish
-To: "Steffen" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; 	format=flowed;
-Date: Wed, 25 Jan 2012 01:54:21 +0100
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124182903.GA10964@fieldses.org>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day, my dear friend!
-What are we looking for here?
-I think that everybody is looking for happiness http://destiny-combine.in
-I am an intelligent, kind and caring lady. I like music, sports, 
-sightseeing  and great tasty  dishes! I like to cook and I think it feels 
-amazing if you cook for the dear people! My friends say that my dishes are 
-very tasty! I would like to meet a man who is reliable  and kind, has a good 
-character. He should also be educated and love children.
-Goodbye
-georgia
+On 2012-01-24 13:29 -0500, J. Bruce Fields wrote:
+> On Tue, Jan 24, 2012 at 11:41:44AM -0500, Nick Bowler wrote:
+> > On 2012-01-23 23:12 -0500, Nick Bowler wrote:
+> > > I'm seeing crashes similar to the following with latest Linus' git on an
+> > > NFSv4 client machine.  User home directories are NFS mounted with
+> > > sec=krb5, and the crash often occurs immediately or shortly after the
+> > > first successful login.  However, it does not always crash: it happens
+> > > maybe 50% of the time.  Most of the time the box is dead as a result.
+> > > 
+> > > I see this in Linux 3.3-rc1 as well, but I've not had a chance to bisect
+> > > it yet (might be tricky since it's not 100% reliable).  The server is
+> > > running Linux 3.2.1.
+> > 
+> > I forgot to mention that this is a regression from 3.2 on the client.
+> 
+> Might be the same as this?:
+> 
+> 	http://marc.info/?l=linux-nfs&m=132734162715894&w=2
+
+Could be.  I just built a kernel with that patch applied and it's
+survived several reboots/logins so far.
+
+Thanks,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
