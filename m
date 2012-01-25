@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2AYHSU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 02:18:20 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35132 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab2AYHST (ORCPT
+	id S1752643Ab2AYHih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 02:38:37 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45024 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab2AYHig convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 02:18:19 -0500
-Date: Wed, 25 Jan 2012 11:18:14 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [patch 3/4] c/r: procfs: add arg_start/end, env_start/end and
- exit_code members to /proc/$pid/stat
-Message-ID: <20120125071814.GE2005@moon>
-References: <20120123142036.025893883@openvz.org>
- <20120123142436.336126707@openvz.org>
- <20120124155941.4f7453d4.akpm@linux-foundation.org>
- <20120125065450.GC2005@moon>
- <20120124231245.e4c68f90.akpm@linux-foundation.org>
+	Wed, 25 Jan 2012 02:38:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120124231245.e4c68f90.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
+References: <20120123.134352.1621146585245670953.davem@davemloft.net>
+ <CAGsizzJnQ6b6eSC0ZnAtFguU7_xDfWFPSY6L4DWXc24F+Ts2XQ@mail.gmail.com>
+ <CAOzFzEjE7b-Y+_vOWeBKbHDkURRcYXomSTcwB91vKHVWQxBVsg@mail.gmail.com>
+ <20120124.230203.1478271172075708903.davem@davemloft.net> <CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
+Date: Wed, 25 Jan 2012 08:38:15 +0100
+X-Google-Sender-Auth: 5UxLyViQ7e_81gjU94JdVaS3sDg
+Message-ID: <CAGsizzJqNgos89pp-0ivw6ZmUd3+SehwdAnPY7FuGG+xvPWxAg@mail.gmail.com>
+Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: Jesse Gross <jesse@nicira.com>
+Cc: David Miller <davem@davemloft.net>, joseph.glanville@orionvm.com.au,
+        eric.dumazet@gmail.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 11:12:45PM -0800, Andrew Morton wrote:
-> On Wed, 25 Jan 2012 10:54:50 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> 
-> > > /proc/pid/stat is getting out of control.  People are now sending patches
-> > > because reading from this thing already takes too long.
-> 
-> err, actually, that was /proc/stat/
-> 
+2012/1/25 Jesse Gross <jesse@nicira.com>:
+> On Tue, Jan 24, 2012 at 8:02 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Joseph Glanville <joseph.glanville@orionvm.com.au>
+>> Date: Wed, 25 Jan 2012 14:48:37 +1100
+>>
+>>> The reason why this patch is useful is that it stands to be the only
+>>> true mulitpoint L2 VPN with a kernel space forwarding plane.
+>>
+>> So what you're telling me is that I added this huge openvswitch
+>> thing essentially for nothing?
+>
+> I think it's actually the opposite - Open vSwitch can be used to
+> implement this type of thing as well as for many other use cases.  On
+> the other hand, even when implementing a multipoint L2 solution it can
+> be useful to have additional levels of control but you can't do that
+> with this patch because it essentially statically glues together
+> tunneling and bridging.
+Yes, those methods are glued together. If you are speaking about
+additional level of controls. What kind of control is missing?
 
-Ah! (I saw those thread, but then I get confused and thought maybe there were
-for /proc/pid/stat as well but I simply missed it ;)
-
-> > 
-> > I can add prctl PR_GET_MM with subcodes, since PR_SET_MM is already here
-> > and wrapped with CHECKPOINT_RESTORE. Would this be better?
-> 
-> mm, not really - /proc is the logical/expected place for it.
-> 
-> I'm thinking that perhaps we should start again with all of this and
-> export all this information in brand new, well-designed procfs files. 
-> We'd still maintain /proc/stat and /proc/pid/stat but people should
-> migrate off them.  Eventually (10 years?) everyone will be setting their
-> CONFIG_PROC_[PID_]STAT to 'n' and perhaps we can retire the things.
-> 
-> Meanwhile, I suppose you may as well continue to make /proc/pid/stat
-> even crazier :(  It isn't as bad as /proc/stat!
-> 
-
-At moment indeed it's not that bloated... yet.
-
-> btw, do we really need to do "(mm && permitted)" so many times?  ie,
-> can we split that seq_printf up and do
-> 
-> 	if (mm && permitted) {
-> 		seq_printf(m + offset, "%lu", mm->start_data);
-> 		...
-> 	} else {
-> 		seq_printf(m + offset, "0 0 0 0 0 0 0 0 0");
-> 	}
-> 
-> ?  Although this probably won't help much.
-> 
-
-Yeah we can. I'll update.
-
-	Cyrill
+As if I compare it to standard bridge, it is missing:
+-  STP code, which is not relevant here as the topology inside the
+gretap bridge never reaches loops - it represent more one shared link
+than box with multiple links from STP point of view. On the other hand
+STP can be tunneled inside of that tunnel by putting gretap interface
+as part of some bridge e.g. "brctl addif br0 gretap0".
+- IGMP/MLD snooping. IGMP/MLD snooping are useful features, but due
+the encapsulation rules, the only one optimalization can be done and
+that's if in ONLY ONE gretap enabled nodes requires to join some
+multicast group inside the gretap and one node has source behind. In
+that case those frames can be forwarded to only that gretap node. In
+case of two or more, the encapsulation process will result in using
+multicast as underlying technology so any one of the gretap nodes will
+received the frames regardless of state if IGMP/MLD. On the other hand
+such multicast optimalizations are missing from whole GRE tunnels code
+(PIM/MLD/IGMP snooping, using something like cisco Multicast Domain
+Trees/MDT....), so if somebody wants to optimize that feel free, but
+don't blame this patch for missing those.
+- did I miss something?
