@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab2AYTEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 14:04:47 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:63294 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964Ab2AYTEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 14:04:44 -0500
-Date: Wed, 25 Jan 2012 14:02:14 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Guillaume Knispel <gknispel@proformatique.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Xavier Carcelle <xcarcelle@avencall.com>,
-        =?iso-8859-1?B?Tm/p?= Rubinstein <nrubinstein@avencall.com>
-Subject: Re: How to "register" a GSI for a non PCI non ISA device
-Message-ID: <20120125190214.GC18606@phenom.dumpdata.com>
-References: <20120124184203.1b0878c2@xilun>
- <4F1F99A5.1000206@kernel.org>
- <20120125182314.7834c75b@xilun>
+	id S1752133Ab2AYTFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 14:05:14 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:45615 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751964Ab2AYTFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 14:05:12 -0500
+Date: Wed, 25 Jan 2012 19:05:10 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1201251902590.12477@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120125182314.7834c75b@xilun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F205242.0033,ss=1,re=0.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 06:23:14PM +0100, Guillaume Knispel wrote:
-> On Wed, 25 Jan 2012 00:56:53 -0500
-> Len Brown <lenb@kernel.org> wrote:
-> 
-> > On 01/24/2012 12:42 PM, Guillaume Knispel wrote:
-> > 
-> > > Hi,
-> > > 
-> > > I'm building a PC platform with additional non-PCI and non-ISA devices:
-> > > they are basically simple telecom chipsets connected to an SPI and an
-> > > old school parallel bus (Intel LEB bus) and GPIO pins that can be used
-> > > as interrupts through the IO APIC which exposes 40 GSI. From the point
-> > > of view of the software the SPI, LEB, and GPIO are provided by PCI
-> > > devices (in reality they are embedded controllers in an Intel SoC
-> > > 80579). Anyway I'm not sure the additional GSI are described anywhere
-> > > in whatever black magic ACPI / legacy BIOS table they could be
-> > > (but I've complete control over the FW, so I can had whatever is
-> > >  needed when I know it).
-> > 
-> > What is the benefit of implementing ACPI on this custom system?
-> 
-> For our short term project it seems to be more a necessity than a
-> benefit. ACPI is supported by the SoC, tables are already largely
-> provided by Coreboot, the whole x86 ecosystem including Linux is more
-> or less based around ACPI, and my whole interrogation comes from the
-> fact that *acpi*_register_gsi() seems to be necessary to configure a
-> GSI in the APIC but is not exported anymore, so my guess is that if I
 
-Hm, isn't it __acpi_register_gsi?
+Hi Linus,
 
-> can't call it explicitly from my LKM, there should better be a way to
-> make it be called when an ACPI thing is done, or maybe a legacy table
-> parsed.
+bunch of regression fixes since TTM rework and radeon initialisation, 
+modesetting fixes for Alex to fix some black screens on kms start type 
+issues, and two radeon ACPI fixes that make some laptops no oops on 
+startup.
 
-Can you do it the way xen does? Look in arch/x86/xen/pci.c
-> 
-> As we first target an unmodified (if possible) 2.6.32 kernel from
-> Debian Squeeze, I can't just re-export acpi_register_gsi() and call it
-> a day. (If I've no other choice I'll obviously do it, but this would be
-> quite bad for future maintenance).
+I think Intel have some -fixes coming soon which I'll send in a separate 
+pull.
 
-Oh wow. That is ancient. 3.2?
+Dave.
+
+The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
+
+  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
+
+are available in the git repository at:
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+Alan Cox (1):
+      gma500: Fix shmem mapping
+
+Alex Deucher (7):
+      drm/radeon/kms: Add an MSI quirk for Dell RS690
+      drm/radeon/kms: add some missing semaphore init
+      drm/radeon/kms: move disp eng pll setup to init path
+      drm/radeon/kms: move panel mode setup into encoder mode set
+      drm/radeon/kms: rework modeset sequence for DCE41 and DCE5
+      drm/radeon/kms: use drm_detect_hdmi_monitor for picking encoder mode
+      drm/radeon/kms: refine TMDS dual link checks
+
+Ben Skeggs (1):
+      drm/ttm: fix two regressions since move_notify changes
+
+Igor Murzov (2):
+      drm/radeon: fix invalid memory access in radeon_atrm_get_bios()
+      drm/radeon: finish getting bios earlier
+
+Jerome Glisse (2):
+      drm/radeon: silence out possible lock dependency warning
+      drm/radeon: avoid deadlock if GPU lockup is detected in ib_pool_get
+
+Jesper Juhl (1):
+      gpu, drm, sis: Don't return uninitialized variable from sis_driver_load()
+
+Thomas Hellstrom (1):
+      drm: Fix authentication kernel crash
+
+ drivers/gpu/drm/drm_auth.c                   |    6 ++-
+ drivers/gpu/drm/drm_fops.c                   |    5 ++
+ drivers/gpu/drm/gma500/gtt.c                 |    5 +-
+ drivers/gpu/drm/nouveau/nouveau_bo.c         |    4 +
+ drivers/gpu/drm/radeon/atombios_crtc.c       |   60 +++++++++---------
+ drivers/gpu/drm/radeon/atombios_dp.c         |   22 +++----
+ drivers/gpu/drm/radeon/atombios_encoders.c   |   89 +++++++++++++-------------
+ drivers/gpu/drm/radeon/evergreen.c           |    1 +
+ drivers/gpu/drm/radeon/evergreend.h          |    1 +
+ drivers/gpu/drm/radeon/ni.c                  |    1 +
+ drivers/gpu/drm/radeon/nid.h                 |    1 +
+ drivers/gpu/drm/radeon/radeon.h              |   84 ++++++++++++------------
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |    4 +-
+ drivers/gpu/drm/radeon/radeon_bios.c         |    2 +-
+ drivers/gpu/drm/radeon/radeon_device.c       |    8 ++-
+ drivers/gpu/drm/radeon/radeon_display.c      |    6 +-
+ drivers/gpu/drm/radeon/radeon_encoders.c     |   77 ++++++++++++++++++++++
+ drivers/gpu/drm/radeon/radeon_irq_kms.c      |    6 ++
+ drivers/gpu/drm/radeon/radeon_mode.h         |    8 ++
+ drivers/gpu/drm/radeon/radeon_ring.c         |   37 ++++++-----
+ drivers/gpu/drm/sis/sis_drv.c                |    3 +-
+ drivers/gpu/drm/ttm/ttm_bo.c                 |   17 ++++-
+ include/drm/drmP.h                           |    1 +
+ 23 files changed, 285 insertions(+), 163 deletions(-)
