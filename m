@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab2AYOIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 09:08:06 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10589 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412Ab2AYOIE (ORCPT
+	id S1755989Ab2AYOLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:11:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:32831 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab2AYOLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 09:08:04 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 25 Jan 2012 06:08:00 -0800
-Message-ID: <4F200C93.30502@nvidia.com>
-Date: Wed, 25 Jan 2012 19:37:15 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lrg@ti.com" <lrg@ti.com>, "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2] regulator: tps65910: Sleep control through external
- inputs
-References: <1327489068-9460-1-git-send-email-ldewangan@nvidia.com> <20120125124250.GH3687@opensource.wolfsonmicro.com> <4F1FF9EF.9000004@nvidia.com> <20120125125020.GI3687@opensource.wolfsonmicro.com>
-In-Reply-To: <20120125125020.GI3687@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 25 Jan 2012 09:11:35 -0500
+Subject: Re: [PATCH v9 3.2 0/9] Uprobes patchset with perf probe support
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <20120117093925.GC10397@elte.hu>
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
+	 <20120116083442.GA23622@elte.hu>
+	 <20120116151755.GH10189@linux.vnet.ibm.com>
+	 <20120117093925.GC10397@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Jan 2012 15:11:27 +0100
+Message-ID: <1327500687.2614.70.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 January 2012 06:20 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Wed, Jan 25, 2012 at 06:17:43PM +0530, Laxman Dewangan wrote:
->> On Wednesday 25 January 2012 06:12 PM, Mark Brown wrote:
->>> This really isn't what the set_mode() API is for - especially the fact
->>> that it supports turning the regulator off which really isn't what
->>> set_mode() is supposed to do.  A generic driver using this API isn't
->>> going to play too well.
->> Then what should be the method? Is it through the macro similar to
->> patch V1 where LOW_POWER mode option come from platform data? The
->> idea  is to set the regulator in OFF or low power mode based on
->> external control.
-> Like I said we've got the various suspend callbacks for setting the
-> behaviour in suspend mode.
-Then in this case, I will implement the
-set_suspend_enable() and put the device in low power mode.
-set_suspend_disable() and put the device in full power, normal mode.
-set_suspend_mode(): based on mode and external control, either it will 
-call existing set_mode() if it is not externally controlled otherwise 
-set the mode locally for the case of externally controlled.
+On Tue, 2012-01-17 at 10:39 +0100, Ingo Molnar wrote:
 
-The board file will set the regulator_state accordingly for a given 
-requirements through the constraints.
+> I did not suggest anything complex or intrusive: just basically 
+> unify the namespace, have a single set of callbacks, and call 
+> into the uprobes and perf code from those callbacks - out of the 
+> sight of MM code.
+> 
+> That unified namespace could be called:
+> 
+>     event_mmap(...);
+>     event_fork(...);
+> 
+> etc. - and from event_mmap() you could do a simple:
+> 
+> 	perf_event_mmap(...)
+> 	uprobes_event_mmap(...)
+> 
+> [ Once all this is updated to use tracepoints it would turn into 
+>   a notification callback chain kind of thing. ]
 
-Does it make sense?
+We keep disagreeing on this. I utterly loathe hiding stuff in notifier
+lists. It makes it completely non-obvious who all does what.
+
+Another very good reason to not do what you suggest is that
+perf_event_mmap() is a pure consumer, it doesn't have a return value,
+whereas uprobes_mmap() can actually fail the mmap.
 
 
-> * Unknown Key
-> * 0x6E30FDDD
 
