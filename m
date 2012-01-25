@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab2AYUWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 15:22:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65337 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab2AYUWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 15:22:12 -0500
-Message-ID: <4F206420.5080200@redhat.com>
-Date: Wed, 25 Jan 2012 20:20:48 +0000
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl> <20120118015013.GR11715@one.firstfloor.org> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk> <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl> <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com> <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com> <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com> <20120125193635.GA30311@redhat.com>
-In-Reply-To: <20120125193635.GA30311@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752229Ab2AYUZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 15:25:22 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:48260 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751301Ab2AYUZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 15:25:21 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.3-rc1
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20120125202519.907DB426DA7@whiskey.americas.sgi.com>
+Date: Wed, 25 Jan 2012 14:25:19 -0600 (CST)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 07:36 PM, Oleg Nesterov wrote:
-> 
-> Not sure this is really better, but there is another idea. Currently we
-> have PTRACE_O_TRACESYSGOOD to avoid the confusion with the real SIGTRAP.
-> Perhaps we can add PTRACE_O_TRACESYS_VERY_GOOD (or we can look at
-> PT_SEIZED instead) and report TS_COMPAT via ptrace_report_syscall ?
+Hi Linus,
 
-May I beg to don't rely on PTRACE_SYSCALL for anything new?
-You can't PTRACE_SINGLESTEP and PTRACE_SYSCALL simultaneously.  Think of
-gdb single-stepping all the way for some reason (software watchpoints, for ex.),
-while at the same time wanting to catch syscalls.
+   Please pull in the following bugfix for xfs.  We forgot to drop a lock on
+   error in xfs_readlink.  It hasn't been through -next yet, but there is no
+   -next tree tomorrow.  The fix is clear so I'm sending this request today.
 
-As Roland suggested, replacing PTRACE_SYSCALL with PTRACE_O_TRACE_SYSCALL_{ENTRY,EXIT}
-and PTRACE_EVENT_SYSCALL_{ENTRY,EXIT} would be superior, syscall tracing wise.
+Thanks,
+	Ben
 
--- 
-Pedro Alves
+The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
+  Linus Torvalds (1):
+        Linux 3.3-rc1
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs.git for-linus
+
+Jan Kara (1):
+      xfs: Fix missing xfs_iunlock() on error recovery path in xfs_readlink()
+
+ fs/xfs/xfs_vnodeops.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
