@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab2AYOEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 09:04:34 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:45013 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754313Ab2AYOEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 09:04:32 -0500
-Message-ID: <4F200BE2.2070301@free.fr>
-Date: Wed, 25 Jan 2012 15:04:18 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1755941Ab2AYOFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:05:12 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59975 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445Ab2AYOFK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 09:05:10 -0500
+Date: Wed, 25 Jan 2012 15:05:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jeff Layton <jlayton@redhat.com>
+cc: Boaz Harrosh <bharrosh@panasas.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        bfields@redhat.com, linux-nfs@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: WARNING: at lib/debugobjects.c:262
+ debug_print_object+0x8c/0xb0()
+In-Reply-To: <20120124124353.7148b827@tlielax.poochiereds.net>
+Message-ID: <alpine.LFD.2.02.1201251502210.2716@ionos>
+References: <20120120135646.2fc4fa61@tlielax.poochiereds.net> <4F1BCCD6.4020603@codeaurora.org> <20120123102311.4378b8c1@tlielax.poochiereds.net> <20120124074516.GC2420@redhat.com> <4F1E7F3F.3060703@panasas.com> <20120124073626.552bc31c@tlielax.poochiereds.net>
+ <4F1EC7C9.2020001@panasas.com> <20120124113234.26c47969@tlielax.poochiereds.net> <20120124124353.7148b827@tlielax.poochiereds.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 0/3] coupled cpuidle state support
-References: <1324426147-16735-1-git-send-email-ccross@android.com> <4F1929E9.7070707@linaro.org> <CAMbhsRTbVqV6p0py9NGZrpFPf2yvp-B0dr+o-m7qbdja_-Lfzw@mail.gmail.com>
-In-Reply-To: <CAMbhsRTbVqV6p0py9NGZrpFPf2yvp-B0dr+o-m7qbdja_-Lfzw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2012 09:40 PM, Colin Cross wrote:
-> On Fri, Jan 20, 2012 at 12:46 AM, Daniel Lezcano
-> <daniel.lezcano@linaro.org>  wrote:
->> Hi Colin,
->>
->> this patchset could be interesting to resolve in a generic way the cpu
->> dependencies.
->> What is the status of this patchset ?
-> I can't do much with it right now, because I don't have any devices
-> that can do SMP idle with a v3.2 kernel.  I've started working on an
-> updated version that avoids the spinlock, but it might be a while
-> before I can test and post it.  I'm mostly looking for feedback on the
-> approach taken in this patch, and whether it will be useful for other
-> SoCs besides Tegra and OMAP4.
+On Tue, 24 Jan 2012, Jeff Layton wrote:
+> > Still, I wonder if there are other problems like this around. The slab
+> > allocators seem to call debug_check_no_obj_freed() on kmem_cache_free,
+> > but parts of the objects themselves (like the timer in the work object
+> > here) get initialized in other places and aren't necessarily
+> > reinitialized when they're recycled out of the slab...
+> > 
+> 
+> On second thought...getting rid of the ctor function here might be
+> problematic. We have to call inode_init_once, etc...
+> 
+> Almost all of the inode slabs have one, so I've settled for just moving
+> the INIT_DELAYED_WORK call out of init_once and into rpc_alloc_inode. I
+> sent a patch to Trond and linux-nfs to do that. That will fix this
+> case, but I do wonder if there are other places in the kernel that have
+> similar problems with debugobject initialization.
 
-Hi Colin,
+The problem is that debugobject requires that a newly allocated object
+is reinitialized and made available to the debugobjects code again
+simply because we remove it from the debugobjects core on
+kmem_cache_free(). 
 
-I will be happy to test your patchset. Do you have a pointer to a more 
-recent kernel ?
+The real question is why the heck kmem_cache_alloc() does not call the
+ctor on each allocation and just expects the previously used and freed
+object to be in a consistent initialiazed state.
 
+Thanks,
 
->> Did you have the opportunity to measure the power consumption with and
->> without this patchset ?
-> Power consumption will be very dependent on the specific SoC in
-> question.  The most important factors are the power savings of the
-> independent cpuidle state (normally WFI) vs. the hotplug state
-> (normally 1 cpu in OFF), and the workload being tested.
->
-> On a very idle system, these patches result in the same total power as
-> hotplugging one cpu and letting the other idle normally.  On a 25%
-> busy system, you might see a slight increase in power, as the best
-> independent cpuidle state might be WFI, vs 1 cpu in OFF mode in
-> hotplug.  On OMAP4, that difference is small, on the order of 10 mW.
-> Once you hit the threshold where a hotplug governor would have
-> hotplugged in the second cpu (lets say 40%), the savings from these
-> patches are enormous, as you can hit the lowest power state up to 60%
-> of the time, where the hotplug solution would never be going below WFI
-> on both cpus.  On OMAP4, that can be well over 100 mW.
-
-Interesting.
-
-
-Thanks
-
-   -- Daniel
-
+	tglx
