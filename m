@@ -1,359 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab2AYKs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 05:48:29 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43465 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab2AYKs1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 05:48:27 -0500
+	id S1752026Ab2AYKsw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 05:48:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751415Ab2AYKsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 05:48:51 -0500
+Message-ID: <4F1FDDE2.9050609@redhat.com>
+Date: Wed, 25 Jan 2012 12:48:02 +0200
+From: Ronen Hod <rhod@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <20120124180707.223ce9b1@debxo>
-References: <4F1F3F17.8060201@gmail.com> <20120124180707.223ce9b1@debxo>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Wed, 25 Jan 2012 11:48:06 +0100
-Message-ID: <CAH9NwWc9WNDWC3HkWJU=-4a0i-AgfB01Qy1NfBYuvCiQPXLesQ@mail.gmail.com>
-Subject: Re: [PATCH] backlight: Add backlight driver for Bachmann's ot200
-To: Andres Salomon <dilinger@queued.net>
-Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: leonid.moiseichuk@nokia.com, penberg@kernel.org, riel@redhat.com,
+        minchan@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
+        kosaki.motohiro@gmail.com, hannes@cmpxchg.org,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC 1/3] /dev/low_mem_notify
+References: <4F175706.8000808@redhat.com> <alpine.LFD.2.02.1201190922390.3033@tux.localdomain> <4F17DCED.4020908@redhat.com> <CAOJsxLG3x_R5xq85hh5RvPoD+nhgYbHJfbLW=YMxCZockAXJqw@mail.gmail.com> <4F17E058.8020008@redhat.com> <84FF21A720B0874AA94B46D76DB9826904559D46@008-AM1MPN1-003.mgdnok.nokia.com> <20120124153835.GA10990@amt.cnet> <4F1ED77F.4090900@redhat.com> <20120124181034.GA19186@amt.cnet> <4F1FC2C8.10103@redhat.com> <20120125101209.GB29167@amt.cnet>
+In-Reply-To: <20120125101209.GB29167@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/25 Andres Salomon <dilinger@queued.net>:
-> On Wed, 25 Jan 2012 00:30:31 +0100
-> Christian Gmeiner <christian.gmeiner@gmail.com> wrote:
+On 01/25/2012 12:12 PM, Marcelo Tosatti wrote:
+> On Wed, Jan 25, 2012 at 10:52:24AM +0200, Ronen Hod wrote:
+>> On 01/24/2012 08:10 PM, Marcelo Tosatti wrote:
+>>> On Tue, Jan 24, 2012 at 06:08:31PM +0200, Ronen Hod wrote:
+>>>> On 01/24/2012 05:38 PM, Marcelo Tosatti wrote:
+>>>>> On Thu, Jan 19, 2012 at 10:53:29AM +0000, leonid.moiseichuk@nokia.com wrote:
+>>>>>>> -----Original Message-----
+>>>>>>> From: ext Ronen Hod [mailto:rhod@redhat.com]
+>>>>>>> Sent: 19 January, 2012 11:20
+>>>>>>> To: Pekka Enberg
+>>>>>> ...
+>>>>>>>>>> Isn't
+>>>>>>>>>>
+>>>>>>>>>> /proc/sys/vm/min_free_kbytes
+>>>>>>>>>>
+>>>>>>>>>> pretty much just that?
+>>>>>>>>> Would you suggest to use min_free_kbytes as the threshold for sending
+>>>>>>>>> low_memory_notifications to applications, and separately as a target
+>>>>>>>>> value for the applications' memory giveaway?
+>>>>>>>> I'm not saying that the kernel should use it directly but it seems
+>>>>>>>> like the kind of "ideal number of free pages" threshold you're
+>>>>>>>> suggesting. So userspace can read that value and use it as the "number
+>>>>>>>> of free pages" threshold for VM events, no?
+>>>>>>> Yes, I like it. The rules of the game are simple and consistent all over, be it the
+>>>>>>> alert threshold, voluntary poling by the apps, and for concurrent work by
+>>>>>>> several applications.
+>>>>>>> Well, as long as it provides a good indication for low_mem_pressure.
+>>>>>> For me it doesn't look that have much sense. min_free_kbytes could be set from user-space (or auto-tuned by kernel) to keep some amount
+>>>>>> of memory available for GFP_ATOMIC allocations.  In case situation comes under pointed level kernel will reclaim memory from e.g. caches.
+>>>>>>
+>>>>>>>  From potential user point of view the proposed API has number of lacks which would be nice to have implemented:
+>>>>>> 1. rename this API from low_mem_pressure to something more related to notification and memory situation in system: memory_pressure, memnotify, memory_level etc. The word "low" is misleading here
+>>>>>> 2. API must use deferred timers to prevent use-time impact. Deferred timer will be triggered only in case HW event or non-deferrable timer, so if device sleeps timer might be skipped and that is what expected for user-space
+>>>>> Having userspace specify the "sample period" for low memory notification
+>>>>> makes no sense. The frequency of notifications is a function of the
+>>>>> memory pressure.
+>>>>>
+>>>>>> 3. API should be tunable for propagate changes when level is Up or Down, maybe both ways.
+>>>>>> 4. to avoid triggering too much events probably has sense to filter according to amount of change but that is optional. If subscriber set timer to 1s the amount of events should not be very big.
+>>>>>> 5. API must provide interface to request parameters e.g. available swap or free memory just to have some base.
+>>>>> It would make the interface easier to use if it provided the number of
+>>>>> pages to free, in the notification (kernel can calculate that as the
+>>>>> delta between current_free_pages ->    comfortable_free_pages relative to
+>>>>> process RSS).
+>>>> If you rely on the notification's argument you lose several features:
+>>>>   - Handling of notifications by several applications in parallel
+>>> Each application has its argument built in a custom fashion
+>>> (pages_to_free = delta between current_free_pages ->
+>>> comfortable_free_pages relative to process RSS), or something to that
+>>> effect. It is compatible with parallel notifications.
+>> Not sure that I got it. Do you suggest to ask all the applications to free say 3% of their memory?.
+>> Some may be able to free more, and some cannot free any. Isn't it more practical to just notify them, and let each app contribute its part to the global moving target?
+> The problem is, how is each process supposed to know how much memory
+> it should free for each notification received, that is, its part?
 >
->> From 27574197e9f8425c6aeadffef199c8b7eb969233 Mon Sep 17 00:00:00 2001
->> From: Christian Gmeiner <christian.gmeiner@gmail.com>
->> Date: Fri, 13 Jan 2012 15:31:01 +0100
->> Subject: [PATCH] backlight: Add backlight driver for Bachmann's ot200
+> Its easier if there is a goal, a hint of how many pages the process
+> should release.
+
+I have to agree.
+Still, the amount of memory that an app should free per memory-pressure-level can be best calculated inside the application (based on comfortable_free_pages relative to process RSS, as you suggested). Fairness is also an issue.
+And, if in the meantime the memory pressure ended, would you recommend that the application will continue with its work?
+
+Ronen.
+
+>
+>>>>   - Voluntary application's decisions, such as cleanup or avoiding allocations, at the application's convenience.
+>>> I am suggesting an additional field in the notification data so that the
+>>> freeing routine has a goal. But it is not mandatory.
+>> If you do want to support voluntary (notification less) app decisions, based on the current status, then why not satisfy with this API and only use the notifications to trigger this procedure?
 >>
->> Add backlight driver for Bachmann's ot200 visualisation device. The
->> driver uses MFGPT 7 of CS5535 silicon to regulate the backlight.
+>>>> - Iterative release loops, until there are enough free pages.
+>>> What is the advantage versus releasing the necessary amount of
+>>> memory in a given moment?
+>> The cleanup logic may be unaware of the page-level effects of its alloc and free, more so when freeing complex internal data structures (such as cached web pages), and this way you let it free until things settle down.
 >>
->> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
->> ---
->>  drivers/video/backlight/Kconfig    |    9 ++
->>  drivers/video/backlight/Makefile   |    2 +-
->>  drivers/video/backlight/ot200_bl.c |  167
->> ++++++++++++++++++++++++++++++++++++ 3 files changed, 177
->> insertions(+), 1 deletions(-) create mode 100644
->> drivers/video/backlight/ot200_bl.c
+>> Ronen.
 >>
->> diff --git a/drivers/video/backlight/Kconfig
->> b/drivers/video/backlight/Kconfig index 278aeaa..ab02544 100644
->> --- a/drivers/video/backlight/Kconfig
->> +++ b/drivers/video/backlight/Kconfig
->> @@ -342,6 +342,15 @@ config BACKLIGHT_AAT2870
->>         If you have a AnalogicTech AAT2870 say Y to enable the
->>         backlight driver.
->>
->> +config BACKLIGHT_OT200
->> +     tristate "Backlight Driver for Bachmann's OT200"
->
-> This is purely personal preference, but the possessive apostrophe for
-> the manufacturer's device seems weird.
->
+>>>> I believe that the notification should only serve as a trigger to run the cleanup.
+>>> Agree.
+>>>
+>>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-okay
->
->> +     depends on BACKLIGHT_CLASS_DEVICE
->> +     select MFD_CS5535
->> +     select CS5535_MFGPT
->
-> This is modular; is there any reason to select these instead of simply
-> depending upon them?  A strict dependency would be preferrable.
->
-> Also, CS5535_MFGPT already depends upon MFD_CS5535, so you can probably
-> drop that.
->
-
-good argument - will change it
->
->> +     help
->> +       To compile this driver as a module, choose M here: the
->> module will be
->> +       called ot200_bl.
->> +
->>  endif # BACKLIGHT_CLASS_DEVICE
->>
->>  endif # BACKLIGHT_LCD_SUPPORT
->> diff --git a/drivers/video/backlight/Makefile
->> b/drivers/video/backlight/Makefile index fdd1fc4..4f07d3f 100644
->> --- a/drivers/video/backlight/Makefile
->> +++ b/drivers/video/backlight/Makefile
->> @@ -39,4 +39,4 @@ obj-$(CONFIG_BACKLIGHT_ADP8870)     +=
->> adp8870_bl.o obj-$(CONFIG_BACKLIGHT_88PM860X) += 88pm860x_bl.o
->>  obj-$(CONFIG_BACKLIGHT_PCF50633)     += pcf50633-backlight.o
->>  obj-$(CONFIG_BACKLIGHT_AAT2870) += aat2870_bl.o
->> -
->> +obj-$(CONFIG_BACKLIGHT_OT200) += ot200_bl.o
->> diff --git a/drivers/video/backlight/ot200_bl.c
->> b/drivers/video/backlight/ot200_bl.c new file mode 100644
->> index 0000000..d8e8ba1
->> --- /dev/null
->> +++ b/drivers/video/backlight/ot200_bl.c
->> @@ -0,0 +1,167 @@
->> +/*
->> + * Copyright (C) 2012 Bachmann electronic GmbH
->> + *   Christian Gmeiner <christian.gmeiner@gmail.com>
->> + *
->> + * Backlight driver for Bachmann's ot200.
->> + *
->> + * This program is free software; you can redistribute it and/or
->> modify it
->> + * under the terms of the GNU General Public License version 2 as
->> published by
->> + * the Free Software Foundation.
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/fb.h>
->> +#include <linux/backlight.h>
->> +#include <linux/gpio.h>
->> +#include <linux/cs5535.h>
->> +
->> +static struct cs5535_mfgpt_timer *pwm_timer;
->> +static const  u8 DIM_TABLE[101] = {0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2,
->
-> Please don't use CAPS_VARIABLES unless it's a macro.
->
-
-okay
->
->> 2, 2, 2, 2,
->> +                                2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
->> 4, 4, 4, 4,
->> +                                4, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7,
->> 8, 8, 9, 9,
->> +                                10, 10, 11, 11, 12, 12, 13, 14,
->> 15, 15, 16,
->> +                                17, 18, 19, 20, 21, 22, 23, 24,
->> 26, 27, 28,
->> +                                30, 31, 33, 35, 37, 39, 41, 43,
->> 45, 47, 50,
->> +                                53, 55, 58, 61, 65, 68, 72, 75,
->> 79, 84, 88,
->> +                                93, 97, 103, 108, 114, 120, 126,
->> 133, 140,
->> +                                147, 155, 163};
->
-> Also, please describe what this table means, or is for.
->
-
-will do in v2
-
->
->> +
->> +struct ot200_backlight_data {
->> +     int current_brightness;
->> +};
->> +
->> +#define GPIO_DIMM    27
->> +
->> +static int ot200_backlight_update_status(struct backlight_device *bl)
->> +{
->> +     struct ot200_backlight_data *data = bl_get_data(bl);
->> +     int brightness = bl->props.brightness;
->
-> Please use an unsigned here.
-
-okay
->
->> +
->> +     if (bl->props.state & BL_CORE_FBBLANK)
->> +             brightness = 0;
->> +
->> +     /* enable or disable PWM timer */
->> +     if (brightness == 0)
->> +             cs5535_mfgpt_write(pwm_timer, MFGPT_REG_SETUP, 0);
->
-> Do you want to disable the timer when the driver/backlight device is
-> unloaded, or will that turn off the backlight?
->
-
-I never thought about this use case, but I think it would be the best to
-turn brightness of the display to 100%.
->
->> +     else if (brightness != 0 && data->current_brightness == 0) {
->> +             cs5535_mfgpt_write(pwm_timer, MFGPT_REG_COUNTER, 0);
->> +             cs5535_mfgpt_write(pwm_timer, MFGPT_REG_SETUP,
->> 0x8281);
->> +     }
->> +
->> +     /* apply new brightness value */
->> +     cs5535_mfgpt_write(pwm_timer, MFGPT_REG_CMP1,
->> +                                     163 - DIM_TABLE[brightness]);
->> +     data->current_brightness = brightness;
->> +
->> +     return 0;
->> +}
->> +
->> +static int ot200_backlight_get_brightness(struct backlight_device
->> *bl) +{
->> +     struct ot200_backlight_data *data = bl_get_data(bl);
->> +     return data->current_brightness;
->> +}
->> +
->> +static const struct backlight_ops ot200_backlight_ops = {
->> +     .update_status  = ot200_backlight_update_status,
->> +     .get_brightness = ot200_backlight_get_brightness,
->> +};
->> +
->> +static int ot200_backlight_probe(struct platform_device *pdev)
->> +{
->> +     struct backlight_device *bl;
->> +     struct ot200_backlight_data *data;
->> +     struct backlight_properties props;
->> +     int retval = 0;
->> +
->> +     /* request gpio */
->> +     if (gpio_request(GPIO_DIMM, "ot200 backlight dimmer") < 0) {
->> +             printk(KERN_ERR "ot200 backlight: failed to request
->> GPIO %d\n",
->
-> I notice you're using dev_err below, but printk(KERN_ERR here.  Any
-> reason for that?  My preference would be dev_err here.
-
-upps
->
->> +                             GPIO_DIMM);
->> +             return -ENODEV;
->> +     }
->> +
->> +     /* request timer */
->> +     pwm_timer = cs5535_mfgpt_alloc_timer(7, MFGPT_DOMAIN_ANY);
->> +     if (!pwm_timer) {
->> +             printk(KERN_ERR "ot200 backlight: MFGPT 7 not
->> available\n");
->
-> Ditto.
->
->> +             retval = -ENODEV;
->> +             goto error_mfgpt_alloc;
->> +     }
->> +
->> +     data = kzalloc(sizeof(*data), GFP_KERNEL);
->> +     if (data == NULL) {
->
-> Please use "if (!data) {" here.
->
-
-okay
->> +             retval = -ENOMEM;
->> +             goto error_kzalloc;
->> +     }
->> +
->> +     /* setup gpio */
->> +     cs5535_gpio_set(GPIO_DIMM, GPIO_OUTPUT_ENABLE);
->> +     cs5535_gpio_set(GPIO_DIMM, GPIO_OUTPUT_AUX1);
->> +
->> +     /* setup timer */
->> +     cs5535_mfgpt_write(pwm_timer, MFGPT_REG_CMP1, 0);
->> +     cs5535_mfgpt_write(pwm_timer, MFGPT_REG_CMP2, 0xa3);
->> +     cs5535_mfgpt_write(pwm_timer, MFGPT_REG_SETUP, 0x8281);
->
-> Can you please document this?  This is a backlight driver; what
-> are you using timers for?  What is the setup here meant to do?  I'd
-> like to see an english description for people so that a glance over
-> this doesn't require checking the data sheet, and so that we can verify
-> that the code matches the desired effect.
->
-
-I also will have a look into the datasheet, as the driver is port of a vxworks
-driver, but I will remove the magic numbers.
->
->> +
->> +     data->current_brightness = 100;
->> +     props.max_brightness = 100;
->> +     props.brightness = 100;
->> +     props.type = BACKLIGHT_RAW;
->> +
->> +     bl = backlight_device_register("ipc", &pdev->dev, data,
->
-> What's ipc?
-
-Industrial PC :) I need a name of the backlight device that is equal on
-all Bachmann visualisation devices. In the near future I will add post
-some patches for an other visualisation device. The goal is to have
-it equal on visualisation device - makes the userspace much simpler.
-
->
->> +                                     &ot200_backlight_ops,
->> &props);
->> +     if (IS_ERR(bl)) {
->> +             dev_err(&pdev->dev, "failed to register
->> backlight\n");
->> +             retval = PTR_ERR(bl);
->> +             goto error_backlight_device_register;
->> +     }
->> +
->> +     platform_set_drvdata(pdev, bl);
->> +
->> +     return 0;
->> +
->> +error_backlight_device_register:
->> +     kfree(data);
->> +error_kzalloc:
->> +     cs5535_mfgpt_free_timer(pwm_timer);
->> +error_mfgpt_alloc:
->> +     gpio_free(GPIO_DIMM);
->> +     return retval;
->> +}
->> +
->> +static int ot200_backlight_remove(struct platform_device *pdev)
->> +{
->> +     struct backlight_device *bl = platform_get_drvdata(pdev);
->> +     struct ot200_backlight_data *data = bl_get_data(bl);
->> +
->> +     backlight_device_unregister(bl);
->> +     kfree(data);
->
-> What about freeing the gpio?  Also, the timer?  I know the timer code
-> doesn't allow you to reuse the timer once it's been set up, but at
-> least you could avoid leaking the pwm_timer memory.
->
-
-good chatch
-
->
->> +     return 0;
->> +}
->> +
->> +static struct platform_driver ot200_backlight_driver = {
->
-> This can probably use __devinitdata.
-
-okay
->
->> +     .driver         = {
->> +             .name   = "ot200-backlight",
->> +             .owner  = THIS_MODULE,
->> +     },
->> +     .probe          = ot200_backlight_probe,
->> +     .remove         = ot200_backlight_remove,
->> +};
->> +
->> +static int __init ot200_backlight_init(void)
->> +{
->> +     return platform_driver_register(&ot200_backlight_driver);
->> +}
->> +module_init(ot200_backlight_init);
->> +
->> +static void __exit ot200_backlight_exit(void)
->> +{
->> +     platform_driver_unregister(&ot200_backlight_driver);
->> +}
->> +module_exit(ot200_backlight_exit);
->> +
->> +MODULE_DESCRIPTION("backlight driver for Bachmann ot200");
->> +MODULE_AUTHOR("Christian Gmeiner <christian.gmeiner@gmail.com>");
->> +MODULE_LICENSE("GPL");
->> +MODULE_ALIAS("platform:ot200-backlight");
->
-
-I will send a v2 of this patch soon
