@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab2AYTU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 14:20:56 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58555 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab2AYTUy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 14:20:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJd=RBCYsOSrJFjbBqqnU4=580Pd2sHQUhpxWfqx0rXJAxihuA@mail.gmail.com>
-References: <CAJd=RBBG5X8=vkdRTCZ1bvTaVxPAVun9O+yiX0SM6yDzrxDGDQ@mail.gmail.com>
-	<CALWz4iyB0oSMBsfLJYD+xrB7ua9bRg5FD=cw4Sc-EdG1iLynow@mail.gmail.com>
-	<CAJd=RBC+y3pVAsbCNP+mBm6Lfcx5XpTcg6D-us5J1E+W+_JcAQ@mail.gmail.com>
-	<CALWz4iznfeLX1u00bWWf_ziThCrJNAJUQVBRu8Rv9yDsdMmKsQ@mail.gmail.com>
-	<CAJd=RBCYsOSrJFjbBqqnU4=580Pd2sHQUhpxWfqx0rXJAxihuA@mail.gmail.com>
-Date: Wed, 25 Jan 2012 11:20:53 -0800
-Message-ID: <CALWz4iw5UkOn4x=mVrL28+Ztb1kKeqZHprUmbdku9r=KZhY+6g@mail.gmail.com>
-Subject: Re: [PATCH] mm: vmscan: check mem cgroup over reclaimed
-From: Ying Han <yinghan@google.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751923Ab2AYTWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 14:22:10 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54490
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751318Ab2AYTWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 14:22:08 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the staging area
+Date: Wed, 25 Jan 2012 10:29:47 -0800
+Message-Id: <1327516187-21793-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 5:47 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> On Wed, Jan 25, 2012 at 7:22 AM, Ying Han <yinghan@google.com> wrote:
->> On Mon, Jan 23, 2012 at 7:45 PM, Hillf Danton <dhillf@gmail.com> wrote:
->>> With soft limit available, what if nr_to_reclaim set to be the number of
->>> pages exceeding soft limit? With over reclaim abused, what are the targets
->>> of soft limit?
->>
->> The nr_to_reclaim is set to SWAP_CLUSTER_MAX (32) for direct reclaim
->> and ULONG_MAX for background reclaim. Not sure we can set it, but it
->> is possible the res_counter_soft_limit_excess equal to that target
->> value. The current soft limit mechanism provides a clue of WHERE to
->> reclaim pages when there is memory pressure, it doesn't change the
->> reclaim target as it was before.
->>
->
-> Decrement in sc->nr_to_reclaim was tried in another patch, you already saw it.
->
->> Overreclaim a cgroup under its softlimit is bad, but we should be
->> careful not introducing side effect before providing the guarantee.
->
-> Yes 8-)
->
->> Here, the should_continue_reclaim() has logic of freeing a bit more
->> order-0 pages for compaction. The logic got changed after this.
->>
->
-> Compaction is to increase the successful rate of THP allocation, and in turn
-> to back up higher performance. In soft limit, performance guarantee is not
-> extra request but treated with less care.
->
-> Which one you prefer, compaction or guarantee?
+The storage driver (storvsc_drv.c) handles all block storage devices
+assigned to Linux guests hosted on Hyper-V. This driver has been in the
+staging tree for a while and this patch moves it out of the staging area.
 
-The compaction is something we already supporting, while the softlimit
-implementation is a new design. I would say that we need to guarantee
-no regression introduced by any new code.
+This patch is based on the storvsc patches that are already on Greg's queue
+for the staging tree. This patch-set addressed Christoph's review comments.
+If need be, I can re-send this patch-set in Greg's queue
+or I can  send the fully patched storvsc_drv.c.
 
---Ying
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/scsi/Kconfig                       |    7 +++++++
+ drivers/scsi/Makefile                      |    3 +++
+ drivers/{staging/hv => scsi}/storvsc_drv.c |    0
+ 3 files changed, 10 insertions(+), 0 deletions(-)
+ rename drivers/{staging/hv => scsi}/storvsc_drv.c (100%)
 
-> Thanks
-> Hillf
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index 16570aa..d3d18e8 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -662,6 +662,13 @@ config VMWARE_PVSCSI
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called vmw_pvscsi.
+ 
++config HYPERV_STORAGE
++	tristate "Microsoft Hyper-V virtual storage driver"
++	depends on SCSI && HYPERV
++	default HYPERV
++	help
++	  Select this option to enable the Hyper-V virtual storage driver.
++
+ config LIBFC
+ 	tristate "LibFC module"
+ 	select SCSI_FC_ATTRS
+diff --git a/drivers/scsi/Makefile b/drivers/scsi/Makefile
+index 2b88749..e4c1a69 100644
+--- a/drivers/scsi/Makefile
++++ b/drivers/scsi/Makefile
+@@ -142,6 +142,7 @@ obj-$(CONFIG_SCSI_BNX2_ISCSI)	+= libiscsi.o bnx2i/
+ obj-$(CONFIG_BE2ISCSI)		+= libiscsi.o be2iscsi/
+ obj-$(CONFIG_SCSI_PMCRAID)	+= pmcraid.o
+ obj-$(CONFIG_VMWARE_PVSCSI)	+= vmw_pvscsi.o
++obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
+ 
+ obj-$(CONFIG_ARM)		+= arm/
+ 
+@@ -170,6 +171,8 @@ scsi_mod-$(CONFIG_SCSI_PROC_FS)	+= scsi_proc.o
+ scsi_mod-y			+= scsi_trace.o
+ scsi_mod-$(CONFIG_PM)		+= scsi_pm.o
+ 
++hv_storvsc-y			:= storvsc_drv.o
++
+ scsi_tgt-y			+= scsi_tgt_lib.o scsi_tgt_if.o
+ 
+ sd_mod-objs	:= sd.o
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+similarity index 100%
+rename from drivers/staging/hv/storvsc_drv.c
+rename to drivers/scsi/storvsc_drv.c
+-- 
+1.7.4.1
+
