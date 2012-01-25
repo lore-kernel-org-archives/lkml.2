@@ -1,55 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab2AYKvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 05:51:49 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:38504 "EHLO gir.skynet.ie"
+	id S1752186Ab2AYKw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 05:52:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52812 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab2AYKvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 05:51:48 -0500
-Date: Wed, 25 Jan 2012 10:51:38 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Adrian Drzewieki <z@drze.net>
-Subject: Re: [PATCH v4 -mm] make swapin readahead skip over holes
-Message-ID: <20120125105138.GA3901@csn.ul.ie>
-References: <20120124131351.05309a2a@annuminas.surriel.com>
- <20120124141400.6d33b7c4@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120124141400.6d33b7c4@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751571Ab2AYKwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 05:52:54 -0500
+From: Ludwig Nussel <ludwig.nussel@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net> (maintainer:DOCUMENTATION),
+        Greg Kroah-Hartman <gregkh@suse.de> (supporter:DRIVER CORE, KOBJ...
+	,commit_signer:2/4=50%),
+        Alessandro Rubini <rubini@gnudd.com> (commit_signer:1/4=25%),
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com> (commit_signer:1/4=25%),
+        Akinobu Mita <akinobu.mita@gmail.com> (commit_signer:1/4=25%),
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
+Subject: [PATCH] debugfs: add mode, uid and gid options
+Date: Wed, 25 Jan 2012 11:52:28 +0100
+Message-Id: <1327488751-6022-1-git-send-email-ludwig.nussel@suse.de>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20120124235734.GA28585@kroah.com>
+References: <20120124235734.GA28585@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 02:14:00PM -0500, Rik van Riel wrote:
-> Ever since abandoning the virtual scan of processes, for scalability
-> reasons, swap space has been a little more fragmented than before.
-> This can lead to the situation where a large memory user is killed,
-> swap space ends up full of "holes" and swapin readahead is totally
-> ineffective.
-> 
-> On my home system, after killing a leaky firefox it took over an
-> hour to page just under 2GB of memory back in, slowing the virtual
-> machines down to a crawl.
-> 
-> This patch makes swapin readahead simply skip over holes, instead
-> of stopping at them.  This allows the system to swap things back in
-> at rates of several MB/second, instead of a few hundred kB/second.
-> 
-> The checks done in valid_swaphandles are already done in 
-> read_swap_cache_async as well, allowing us to remove a fair amount
-> of code.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+Cautious admins may want to restrict access to debugfs. Currently a
+manual chown/chmod e.g. in an init script is needed to achieve that.
+Distributions that want to make the mount options configurable need
+to add extra config files. By allowing to set the root inode's uid,
+gid and mode via mount options no such hacks are needed anymore.
+Instead configuration becomes straight forward via fstab.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
+---
+ Documentation/filesystems/debugfs.txt |    5 +-
+ fs/debugfs/inode.c                    |  149 ++++++++++++++++++++++++++++++++-
+ 2 files changed, 152 insertions(+), 2 deletions(-)
 
+compared to previous patch:
+- adjug debugfs_show_options to new api
+- mention mount options in docu
+
+diff --git a/Documentation/filesystems/debugfs.txt b/Documentation/filesystems/debugfs.txt
+index 6872c91..4e25758 100644
+--- a/Documentation/filesystems/debugfs.txt
++++ b/Documentation/filesystems/debugfs.txt
+@@ -14,7 +14,10 @@ Debugfs is typically mounted with a command like:
+ 
+     mount -t debugfs none /sys/kernel/debug
+ 
+-(Or an equivalent /etc/fstab line). 
++(Or an equivalent /etc/fstab line).
++The debugfs root directory is accessible by anyone by default. To
++restrict access to the tree the "uid", "gid" and "mode" mount
++options can be used.
+ 
+ Note that the debugfs API is exported GPL-only to modules.
+ 
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index 956d5dd..b80bc84 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -23,9 +23,13 @@
+ #include <linux/debugfs.h>
+ #include <linux/fsnotify.h>
+ #include <linux/string.h>
++#include <linux/seq_file.h>
++#include <linux/parser.h>
+ #include <linux/magic.h>
+ #include <linux/slab.h>
+ 
++#define DEBUGFS_DEFAULT_MODE	0755
++
+ static struct vfsmount *debugfs_mount;
+ static int debugfs_mount_count;
+ static bool debugfs_registered;
+@@ -125,11 +129,154 @@ static inline int debugfs_positive(struct dentry *dentry)
+ 	return dentry->d_inode && !d_unhashed(dentry);
+ }
+ 
++struct debugfs_mount_opts {
++	uid_t uid;
++	gid_t gid;
++	umode_t mode;
++};
++
++enum {
++	Opt_uid,
++	Opt_gid,
++	Opt_mode,
++	Opt_err
++};
++
++static const match_table_t tokens = {
++	{Opt_uid, "uid=%u"},
++	{Opt_gid, "gid=%u"},
++	{Opt_mode, "mode=%o"},
++	{Opt_err, NULL}
++};
++
++struct debugfs_fs_info {
++	struct debugfs_mount_opts mount_opts;
++};
++
++static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
++{
++	substring_t args[MAX_OPT_ARGS];
++	int option;
++	int token;
++	char *p;
++
++	opts->mode = DEBUGFS_DEFAULT_MODE;
++
++	while ((p = strsep(&data, ",")) != NULL) {
++		if (!*p)
++			continue;
++
++		token = match_token(p, tokens, args);
++		switch (token) {
++		case Opt_uid:
++			if (match_int(&args[0], &option))
++				return -EINVAL;
++			opts->uid = option;
++			break;
++		case Opt_gid:
++			if (match_octal(&args[0], &option))
++				return -EINVAL;
++			opts->gid = option;
++			break;
++		case Opt_mode:
++			if (match_octal(&args[0], &option))
++				return -EINVAL;
++			opts->mode = option & S_IALLUGO;
++			break;
++		/*
++		 * We might like to report bad mount options here;
++		 * but traditionally debugfs has ignored all mount options
++		 */
++		}
++	}
++
++	return 0;
++}
++
++static int debugfs_apply_options(struct super_block *sb)
++{
++	struct debugfs_fs_info *fsi = sb->s_fs_info;
++	struct inode *inode = sb->s_root->d_inode;
++	struct debugfs_mount_opts *opts = &fsi->mount_opts;
++
++	inode->i_mode &= ~S_IALLUGO;
++	inode->i_mode |= opts->mode;
++
++	inode->i_uid = opts->uid;
++	inode->i_gid = opts->gid;
++
++	return 0;
++}
++
++static int debugfs_remount(struct super_block *sb, int *flags, char *data)
++{
++	int err;
++	struct debugfs_fs_info *fsi = sb->s_fs_info;
++
++	err = debugfs_parse_options(data, &fsi->mount_opts);
++	if (err)
++		goto fail;
++
++	debugfs_apply_options(sb);
++
++fail:
++	return err;
++}
++
++static int debugfs_show_options(struct seq_file *m, struct dentry *root)
++{
++	struct debugfs_fs_info *fsi = root->d_sb->s_fs_info;
++	struct debugfs_mount_opts *opts = &fsi->mount_opts;
++
++	if (opts->uid != 0)
++		seq_printf(m, ",uid=%u", opts->uid);
++	if (opts->gid != 0)
++		seq_printf(m, ",gid=%u", opts->gid);
++	if (opts->mode != DEBUGFS_DEFAULT_MODE)
++		seq_printf(m, ",mode=%o", opts->mode);
++
++	return 0;
++}
++
++static const struct super_operations debugfs_super_operations = {
++	.statfs		= simple_statfs,
++	.remount_fs	= debugfs_remount,
++	.show_options	= debugfs_show_options,
++};
++
+ static int debug_fill_super(struct super_block *sb, void *data, int silent)
+ {
+ 	static struct tree_descr debug_files[] = {{""}};
++	struct debugfs_fs_info *fsi;
++	int err;
++
++	save_mount_options(sb, data);
++
++	fsi = kzalloc(sizeof(struct debugfs_fs_info), GFP_KERNEL);
++	sb->s_fs_info = fsi;
++	if (!fsi) {
++		err = -ENOMEM;
++		goto fail;
++	}
++
++	err = debugfs_parse_options(data, &fsi->mount_opts);
++	if (err)
++		goto fail;
++
++	err  =  simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
++	if (err)
++		goto fail;
++
++	sb->s_op = &debugfs_super_operations;
++
++	debugfs_apply_options(sb);
++
++	return 0;
+ 
+-	return simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
++fail:
++	kfree(fsi);
++	sb->s_fs_info = NULL;
++	return err;
+ }
+ 
+ static struct dentry *debug_mount(struct file_system_type *fs_type,
 -- 
-Mel Gorman
-SUSE Labs
+1.7.7
+
