@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab2AYMnf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 07:43:35 -0500
-Received: from fanny.its.uu.se ([130.238.4.241]:62079 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472Ab2AYMnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 07:43:33 -0500
-X-Greylist: delayed 1584 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jan 2012 07:43:33 EST
+	id S1753381Ab2AYMs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 07:48:26 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4138 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab2AYMsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 07:48:24 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 25 Jan 2012 04:48:21 -0800
+Message-ID: <4F1FF9EF.9000004@nvidia.com>
+Date: Wed, 25 Jan 2012 18:17:43 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>, "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2] regulator: tps65910: Sleep control through external
+ inputs
+References: <1327489068-9460-1-git-send-email-ldewangan@nvidia.com> <20120125124250.GH3687@opensource.wolfsonmicro.com>
+In-Reply-To: <20120125124250.GH3687@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <20255.62146.305064.490693@pilspetsen.it.uu.se>
-Date: Wed, 25 Jan 2012 13:17:06 +0100
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: Stefan Seidel <stefans@android-x86.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Emulating unsupported x86 opcodes in software
-In-Reply-To: <CACcUPpa5FydvemAX7idTOi9dU3+UYs_cra_YNq1bbQc47jr0Yw@mail.gmail.com>
-References: <CACcUPpa5FydvemAX7idTOi9dU3+UYs_cra_YNq1bbQc47jr0Yw@mail.gmail.com>
-X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Seidel writes:
- > Hello,
- > 
- > I'm looking for advice regarding the emulation of CPU instructions
- > which the current processor doesn't support. Specifically, I want to
- > emulate SSE3 instructions on non-SSE3-capable CPUs. The OSx86
- > project[1] has developed an SSE3 emulation based on SSE2 instructions.
- > 
- > The general idea is:
- >  - install a "stage 1" trap handler for INT 6h (invalid opcode)
- >  - "stage 1" handler returns the address of the "stage 2" handler, the
- > actual emulation routine
- >  - "stage 2" handler runs in user-mode, reads the invalid (SSE3)
- > instruction and operands and emulates it
- >  - "stage 2" handler stores the result in the correct destination
- > (register or memory) and restores all dirty registers to their
- > original state
- > More in-depth description is available as PDF[2].
- > 
- > Now it is not a problem to replace the INT 6h handler, but these are
- > my open questions:
- > 1. How can I have the stage 2 handler run in user-mode (ring 3)
- > 2. How do I allocate/obtain the address of the code segment containing
- > the stage 2 handler OR
- > 3. Is it even possible to for code which is implemented in the kernel
- > to be called and executed in user-mode, and if not, what is the
- > alternative.
- > 
- > Both stage 1 and 2 handlers are available as binary (currently, I'm
- > trying to contact the original author for the source code).
- > 
- > Thank you very much for any help.
- > 
- > Stefan Seidel
- > P.S.: CC'ing me in your answer would be appreciated.
- > 
- > [1] http://code.google.com/p/xnu-dev/
- > [2] http://code.google.com/p/xnu-dev/downloads/detail?name=SSE3%20Emulator.pdf
+On Wednesday 25 January 2012 06:12 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Jan 25, 2012 at 04:27:48PM +0530, Laxman Dewangan wrote:
+>
+>> @@ -450,6 +489,29 @@ static int tps65910_set_mode(struct regulator_dev *dev, unsigned int mode)
+>>   	struct tps65910 *mfd = pmic->mfd;
+>>   	int reg, value, id = rdev_get_id(dev);
+>>
+>> +	/*
+>> +	 * If regulator is controlled through external control then
+>> +	 * mode can be identified by the input level of EN1/EN2/EN3.
+>> +	 * If it is HIGH then regulators is on, full power.
+>> +	 * If it is LOW then:
+>> +	 *       - the regulator is set off if its corresponding Control
+>> +	 *         bit = 0 in SLEEP_KEEP_XXX_ON.
+>> +	 *       - the regulator is set in low-power mode if its corresponding
+>> +	 *         control bit = 1 in SLEEP_KEEP_XXX_ON register.
+>> +	 */
+> This really isn't what the set_mode() API is for - especially the fact
+> that it supports turning the regulator off which really isn't what
+> set_mode() is supposed to do.  A generic driver using this API isn't
+> going to play too well.
+Then what should be the method? Is it through the macro similar to patch 
+V1 where LOW_POWER mode option come from platform data? The idea  is to 
+set the regulator in OFF or low power mode based on external control.
 
-Just two general comments, not specifically related to emulating SSE3:
+>> +	if (pmic->board_ext_control[id]) {
+>> +		u8 regoffs = (pmic->ext_sleep_control[id]>>  8)&  0xFF;
+>> +		u8 bit_pos = (1<<  pmic->ext_sleep_control[id]&  0xFF);
+>> +		int ret = 0;
+>> +		if ((mode == REGULATOR_MODE_IDLE) ||
+>> +			(mode == REGULATOR_MODE_STANDBY))
+>> +			ret = tps65910_set_bits(mfd,
+>> +				TPS65910_SLEEP_KEEP_LDO_ON + regoffs, bit_pos);
+> As a coding style thing this should be a switch statement.
+I will take care in next patch once above question is clear.
 
-1. Deploying the emulator from userspace would be preferable.  LD_PRELOAD a
-   library containing the SSE3 emulation and init code to set up a SIGILL
-   handler.  This solves all the ring 0 vs 3 problems and avoids needing
-   any kernel modifications.
+> * Unknown Key
+> * 0x6E30FDDD
 
-   For static binaries you can use a debugger-like launcher to insert
-   and activate the emulation code.
-
-2. It's not always the case that new instructions in later generation x86
-   processors trap in earlier generation processors.  E.g., several years
-   ago I discovered by accident that a PIII would run SSE (or was it SSE2?)
-   instructions w/o trapping, it just ignored the additional prefix and
-   executed the corresponding MMX instruction instead.  Maybe that was an
-   isolated case, I don't know.
-
-   In the worst case you'll need binary rewriting (static or dynamic), which
-   also is implementable entirely in userspace without kernel modifications.
