@@ -1,129 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab2AYXZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 18:25:17 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35354 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab2AYXZP (ORCPT
+	id S1752079Ab2AYXac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 18:30:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56990 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab2AYXaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 18:25:15 -0500
-Date: Wed, 25 Jan 2012 15:25:00 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Cong Wang <xiyou.wangcong@gmail.com>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org
-Subject: Re: [Patch] tmpfs: clean up shmem_find_get_pages_and_swap()
-In-Reply-To: <1327420133-16551-1-git-send-email-xiyou.wangcong@gmail.com>
-Message-ID: <alpine.LSU.2.00.1201251509480.2141@eggly.anvils>
-References: <1327420133-16551-1-git-send-email-xiyou.wangcong@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 25 Jan 2012 18:30:30 -0500
+Date: Wed, 25 Jan 2012 15:30:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Borislav Petkov <bp@alien8.de>,
+        Vasiliy Kulikov <segoon@openwall.com>, Dan Ballard <dan@mindstab.net>,
+        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        Stephen Wilson <wilsons@start.ca>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-doc@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Colin Walters <walters@verbum.org>
+Subject: Re: [PATCH v3] sysctl: control functionality of /proc/pid/mem
+Message-Id: <20120125153028.17d69f6e.akpm@linux-foundation.org>
+In-Reply-To: <20120123212115.GA29641@www.outflux.net>
+References: <20120123212115.GA29641@www.outflux.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012, Cong Wang wrote:
-
-> This patch cleans up shmem_find_get_pages_and_swap() interface:
-> 
-> a) Pass struct pagevec* instead of ->pages
-> b) Check if nr_pages is greater than PAGEVEC_SIZE inside the function
-> c) Return the result via ->nr instead of using return value
-> 
-> Compiling test only.
-> 
-> Cc: Hugh Dickins <hughd@google.com>
-> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-
-I don't see any cleanup: just a difference in taste, I suppose.
-
-shmem_find_get_pages_and_swap() is modelled on find_get_pages():
-I'd prefer to keep it that way unless there's good reason to diverge.
-
-I do see a slight change in behaviour, where you've undone the range
-limitation (coming from invalidate_inode_pages2_range() originally, but
-now in several functions in mm/truncate.c).  I think you misunderstood
-
-> -			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
-
-When doing a range, that's trying to stop the radix_tree gang lookup
-looking further than could ever be necessary.  Not a big deal, it is
-imperfect anyway - makes more sense when the range is 1 than larger;
-but shouldn't be undone without justification.
-
-Hugh
+On Mon, 23 Jan 2012 13:21:15 -0800
+Kees Cook <keescook@chromium.org> wrote:
 
 > 
+> Add the "proc_pid_mem" sysctl to control whether or not /proc/pid/mem is
+> allowed to work: 0: disabled, 1: read only, 2: read/write (default).
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 > ---
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 269d049..c4e08e2 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -312,15 +312,19 @@ static void shmem_delete_from_page_cache(struct page *page, void *radswap)
->  /*
->   * Like find_get_pages, but collecting swap entries as well as pages.
->   */
-> -static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
-> +static void shmem_find_get_pages_and_swap(struct address_space *mapping,
->  					pgoff_t start, unsigned int nr_pages,
-> -					struct page **pages, pgoff_t *indices)
-> +					struct pagevec *pvec, pgoff_t *indices)
->  {
->  	unsigned int i;
->  	unsigned int ret;
->  	unsigned int nr_found;
-> +	struct page **pages = pvec->pages;
+> v3:
+>  - document the default, thanks to Randy Dunlap.
+>  - remove needless CONFIG_PROC_FS checks, thanks to Eric W. Biederman.
+
+I was wondering about that.  Is CONFIG_PROC_FS=n, CONFIG_SYSCTL=y an
+impossible combination?  If so, why?
+
+> --- a/Documentation/sysctl/kernel.txt
+> +++ b/Documentation/sysctl/kernel.txt
+> @@ -56,6 +56,7 @@ show up in /proc/sys/kernel:
+>  - printk_delay
+>  - printk_ratelimit
+>  - printk_ratelimit_burst
+> +- proc_pid_mem
+>  - randomize_va_space
+>  - real-root-dev               ==> Documentation/initrd.txt
+>  - reboot-cmd                  [ SPARC only ]
+> @@ -477,6 +478,20 @@ send before ratelimiting kicks in.
 >  
->  	rcu_read_lock();
+>  ==============================================================
+>  
+> +proc_pid_mem:
 > +
-> +	if (nr_pages > PAGEVEC_SIZE)
-> +		nr_pages = PAGEVEC_SIZE;
->  restart:
->  	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
->  				(void ***)pages, indices, start, nr_pages);
-> @@ -357,7 +361,7 @@ export:
->  	if (unlikely(!ret && nr_found))
->  		goto restart;
->  	rcu_read_unlock();
-> -	return ret;
-> +	pvec->nr = ret;
->  }
->  
->  /*
-> @@ -409,8 +413,8 @@ void shmem_unlock_mapping(struct address_space *mapping)
->  		 * Avoid pagevec_lookup(): find_get_pages() returns 0 as if it
->  		 * has finished, if it hits a row of PAGEVEC_SIZE swap entries.
->  		 */
-> -		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
-> -					PAGEVEC_SIZE, pvec.pages, indices);
-> +		shmem_find_get_pages_and_swap(mapping, index,
-> +					PAGEVEC_SIZE, &pvec, indices);
->  		if (!pvec.nr)
->  			break;
->  		index = indices[pvec.nr - 1] + 1;
-> @@ -442,9 +446,8 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
->  	pagevec_init(&pvec, 0);
->  	index = start;
->  	while (index <= end) {
-> -		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
-> -			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
-> -							pvec.pages, indices);
-> +		shmem_find_get_pages_and_swap(mapping, index,
-> +			end - index + 1, &pvec, indices);
->  		if (!pvec.nr)
->  			break;
->  		mem_cgroup_uncharge_start();
-> @@ -490,9 +493,8 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
->  	index = start;
->  	for ( ; ; ) {
->  		cond_resched();
-> -		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
-> -			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
-> -							pvec.pages, indices);
-> +		shmem_find_get_pages_and_swap(mapping, index,
-> +			end - index + 1, &pvec, indices);
->  		if (!pvec.nr) {
->  			if (index == start)
->  				break;
+> +This option can be used to select the level of access given to potential
+> +ptracers when using the per-process "mem" file in /proc/pid/mem.
+> +
+> +0 - Disable entirely.
+> +
+> +1 - Allow potential ptracers read access to process memory, but not writes.
+> +
+> +2 - Allow potential ptracers read and write access to process memory. This
+> +    is the default.
+> +
+> +==============================================================
+
+I agree with Colin on this (he stole my line!).
+
+
+
+Overall, the patch looks really hacky and random.  I felt the same way
+as Vasily: it's easy to see how a significant number of similar (and
+hacky and random) patches could be added, resulting in a regrettable
+mess.
+
+Is there some better designed, more organized way of approaching all of
+this?  Random ideas:
+
+- A parallel /procfs-perms filesystem.  You write a number into
+  /procfs-perms/stat to affect access to /proc/stat (although why the
+  heck not just run `chmod /proc/stat'?) It's unclear how to handle
+  /proc/pid/.  Perhaps literally have a /procfs-perms/pid/ directory.
+
+- Make tasks inherit their /proc/pid/* permissions across fork, do a
+  chmod /proc/1/whatever in initscripts.
+
+- Other and better things ;)   This particular approach makes my toes
+  curl.
+
+
+
