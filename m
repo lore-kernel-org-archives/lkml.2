@@ -1,124 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab2AYQH5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 11:07:57 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:42389 "EHLO gir.skynet.ie"
+	id S1755387Ab2AYQNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 11:13:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44545 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754856Ab2AYQH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 11:07:56 -0500
-Date: Wed, 25 Jan 2012 16:07:52 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH v2 -mm 1/3] mm: reclaim at order 0 when compaction is
- enabled
-Message-ID: <20120125160752.GE3901@csn.ul.ie>
-References: <20120124131822.4dc03524@annuminas.surriel.com>
- <20120124132136.3b765f0c@annuminas.surriel.com>
- <20120125150016.GB3901@csn.ul.ie>
- <4F201F60.8080808@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4F201F60.8080808@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752904Ab2AYQNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 11:13:51 -0500
+From: Michal Kubecek <mkubecek@suse.cz>
+Date: Wed, 25 Jan 2012 16:51:05 +0100
+Subject: [PATCH] agp: fix scratch page cleanup
+To: David Airlie <airlied@linux.ie>
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <20120125161350.82538402A7@alaris.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 10:27:28AM -0500, Rik van Riel wrote:
-> On 01/25/2012 10:00 AM, Mel Gorman wrote:
-> >On Tue, Jan 24, 2012 at 01:21:36PM -0500, Rik van Riel wrote:
-> >>When built with CONFIG_COMPACTION, kswapd does not try to free
-> >>contiguous pages.
-> >
-> >balance_pgdat() gets its order from wakeup_kswapd(). This does not apply
-> >to THP because kswapd does not get woken for THP but it should be woken
-> >up for allocations like jumbo frames or order-1.
-> 
-> In the kernel I run at home, I wake up kswapd for THP
-> as well. This is a larger change, which Andrea asked
-> me to delay submitting upstream for a bit.
-> 
+In error cleanup of agp_backend_initialize() and in agp_backend_cleanup(),
+agp_destroy_page() is passed virtual address of the scratch page. This
+leads to a kernel warning if the initialization fails (or upon regular
+cleanup) as pointer to struct page should be passed instead.
 
-Ok, good call. Waking kswapd up for THP is still premature.
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+---
+ drivers/char/agp/backend.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-> So far there seem to be no ill effects. I'll continue
-> watching for them.
-> 
-> >As kswapd does no memory compaction itself, this patch still makes
-> >sense but I found the changelog misleading.
-> 
-> Fair enough.  I will adjust the changelog.
-> 
-
-Thanks.
-
-> ><SNIP>
-> >The second effect of this change is a non-obvious side-effect. kswapd
-> >will now isolate fewer pages per cycle because it will isolate
-> >SWAP_CLUSTER_MAX pages instead of SWAP_CLUSTER_MAX<<order which it
-> >potentially does currently. This is not wrong as such and may be
-> >desirable to limit how much reclaim kswapd does but potentially it
-> >impacts success rates for compaction. As this does not apply to THP,
-> >it will be difficult to detect but bear in mind if we see an increase
-> >in high-order allocation failures after this patch is merged. I am
-> >not suggesting a change here but it would be nice to note in the
-> >changelog if there is a new version of this patch.
-> 
-> Good point.  I am running with THP waking up kswapd, and
-> things seem to behave (and compaction seems to succeed),
-> but we might indeed want to change balance_pgdat to free
-> more pages for higher order allocations.
-> 
-> Maybe this is the place to check (in balanced_pgdat) ?
-> 
->                 /*
->                  * We do this so kswapd doesn't build up large
-> priorities for
->                  * example when it is freeing in parallel with
-> allocators. It
->                  * matches the direct reclaim path behaviour in
-> terms of impact
->                  * on zone->*_priority.
->                  */
->                 if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
->                         break;
-> 
-
-It would be a good place all right. Preferably it would tie into
-compaction_ready() to decide whether to continue reclaiming or not.
-
-> >>@@ -2922,8 +2939,6 @@ out:
-> >>
-> >>  			/* If balanced, clear the congested flag */
-> >>  			zone_clear_flag(zone, ZONE_CONGESTED);
-> >>-			if (i<= *classzone_idx)
-> >>-				balanced += zone->present_pages;
-> >>  		}
-> >
-> >Why is this being deleted? It is still used by pgdat_balanced().
-> 
-> This is outside of the big while loop and is not used again
-> in the function. 
-
-How about here?
-
-               if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
-                        break;          /* kswapd: all done */
-
-Either way, it looks like something that should be in its own patch.
-
-> This final for loop does not appear to
-> use the variable balanced at all, except for incrementing
-> it.
-> 
-
+diff --git a/drivers/char/agp/backend.c b/drivers/char/agp/backend.c
+index 4b71647..317c28c 100644
+--- a/drivers/char/agp/backend.c
++++ b/drivers/char/agp/backend.c
+@@ -194,10 +194,10 @@ static int agp_backend_initialize(struct agp_bridge_data *bridge)
+ 
+ err_out:
+ 	if (bridge->driver->needs_scratch_page) {
+-		void *va = page_address(bridge->scratch_page_page);
++		struct page *page = bridge->scratch_page_page;
+ 
+-		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_UNMAP);
+-		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_FREE);
++		bridge->driver->agp_destroy_page(page, AGP_PAGE_DESTROY_UNMAP);
++		bridge->driver->agp_destroy_page(page, AGP_PAGE_DESTROY_FREE);
+ 	}
+ 	if (got_gatt)
+ 		bridge->driver->free_gatt_table(bridge);
+@@ -221,10 +221,10 @@ static void agp_backend_cleanup(struct agp_bridge_data *bridge)
+ 
+ 	if (bridge->driver->agp_destroy_page &&
+ 	    bridge->driver->needs_scratch_page) {
+-		void *va = page_address(bridge->scratch_page_page);
++		struct page *page = bridge->scratch_page_page;
+ 
+-		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_UNMAP);
+-		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_FREE);
++		bridge->driver->agp_destroy_page(page, AGP_PAGE_DESTROY_UNMAP);
++		bridge->driver->agp_destroy_page(page, AGP_PAGE_DESTROY_FREE);
+ 	}
+ }
+ 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.7
+
