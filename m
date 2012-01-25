@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab2AYOLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 09:11:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:32831 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab2AYOLf (ORCPT
+	id S1752849Ab2AYONC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:13:02 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37245 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab2AYONA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 09:11:35 -0500
-Subject: Re: [PATCH v9 3.2 0/9] Uprobes patchset with perf probe support
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <20120117093925.GC10397@elte.hu>
-References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
-	 <20120116083442.GA23622@elte.hu>
-	 <20120116151755.GH10189@linux.vnet.ibm.com>
-	 <20120117093925.GC10397@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Jan 2012 15:11:27 +0100
-Message-ID: <1327500687.2614.70.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jan 2012 09:13:00 -0500
+MIME-Version: 1.0
+Date: Wed, 25 Jan 2012 15:13:00 +0100
+Message-ID: <CADkCAuuV7Q1+MjEhFPKCwYXiy4RtdB9-vJ5f3rZpP6pcig4OvA@mail.gmail.com>
+Subject: [PATCH/RFC] regulator: pass voltage to notifiers
+From: Bill Gatliff <bgat@billgatliff.com>
+To: lrg@slimlogic.co.uk, lkml <linux-kernel@vger.kernel.org>
+Cc: Ryan Kuester <rkuester@insymbols.com>,
+        John Marland <johnwmarland@gmail.com>
+Content-Type: multipart/mixed; boundary=14dae9340f9d75995b04b75adcac
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-17 at 10:39 +0100, Ingo Molnar wrote:
+--14dae9340f9d75995b04b75adcac
+Content-Type: text/plain; charset=ISO-8859-1
 
-> I did not suggest anything complex or intrusive: just basically 
-> unify the namespace, have a single set of callbacks, and call 
-> into the uprobes and perf code from those callbacks - out of the 
-> sight of MM code.
-> 
-> That unified namespace could be called:
-> 
->     event_mmap(...);
->     event_fork(...);
-> 
-> etc. - and from event_mmap() you could do a simple:
-> 
-> 	perf_event_mmap(...)
-> 	uprobes_event_mmap(...)
-> 
-> [ Once all this is updated to use tracepoints it would turn into 
->   a notification callback chain kind of thing. ]
-
-We keep disagreeing on this. I utterly loathe hiding stuff in notifier
-lists. It makes it completely non-obvious who all does what.
-
-Another very good reason to not do what you suggest is that
-perf_event_mmap() is a pure consumer, it doesn't have a return value,
-whereas uprobes_mmap() can actually fail the mmap.
+Guys:
 
 
+The attached patch file passes the new regulator voltage forward to
+notifiers in the *data argument.  This eliminates the need for a
+schedule_work() in situations where the notifier needs to know what
+the new voltage is.
 
+I apologize for sending it outside of git send-email, but I am behind
+a firewall at the moment and wanted to get this out now rather than
+waiting.  Will re-send if necessary.
+
+Also, this is against linux-3.0.8, but I am happy to rebase if
+upstream is interested.
+
+
+Kindest regards,
+
+
+b.g.
+-- 
+Bill Gatliff
+bgat@billgatliff.com
+
+--14dae9340f9d75995b04b75adcac
+Content-Type: application/octet-stream; 
+	name="0001-regulator-pass-voltage-to-notifiers.patch"
+Content-Disposition: attachment; 
+	filename="0001-regulator-pass-voltage-to-notifiers.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gxufmjhf0
+
+RnJvbSBjNDZlOTdlNTc0ZmFlNTU0MTEyYWNkOTMxNTY1ZmM1YWE0YjUxMWQ2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBCaWxsIEdhdGxpZmYgPGJpbGwuZ2F0bGlmZkBzb255ZXJpY3Nz
+b24uY29tPgpEYXRlOiBXZWQsIDI1IEphbiAyMDEyIDE0OjU5OjEzICswMTAwClN1YmplY3Q6IFtQ
+QVRDSF0gcmVndWxhdG9yOiBwYXNzIHZvbHRhZ2UgdG8gbm90aWZpZXJzCgpUaGUgcmVndWxhdG9y
+IEFQSSBnb2VzIHRvIGdyZWF0IGxlbmd0aHMgdG8gc3RheSBzeW5jaHJvbml6ZWQgd2l0aApyZWd1
+bGF0b3Igc3RhdGVzLCBidXQgdGhlbiB0aHJvd3MgYWxsIHRoYXQgaGFyZCB3b3JrIGF3YXkgYnkg
+bm90CnBhc2luZyB0aGUgY3VycmVudCByZWd1bGF0b3Igdm9sdGFnZSB0byBub3RpZmllcnMuICBU
+aGlzIGZvcmNlcwpub3RpZmllcnMgdG8gZG8gYSBzY2hlZHVsZV93b3JrKCkgb3Igc2ltaWxhciB0
+byB0YWtlIGFjdGlvbiBiYXNlZCBvbgpyZWd1bGF0b3Igdm9sdGFnZSwgc2luY2UgdGhleSBjYW5u
+b3QgY2FsbCByZWd1bGF0b3JfZ2V0X3ZvbHRhZ2UoKSBpbgp0aGUgbm90aWZpZXIgZnVuY3Rpb24g
+aXRzZWxmLiAgVGhpcyB1bi1zeW5jaHJvbml6ZXMgdGhlbSBmcm9tCnJlZ3VsYXRvciBzdGF0ZSBj
+aGFuZ2VzLgoKVGhlIGVuY2xvc2VkIHBhdGNoIHBhc3NlcyB0aGUgbmV3IHJlZ3VsYXRvciB2b2x0
+YWdlIGZvcndhcmQgdG8Kbm90aWZpZXJzLCBhbGxvd2luZyB0aGVtIHRvIHN0YXkgc3luY2hyb25p
+emVkIHdpdGggdGhlIHJlZ3VsYXRvciBpZgp0aGF0IGlzIHRoZSBvbmx5IGluZm9ybWF0aW9uIHRo
+ZXkgbmVlZC4KCkNoYW5nZS1JZDogSTlkNmRmZTgyYzQ2NGEyODM0YWMxNDkyNzVmNmQ3ZjBjZGY4
+YTgxNjcKClNpZ25lZC1vZmYtYnk6IEJpbGwgR2F0bGlmZiA8YmlsbC5nYXRsaWZmQHNvbnllcmlj
+c3Nvbi5jb20+Ci0tLQogZHJpdmVycy9yZWd1bGF0b3IvY29yZS5jIHwgICAxMCArKysrKystLS0t
+CiAxIGZpbGVzIGNoYW5nZWQsIDYgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCmRpZmYg
+LS1naXQgYS9kcml2ZXJzL3JlZ3VsYXRvci9jb3JlLmMgYi9kcml2ZXJzL3JlZ3VsYXRvci9jb3Jl
+LmMKaW5kZXggNWIyMzI4ZC4uOWE1N2VlNiAxMDA2NDQKLS0tIGEvZHJpdmVycy9yZWd1bGF0b3Iv
+Y29yZS5jCisrKyBiL2RyaXZlcnMvcmVndWxhdG9yL2NvcmUuYwpAQCAtNjQzLDcgKzY0Myw4IEBA
+IHN0YXRpYyBpbnQgdXBkYXRlX3ZvbHRhZ2Uoc3RydWN0IHJlZ3VsYXRvciAqcmVndWxhdG9yLCBp
+bnQgbWluX3VWLCBpbnQgbWF4X3VWKQogCWlmICghcmV0KQogCQlnb3RvIG91dDsKIAotCV9ub3Rp
+Zmllcl9jYWxsX2NoYWluKHJkZXYsIFJFR1VMQVRPUl9FVkVOVF9WT0xUQUdFX0NIQU5HRSwgTlVM
+TCk7CisJX25vdGlmaWVyX2NhbGxfY2hhaW4ocmRldiwgUkVHVUxBVE9SX0VWRU5UX1ZPTFRBR0Vf
+Q0hBTkdFLAorCQkJICAgICAodm9pZCopX3JlZ3VsYXRvcl9nZXRfdm9sdGFnZShyZGV2KSk7CiAK
+IG91dDoKIAlyZXR1cm4gcmV0OwpAQCAtNjcwLDcgKzY3MSw4IEBAIHN0YXRpYyBpbnQgdXBkYXRl
+X3ZvbHRhZ2VfcHJldihzdHJ1Y3QgcmVndWxhdG9yX2RldiAqcmRldikKIAlpZiAoIXJldCkKIAkJ
+cmV0dXJuIHJldDsKIAotCV9ub3RpZmllcl9jYWxsX2NoYWluKHJkZXYsIFJFR1VMQVRPUl9FVkVO
+VF9WT0xUQUdFX0NIQU5HRSwgTlVMTCk7CisJX25vdGlmaWVyX2NhbGxfY2hhaW4ocmRldiwgUkVH
+VUxBVE9SX0VWRU5UX1ZPTFRBR0VfQ0hBTkdFLAorCQkJICAgICAodm9pZCopX3JlZ3VsYXRvcl9n
+ZXRfdm9sdGFnZShyZGV2KSk7CiAKIAlyZXR1cm4gcmV0OwogfQpAQCAtMTg1Miw3ICsxODU0LDcg
+QEAgc3RhdGljIGludCBfcmVndWxhdG9yX2RvX3NldF92b2x0YWdlKHN0cnVjdCByZWd1bGF0b3Jf
+ZGV2ICpyZGV2LAogCiAJaWYgKHJldCA9PSAwKQogCQlfbm90aWZpZXJfY2FsbF9jaGFpbihyZGV2
+LCBSRUdVTEFUT1JfRVZFTlRfVk9MVEFHRV9DSEFOR0UsCi0JCQkJICAgICBOVUxMKTsKKwkJCQkg
+ICAgICh2b2lkKilfcmVndWxhdG9yX2dldF92b2x0YWdlKHJkZXYpKTsKIAogCXRyYWNlX3JlZ3Vs
+YXRvcl9zZXRfdm9sdGFnZV9jb21wbGV0ZShyZGV2X2dldF9uYW1lKHJkZXYpLCBzZWxlY3Rvcik7
+CiAKQEAgLTIzNDIsNyArMjM0NCw3IEBAIHN0YXRpYyB2b2lkIF9ub3RpZmllcl9jYWxsX2NoYWlu
+KHN0cnVjdCByZWd1bGF0b3JfZGV2ICpyZGV2LAogCXN0cnVjdCByZWd1bGF0b3JfZGV2ICpfcmRl
+djsKIAogCS8qIGNhbGwgcmRldiBjaGFpbiBmaXJzdCAqLwotCWJsb2NraW5nX25vdGlmaWVyX2Nh
+bGxfY2hhaW4oJnJkZXYtPm5vdGlmaWVyLCBldmVudCwgTlVMTCk7CisJYmxvY2tpbmdfbm90aWZp
+ZXJfY2FsbF9jaGFpbigmcmRldi0+bm90aWZpZXIsIGV2ZW50LCBkYXRhKTsKIAogCS8qIG5vdyBu
+b3RpZnkgcmVndWxhdG9yIHdlIHN1cHBseSAqLwogCWxpc3RfZm9yX2VhY2hfZW50cnkoX3JkZXYs
+ICZyZGV2LT5zdXBwbHlfbGlzdCwgc2xpc3QpIHsKLS0gCjEuNy41LjQKCg==
+--14dae9340f9d75995b04b75adcac--
