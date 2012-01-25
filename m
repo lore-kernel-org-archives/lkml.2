@@ -1,75 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2AYAHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 19:07:07 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35429 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754369Ab2AYAHA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 19:07:00 -0500
-X-Sasl-enc: fk7BAiORy0VVdF+gJcw9Tg7VfXBrnLP2Y5lXx+tXC2kV 1327450019
-Date: Tue, 24 Jan 2012 16:06:34 -0800
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michael Buesch <m@bues.ch>, Joerg Roedel <joerg.roedel@amd.com>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org,
-        netdev@vger.kernel.org, linux-pcmcia@lists.infradead.org,
-        linux-s390@vger.kernel.org, USB list <linux-usb@vger.kernel.org>,
-        xen-devel@lists.xensource.com,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Get rid of get_driver() and put_driver()
-Message-ID: <20120125000634.GA1178@kroah.com>
-References: <Pine.LNX.4.44L0.1201241158540.1200-100000@iolanthe.rowland.org>
+	id S1754791Ab2AYAHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 19:07:17 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49066 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752768Ab2AYAHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 19:07:11 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
+Date: Wed, 25 Jan 2012 01:10:44 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <4F1EC8D5.5040102@suse.cz> <201201250002.37916.rjw@sisk.pl> <4F1F4717.2090704@gmail.com>
+In-Reply-To: <4F1F4717.2090704@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201241158540.1200-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201250110.44360.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 01:33:37PM -0500, Alan Stern wrote:
-> Greg:
+On Wednesday, January 25, 2012, Jiri Slaby wrote:
+> On 01/25/2012 12:02 AM, Rafael J. Wysocki wrote:
+> > On Tuesday, January 24, 2012, Jiri Slaby wrote:
+> >> On 01/24/2012 11:36 PM, Rafael J. Wysocki wrote:
+> >>> On Tuesday, January 24, 2012, Jiri Slaby wrote:
+> >>>> On 01/24/2012 05:18 PM, Srivatsa S. Bhat wrote:
+> >>>>> Hi Jiri,
+> >>>>>
+> >>>>> On 01/24/2012 08:35 PM, Jiri Slaby wrote:
+> >>>>>
+> >>>>>> Hi,
+> >>>>>>
+> >>>>>> this is a freshly booted system. When I do s2dsk, I see:
+> >>>>>> ...
+> >>>>>> Freezing remaining freezable tasks ... BUG: 'workqueue_freezing' is true!
+> >>>>>> ------------[ cut here ]------------
+> >>>>>> kernel BUG at /l/latest/linux/kernel/workqueue.c:3659!
+> >>>>>> invalid opcode: 0000 [#1] SMP
+> >>>>>> CPU 0
+> >>>>>> Modules linked in:
+> >>>>>>
+> >>>>>> Pid: 2669, comm: s2disk Not tainted 3.3.0-rc1-next-20120124_64+ #1627
+> >>>>>> Bochs Bochs
+> >>>>>> RIP: 0010:[<ffffffff8107e365>]  [<ffffffff8107e365>]
+> >>>>>> freeze_workqueues_begin+0x195/0x1a0
+> >>>>>> RSP: 0018:ffff880046f01d68  EFLAGS: 00010292
+> >>>>>> RAX: 0000000000000023 RBX: 0000000000000001 RCX: 00000000000000c9
+> >>>>>> RDX: 0000000000000077 RSI: 0000000000000046 RDI: ffffffff81b51f7c
+> >>>>>> RBP: ffff880046f01d98 R08: ffffffff81a9d760 R09: 0000000000000000
+> >>>>>> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+> >>>>>> R13: 00007fff579464dc R14: ffffffffffffffff R15: 0000000000000004
+> >>>>>> FS:  00007f3c65d54700(0000) GS:ffff880049600000(0000) knlGS:0000000000000000
+> >>>>>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> >>>>>> CR2: 00007f3c64f58c20 CR3: 0000000045b64000 CR4: 00000000000006f0
+> >>>>>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> >>>>>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> >>>>>> Process s2disk (pid: 2669, threadinfo ffff880046f00000, task
+> >>>>>> ffff880047251980)
+> >>>>>> Stack:
+> >>>>>>  ffff880046f01d98 0000000000000001 0000000000000000 00007fff579464dc
+> >>>>>>  ffffffffffffffff 0000000000000004 ffff880046f01e18 ffffffff81096cb9
+> >>>>>>  00000000ffff0124 0000000000000004 ffff880046f01e18 000000004f1ec7d1
+> >>>>>> Call Trace:
+> >>>>>>  [<ffffffff81096cb9>] try_to_freeze_tasks+0x1b9/0x2d0
+> >>>>>>  [<ffffffff81096ed5>] freeze_kernel_threads+0x25/0x90
+> >>>>>>  [<ffffffff81097b55>] hibernation_snapshot+0x75/0x2e0
+> >>>>>>  [<ffffffff8109d724>] snapshot_ioctl+0x314/0x4e0
+> >>>>>>  [<ffffffff81130856>] do_vfs_ioctl+0x96/0x550
+> >>>>>>  [<ffffffff8111ff7b>] ? vfs_write+0x10b/0x180
+> >>>>>>  [<ffffffff81130d5a>] sys_ioctl+0x4a/0x80
+> >>>>>>  [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
+> >>>>>> Code: c7 c6 0a a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 19 94 5a 00 0f 0b
+> >>>>>> 48 c7 c6 27 a4 92 81 48 c7 c7 16 65 92 81 31 c0 e8 02 94 5a 00 <0f> 0b
+> >>>>>> 66 0f 1f 84 00 00 00 00 00 55 48 c7 c7 82 4b b9 81 48 89
+> >>>>>> RIP  [<ffffffff8107e365>] freeze_workqueues_begin+0x195/0x1a0
+> >>>>>>  RSP <ffff880046f01d68>
+> >>>>>> ---[ end trace 632574abdc098963 ]---
+> >>>>>>
+> >>>>>
+> >>>>>
+> >>>>> I couldn't find any obvious root-cause from a quick check. Is this completely
+> >>>>> reproducible upon a fresh boot?
+> >>>>
+> >>>> True.
+> >>>>
+> >>>> The cause is that the function is called twice:
+> >>>
+> >>> Which function?
+> >>
+> >> The one where the BUG is. Maybe the functions which should clear the
+> >> flag is not called in between? See:
+> >>
+> >>>>  [<ffffffff8107e206>] freeze_workqueues_begin+0x36/0x1b0
+> >>                          ^^^^^^^^^^^^^^^^^^^^^^^
+> >>>>  [<ffffffff81096cc9>] try_to_freeze_tasks+0x1b9/0x2d0
+> >>>>  [<ffffffff81096ee5>] freeze_kernel_threads+0x25/0x90
+> >>>>  [<ffffffff81097b65>] hibernation_snapshot+0x75/0x2e0
+> >>>>  [<ffffffff8109d734>] snapshot_ioctl+0x314/0x4e0
+> >>>>  [<ffffffff81130866>] do_vfs_ioctl+0x96/0x550
+> >>>>  [<ffffffff8111ff8b>] ? vfs_write+0x10b/0x180
+> >>>>  [<ffffffff81130d6a>] sys_ioctl+0x4a/0x80
+> >>>>  [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
+> >>>> (elapsed 0.03 seconds) done.
+> >> ...
+> >>>> Freezing remaining freezable tasks ... BUG: 'workqueue_freezing' is true!
+> >>>> ------------[ cut here ]------------
+> >>>> kernel BUG at /l/latest/linux/kernel/workqueue.c:3659!
+> >> ...
+> >>>> RIP: 0010:[<ffffffff8107e371>]  [<ffffffff8107e371>
+> >>>> freeze_workqueues_begin+0x1a1/0x1b0
+> >>    ^^^^^^^^^^^^^^^^^^^^^^^
+> >>>> Call Trace:
+> >>>>  [<ffffffff81096cc9>] try_to_freeze_tasks+0x1b9/0x2d0
+> >>>>  [<ffffffff81096ee5>] freeze_kernel_threads+0x25/0x90
+> >>>>  [<ffffffff81097b65>] hibernation_snapshot+0x75/0x2e0
+> >>>>  [<ffffffff8109d734>] snapshot_ioctl+0x314/0x4e0
+> >>>>  [<ffffffff81130866>] do_vfs_ioctl+0x96/0x550
+> >>>>  [<ffffffff8111ff8b>] ? vfs_write+0x10b/0x180
+> >>>>  [<ffffffff81130d6a>] sys_ioctl+0x4a/0x80
+> >>>>  [<ffffffff81630e22>] system_call_fastpath+0x16/0x1b
+> > 
+> > Ah.  So this is linux-next, right?
 > 
-> This patch series removes the get_driver() and put_driver() routines
-> from the kernel.
+> Right.
 > 
-> Those routines don't do anything useful.  Their comments say that they
-> increment and decrement the driver's reference count, just like
-> get_device()/put_device() and a lot of other utility routines.  But a
-> struct driver is _not_ like a struct device!  It resembles a piece of
-> code more than a piece of data -- it acts as an encapsulation of a
-> driver.  Incrementing its refcount doesn't have much meaning because a
-> driver's lifetime isn't determined by the structure's refcount; it's
-> determined by when the driver's module gets unloaded.
+> > Can you please test the linux-next branch of the linux-pm tree and see if
+> > the problem is reproducible in there?
 > 
-> What really matters for a driver is whether or not it is registered.  
-> Drivers expect, for example, that none of their methods will be called
-> after driver_unregister() returns.  It doesn't matter if some other
-> thread still holds a reference to the driver structure; that reference
-> mustn't be used for accessing the driver code after unregistration.  
-> get_driver() does not do any checking for this.
-> 
-> People may have been misled by the kerneldoc into thinking that the
-> references obtained by get_driver() do somehow pin the driver structure
-> in memory.  This simply isn't true; all it pins is the associated
-> private structure.  Code that needs to pin a driver must do it some
-> other way (probably by calling try_module_get()).
-> 
-> In short, these routines don't do anything useful and they can actively 
-> mislead people.  Removing them won't introduce any bugs that aren't 
-> already present.  There is no reason to keep them.
+> Yeah, 100%. Just try it with a small enough swap.
 
-Very nice work, all now applied, thanks for doing this.
+Ah, thanks, so that's an error code path problem and most likely in the Linus'
+tree.
 
-greg k-h
+Srivatsa, any ideas?
+
+Rafael
