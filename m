@@ -1,44 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab2AYKft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 05:35:49 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:48053 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751010Ab2AYKfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 05:35:48 -0500
-Message-ID: <4F1FDAF9.90008@st.com>
-Date: Wed, 25 Jan 2012 16:05:37 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1751682Ab2AYKkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 05:40:00 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:43272 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750754Ab2AYKj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 05:39:58 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Sekhar Nori <nsekhar@ti.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Subject: [PATCH v2 1/3] arm:davinci: prepare to move aemif driver to drivers/mfd
+Date: Wed, 25 Jan 2012 15:55:54 +0530
+Message-ID: <1327487156-10238-1-git-send-email-prakash.pm@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Linus WALLEIJ <linus.walleij@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christopher BLAIR <chris.blair@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2] gpio/stmpe: support no-irq mode
-References: <1327485189-15522-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1327485189-15522-1-git-send-email-linus.walleij@stericsson.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/25/2012 3:23 PM, Linus WALLEIJ wrote:
-> +	if (!stmpe->pdata->no_irq) {
-> +		irq = platform_get_irq(pdev, 0);
-> +		if (irq < 0)
-> +			return irq;
-> +	}
+Patch moves emif header file appropriately as a part preparation to move emif
+driver from arch/arm/mach-davinci/ to drivers/mfd folder.
+There by it isolates modifications in emif interface depicting as platform code
+change.
 
-I already acked it once, but there is another idea that i have :)
-Why not allow passing no irqs in resource fields directly.
+Patch series are based on the discussion and concerns expressed in
+davinci-linux-open-source community. Here is the link for the same:
+http://davinci-linux-open-source.1494791.n2.nabble.com/PATCH-arm-davinci-configure-davinci-aemif-chipselects-through-OF-tt7059739.html#none
 
-i.e. platform_get_irq() < 0 will automatically mean irqs are not supported
-on platform and then we can do what we are doing in your patch. This will
-remove need of another pdata field. :)
+Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+---
+Since v1:
+Patch is generated using -M option.
 
+ arch/arm/mach-davinci/aemif.c                      |    2 +-
+ arch/arm/mach-davinci/board-da830-evm.c            |    2 +-
+ arch/arm/mach-davinci/board-da850-evm.c            |    2 +-
+ drivers/mtd/nand/davinci_nand.c                    |    2 +-
+ .../aemif.h => include/linux/mfd/davinci_aemif.h   |    0
+ 5 files changed, 4 insertions(+), 4 deletions(-)
+ rename arch/arm/mach-davinci/include/mach/aemif.h => include/linux/mfd/davinci_aemif.h (100%)
+
+diff --git a/arch/arm/mach-davinci/aemif.c b/arch/arm/mach-davinci/aemif.c
+index 1ce70a9..b67c115 100644
+--- a/arch/arm/mach-davinci/aemif.c
++++ b/arch/arm/mach-davinci/aemif.c
+@@ -15,7 +15,7 @@
+ #include <linux/module.h>
+ #include <linux/time.h>
+ 
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ 
+ /* Timing value configuration */
+ 
+diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+index dc1afe5..0b43554 100644
+--- a/arch/arm/mach-davinci/board-da830-evm.c
++++ b/arch/arm/mach-davinci/board-da830-evm.c
+@@ -31,7 +31,7 @@
+ #include <mach/nand.h>
+ #include <mach/da8xx.h>
+ #include <mach/usb.h>
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ #include <mach/spi.h>
+ 
+ #define DA830_EVM_PHY_ID		""
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 6b22b54..6dda013 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -41,7 +41,7 @@
+ #include <mach/da8xx.h>
+ #include <mach/nand.h>
+ #include <mach/mux.h>
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ #include <mach/spi.h>
+ 
+ #define DA850_EVM_PHY_ID		"0:00"
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index 6e56615..f19151b 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -35,7 +35,7 @@
+ #include <linux/slab.h>
+ 
+ #include <mach/nand.h>
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ 
+ /*
+  * This is a device driver for the NAND flash controller found on the
+diff --git a/arch/arm/mach-davinci/include/mach/aemif.h b/include/linux/mfd/davinci_aemif.h
+similarity index 100%
+rename from arch/arm/mach-davinci/include/mach/aemif.h
+rename to include/linux/mfd/davinci_aemif.h
 -- 
-viresh
+1.7.1
+
