@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab2AYF46 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 00:56:58 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:55940 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab2AYF44 (ORCPT
+	id S1754843Ab2AYGPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 01:15:25 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:34931 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752423Ab2AYGPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 00:56:56 -0500
-Message-ID: <4F1F99A5.1000206@kernel.org>
-Date: Wed, 25 Jan 2012 00:56:53 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Guillaume Knispel <gknispel@proformatique.com>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Guillaume Knispel <gknispel@avencall.com>,
-        Xavier Carcelle <xcarcelle@avencall.com>,
-        =?ISO-8859-1?Q?No=E9_Rubinst?= =?ISO-8859-1?Q?ein?= 
-	<nrubinstein@avencall.com>
-Subject: Re: How to "register" a GSI for a non PCI non ISA device
-References: <20120124184203.1b0878c2@xilun>
-In-Reply-To: <20120124184203.1b0878c2@xilun>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Jan 2012 01:15:23 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/2tuki7LT2cjo6lJ4xM1zFwOPNdCvycY9nUTLr8U
+	adBPLmgFYP6nKq
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
+ condition
+From: Mike Galbraith <efault@gmx.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: peterz@infradead.org, kosaki.motohiro@gmail.com, oleg@redhat.com,
+        y-goto@jp.fujitsu.com, mingo@elte.hu, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4F1EF1E8.4090909@jp.fujitsu.com>
+References: <1324633794.24803.48.camel@twins>
+	 <20111223154137.GA27901@redhat.com>
+	 <20111226172357.CE4D.E1E9C6FF@jp.fujitsu.com>
+	 <20111226171151.GA4472@redhat.com>  <4EFB8523.6080708@gmail.com>
+	 <1327400618.2614.13.camel@laptop>  <4F1EF1E8.4090909@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Jan 2012 07:15:17 +0100
+Message-ID: <1327472117.7591.12.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2012 12:42 PM, Guillaume Knispel wrote:
-
-> Hi,
+On Tue, 2012-01-24 at 13:01 -0500, KOSAKI Motohiro wrote:
+> On 1/24/2012 5:23 AM, Peter Zijlstra wrote:
+> > On Wed, 2011-12-28 at 16:07 -0500, KOSAKI Motohiro wrote:
+> >> I looked at scheduler code today briefly. now I'm afraid following code 
+> >> have similar race.
+> >>
+> >>
+> >>          if (task_contributes_to_load(p))
+> >>                  rq->nr_uninterruptible--;
+> >>
+> >>
+> >>
+> >> Can't following schenario be happen?
+> >>
+> >>
+> >> CPU0                    CPU1
+> >> --------------------------------------------------------
+> >> deactivate_task()
+> >>                         task->state = TASK_UNINTERRUPTIBLE;
+> >> activate_task()
+> >>    rq->nr_uninterruptible--;
+> >>
+> >>                         schedule()
+> >>                           deactivate_task()
+> >>                             rq->nr_uninterruptible++;
+> >>
+> >> Totally, nr_uninterruptible wasn't incremented.
+> >>
+> >>
+> >> I'm still not sure. I need to read more sched code. 
+> > 
+> > You shouldn't ever set another tasks ->state. 
 > 
-> I'm building a PC platform with additional non-PCI and non-ISA devices:
-> they are basically simple telecom chipsets connected to an SPI and an
-> old school parallel bus (Intel LEB bus) and GPIO pins that can be used
-> as interrupts through the IO APIC which exposes 40 GSI. From the point
-> of view of the software the SPI, LEB, and GPIO are provided by PCI
-> devices (in reality they are embedded controllers in an Intel SoC
-> 80579). Anyway I'm not sure the additional GSI are described anywhere
-> in whatever black magic ACPI / legacy BIOS table they could be
-> (but I've complete control over the FW, so I can had whatever is
->  needed when I know it).
-
-What is the benefit of implementing ACPI on this custom system?
-
--Len
-
-> But as my devices are neither PCI nor ISA, I don't know how i can get
-> access to the custom GSI interrupt from a LKM. acpi_register_gsi() used
-> to be exported but is not anymore and I guess this is mandatory that
-> this function is called to prepare internal structures (maybe irq_desc)
-> and most importantly to configure to level triggering active low.
+> I'm sorry. I haven't catch your point. I think following step is
+> valid kernel code. Do you disagree?
 > 
-> So I'm thinking about writing black magic DSDT stuffs or whatever,
-> which i might be able to sort of do after reading the fabulous ACPI
-> specifications. Any feedback or pointer would be highly welcome.
-> 
-> BTW when Linux devs says that bios writers are writing shit, yeah, they
-> do, and given the state of complexity of the PC platform, I'm at the
-> risk to do it too because I'm not supposed to delay the production of
-> our system by one additional year just to completely learn how the
-> shitty PC "standards" are supposed to work. From a more personal
-> point of view when I'm reading the ACPI or other related specs tainted
-> by MS and their desire to put GUID everywhere and other terrible ideas,
-> I would rather prefer being high to not endure that much pain.
-> 
-> As more and more x86 systems are directly designed to run Linux and
-> only tested with it, with some of those (like our own) being built
-> by people having complete control on the board and firmware (Coreboot),
-> maybe it is time to define a legacy-free variant of the x86 plateform
-> (especially on the FW/OS interface) for the free software and free
-> hardware design world, so that we aren't restricted and slowed down by
-> retro-compatible technologies dedicated at running MS-DOS and created
-> with the explicit goal to be hard to use for anything else than
-> Windows NT.
-> 
-> Cheers!
+> >>                         task->state = TASK_UNINTERRUPTIBLE;
+> >>                         schedule()
 
+I think you meant:
+	__set_current_state(TASK_UNINTERRUPTIBLE);
+	schedule();
+
+The way you wrote it, task doesn't have to be current, so could be doing
+the bad thing Peter pointed out, diddling *another* tasks ->state.
+
+	-Mike
 
