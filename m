@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751092Ab2AYWD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 17:03:59 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:29609 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab2AYWD6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 17:03:58 -0500
-Date: Wed, 25 Jan 2012 23:04:04 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg KH <gregkh@suse.de>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [000/129] 3.2.2-stable review
-In-Reply-To: <20120125215107.GA15555@suse.de>
-Message-ID: <alpine.LNX.2.00.1201252303060.4417@swampdragon.chaosbits.net>
-References: <20120124024041.GA18422@kroah.com> <alpine.LNX.2.00.1201252245210.4417@swampdragon.chaosbits.net> <20120125215107.GA15555@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751275Ab2AYWEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 17:04:41 -0500
+Received: from mga03.intel.com ([143.182.124.21]:24729 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806Ab2AYWEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 17:04:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99726073"
+Subject: Re: 3.2.1 Unable to reset IRR messages on boot
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org, midgoon@gmail.com
+In-Reply-To: <20120125134947.GF13655@zod.bos.redhat.com>
+References: <20120125000434.GC13655@zod.bos.redhat.com>
+	 <1327454651.27983.7.camel@sbsiddha-desk.sc.intel.com>
+	 <20120125134947.GF13655@zod.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel
+Date: Wed, 25 Jan 2012 14:04:08 -0800
+Message-ID: <1327529048.2327.17.camel@sbsiddha-mobl2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jan 2012, Greg KH wrote:
+On Wed, 2012-01-25 at 08:49 -0500, Josh Boyer wrote:
+> [    0.000000] IOAPIC[1]: apic_id 2, version 255, address 0xfec28000, GSI 24-279
 
-> On Wed, Jan 25, 2012 at 10:47:08PM +0100, Jesper Juhl wrote:
-> > On Mon, 23 Jan 2012, Greg KH wrote:
-> > 
-> > > #include <stable/formletter.h>
-> > > #define RELEASE		3.2.2-rc1
-> > > #define NUM_PATCHES	129
-> > > #define RESPONSE_DATE	"Wed, Jan 25, 2012 20:00:00 +0000"
-> > > #define LOCATION	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.2-rc1.gz
-> > 
-> > A very small, seriously not at all important, tiny question; Why are the 
-> > patches for 3.2.x placed in /pub/linux/kernel/v3.**0**/ ???
-> 
-> It's a symlink, why not?  :)
-> 
-Just seems confusing, that's all.. After all, 3.2.x is not 3.0.x, so it 
-looks like an error...
-Not at all important, that's just the impression I got..
+This looks indeed like a bogus entry probably returning all 1's for
+RTE's etc. Can you please send me a dmesg with "apic=verbose" boot
+parameter?
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+thanks,
+suresh
 
