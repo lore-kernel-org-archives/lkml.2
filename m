@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862Ab2AYBz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 20:55:27 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:63554 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755627Ab2AYBzZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 20:55:25 -0500
+	id S1755847Ab2AYB6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 20:58:13 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:54916 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755786Ab2AYB6M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 20:58:12 -0500
+X-WSS-ID: 0LYC04W-0A-3W1-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Linus Walleij" <linus.walleij@linaro.org>
+cc: "shreshthakumar.sahu@stericsson.com" 
+	<shreshthakumar.sahu@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
+Date: Tue, 24 Jan 2012 17:57:35 -0800
+Subject: RE: [PATCH 3/7] leds-lm3530: add 'is_vin_always_on' in the
+ lm3530_platform_data
+Thread-Topic: [PATCH 3/7] leds-lm3530: add 'is_vin_always_on' in the
+ lm3530_platform_data
+Thread-Index: AczaBZnhmOVkXEMmSQCoeTS8KdImaQA/rqEw
+Message-ID: <B567DBAB974C0544994013492B949F8E3812CD3E47@EXMAIL03.scwf.nsc.com>
+References: <AczXFZjmtQHOiXDCSJi9Lr1dSJlaCQ==>
+ <B567DBAB974C0544994013492B949F8E3812C6D0CD@EXMAIL03.scwf.nsc.com>
+ <CACRpkdbyK3eevSu3JeTzWguhJkSAm+8vmxymV03UhxhNQUtVsw@mail.gmail.com>
+ <20120123193122.GB26409@opensource.wolfsonmicro.com>
+In-Reply-To: <20120123193122.GB26409@opensource.wolfsonmicro.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
-References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-	<20120108221342.GA7058@ime.usp.br>
-	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
-	<20120109112207.7f993845@jbarnes-desktop>
-	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
-	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
-	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
-	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
-	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
-	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
-	<20120113115946.GA10615@ime.usp.br>
-	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
-	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
-	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
-	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
-	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
-	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
-	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
-	<CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
-	<CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
-	<CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
-	<CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
-	<CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
-	<CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
-	<CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
-Date: Tue, 24 Jan 2012 23:55:24 -0200
-X-Google-Sender-Auth: ZgqT8ts5cg1Hnxt87mrvB8-01eg
-Message-ID: <CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
-Content-Type: text/plain; charset=UTF-8
+X-WSS-ID: 6301BE1B1LS9908754-02-01
+Content-Type: text/plain;
+ charset=us-ascii
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, people.
+OK, I see. I'll try to follow design patterns for the regulator.
+Thanks a lot for your comment.
 
-On Tue, Jan 24, 2012 at 22:57, Yinghai Lu <yinghai@kernel.org> wrote:
-> 2012/1/24 Yinghai Lu <yinghai@kernel.org>:
->> 2012/1/24 Rogério Brito <rbrito@ime.usp.br>:
->>>> it seems not related. or could be ioremap etc have problem?
->>>>
->>>> So can you try to boot with nopat?
->>>
->>> I have experimented with Linux 3.3.0-rc1-00080-g16111ea, which is a merge of:
->>>
->>> * yinghai's usb_smi_disable_early branch with HEAD = a3a6c096
->>> * linus's master branch with HEAD = 4a7cbb56
->>>
->>> I have booted the kernel as above, configured, as Yinghai asked, with
->>> OHCI disabled, but no other changes from the previous times.  I
->>> registered in video two boots with only a slight change in options
->>> passed to the kernel, with:
->
-> you really need disable_cardbus_mem1_pref.patch that i sent out before.
-
-I thought that it was already in your git branch, but I applied it this time.
-
-> also please try to boot with
-> pci=nobios
->
-> it will disable pci bios32 probing.
-
-Did that (with both the disable_cardbus... and with e820_ram_aligned
-patches applied), but I still got the same results. This was booting
-with nopat and pci=nobios.
-
-The next thing that I'm doing is recording a video of how the computer
-boots when that transparent sizing bridge patch is reverted, so that
-you can have that as a reference. Then, I will rip apart the ACPI
-stuff from the configuration of the kernel to see if it is ACPI that
-is getting in the way of something here.
-
-I'm open to other suggestions.
+Best Regards,
+Milo -
 
 
-Thanks,
+-----Original Message-----
+From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com] 
+Sent: Tuesday, January 24, 2012 4:31 AM
+To: Linus Walleij
+Cc: Kim, Milo; shreshthakumar.sahu@stericsson.com; linux-kernel@vger.kernel.org; rpurdie@rpsys.net
+Subject: Re: [PATCH 3/7] leds-lm3530: add 'is_vin_always_on' in the lm3530_platform_data
 
--- 
-Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
-http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
-DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
+On Mon, Jan 23, 2012 at 08:13:18PM +0100, Linus Walleij wrote:
+
+> As far as I know we want to get rid of different design patterns
+> avoiding the regulator interface. The way forward for this is
+> either:
+
+> (A) Provide a fixed voltage regulator in your platform for this
+>   device (AFAIK the voltage does not even have to be correct)
+> (B) Enable dummy regulators in your platform
+
+> (A) is more elegant.
+
+Yeah, regulator usage should essentially never be conditional at a
+driver level unless there's actual optional supplies in the hardware.
+The situation has never been any different to that.
+
