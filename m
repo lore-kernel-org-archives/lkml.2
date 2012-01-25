@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab2AYOsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 09:48:13 -0500
-Received: from natasha.panasas.com ([67.152.220.90]:37754 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab2AYOsM (ORCPT
+	id S1752521Ab2AYOxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:53:16 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59300 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab2AYOxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 09:48:12 -0500
-Message-ID: <4F20160F.4020808@panasas.com>
-Date: Wed, 25 Jan 2012 16:47:43 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jeff Layton <jlayton@redhat.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        <bfields@redhat.com>, <linux-nfs@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: WARNING: at lib/debugobjects.c:262 debug_print_object+0x8c/0xb0()
-References: <20120120135646.2fc4fa61@tlielax.poochiereds.net> <4F1BCCD6.4020603@codeaurora.org> <20120123102311.4378b8c1@tlielax.poochiereds.net> <20120124074516.GC2420@redhat.com> <4F1E7F3F.3060703@panasas.com> <20120124073626.552bc31c@tlielax.poochiereds.net> <4F1EC7C9.2020001@panasas.com> <20120124113234.26c47969@tlielax.poochiereds.net> <20120124124353.7148b827@tlielax.poochiereds.net> <alpine.LFD.2.02.1201251502210.2716@ionos>
-In-Reply-To: <alpine.LFD.2.02.1201251502210.2716@ionos>
+	Wed, 25 Jan 2012 09:53:15 -0500
+Subject: Re: [RFC PATCH v1 1/2] sched: unified sched_powersavings sysfs
+ tunable
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Indan Zupancic <indan@nul.nu>, Youquan Song <youquan.song@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+In-Reply-To: <20120116162241.29759.13220.stgit@localhost>
+References: <20120116161740.29759.4679.stgit@localhost>
+	 <20120116162241.29759.13220.stgit@localhost>
 Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Jan 2012 15:53:01 +0100
+Message-ID: <1327503181.2614.76.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 04:05 PM, Thomas Gleixner wrote:
-> On Tue, 24 Jan 2012, Jeff Layton wrote:
->>> Still, I wonder if there are other problems like this around. The slab
->>> allocators seem to call debug_check_no_obj_freed() on kmem_cache_free,
->>> but parts of the objects themselves (like the timer in the work object
->>> here) get initialized in other places and aren't necessarily
->>> reinitialized when they're recycled out of the slab...
->>>
->>
->> On second thought...getting rid of the ctor function here might be
->> problematic. We have to call inode_init_once, etc...
->>
->> Almost all of the inode slabs have one, so I've settled for just moving
->> the INIT_DELAYED_WORK call out of init_once and into rpc_alloc_inode. I
->> sent a patch to Trond and linux-nfs to do that. That will fix this
->> case, but I do wonder if there are other places in the kernel that have
->> similar problems with debugobject initialization.
-> 
-> The problem is that debugobject requires that a newly allocated object
-> is reinitialized and made available to the debugobjects code again
-> simply because we remove it from the debugobjects core on
-> kmem_cache_free(). 
-> 
-> The real question is why the heck kmem_cache_alloc() does not call the
-> ctor on each allocation and just expects the previously used and freed
-> object to be in a consistent initialiazed state.
-> 
+On Mon, 2012-01-16 at 21:52 +0530, Vaidyanathan Srinivasan wrote:
+> +++ b/block/blk.h
+> @@ -167,14 +167,15 @@ static inline int queue_congestion_off_threshold(struct request_queue *q)
+>  static inline int blk_cpu_to_group(int cpu)
+>  {
+>         int group = NR_CPUS;
+> -#ifdef CONFIG_SCHED_MC
+> -       const struct cpumask *mask = cpu_coregroup_mask(cpu);
+> -       group = cpumask_first(mask);
+> -#elif defined(CONFIG_SCHED_SMT)
+> -       group = cpumask_first(topology_thread_cpumask(cpu));
+> +#ifdef CONFIG_SCHED_POWERSAVE
+> +       if (smt_capable())
+> +               group = cpumask_first(topology_thread_cpumask(cpu));
+> +       else    
+> +               group = cpumask_first(cpu_coregroup_mask(cpu));
+>  #else
+>         return cpu;
+>  #endif
+> +       /* Possible dead code?? */
+>         if (likely(group < NR_CPUS))
+>                 return group;
+>         return cpu; 
 
-Perhaps it's some flags that is to do with the RCU delete thing.
-You know for the lockless walks and stuff
+After going, WTF is block doing! I had a closer look and this doesn't
+seem right at all. The old code would use coregroup_mask when SCHED_MC
+&& SCHED_SMT, the new code does something else.
 
-> Thanks,
-> 
-> 	tglx
+Jens, what is this thing trying to do?
 
