@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab2AYLf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 06:35:57 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:48358 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab2AYLf4 (ORCPT
+	id S1752500Ab2AYLjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 06:39:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40406 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752267Ab2AYLjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 06:35:56 -0500
-Date: Wed, 25 Jan 2012 12:35:38 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH/RFC] regulator: Reverse the disable sequence in
- regulator_bulk_disable()
-To: broonie@opensource.wolfsonmicro.com, lrg@ti.com
+	Wed, 25 Jan 2012 06:39:43 -0500
+Date: Wed, 25 Jan 2012 11:39:41 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
 Cc: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Steve Glendinning <steve.glendinning@smsc.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Timur Tabi <timur@freescale.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <1327491338-18817-1-git-send-email-s.nawrocki@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.7.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
+        s.nawrocki@samsung.com, lrg@ti.com,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Subject: Re: [PATCH] regulator: Set apply_uV only when min and max voltages
+ are defined
+Message-ID: <20120125113940.GD3687@opensource.wolfsonmicro.com>
+References: <1327483905-27007-1-git-send-email-k.lewandowsk@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BI5RvnYi6R4T2M87"
+Content-Disposition: inline
+In-Reply-To: <1327483905-27007-1-git-send-email-k.lewandowsk@samsung.com>
+X-Cookie: Q:	How do you keep a moron in suspense?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Often there is a need for disabling a set of regulators in order opposite
-to the enable order. Currently the function regulator_bulk_disable() walks
-list of regulators in same order as regulator_bulk_enable(). This may cause
-trouble, especially for devices with mixed analogue and digital circuits.
-So reverse the disabling sequence of regulator_bulk_disable().
-While at it, also correct the comment.
 
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Steve Glendinning <steve.glendinning@smsc.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Timur Tabi <timur@freescale.com>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-The alternatives to directly modifying regulator_bulk_disable() could be:
+--BI5RvnYi6R4T2M87
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- - re-implement it in modules that need the order reversed; it is not
-   really helpful in practice since such code would have to be repeated
-   in multiple modules;
+On Wed, Jan 25, 2012 at 10:31:45AM +0100, Karol Lewandowski wrote:
+> apply_uV is errornously set when regulator is instantiated from device
+> tree, even when it doesn't contain any voltage constraints.
 
- - create new function, e.g. regulator_bulk_disable_reversed() with the
-   order reversed - not sure if it is not an overkill though;
----
- drivers/regulator/core.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Applied, thanks.  But really
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index e9a83f8..67db4a6 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2463,8 +2463,8 @@ EXPORT_SYMBOL_GPL(regulator_bulk_enable);
-  * @return         0 on success, an errno on failure
-  *
-  * This convenience API allows consumers to disable multiple regulator
-- * clients in a single API call.  If any consumers cannot be enabled
-- * then any others that were disabled will be disabled again prior to
-+ * clients in a single API call.  If any consumers cannot be disabled
-+ * then any others that were disabled will be enabled again prior to
-  * return.
-  */
- int regulator_bulk_disable(int num_consumers,
-@@ -2473,7 +2473,7 @@ int regulator_bulk_disable(int num_consumers,
- 	int i;
- 	int ret;
- 
--	for (i = 0; i < num_consumers; i++) {
-+	for (i = num_consumers - 1; i >= 0; --i) {
- 		ret = regulator_disable(consumers[i].consumer);
- 		if (ret != 0)
- 			goto err;
-@@ -2483,7 +2483,7 @@ int regulator_bulk_disable(int num_consumers,
- 
- err:
- 	pr_err("Failed to disable %s: %d\n", consumers[i].supply, ret);
--	for (--i; i >= 0; --i)
-+	for (++i; i < num_consumers; ++i)
- 		regulator_enable(consumers[i].consumer);
- 
- 	return ret;
--- 
-1.7.8.3
+> -	if (constraints->min_uV == constraints->max_uV)
+> +	if (min_uV && max_uV && constraints->min_uV == constraints->max_uV)
 
+we only actually need to check one of min_uV and max_uV due to the
+equality check.
+
+--BI5RvnYi6R4T2M87
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPH+nmAAoJEBus8iNuMP3d3DsP/A4IURGaroMo6VOSZ4R10uBQ
+JqAITy8uV8jNrwIy7ELsSjpo8OpS9UteZHv0vrQJarOKYiFQQadh59Oi/4iHYBRu
+0rJGc0NLcYGhqmIRL3h/YF51VorrhkAfuiZmzm4/V5OtQi1Cgz4/SKUe6j+MavLz
+x5UXJxn0JxfcYwoeZWUDeicpK9NEKX7BFqeHK+6n1lseg3u6lZP6vKDV/QaQ8OP2
+glEs+/YWrvdOiFCJpHbuHYgl3RQePLALVzblJClWrZK2RzkZFRl2+hWWVUKLpOZ+
+XyqjXWl/noFDR8/ZNP8cPpsTSAPqNm99wkVnUJTZG0UJeEEg5bGuXf4yKzPf4lWg
+30Li0AW+qlKGLyQxTONOIj948uRLFYAEjWYuA2Qo0WZZ8ZCbzDY3jLQh1OpNOv0R
+sUV/LZFkyZOwPh6MeE9HKEyNEv2FYAnRtzFxZaPBQdmrfpoCdcdCAtHEk2dUBFBa
+UNXX7IQfA7pIeaznL/7IM4/ah39xd3ljETQYzFwLml8cUb9Ut7bj33SNnBBeGVaq
+MROQIjB2E5AOSKK/M9wSsSmdojELYWoB7kBE0pa2p1qmKcBIr/OeBWblo4jbOysK
+kaagra79MMxSfyCfgIMW9vc16/QR9PR//4tTMegvByQx7R9o2f97vfvZPOq1JfeX
+qPVY/9rKvGlvfD2xrNzE
+=J/0c
+-----END PGP SIGNATURE-----
+
+--BI5RvnYi6R4T2M87--
