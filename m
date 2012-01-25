@@ -1,108 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab2AYFel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 00:34:41 -0500
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:40032 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751447Ab2AYFek convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 00:34:40 -0500
+	id S1752079Ab2AYFfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 00:35:51 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57048 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab2AYFft convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 00:35:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120121173207.GF3821@phenom.ffwll.local>
-References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
- <1326845297-6233-1-git-send-email-rmorell@nvidia.com> <1326845297-6233-2-git-send-email-rmorell@nvidia.com>
- <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com>
- <20120120180457.GE29824@morell.nvidia.com> <20120121173207.GF3821@phenom.ffwll.local>
-From: "Semwal, Sumit" <sumit.semwal@ti.com>
-Date: Wed, 25 Jan 2012 11:04:18 +0530
-Message-ID: <CAB2ybb8YepvuKDAMBH1REYERuajmczHZvsv=ENX0SFcuagXm=Q@mail.gmail.com>
-Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
-To: Robert Morell <rmorell@nvidia.com>, "Semwal, Sumit" <sumit.semwal@ti.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "sumit.semwal@linaro.org" <sumit.semwal@linaro.org>
+In-Reply-To: <4F1F5FE0.9090901@gmail.com>
+References: <1327450719-25590-1-git-send-email-grant.likely@secretlab.ca> <4F1F5FE0.9090901@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 24 Jan 2012 22:35:28 -0700
+X-Google-Sender-Auth: GjnBzaRXUd8RGTJyznxLZUPGpnw
+Message-ID: <CACxGe6s3R0fcBSf_YHTpXp15gtEBHRQg5-YM=cDO5UfY9cRGrQ@mail.gmail.com>
+Subject: Re: [RFC 1/2] irq_domain: Create common xlate functions that device
+ drivers can use
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 11:02 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Fri, Jan 20, 2012 at 10:04:57AM -0800, Robert Morell wrote:
->> On Wed, Jan 18, 2012 at 01:10:04AM -0800, Semwal, Sumit wrote:
->> > On Wed, Jan 18, 2012 at 5:38 AM, Robert Morell <rmorell@nvidia.com> wrote:
->> > > EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
->> > > issue, and not really an interface".  The dma-buf infrastructure is
->> > > explicitly intended as an interface between modules/drivers, so it
->> > > should use EXPORT_SYMBOL instead.
->> >
->> > + Konrad, Arnd, Mauro: there were strong objections on using
->> > EXPORT_SYMBOL in place of EXPORT_SYMBOL_GPL by all 3 of them; I
->> > suggest we first arrive at a consensus before merging this patch.
+On Tue, Jan 24, 2012 at 6:50 PM, Rob Herring <robherring2@gmail.com> wrote:
+>
+>
+> On 01/24/2012 06:18 PM, Grant Likely wrote:
+>> Rather than having each interrupt controller driver creating its own barely
+>> unique .xlate function for irq_domain, create a library of translators which
+>> any driver can use directly.
 >>
->> This discussion seems to have stagnated; how do we move forward here?
+>> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+>> index e7379a3..5e497a0 100644
+>> --- a/include/linux/irqdomain.h
+>> +++ b/include/linux/irqdomain.h
+>> @@ -110,6 +110,9 @@ struct irq_domain {
+>>       void *host_data;
+>>       irq_hw_number_t inval_irq;
 >>
->> Sumit, as the primary author and new maintainer (congrats!) of the
->> dma-buf infrastructure, it seems like it's really your call how to
->> proceed.  I'd still like to see this be something that we can use from
->> the nvidia and fglrx drivers for Xorg buffer sharing, as I and Dave have
->> argued in this thread.  It really seems to me that this change on a
->> technical level won't have any adverse effect on the scenarios where it
->> can be used today, but it will allow it to be used more widely, which
->> will prevent duplication and fragmentation in the future and be greatly
->> appreciated by users of hardware such as Optimus.
+>> +     /* Data for common irq xlate functions */
+>> +     unsigned int xlate_type;
+>> +
 >
-> Given that I've participated quite a bit in the design of dma_buf as-is,
-> let me throw in my totally irrelevant opinion, too ;-)
+> How does this get set? Do we want interrupt controllers messing with the
+> domain struct directly long term?
+
+It defaults to IRQ_TYPE_NONE in the alloc function and drivers can
+override it.  Alternately it could be made part of the
+irq_domain_add() arguments, but I'm not thrilled with adding a whole
+bunch of arguments to the function prototype.
+
 >
-> I'll refrain from comment on the actual patch, it's obviously a hot topic.
-> Furthermore I might need to ask Intel's legal dep for guidance to asses
-> things wrt my own contributions to dma_buf.
+>>       /* Optional device node pointer */
+>>       struct device_node *of_node;
+>>  };
+>> @@ -163,6 +166,18 @@ extern unsigned int irq_linear_revmap(struct irq_domain *host,
+>>                                     irq_hw_number_t hwirq);
+>>
+>>  extern struct irq_domain_ops irq_domain_simple_ops;
+>> +
+>> +/* stock xlate functions */
+>> +int irq_domain_xlate_onecell(struct irq_domain *d, struct device_node *ctrlr,
+>> +                     const u32 *intspec, unsigned int intsize,
+>> +                     irq_hw_number_t *out_hwirq, unsigned int *out_type);
+>> +int irq_domain_xlate_twocell(struct irq_domain *d, struct device_node *ctrlr,
+>> +                     const u32 *intspec, unsigned int intsize,
+>> +                     irq_hw_number_t *out_hwirq, unsigned int *out_type);
+>> +int irq_domain_xlate_onetwocell(struct irq_domain *d, struct device_node *ctrlr,
+>> +                     const u32 *intspec, unsigned int intsize,
+>> +                     irq_hw_number_t *out_hwirq, unsigned int *out_type);
+>> +
+>>  #if defined(CONFIG_OF_IRQ)
+>>  extern void irq_domain_generate_simple(const struct of_device_id *match,
+>>                                       u64 phys_base, unsigned int irq_start);
+>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+>> index def8e7b..df80205 100644
+>> --- a/kernel/irq/irqdomain.c
+>> +++ b/kernel/irq/irqdomain.c
+>> @@ -53,6 +53,7 @@ static struct irq_domain *irq_domain_alloc(struct device_node *of_node,
+>>       domain->ops = ops;
+>>       domain->host_data = host_data;
+>>       domain->of_node = of_node_get(of_node);
+>> +     domain->xlate_type = IRQ_TYPE_NONE;
+>>
+>>       if (domain->ops->match == NULL)
+>>               domain->ops->match = default_irq_domain_match;
+>> @@ -690,25 +691,77 @@ int irq_domain_simple_map(struct irq_domain *d, unsigned int irq,
+>>       return 0;
+>>  }
+>>
+>> -int irq_domain_simple_xlate(struct irq_domain *d,
+>> -                         struct device_node *controller,
+>> -                         const u32 *intspec, unsigned int intsize,
+>> -                         unsigned long *out_hwirq, unsigned int *out_type)
+>> +/**
+>> + * irq_domain_xlate_onecell() - Generic xlate for direct one cell bindings
+>> + *
+>> + * Device Tree IRQ specifier translation function which works with one cell
+>> + * bindings where the cell value maps directly to the hwirq number.
+>> + */
+>> +int irq_domain_xlate_onecell(struct irq_domain *d, struct device_node *ctrlr,
+>> +                          const u32 *intspec, unsigned int intsize,
+>> +                          unsigned long *out_hwirq, unsigned int *out_type)
+>> +{
+>> +     if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
+>> +              ctrlr->full_name, intsize))
+>> +             return -EINVAL;
+>> +     *out_hwirq = intspec[0];
+>> +     *out_type = d->xlate_type;
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(irq_domain_xlate_onecell);
+>> +
+>> +/**
+>> + * irq_domain_xlate_twocell() - Generic xlate for direct two cell bindings
+>> + *
+>> + * Device Tree IRQ specifier translation function which works with two cell
+>> + * bindings where the cell values map directly to the hwirq number
+>> + * and linux irq flags.
+>> + */
+>> +int irq_domain_xlate_twocell(struct irq_domain *d, struct device_node *ctrlr,
+>> +                     const u32 *intspec, unsigned int intsize,
+>> +                     irq_hw_number_t *out_hwirq, unsigned int *out_type)
+>>  {
+>> -     if (d->of_node != controller)
+>> +     if (WARN(intsize < 2, "Bad intspec for %s: intsize=%i < 2\n",
+>> +              ctrlr->full_name, intsize))
+>> +             return -EINVAL;
+>> +     if (intsize < 2)
 >
-> Otoh I'd like nvidia to be on board, especially when we're desingned
-> additions to dma_buf required to make it really work for multiple gpus. In
-> additions it looks like that the nvidia blob will only be an importer of a
-> dma_buf, at least for the use-cases discussed here.
+> You've already checked this...
+
+cut-and-paste error.  Fixed.
+
 >
-> So why don't you just ditch this patch here and add a small shim to your
-> blob to interface with drm's prime as an importing driver? I personally
-> would deem that acceptable and I think Dave wouldn't mind too much,
-> either.
-
-Hi Everyone!
-
-(Apologies for delay in replying; was OoO for past couple of days)
-
-Thanks very much for this discussion - a couple of things:
-
-1. I am definitely willing to make changes as needed to get as many
-devices / subsystems / frameworks to use the dma-buf infrastructure.
-This could include changing the way symbols are exported, if that is
-the *only* way to get things done.
-
-2. With that premise, I quite like the idea that Daniel gave (of
-course, in his capacity as one of the top contributors behind dma-buf
-infrastructure, and like he said, not as an Intel employee) - so let
-me ask the following:
-
-Robert, Dave,
-Technically speaking, is there no way that the EXPORT_SYMBOL_GPLed
-symbols can be used by the binary blobs, possibly with an open-sourced
-shim which provides the buffer-sharing interface to the binary blobs?
-Are there any reasons to not consider this approach?
-
-Also, if some of you are going to be at ELC mid-Feb at SFO, we could
-meet up face-to-face and thrash out possible ways forward.
+>>               return -EINVAL;
+>> -     if (intsize < 1)
+>> +     *out_hwirq = intspec[0];
+>> +     *out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(irq_domain_xlate_twocell);
+>> +
+>> +/**
+>> + * irq_domain_xlate_onetwocell() - Generic xlate for one or two cell bindings
+>> + *
+>> + * Device Tree IRQ specifier translation function which works with either one
+>> + * or two cell bindings where the cell values map directly to the hwirq number
+>> + * and linux irq flags.
+>> + *
+>> + * Note: don't use this function unless your interrupt controller explicitly
+>> + * supports both one and two cell bindings.  For the majority of controllers
+>> + * the _onecell() or _twocell() variants above should be used.
 >
-> Yours, Daniel
-Thanks, and best regards,
-~Sumit.
+> This comment is confusing since you turn around and use it for simple
+> ops below.
+
+I intend to faze out the generic simple ops so that most drivers will
+explicitly use _onecell or _twocell.
+
+>> + */
+>> +int irq_domain_xlate_onetwocell(struct irq_domain *d,
+>> +                             struct device_node *ctrlr,
+>> +                             const u32 *intspec, unsigned int intsize,
+>> +                             unsigned long *out_hwirq, unsigned int *out_type)
+>> +{
+>> +     if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
+>> +              ctrlr->full_name, intsize))
+>>               return -EINVAL;
 >
-> Disclaimer: This is my own opinion and I do not speak as an Intel employee
-> here.
-> --
-> Daniel Vetter
-> Mail: daniel@ffwll.ch
-> Mobile: +41 (0)79 365 57 48
+> Isn't this check redundant with the check in of_irq_map_raw:
+>
+>        if (ointsize != intsize)
+>                return -EINVAL;
+
+No.  It's a different test.  The core code does indeed ensure that
+intsize matches the #interrupt-cells value defined in the device tree,
+but it does nothing to check if the #interrupt-cells value is set to
+something sane.  This test ensures that the xlate function will not
+dereference beyond the end of the intspec array.
+
+Ideally the interrupt controller driver should already verify the
+#interrupt-cells value at initialization, but I'm not going to rely on
+it when this test is so cheap.  The intent is to be really noisy about
+bad data in the device tree.
+
+> The only diff in these functions is really checking the size. So I
+> really don't think we need 3 versions if that can be factored out where
+> you know value of #interrupt-cells.
+
+There are subtleties here and #interrupt-cells is not always the
+correct thing to test.  For example, some powerpc controllers has
+#interrupt-cells = <2>, but the second cell must be ignored so the
+_onecell version is the correct function.  I originally investigated
+parameterizing a single function, but I didn't like how it ended up
+looking because it would require adding something like irq_cells_min
+and irq_cells_max to the irq_domain structure.  I think using
+variations on the function ends up being cleaner.  I may also add
+something like a ..._twocell_lookup() version that uses a lookup table
+for the type values to handle the other type of xlate common in the
+powerpc tree.
+
+Thanks for the quick review.
+
+g.
