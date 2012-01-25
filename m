@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab2AYWvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 17:51:15 -0500
-Received: from cpanel23.proisp.no ([88.87.44.74]:41031 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab2AYWvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 17:51:14 -0500
-Message-ID: <4F20875C.3000207@numascale.com>
-Date: Wed, 25 Jan 2012 23:51:08 +0100
-From: Steffen Persvold <sp@numascale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Daniel J Blueman <daniel@numascale-asia.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: RCU qsmask !=0 warnings on large-SMP...
-References: <4F1FCF02.9060209@numascale-asia.com> <20120125140029.GA2534@linux.vnet.ibm.com> <4F200F4D.5000201@numascale.com> <20120125181441.GD2849@linux.vnet.ibm.com> <4F206783.2050901@numascale.com> <20120125215121.GK2849@linux.vnet.ibm.com>
-In-Reply-To: <20120125215121.GK2849@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751777Ab2AYWxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 17:53:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50306 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab2AYWxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 17:53:37 -0500
+Subject: Re: [RFCv2 00/14]
+From: Mark Salter <msalter@redhat.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
+        benh@kernel.crashing.org, Rob Herring <rob.herring@calxeda.com>
+Date: Wed, 25 Jan 2012 17:53:29 -0500
+In-Reply-To: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
+References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Message-ID: <1327532011.24169.6.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/25/2012 22:51, Paul E. McKenney wrote:
-> On Wed, Jan 25, 2012 at 09:35:15PM +0100, Steffen Persvold wrote:
-[]
->>
->> Yes, 3.2.1 is our debug target right now.
->
-> OK, good!  Could you please add an "ftrace_dump(DUMP_ALL)" before you
-> print the first set of error messages?  (Preferably set up so that
-> you only dump once!)
->
-> Then before you start testing, could you please enable the
-> rcu_grace_period and rcu_grace_period_init trace events?  This should
-> get a good picture of the sequence of grace-period-related events leading
-> up to the failure.
->
-> You will need to build the kernel with CONFIG_RCU_TRACE=y.
->
-> The usual commands suffice to enable tracing:
->
-> 	echo 1>  /sys/kernel/debug/tracing/events/rcu_grace_period/enable
-> 	echo 1>  /sys/kernel/debug/tracing/events/rcu_grace_period_init/enable
->
-> This should give some history that might help understand why the previous
-> grace period ended before the CPUs had all checked in.  Maybe even why
-> the rcu_node structures got advance notice of the new grace period...
->
+On Mon, 2012-01-23 at 14:07 -0700, Grant Likely wrote:
+> Hey everyone,
+> 
+> Here's the second RFC for the irq_domain patches.  I could use some
+> help testing now.  I still expect there will be a few bugs.  The
+> series is based on v3.3-rc1, and I've pushed it out to my git server:
 
-[]
+Hi Grant,
 
->>
->> Are you talking about the data from /sys/kernel/debug/rcu/ ? I have
->> CONFIG_RCU_TRACE (and consequently CONFIG_TREE_RCU_TRACE) set, is
->> this enough to get the event data you want ?
->
-> Yep, if you have CONFIG_RCU_TRACE=y, then the two tracepoints should
-> be available.
->
+I converted arch/c6x over to the generic irq_domain support and have not
+had any problems in testing. The c6x virtual irq support was a nearly
+identical copy of the powerpc code, so the patch I ended up with mostly
+copied what you did in arch/powerpc. The c6x patch is on the tip of:
 
-It seems that I don't have the /sys/kernel/debug/tracing/events 
-interface on the kernel I'm running now. Perhaps I need to enable the 
-CONFIG_FTRACE feature also ? If so what FTRACE interfaces do I need ?
+  git@linux-c6x.org:/git/projects/linux-c6x-upstreaming irq-testing
 
-Cheers,
--- 
-Steffen Persvold, Chief Architect NumaChip
-Numascale AS - www.numascale.com
-Tel: +47 92 49 25 54 Skype: spersvold
+I think this probably belongs in your series, but I can push it
+separately if not.
+
+--Mark
+
+
