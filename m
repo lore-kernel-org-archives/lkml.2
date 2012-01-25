@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab2AYHG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 02:06:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44028 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2AYHG4 (ORCPT
+	id S1752208Ab2AYHL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 02:11:28 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32876 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2AYHL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 02:06:56 -0500
-Date: Tue, 24 Jan 2012 23:12:45 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [patch 3/4] c/r: procfs: add arg_start/end, env_start/end and
- exit_code members to /proc/$pid/stat
-Message-Id: <20120124231245.e4c68f90.akpm@linux-foundation.org>
-In-Reply-To: <20120125065450.GC2005@moon>
-References: <20120123142036.025893883@openvz.org>
-	<20120123142436.336126707@openvz.org>
-	<20120124155941.4f7453d4.akpm@linux-foundation.org>
-	<20120125065450.GC2005@moon>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jan 2012 02:11:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120124.230203.1478271172075708903.davem@davemloft.net>
+References: <20120123.134352.1621146585245670953.davem@davemloft.net>
+ <CAGsizzJnQ6b6eSC0ZnAtFguU7_xDfWFPSY6L4DWXc24F+Ts2XQ@mail.gmail.com>
+ <CAOzFzEjE7b-Y+_vOWeBKbHDkURRcYXomSTcwB91vKHVWQxBVsg@mail.gmail.com> <20120124.230203.1478271172075708903.davem@davemloft.net>
+From: Jesse Gross <jesse@nicira.com>
+Date: Tue, 24 Jan 2012 23:11:06 -0800
+Message-ID: <CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
+Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: David Miller <davem@davemloft.net>
+Cc: joseph.glanville@orionvm.com.au, steweg@ynet.sk, eric.dumazet@gmail.com,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jan 2012 10:54:50 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+On Tue, Jan 24, 2012 at 8:02 PM, David Miller <davem@davemloft.net> wrote:
+> From: Joseph Glanville <joseph.glanville@orionvm.com.au>
+> Date: Wed, 25 Jan 2012 14:48:37 +1100
+>
+>> The reason why this patch is useful is that it stands to be the only
+>> true mulitpoint L2 VPN with a kernel space forwarding plane.
+>
+> So what you're telling me is that I added this huge openvswitch
+> thing essentially for nothing?
 
-> > > +		(mm && permitted) ? mm->start_brk : 0,
-> > > +		(mm && permitted) ? mm->arg_start : 0,
-> > > +		(mm && permitted) ? mm->arg_end : 0,
-> > > +		(mm && permitted) ? mm->env_start : 0,
-> > > +		(mm && permitted) ? mm->env_end : 0,
-> > > +		task->exit_code);
-> > >  	if (mm)
-> > >  		mmput(mm);
-> > >  	return 0;
-> > 
-> > /proc/pid/stat is getting out of control.  People are now sending patches
-> > because reading from this thing already takes too long.
-
-err, actually, that was /proc/stat/
-
-> > The problem is that if you only want one field, you have to incur the
-> > cost of preparing all the fields.  The magnitude of this problem
-> > increases exponentially over time!
-> > 
-> > I'm unsure what to do about it really.  Perhaps add a new
-> > /proc/pid/mmstat for MM-specific things.  We could put the above six
-> > fields in there, as long as we move quickly.
-> > 
-> 
-> I can add prctl PR_GET_MM with subcodes, since PR_SET_MM is already here
-> and wrapped with CHECKPOINT_RESTORE. Would this be better?
-
-mm, not really - /proc is the logical/expected place for it.
-
-I'm thinking that perhaps we should start again with all of this and
-export all this information in brand new, well-designed procfs files. 
-We'd still maintain /proc/stat and /proc/pid/stat but people should
-migrate off them.  Eventually (10 years?) everyone will be setting their
-CONFIG_PROC_[PID_]STAT to 'n' and perhaps we can retire the things.
-
-Meanwhile, I suppose you may as well continue to make /proc/pid/stat
-even crazier :(  It isn't as bad as /proc/stat!
-
-
-btw, do we really need to do "(mm && permitted)" so many times?  ie,
-can we split that seq_printf up and do
-
-	if (mm && permitted) {
-		seq_printf(m + offset, "%lu", mm->start_data);
-		...
-	} else {
-		seq_printf(m + offset, "0 0 0 0 0 0 0 0 0");
-	}
-
-?  Although this probably won't help much.
+I think it's actually the opposite - Open vSwitch can be used to
+implement this type of thing as well as for many other use cases.  On
+the other hand, even when implementing a multipoint L2 solution it can
+be useful to have additional levels of control but you can't do that
+with this patch because it essentially statically glues together
+tunneling and bridging.
