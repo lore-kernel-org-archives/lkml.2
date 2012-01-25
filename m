@@ -1,91 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab2AYXYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 18:24:14 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21371 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2AYXYM (ORCPT
+	id S1751702Ab2AYXZR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 18:25:17 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35354 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab2AYXZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 18:24:12 -0500
-Message-ID: <4F208E73.3070103@oracle.com>
-Date: Wed, 25 Jan 2012 15:21:23 -0800
-From: Maxim Uvarov <maxim.uvarov@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Wed, 25 Jan 2012 18:25:15 -0500
+Date: Wed, 25 Jan 2012 15:25:00 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Cong Wang <xiyou.wangcong@gmail.com>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org
+Subject: Re: [Patch] tmpfs: clean up shmem_find_get_pages_and_swap()
+In-Reply-To: <1327420133-16551-1-git-send-email-xiyou.wangcong@gmail.com>
+Message-ID: <alpine.LSU.2.00.1201251509480.2141@eggly.anvils>
+References: <1327420133-16551-1-git-send-email-xiyou.wangcong@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
-CC: Wim Van Sebroeck <wim@iguana.be>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        dann frazier <dannf@hp.com>
-Subject: Re: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
-References: <1326686570-19303-1-git-send-email-maxim.uvarov@oracle.com> <1326686570-19303-2-git-send-email-maxim.uvarov@oracle.com> <CA+55aFxzfCxwYUcRbSyf+U7nr5GPjH4Qfine_TcY6Oxj8WQrWw@mail.gmail.com> <20120124203738.GA27296@infomag.iguana.be> <9774516974AF5F4C8A2C3C69CD3412332032E846@G9W0755.americas.hpqcorp.net>
-In-Reply-To: <9774516974AF5F4C8A2C3C69CD3412332032E846@G9W0755.americas.hpqcorp.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090201.4F208F12.00B8,ss=1,re=0.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas, will you be able to test patch accoring to  Linus's nr_page note?
+On Tue, 24 Jan 2012, Cong Wang wrote:
 
-Maxim.
+> This patch cleans up shmem_find_get_pages_and_swap() interface:
+> 
+> a) Pass struct pagevec* instead of ->pages
+> b) Check if nr_pages is greater than PAGEVEC_SIZE inside the function
+> c) Return the result via ->nr instead of using return value
+> 
+> Compiling test only.
+> 
+> Cc: Hugh Dickins <hughd@google.com>
+> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-On 01/24/2012 01:05 PM, Mingarelli, Thomas wrote:
-> Yes I agree that Maxim's patch is correct. The original set_memory_x call for 64 bit was done correctly and the newer calls are wrong.
->
-> The 2 pages for the BIOS SD is a known value so it should be safe to use as is.
->
->
->
-> Tom
-> -----Original Message-----
-> From: Wim Van Sebroeck [mailto:wim@iguana.be]
-> Sent: Tuesday, January 24, 2012 2:38 PM
-> To: Linus Torvalds
-> Cc: Maxim Uvarov; linux-kernel@vger.kernel.org; akpm@linux-foundation.org; stable@vger.kernel.org; Mingarelli, Thomas; dann frazier
-> Subject: Re: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
->
-> Hi Linus,
->
->> So I don't know who is supposed to be handling this (Wim?), but the
->> patch itself looks suspicious.
->
-> I asked Tom to look at Maxim's patch and see what it does. Tom was going to look at the patch and
-> I'm waiting on feedback from him first. (That's why I din't sent it upstream yet).
->
->> On Sun, Jan 15, 2012 at 8:02 PM, Maxim Uvarov<maxim.uvarov@oracle.com>  wrote:
->>> -       set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
->>> +       set_memory_x((unsigned long)bios32_entrypoint&  PAGE_MASK, 2);
->>
->> If it wasn't page-aligned to begin with, then maybe it needs three pages now?
->>
->>> -                               set_memory_x((unsigned long)cru_rom_addr, cru_length);
->>> +                               set_memory_x((unsigned long)cru_rom_addr&  PAGE_MASK, cru_length>>  PAGE_SHIFT);
->>
->> Same here. If we align the start address down, we should fix up the
->> length. And should we not align the number of pages up?
->>
->> In general, a "start/length" conversion to a "page/nr" model needs to be roughly
->>
->>     len += start&  ~PAGE_MASK;
->>     start&= PAGE_MASK;
->>     nr_pages = (len + PAGE_SIZE - 1)>>  PAGE_SHIFT;
->>
->> to do things right. But I don't know where those magic numbers come
->> from. Maybe the "2" is already due to the code possibly traversing a
->> page boundary, and has already been fixed up. Somebody who knows the
->> driver and the requirements should take a look at this.
->
-> Valid comments indeed. Tom please take Linus comments with you when you look at the patch.
->
-> Dan: I put you in Cc: also so that you can have a look at it also.
->
-> Kind regards,
-> Wim.
->
->
+I don't see any cleanup: just a difference in taste, I suppose.
 
+shmem_find_get_pages_and_swap() is modelled on find_get_pages():
+I'd prefer to keep it that way unless there's good reason to diverge.
+
+I do see a slight change in behaviour, where you've undone the range
+limitation (coming from invalidate_inode_pages2_range() originally, but
+now in several functions in mm/truncate.c).  I think you misunderstood
+
+> -			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
+
+When doing a range, that's trying to stop the radix_tree gang lookup
+looking further than could ever be necessary.  Not a big deal, it is
+imperfect anyway - makes more sense when the range is 1 than larger;
+but shouldn't be undone without justification.
+
+Hugh
+
+> 
+> ---
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 269d049..c4e08e2 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -312,15 +312,19 @@ static void shmem_delete_from_page_cache(struct page *page, void *radswap)
+>  /*
+>   * Like find_get_pages, but collecting swap entries as well as pages.
+>   */
+> -static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+> +static void shmem_find_get_pages_and_swap(struct address_space *mapping,
+>  					pgoff_t start, unsigned int nr_pages,
+> -					struct page **pages, pgoff_t *indices)
+> +					struct pagevec *pvec, pgoff_t *indices)
+>  {
+>  	unsigned int i;
+>  	unsigned int ret;
+>  	unsigned int nr_found;
+> +	struct page **pages = pvec->pages;
+>  
+>  	rcu_read_lock();
+> +
+> +	if (nr_pages > PAGEVEC_SIZE)
+> +		nr_pages = PAGEVEC_SIZE;
+>  restart:
+>  	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
+>  				(void ***)pages, indices, start, nr_pages);
+> @@ -357,7 +361,7 @@ export:
+>  	if (unlikely(!ret && nr_found))
+>  		goto restart;
+>  	rcu_read_unlock();
+> -	return ret;
+> +	pvec->nr = ret;
+>  }
+>  
+>  /*
+> @@ -409,8 +413,8 @@ void shmem_unlock_mapping(struct address_space *mapping)
+>  		 * Avoid pagevec_lookup(): find_get_pages() returns 0 as if it
+>  		 * has finished, if it hits a row of PAGEVEC_SIZE swap entries.
+>  		 */
+> -		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+> -					PAGEVEC_SIZE, pvec.pages, indices);
+> +		shmem_find_get_pages_and_swap(mapping, index,
+> +					PAGEVEC_SIZE, &pvec, indices);
+>  		if (!pvec.nr)
+>  			break;
+>  		index = indices[pvec.nr - 1] + 1;
+> @@ -442,9 +446,8 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
+>  	pagevec_init(&pvec, 0);
+>  	index = start;
+>  	while (index <= end) {
+> -		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+> -			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
+> -							pvec.pages, indices);
+> +		shmem_find_get_pages_and_swap(mapping, index,
+> +			end - index + 1, &pvec, indices);
+>  		if (!pvec.nr)
+>  			break;
+>  		mem_cgroup_uncharge_start();
+> @@ -490,9 +493,8 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
+>  	index = start;
+>  	for ( ; ; ) {
+>  		cond_resched();
+> -		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+> -			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
+> -							pvec.pages, indices);
+> +		shmem_find_get_pages_and_swap(mapping, index,
+> +			end - index + 1, &pvec, indices);
+>  		if (!pvec.nr) {
+>  			if (index == start)
+>  				break;
