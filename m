@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab2AYG3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 01:29:33 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:53786 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab2AYG3c (ORCPT
+	id S1751433Ab2AYGgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 01:36:35 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61577 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab2AYGge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 01:29:32 -0500
-Message-ID: <1327472968.14373.41.camel@edumazet-laptop>
-Subject: Re: [patch v3, kernel version 3.2.1] Source mode for macvlan
- interface
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?UTF-8?Q?=C5=A0tefan?= Gula <steweg@ynet.sk>
-Cc: David Miller <davem@davemloft.net>, kaber@trash.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jan 2012 07:29:28 +0100
-In-Reply-To: <CAGsizzLHT6jK8zJn+5eJkTUt5NBdpK9uNHJTzDCPrbCcPBvBNA@mail.gmail.com>
-References: <12446987.2261327416407141.JavaMail.root@5-MeO-DMT.ynet.sk>
-	 <25119746.2341327416953583.JavaMail.root@5-MeO-DMT.ynet.sk>
-	 <20120124.230354.1696063062900108959.davem@davemloft.net>
-	 <CAGsizzLHT6jK8zJn+5eJkTUt5NBdpK9uNHJTzDCPrbCcPBvBNA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 25 Jan 2012 01:36:34 -0500
+MIME-Version: 1.0
+From: Daniel J Blueman <daniel@numascale-asia.com>
+To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>
+Cc: Steffen Persvold <sp@numascale.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Daniel J Blueman <daniel@numascale-asia.com>
+Subject: [PATCH] Drop unnecessary NumaChip conflict with EDAC
+Date: Wed, 25 Jan 2012 14:35:49 +0800
+Message-Id: <1327473349-28395-1-git-send-email-daniel@numascale-asia.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 25 janvier 2012 à 07:22 +0100, Štefan Gula a écrit :
+EDAC detection no longer crashes multi-node systems, so don't
+conflict on it with NumaChip.
 
-> It's a result of need to have enough space allocated for sk_buff
-> struct before called macvlan_fill_info. I know that it looks somehow
-> messy. BUt before the macvlan_fill_info is called there is only one
-> procedure calcit. The problem of calcit is that it doesn't have access
-> to struct net_device *dev int it. It has only access to struct sk_buff
-> *skb, so from that point it cannot be called directly (whole parsing
-> code had to be copied there to get the *dev a calling
-> if_nlmsg_size(dev) from it. On the other hand calcit returns global
-> static value of min_ifinfo_dump_size and that is shared among all
-> interfaces and modifying like this do the job properly. There was
-> another different way and that was creating and registering a whole
-> new PF_MACLVAN netlink group resulting in copying almost 95% percent
-> of given code and modified it somehow to do the same.
-> 
-> If it should be result of separate commitment than ok, but it was
-> result apparently of need only for use of macvlan that's why it was
-> included in my patch.
-> 
-> So how should I proceed with it?
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+---
+ arch/x86/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-A separate patch for this part, as David said ?
-
-The intent is to catch people attention on a particular point, instead
-of unnoticed code in some huge unrelated patch.
-
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 864cc6e..5bed94e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -360,7 +360,6 @@ config X86_NUMACHIP
+ 	depends on NUMA
+ 	depends on SMP
+ 	depends on X86_X2APIC
+-	depends on !EDAC_AMD64
+ 	---help---
+ 	  Adds support for Numascale NumaChip large-SMP systems. Needed to
+ 	  enable more than ~168 cores.
+-- 
+1.7.5.4
 
