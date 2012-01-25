@@ -1,195 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2AYPlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:41:13 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:42092 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753491Ab2AYPlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:41:12 -0500
-Date: Wed, 25 Jan 2012 15:41:08 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH v2 -mm 3/3] mm: only defer compaction for failed order
- and higher
-Message-ID: <20120125154108.GD3901@csn.ul.ie>
-References: <20120124131822.4dc03524@annuminas.surriel.com>
- <20120124132332.0c18d346@annuminas.surriel.com>
+	id S1754727Ab2AYPnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:43:05 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53668
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752347Ab2AYPnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 10:43:04 -0500
+Date: Wed, 25 Jan 2012 10:43:00 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>
+Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
+ the staging area
+Message-ID: <20120125154300.GA19509@infradead.org>
+References: <1326402943-14031-1-git-send-email-kys@microsoft.com>
+ <20120114164228.GB9682@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481B6F0307@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20120116152951.GA9720@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481B6FE0E2@TK5EX14MBXC122.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120124132332.0c18d346@annuminas.surriel.com>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B6FE0E2@TK5EX14MBXC122.redmond.corp.microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 01:23:32PM -0500, Rik van Riel wrote:
-> Currently a failed order-9 (transparent hugepage) compaction can
-> lead to memory compaction being temporarily disabled for a memory
-> zone.  Even if we only need compaction for an order 2 allocation,
-> eg. for jumbo frames networking.
-> 
+On Wed, Jan 25, 2012 at 03:29:05PM +0000, KY Srinivasan wrote:
+> James,
+> Any updates here? 
 
-This is a throwback to when compaction was introduced just for
-THP and hugetlbfs and compaction did not take place for order <=
-PAGE_ALLOC_COSTLY_ORDER.
+Given that this is a new driver without external dependencies it seems
+fine even for a 3.3 merge to me.
 
-> The fix is relatively straightforward: keep track of the order at
-> which compaction failed to create a free memory area. Only defer
-> compaction at that order and higher, while letting compaction go
-> through for lower orders.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  include/linux/compaction.h |   14 ++++++++++----
->  include/linux/mmzone.h     |    1 +
->  mm/compaction.c            |   11 ++++++++++-
->  mm/page_alloc.c            |    6 ++++--
->  mm/vmscan.c                |    2 +-
->  5 files changed, 26 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index 7a9323a..51a90b7 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -34,20 +34,26 @@ extern unsigned long compaction_suitable(struct zone *zone, int order);
->   * allocation success. 1 << compact_defer_limit compactions are skipped up
->   * to a limit of 1 << COMPACT_MAX_DEFER_SHIFT
->   */
-> -static inline void defer_compaction(struct zone *zone)
-> +static inline void defer_compaction(struct zone *zone, int order)
->  {
->  	zone->compact_considered = 0;
->  	zone->compact_defer_shift++;
->  
-> +	if (order < zone->compact_order_failed)
-> +		zone->compact_order_failed = order;
-> +
->  	if (zone->compact_defer_shift > COMPACT_MAX_DEFER_SHIFT)
->  		zone->compact_defer_shift = COMPACT_MAX_DEFER_SHIFT;
->  }
->  
->  /* Returns true if compaction should be skipped this time */
-> -static inline bool compaction_deferred(struct zone *zone)
-> +static inline bool compaction_deferred(struct zone *zone, int order)
->  {
->  	unsigned long defer_limit = 1UL << zone->compact_defer_shift;
->  
-> +	if (order < zone->compact_order_failed)
-> +		return false;
-> +
->  	/* Avoid possible overflow */
->  	if (++zone->compact_considered > defer_limit)
->  		zone->compact_considered = defer_limit;
-> @@ -73,11 +79,11 @@ static inline unsigned long compaction_suitable(struct zone *zone, int order)
->  	return COMPACT_SKIPPED;
->  }
->  
-> -static inline void defer_compaction(struct zone *zone)
-> +static inline void defer_compaction(struct zone *zone, int order)
->  {
->  }
->  
-> -static inline bool compaction_deferred(struct zone *zone)
-> +static inline bool compaction_deferred(struct zone *zone, int order)
->  {
->  	return 1;
->  }
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 650ba2f..dff7115 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -365,6 +365,7 @@ struct zone {
->  	 */
->  	unsigned int		compact_considered;
->  	unsigned int		compact_defer_shift;
-> +	int			compact_order_failed;
->  #endif
->  
->  	ZONE_PADDING(_pad1_)
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 51ece75..e8cff81 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -673,9 +673,18 @@ static int __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
->  		INIT_LIST_HEAD(&cc->freepages);
->  		INIT_LIST_HEAD(&cc->migratepages);
->  
-> -		if (cc->order < 0 || !compaction_deferred(zone))
-> +		if (cc->order < 0 || !compaction_deferred(zone, cc->order))
->  			compact_zone(zone, cc);
->  
-> +		if (cc->order > 0) {
-> +			int ok = zone_watermark_ok(zone, cc->order,
-> +						low_wmark_pages(zone), 0, 0);
-> +			if (ok && cc->order > zone->compact_order_failed)
-> +				zone->compact_order_failed = cc->order + 1;
-> +			else if (!ok && cc->sync)
-> +				defer_compaction(zone, cc->order);
-> +		}
-> +
-
-That needs a comment. I think what you're trying to do is reset
-compat_order_failed once compaction is successful.
-
-The "!ok && cc->sync" check may be broken. __compact_pgdat() is
-called from kswapd, not direct compaction so cc->sync will not be true.
-
->  		VM_BUG_ON(!list_empty(&cc->freepages));
->  		VM_BUG_ON(!list_empty(&cc->migratepages));
->  	}
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 0027d8f..cd617d9 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1990,7 +1990,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  	if (!order)
->  		return NULL;
->  
-> -	if (compaction_deferred(preferred_zone)) {
-> +	if (compaction_deferred(preferred_zone, order)) {
->  		*deferred_compaction = true;
->  		return NULL;
->  	}
-> @@ -2012,6 +2012,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  		if (page) {
->  			preferred_zone->compact_considered = 0;
->  			preferred_zone->compact_defer_shift = 0;
-> +			if (order >= preferred_zone->compact_order_failed)
-> +				preferred_zone->compact_order_failed = order + 1;
->  			count_vm_event(COMPACTSUCCESS);
->  			return page;
->  		}
-> @@ -2028,7 +2030,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  		 * defer if the failure was a sync compaction failure.
->  		 */
->  		if (sync_migration)
-> -			defer_compaction(preferred_zone);
-> +			defer_compaction(preferred_zone, order);
->  
->  		cond_resched();
->  	}
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index fa17794..5d65991 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2199,7 +2199,7 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
->  	 * If compaction is deferred, reclaim up to a point where
->  	 * compaction will have a chance of success when re-enabled
->  	 */
-> -	if (compaction_deferred(zone))
-> +	if (compaction_deferred(zone, sc->order))
->  		return watermark_ok;
->  
->  	/* If compaction is not ready to start, keep reclaiming */
-> 
-
--- 
-Mel Gorman
-SUSE Labs
