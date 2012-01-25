@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab2AYOjq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 09:39:46 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37384 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab2AYOjp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 09:39:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120110114831.17610.88468.sendpatchset@srdronam.in.ibm.com>
-References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com> <20120110114831.17610.88468.sendpatchset@srdronam.in.ibm.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 25 Jan 2012 15:39:19 +0100
-Message-ID: <CAK1hOcMVQN4sQjMnV3YBtd6hi8ZtbxPuguVHGxGgSPGn2scsNQ@mail.gmail.com>
-Subject: Re: [PATCH v9 3.2 1/9] uprobes: Install and remove breakpoints.
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752292Ab2AYOqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 09:46:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab2AYOqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 09:46:33 -0500
+Date: Wed, 25 Jan 2012 09:46:16 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        bfields@redhat.com, linux-nfs@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: WARNING: at lib/debugobjects.c:262
+ debug_print_object+0x8c/0xb0()
+Message-ID: <20120125094616.6e90d113@tlielax.poochiereds.net>
+In-Reply-To: <alpine.LFD.2.02.1201251502210.2716@ionos>
+References: <20120120135646.2fc4fa61@tlielax.poochiereds.net>
+	<4F1BCCD6.4020603@codeaurora.org>
+	<20120123102311.4378b8c1@tlielax.poochiereds.net>
+	<20120124074516.GC2420@redhat.com>
+	<4F1E7F3F.3060703@panasas.com>
+	<20120124073626.552bc31c@tlielax.poochiereds.net>
+	<4F1EC7C9.2020001@panasas.com>
+	<20120124113234.26c47969@tlielax.poochiereds.net>
+	<20120124124353.7148b827@tlielax.poochiereds.net>
+	<alpine.LFD.2.02.1201251502210.2716@ionos>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 12:48 PM, Srikar Dronamraju
-<srikar@linux.vnet.ibm.com> wrote:
-> +/*
-> + * opcodes we'll probably never support:
-> + * 6c-6d, e4-e5, ec-ed - in
-> + * 6e-6f, e6-e7, ee-ef - out
-> + * cc, cd - int3, int
+On Wed, 25 Jan 2012 15:05:03 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-I imagine desire to set a breakpoint on int 0x80 will be rather typical.
-(Same for sysenter).
-
-> + * cf - iret
-
-Iret does work. Test program for 32-bit x86:
-
-/* gcc -nostartfiles -nostdlib -o iret iret.S */
-_start: .globl  _start
-        pushf
-        push    %cs
-        push    $_e
-        iret  /* will this jump to _e? Yes! */
-        hlt   /* segv if reached */
-_e:     movl    $42, %ebx
-        movl    $1, %eax
-        int     $0x80
-
-I guess supporting probes in weird stuff like ancient DOS emulators
-(they actually use iret) is not important.
-
-OTOH iret doesn't seem to be too hard: if it fails (bad cs/eflags
-on stack), then the location of iret instruction per se is not
-terribly important.
-If it works, then you need to be careful to not mess up eip,
-same as you already do with ordinary [l]ret, nothing more.
+> On Tue, 24 Jan 2012, Jeff Layton wrote:
+> > > Still, I wonder if there are other problems like this around. The slab
+> > > allocators seem to call debug_check_no_obj_freed() on kmem_cache_free,
+> > > but parts of the objects themselves (like the timer in the work object
+> > > here) get initialized in other places and aren't necessarily
+> > > reinitialized when they're recycled out of the slab...
+> > > 
+> > 
+> > On second thought...getting rid of the ctor function here might be
+> > problematic. We have to call inode_init_once, etc...
+> > 
+> > Almost all of the inode slabs have one, so I've settled for just moving
+> > the INIT_DELAYED_WORK call out of init_once and into rpc_alloc_inode. I
+> > sent a patch to Trond and linux-nfs to do that. That will fix this
+> > case, but I do wonder if there are other places in the kernel that have
+> > similar problems with debugobject initialization.
+> 
+> The problem is that debugobject requires that a newly allocated object
+> is reinitialized and made available to the debugobjects code again
+> simply because we remove it from the debugobjects core on
+> kmem_cache_free(). 
+> 
+> The real question is why the heck kmem_cache_alloc() does not call the
+> ctor on each allocation and just expects the previously used and freed
+> object to be in a consistent initialiazed state.
+> 
+> Thanks,
+> 
+> 	tglx
 
 
-Come to think of it, why do you bother checking for
-invalid instructions? What can happen if you would just copy
-and run all instructions? You already are prepared to handle
-exceptions, right?
+I believe that's by design. The comments at the top of slab.c say:
 
+ * This means, that your constructor is used only for newly allocated
+ * slabs and you must pass objects with the same initializations to
+ * kmem_cache_free.
+
+I assume that it was done that way for efficiency, but not passing
+"clean" objects to kmem_cache_free has been the source of bugs in the
+past.
+
+Rerunning the ctor should be safe. SLAB already does that when memory
+poisoning is enabled. Perhaps we could make sure all the allocators do
+that when debug objects are enabled?
+
+OTOH, doing that might paper over bugs in some cases...
 
 -- 
-vda
+Jeff Layton <jlayton@redhat.com>
