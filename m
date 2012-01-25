@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab2AYVoM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 16:44:12 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46518 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295Ab2AYVoL (ORCPT
+	id S1752678Ab2AYVo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 16:44:28 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:29375 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab2AYVo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 16:44:11 -0500
-Date: Wed, 25 Jan 2012 21:45:22 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Why are not processes HUPped when they open /dev/console?
-Message-ID: <20120125214522.7a49cf39@pyramind.ukuu.org.uk>
-In-Reply-To: <4F207660.500@suse.cz>
-References: <4F207660.500@suse.cz>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jan 2012 16:44:26 -0500
+Date: Wed, 25 Jan 2012 22:44:32 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg KH <gregkh@suse.de>
+cc: Igor Grinberg <grinberg@compulab.co.il>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [000/129] 3.2.2-stable review
+In-Reply-To: <20120124165204.GB26552@suse.de>
+Message-ID: <alpine.LNX.2.00.1201252244150.4417@swampdragon.chaosbits.net>
+References: <20120124024041.GA18422@kroah.com> <4F1E5B88.50801@compulab.co.il> <20120124165204.GB26552@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jan 2012 22:38:40 +0100
-Jiri Slaby <jslaby@suse.cz> wrote:
+On Tue, 24 Jan 2012, Greg KH wrote:
 
-> Hello,
+> On Tue, Jan 24, 2012 at 09:19:36AM +0200, Igor Grinberg wrote:
+> > Hi Greg,
+> > 
+> > On 01/24/12 04:40, Greg KH wrote:
+> > > #include <stable/formletter.h>
+> > > #define RELEASE		3.2.2-rc1
+> > > #define NUM_PATCHES	129
+> > > #define RESPONSE_DATE	"Wed, Jan 25, 2012 20:00:00 +0000"
+> > > #define LOCATION	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.2-rc1.gz
+> > > 
+> > > diffstat below, no one really reads these things anyway...
+> > 
+> > This is not exactly true...
+> > I'm (and I think I'm not the only one) going through the diffstat
+> > to see if there are any files of my interest involved,
+> > because it is not always straight forward to understand what
+> > the patch subject means and also there are too many of them to read all...
+> > So, for me, the compromise between being updated on important issues
+> > and spend not too much time reading patches subjects/message is
+> > read the diffstat and if I find anything that is of my interest,
+> > then go to the patches...
+> > May be not the best, but works for me...
 > 
-> don't you remember by a chance the reason for this test in __tty_hangup:
->   if (filp->f_op->write != tty_write)
+> Sorry, I didn't mean to imply that no one reads the diffstat, I ment the
+> other generic wording that I've had in the announcement emails for the
+> past 6 years.
 > 
-> The logic there is not to HUP processes that have this tty open via
-> /dev/console.
+> Glad it's still useful for you.
+> 
+I find it useful as well..
 
-Because if you hang up the console the machine crashes ?
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-At least that's what used to happen.
-
-Alan
