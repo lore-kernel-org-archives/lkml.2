@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab2AYTDs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 14:03:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43893 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2AYTDp convert rfc822-to-8bit (ORCPT
+	id S1752088Ab2AYTEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 14:04:47 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:63294 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab2AYTEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 14:03:45 -0500
+	Wed, 25 Jan 2012 14:04:44 -0500
+Date: Wed, 25 Jan 2012 14:02:14 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Guillaume Knispel <gknispel@proformatique.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Xavier Carcelle <xcarcelle@avencall.com>,
+        =?iso-8859-1?B?Tm/p?= Rubinstein <nrubinstein@avencall.com>
+Subject: Re: How to "register" a GSI for a non PCI non ISA device
+Message-ID: <20120125190214.GC18606@phenom.dumpdata.com>
+References: <20120124184203.1b0878c2@xilun>
+ <4F1F99A5.1000206@kernel.org>
+ <20120125182314.7834c75b@xilun>
 MIME-Version: 1.0
-In-Reply-To: <201201242356.04244.rjw@sisk.pl>
-References: <201201242356.04244.rjw@sisk.pl>
-Date: Wed, 25 Jan 2012 14:03:44 -0500
-X-Google-Sender-Auth: P37cUpNPSF725zeU_7xB1UDGbBY
-Message-ID: <CAP=VYLo90FANL8tX5VPvL+3wKB0CDF3Ryz1Lsw6ECVpcT9nesQ@mail.gmail.com>
-Subject: Re: [Announce] linux-pm tree changes
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120125182314.7834c75b@xilun>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4F205242.0033,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 5:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Hi,
->
-> I'd like you to know some workflow changes regarding the linux-pm tree.
->
-> Since it's now possible to create signed tags for Linus to pull from, I won't
-> need the 'pm-for-linus' branch any more and it's gone.  The 'pm-fixes' branch
-> is gone too and replaced by the 'fixes' branch (which currently contains the
-> same material as master).
->
-> The idea is that the main development is going to happen in the 'master'
-> branch, which is not going to be rebased and the Linus' tree will be merged
-> into it from time to time (most of the time when the 'master' branch can be
-> fast-forwarded to it).  The 'fixes' branch will be used for pushing urgent
+On Wed, Jan 25, 2012 at 06:23:14PM +0100, Guillaume Knispel wrote:
+> On Wed, 25 Jan 2012 00:56:53 -0500
+> Len Brown <lenb@kernel.org> wrote:
+> 
+> > On 01/24/2012 12:42 PM, Guillaume Knispel wrote:
+> > 
+> > > Hi,
+> > > 
+> > > I'm building a PC platform with additional non-PCI and non-ISA devices:
+> > > they are basically simple telecom chipsets connected to an SPI and an
+> > > old school parallel bus (Intel LEB bus) and GPIO pins that can be used
+> > > as interrupts through the IO APIC which exposes 40 GSI. From the point
+> > > of view of the software the SPI, LEB, and GPIO are provided by PCI
+> > > devices (in reality they are embedded controllers in an Intel SoC
+> > > 80579). Anyway I'm not sure the additional GSI are described anywhere
+> > > in whatever black magic ACPI / legacy BIOS table they could be
+> > > (but I've complete control over the FW, so I can had whatever is
+> > >  needed when I know it).
+> > 
+> > What is the benefit of implementing ACPI on this custom system?
+> 
+> For our short term project it seems to be more a necessity than a
+> benefit. ACPI is supported by the SoC, tables are already largely
+> provided by Coreboot, the whole x86 ecosystem including Linux is more
+> or less based around ACPI, and my whole interrogation comes from the
+> fact that *acpi*_register_gsi() seems to be necessary to configure a
+> GSI in the APIC but is not exported anymore, so my guess is that if I
 
-Not sure what you have in mind for "from time to time", but random merges
-without a clear reason (i.e. "merge Linus to get access to new files X Y Z")
-are probably going to get you in hot water.
+Hm, isn't it __acpi_register_gsi?
 
-Also, once you stack on your 1st PM commit onto your master, none of
-your future merges of Linus' tree will be fast forward.  Here is an
-example, where I simulate a local change, followed by "time to time"
-merges of Linus tree.  Note each creates a merge, not just the 1st one.
+> can't call it explicitly from my LKM, there should better be a way to
+> make it be called when an ACPI thing is done, or maybe a legacy table
+> parsed.
 
------------------------------
-linux-head$git checkout -b crap v3.1
-Checking out files: 100% (17551/17551), done.
-Switched to a new branch 'crap'
-linux-head$echo foo > foo ; git add foo ; git commit -m '1st pm commit'
-[crap 1675da3] 1st pm commit
- 1 files changed, 1 insertions(+), 0 deletions(-)
- create mode 100644 foo
-linux-head$git merge v3.2-rc1 2>&1 |grep 'Merge\|Fast'
-Merge made by recursive.
-linux-head$git merge v3.2-rc2 2>&1 |grep 'Merge\|Fast'
-Merge made by recursive.
-linux-head$git merge v3.2-rc3 2>&1 |grep 'Merge\|Fast'
-Merge made by recursive.
-linux-head$git show -m |head -n5
-commit 3cbd041875960361ffde72612afadc6c68e94654 (from
-6f6028bdbbc63dc71b408da8976f154a2e6a70ee)
-Merge: 6f6028b caca6a0
-Author: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date:   Wed Jan 25 13:45:55 2012 -0500
-linux-head$
-----------------
+Can you do it the way xen does? Look in arch/x86/xen/pci.c
+> 
+> As we first target an unmodified (if possible) 2.6.32 kernel from
+> Debian Squeeze, I can't just re-export acpi_register_gsi() and call it
+> a day. (If I've no other choice I'll obviously do it, but this would be
+> quite bad for future maintenance).
 
-Having lots of these kinds of pointless merge commits are
-what will most likely get you in hot water when you ask for
-it to be pulled.
-
-Maybe I'm just misinterpreting what your plan is.
-
-Paul.
----
-
-> stuff that must go in before the new material in the 'master' branch.
->
-> The linux-next branch is going to be based on top of the master branch
-> with the 'fixes' branch merged into it and will contain additional new
-> material that hasn't been added to the master branch yet.  Every patch
-> going through linux-pm has to spend some time in the linux-next branch
-> alone before it is added to the master (or 'fixes') branch (some super-urgent
-> fixes may go directly to the 'fixes' branch, though).
->
-> Topic branches are all gone now and they will be re-created as needed.
->
-> If you have any questions, please ask.
->
-> Thanks,
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Oh wow. That is ancient. 3.2?
