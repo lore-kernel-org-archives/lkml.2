@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab2AYRCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 12:02:48 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:20970 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756112Ab2AYRCq (ORCPT
+	id S1756330Ab2AYRD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 12:03:29 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16395 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab2AYRD2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 12:02:46 -0500
-Date: Wed, 25 Jan 2012 18:02:41 +0100
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: Re: [PATCH 1/3] dma-buf: Introduce dma buffer sharing mechanism
-In-reply-to: <1324891397-10877-2-git-send-email-sumit.semwal@ti.com>
-To: Sumit Semwal <sumit.semwal@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        arnd@arndb.de, airlied@redhat.com, linux@arm.linux.org.uk,
-        jesse.barker@linaro.org, m.szyprowski@samsung.com, rob@ti.com,
-        daniel@ffwll.ch, patches@linaro.org,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Message-id: <4F2035B1.4020204@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124
- Thunderbird/8.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel,gmane.linux.ports.arm.kernel,gmane.comp.video.dri.devel,gmane.linux.drivers.video-input-infrastructure
-References: <1324891397-10877-1-git-send-email-sumit.semwal@ti.com>
- <1324891397-10877-2-git-send-email-sumit.semwal@ti.com>
+	Wed, 25 Jan 2012 12:03:28 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 25 Jan 2012 09:03:16 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 25 Jan 2012 09:03:16 -0800
+Subject: RE: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
+Thread-Topic: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
+Thread-Index: AczbU1pKJnu+MAQET3+Ak1FAEwpeiwALsWVQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178CB8202B@HQMAIL01.nvidia.com>
+References: <1327490378-10904-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1327490378-10904-1-git-send-email-ldewangan@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sumit,
+Laxman Dewangan wrote at Wednesday, January 25, 2012 4:20 AM:
+> Allow the transfer size to vary in each DMA request,
+> rather than assuming all requests to be the same size
+> as the first request made.
+...
+> diff --git a/arch/arm/mach-tegra/dma.c b/arch/arm/mach-tegra/dma.c
+...
+> @@ -434,6 +435,15 @@ static void tegra_dma_update_hw_partial(struct tegra_dma_channel *ch,
+>  	writel(apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
+>  	writel(ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
+> 
+> +	if (ch->mode & TEGRA_DMA_MODE_CONTINOUS)
+> +		ch->req_transfer_count = (req->size >> 3) - 1;
+> +	else
+> +		ch->req_transfer_count = (req->size >> 2) - 1;
 
-On 12/26/2011 10:23 AM, Sumit Semwal wrote:
-> This is the first step in defining a dma buffer sharing mechanism.
->
-> A new buffer object dma_buf is added, with operations and API to allow easy
-> sharing of this buffer object across devices.
->
-> The framework allows:
-> - creation of a buffer object, its association with a file pointer, and
->     associated allocator-defined operations on that buffer. This operation is
->     called the 'export' operation.
-> - different devices to 'attach' themselves to this exported buffer object, to
->    facilitate backing storage negotiation, using dma_buf_attach() API.
-> - the exported buffer object to be shared with the other entity by asking for
->     its 'file-descriptor (fd)', and sharing the fd across.
-> - a received fd to get the buffer object back, where it can be accessed using
->     the associated exporter-defined operations.
-> - the exporter and user to share the scatterlist associated with this buffer
->     object using map_dma_buf and unmap_dma_buf operations.
->
+There are cases in the current continuous mode where HW is working on
+one buffer and the next buffer is queued in HW. Once we've written the
+new request to HW, we don't know exactly which buffer HW is operating
+on. Hence, we don't know which buffer ch->req_transfer_count refers to.
+If req->size changes, might this change cause the new req->size value
+to be used when the old buffer's final completion interrupt goes off
+and hence the old buffer's req->bytes_transferred be wrong?
 
-[snip]
+Actually looking at the current continuous mode, I'm not convinced that
+it correctly handles replacing an in-progress buffer with a new buffer;
+I certainly see where handle_continuous_dma() checks for a second (SW)
+queued buffer and tells the HW to use that buffer instead, but I don't
+see where the (SW) queue management is done; where is the old req removed
+from the head of ch->list and marked complete? I assume the "out of sync"
+case is only intended to be an error condition and not part of the
+buffer switch?
 
-> +/**
-> + * struct dma_buf_attachment - holds device-buffer attachment data
-> + * @dmabuf: buffer for this attachment.
-> + * @dev: device attached to the buffer.
-> + * @node: list of dma_buf_attachment.
-> + * @priv: exporter specific attachment data.
-> + *
-> + * This structure holds the attachment information between the dma_buf buffer
-> + * and its user device(s). The list contains one attachment struct per device
-> + * attached to the buffer.
-> + */
-> +struct dma_buf_attachment {
-> +	struct dma_buf *dmabuf;
-> +	struct device *dev;
-> +	struct list_head node;
-> +	void *priv;
-> +};
+Perhaps for the current continuous mode, it'd be best to require the
+client to dequeue any existing request before queuing another, i.e. to
+fail tegra_dma_enqueue_req() if there's already something in ch->list
+in continuous mode?
+
+> +	csr = readl(ch->addr + APB_DMA_CHAN_CSR);
+> +	csr &= ~CSR_WCOUNT_MASK;
+> +	csr |= ch->req_transfer_count << CSR_WCOUNT_SHIFT;
+> +	writel(csr, ch->addr + APB_DMA_CHAN_CSR);
 > +
-> +#ifdef CONFIG_DMA_SHARED_BUFFER
-> +struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
-> +							struct device *dev);
-> +void dma_buf_detach(struct dma_buf *dmabuf,
-> +				struct dma_buf_attachment *dmabuf_attach);
-> +struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops,
-> +			size_t size, int flags);
-> +int dma_buf_fd(struct dma_buf *dmabuf);
-> +struct dma_buf *dma_buf_get(int fd);
-> +void dma_buf_put(struct dma_buf *dmabuf);
-> +
-> +struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *,
-> +					enum dma_data_direction);
-> +void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *);
+>  	req->status = TEGRA_DMA_REQ_INFLIGHT;
+>  	return;
+>  }
 
-I think that you should add enum dma_data_direction as an argument
-unmap function. It was mentioned that the dma_buf_attachment should keep
-cached and mapped sg_table for performance reasons. The field
-dma_buf_attachment::priv seams to be a natural place to keep this sg_table.
-To map a buffer the exporter calls dma_map_sg. It needs dma direction
-as an argument. The problem is that dma_unmap_sg also needs this
-argument but dma direction is not available neither in
-dma_buf_unmap_attachment nor in unmap callback. Therefore the exporter
-is forced to embed returned sg_table into a bigger structure where dma 
-direction is remembered. Refer to function vb2_dc_dmabuf_ops_map at
-link below as an example:
+-- 
+nvpublic
 
-http://thread.gmane.org/gmane.linux.drivers.video-input-infrastructure/43793/focus=43797
-
-Regards,
-Tomasz Stanislawski
