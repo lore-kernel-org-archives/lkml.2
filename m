@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab2AYLCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 06:02:25 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57900 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab2AYLCY (ORCPT
+	id S1752109Ab2AYLFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 06:05:31 -0500
+Received: from mga06.intel.com ([134.134.136.21]:9641 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751180Ab2AYLF3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 06:02:24 -0500
-Date: Wed, 25 Jan 2012 12:02:19 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Kacur <jkacur@redhat.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Karsten Wiese <fzuuzf@googlemail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: rt-kernel 3.0.14-rt31: BUG: sleeping function called from invalid
- context
-In-Reply-To: <CAONaPpHJM1GKdRCdvw97AsBSRQk1oHUt6u2bGJRoin+e59Wbzg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1201251156310.2716@ionos>
-References: <CAONaPpFjfGiKKGAzrQNk+MF4k50nRf+wMU8H9491NgHyJrUkyw@mail.gmail.com> <201201180053.52617.fzuuzf@googlemail.com> <1326848525.17534.66.camel@gandalf.stny.rr.com> <CAONaPpGHULxDZXBTprkCy9vKPH46gHOiQs6GM_ysfP2znDqqXg@mail.gmail.com>
- <1326991117.17534.132.camel@gandalf.stny.rr.com> <CAONaPpHJM1GKdRCdvw97AsBSRQk1oHUt6u2bGJRoin+e59Wbzg@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 25 Jan 2012 06:05:29 -0500
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1286624960-1327489340=:2716"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20120121011243.GC23916@ZenIV.linux.org.uk>
+References: <20120121011243.GC23916@ZenIV.linux.org.uk>
+Date: Wed, 25 Jan 2012 13:05:28 +0200
+Message-ID: <CALLzPKZ8iR0TumBc5wa+BLTFZeo7ABv47O4P4d=sv8MaSzeTLA@mail.gmail.com>
+Subject: Re: sparc32 vs lib/mpi
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sat, Jan 21, 2012 at 3:12 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>        I realize that very few people care about sparc32 these days,
+> but...
+>        a) __clz_tab[] is defined (with identical contents) in
+> lib/mpi/mpi-bit.c and arch/sparc/lib/divdi3.S.  Linker is unhappy,
+> of course...
+>        b) the same thing ends up using __udiv_qrnnd(), which simply
+> does not exist on sparc32.  There's a Cthulhu-scaring cascade of
+> ifdefs in lib/mpi/longlong.h, with several variants of udiv_qrnnd()
+> for sparc.  Unfortunately, it falls back on use of __udiv_qrnnd()...
+> Note that arch/sparc/math-emu/sfp-util_32.h has a definition of
+> udiv_qrnnd() which might match one of inline assembly variants in
 
---8323328-1286624960-1327489340=:2716
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Would need to test it and see how it works...
 
-On Thu, 19 Jan 2012, John Kacur wrote:
+> lib/mpi/longlong.h.  Or not.  BTW, what the hell is LONGLONG_STANDALONE?
+>
 
-> On Thu, Jan 19, 2012 at 5:38 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Thu, 2012-01-19 at 17:16 +0100, John Kacur wrote:
-> > 
-> >> I'm testing v3.0.14-rt32-rc1, and it greatly reduced the number of
-> >> these, but I still got one during boot.
-> >>
-> >> [ � 11.938649] BUG: sleeping function called from invalid context at
-> >> /home/jkacur/rt.linux.git/kernel/rtmutex.c:645
-> >> [ � 11.938651] in_atomic(): 1, irqs_disabled(): 1, pid: 168, name: irq/9-acpi
-> >> [ � 11.938653] 1 lock held by irq/9-acpi/168:
-> >> [ � 11.938653] �#0: �(acpi_gbl_gpe_lock){......}, at:
-> >> [<ffffffff8123881d>] acpi_ev_gpe_detect+0x31/0x110
-> >
-> > Could you test 3.2-rt. If that has the issue then we know we have more
-> > to fix. If not, we know I missed a patch.
-> >
-> 
-> I tested with v3.2-rt10 and the issue is not there.
+i see that it comes from gnupg code as it is, but do not see any
+scripts which might define it.
 
-I'm surprised. I know already what the problem is and according to the
-code it should be visible in 3.2 as well. I'm still twisting my head
-around that acpi maze to fix that particular one.
-
-> I also examined your patches and couldn't find anything wrong with
-> them, and for larks tried applying
-> cpumask-disable-offstack-on-rt.patch from v3.2-rt10
-> all to no avail, the problem is still there.
-
-What a surprise, it's completely unrelated.
---8323328-1286624960-1327489340=:2716--
+>        Could somebody who might remember still remember that stuff
+> come up with comments?  For now I'm disabling everything from
+> INTEGRITY_SIGNATURE down to MPILIB on sparc32 cross-build, but it
+> would be nice to get it at least somewhat sorted out...
