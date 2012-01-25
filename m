@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab2AYBOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 20:14:24 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:59539 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab2AYBOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 20:14:23 -0500
-Message-ID: <4F1F576A.9090102@gmail.com>
-Date: Tue, 24 Jan 2012 20:14:18 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children
- entry v8
-References: <20120123142036.025893883@openvz.org> <20120123142436.181674896@openvz.org> <20120124110730.a3536647.kamezawa.hiroyu@jp.fujitsu.com> <20120124065338.GB29735@moon> <20120124160709.e05c51b5.kamezawa.hiroyu@jp.fujitsu.com> <20120124072122.GD29735@moon> <m1boptmqj0.fsf@fess.ebiederm.org> <20120124091135.GI29735@moon>
-In-Reply-To: <20120124091135.GI29735@moon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755440Ab2AYBRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 20:17:34 -0500
+Received: from mga09.intel.com ([134.134.136.24]:58339 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755293Ab2AYBRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jan 2012 20:17:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="100226200"
+Subject: Re: 3.2.1 Unable to reset IRR messages on boot
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Date: Tue, 24 Jan 2012 17:24:11 -0800
+In-Reply-To: <20120125000434.GC13655@zod.bos.redhat.com>
+References: <20120125000434.GC13655@zod.bos.redhat.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1327454651.27983.7.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(1/24/12 4:11 AM), Cyrill Gorcunov wrote:
-> On Tue, Jan 24, 2012 at 12:52:03AM -0800, Eric W. Biederman wrote:
->> Cyrill Gorcunov<gorcunov@gmail.com>  writes:
->>
->>> On Tue, Jan 24, 2012 at 04:07:09PM +0900, KAMEZAWA Hiroyuki wrote:
->>>>>
->>>>> Hmm. But userspace app will get eof, so frankly I don't see
->>>>> a problem here. Or maybe I miss something?
->>>>>
->>>>
->>>> Userspace need to take care of whether there may be"\n" or not even
->>>> if read() returns EOF.
->>>> As an interface, it's BUG to say "\n" will be there if you're lucky!"
->>>> (*) I know script language can handle this but we shouldn't assume that.
->>>>
->>>> How about just remove "\n" at EOF  ? I think it's unnecessary.
->>>>
->>>
->>> Sure thing, it's not a problem to remove it completely.
->>
->> Foolish question.  Is there any reason why this is a file instead
->> of being the obvious directory full of symlinks?
->>
->
-> How would these symlinks look like? "../../pid"? There were a conversation
-> about such things (https://lkml.org/lkml/2011/12/2/142) but I suppose we
-> were agree on children with pids as consensus.
+On Tue, 2012-01-24 at 19:04 -0500, Josh Boyer wrote:
+> We've had a report [1] from users booting the 3.2.1 kernel and getting a
+> large number of KERN_ERR messages that look like:
+> 
+> [    0.020902] Unable to reset IRR for apic: 2, pin :0
+> [    0.020970] Unable to reset IRR for apic: 2, pin :1
+> [    0.021012] Unable to reset IRR for apic: 2, pin :2
+> [    0.021077] Unable to reset IRR for apic: 2, pin :3
+> [    0.021138] Unable to reset IRR for apic: 2, pin :4
+> [    0.021199] Unable to reset IRR for apic: 2, pin :5
+> [    0.021261] Unable to reset IRR for apic: 2, pin :6
+> [    0.021323] Unable to reset IRR for apic: 2, pin :7
+> 
+> Digging through git, it seems that error message was added to 3.2 with
+> commit 1e75b31d63.  The commit log mentions kdump, but I don't believe the
+> user is doing kexec/kdump of any kind.  It seems a normal yum update/reboot
+> and they hit this.
+> 
+> Are there any details the user can gather to help debug this, or has
+> anyone seen this before?
+> 
 
-I couldn't find any agreement in this link. Suppose wrong url?
+complete dmesg (which will have the platform, io-apic version info etc)
+will be useful.
 
+If we are seeing this during a regular boot and for the all the RTE
+entries for a specific io-apic, most likely something is wrong with that
+io-apic (probably a bogus one listed by the bios?). We should be able to
+make the kernel code bit more smart to workaround this.
+
+thanks,
+suresh
 
