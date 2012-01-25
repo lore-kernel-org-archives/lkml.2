@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab2AYNqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 08:46:14 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35273 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab2AYNqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 08:46:13 -0500
+	id S1755191Ab2AYNqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 08:46:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753257Ab2AYNqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 08:46:35 -0500
+Message-ID: <4F2007A8.2080301@redhat.com>
+Date: Wed, 25 Jan 2012 11:46:16 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-X-Originating-IP: [89.139.53.79]
-In-Reply-To: <4F1FF870.3000105@monstr.eu>
-References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com>
- <4F1FF870.3000105@monstr.eu>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 25 Jan 2012 15:45:48 +0200
-Message-ID: <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com>
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory location
-To: monstr@monstr.eu
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "Semwal, Sumit" <sumit.semwal@ti.com>, Robert Morell <rmorell@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "sumit.semwal@linaro.org" <sumit.semwal@linaro.org>
+Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie> <1326845297-6233-1-git-send-email-rmorell@nvidia.com> <1326845297-6233-2-git-send-email-rmorell@nvidia.com> <CAB2ybb-RF_JU=pFDM01PJ8kiCMrJkXAMCk2LcVqYUtEoJ_We2g@mail.gmail.com> <20120120180457.GE29824@morell.nvidia.com> <20120121173207.GF3821@phenom.ffwll.local> <CAB2ybb8YepvuKDAMBH1REYERuajmczHZvsv=ENX0SFcuagXm=Q@mail.gmail.com> <20120125123036.70b28393@pyramind.ukuu.org.uk>
+In-Reply-To: <20120125123036.70b28393@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 2:41 PM, Michal Simek <monstr@monstr.eu> wrote:
-> First of all will be the best to describe what we want to achieve.
-> We have Zynq platform ARM Cortex-A9(which should be ARMv7 - 2cpus).
-> cpu0 runs Linux and cpu1 will be used for real-time os. We would like to use
-> remoteproc for loading any code(firmware if you like) for the cpu1 and start
-> it.
+Em 25-01-2012 10:30, Alan Cox escreveu:
+>> Technically speaking, is there no way that the EXPORT_SYMBOL_GPLed
+>> symbols can be used by the binary blobs, possibly with an open-sourced
+>> shim which provides the buffer-sharing interface to the binary blobs?
+>> Are there any reasons to not consider this approach?
+> 
+> The GPL requires all the code of a work is source. All of it, no shims no
+> magic glue. EXPORT_SYMBOL isn't an indication you can use it for binary
+> modules. The GPL licence is quite clear on what is covered.
 
-Sounds cool.
+Agreed. Such patch won't change anything. The discussions, patch reviews,
+etc were under the assumption that the code will be GPL'd, plus the
+subsystems that are exposed by this interface also assumes that. Any trials
+to circumvent it seem to violate Kernel owner's rights.
 
-So you're not < ARMv6, and I now understand why you bumped into that
-code path: you're using a vanilla kernel, without CMA.
+> Since you've asked this I'm advised by my lawyer to respond to all such
+> assumptions of legality of binary modules...
+> 
+> For a Linux kernel containing any code I own the code is under the GNU
+> public license v2 (in some cases or later), I have never given permission
+> for that code to be used as part of a combined or derivative work which
+> contains binary chunks. I have never said that modules are somehow
+> magically outside the GPL and I am doubtful that in most cases a work
+> containing binary modules for a Linux kernel is compatible with the
+> licensing, although I accept there may be some cases that it is.
+> 
+> Alan
 
-I suggest you merge Marek's CMA branch into your tree. Though 1MB
-isn't that much really, and you can easily get away even without CMA.
-You just won't have any non-CMA public example to use as a reference
-;).
-
-For details about the CMA tree and branches, see Marek's email:
-
-https://lkml.org/lkml/2012/1/10/48
-
-> Then in zynq_rproc_kick I copy content of this 1MB carveout to 0x0 physical
-
-I recommend to keep the ->kick() handler as light as possible, as it
-may be frequently triggered (think of a network driver doing I/O).
-
-Ideally you should do the minimum required to only wake up the other
-core when you are kicked. Copying a 1MB region every kick sounds
-excessive.
-
-> The main my problem is that firmware base addr must be at the beginning of
-> address space
-> or selected address but it is fixed and known.
-..
-> ok. How do you handle limitations if coprocessor expect code on any address?
-
-Just make sure you reserve the CMA region at that fixed address.
-
-For a reference how this can be done, look for OMAP_RPROC_CMA_BASE in
-my rpmsg_3.2_rc4 branch.
-
->> Looping in Mark, who did the davinci remoteproc support, and might
->> have the code available to share. Hopefully we'd have the patches
->> posted soon, and then no-iommu platforms could just use them for
->> reference.
->
->
-> ok. great. Will look forward for that code and recommendation because I am
-> ARM newbie.
-
-So I no longer think you need the davinci code, you can just follow
-the OMAP example.
-
-> I am also interested in suggestions about DTS binding. Have someone tried to
-> describe it or use it?
-
-No, AFAICT. And I'm not sure there are DTS binding for CMA regions
-yet. Feel free to take a stab at it though ;)
+I second Alan:
+	For a Linux kernel containing any code I own the code is under the GNU
+	public license v2 (in a few cases, where explicitly said GPLv2 or later 
+	or dual GNU/BSD), I have never given permission for that code to be
+	used as part of a combined or derivative work which contains binary chunks.
 
 Regards,
-Ohad.
+Mauro.
