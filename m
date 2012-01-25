@@ -1,43 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab2AYQQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 11:16:48 -0500
-Received: from home.keithp.com ([63.227.221.253]:33821 "EHLO keithp.com"
+	id S1755970Ab2AYQRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 11:17:07 -0500
+Received: from home.keithp.com ([63.227.221.253]:33814 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755663Ab2AYQQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 11:16:46 -0500
+	id S1755340Ab2AYQQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 11:16:42 -0500
 From: Keith Packard <keithp@keithp.com>
 To: intel-gfx@lists.freedesktop.org
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>
-Subject: [PATCH 0/2] drm/i915: Use correct bpc computations for DisplayPort
-Date: Wed, 25 Jan 2012 08:16:24 -0800
-Message-Id: <1327508186-26704-1-git-send-email-keithp@keithp.com>
+        Keith Packard <keithp@keithp.com>,
+        Lubos Kolouch <lubos.kolouch@gmail.com>,
+        Adam Jackson <ajax@redhat.com>
+Subject: [PATCH 2/2] drm/i915: Select DP BPC at mode set, rather than mode validate
+Date: Wed, 25 Jan 2012 08:16:26 -0800
+Message-Id: <1327508186-26704-3-git-send-email-keithp@keithp.com>
 X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1327508186-26704-1-git-send-email-keithp@keithp.com>
+References: <1327508186-26704-1-git-send-email-keithp@keithp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's a couple of patches that fix some bpc (bits per component)
-computation issues with DisplayPort. The problem was that the
-DisplayPort code tried to figure out the 'current' bpc by looking at
-the bpp stored in an associated crtc, but that was never right (as
-described in the message for the first patch).
+The DP configuration must match the pipe configuration, and until mode
+set we don't know what BPC will be used. Delay all decisions about BPC
+until mode set, computing the target BPC in both intel_dp_mode_fixup
+and either i9xx_crtc_mode_set or ironlake_crtc_mode_set. It might be
+slightly better to compute this only once, but storing the value
+between those two calls would be a pain.
 
-The first patch assumes that the display will run at 8bpc (24bpp) if
-the link has enough bandwidth, otherwise at 6bpc (18bpp). This is
-essentially what the existing code ends up doing at boot time; modes
-are computed before any crtc is assigned, so intel_dp_link_required
-would have used 24bpp for bandwidth computations.
+Cc: Lubos Kolouch <lubos.kolouch@gmail.com>
+Cc: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+---
+ drivers/gpu/drm/i915/intel_display.c |   27 +++++-------
+ drivers/gpu/drm/i915/intel_dp.c      |   77 +++++++++++++++++++++++++++-------
+ drivers/gpu/drm/i915/intel_drv.h     |    6 ++-
+ 3 files changed, 78 insertions(+), 32 deletions(-)
 
-The second patch allows for arbitrary bpc values, computing the
-display bpc in both intel_dp_mode_fixup and the two crtc_mode_set
-functions. Obviously doing the computation once would be nice, but
-there isn't an obvious place to stick the result between those two
-functions as the bpc computation is also needed for non-DP encoders.
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index b3b51c4..d613676 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4850,9 +4850,9 @@ static inline bool intel_panel_use_ssc(struct drm_i915_private *dev_priv)
+  * Dithering requirement (i.e. false if display bpc and pipe bpc match,
+  * true if they don't match).
+  */
+-static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+-					 unsigned int *pipe_bpp,
+-					 struct drm_display_mode *mode)
++bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
++				  unsigned int *pipe_bpp,
++				  struct drm_display_mode *mode)
+ {
+ 	struct drm_device *dev = crtc->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -4883,13 +4883,13 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+ 			continue;
+ 		}
+ 
+-		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
+-			/* Use VBT settings if we have an eDP panel */
+-			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
++		if (intel_encoder->type == INTEL_OUTPUT_EDP ||
++		    intel_encoder->type == INTEL_OUTPUT_DISPLAYPORT) {
++			unsigned int dp_bpc = intel_dp_max_bpp(&intel_encoder->base, mode);
+ 
+-			if (edp_bpc < display_bpc) {
+-				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
+-				display_bpc = edp_bpc;
++			if (dp_bpc < display_bpc) {
++				DRM_DEBUG_KMS("clamping display bpc (was %d) to DP (%d)\n", display_bpc, dp_bpc);
++				display_bpc = dp_bpc;
+ 			}
+ 			continue;
+ 		}
+@@ -4923,11 +4923,6 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+ 		}
+ 	}
+ 
+-	if (mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
+-		DRM_DEBUG_KMS("Dithering DP to 6bpc\n");
+-		display_bpc = 6;
+-	}
+-
+ 	/*
+ 	 * We could just drive the pipe at the highest bpc all the time and
+ 	 * enable dithering as needed, but that costs bandwidth.  So choose
+@@ -4990,6 +4985,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+ 	int ret;
+ 	u32 temp;
+ 	u32 lvds_sync = 0;
++	int dp_max_bpp = 0;
+ 
+ 	list_for_each_entry(encoder, &mode_config->encoder_list, base.head) {
+ 		if (encoder->base.crtc != crtc)
+@@ -5016,6 +5012,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+ 			break;
+ 		case INTEL_OUTPUT_DISPLAYPORT:
+ 			is_dp = true;
++			dp_max_bpp = intel_dp_max_bpp(&encoder->base, mode);
+ 			break;
+ 		}
+ 
+@@ -5192,7 +5189,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+ 	/* default to 8bpc */
+ 	pipeconf &= ~(PIPECONF_BPP_MASK | PIPECONF_DITHER_EN);
+ 	if (is_dp) {
+-		if (mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
++		if (dp_max_bpp <= 18) {
+ 			pipeconf |= PIPECONF_BPP_6 |
+ 				    PIPECONF_DITHER_EN |
+ 				    PIPECONF_DITHER_TYPE_SP;
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 94f860c..2482796 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -219,14 +219,51 @@ intel_dp_max_data_rate(int max_link_clock, int max_lanes)
+ 	return (max_link_clock * max_lanes * 8) / 10;
+ }
+ 
++/*
++ * For the specified encoder, return the maximum bpp that can be used
++ * for the specified mode.
++ */
++
++static const int dp_supported_bpc[] = { 6, 8, 10, 12, 16 };
++
++#define NUM_DP_SUPPORTED_BPC (sizeof dp_supported_bpc/sizeof dp_supported_bpc[0])
++
++int
++intel_dp_max_bpp(struct drm_encoder *encoder, struct drm_display_mode *mode)
++{
++	struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
++	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
++	int max_lanes = intel_dp_max_lane_count(intel_dp);
++	int max_rate, mode_rate;
++	int i;
++
++	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
++	for (i = NUM_DP_SUPPORTED_BPC - 1; i >= 0; i--) {
++		int bpp = dp_supported_bpc[i] * 3;	/* 3 channels of data (RGB) */
++
++		mode_rate = intel_dp_link_required(mode->clock, bpp);
++		if (mode_rate <= max_rate) {
++
++			/* Limit EDP bpp to panel ability */
++			if (intel_dp->base.type == INTEL_OUTPUT_EDP) {
++				struct drm_device *dev = encoder->dev;
++				struct drm_i915_private *dev_priv = dev->dev_private;
++				int edp_bpp = dev_priv->edp.bpp;
++
++				if (bpp > edp_bpp)
++					bpp = edp_bpp;
++			}
++			return bpp;
++		}
++	}
++	return 0;
++}
++
+ static int
+ intel_dp_mode_valid(struct drm_connector *connector,
+ 		    struct drm_display_mode *mode)
+ {
+ 	struct intel_dp *intel_dp = intel_attached_dp(connector);
+-	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
+-	int max_lanes = intel_dp_max_lane_count(intel_dp);
+-	int max_rate, mode_rate;
+ 
+ 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+ 		if (mode->hdisplay > intel_dp->panel_fixed_mode->hdisplay)
+@@ -236,16 +273,8 @@ intel_dp_mode_valid(struct drm_connector *connector,
+ 			return MODE_PANEL;
+ 	}
+ 
+-	mode_rate = intel_dp_link_required(mode->clock, 24);
+-	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
+-
+-	if (mode_rate > max_rate) {
+-			mode_rate = intel_dp_link_required(mode->clock, 18);
+-			if (mode_rate > max_rate)
+-				return MODE_CLOCK_HIGH;
+-			else
+-				mode->private_flags |= INTEL_MODE_DP_FORCE_6BPC;
+-	}
++	if (intel_dp_max_bpp(&intel_dp->base.base, mode) == 0)
++		return MODE_CLOCK_HIGH;
+ 
+ 	if (mode->clock < 10000)
+ 		return MODE_CLOCK_LOW;
+@@ -673,9 +702,26 @@ intel_dp_mode_fixup(struct drm_encoder *encoder, struct drm_display_mode *mode,
+ 	int lane_count, clock;
+ 	int max_lane_count = intel_dp_max_lane_count(intel_dp);
+ 	int max_clock = intel_dp_max_link_bw(intel_dp) == DP_LINK_BW_2_7 ? 1 : 0;
+-	int bpp = mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
++	unsigned int bpp;
+ 	static int bws[2] = { DP_LINK_BW_1_62, DP_LINK_BW_2_7 };
+ 
++	if (HAS_PCH_SPLIT(dev))
++		(void) intel_choose_pipe_bpp_dither(intel_dp->base.base.crtc, &bpp, mode);
++	else {
++		bpp = intel_dp_max_bpp(encoder, mode);
++		if (bpp > 24)
++			bpp = 24;
++	}
++
++	DRM_DEBUG_KMS("encoder assuming bpp %d (bpc %d)\n",
++		      bpp, bpp / 3);
++
++	if (bpp == 0) {
++		DRM_DEBUG_KMS("Display port cannot support requested clock %d\n",
++			      mode->clock);
++		return false;
++	}
++
+ 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+ 		intel_fixed_panel_mode(intel_dp->panel_fixed_mode, adjusted_mode);
+ 		intel_pch_panel_fitting(dev, DRM_MODE_SCALE_FULLSCREEN,
+@@ -691,8 +737,7 @@ intel_dp_mode_fixup(struct drm_encoder *encoder, struct drm_display_mode *mode,
+ 		for (clock = 0; clock <= max_clock; clock++) {
+ 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
+ 
+-			if (intel_dp_link_required(mode->clock, bpp)
+-					<= link_avail) {
++			if (intel_dp_link_required(mode->clock, bpp) <= link_avail) {
+ 				intel_dp->link_bw = bws[clock];
+ 				intel_dp->lane_count = lane_count;
+ 				adjusted_mode->clock = intel_dp_link_clock(intel_dp->link_bw);
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 1348705..03b4595 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -104,7 +104,6 @@
+ /* drm_display_mode->private_flags */
+ #define INTEL_MODE_PIXEL_MULTIPLIER_SHIFT (0x0)
+ #define INTEL_MODE_PIXEL_MULTIPLIER_MASK (0xf << INTEL_MODE_PIXEL_MULTIPLIER_SHIFT)
+-#define INTEL_MODE_DP_FORCE_6BPC (0x10)
+ 
+ static inline void
+ intel_mode_set_pixel_multiplier(struct drm_display_mode *mode,
+@@ -303,11 +302,16 @@ extern void intel_dp_init(struct drm_device *dev, int dp_reg);
+ void
+ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+ 		 struct drm_display_mode *adjusted_mode);
++extern int intel_dp_max_bpp(struct drm_encoder *encoder, struct drm_display_mode *mode);
+ extern bool intel_dpd_is_edp(struct drm_device *dev);
+ extern void intel_edp_link_config(struct intel_encoder *, int *, int *);
+ extern bool intel_encoder_is_pch_edp(struct drm_encoder *encoder);
+ extern int intel_plane_init(struct drm_device *dev, enum pipe pipe);
+ 
++bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
++				  unsigned int *pipe_bpp,
++				  struct drm_display_mode *mode);
++
+ /* intel_panel.c */
+ extern void intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
+ 				   struct drm_display_mode *adjusted_mode);
+-- 
+1.7.8.3
 
-This should fix problems where display port doesn't come back after
-resume for panels which need 6bpc modes.
-
---
-keith.packard@intel.com
