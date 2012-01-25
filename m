@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab2AYP2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:28:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6192 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab2AYP2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:28:31 -0500
-Message-ID: <4F201F60.8080808@redhat.com>
-Date: Wed, 25 Jan 2012 10:27:28 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754436Ab2AYP31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:29:27 -0500
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:6666
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753189Ab2AYP30 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 10:29:26 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bhz2fhc1bhc31hc1ah2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>
+Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Index: AQHM0W763o2pXZK11UadxuudCK0AbpYMmkCA//+5EwCAA1dLgIANnEvA
+Date: Wed, 25 Jan 2012 15:29:05 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B6FE0E2@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1326402943-14031-1-git-send-email-kys@microsoft.com>
+ <20120114164228.GB9682@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481B6F0307@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20120116152951.GA9720@infradead.org>
+In-Reply-To: <20120116152951.GA9720@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH v2 -mm 1/3] mm: reclaim at order 0 when compaction is
- enabled
-References: <20120124131822.4dc03524@annuminas.surriel.com> <20120124132136.3b765f0c@annuminas.surriel.com> <20120125150016.GB3901@csn.ul.ie>
-In-Reply-To: <20120125150016.GB3901@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 10:00 AM, Mel Gorman wrote:
-> On Tue, Jan 24, 2012 at 01:21:36PM -0500, Rik van Riel wrote:
->> When built with CONFIG_COMPACTION, kswapd does not try to free
->> contiguous pages.
->
-> balance_pgdat() gets its order from wakeup_kswapd(). This does not apply
-> to THP because kswapd does not get woken for THP but it should be woken
-> up for allocations like jumbo frames or order-1.
 
-In the kernel I run at home, I wake up kswapd for THP
-as well. This is a larger change, which Andrea asked
-me to delay submitting upstream for a bit.
 
-So far there seem to be no ill effects. I'll continue
-watching for them.
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Monday, January 16, 2012 10:30 AM
+> To: KY Srinivasan
+> Cc: Christoph Hellwig; JBottomley@parallels.com; gregkh@suse.de; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; ohering@suse.com
+> Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
+> staging area
+> 
+> On Sat, Jan 14, 2012 at 08:31:18PM +0000, KY Srinivasan wrote:
+> > Thanks Christoph. Would you be taking this driver out of staging or should I ask
+> Greg. James had indicated that
+> > he had turned the driver over to you for reviewing.
+> 
+> In the end James still maintains the SCSI tree and send on all drivers.
+> The only thing I can do is give a positive review.
+James,
+Any updates here? 
 
-> As kswapd does no memory compaction itself, this patch still makes
-> sense but I found the changelog misleading.
+Regards,
 
-Fair enough.  I will adjust the changelog.
-
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 2880396..0398fab 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1512,6 +1512,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
->>   	unsigned long nr_writeback = 0;
->>   	isolate_mode_t reclaim_mode = ISOLATE_INACTIVE;
->>   	struct zone *zone = mz->zone;
->> +	int order = 0;
->>
->>   	while (unlikely(too_many_isolated(zone, file, sc))) {
->>   		congestion_wait(BLK_RW_ASYNC, HZ/10);
->> @@ -1522,8 +1523,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
->>   	}
->>
->>   	set_reclaim_mode(priority, sc, false);
->> -	if (sc->reclaim_mode&  RECLAIM_MODE_LUMPYRECLAIM)
->> +	if (sc->reclaim_mode&  RECLAIM_MODE_LUMPYRECLAIM) {
->>   		reclaim_mode |= ISOLATE_ACTIVE;
->> +		order = sc->order;
->> +	}
->>
->>   	lru_add_drain();
->>
->
-> This is a nit-pick but I would far prefer if you did not bypass
-> sc->order like this and instead changes isolate_lru_pages to do a
->
-> if (!order || !(sc->reclaim_mode&  RECLAIM_MODE_LUMPYRECLAIM))
-> 	continue;
->
-> That would very clearly mark where LUMPYRECLAIM takes effect in
-> isolate_lru_pages() and makes deleting LUMPYRECLAIM easier in the
-> future.
-
-OK, I will do things that way instead.
-
-> The second effect of this change is a non-obvious side-effect. kswapd
-> will now isolate fewer pages per cycle because it will isolate
-> SWAP_CLUSTER_MAX pages instead of SWAP_CLUSTER_MAX<<order which it
-> potentially does currently. This is not wrong as such and may be
-> desirable to limit how much reclaim kswapd does but potentially it
-> impacts success rates for compaction. As this does not apply to THP,
-> it will be difficult to detect but bear in mind if we see an increase
-> in high-order allocation failures after this patch is merged. I am
-> not suggesting a change here but it would be nice to note in the
-> changelog if there is a new version of this patch.
-
-Good point.  I am running with THP waking up kswapd, and
-things seem to behave (and compaction seems to succeed),
-but we might indeed want to change balance_pgdat to free
-more pages for higher order allocations.
-
-Maybe this is the place to check (in balanced_pgdat) ?
-
-                 /*
-                  * We do this so kswapd doesn't build up large 
-priorities for
-                  * example when it is freeing in parallel with 
-allocators. It
-                  * matches the direct reclaim path behaviour in terms 
-of impact
-                  * on zone->*_priority.
-                  */
-                 if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
-                         break;
-
->> @@ -2922,8 +2939,6 @@ out:
->>
->>   			/* If balanced, clear the congested flag */
->>   			zone_clear_flag(zone, ZONE_CONGESTED);
->> -			if (i<= *classzone_idx)
->> -				balanced += zone->present_pages;
->>   		}
->
-> Why is this being deleted? It is still used by pgdat_balanced().
-
-This is outside of the big while loop and is not used again
-in the function.  This final for loop does not appear to
-use the variable balanced at all, except for incrementing
-it.
+K. Y
 
