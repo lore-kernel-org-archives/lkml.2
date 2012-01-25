@@ -1,184 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab2AYDaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 22:30:21 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:48563 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab2AYDaT convert rfc822-to-8bit (ORCPT
+	id S1752415Ab2AYDhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 22:37:50 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:57679 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752145Ab2AYDht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 22:30:19 -0500
+	Tue, 24 Jan 2012 22:37:49 -0500
+Message-ID: <4F1F7901.4000101@st.com>
+Date: Wed, 25 Jan 2012 09:07:37 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <4F1EDB32.3010903@gmail.com>
-References: <4F182BED.3090009@gmail.com>
-	<CAKcLGm9kVOw6D8kPECfhfohH4pAT=09qws7-jRsh1TZJTyh1_A@mail.gmail.com>
-	<4F199AF9.4030909@gmail.com>
-	<CAKcLGm9ppCT94y2ijuEEQjH+tP8wPK1E+U6x6RHH2CjtoHmJMg@mail.gmail.com>
-	<4F1EDB32.3010903@gmail.com>
-Date: Tue, 24 Jan 2012 21:30:17 -0600
-Message-ID: <CAKcLGm9S7XQRrRJfkptXnEm+df4pz8qws4SiBkUBC+2sbTGMVA@mail.gmail.com>
-Subject: Re: [BUG - btrfs] kernel oops in extent_range_uptodate
-From: Mitch Harder <mitch.harder@sabayonlinux.org>
-To: Vincent Vanackere <vincent.vanackere@gmail.com>
-Cc: linux-btrfs@vger.kernel.org,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus WALLEIJ <linus.walleij@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christopher BLAIR <chris.blair@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2] mfd/stmpe: Add support for no-interrupt config
+References: <1327445946-11470-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1327445946-11470-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 10:24 AM, Vincent Vanackere
-<vincent.vanackere@gmail.com> wrote:
-> On 01/20/2012 09:54 PM, Mitch Harder wrote:
->>
->> On Fri, Jan 20, 2012 at 10:48 AM, Vincent Vanackere
->> <vincent.vanackere@gmail.com>  wrote:
->>>
->>> On 01/19/2012 05:24 PM, Mitch Harder wrote:
->>>>
->>>> On Thu, Jan 19, 2012 at 8:42 AM, Vincent Vanackere
->>>> <vincent.vanackere@gmail.com>    wrote:
->>>>>
->>>>> Hi,
->>>>>
->>>>> With the most current git kernel
->>>>> (90a4c0f51e8e44111a926be6f4c87af3938a79c3)
->>>>> I'm still getting the same reproducible kernel panic when trying to
->>>>> read
->>>>> a
->>>>> particular file stored on a btrfs filesystem (as seen in the log there
->>>>> are
->>>>> indeed disk media errors on this disk).
->>>>> I'd like the "software" part of this to be fixed - btrfs should
->>>>> definitely
->>>>> not oops even in case of media error - before sending the disk to RMA.
->>>>> Is
->>>>> there anything I can do to make progress on this ?
->>>>>
->>>> Is this kernel compiled with "Compile the kernel with debug info" (in
->>>> the "Kernel hacking  --->" configuration section)?
->>>>
->>>> It would be nice to have the specific line of code passing the NULL
->>>> pointer.
->>>
->>>
->>> The kernel was compiled with debug information but modern linux
->>> distribution
->>> make it really hard to keep your debug information it seems :-(
->>
->> I see where the find_get_page(...) function called in
->> extent_range_uptodate has the potential to return a NULL value.
->>
->> Could you try the following patch, and if it solves your oops and
->> shows the included warning in your dmesg log, I'll simplify the patch
->> to drop the printk and submit it to the list.
->>
->> I only included the printk since your current error log is ambiguous
->> regarding the specific point where we're getting the NULL pointer
->> dereference, but I'll pull it out if it works.
->>
->> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
->> index 9d09a4f..35c3a2a 100644
->> --- a/fs/btrfs/extent_io.c
->> +++ b/fs/btrfs/extent_io.c
->> @@ -3909,6 +3909,13 @@ int extent_range_uptodate(struct extent_io_tree
->> *tree,
->>        while (start<= end) {
->>                index = start>>  PAGE_CACHE_SHIFT;
->>                page = find_get_page(tree->mapping, index);
->> +               if (unlikely(!page)) {
->> +                       if (printk_ratelimit())
->> +                               printk(KERN_WARNING
->> +                                      "btrfs: NULL page in "
->> +                                      "extent_range_uptodate()\n");
->> +                       return 1;
->> +               }
->>                uptodate = PageUptodate(page);
->>                page_cache_release(page);
->>                if (!uptodate) {
->
->
-> Indeed your patch helps. No kernel panic any more... but it looks like the
-> task doesn't finish and there's another problem to solve now :
->
->
-> sd 5:0:0:0: [sdd] Unhandled sense code
-> sd 5:0:0:0: [sdd]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-> sd 5:0:0:0: [sdd]  Sense Key : Medium Error [current] [descriptor]
-> Descriptor sense data with sense descriptors (in hex):
->        72 03 11 04 00 00 00 0c 00 0a 80 00 00 00 00 00
->        70 2f dc 61
-> sd 5:0:0:0: [sdd]  Add. Sense: Unrecovered read error - auto reallocate
-> failed
-> sd 5:0:0:0: [sdd] CDB: Read(10): 28 00 70 2f dc 5f 00 00 08 00
-> end_request: I/O error, dev sdd, sector 1882184801
-> ata6: EH complete
-> btrfs: NULL page in extent_range_uptodate()
-> btrfs: NULL page in extent_range_uptodate()
-> btrfs bad tree block start 959241011200 959241011200
-> INFO: task cat:3099 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> cat             D ffffffff8180c600     0  3099   3002 0x00000000
->  ffff8801f2b0f618 0000000000000086 ffff8801f2b0f5d8 ffff880221018770
->  ffff880222c65b80 ffff8801f2b0ffd8 ffff8801f2b0ffd8 ffff8801f2b0ffd8
->  ffff8802241816e0 ffff880222c65b80 ffff8801f2b0f5e8 ffff88022fd13e88
-> Call Trace:
->  [<ffffffff81114260>] ? __lock_page+0x70/0x70
->  [<ffffffff8162c93f>] schedule+0x3f/0x60
->  [<ffffffff8162c9ef>] io_schedule+0x8f/0xd0
->  [<ffffffff8111426e>] sleep_on_page+0xe/0x20
->  [<ffffffff8162b1ff>] __wait_on_bit+0x5f/0x90
->  [<ffffffff811143d8>] wait_on_page_bit+0x78/0x80
->  [<ffffffff81070c40>] ? autoremove_wake_function+0x40/0x40
->  [<ffffffffa0192161>] read_extent_buffer_pages+0x471/0x4d0 [btrfs]
->  [<ffffffffa01697b0>] ? verify_parent_transid+0x160/0x160 [btrfs]
->  [<ffffffffa016a13a>] btree_read_extent_buffer_pages.isra.99+0x8a/0xc0
-> [btrfs]
->  [<ffffffffa016c1e1>] read_tree_block+0x41/0x60 [btrfs]
->  [<ffffffffa01526a3>] read_block_for_search.isra.34+0xf3/0x3d0 [btrfs]
->  [<ffffffffa0154930>] btrfs_search_slot+0x300/0x8a0 [btrfs]
->  [<ffffffffa0166ab4>] btrfs_lookup_csum+0x74/0x170 [btrfs]
->  [<ffffffffa0166d5f>] __btrfs_lookup_bio_sums+0x1af/0x3b0 [btrfs]
->  [<ffffffffa0166fb6>] btrfs_lookup_bio_sums+0x16/0x20 [btrfs]
->  [<ffffffffa0173650>] btrfs_submit_bio_hook+0x140/0x170 [btrfs]
->  [<ffffffffa01755d0>] ? btrfs_real_readdir+0x720/0x720 [btrfs]
->  [<ffffffffa018c17a>] submit_one_bio+0x6a/0xa0 [btrfs]
->  [<ffffffffa0190e34>] extent_readpages+0xe4/0x100 [btrfs]
->  [<ffffffffa01755d0>] ? btrfs_real_readdir+0x720/0x720 [btrfs]
->  [<ffffffffa0173ebf>] btrfs_readpages+0x1f/0x30 [btrfs]
->  [<ffffffff81120a0f>] __do_page_cache_readahead+0x1af/0x250
->  [<ffffffff81120e11>] ra_submit+0x21/0x30
->  [<ffffffff81120f35>] ondemand_readahead+0x115/0x230
->  [<ffffffff81137cd9>] ? __do_fault+0x419/0x530
->  [<ffffffff81121131>] page_cache_sync_readahead+0x31/0x50
->  [<ffffffff811165f8>] generic_file_aio_read+0x438/0x780
->  [<ffffffff81173bb2>] do_sync_read+0xd2/0x110
->  [<ffffffff81293e73>] ? security_file_permission+0x93/0xb0
->  [<ffffffff81174031>] ? rw_verify_area+0x61/0xf0
->  [<ffffffff81174510>] vfs_read+0xb0/0x180
->  [<ffffffff8117462a>] sys_read+0x4a/0x90
->  [<ffffffff81635ae9>] system_call_fastpath+0x16/0x1b
->
+On 1/25/2012 4:29 AM, Linus WALLEIJ wrote:
+> From: Chris Blair <chris.blair@stericsson.com>
+> 
+> Adds support for boards which have an STMPE device without the
+> interrupt pin connected.
+> 
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> Signed-off-by: Chris Blair <chris.blair@stericsson.com>
+> Tested-by: Michel Jaouen <michel.jaouen@stericsson.com>
+> Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> ChangeLog v1->v2:
+> - Corrects initialisation, error condition and driver removal cleanup
+>   for the no-irq configuration.
+> ---
+>  drivers/mfd/stmpe.c       |  114 +++++++++++++++++++++++++-------------------
+>  include/linux/mfd/stmpe.h |    2 +
+>  2 files changed, 67 insertions(+), 49 deletions(-)
+> 
+> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+> index e07947e..04bb013 100644
+> --- a/drivers/mfd/stmpe.c
+> +++ b/drivers/mfd/stmpe.c
+> @@ -864,7 +864,7 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
+>  	unsigned int irq_trigger = stmpe->pdata->irq_trigger;
+>  	int autosleep_timeout = stmpe->pdata->autosleep_timeout;
+>  	struct stmpe_variant_info *variant = stmpe->variant;
+> -	u8 icr;
+> +	u8 icr = 0;
+>  	unsigned int id;
+>  	u8 data[2];
+>  	int ret;
+> @@ -887,31 +887,33 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
+>  	if (ret)
+>  		return ret;
+>  
+> -	if (id == STMPE801_ID)
+> -		icr = STMPE801_REG_SYS_CTRL_INT_EN;
+> -	else
+> -		icr = STMPE_ICR_LSB_GIM;
+> -
+> -	/* STMPE801 doesn't support Edge interrupts */
+> -	if (id != STMPE801_ID) {
+> -		if (irq_trigger == IRQF_TRIGGER_FALLING ||
+> -				irq_trigger == IRQF_TRIGGER_RISING)
+> -			icr |= STMPE_ICR_LSB_EDGE;
+> -	}
+> -
+> -	if (irq_trigger == IRQF_TRIGGER_RISING ||
+> -			irq_trigger == IRQF_TRIGGER_HIGH) {
+> +	if (!stmpe->pdata->no_irq) {
+>  		if (id == STMPE801_ID)
+> -			icr |= STMPE801_REG_SYS_CTRL_INT_HI;
+> +			icr = STMPE801_REG_SYS_CTRL_INT_EN;
+>  		else
+> -			icr |= STMPE_ICR_LSB_HIGH;
+> -	}
+> +			icr = STMPE_ICR_LSB_GIM;
+>  
+> -	if (stmpe->pdata->irq_invert_polarity) {
+> -		if (id == STMPE801_ID)
+> -			icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
+> -		else
+> -			icr ^= STMPE_ICR_LSB_HIGH;
+> +		/* STMPE801 doesn't support Edge interrupts */
+> +		if (id != STMPE801_ID) {
+> +			if (irq_trigger == IRQF_TRIGGER_FALLING ||
+> +					irq_trigger == IRQF_TRIGGER_RISING)
+> +				icr |= STMPE_ICR_LSB_EDGE;
+> +		}
+> +
+> +		if (irq_trigger == IRQF_TRIGGER_RISING ||
+> +				irq_trigger == IRQF_TRIGGER_HIGH) {
+> +			if (id == STMPE801_ID)
+> +				icr |= STMPE801_REG_SYS_CTRL_INT_HI;
+> +			else
+> +				icr |= STMPE_ICR_LSB_HIGH;
+> +		}
+> +
+> +		if (stmpe->pdata->irq_invert_polarity) {
+> +			if (id == STMPE801_ID)
+> +				icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
+> +			else
+> +				icr ^= STMPE_ICR_LSB_HIGH;
+> +		}
+>  	}
+>  
+>  	if (stmpe->pdata->autosleep) {
+> @@ -988,32 +990,42 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+>  	if (ci->init)
+>  		ci->init(stmpe);
+>  
+> -	if (pdata->irq_over_gpio) {
+> -		ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "stmpe");
+> -		if (ret) {
+> -			dev_err(stmpe->dev, "failed to request IRQ GPIO: %d\n",
+> +	if (pdata->no_irq) {
+> +		dev_info(stmpe->dev,
+> +			"board config says IRQs are not supported\n");
+> +	} else {
+> +		if (pdata->irq_over_gpio) {
+> +			ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN,
+> +						"stmpe");
+> +			if (ret) {
+> +				dev_err(stmpe->dev,
+> +					"failed to request IRQ GPIO: %d\n",
+>  					ret);
+> -			goto out_free;
+> -		}
+> +				goto out_free;
+> +			}
+>  
+> -		stmpe->irq = gpio_to_irq(pdata->irq_gpio);
+> -	} else {
+> -		stmpe->irq = ci->irq;
+> +			stmpe->irq = gpio_to_irq(pdata->irq_gpio);
+> +		} else {
+> +			stmpe->irq = ci->irq;
+> +		}
+>  	}
+>  
+>  	ret = stmpe_chip_init(stmpe);
+>  	if (ret)
+>  		goto free_gpio;
+>  
+> -	ret = stmpe_irq_init(stmpe);
+> -	if (ret)
+> -		goto free_gpio;
+> +	if (!pdata->no_irq) {
+> +		ret = stmpe_irq_init(stmpe);
+> +		if (ret)
+> +			goto free_gpio;
+>  
+> -	ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
+> -			pdata->irq_trigger | IRQF_ONESHOT, "stmpe", stmpe);
+> -	if (ret) {
+> -		dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
+> -		goto out_removeirq;
+> +		ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
+> +				pdata->irq_trigger | IRQF_ONESHOT,
+> +				"stmpe", stmpe);
+> +		if (ret) {
+> +			dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
+> +			goto out_removeirq;
+> +		}
+>  	}
+>  
+>  	ret = stmpe_devices_init(stmpe);
+> @@ -1026,11 +1038,13 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+>  
+>  out_removedevs:
+>  	mfd_remove_devices(stmpe->dev);
+> -	free_irq(stmpe->irq, stmpe);
+> +	if (!pdata->no_irq)
+> +		free_irq(stmpe->irq, stmpe);
+>  out_removeirq:
+> -	stmpe_irq_remove(stmpe);
+> +	if (!pdata->no_irq)
+> +		stmpe_irq_remove(stmpe);
+>  free_gpio:
+> -	if (pdata->irq_over_gpio)
+> +	if (!pdata->no_irq && pdata->irq_over_gpio)
+>  		gpio_free(pdata->irq_gpio);
+>  out_free:
+>  	kfree(stmpe);
+> @@ -1041,11 +1055,13 @@ int stmpe_remove(struct stmpe *stmpe)
+>  {
+>  	mfd_remove_devices(stmpe->dev);
+>  
+> -	free_irq(stmpe->irq, stmpe);
+> -	stmpe_irq_remove(stmpe);
+> +	if (!stmpe->pdata->no_irq) {
+> +		free_irq(stmpe->irq, stmpe);
+> +		stmpe_irq_remove(stmpe);
+>  
+> -	if (stmpe->pdata->irq_over_gpio)
+> -		gpio_free(stmpe->pdata->irq_gpio);
+> +		if (stmpe->pdata->irq_over_gpio)
+> +			gpio_free(stmpe->pdata->irq_gpio);
+> +	}
+>  
+>  	kfree(stmpe);
+>  
+> @@ -1057,7 +1073,7 @@ static int stmpe_suspend(struct device *dev)
+>  {
+>  	struct stmpe *stmpe = dev_get_drvdata(dev);
+>  
+> -	if (device_may_wakeup(dev))
+> +	if (!stmpe->pdata->no_irq && device_may_wakeup(dev))
+>  		enable_irq_wake(stmpe->irq);
+>  
+>  	return 0;
+> @@ -1067,7 +1083,7 @@ static int stmpe_resume(struct device *dev)
+>  {
+>  	struct stmpe *stmpe = dev_get_drvdata(dev);
+>  
+> -	if (device_may_wakeup(dev))
+> +	if (!stmpe->pdata->no_irq && device_may_wakeup(dev))
+>  		disable_irq_wake(stmpe->irq);
+>  
+>  	return 0;
+> diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+> index ca1d7a3..c4b45fd 100644
+> --- a/include/linux/mfd/stmpe.h
+> +++ b/include/linux/mfd/stmpe.h
+> @@ -188,6 +188,7 @@ struct stmpe_ts_platform_data {
+>   * @irq_invert_polarity: IRQ line is connected with reversed polarity
+>   * @autosleep: bool to enable/disable stmpe autosleep
+>   * @autosleep_timeout: inactivity timeout in milliseconds for autosleep
+> + * @no_irq: IRQs are not supported on this board
+>   * @irq_base: base IRQ number.  %STMPE_NR_IRQS irqs will be used, or
+>   *	      %STMPE_NR_INTERNAL_IRQS if the GPIO driver is not used.
+>   * @irq_over_gpio: true if gpio is used to get irq
+> @@ -200,6 +201,7 @@ struct stmpe_ts_platform_data {
+>  struct stmpe_platform_data {
+>  	int id;
+>  	unsigned int blocks;
+> +	bool no_irq;
+>  	int irq_base;
+>  	unsigned int irq_trigger;
+>  	bool irq_invert_polarity;
 
-Good, looks like we're making progress.
+Acked-by: Viresh Kumar <viresh.kumar@st.com>
 
-We appear to be stuck now at wait_on_page_locked(page) in the
-read_extent_buffer_pages(...) function in extent_io.c
-
-	for (i = start_i; i < num_pages; i++) {
-		page = extent_buffer_page(eb, i);
-		wait_on_page_locked(page);
-		if (!PageUptodate(page))
-			ret = -EIO;
-	}
-
-I tried looking around the kernel for how others have handled error
-checking when using wait_on_page_locked(...), but I could not find
-many examples.
-
-http://lxr.free-electrons.com/ident?i=wait_on_page_locked
-
-I believe I'll have to ask for help from the others on the list at
-this point for how to handle this issue.
-
-Do you still have data you are trying to recover from this disk?
+-- 
+viresh
