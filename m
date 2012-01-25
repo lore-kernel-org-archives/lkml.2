@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab2AYRD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 12:03:29 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16395 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756111Ab2AYRD2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 12:03:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 25 Jan 2012 09:03:16 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Jan 2012 09:03:16 -0800
-Subject: RE: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
-Thread-Topic: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
-Thread-Index: AczbU1pKJnu+MAQET3+Ak1FAEwpeiwALsWVQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178CB8202B@HQMAIL01.nvidia.com>
-References: <1327490378-10904-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1327490378-10904-1-git-send-email-ldewangan@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756349Ab2AYREQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 12:04:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47895 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754883Ab2AYREP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 12:04:15 -0500
+Date: Wed, 25 Jan 2012 09:03:51 -0800
+From: Greg KH <gregkh@suse.de>
+To: James Bottomley <jbottomley@parallels.com>
+Cc: Christoph Hellwig <hch@infradead.org>, KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>
+Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
+ the staging area
+Message-ID: <20120125170351.GB5461@suse.de>
+References: <1326402943-14031-1-git-send-email-kys@microsoft.com>
+ <20120114164228.GB9682@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481B6F0307@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20120116152951.GA9720@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481B6FE0E2@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20120125154300.GA19509@infradead.org>
+ <20120125155115.GA3608@suse.de>
+ <1327507166.2776.32.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327507166.2776.32.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Laxman Dewangan wrote at Wednesday, January 25, 2012 4:20 AM:
-> Allow the transfer size to vary in each DMA request,
-> rather than assuming all requests to be the same size
-> as the first request made.
-...
-> diff --git a/arch/arm/mach-tegra/dma.c b/arch/arm/mach-tegra/dma.c
-...
-> @@ -434,6 +435,15 @@ static void tegra_dma_update_hw_partial(struct tegra_dma_channel *ch,
->  	writel(apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
->  	writel(ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
+On Wed, Jan 25, 2012 at 03:59:26PM +0000, James Bottomley wrote:
+> On Wed, 2012-01-25 at 07:51 -0800, Greg KH wrote:
+> > On Wed, Jan 25, 2012 at 10:43:00AM -0500, Christoph Hellwig wrote:
+> > > On Wed, Jan 25, 2012 at 03:29:05PM +0000, KY Srinivasan wrote:
+> > > > James,
+> > > > Any updates here? 
+> > > 
+> > > Given that this is a new driver without external dependencies it seems
+> > > fine even for a 3.3 merge to me.
+> > 
+> > Fine with me as well.
 > 
-> +	if (ch->mode & TEGRA_DMA_MODE_CONTINOUS)
-> +		ch->req_transfer_count = (req->size >> 3) - 1;
-> +	else
-> +		ch->req_transfer_count = (req->size >> 2) - 1;
+> OK, so what I need to linux-scsi is an applyable patch moving it out of
+> staging.
 
-There are cases in the current continuous mode where HW is working on
-one buffer and the next buffer is queued in HW. Once we've written the
-new request to HW, we don't know exactly which buffer HW is operating
-on. Hence, we don't know which buffer ch->req_transfer_count refers to.
-If req->size changes, might this change cause the new req->size value
-to be used when the old buffer's final completion interrupt goes off
-and hence the old buffer's req->bytes_transferred be wrong?
+I think there have been about 3-4 copies of this in your email archives,
+but if that didn't work, I'm sure that KY can create it again :)
 
-Actually looking at the current continuous mode, I'm not convinced that
-it correctly handles replacing an in-progress buffer with a new buffer;
-I certainly see where handle_continuous_dma() checks for a second (SW)
-queued buffer and tells the HW to use that buffer instead, but I don't
-see where the (SW) queue management is done; where is the old req removed
-from the head of ch->list and marked complete? I assume the "out of sync"
-case is only intended to be an error condition and not part of the
-buffer switch?
+thanks,
 
-Perhaps for the current continuous mode, it'd be best to require the
-client to dequeue any existing request before queuing another, i.e. to
-fail tegra_dma_enqueue_req() if there's already something in ch->list
-in continuous mode?
-
-> +	csr = readl(ch->addr + APB_DMA_CHAN_CSR);
-> +	csr &= ~CSR_WCOUNT_MASK;
-> +	csr |= ch->req_transfer_count << CSR_WCOUNT_SHIFT;
-> +	writel(csr, ch->addr + APB_DMA_CHAN_CSR);
-> +
->  	req->status = TEGRA_DMA_REQ_INFLIGHT;
->  	return;
->  }
-
--- 
-nvpublic
-
+greg k-h
