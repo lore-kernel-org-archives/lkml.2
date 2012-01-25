@@ -1,87 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab2AYCIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jan 2012 21:08:50 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:38385 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab2AYCIt (ORCPT
+	id S1755974Ab2AYCJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jan 2012 21:09:14 -0500
+Received: from lunge.queued.net ([173.255.254.236]:33927 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516Ab2AYCJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jan 2012 21:08:49 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v8
-References: <20120123142036.025893883@openvz.org>
-	<20120123142436.181674896@openvz.org>
-	<20120124110730.a3536647.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124065338.GB29735@moon>
-	<20120124160709.e05c51b5.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120124072122.GD29735@moon> <m1boptmqj0.fsf@fess.ebiederm.org>
-	<20120124091135.GI29735@moon> <4F1F576A.9090102@gmail.com>
-Date: Tue, 24 Jan 2012 18:11:21 -0800
-In-Reply-To: <4F1F576A.9090102@gmail.com> (KOSAKI Motohiro's message of "Tue,
-	24 Jan 2012 20:14:18 -0500")
-Message-ID: <m1r4yoedkm.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19fyYkoRA3SJZWSd6dosH/fL+lIMGyNLJU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Tue, 24 Jan 2012 21:09:12 -0500
+Date: Tue, 24 Jan 2012 18:07:07 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
+        linux-geode@lists.infradead.org
+Subject: Re: [PATCH] backlight: Add backlight driver for Bachmann's ot200
+Message-ID: <20120124180707.223ce9b1@debxo>
+In-Reply-To: <4F1F3F17.8060201@gmail.com>
+References: <4F1F3F17.8060201@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KOSAKI Motohiro <kosaki.motohiro@gmail.com> writes:
+On Wed, 25 Jan 2012 00:30:31 +0100
+Christian Gmeiner <christian.gmeiner@gmail.com> wrote:
 
-> (1/24/12 4:11 AM), Cyrill Gorcunov wrote:
->> On Tue, Jan 24, 2012 at 12:52:03AM -0800, Eric W. Biederman wrote:
->>> Cyrill Gorcunov<gorcunov@gmail.com>  writes:
->>>
->>>> On Tue, Jan 24, 2012 at 04:07:09PM +0900, KAMEZAWA Hiroyuki wrote:
->>>>>>
->>>>>> Hmm. But userspace app will get eof, so frankly I don't see
->>>>>> a problem here. Or maybe I miss something?
->>>>>>
->>>>>
->>>>> Userspace need to take care of whether there may be"\n" or not even
->>>>> if read() returns EOF.
->>>>> As an interface, it's BUG to say "\n" will be there if you're lucky!"
->>>>> (*) I know script language can handle this but we shouldn't assume that.
->>>>>
->>>>> How about just remove "\n" at EOF  ? I think it's unnecessary.
->>>>>
->>>>
->>>> Sure thing, it's not a problem to remove it completely.
->>>
->>> Foolish question.  Is there any reason why this is a file instead
->>> of being the obvious directory full of symlinks?
->>>
->>
->> How would these symlinks look like? "../../pid"? There were a conversation
->> about such things (https://lkml.org/lkml/2011/12/2/142) but I suppose we
->> were agree on children with pids as consensus.
->
-> I couldn't find any agreement in this link. Suppose wrong url?
+> From 27574197e9f8425c6aeadffef199c8b7eb969233 Mon Sep 17 00:00:00 2001
+> From: Christian Gmeiner <christian.gmeiner@gmail.com>
+> Date: Fri, 13 Jan 2012 15:31:01 +0100
+> Subject: [PATCH] backlight: Add backlight driver for Bachmann's ot200
+> 
+> Add backlight driver for Bachmann's ot200 visualisation device. The
+> driver uses MFGPT 7 of CS5535 silicon to regulate the backlight.
+> 
+> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+> ---
+>  drivers/video/backlight/Kconfig    |    9 ++
+>  drivers/video/backlight/Makefile   |    2 +-
+>  drivers/video/backlight/ot200_bl.c |  167
+> ++++++++++++++++++++++++++++++++++++ 3 files changed, 177
+> insertions(+), 1 deletions(-) create mode 100644
+> drivers/video/backlight/ot200_bl.c
+> 
+> diff --git a/drivers/video/backlight/Kconfig
+> b/drivers/video/backlight/Kconfig index 278aeaa..ab02544 100644
+> --- a/drivers/video/backlight/Kconfig
+> +++ b/drivers/video/backlight/Kconfig
+> @@ -342,6 +342,15 @@ config BACKLIGHT_AAT2870
+>  	  If you have a AnalogicTech AAT2870 say Y to enable the
+>  	  backlight driver.
+>  
+> +config BACKLIGHT_OT200
+> +	tristate "Backlight Driver for Bachmann's OT200"
 
-Now that you have reminded me of this thread.  I can say that the
-link would need to look like ../../pid.  Our children will always
-be thread group leaders, so we can safely point to the /proc/<pid>
-directories.  So readlink would return ../../<pid> or however many
-dots are needed.  Follow link could just warp us to that directory
-as it does for the other magic proc symlinks.
+This is purely personal preference, but the possessive apostrophe for
+the manufacturer's device seems weird.
 
-My feeling is that a children subdirectory would be a lot more useful
-than a simple file that lists the children.
 
-Eric
+> +	depends on BACKLIGHT_CLASS_DEVICE
+> +	select MFD_CS5535
+> +	select CS5535_MFGPT
+
+This is modular; is there any reason to select these instead of simply
+depending upon them?  A strict dependency would be preferrable.
+
+Also, CS5535_MFGPT already depends upon MFD_CS5535, so you can probably
+drop that.
+
+
+> +	help
+> +	  To compile this driver as a module, choose M here: the
+> module will be
+> +	  called ot200_bl.
+> +
+>  endif # BACKLIGHT_CLASS_DEVICE
+>  
+>  endif # BACKLIGHT_LCD_SUPPORT
+> diff --git a/drivers/video/backlight/Makefile
+> b/drivers/video/backlight/Makefile index fdd1fc4..4f07d3f 100644
+> --- a/drivers/video/backlight/Makefile
+> +++ b/drivers/video/backlight/Makefile
+> @@ -39,4 +39,4 @@ obj-$(CONFIG_BACKLIGHT_ADP8870)	+=
+> adp8870_bl.o obj-$(CONFIG_BACKLIGHT_88PM860X) += 88pm860x_bl.o
+>  obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
+>  obj-$(CONFIG_BACKLIGHT_AAT2870) += aat2870_bl.o
+> -
+> +obj-$(CONFIG_BACKLIGHT_OT200) += ot200_bl.o
+> diff --git a/drivers/video/backlight/ot200_bl.c
+> b/drivers/video/backlight/ot200_bl.c new file mode 100644
+> index 0000000..d8e8ba1
+> --- /dev/null
+> +++ b/drivers/video/backlight/ot200_bl.c
+> @@ -0,0 +1,167 @@
+> +/*
+> + * Copyright (C) 2012 Bachmann electronic GmbH
+> + *	Christian Gmeiner <christian.gmeiner@gmail.com>
+> + *
+> + * Backlight driver for Bachmann's ot200.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> modify it
+> + * under the terms of the GNU General Public License version 2 as
+> published by
+> + * the Free Software Foundation.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/fb.h>
+> +#include <linux/backlight.h>
+> +#include <linux/gpio.h>
+> +#include <linux/cs5535.h>
+> +
+> +static struct cs5535_mfgpt_timer *pwm_timer;
+> +static const  u8 DIM_TABLE[101] = {0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+
+Please don't use CAPS_VARIABLES unless it's a macro.
+
+
+> 2, 2, 2, 2,
+> +				   2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
+> 4, 4, 4, 4,
+> +				   4, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7,
+> 8, 8, 9, 9,
+> +				   10, 10, 11, 11, 12, 12, 13, 14,
+> 15, 15, 16,
+> +				   17, 18, 19, 20, 21, 22, 23, 24,
+> 26, 27, 28,
+> +				   30, 31, 33, 35, 37, 39, 41, 43,
+> 45, 47, 50,
+> +				   53, 55, 58, 61, 65, 68, 72, 75,
+> 79, 84, 88,
+> +				   93, 97, 103, 108, 114, 120, 126,
+> 133, 140,
+> +				   147, 155, 163};
+
+Also, please describe what this table means, or is for.
+
+
+> +
+> +struct ot200_backlight_data {
+> +	int current_brightness;
+> +};
+> +
+> +#define GPIO_DIMM	27
+> +
+> +static int ot200_backlight_update_status(struct backlight_device *bl)
+> +{
+> +	struct ot200_backlight_data *data = bl_get_data(bl);
+> +	int brightness = bl->props.brightness;
+
+Please use an unsigned here.
+
+> +
+> +	if (bl->props.state & BL_CORE_FBBLANK)
+> +		brightness = 0;
+> +
+> +	/* enable or disable PWM timer */
+> +	if (brightness == 0)
+> +		cs5535_mfgpt_write(pwm_timer, MFGPT_REG_SETUP, 0);
+
+Do you want to disable the timer when the driver/backlight device is
+unloaded, or will that turn off the backlight?
+
+
+> +	else if (brightness != 0 && data->current_brightness == 0) {
+> +		cs5535_mfgpt_write(pwm_timer, MFGPT_REG_COUNTER, 0);
+> +		cs5535_mfgpt_write(pwm_timer, MFGPT_REG_SETUP,
+> 0x8281);
+> +	}
+> +
+> +	/* apply new brightness value */
+> +	cs5535_mfgpt_write(pwm_timer, MFGPT_REG_CMP1,
+> +					163 - DIM_TABLE[brightness]);
+> +	data->current_brightness = brightness;
+> +
+> +	return 0;
+> +}
+> +
+> +static int ot200_backlight_get_brightness(struct backlight_device
+> *bl) +{
+> +	struct ot200_backlight_data *data = bl_get_data(bl);
+> +	return data->current_brightness;
+> +}
+> +
+> +static const struct backlight_ops ot200_backlight_ops = {
+> +	.update_status	= ot200_backlight_update_status,
+> +	.get_brightness	= ot200_backlight_get_brightness,
+> +};
+> +
+> +static int ot200_backlight_probe(struct platform_device *pdev)
+> +{
+> +	struct backlight_device *bl;
+> +	struct ot200_backlight_data *data;
+> +	struct backlight_properties props;
+> +	int retval = 0;
+> +
+> +	/* request gpio */
+> +	if (gpio_request(GPIO_DIMM, "ot200 backlight dimmer") < 0) {
+> +		printk(KERN_ERR "ot200 backlight: failed to request
+> GPIO %d\n",
+
+I notice you're using dev_err below, but printk(KERN_ERR here.  Any
+reason for that?  My preference would be dev_err here.
+
+> +				GPIO_DIMM);
+> +		return -ENODEV;
+> +	}
+> +
+> +	/* request timer */
+> +	pwm_timer = cs5535_mfgpt_alloc_timer(7, MFGPT_DOMAIN_ANY);
+> +	if (!pwm_timer) {
+> +		printk(KERN_ERR "ot200 backlight: MFGPT 7 not
+> available\n");
+
+Ditto.
+
+> +		retval = -ENODEV;
+> +		goto error_mfgpt_alloc;
+> +	}
+> +
+> +	data = kzalloc(sizeof(*data), GFP_KERNEL);
+> +	if (data == NULL) {
+
+Please use "if (!data) {" here.
+
+> +		retval = -ENOMEM;
+> +		goto error_kzalloc;
+> +	}
+> +
+> +	/* setup gpio */
+> +	cs5535_gpio_set(GPIO_DIMM, GPIO_OUTPUT_ENABLE);
+> +	cs5535_gpio_set(GPIO_DIMM, GPIO_OUTPUT_AUX1);
+> +
+> +	/* setup timer */
+> +	cs5535_mfgpt_write(pwm_timer, MFGPT_REG_CMP1, 0);
+> +	cs5535_mfgpt_write(pwm_timer, MFGPT_REG_CMP2, 0xa3);
+> +	cs5535_mfgpt_write(pwm_timer, MFGPT_REG_SETUP, 0x8281);
+
+Can you please document this?  This is a backlight driver; what
+are you using timers for?  What is the setup here meant to do?  I'd
+like to see an english description for people so that a glance over
+this doesn't require checking the data sheet, and so that we can verify
+that the code matches the desired effect.
+
+
+> +
+> +	data->current_brightness = 100;
+> +	props.max_brightness = 100;
+> +	props.brightness = 100;
+> +	props.type = BACKLIGHT_RAW;
+> +
+> +	bl = backlight_device_register("ipc", &pdev->dev, data,
+
+What's ipc?
+
+> +					&ot200_backlight_ops,
+> &props);
+> +	if (IS_ERR(bl)) {
+> +		dev_err(&pdev->dev, "failed to register
+> backlight\n");
+> +		retval = PTR_ERR(bl);
+> +		goto error_backlight_device_register;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, bl);
+> +
+> +	return 0;
+> +
+> +error_backlight_device_register:
+> +	kfree(data);
+> +error_kzalloc:
+> +	cs5535_mfgpt_free_timer(pwm_timer);
+> +error_mfgpt_alloc:
+> +	gpio_free(GPIO_DIMM);
+> +	return retval;
+> +}
+> +
+> +static int ot200_backlight_remove(struct platform_device *pdev)
+> +{
+> +	struct backlight_device *bl = platform_get_drvdata(pdev);
+> +	struct ot200_backlight_data *data = bl_get_data(bl);
+> +
+> +	backlight_device_unregister(bl);
+> +	kfree(data);
+
+What about freeing the gpio?  Also, the timer?  I know the timer code
+doesn't allow you to reuse the timer once it's been set up, but at
+least you could avoid leaking the pwm_timer memory.
+
+
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver ot200_backlight_driver = {
+
+This can probably use __devinitdata.
+
+> +	.driver		= {
+> +		.name	= "ot200-backlight",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +	.probe		= ot200_backlight_probe,
+> +	.remove		= ot200_backlight_remove,
+> +};
+> +
+> +static int __init ot200_backlight_init(void)
+> +{
+> +	return platform_driver_register(&ot200_backlight_driver);
+> +}
+> +module_init(ot200_backlight_init);
+> +
+> +static void __exit ot200_backlight_exit(void)
+> +{
+> +	platform_driver_unregister(&ot200_backlight_driver);
+> +}
+> +module_exit(ot200_backlight_exit);
+> +
+> +MODULE_DESCRIPTION("backlight driver for Bachmann ot200");
+> +MODULE_AUTHOR("Christian Gmeiner <christian.gmeiner@gmail.com>");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:ot200-backlight");
+
