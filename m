@@ -1,106 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291Ab2AYFWJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 00:22:09 -0500
-Received: from nm12.bullet.mail.bf1.yahoo.com ([98.139.212.171]:46998 "HELO
-	nm12.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750812Ab2AYFWI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 00:22:08 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 415543.75490.bm@omp1048.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=YXUjSNR8I1I16+vHeNtp/76/BLLSqih69f3skEDvxKDalyj88R1cAisTa0E50hlOQKCMW44Qc6QueyxLrMCTBejbckg604bkfsSV5ZfxsTSmeiWSZA2aijBjAL6vsFBT6h4GGYaZ6zqZoxn+sgXlWHAmmCumQXR3ccNU2Od2FW8=;
-X-YMail-OSG: VZ.9OnUVM1lsq3xv5tY4_4QklfI5Qjzj4_nNzHBoC2ftl4s
- XtVFJmlp0dfGkM9.uuI1jvismE5a2jQdz4O8xJA3OKit2PbEOPDstZtXEE0l
- tUVmbgMTa88vSQRGKlLVEdmvPPmON5HRp7BrPb.Kjwrz7CJELTLjOf829xvb
- T0XEh7swxmpxgwhXjtMHijMV77gEO8T2FkcWTt6p3jIt7cKojJLvsrHf77aC
- a51n6RS962bLR_iGDs7yaynyiC.Iwe3Wrudq4gdPLw1e8OkmEKHMpL5O9v3w
- c_8veSyraNyzglcX1eVf_kcAiwCZaxVPnwZXH0kKogpuIefHd0LCT5awfhsw
- nS2GdI9_ppEi2N_nyjzSrXFCMxOGmIwZaohw6v8ORFGfBvu4uvXFqLbdrbnK
- uVZUZZBbv5krZz48TvIp3UY1DmrcX_i_ah8PJf41lolyk1ES3.d4ouuCZ9BH
- eRQ0uXSDtXYjW.rAAqBi5o4tm8WHBcGUuNzDxbm20QvMbcdVx5Xi0D9re
-X-Mailer: YahooMailWebService/0.8.116.331537
-References: <1327310360.96918.YahooMailNeo@web162003.mail.bf1.yahoo.com> <1327313719.76517.YahooMailNeo@web162002.mail.bf1.yahoo.com> <alpine.LSU.2.00.1201231125200.1677@eggly.anvils>
-Message-ID: <1327468926.52380.YahooMailNeo@web162002.mail.bf1.yahoo.com>
-Date: Tue, 24 Jan 2012 21:22:06 -0800 (PST)
-From: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Reply-To: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Subject: Re: [Help] : RSS/PSS showing 0 during smaps for Xorg
-To: Hugh Dickins <hughd@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <alpine.LSU.2.00.1201231125200.1677@eggly.anvils>
+	id S1751488Ab2AYFZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 00:25:25 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:56660 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896Ab2AYFZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 00:25:24 -0500
+Date: Tue, 24 Jan 2012 21:23:13 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon updates for 3.3
+Message-ID: <20120125052313.GA11583@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/04w6evG8XlLl3ft"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-________________________________
->From: Hugh Dickins <hughd@google.com>
->To: PINTU KUMAR <pintu_agarwal@yahoo.com> 
->Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; "linux-mm@kvack.org" <linux-mm@kvack.org> 
->Sent: Tuesday, 24 January 2012 1:01 AM
->Subject: Re: [Help] : RSS/PSS showing 0 during smaps for Xorg
->
->On Mon, 23 Jan 2012, PINTU KUMAR wrote:
->> Dear All,
->> 
->> I am facing one problem for one of my kernel module for our linux mobile with kernel2.6.36.
->> 
->> When I do cat /proc/<Xorg pid>/smaps | grep -A 11 /dev/ump , to track information for my ump module,
->> we always get Rss/Pss as 0 kB as shown below:
->> cat /proc/1731/smaps | grep -A 11 /dev/ump
->> 414db000-415ff000 rw-s 00015000 00:12 6803       /dev/ump
->> Size:               1168 kB
->> Rss:                   0 kB
->> Pss:                   0 kB
->> track_rss_value = 0, iswalkcalled = 1, smap_pte_range_called = 1, swap_pte = 0, not_pte_present = 0, not_normal_page = 1
->> isspecial = 0, not_special = 1, isMixedMap = 0, pfnpages_null = 0, pfnoff_flag = 0, not_cow_mapping = 1, normal_page_end = 0
->>  
->> After tracing down the problem, I found out that during "show_smaps" in fs/proc/task_mmu.c and during call to smaps_pte_range the vm_normal_page() is always returning NULL for our /dev/ump driver.
->> (smaps_pte_range() is the place where Rss/Pss information is populated)
->> Thus mss->resident (Rss value) is never getting incremented.  
->>  
->> To trace the problem I added few flags during show_smaps & vm_normal_page() as shown above. The value of 1 indicates that the condition is executed.
->> Thus "normal_page_end" indicates that the "vm_normal_page" has never ended successfully and always returns from 
->> "!is_cow_mapping()".
->>  
->> So, I wanted to know the main cause for vm_normal_page() always returning NULL page for our ump driver. 
->> What is that I am missing in my driver ?
->>  
->> Can anyone please let me know what could be the problem in our driver.
->
->This not evidence of any problem in your driver.
->
->vm_normal_page() returns NULL because the pages mapped by your driver
->are not normal faultable and reclaimable pages, but an area of physical
->memory mapped in by remap_pfn_range(), which sets the VM_PFNMAP flag.
->
->The mm subsystem does not count such pages towards rss (or pss),
->hence your 0s.
->
->Hugh
->
+--/04w6evG8XlLl3ft
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Dear Mr. Hugh,
- 
-Thank you very much for your reply.
-Is there a way to convert our mapped pages to a normal pages. I tried pfn_to_page() but no effect.
-I mean the page is considered normal only if it is associated with "struct page" right???
-Is is possible to convert these pages to a normal struct pages so that we can get the Rss/Pss value??
- 
-Also, the VM_PFNMAP is being set for all dirvers during remap_pfn_range and stills shows Rss/Pss for other drivers.
-Then why it is not shown for our driver?
-How to avoid remap_pfn_range to not to set VM_PFNMAP for our driver?
- 
-Please let me know.
- 
- 
- 
-Thanks, Regards,
-Pintu
+Hi Linus,
+
+Please pull hwmon subsystem updates for Linux 3.3 from:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Looks like a lot of changes, but almost all of it is cleanup, plus some
+error handling improvements, MAINTAINERS updates, and a couple of
+minor bug fixes.
+
+Thanks,
+Guenter
+
+------
+
+The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
+
+  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Axel Lin (2):
+      hwmon: convert drivers/hwmon/* to use module_i2c_driver()
+      hwmon: convert drivers/hwmon/* to use module_spi_driver()
+
+Frans Meulenbroeks (26):
+      hwmon: (lm80) add error handling
+      hwmon: (amc6821) fix initialisation
+      hwmon: (mc13783-adc) remove space before tab
+      hwmon: remove () used with return
+      hwmon: use DEFINE_PCI_DEVICE_TABLE
+      hwmon: (i5k_amb) fix checkpatch issues
+      hwmon: (g760a) fix checkpatch issues
+      hwmon: (adm1029) fix checkpatch issues
+      hwmon: fix checkpatch issues
+      hwmon: (wm831x-hwmon) fix checkpatch issues
+      hwmon: (w83l785ts) fix checkpatch issues
+      hwmon: (ad7418) fix checkpatch issues
+      hwmon: (ad7414) fix checkpatch issues
+      hwmon: (ibmaem) fix checkpatch issues
+      hwmon: (sht15) fix checkpatch issues
+      hwmon: (smm665) fix checkpatch issues
+      hwmon: (adt7475) fix checkpatch issues
+      hwmon: (asus_atk0110) fix checkpatch issues
+      hwmon: (f71882fg) fix checkpatch issues
+      hwmon: (lm70) fix checkpatch issues
+      hwmon: (adt7411) fix checkpatch issues
+      hwmon: (adt7470) fix checkpatch issues
+      hwmon: (lm80) fix checkpatch warnings
+      hwmon: (lm80) reset device if error occurred
+      hwmon: (k8temp) fix checkpatch issues
+      hwmon: (lm83) fix checkpatch issues
+
+Guenter Roeck (31):
+      hwmon: (pmbus) Replace strict_strtol with kstrtol
+      hwmon: (max6650) Fix checkpatch issues
+      hwmon: (vt8231) Fix checkpatch issues
+      hwmon: (abituguru3) Fix checkpatch issues
+      hwmon: (adm1025) Fix checkpatch issues
+      hwmon: (adm1025) Limit data range when writing cpu0_vid
+      hwmon: (w83781d) Fix checkpatch issues
+      hwmon: (max6650) Fix multi-line comments
+      hwmon: (f71805f) Fix multi-line comments
+      hwmon: (adt7475) Fix multi-line comments
+      hwmon: (vt8231) Fix multi-line comments
+      hwmon: (ds1621) Fix checkpatch issues
+      hwmon: (ds1621) Fix multi-line comments
+      hwmon: (f71805f) Fix checkpatch issues
+      hwmon: (hwmon) Fix multi-line comments
+      hwmon: (hwmon-vid) Fix multi-line comments
+      hwmon: (it87) Fix multi-line comments
+      hwmon: (asc7621) Fix multi-line comments
+      hwmon: (smm665) Fix checkpatch error
+      hwmon: (wm831x-hwmon) Fix multi-line comments
+      hwmon: (pc87360) Fix multi-line comments
+      hwmon: (coretemp) Fix checkpatch error
+      hwmon: (jc42) Fix multi-line comments
+      hwmon: (ad7414) Fix multi-line comments
+      hwmon: (it87) Constify fixed string arrays
+      hwmon: (asus_atk0110) Fix multi-line comments
+      hwmon: (applesmc) Fix multi-line comments
+      hwmon: (wm8350-hwmon) Constify fixed string array
+      hwmon: (ltc4245) Fix multi-line comments
+      hwmon: (ltc4215) Fix multi-line comments
+      MAINTAINERS: Drop maintainer for MAX1668 hwmon driver
+
+Jean Delvare (1):
+      hwmon: (f71805f) Fix clamping of temperature limits
+
+Mark Brown (1):
+      MAINTAINERS: Add hwmon entries for Wolfson
+
+ MAINTAINERS                      |    8 +-
+ drivers/hwmon/abituguru3.c       |   56 +++++---
+ drivers/hwmon/ad7314.c           |   12 +--
+ drivers/hwmon/ad7414.c           |   21 +--
+ drivers/hwmon/ad7418.c           |   25 ++--
+ drivers/hwmon/adcxx.c            |   13 +--
+ drivers/hwmon/adm1021.c          |   13 +--
+ drivers/hwmon/adm1025.c          |   76 ++++++----
+ drivers/hwmon/adm1026.c          |   13 +--
+ drivers/hwmon/adm1029.c          |   28 +---
+ drivers/hwmon/adm1031.c          |   13 +--
+ drivers/hwmon/adm9240.c          |   14 +--
+ drivers/hwmon/ads1015.c          |   13 +--
+ drivers/hwmon/ads7871.c          |   13 +--
+ drivers/hwmon/adt7411.c          |   14 +--
+ drivers/hwmon/adt7462.c          |   13 +--
+ drivers/hwmon/adt7470.c          |   19 +--
+ drivers/hwmon/adt7475.c          |  105 ++++++++------
+ drivers/hwmon/amc6821.c          |   17 +--
+ drivers/hwmon/applesmc.c         |    6 +-
+ drivers/hwmon/asb100.c           |   13 +--
+ drivers/hwmon/asc7621.c          |    8 +-
+ drivers/hwmon/asus_atk0110.c     |   18 ++-
+ drivers/hwmon/atxp1.c            |   15 +--
+ drivers/hwmon/coretemp.c         |    4 +-
+ drivers/hwmon/ds1621.c           |   93 ++++++-------
+ drivers/hwmon/ds620.c            |   13 +--
+ drivers/hwmon/emc1403.c          |   13 +--
+ drivers/hwmon/emc2103.c          |   13 +--
+ drivers/hwmon/emc6w201.c         |   12 +--
+ drivers/hwmon/f71805f.c          |  211 ++++++++++++++++++++---------
+ drivers/hwmon/f71882fg.c         |    4 +-
+ drivers/hwmon/f75375s.c          |   13 +--
+ drivers/hwmon/fschmd.c           |   13 +--
+ drivers/hwmon/g760a.c            |   19 +--
+ drivers/hwmon/gl518sm.c          |   13 +--
+ drivers/hwmon/gl520sm.c          |   15 +--
+ drivers/hwmon/hwmon-vid.c        |   36 +++---
+ drivers/hwmon/hwmon.c            |   25 ++--
+ drivers/hwmon/i5k_amb.c          |   18 ++-
+ drivers/hwmon/ibmaem.c           |    2 +-
+ drivers/hwmon/it87.c             |  176 +++++++++++++++---------
+ drivers/hwmon/jc42.c             |   19 +--
+ drivers/hwmon/k10temp.c          |    2 +-
+ drivers/hwmon/k8temp.c           |   17 ++-
+ drivers/hwmon/lineage-pem.c      |   13 +--
+ drivers/hwmon/lm63.c             |   13 +--
+ drivers/hwmon/lm70.c             |   15 +--
+ drivers/hwmon/lm73.c             |   15 +--
+ drivers/hwmon/lm75.c             |   17 +--
+ drivers/hwmon/lm77.c             |   13 +--
+ drivers/hwmon/lm80.c             |  171 +++++++++++++++++------
+ drivers/hwmon/lm83.c             |   30 ++---
+ drivers/hwmon/lm85.c             |   14 +--
+ drivers/hwmon/lm87.c             |   13 +--
+ drivers/hwmon/lm90.c             |   13 +--
+ drivers/hwmon/lm92.c             |   13 +--
+ drivers/hwmon/lm93.c             |   13 +--
+ drivers/hwmon/lm95241.c          |   13 +--
+ drivers/hwmon/lm95245.c          |   13 +--
+ drivers/hwmon/ltc4151.c          |   13 +--
+ drivers/hwmon/ltc4215.c          |   28 ++---
+ drivers/hwmon/ltc4245.c          |   22 +--
+ drivers/hwmon/ltc4261.c          |   13 +--
+ drivers/hwmon/max1111.c          |   12 +--
+ drivers/hwmon/max16065.c         |   13 +--
+ drivers/hwmon/max1619.c          |   13 +--
+ drivers/hwmon/max1668.c          |   13 +--
+ drivers/hwmon/max6639.c          |   13 +--
+ drivers/hwmon/max6642.c          |   13 +--
+ drivers/hwmon/max6650.c          |  177 ++++++++++++-----------
+ drivers/hwmon/mc13783-adc.c      |    2 +-
+ drivers/hwmon/pc87360.c          |   73 ++++++----
+ drivers/hwmon/pcf8591.c          |    4 +-
+ drivers/hwmon/pmbus/adm1275.c    |   12 +--
+ drivers/hwmon/pmbus/lm25066.c    |   12 +--
+ drivers/hwmon/pmbus/ltc2978.c    |   12 +--
+ drivers/hwmon/pmbus/max16064.c   |   12 +--
+ drivers/hwmon/pmbus/max34440.c   |   12 +--
+ drivers/hwmon/pmbus/max8688.c    |   12 +--
+ drivers/hwmon/pmbus/pmbus.c      |   12 +--
+ drivers/hwmon/pmbus/pmbus_core.c |    2 +-
+ drivers/hwmon/pmbus/ucd9000.c    |   12 +--
+ drivers/hwmon/pmbus/ucd9200.c    |   12 +--
+ drivers/hwmon/pmbus/zl6100.c     |   12 +--
+ drivers/hwmon/sht15.c            |    2 +-
+ drivers/hwmon/sht21.c            |   23 +---
+ drivers/hwmon/sis5595.c          |    2 +-
+ drivers/hwmon/smm665.c           |   22 +--
+ drivers/hwmon/smsc47m192.c       |   13 +--
+ drivers/hwmon/thmc50.c           |   13 +--
+ drivers/hwmon/tmp102.c           |   12 +--
+ drivers/hwmon/tmp401.c           |   13 +--
+ drivers/hwmon/tmp421.c           |   13 +--
+ drivers/hwmon/via686a.c          |    2 +-
+ drivers/hwmon/vt8231.c           |  285 ++++++++++++++++++++++++--------------
+ drivers/hwmon/w83627hf.c         |    8 +-
+ drivers/hwmon/w83781d.c          |  146 ++++++++++++-------
+ drivers/hwmon/w83791d.c          |   13 +--
+ drivers/hwmon/w83792d.c          |   20 +---
+ drivers/hwmon/w83793.c           |   19 +--
+ drivers/hwmon/w83795.c           |   13 +--
+ drivers/hwmon/w83l785ts.c        |   15 +--
+ drivers/hwmon/w83l786ng.c        |   17 +--
+ drivers/hwmon/wm831x-hwmon.c     |    8 +-
+ drivers/hwmon/wm8350-hwmon.c     |    2 +-
+ 106 files changed, 1228 insertions(+), 1620 deletions(-)
+
+--/04w6evG8XlLl3ft
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPH5HBAAoJEMsfJm/On5mByhwP/iXpRqtDtiVk6fm8cvjyq4x2
+yTdN0YhkYMk5f31hjTu4v3/RQLTQCZLpyT9+XrYetnsAlVor7vIKTCgDMzkKyfVM
+w9OxjCj79EOjBz2X5DSvWnaqwsGQfQuVXG4xpyB4KbJ7kgwZZuXceJg4DarYN6nL
+NF8/Ib8OvkonZAHA7YBlumbJs9CxnkTEuBGUeTJwURJ5lmDEZxrlzrKbh/iFyGN0
+sWbT+Qy1jeBWEIFRFvzvqyO/2fWIn7Q0K/Kw6soyHehlcOtLd6wi7OUnUlOxXN96
+IuGBf1+5bYvHhtTZEYgrAkPYvnm7kIv0RcbOcVBCfuUtpce0YHTAa7SfvEvfBtUl
+lUu/2sL7gsjElc64YmBgK9gmNtdGNZLml3ntgLB3nMTeZYCt+k8XAKzl1Iaq207s
+ulOmVlWEnUu14ztIPNYLWLPX1P89Fumw3Le+7trdBulEqFkHpwg1ipXf416ZgAhm
+X5xvYXqwPj+QkIQklxdu/MsuoCgEU9qUPcvDtNR672JOWSwr1FODGmq3V1ZPyErg
+kWDP4Z3MXwZiDFOxoVE7GVjIkrO9a9hsJwPxrGyOIUpflEKgDVzmkh1Y1Ut5IiQc
+DEPr1wuKNFQSXNBmIxOPpN1F1vVLfGDS87WIGmjYr+i6sRf7fx+rXsYKTbncpWpb
+eYkwEsv2adQaVCUwLEjQ
+=9UAe
+-----END PGP SIGNATURE-----
+
+--/04w6evG8XlLl3ft--
