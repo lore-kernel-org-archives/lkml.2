@@ -1,109 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756472Ab2AYRU1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 12:20:27 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:22048 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab2AYRU0 (ORCPT
+	id S1756501Ab2AYRXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 12:23:25 -0500
+Received: from paperboy.avencall.com ([91.194.178.22]:46830 "EHLO
+	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756226Ab2AYRXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 12:20:26 -0500
-Date: Wed, 25 Jan 2012 18:20:24 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH/RFC] regulator: Reverse the disable sequence in
- regulator_bulk_disable()
-In-reply-to: <20120125115705.GF3687@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Steve Glendinning <steve.glendinning@smsc.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Timur Tabi <timur@freescale.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <4F2039D8.2030706@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24)
- Gecko/20111108 Thunderbird/3.1.16
-References: <1327491338-18817-1-git-send-email-s.nawrocki@samsung.com>
- <20120125115705.GF3687@opensource.wolfsonmicro.com>
+	Wed, 25 Jan 2012 12:23:23 -0500
+Date: Wed, 25 Jan 2012 18:23:14 +0100
+From: Guillaume Knispel <gknispel@proformatique.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Guillaume Knispel <gknispel@proformatique.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Xavier Carcelle <xcarcelle@avencall.com>,
+        =?ISO-8859-1?Q?No=E9?= Rubinstein <nrubinstein@avencall.com>
+Subject: Re: How to "register" a GSI for a non PCI non ISA device
+Message-ID: <20120125182314.7834c75b@xilun>
+In-Reply-To: <4F1F99A5.1000206@kernel.org>
+References: <20120124184203.1b0878c2@xilun>
+ <4F1F99A5.1000206@kernel.org>
+Organization: Avencall
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 12:57 PM, Mark Brown wrote:
-> So, I've applied this since it shouldn't do any harm and probably is
+On Wed, 25 Jan 2012 00:56:53 -0500
+Len Brown <lenb@kernel.org> wrote:
 
-Thank you!
-
-> more what we meant to do but note that the bulk APIs don't make any
-> guarantees about ordering - in particular when we do the enable we fire
-> off a bunch of threads to bring the regulators up in parallel so the
-> ordering really is going to be unreliable as it depends on the scheduler
-> and the rates at which the various regulators ramp.  This is done so
-> that we can enable faster as we don't have to wait for each regulator to
-> ramp in series.
-
-Yeah, I've noticed this API change recently.
-
-> Whatever driver inspired you to submit this change is therefore probably
-> buggy or fragile at the minute - is it something that's in mainline or
-> next right now?
-
-Yes, there are some drivers in mainline using the bulk API for which TRMs
-recommend specific voltage supply enable/disable order, e.g.
-drivers/media/video/s5k6aa.* or drivers/media/m5mols.
-
-In fact I've had this patch for a quite long time hanging around in the
-internal trees, long before the commit
-
- f21e0e81d81b649ad309cedc7226f1bed72982e0
- regulator: Do bulk enables of regulators in parallel
-
-However it clearly indicates the order isn't guaranteed for the bulk APIs.
-
-> At some point I'd like to enhance things further so we can coalesce
-> register writes where multiple regulators have their enable bits in the
-> same register but that's a relatively large amount of work for a small
-> benefit unless we do something cute with regmap (and that is likely to
-> be too cute).
-
-Hmm, sounds like a good improvement which could also lead to lower power
-consumption (since we reduce number of I2C/SPI transfers, etc.). But indeed
-the benefits might hardly justify the amount of work needed :)
-
->> The alternatives to directly modifying regulator_bulk_disable() could be:
+> On 01/24/2012 12:42 PM, Guillaume Knispel wrote:
 > 
->>  - re-implement it in modules that need the order reversed; it is not
->>    really helpful in practice since such code would have to be repeated
->>    in multiple modules;
+> > Hi,
+> > 
+> > I'm building a PC platform with additional non-PCI and non-ISA devices:
+> > they are basically simple telecom chipsets connected to an SPI and an
+> > old school parallel bus (Intel LEB bus) and GPIO pins that can be used
+> > as interrupts through the IO APIC which exposes 40 GSI. From the point
+> > of view of the software the SPI, LEB, and GPIO are provided by PCI
+> > devices (in reality they are embedded controllers in an Intel SoC
+> > 80579). Anyway I'm not sure the additional GSI are described anywhere
+> > in whatever black magic ACPI / legacy BIOS table they could be
+> > (but I've complete control over the FW, so I can had whatever is
+> >  needed when I know it).
 > 
->>  - create new function, e.g. regulator_bulk_disable_reversed() with the
->>    order reversed - not sure if it is not an overkill though;
-> 
-> The third option is that where devices really care about the power
-> sequencing they should explicitly write that in code and only use the
-> bulk APIs where they don't care.  Typically this will mean either a few
-> sets of bulk supplies or a single set of bulk supplies and then some
-> number of individual supplies.  An awful lot of devices don't have any
-> sequencing constraints at all, apparently including most of those using
-> the API at present.
+> What is the benefit of implementing ACPI on this custom system?
 
-Yeah, I guess that's what I'm going to do - drop the bulk API usage to make
-sure the order is right for drivers which really are sensitive.
-Some of the devices I used to work with require explicit order of switching
-all regulators, while some only care about timing relation of single supply
-to a group of the remaining ones.
+For our short term project it seems to be more a necessity than a
+benefit. ACPI is supported by the SoC, tables are already largely
+provided by Coreboot, the whole x86 ecosystem including Linux is more
+or less based around ACPI, and my whole interrogation comes from the
+fact that *acpi*_register_gsi() seems to be necessary to configure a
+GSI in the APIC but is not exported anymore, so my guess is that if I
+can't call it explicitly from my LKM, there should better be a way to
+make it be called when an ACPI thing is done, or maybe a legacy table
+parsed.
 
-> BTW, your CC list here is *really* random - please think more about who
-> you're CCing, it looks like you've done something with get_maintainer.
+As we first target an unmodified (if possible) 2.6.32 kernel from
+Debian Squeeze, I can't just re-export acpi_register_gsi() and call it
+a day. (If I've no other choice I'll obviously do it, but this would be
+quite bad for future maintenance).
 
-My apologies for that, especially to those not really involved..
-Indeed, I've used get_maintainer on files which used the regulator API
-calls in question. I'll try to do better job next time.
+Now if we consider the long term / big picture and ask ourselves what
+is the benefit of ACPI for x86 systems with completely free designs and
+running exclusively free operating systems, I consider it more as a
+huge hindrance than as a benefit... Who understands that mess to begin
+with? If people dedicated at building only COTS motherboards with
+proprietary designs and BIOSes don't get it and repetitively make buggy
+DSDT, I doubt than I or other people building complete free systems
+with hugely limited resources would do very much better. But to
+leverage major Linux distributions that kind of hardware platform
+builders can be inclined to target existing kernels, so if there is no
+pre-built alternative in them the whole ACPI stack will continue to be
+used.
 
+So I'm both looking for pointers to how to configure custom GSI in
+existing kernels and if I need to do that through ACPI I'm also
+interested in pointers to alternatives in Linux on x86 systems where we
+could put that kind of description of the hardware platform in future
+kernels (device-tree maybe?), because we are very interested in
+contributing upstream to try to make our life easier for our next
+products using a modern kernel.
 
-Regards,
---
-Sylwester Nawrocki
-Samsung Poland R&D Center
+-- 
+Guillaume Knispel
+Avencall - 10 bis, rue Lucien Voilin - 92800 Puteaux
