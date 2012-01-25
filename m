@@ -1,192 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab2AYIaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 03:30:06 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47177 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752772Ab2AYIaD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 03:30:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKcLGm9S7XQRrRJfkptXnEm+df4pz8qws4SiBkUBC+2sbTGMVA@mail.gmail.com>
-References: <4F182BED.3090009@gmail.com> <CAKcLGm9kVOw6D8kPECfhfohH4pAT=09qws7-jRsh1TZJTyh1_A@mail.gmail.com>
- <4F199AF9.4030909@gmail.com> <CAKcLGm9ppCT94y2ijuEEQjH+tP8wPK1E+U6x6RHH2CjtoHmJMg@mail.gmail.com>
- <4F1EDB32.3010903@gmail.com> <CAKcLGm9S7XQRrRJfkptXnEm+df4pz8qws4SiBkUBC+2sbTGMVA@mail.gmail.com>
-From: Vincent Vanackere <vincent.vanackere@gmail.com>
-Date: Wed, 25 Jan 2012 09:29:31 +0100
-Message-ID: <CAMpZLrhFre4J2nX0USgO-BTJ303OzTARjxV2+DgWXukKtrYAxA@mail.gmail.com>
-Subject: Re: [BUG - btrfs] kernel oops in extent_range_uptodate
-To: Mitch Harder <mitch.harder@sabayonlinux.org>
-Cc: linux-btrfs@vger.kernel.org,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Vincent Vanackere <vincent.vanackere@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753481Ab2AYIaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 03:30:15 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:46826 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752772Ab2AYIaJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 03:30:09 -0500
+Subject: Re: [PATCH] drivers/video/omap2/dss: use devm_ functions
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1327410045-3906-2-git-send-email-Julia.Lawall@lip6.fr>
+References: <1327410045-3906-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1327410045-3906-2-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-Tqhkox6DqtMuBk8x6OLS"
+Date: Wed, 25 Jan 2012 10:30:03 +0200
+Message-ID: <1327480203.1858.18.camel@deskari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 04:30, Mitch Harder
-<mitch.harder@sabayonlinux.org> wrote:
->
-> On Tue, Jan 24, 2012 at 10:24 AM, Vincent Vanackere
-> <vincent.vanackere@gmail.com> wrote:
-> > On 01/20/2012 09:54 PM, Mitch Harder wrote:
-> >>
-> >> On Fri, Jan 20, 2012 at 10:48 AM, Vincent Vanackere
-> >> <vincent.vanackere@gmail.com>  wrote:
-> >>>
-> >>> On 01/19/2012 05:24 PM, Mitch Harder wrote:
-> >>>>
-> >>>> On Thu, Jan 19, 2012 at 8:42 AM, Vincent Vanackere
-> >>>> <vincent.vanackere@gmail.com>    wrote:
-> >>>>>
-> >>>>> Hi,
-> >>>>>
-> >>>>> With the most current git kernel
-> >>>>> (90a4c0f51e8e44111a926be6f4c87af3938a79c3)
-> >>>>> I'm still getting the same reproducible kernel panic when trying to
-> >>>>> read
-> >>>>> a
-> >>>>> particular file stored on a btrfs filesystem (as seen in the log there
-> >>>>> are
-> >>>>> indeed disk media errors on this disk).
-> >>>>> I'd like the "software" part of this to be fixed - btrfs should
-> >>>>> definitely
-> >>>>> not oops even in case of media error - before sending the disk to RMA.
-> >>>>> Is
-> >>>>> there anything I can do to make progress on this ?
-> >>>>>
-> >>>> Is this kernel compiled with "Compile the kernel with debug info" (in
-> >>>> the "Kernel hacking  --->" configuration section)?
-> >>>>
-> >>>> It would be nice to have the specific line of code passing the NULL
-> >>>> pointer.
-> >>>
-> >>>
-> >>> The kernel was compiled with debug information but modern linux
-> >>> distribution
-> >>> make it really hard to keep your debug information it seems :-(
-> >>
-> >> I see where the find_get_page(...) function called in
-> >> extent_range_uptodate has the potential to return a NULL value.
-> >>
-> >> Could you try the following patch, and if it solves your oops and
-> >> shows the included warning in your dmesg log, I'll simplify the patch
-> >> to drop the printk and submit it to the list.
-> >>
-> >> I only included the printk since your current error log is ambiguous
-> >> regarding the specific point where we're getting the NULL pointer
-> >> dereference, but I'll pull it out if it works.
-> >>
-> >> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-> >> index 9d09a4f..35c3a2a 100644
-> >> --- a/fs/btrfs/extent_io.c
-> >> +++ b/fs/btrfs/extent_io.c
-> >> @@ -3909,6 +3909,13 @@ int extent_range_uptodate(struct extent_io_tree
-> >> *tree,
-> >>        while (start<= end) {
-> >>                index = start>>  PAGE_CACHE_SHIFT;
-> >>                page = find_get_page(tree->mapping, index);
-> >> +               if (unlikely(!page)) {
-> >> +                       if (printk_ratelimit())
-> >> +                               printk(KERN_WARNING
-> >> +                                      "btrfs: NULL page in "
-> >> +                                      "extent_range_uptodate()\n");
-> >> +                       return 1;
-> >> +               }
-> >>                uptodate = PageUptodate(page);
-> >>                page_cache_release(page);
-> >>                if (!uptodate) {
-> >
-> >
-> > Indeed your patch helps. No kernel panic any more... but it looks like the
-> > task doesn't finish and there's another problem to solve now :
-> >
-> >
-> > sd 5:0:0:0: [sdd] Unhandled sense code
-> > sd 5:0:0:0: [sdd]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-> > sd 5:0:0:0: [sdd]  Sense Key : Medium Error [current] [descriptor]
-> > Descriptor sense data with sense descriptors (in hex):
-> >        72 03 11 04 00 00 00 0c 00 0a 80 00 00 00 00 00
-> >        70 2f dc 61
-> > sd 5:0:0:0: [sdd]  Add. Sense: Unrecovered read error - auto reallocate
-> > failed
-> > sd 5:0:0:0: [sdd] CDB: Read(10): 28 00 70 2f dc 5f 00 00 08 00
-> > end_request: I/O error, dev sdd, sector 1882184801
-> > ata6: EH complete
-> > btrfs: NULL page in extent_range_uptodate()
-> > btrfs: NULL page in extent_range_uptodate()
-> > btrfs bad tree block start 959241011200 959241011200
-> > INFO: task cat:3099 blocked for more than 120 seconds.
-> > "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > cat             D ffffffff8180c600     0  3099   3002 0x00000000
-> >  ffff8801f2b0f618 0000000000000086 ffff8801f2b0f5d8 ffff880221018770
-> >  ffff880222c65b80 ffff8801f2b0ffd8 ffff8801f2b0ffd8 ffff8801f2b0ffd8
-> >  ffff8802241816e0 ffff880222c65b80 ffff8801f2b0f5e8 ffff88022fd13e88
-> > Call Trace:
-> >  [<ffffffff81114260>] ? __lock_page+0x70/0x70
-> >  [<ffffffff8162c93f>] schedule+0x3f/0x60
-> >  [<ffffffff8162c9ef>] io_schedule+0x8f/0xd0
-> >  [<ffffffff8111426e>] sleep_on_page+0xe/0x20
-> >  [<ffffffff8162b1ff>] __wait_on_bit+0x5f/0x90
-> >  [<ffffffff811143d8>] wait_on_page_bit+0x78/0x80
-> >  [<ffffffff81070c40>] ? autoremove_wake_function+0x40/0x40
-> >  [<ffffffffa0192161>] read_extent_buffer_pages+0x471/0x4d0 [btrfs]
-> >  [<ffffffffa01697b0>] ? verify_parent_transid+0x160/0x160 [btrfs]
-> >  [<ffffffffa016a13a>] btree_read_extent_buffer_pages.isra.99+0x8a/0xc0
-> > [btrfs]
-> >  [<ffffffffa016c1e1>] read_tree_block+0x41/0x60 [btrfs]
-> >  [<ffffffffa01526a3>] read_block_for_search.isra.34+0xf3/0x3d0 [btrfs]
-> >  [<ffffffffa0154930>] btrfs_search_slot+0x300/0x8a0 [btrfs]
-> >  [<ffffffffa0166ab4>] btrfs_lookup_csum+0x74/0x170 [btrfs]
-> >  [<ffffffffa0166d5f>] __btrfs_lookup_bio_sums+0x1af/0x3b0 [btrfs]
-> >  [<ffffffffa0166fb6>] btrfs_lookup_bio_sums+0x16/0x20 [btrfs]
-> >  [<ffffffffa0173650>] btrfs_submit_bio_hook+0x140/0x170 [btrfs]
-> >  [<ffffffffa01755d0>] ? btrfs_real_readdir+0x720/0x720 [btrfs]
-> >  [<ffffffffa018c17a>] submit_one_bio+0x6a/0xa0 [btrfs]
-> >  [<ffffffffa0190e34>] extent_readpages+0xe4/0x100 [btrfs]
-> >  [<ffffffffa01755d0>] ? btrfs_real_readdir+0x720/0x720 [btrfs]
-> >  [<ffffffffa0173ebf>] btrfs_readpages+0x1f/0x30 [btrfs]
-> >  [<ffffffff81120a0f>] __do_page_cache_readahead+0x1af/0x250
-> >  [<ffffffff81120e11>] ra_submit+0x21/0x30
-> >  [<ffffffff81120f35>] ondemand_readahead+0x115/0x230
-> >  [<ffffffff81137cd9>] ? __do_fault+0x419/0x530
-> >  [<ffffffff81121131>] page_cache_sync_readahead+0x31/0x50
-> >  [<ffffffff811165f8>] generic_file_aio_read+0x438/0x780
-> >  [<ffffffff81173bb2>] do_sync_read+0xd2/0x110
-> >  [<ffffffff81293e73>] ? security_file_permission+0x93/0xb0
-> >  [<ffffffff81174031>] ? rw_verify_area+0x61/0xf0
-> >  [<ffffffff81174510>] vfs_read+0xb0/0x180
-> >  [<ffffffff8117462a>] sys_read+0x4a/0x90
-> >  [<ffffffff81635ae9>] system_call_fastpath+0x16/0x1b
-> >
->
-> Good, looks like we're making progress.
->
-> We appear to be stuck now at wait_on_page_locked(page) in the
-> read_extent_buffer_pages(...) function in extent_io.c
->
->        for (i = start_i; i < num_pages; i++) {
->                page = extent_buffer_page(eb, i);
->                wait_on_page_locked(page);
->                if (!PageUptodate(page))
->                        ret = -EIO;
->        }
->
-> I tried looking around the kernel for how others have handled error
-> checking when using wait_on_page_locked(...), but I could not find
-> many examples.
->
-> http://lxr.free-electrons.com/ident?i=wait_on_page_locked
->
-> I believe I'll have to ask for help from the others on the list at
-> this point for how to handle this issue.
->
-> Do you still have data you are trying to recover from this disk?
 
-I already recovered all interesting data, I'm only keeping this disk
-until I'm confident btrfs will be able to deal with this particular IO
-error... Thanks for your help so far !
+--=-Tqhkox6DqtMuBk8x6OLS
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Vincent
+Hi,
+
+On Tue, 2012-01-24 at 14:00 +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
+> The various devm_ functions allocate memory that is released when a
+> driver
+> detaches.  This patch uses these functions for data that is allocated
+> in
+> the probe function of a platform device and is only freed in the
+> remove
+> function.
+>=20
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+Thanks, this looks very good. I'll apply to omapdss tree.
+
+ Tomi
+
+
+--=-Tqhkox6DqtMuBk8x6OLS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPH72KAAoJEPo9qoy8lh71CwIP/2OmQyhyKDQ7vMn5l3r36opX
+C1nC0BNVL8Ng5ZinwJAJKyAFx7ZMS4hmn0XQLetaqElFHlZjJ3T0BrshQasmOro+
+KVKW01Y8VmurASfUK0muvZqf1XTutS0WgkFZzNgYiqApJpzY5i3LTMaDHo7Xoyru
+8s7gVEMYs5+hggAWDjsOqCKrmquoxN7dDgxOCxrRtuKSbxZyTfE0CzBpkksn0nyq
+NpAPj4/WOPDa9JRTm39gYiLSMxlQqgAvw0IcI/TxYv6Gzbc9xNYgrja1kyRbkrSV
+8d6Y+/+zA2JY460cxuAHyEu29LgaqWiYmANv1HKXWZi9Mdh9+gALAxkEeta4htH0
+BfkjB3i3qjgx/2ccJ788UloHFpjh8BcwuZKBiz5RPrGkBeN0cKAFj0M4aCuAAhHW
+5sYe01NzEMNsuBDbwjNnQiEE3jGLpP2KzgkcM21iefxIPLw1wmpzfOn5zGRfInAv
+IWbpxti2pLKPhfmAhaY2S89QNZg0/eayJSDq7fYNx5sxUdHWDCy3jRBG0EdQoOzc
+vADRgoOic2duGHNkBBgRD0zhJJSFLRBSksSCdaZbgMKsK6S55V7zBbYAzY1rJVsB
+Y1yZ/1rngY9ca9fblsImbb+SUMOaEb9oWmQn1502pD7mZ3VIxAse7PKKKAC8cTqm
+bCPjh/pShN6UU12AS97r
+=eYcY
+-----END PGP SIGNATURE-----
+
+--=-Tqhkox6DqtMuBk8x6OLS--
+
