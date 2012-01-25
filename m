@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab2AYPyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 10:54:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43066 "EHLO mx2.suse.de"
+	id S1755206Ab2AYPyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 10:54:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43086 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754819Ab2AYPyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 10:54:18 -0500
-Date: Wed, 25 Jan 2012 07:51:15 -0800
+	id S1755075Ab2AYPyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 10:54:22 -0500
+Date: Wed, 25 Jan 2012 07:52:58 -0800
 From: Greg KH <gregkh@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>
-Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
- the staging area
-Message-ID: <20120125155115.GA3608@suse.de>
-References: <1326402943-14031-1-git-send-email-kys@microsoft.com>
- <20120114164228.GB9682@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481B6F0307@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20120116152951.GA9720@infradead.org>
- <6E21E5352C11B742B20C142EB499E0481B6FE0E2@TK5EX14MBXC122.redmond.corp.microsoft.com>
- <20120125154300.GA19509@infradead.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, kernel@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH v4] serial/efm32: add new driver
+Message-ID: <20120125155258.GB3608@suse.de>
+References: <20120124220522.GA10590@kroah.com>
+ <1327478704-4233-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120125154300.GA19509@infradead.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1327478704-4233-1-git-send-email-u.kleine-koenig@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 10:43:00AM -0500, Christoph Hellwig wrote:
-> On Wed, Jan 25, 2012 at 03:29:05PM +0000, KY Srinivasan wrote:
-> > James,
-> > Any updates here? 
+On Wed, Jan 25, 2012 at 09:05:04AM +0100, Uwe Kleine-König wrote:
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+> changes since v3 (id:1326127447-20284-1-git-send-email-u.kleine-koenig@pengutronix.de)
+>  - increase number of ports to support UART additionally to USART ports
+>  - implement choosing route location
+>  - implement setting stopbit config
+>    (before one stop bit was configured and CSTOPB was set unconditionally which
+>    is wrong. Spotted by Russell King.)
+>  - implement break, sysrq and overflow detection
+>  - drop unrelated changing to make patch apply on v3.3-rc1
 > 
-> Given that this is a new driver without external dependencies it seems
-> fine even for a 3.3 merge to me.
+> Hello Greg,
+> 
+> On Tue, Jan 24, 2012 at 02:05:22PM -0800, Greg KH wrote:
+> > On Mon, Jan 09, 2012 at 05:44:07PM +0100, Uwe Kleine-König wrote:
+> > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > > ---
+> > > Hello,
+> > > 
+> > > changes since v2:
+> > > - use {read,write}l_relaxed
+> > > - rename driver to efm32-uart as USARTs and UARTs can be handled both
+> > >   with it
+> > > - disable TX in .stop_tx (which needs some changes related to
+> > >   USARTn_IF_TXC)
+> > > 
+> > > Best regards
+> > > Uwe
+> > > 
+> > >  .../devicetree/bindings/tty/serial/efm32-uart.txt  |   14 +
+> > >  arch/arm/boot/dts/efm32gg-dk3750.dts               |    2 +-
+> > >  arch/arm/mach-efm32/devices/pdev-efm32-usart.c     |    6 +-
+> > 
+> > This file isn't in 3.3-rc1, so I can't apply this patch :(
+> > 
+> > What tree is it supposed to be against?
+> Sorry, I messed this up, it bases on my private development tree. These
+> two changes should go independant of the driver patch via an ARM tree
+> (if at all).
+> 
+> I added a few more features in the meantime, so the options are:
+>  - take v3 simply droping the hunks changing
+>    arch/arm/boot/dts/efm32gg-dk3750.dts and
+>    arch/arm/mach-efm32/devices/pdev-efm32-usart.c
+>  - take this for 3.3
+>  - take this for 3.4
+> 
+> My preference would be of course the second option, but for me the other two
+> would be OK if you don't like taking the update that late, too.
 
-Fine with me as well.
+I was going to take this for the 3.4 merge, adding it to my tree now.
+It should be ok to drop those hunks, right?
+
+greg k-h
