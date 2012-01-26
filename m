@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2AZVqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:46:40 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:33638 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab2AZVqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:46:38 -0500
-Date: Fri, 27 Jan 2012 08:46:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Glauber Costa <glommer@parallels.com>
-Cc: David Miller <davem@davemloft.net>, <geert@linux-m68k.org>,
-        <rdunlap@xenotime.net>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gleb@redhat.com>,
-        <netdev@vger.kernel.org>
-Subject: Re: linux-next: Tree for Jan 25 (net/sock.h, jump_label, memcg)
-Message-Id: <20120127084622.a16b0f43e6fcbd029cb1f923@canb.auug.org.au>
-In-Reply-To: <4F21B811.90904@parallels.com>
-References: <20120125141938.c1a9460d56948e1c7b26d3f8@canb.auug.org.au>
-	<4F2052DB.4060602@xenotime.net>
-	<CAMuHMdWp1wEHqPXNs+kaMYpomJnfbZPJjRk5GVFCuCL4Q5zK7g@mail.gmail.com>
-	<20120126.134333.31948964659222759.davem@davemloft.net>
-	<4F21B811.90904@parallels.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Jan_2012_08_46_22_+1100_.y/YF/xi53=J/z4X"
+	id S1753985Ab2AZVsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:48:11 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:29805 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab2AZVsJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 16:48:09 -0500
+X-Authority-Analysis: v=2.0 cv=ffgvOjsF c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=seg9fo12g4kA:10 a=LNmbJxpDd3oA:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=xe8BsctaAAAA:8 a=CRqTrgFaUOwqIbQ1F-4A:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.78.168.186
+Message-ID: <4F21CA16.3020002@ubuntu.com>
+Date: Thu, 26 Jan 2012 16:48:06 -0500
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Maxim Patlasov <maxim.patlasov@gmail.com>, joe@perches.com,
+        kzak@redhat.com, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
+References: <CA+X1aCQRpJ_NwJBSBp+vDN37p+oipJNz=6T5LdJdqzxTiSWWWA@mail.gmail.com> <4EFD012D.7040602@cfl.rr.com> <20120126190114.GG1891@redhat.com> <4F21B91E.90106@ubuntu.com> <20120126210456.GC11297@redhat.com>
+In-Reply-To: <20120126210456.GC11297@redhat.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Jan_2012_08_46_22_+1100_.y/YF/xi53=J/z4X
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Fri, 27 Jan 2012 00:31:13 +0400 Glauber Costa <glommer@parallels.com> wr=
-ote:
->
-> On the specifics of this bug, I verified this config compiles okay in=20
-> your tree + my patches at the day I last sent them. I also verified it=20
-> breaks on the tree today.
->=20
-> The reason seems to be that some other patch tweaked with the header=20
-> files in an unrelated patch, and the static_branch definition that was=20
-> getting to us in sock.h, is no longer getting there.
->=20
-> Including it explicitly fixes it here. I will again pass through a=20
-> battery of randconfigs on my own, and send you a fix.
+On 1/26/2012 4:04 PM, Vivek Goyal wrote:
+>> Another idea that I had but have not yet checked to see if it is
+>>  actually feasible is to copy the struct genhd, change the size
+>> of the copy, and replace the existing one since updating the
+>> pointer will be atomic.
+> 
+> You will run into issues if somebody has a pointer stored to 
+> genhd.
 
-Which is one of the reasons we have Rule 1 in Documentation/SubmitChecklist:
+They are already kept in an RCU list which has the same problem.
+Doesn't that deal with it by using reference counters, so the reader
+can keep and use the pointer to the old structure just fine, and it
+will be cleaned up when they release the reference.
 
-1: If you use a facility then #include the file that defines/declares
-   that facility.  Don't depend on other header files pulling in ones
-   that you use.
+> I think simpler thing would be to stick with sequence counter 
+> approach which keeps read side lockless. We can fix other writers 
+> of nr_sects over a period of time. If nobody has complained so
+> far, that means we don't run into issues frequently and it is not a
+> huge concern.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__27_Jan_2012_08_46_22_+1100_.y/YF/xi53=J/z4X
-Content-Type: application/pgp-signature
+So you think the patch is fine the way it is?
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v2.0.17 (MingW32)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iQIcBAEBCAAGBQJPIcmuAAoJEECxmPOUX5FEG9IP/1gggtv6jmzcOLvedNBKjQp4
-jnGk3IgNZ2AzNuDKcKO1pno0tpqbuC6Z//8Yk4Q8w4QCAK77ko+ejh0r/DhcEVjL
-aGMLnG1qpUsgHHY6mOEYbSEVL+FwaVcq9asU1h9PNCZWle1awKDA7PJ6yh2VoUMS
-amgWfNH9kp53nU6fYSOo74McEkSQsJkamVdj5AqiyhZ1O3v9A+mLLJ07dDIXHhOJ
-w99/1tDsGlzaUHcCeXS3RzF4SKStEuIhhow5TV1BrRM2rTrk0hmJ8vpWU9QFIiWm
-hYIPmSkJTuWm60JBiEHU6Phdlc2xKuU2nqjE+BTi9ifqXE5+J9YCkRyqBS4KhFs0
-mS5+x4B7R1UTwb/gN/B8dQRSGmIbZ/oONOctJAdgqe3Abaq/HABuuaG8JK1g0whM
-yj66RO5KdWFWGzxvWn+7SLa7tBTgjNLfGsLCHAlHQEPaH7sG9NfclfeM9C6v2ND+
-KIK29M6tLTF7mbXIKb80XS/4Iy1zAhLt/jtDEy0eQ4+dEy9m4LCHQGO33IOtz8XB
-miF+5z3QVYJWrVaowxJgMFbdBEC0eqYitUQsi4kvi4U3Nqpqc8ygXpbmhAnDWmJe
-3uqkbS1EoFJU+kLzY8qM/eaAi9G8ryCUwQFBjm2xDF3Z3o2I5QDtdpz1y16e3LDs
-n/aL3xE4aUcl0Fyrwvxa
-=4l9l
+iQEcBAEBAgAGBQJPIcoWAAoJEJrBOlT6nu75SfYIALuzdfVKVKBdXa16nrKj4XtU
+T2PHkbNRRJhFjRbtxfyLkAWL//yEz4S1z08z+RCpP8YcuQ47bKa8WnoamTYSkzuV
+SLjKjjec5a2v/SpEBl6QSHUxg73kBXi0pvsQDEm1+j0ZinZk7Sy+x2uZ8fKwYYYp
+Z8dOShzSR5toIdpi42SbgmtO/qrdqbRcxANvCVwtybeAyVqmIiOY4DTdBm4YhTp5
+GeVTUYTsfjuS3P+i1JJaVmUPMtMzOegXLKI775gWTn+x90TIMnoI+lXa2h1QeZOL
+ZCsk6x7BF9t3lAkk60E8BePFFGoYpz3rHrAsco2qizrXz4Z0WVlh6KGIad0xDF4=
+=SifF
 -----END PGP SIGNATURE-----
-
---Signature=_Fri__27_Jan_2012_08_46_22_+1100_.y/YF/xi53=J/z4X--
