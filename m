@@ -1,154 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab2AZQCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 11:02:38 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37415 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778Ab2AZQCh (ORCPT
+	id S1753090Ab2AZQD0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 11:03:26 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64432 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778Ab2AZQDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 11:02:37 -0500
-Message-ID: <4F21790E.6060408@linux.vnet.ibm.com>
-Date: Thu, 26 Jan 2012 21:32:22 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Thu, 26 Jan 2012 11:03:24 -0500
+Date: Thu, 26 Jan 2012 17:03:19 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, gleb@redhat.com, wcohen@redhat.com,
+        vince@deater.net, asharma@fb.com, andi@firstfloor.org
+Subject: [PATCH] perf_events: fix broken intr throttling (v3)
+Message-ID: <20120126160319.GA5655@quad>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tony.luck@intel.com,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        marcos.mage@gmail.com, prasad@linux.vnet.ibm.com
-Subject: Re: [PATCH] x86, mce: Fix rcu splat in drain_mce_log_buffer()
-References: <20120111142213.16610.85866.stgit@srivatsabhat.in.ibm.com> <20120111161153.GA2925@linux.vnet.ibm.com> <4F102353.1040109@linux.vnet.ibm.com> <20120113214435.GC2909@linux.vnet.ibm.com>
-In-Reply-To: <20120113214435.GC2909@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12012605-7014-0000-0000-0000007AF66B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2012 03:14 AM, Paul E. McKenney wrote:
 
-> On Fri, Jan 13, 2012 at 05:58:03PM +0530, Srivatsa S. Bhat wrote:
->> On 01/11/2012 09:41 PM, Paul E. McKenney wrote:
->>
->>> On Wed, Jan 11, 2012 at 07:54:48PM +0530, Srivatsa S. Bhat wrote:
->>>> While booting, the following message is seen:
->>>
->>> Hmmm...  This code is interesting.  It looks to me that access to
->>> each entry is gated by the ->finished field.  If so, there should be
->>> no need for any kind of rcu_dereference() on mcelog.next -- ACCESS_ONCE()
->>> should work just fine.
->>>
->>
->> [snip]
->>
->>>>
->>>> -	next = rcu_dereference_check_mce(mcelog.next);
->>>> +	next = rcu_access_index(mcelog.next);
->>>
->>> So this is not so much a use of RCU as it is a standard mailbox algorithm,
->>> with the ->finished flag controlling access.  So I suggest ACCESS_ONCE()
->>> for the accesses to mcelog.next.
->>>
->>
->>
->> Hi Paul,
->> Thank you for the suggestion. Here is an updated patch:
-> 
-> Looks good to me, but I do need to defer to people who know this code
-> better than do I.  The key thing that (from what I can see) makes
-> rcu_dereference() unnecessary is that the smp_rmb() used in conjunction
-> with polling the .finished field takes care of ordering.
-> 
-> Note that this also relies on the fact that mcelog is statically
-> allocated.  If it was dynamically allocated, then the code would need
-> to wait a grace period between allocating it an initializing it.
-> 
-> 							Thanx, Paul
->
+This patch fixes the throttling mechanism. It was broken
+in 3.2.0. Events were not being unthrottled. The unthrottling
+mechanism required that events be checked at each timer tick.
 
+This patch solves this problem and also separates:
+  - unthrottling
+  - multiplexing
+  - frequency-mode period adjustments
 
-Ping?
+Not all of them need to be executed at each timer tick.
 
-Regards,
-Srivatsa S. Bhat
+This third version of the patch is based on my original patch +
+PeterZ proposal (https://lkml.org/lkml/2012/1/7/87).
 
+At each timer tick, for each context:
+  - if the current CPU has throttled events, we unthrottle events
+
+  - if context has frequency-based events, we adjust sampling periods
+
+  - if we have reached the jiffies interval, we multiplex (rotate)
+
+We decoupled rotation (multiplexing) from frequency-mode sampling
+period adjustments.  They should not necessarily happen at the same
+rate. Multiplexing is subject to jiffies_interval (currently at 1
+but could be higher once the tunable is exposed via sysfs).
+
+We have grouped frequency-mode adjustment and unthrottling into the
+same routine to minimize code duplication. When throttled while in
+frequency mode, we scan the events only once.
+
+We have fixed the threshold enforcement code in __perf_event_overflow().
+There was a bug whereby it would allow more than the authorized rate
+because an increment of hwc->interrupts was not executed at the right
+place.
+
+The patch was tested with low sampling limit (2000) and fixed periods,
+frequency mode, overcommitted PMU.
+
+On a 2.1GHz AMD CPU:
+$ cat /proc/sys/kernel/perf_event_max_sample_rate
+2000
+
+We set a rate of 3000 samples/sec (2.1GHz/3000 = 700000):
+
+$ perf record -e cycles,cycles -c 700000  noploop 10
+$ perf report -D | tail -21
+Aggregated stats:
+           TOTAL events:      80086
+            MMAP events:         88
+            COMM events:          2
+            EXIT events:          4
+        THROTTLE events:      19996
+      UNTHROTTLE events:      19996
+          SAMPLE events:      40000
+cycles stats:
+           TOTAL events:      40006
+            MMAP events:          5
+            COMM events:          1
+            EXIT events:          4
+        THROTTLE events:       9998
+      UNTHROTTLE events:       9998
+          SAMPLE events:      20000
+cycles stats:
+           TOTAL events:      39996
+        THROTTLE events:       9998
+      UNTHROTTLE events:       9998
+          SAMPLE events:      20000
+
+For 10s, the cap is 2x2000x10 = 40000 samples.
+We get exactly that: 20000 samples/event.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 0b91db2..412b790 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -589,6 +589,7 @@ struct hw_perf_event {
+ 	u64				sample_period;
+ 	u64				last_period;
+ 	local64_t			period_left;
++	u64                             interrupts_seq;
+ 	u64				interrupts;
  
->> ------
->> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> Subject: [PATCH v2] x86, mce: Fix rcu splat in drain_mce_log_buffer()
->>
->> While booting, the following message is seen:
->>
->> [   21.665087] ===============================
->> [   21.669439] [ INFO: suspicious RCU usage. ]
->> [   21.673798] 3.2.0-0.0.0.28.36b5ec9-default #2 Not tainted
->> [   21.681353] -------------------------------
->> [   21.685864] arch/x86/kernel/cpu/mcheck/mce.c:194 suspicious rcu_dereference_index_check() usage!
->> [   21.695013]
->> [   21.695014] other info that might help us debug this:
->> [   21.695016]
->> [   21.703488]
->> [   21.703489] rcu_scheduler_active = 1, debug_locks = 1
->> [   21.710426] 3 locks held by modprobe/2139:
->> [   21.714754]  #0:  (&__lockdep_no_validate__){......}, at: [<ffffffff8133afd3>] __driver_attach+0x53/0xa0
->> [   21.725020]  #1:
->> [   21.725323] ioatdma: Intel(R) QuickData Technology Driver 4.00
->> [   21.733206]  (&__lockdep_no_validate__){......}, at: [<ffffffff8133afe1>] __driver_attach+0x61/0xa0
->> [   21.743015]  #2:  (i7core_edac_lock){+.+.+.}, at: [<ffffffffa01cfa5f>] i7core_probe+0x1f/0x5c0 [i7core_edac]
->> [   21.753708]
->> [   21.753709] stack backtrace:
->> [   21.758429] Pid: 2139, comm: modprobe Not tainted 3.2.0-0.0.0.28.36b5ec9-default #2
->> [   21.768253] Call Trace:
->> [   21.770838]  [<ffffffff810977cd>] lockdep_rcu_suspicious+0xcd/0x100
->> [   21.777366]  [<ffffffff8101aa41>] drain_mcelog_buffer+0x191/0x1b0
->> [   21.783715]  [<ffffffff8101aa78>] mce_register_decode_chain+0x18/0x20
->> [   21.790430]  [<ffffffffa01cf8db>] i7core_register_mci+0x2fb/0x3e4 [i7core_edac]
->> [   21.798003]  [<ffffffffa01cfb14>] i7core_probe+0xd4/0x5c0 [i7core_edac]
->> [   21.804809]  [<ffffffff8129566b>] local_pci_probe+0x5b/0xe0
->> [   21.810631]  [<ffffffff812957c9>] __pci_device_probe+0xd9/0xe0
->> [   21.816650]  [<ffffffff813362e4>] ? get_device+0x14/0x20
->> [   21.822178]  [<ffffffff81296916>] pci_device_probe+0x36/0x60
->> [   21.828061]  [<ffffffff8133ac8a>] really_probe+0x7a/0x2b0
->> [   21.833676]  [<ffffffff8133af23>] driver_probe_device+0x63/0xc0
->> [   21.839868]  [<ffffffff8133b01b>] __driver_attach+0x9b/0xa0
->> [   21.845718]  [<ffffffff8133af80>] ? driver_probe_device+0xc0/0xc0
->> [   21.852027]  [<ffffffff81339168>] bus_for_each_dev+0x68/0x90
->> [   21.857876]  [<ffffffff8133aa3c>] driver_attach+0x1c/0x20
->> [   21.863462]  [<ffffffff8133a64d>] bus_add_driver+0x16d/0x2b0
->> [   21.869377]  [<ffffffff8133b6dc>] driver_register+0x7c/0x160
->> [   21.875220]  [<ffffffff81296bda>] __pci_register_driver+0x6a/0xf0
->> [   21.881494]  [<ffffffffa01fe000>] ? 0xffffffffa01fdfff
->> [   21.886846]  [<ffffffffa01fe047>] i7core_init+0x47/0x1000 [i7core_edac]
->> [   21.893737]  [<ffffffff810001ce>] do_one_initcall+0x3e/0x180
->> [   21.899670]  [<ffffffff810a9b95>] sys_init_module+0xc5/0x220
->> [   21.905542]  [<ffffffff8149bc39>] system_call_fastpath+0x16/0x1b
->>
->> Fix this by using ACCESS_ONCE() instead of rcu_dereference_check_mce()
->> over mcelog.next. Since the access to each entry is controlled by the
->> ->finished field, ACCESS_ONCE() should work just fine. An rcu_dereference
->> is unnecessary here.
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
->> index f22a9f7..f525f99 100644
->> --- a/arch/x86/kernel/cpu/mcheck/mce.c
->> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
->> @@ -191,7 +191,7 @@ static void drain_mcelog_buffer(void)
->>  {
->>  	unsigned int next, i, prev = 0;
->>
->> -	next = rcu_dereference_check_mce(mcelog.next);
->> +	next = ACCESS_ONCE(mcelog.next);
->>
->>  	do {
->>  		struct mce *m;
->>
->>
-
+ 	u64				freq_time_stamp;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index de859fb..7c3b9de 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2300,6 +2300,9 @@ do {					\
+ 	return div64_u64(dividend, divisor);
+ }
+ 
++static DEFINE_PER_CPU(int, perf_throttled_count);
++static DEFINE_PER_CPU(u64, perf_throttled_seq);
++
+ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+@@ -2325,16 +2328,29 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ 	}
+ }
+ 
+-static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
++/*
++ * combine freq adjustment with unthrottling to avoid two passes over the
++ * events. At the same time, make sure, having freq events does not change
++ * the rate of unthrottling as that would introduce bias.
++ */
++static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
++					   int needs_unthr)
+ {
+ 	struct perf_event *event;
+ 	struct hw_perf_event *hwc;
+-	u64 interrupts, now;
++	u64 now, period = TICK_NSEC;
+ 	s64 delta;
+ 
+-	if (!ctx->nr_freq)
++	/*
++	 * only need to iterate over all events iff:
++	 * - context have events in frequency mode (needs freq adjust)
++	 * - there are events to unthrottle on this cpu
++	 */
++	if (!(ctx->nr_freq || needs_unthr))
+ 		return;
+ 
++	raw_spin_lock(&ctx->lock);
++
+ 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+ 		if (event->state != PERF_EVENT_STATE_ACTIVE)
+ 			continue;
+@@ -2344,13 +2360,8 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+ 
+ 		hwc = &event->hw;
+ 
+-		interrupts = hwc->interrupts;
+-		hwc->interrupts = 0;
+-
+-		/*
+-		 * unthrottle events on the tick
+-		 */
+-		if (interrupts == MAX_INTERRUPTS) {
++		if (needs_unthr && hwc->interrupts == MAX_INTERRUPTS) {
++			hwc->interrupts = 0;
+ 			perf_log_throttle(event, 1);
+ 			event->pmu->start(event, 0);
+ 		}
+@@ -2358,14 +2369,26 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+ 		if (!event->attr.freq || !event->attr.sample_freq)
+ 			continue;
+ 
+-		event->pmu->read(event);
++		/*
++		 * stop the event and update event->count
++		 */
++		event->pmu->stop(event, PERF_EF_UPDATE);
++
+ 		now = local64_read(&event->count);
+ 		delta = now - hwc->freq_count_stamp;
+ 		hwc->freq_count_stamp = now;
+ 
++		/*
++		 * restart the event
++		 * reload only if value has changed
++		 */
+ 		if (delta > 0)
+ 			perf_adjust_period(event, period, delta);
++
++		event->pmu->start(event, delta > 0 ? PERF_EF_RELOAD : 0);
+ 	}
++
++	raw_spin_unlock(&ctx->lock);
+ }
+ 
+ /*
+@@ -2388,16 +2411,13 @@ static void rotate_ctx(struct perf_event_context *ctx)
+  */
+ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+ {
+-	u64 interval = (u64)cpuctx->jiffies_interval * TICK_NSEC;
+ 	struct perf_event_context *ctx = NULL;
+-	int rotate = 0, remove = 1, freq = 0;
++	int rotate = 0, remove = 1;
+ 
+ 	if (cpuctx->ctx.nr_events) {
+ 		remove = 0;
+ 		if (cpuctx->ctx.nr_events != cpuctx->ctx.nr_active)
+ 			rotate = 1;
+-		if (cpuctx->ctx.nr_freq)
+-			freq = 1;
+ 	}
+ 
+ 	ctx = cpuctx->task_ctx;
+@@ -2405,37 +2425,26 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+ 		remove = 0;
+ 		if (ctx->nr_events != ctx->nr_active)
+ 			rotate = 1;
+-		if (ctx->nr_freq)
+-			freq = 1;
+ 	}
+ 
+-	if (!rotate && !freq)
++	if (!rotate)
+ 		goto done;
+ 
+ 	perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+ 	perf_pmu_disable(cpuctx->ctx.pmu);
+ 
+-	if (freq) {
+-		perf_ctx_adjust_freq(&cpuctx->ctx, interval);
+-		if (ctx)
+-			perf_ctx_adjust_freq(ctx, interval);
+-	}
+-
+-	if (rotate) {
+-		cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
+-		if (ctx)
+-			ctx_sched_out(ctx, cpuctx, EVENT_FLEXIBLE);
++	cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
++	if (ctx)
++		ctx_sched_out(ctx, cpuctx, EVENT_FLEXIBLE);
+ 
+-		rotate_ctx(&cpuctx->ctx);
+-		if (ctx)
+-			rotate_ctx(ctx);
++	rotate_ctx(&cpuctx->ctx);
++	if (ctx)
++		rotate_ctx(ctx);
+ 
+-		perf_event_sched_in(cpuctx, ctx, current);
+-	}
++	perf_event_sched_in(cpuctx, ctx, current);
+ 
+ 	perf_pmu_enable(cpuctx->ctx.pmu);
+ 	perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+-
+ done:
+ 	if (remove)
+ 		list_del_init(&cpuctx->rotation_list);
+@@ -2445,10 +2454,22 @@ void perf_event_task_tick(void)
+ {
+ 	struct list_head *head = &__get_cpu_var(rotation_list);
+ 	struct perf_cpu_context *cpuctx, *tmp;
++	struct perf_event_context *ctx;
++	int throttled;
+ 
+ 	WARN_ON(!irqs_disabled());
+ 
++	__this_cpu_inc(perf_throttled_seq);
++	throttled = __this_cpu_xchg(perf_throttled_count, 0);
++
+ 	list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
++		ctx = &cpuctx->ctx;
++		perf_adjust_freq_unthr_context(ctx, throttled);
++
++		ctx = cpuctx->task_ctx;
++		if (ctx)
++			perf_adjust_freq_unthr_context(ctx, throttled);
++
+ 		if (cpuctx->jiffies_interval == 1 ||
+ 				!(jiffies % cpuctx->jiffies_interval))
+ 			perf_rotate_context(cpuctx);
+@@ -4514,6 +4535,7 @@ static int __perf_event_overflow(struct perf_event *event,
+ {
+ 	int events = atomic_read(&event->event_limit);
+ 	struct hw_perf_event *hwc = &event->hw;
++	u64 seq;
+ 	int ret = 0;
+ 
+ 	/*
+@@ -4523,14 +4545,20 @@ static int __perf_event_overflow(struct perf_event *event,
+ 	if (unlikely(!is_sampling_event(event)))
+ 		return 0;
+ 
+-	if (unlikely(hwc->interrupts >= max_samples_per_tick)) {
+-		if (throttle) {
++	seq = __this_cpu_read(perf_throttled_seq);
++	if (seq != hwc->interrupts_seq) {
++		hwc->interrupts_seq = seq;
++		hwc->interrupts = 1;
++	} else {
++		hwc->interrupts++;
++		if (unlikely(throttle
++			     && hwc->interrupts >= max_samples_per_tick)) {
++			__this_cpu_inc(perf_throttled_count);
+ 			hwc->interrupts = MAX_INTERRUPTS;
+ 			perf_log_throttle(event, 0);
+ 			ret = 1;
+ 		}
+-	} else
+-		hwc->interrupts++;
++	}
+ 
+ 	if (event->attr.freq) {
+ 		u64 now = perf_clock();
