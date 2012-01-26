@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab2AZV0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:26:05 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61757 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2AZV0C convert rfc822-to-8bit (ORCPT
+	id S1753840Ab2AZV2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:28:19 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17541 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab2AZV2R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:26:02 -0500
+	Thu, 26 Jan 2012 16:28:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <4F218CF2.4020409@linux.vnet.ibm.com>
-References: <CABeCy1ZA1nkWSmbN2LE+V1SxKEHX4XrpN5xfdzY=NSsS8=L0DA@mail.gmail.com>
- <1327447541-3040-1-git-send-email-venki@google.com> <4F218CF2.4020409@linux.vnet.ibm.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Thu, 26 Jan 2012 16:25:42 -0500
-Message-ID: <CAHGf_=qiNYDKmgs63t2MeSSfTpNdwbqJiyfHRu4sHYTFePjzeA@mail.gmail.com>
-Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus -v4
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
+Message-ID: <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
+Date: Thu, 26 Jan 2012 13:28:02 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mike Travis <travis@sgi.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
+        Chris Mason <chris.mason@oracle.com>
+Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
+ cleancache)
+References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
+ <4F218D36.2060308@linux.vnet.ibm.com>
+In-Reply-To: <4F218D36.2060308@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F21C55E.0059,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/26 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>:
-> On 01/25/2012 04:55 AM, Venkatesh Pallipadi wrote:
->
->> Kernel's notion of possible cpus (from include/linux/cpumask.h)
->>  *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
->>
->>  *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
->>  *  that it is possible might ever be plugged in at anytime during the
->>  *  life of that system boot.
->>
->>  #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
->>
->> and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
->> and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
->>
->> i.e, We needlessly go through this mask based calculation everytime
->> num_possible_cpus() is called.
->>
->> The problem is there with cpu_online_mask() as well, which is fixed value at
->> boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
->> in HOTPLUG case.
->>
->> Though most of the callers of these two routines are init time (with few
->> exceptions of runtime calls), it is cleaner to use variables
->> and not go through this repeated mask based calculation.
->>
->> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
->> ---
->
->
-> Looks good to me now :-)
->
-> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> From: Dave Hansen [mailto:dave@linux.vnet.ibm.com]
+> Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
 
-I'm ok too.
+Thanks for the review Dave!
+ 
+> On 01/25/2012 01:58 PM, Dan Magenheimer wrote:
+> > (Feedback welcome if there is a different/better way to do this
+> > without using a page flag!)
+> >
+> > Since about 2.6.27, the page replacement algorithm maintains
+> > an "active" bit to help decide which pages are most eligible
+> > to reclaim, see http://linux-mm.org/PageReplacementDesign
+> >
+> > This "active' information is also useful to cleancache but is lost
+> > by the time that cleancache has the opportunity to preserve the
+> > pageful of data.  This patch adds a new page flag "WasActive" to
+> > retain the state.  The flag may possibly be useful elsewhere.
+> 
+> I guess cleancache itself is clearing the bit, right?  I didn't see any
+> clearing going on in the patch.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+No, there are no changes in cleancache.c so it isn't clearing
+the bit.
+
+> I do think it also needs to get cleared on the way in to the page
+> allocator.  Otherwise:
+> 
+> 	PageSetWasActive(page);
+> 	free_page(page);
+> 	...
+> 	another_user_page = get_free_page()
+> 	// now cleancache sees the active bit for the prev user
+> 
+> Or am I missing somewhere it gets cleared non-explicitly somewhere?
+
+True, it is not getting cleared and it should be, good catch!
+
+I'll find the place to add the call to ClearPageWasActive() for v2.
+
+Thanks,
+Dan
+
