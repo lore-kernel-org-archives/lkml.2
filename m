@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab2AZOFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 09:05:34 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37008 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab2AZOFc convert rfc822-to-8bit (ORCPT
+	id S1752252Ab2AZOHJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 09:07:09 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:7891 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751163Ab2AZOHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 09:05:32 -0500
+	Thu, 26 Jan 2012 09:07:08 -0500
+X-IronPort-AV: E=Sophos;i="4.71,574,1320620400"; 
+   d="scan'208";a="141542968"
+Date: Thu, 26 Jan 2012 15:07:06 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Wolfram Sang <w.sang@pengutronix.de>
+cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [alsa-devel] [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing
+ iounmap
+In-Reply-To: <20120126135135.GD2611@pengutronix.de>
+Message-ID: <alpine.DEB.2.02.1201261504200.1851@localhost6.localdomain6>
+References: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr> <7FE21149F4667147B645348EC605788508FBDB@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1201241828480.1779@localhost6.localdomain6> <20120124202203.GD1135@opensource.wolfsonmicro.com>
+ <alpine.DEB.2.02.1201242144580.1998@hadrien> <20120126110506.GB2611@pengutronix.de> <alpine.DEB.2.02.1201261220460.1851@localhost6.localdomain6> <20120126112242.GA9401@opensource.wolfsonmicro.com> <alpine.DEB.2.02.1201261439460.1851@localhost6.localdomain6>
+ <20120126135135.GD2611@pengutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120126114741.GG18613@jl-vm1.vm.bytemark.co.uk>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
- <20120125193635.GA30311@redhat.com> <201201260032.57937.vda.linux@googlemail.com>
- <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
- <20120126010858.GD18613@jl-vm1.vm.bytemark.co.uk> <88753c7d600bee39c06bbda32b08daae.squirrel@webmail.greenhost.nl>
- <20120126103157.GE18613@jl-vm1.vm.bytemark.co.uk> <6cc0a81f9f84af80bd66bc44a03c8c0b.squirrel@webmail.greenhost.nl>
- <20120126114741.GG18613@jl-vm1.vm.bytemark.co.uk>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Thu, 26 Jan 2012 15:05:10 +0100
-Message-ID: <CAK1hOcNXLO+TdFstZDX9bQyEMga=5A+4G4Sk6Te=PWe3+Q=+2Q@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Indan Zupancic <indan@nul.nu>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Andrew Lutomirski <luto@mit.edu>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 12:47 PM, Jamie Lokier <jamie@shareable.org> wrote:
-> Indan Zupancic wrote:
-> Denys, would you be interested in further refactoring strace to use a
-> "libsystrace" sort of thing which abstracts the detail of archs,
-> tracing (and maybe syscall argument layout) away from the printing and
-> user-interface, for strace's use and other users?  I would be happy to
-> help with that and keep strace's non-Linux support as well (if there's
-> any way to test the latter...)  I seem to be going in the direction of
-> a library like that anyway for another project.
+On Thu, 26 Jan 2012, Wolfram Sang wrote:
 
-It might make sense to do this.
-Design of this library would depend on the needs
-of those other projects. Where can I see their code?
+> Julia,
+>
+>>  	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> @@ -663,18 +663,11 @@ static int mxs_saif_probe(struct platform_device *pdev)
+>>  		goto failed_get_resource;
+>>  	}
+>>
+>> -	if (!request_mem_region(iores->start, resource_size(iores),
+>> -				"mxs-saif")) {
+>> -		dev_err(&pdev->dev, "request_mem_region failed\n");
+>> -		ret = -EBUSY;
+>> -		goto failed_get_resource;
+>> -	}
+>> -
+>> -	saif->base = ioremap(iores->start, resource_size(iores));
+>> +	saif->base = devm_request_and_ioremap(&pdev->dev, iores);
+>
+> You can skip checking 'iores', too. I also did that in the example, but
+> a lot of people seem to miss it.
 
--- 
-vda
+I can try to do that, but it seems a little bit unintuitive.  Perhaps it 
+would be easier for people to remember to put in error handling code when 
+they need it if they always have to do it?  If I remove it, there will be 
+one call that has no test and then another call a few lines later that 
+does.
+
+> Where did you get the information how
+> to use devm_request_and_ioremap? I probably need to spread the word even
+> more...
+
+I saw it in Documentation/driver-model/devres.txt and then looked around 
+for some examples.
+
+julia
