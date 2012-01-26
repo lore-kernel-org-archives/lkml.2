@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab2AZIja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 03:39:30 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39605 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab2AZIj2 (ORCPT
+	id S1751597Ab2AZIt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 03:49:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33341 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab2AZIt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 03:39:28 -0500
-X-AuditID: b753bd60-a1286ba000000655-b1-4f21113d4e8a
-X-AuditID: b753bd60-a1286ba000000655-b1-4f21113d4e8a
-Message-ID: <4F211126.1090204@hitachi.com>
-Date: Thu, 26 Jan 2012 17:39:02 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Andi Kleen <ak@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Luis Goncalves <lgoncalv@redhat.com>
-Subject: Re: [PATCH RT 1/2 v2] x86: Do not disable preemption in int3 on
- 32bit
-References: <20120125143231.196670014@goodmis.org> <20120125143520.086175333@goodmis.org>
-In-Reply-To: <20120125143520.086175333@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Thu, 26 Jan 2012 03:49:27 -0500
+Date: Thu, 26 Jan 2012 00:55:21 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-mm@kvack.org,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH] memcg: fix compile warning on non-numa systems
+Message-Id: <20120126005521.07ac0faf.akpm@linux-foundation.org>
+In-Reply-To: <20120116084715.GA1639@tiehlicka.suse.cz>
+References: <4F13BE05.70505@cn.fujitsu.com>
+	<20120116084715.GA1639@tiehlicka.suse.cz>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/01/25 23:32), Steven Rostedt wrote:
-> Preemption must be disabled before enabling interrupts in do_trap
-> on x86_64 because the stack in use for int3 and debug is a per CPU
-> stack set by th IST. But in 32bit, the stack still belongs to the
-> current task and there is no problem in scheduling out the task.
-> 
-> Keep preemption enabled on X86_32 when enabling interrupts for
-> do_trap().
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+On Mon, 16 Jan 2012 09:47:15 +0100 Michal Hocko <mhocko@suse.cz> wrote:
 
-Hmm, I think you'd better change caller side, because the
-function itself has "preempt" in its name. I think it can
-easily mislead other people.
-
-Thank you,
-
+> On Mon 16-01-12 14:04:53, Li Zefan wrote:
+> > Fix this warning:
+> > 
+> >   CC      mm/memcontrol.o
+> > mm/memcontrol.c: In function 'memcg_check_events':
+> > mm/memcontrol.c:779:22: warning: unused variable 'do_numainfo'
 > 
-> Index: linux-rt.git/arch/x86/kernel/traps.c
-> ===================================================================
-> --- linux-rt.git.orig/arch/x86/kernel/traps.c
-> +++ linux-rt.git/arch/x86/kernel/traps.c
-> @@ -89,7 +89,14 @@ static inline void conditional_sti(struc
->  
->  static inline void preempt_conditional_sti(struct pt_regs *regs)
->  {
-> +#ifdef CONFIG_X86_64
-> +	/*
-> +	 * X86_64 uses a per CPU stack for certain traps like int3.
-> +	 * We must disable preemption, otherwise we can corrupt the
-> +	 * stack if the task is scheduled out with this stack.
-> +	 */
->  	inc_preempt_count();
-> +#endif
->  	if (regs->flags & X86_EFLAGS_IF)
->  		local_irq_enable();
->  }
-> @@ -104,7 +111,9 @@ static inline void preempt_conditional_c
->  {
->  	if (regs->flags & X86_EFLAGS_IF)
->  		local_irq_disable();
-> +#ifdef CONFIG_X86_64
->  	dec_preempt_count();
-> +#endif
->  }
->  
->  static void __kprobes
-> 
+> This has been already posted by Kirill and I didn't like the solution
+> (https://lkml.org/lkml/2011/12/27/86). He then reposted with a different
+> version (https://lkml.org/lkml/2012/1/6/281).
+> The later one looks better but I still think this is not worth
+> complicate the code just to get rid of this warning.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+This?
+
+--- a/mm/memcontrol.c~a
++++ a/mm/memcontrol.c
+@@ -776,7 +776,8 @@ static void memcg_check_events(struct me
+ 	/* threshold event is triggered in finer grain than soft limit */
+ 	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+ 						MEM_CGROUP_TARGET_THRESH))) {
+-		bool do_softlimit, do_numainfo;
++		bool do_softlimit;
++		bool do_numainfo __maybe_unused;
+ 
+ 		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+ 						MEM_CGROUP_TARGET_SOFTLIMIT);
+_
+
