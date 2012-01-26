@@ -1,137 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab2AZUC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 15:02:29 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61374 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab2AZUC0 (ORCPT
+	id S1753826Ab2AZUCi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 15:02:38 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:42833
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753799Ab2AZUCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 15:02:26 -0500
-Date: Thu, 26 Jan 2012 12:01:53 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Roland Dreier <roland@kernel.org>
-cc: linux-rdma@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages()
- parameters
-In-Reply-To: <1327557574-6125-1-git-send-email-roland@kernel.org>
-Message-ID: <alpine.LSU.2.00.1201261133230.1369@eggly.anvils>
-References: <1327557574-6125-1-git-send-email-roland@kernel.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 26 Jan 2012 15:02:35 -0500
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dhc1bhc31hc1ah2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F21B152.3010103@freescale.com>
+Date: Thu, 26 Jan 2012 14:02:26 -0600
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Joerg Roedel <joro@8bytes.org>
+CC: Joerg Roedel <joerg.roedel@amd.com>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        David Brown <davidb@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+References: <1326983405-319-1-git-send-email-joerg.roedel@amd.com> <1326983405-319-3-git-send-email-joerg.roedel@amd.com> <C5ECD7A89D1DC44195F34B25E172658D038749@039-SN2MPN1-011.039d.mgd.msft.net> <20120120160344.GG2205@amd.com> <4F219A9C.8000400@freescale.com> <20120126183116.GI19255@amd.com> <4F219E82.106@freescale.com> <20120126185101.GJ19255@amd.com> <4F21A2D5.6000204@freescale.com> <20120126194428.GH6269@8bytes.org>
+In-Reply-To: <20120126194428.GH6269@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jan 2012, Roland Dreier wrote:
-> From: Roland Dreier <roland@purestorage.com>
+On 01/26/2012 01:44 PM, Joerg Roedel wrote:
+> On Thu, Jan 26, 2012 at 01:00:37PM -0600, Scott Wood wrote:
+>> On 01/26/2012 12:51 PM, Joerg Roedel wrote:
+>>> Because this is a flag that makes sense for all IOMMU. Every IOMMU
+>>> either allows DMA outside its aperture or it doesn't.
+>>>
+>>> Another reason why it must be in the generic struct is the intended
+>>> generic dma-ops layer on-top. This code can decide on this flag wheter a
+>>> address needs to be remapped at all.
+>>
+>> So the DMA API would just read this, not write it?
 > 
-> Right now, we always pass write==1 to get_user_pages(), even when we
-> only intend to read the memory.  We pass force==1 if we're going for
-> read-only and force==0 if we want writable.  The reasoning behind this
-> seems to be contained in this out-of-tree changelog from 2005:
-> 
->     Always ask get_user_pages() for writable pages, but pass force=1
->     if the consumer has only asked for read-only pages.  This fixes a
->     problem registering memory that has just been allocated but not
->     touched yet, while allowing registration of read-only memory to
->     continue to work.
-> 
-> However, I don't think the mm works like this today, and indeed GUP
-> will fault in pages for an untouched read-only mapping just fine with
-> write and force set to 0.  In fact, always passing 1 for write causes
-> problems with modern kernels, because we end up hitting the "early
-> C-O-W break" case in __do_fault(), even for read-only mappings where
-> this makes no sense.
-> 
-> Signed-off-by: Roland Dreier <roland@purestorage.com>
+> The whole geometry thing is only implemented on the read side. There is
+> no implementation in domain_set_attr for it. So the geometry
+> information is read-only by default.
 
-I'd love to say go ahead with this, it looks so obviously correct...
-... so obviously correct that it made me wonder why on earth the old
-code was writing for read, and how to make make sense of the paragraph
-you very helpfully quote above.
+We will need to be able to set this, for some vfio+kvm uses.
 
-I think this is largely about the ZERO_PAGE.  If you do a read fault
-on an untouched anonymous area, it maps in the ZERO_PAGE, and will
-only give you your own private zeroed page when there's a write fault
-to touch it.
+>> Still no reason why it couldn't be a separate attribute.  Then if you
+>> get a failure trying to write it, it's more obvious why.
+> 
+> This would mean iommu specific hacks, which are not necessary in this
+> case.
 
-I think your ib_umem_get() is making sure to give the process its own
-private zeroed page: if the area is PROT_READ, MAP_PRIVATE, userspace
-will not be wanting to write into it, but presumably it expects to see
-data placed in that page by the underlying driver, and it would be very
-bad news if the driver wrote its data into the ZERO_PAGE.
+Why would making it a separate generic attribute require iommu specific
+hacks?
 
-We did go through a phase (2.6.24 through 2.6.31) of not using the
-ZERO_PAGE, but that presented its own problems, so it was reinstated.
+>>> Setting this flag wrong does not create unintended identity mappings.
+>>
+>> Failing to set it means that DMA can go through that is not limited to
+>> explicitly created mappings.  In some contexts (e.g. vfio) this is a
+>> security hole.
+> 
+> No, when the hardware does not allow this, then software can't enforce
+> it.
 
-So, ugly as it looks, I think you have to stick with write=1 force=!write.
-Does that make sense now?
+OK, it looked like an option that could be enabled or disabled --
+because I didn't realize you were considering geometry as read-only.
 
-And although the ZERO_PAGE gives the most vivid example, I think it goes
-beyond that to the wider issue of pages COWed after fork() - GUPping in
-this way fixes the easy cases (and I've no desire again to go down that
-rathole of fixing the most general cases).
+> Again, the whole geometry attribute is only for iommu drivers to
+> export what the hardware can do. It is not for software to configure the
+> iommu driver.
 
-Hugh
+So how would a vfio user set up the iommu so a kvm guest sees iova ==
+guest physical, for at least its main memory, if the default aperture
+doesn't cover it?
 
-> ---
-> This patch comes from me trying to do userspace RDMA on a memory
-> region exported from a character driver and mapped with
+We also will gain performance by being able to set custom geometry,
+because we will not be as hard on the IOMMU cache if we can use fewer,
+larger subwindows.
+
+It's not configuring the iommu driver, just this particular domain.
+
+>>> But I don't understand what you mean by 'restrictions on possible values'. The
+>>> geometry attribute is filled by the IOMMU driver dependent on the
+>>> hardware capabilities. There are no limits from the iommu-code side.
+>>
+>> How does the user of the iommu API discover the hardware capabilities?
 > 
->     mmap(... PROT_READ, MAP_PRIVATE ...)
-> 
-> The character driver has a trivial mmap method that just sets vm_ops
-> and and equally trivial fault method that essentially just does
-> 
->     vmf->page = vmalloc_to_page(buf + (vmf->pgoff << PAGE_SHIFT));
-> 
-> ie the most elementary way to export a vmalloc'ed buffer to userspace.
-> 
-> However, when I tried doing
-> 
->     ibv_reg_mr(... IBV_ACCESS_REMOTE_READ ...)
-> 
-> in userspace on that mmap region, I found that COW was happening and
-> so neither userspace nor the registered memory ended up pointing at
-> the kernel buffer anymore, exactly because of the COW in __do_fault()
-> I mention in the changelog above.
-> 
-> The patch below fixes my test case, and doesn't seem to break any of
-> the ibverbs examples and other simple tests of userspace verbs that I
-> tried.  But that's far from an exhaustive test suite.
-> 
-> I'd definitely appreciate comments from MM experts here, since I'm not
-> positive of my understand of G-U-P and friends, and I don't want to
-> apps because this is wrong in some special case I didn't try.
-> 
-> Also testing from anyone with an RDMA app that does anything at all
-> fancy with memory allocation or registration would be helpful.
-> 
-> Thanks!
-> 
-> PS Let me know if I didn't go on long enough about this one-line patch
-> and I can write some more.
-> 
->  drivers/infiniband/core/umem.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
-> index 71f0c0f..fb5abd3 100644
-> --- a/drivers/infiniband/core/umem.c
-> +++ b/drivers/infiniband/core/umem.c
-> @@ -152,7 +152,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
->  		ret = get_user_pages(current, current->mm, cur_base,
->  				     min_t(unsigned long, npages,
->  					   PAGE_SIZE / sizeof (struct page *)),
-> -				     1, !umem->writable, page_list, vma_list);
-> +				     umem->writable, 0, page_list, vma_list);
->  
->  		if (ret < 0)
->  			goto out;
-> -- 
-> 1.7.8.3
-> 
-> 
+> Which hardware capabilities besides the geometry do you mean?
+
+Well, we have things like stash target (automatic cache prefetch after
+DMA) configuration, but in this case I was thinking about restrictions
+on what kind of aperture you can set, and what sort of mappings you can
+create with the result.
+
+On current Freescale PAMUs, the aperture must be a size-aligned
+power-of-two region, which is carved into up to 256 equal-size
+subwindows.  A mapping can be any power of 2 up to the subwindow size,
+but its iova must be the subwindow start address.
+
+We cannot just say "oh look, an aperture from here to there, we can
+create all the mappings we want within that space", at least not with an
+aperture over 1 MiB (256 contiguous 4k subwindows).
+
+-Scott
+
