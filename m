@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab2AZRaK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:30:10 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:35162
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752176Ab2AZRaI (ORCPT
+	id S1753291Ab2AZRau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:30:50 -0500
+Received: from paperboy.avencall.com ([91.194.178.22]:58285 "EHLO
+	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752176Ab2AZRat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:30:08 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dhc1bhc31hc1ah668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LYF1Y1-01-2M5-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        David Brown <davidb@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH] iommu/msm: Fix error handling in msm_iommu_unmap()
-Date: Thu, 26 Jan 2012 18:29:44 +0100
-Message-ID: <1327598984-20662-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Thu, 26 Jan 2012 12:30:49 -0500
+Date: Thu, 26 Jan 2012 18:30:41 +0100
+From: Guillaume Knispel <gknispel@proformatique.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Guillaume Knispel <gknispel@proformatique.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Xavier Carcelle <xcarcelle@avencall.com>,
+        =?ISO-8859-1?Q?No=E9?= Rubinstein <nrubinstein@avencall.com>
+Subject: Re: How to "register" a GSI for a non PCI non ISA device
+Message-ID: <20120126183041.15474705@xilun>
+In-Reply-To: <CAErSpo5vCr4Y3Q6U1=yYLcSBH-85koMKDte4rzw4tyuKocYXYA@mail.gmail.com>
+References: <20120124184203.1b0878c2@xilun>
+	<4F1F99A5.1000206@kernel.org>
+	<20120125182314.7834c75b@xilun>
+	<20120125190214.GC18606@phenom.dumpdata.com>
+	<20120126160719.3b9be3b3@xilun>
+	<20120126153239.GA14367@phenom.dumpdata.com>
+	<20120126172248.72b0efa5@xilun>
+	<CAErSpo5vCr4Y3Q6U1=yYLcSBH-85koMKDte4rzw4tyuKocYXYA@mail.gmail.com>
+Organization: Avencall
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Error handling in msm_iommu_unmap() is broken. On some error
-conditions retval is set to a non-zero value which causes
-the function to return 'len' at the end. This hides the
-error from the user. Zero should be returned in those error
-cases.
+On Thu, 26 Jan 2012 10:24:31 -0700
+Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-Cc: David Brown <davidb@codeaurora.org>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/msm_iommu.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+> A driver should never need to use acpi_register_gsi() directly.  It
+> sounds like you have a non-PCI device that would be described as an
+> ACPI device in the DSDT.  In the Device definition, you include a _CRS
+> method that tells the kernel what GSI it is using.  The PNPACPI
+> subsystem will parse _CRS and should do the acpi_register_gsi() for
+> you.  Then your driver would use pnp_register_driver() and pnp_irq()
+> to learn the IRQ.  drivers/tty/serial/8250_pnp.c is an example.
 
-diff --git a/drivers/iommu/msm_iommu.c b/drivers/iommu/msm_iommu.c
-index 08a90b8..cee307e 100644
---- a/drivers/iommu/msm_iommu.c
-+++ b/drivers/iommu/msm_iommu.c
-@@ -482,23 +482,19 @@ static size_t msm_iommu_unmap(struct iommu_domain *domain, unsigned long va,
- 
- 	priv = domain->priv;
- 
--	if (!priv) {
--		ret = -ENODEV;
-+	if (!priv)
- 		goto fail;
--	}
- 
- 	fl_table = priv->pgtable;
- 
- 	if (len != SZ_16M && len != SZ_1M &&
- 	    len != SZ_64K && len != SZ_4K) {
- 		pr_debug("Bad length: %d\n", len);
--		ret = -EINVAL;
- 		goto fail;
- 	}
- 
- 	if (!fl_table) {
- 		pr_debug("Null page table\n");
--		ret = -EINVAL;
- 		goto fail;
- 	}
- 
-@@ -507,7 +503,6 @@ static size_t msm_iommu_unmap(struct iommu_domain *domain, unsigned long va,
- 
- 	if (*fl_pte == 0) {
- 		pr_debug("First level PTE is 0\n");
--		ret = -ENODEV;
- 		goto fail;
- 	}
- 
+Thanks a lot, I'll look into it.
+
 -- 
-1.7.5.4
-
-
+Guillaume Knispel
+Avencall - 10 bis, rue Lucien Voilin - 92800 Puteaux
