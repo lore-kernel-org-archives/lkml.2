@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791Ab2AZNO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 08:14:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53454 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab2AZNO4 (ORCPT
+	id S1751931Ab2AZNPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 08:15:47 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57306 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab2AZNPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 08:14:56 -0500
+	Thu, 26 Jan 2012 08:15:46 -0500
+Message-ID: <4F2151FD.4050101@suse.cz>
+Date: Thu, 26 Jan 2012 14:15:41 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120118 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <20120125220824.GW22818@atomide.com>
-References: <20120120161610.21955.25082.stgit@kaulin.local>
-	<20120120161730.21955.40332.stgit@kaulin.local>
-	<74CDBE0F657A3D45AFBB94109FB122FF1780DAB384@HQMAIL01.nvidia.com>
-	<20120120174157.GQ22818@atomide.com>
-	<20120125220824.GW22818@atomide.com>
-Date: Thu, 26 Jan 2012 14:14:55 +0100
-Message-ID: <CACRpkdYnC9smbM+WeYxahZGbevFiYyMRbyPKS+Y1YNryH_27iw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] pinctrl: Add checks for empty names in pinmux_search_function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Why are not processes HUPped when they open /dev/console?
+References: <4F207660.500@suse.cz> <20120125214522.7a49cf39@pyramind.ukuu.org.uk>
+In-Reply-To: <20120125214522.7a49cf39@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 11:08 PM, Tony Lindgren <tony@atomide.com> wrote:
-
-> This is needed as otherwise we can get the following when dealing
-> with buggy data in a pinmux driver for pinmux_search_function:
+On 01/25/2012 10:45 PM, Alan Cox wrote:
+> On Wed, 25 Jan 2012 22:38:40 +0100
+> Jiri Slaby <jslaby@suse.cz> wrote:
+> 
+>> Hello,
+>>
+>> don't you remember by a chance the reason for this test in __tty_hangup:
+>>   if (filp->f_op->write != tty_write)
+>>
+>> The logic there is not to HUP processes that have this tty open via
+>> /dev/console.
+> 
+> Because if you hang up the console the machine crashes ?
 >
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> ...
-> PC is at strcmp+0xc/0x34
-> LR is at pinmux_get+0x350/0x8f4
-> ...
->
-> As we need pctldev initialized to call ops->list_functions, let's
-> initialize it before check_ops calls and pass the pctldev to the
-> check_ops functions. Do this for both pinmux and pinconf check_ops
-> functions.
->
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
+> At least that's what used to happen.
 
-This looks correct to me, so applied it and pushed to -next
-for testing.
+It does not crash anymore. However the system (systemd more precisely)
+is confused a bit (well, a huge). So I suppose the test has its meaning.
 
-Yours,
-Linus Walleij
+The whole exercise was about how to fix the userspace issue introduced
+by the added infinite timeout.
+
+I think the proper solution here is just not to call vhangup in
+userspace for the device which is /dev/console. It never worked anyway.
+Because the HUP signal was never sent and it always timed out.
+
+thanks,
+-- 
+js
+suse labs
