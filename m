@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab2AZJBV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:01:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33659 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316Ab2AZJBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:01:18 -0500
-Date: Thu, 26 Jan 2012 10:01:15 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-mm@kvack.org,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH] memcg: fix compile warning on non-numa systems
-Message-ID: <20120126090115.GB13421@tiehlicka.suse.cz>
-References: <4F13BE05.70505@cn.fujitsu.com>
- <20120116084715.GA1639@tiehlicka.suse.cz>
- <20120126005521.07ac0faf.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120126005521.07ac0faf.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752612Ab2AZJCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:02:00 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:59815 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab2AZJBM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 04:01:12 -0500
+Date: Thu, 26 Jan 2012 10:00:57 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 15/15] ARM: Samsung: use CMA for 2 memory banks for s5p-mfc
+ device
+In-reply-to: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Message-id: <1327568457-27734-16-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.7.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 26-01-12 00:55:21, Andrew Morton wrote:
-> On Mon, 16 Jan 2012 09:47:15 +0100 Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Mon 16-01-12 14:04:53, Li Zefan wrote:
-> > > Fix this warning:
-> > > 
-> > >   CC      mm/memcontrol.o
-> > > mm/memcontrol.c: In function 'memcg_check_events':
-> > > mm/memcontrol.c:779:22: warning: unused variable 'do_numainfo'
-> > 
-> > This has been already posted by Kirill and I didn't like the solution
-> > (https://lkml.org/lkml/2011/12/27/86). He then reposted with a different
-> > version (https://lkml.org/lkml/2012/1/6/281).
-> > The later one looks better but I still think this is not worth
-> > complicate the code just to get rid of this warning.
-> 
-> This?
+Replace custom memory bank initialization using memblock_reserve and
+dma_declare_coherent with a single call to CMA's dma_declare_contiguous.
 
-Haven't seen this one but it looks sane.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/plat-s5p/dev-mfc.c |   51 ++++++-------------------------------------
+ 1 files changed, 7 insertions(+), 44 deletions(-)
 
-> 
-> --- a/mm/memcontrol.c~a
-> +++ a/mm/memcontrol.c
-> @@ -776,7 +776,8 @@ static void memcg_check_events(struct me
->  	/* threshold event is triggered in finer grain than soft limit */
->  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_THRESH))) {
-> -		bool do_softlimit, do_numainfo;
-> +		bool do_softlimit;
-> +		bool do_numainfo __maybe_unused;
->  
->  		do_softlimit = mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_SOFTLIMIT);
-> _
-> 
-
+diff --git a/arch/arm/plat-s5p/dev-mfc.c b/arch/arm/plat-s5p/dev-mfc.c
+index a30d36b..fcb8400 100644
+--- a/arch/arm/plat-s5p/dev-mfc.c
++++ b/arch/arm/plat-s5p/dev-mfc.c
+@@ -14,6 +14,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+ #include <linux/dma-mapping.h>
++#include <linux/dma-contiguous.h>
+ #include <linux/memblock.h>
+ #include <linux/ioport.h>
+ 
+@@ -22,52 +23,14 @@
+ #include <plat/irqs.h>
+ #include <plat/mfc.h>
+ 
+-struct s5p_mfc_reserved_mem {
+-	phys_addr_t	base;
+-	unsigned long	size;
+-	struct device	*dev;
+-};
+-
+-static struct s5p_mfc_reserved_mem s5p_mfc_mem[2] __initdata;
+-
+ void __init s5p_mfc_reserve_mem(phys_addr_t rbase, unsigned int rsize,
+ 				phys_addr_t lbase, unsigned int lsize)
+ {
+-	int i;
+-
+-	s5p_mfc_mem[0].dev = &s5p_device_mfc_r.dev;
+-	s5p_mfc_mem[0].base = rbase;
+-	s5p_mfc_mem[0].size = rsize;
+-
+-	s5p_mfc_mem[1].dev = &s5p_device_mfc_l.dev;
+-	s5p_mfc_mem[1].base = lbase;
+-	s5p_mfc_mem[1].size = lsize;
+-
+-	for (i = 0; i < ARRAY_SIZE(s5p_mfc_mem); i++) {
+-		struct s5p_mfc_reserved_mem *area = &s5p_mfc_mem[i];
+-		if (memblock_remove(area->base, area->size)) {
+-			printk(KERN_ERR "Failed to reserve memory for MFC device (%ld bytes at 0x%08lx)\n",
+-			       area->size, (unsigned long) area->base);
+-			area->base = 0;
+-		}
+-	}
+-}
+-
+-static int __init s5p_mfc_memory_init(void)
+-{
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(s5p_mfc_mem); i++) {
+-		struct s5p_mfc_reserved_mem *area = &s5p_mfc_mem[i];
+-		if (!area->base)
+-			continue;
++	if (dma_declare_contiguous(&s5p_device_mfc_r.dev, rsize, rbase, 0))
++		printk(KERN_ERR "Failed to reserve memory for MFC device (%u bytes at 0x%08lx)\n",
++		       rsize, (unsigned long) rbase);
+ 
+-		if (dma_declare_coherent_memory(area->dev, area->base,
+-				area->base, area->size,
+-				DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE) == 0)
+-			printk(KERN_ERR "Failed to declare coherent memory for MFC device (%ld bytes at 0x%08lx)\n",
+-			       area->size, (unsigned long) area->base);
+-	}
+-	return 0;
++	if (dma_declare_contiguous(&s5p_device_mfc_l.dev, lsize, lbase, 0))
++		printk(KERN_ERR "Failed to reserve memory for MFC device (%u bytes at 0x%08lx)\n",
++		       rsize, (unsigned long) rbase);
+ }
+-device_initcall(s5p_mfc_memory_init);
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.1.569.g6f426
+
