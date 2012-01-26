@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab2AZUcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 15:32:09 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:55213 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751443Ab2AZUcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 15:32:07 -0500
-Message-ID: <4F21B811.90904@parallels.com>
-Date: Fri, 27 Jan 2012 00:31:13 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753820Ab2AZUfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 15:35:46 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:29414 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab2AZUfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 15:35:44 -0500
+X-Authority-Analysis: v=2.0 cv=ad3jbGUt c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=seg9fo12g4kA:10 a=LNmbJxpDd3oA:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=xe8BsctaAAAA:8 a=Ap5BOXVSaaG6XEptU8YA:9 a=ac9XEOwaVzYJz9280gUA:7 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.78.168.186
+Message-ID: <4F21B91E.90106@ubuntu.com>
+Date: Thu, 26 Jan 2012 15:35:42 -0500
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <geert@linux-m68k.org>, <rdunlap@xenotime.net>, <sfr@canb.auug.org.au>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gleb@redhat.com>, <netdev@vger.kernel.org>
-Subject: Re: linux-next: Tree for Jan 25 (net/sock.h, jump_label, memcg)
-References: <20120125141938.c1a9460d56948e1c7b26d3f8@canb.auug.org.au> <4F2052DB.4060602@xenotime.net> <CAMuHMdWp1wEHqPXNs+kaMYpomJnfbZPJjRk5GVFCuCL4Q5zK7g@mail.gmail.com> <20120126.134333.31948964659222759.davem@davemloft.net>
-In-Reply-To: <20120126.134333.31948964659222759.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Maxim Patlasov <maxim.patlasov@gmail.com>, joe@perches.com,
+        kzak@redhat.com, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
+References: <CA+X1aCQRpJ_NwJBSBp+vDN37p+oipJNz=6T5LdJdqzxTiSWWWA@mail.gmail.com> <4EFD012D.7040602@cfl.rr.com> <20120126190114.GG1891@redhat.com>
+In-Reply-To: <20120126190114.GG1891@redhat.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 10:43 PM, David Miller wrote:
-> From: Geert Uytterhoeven<geert@linux-m68k.org>
-> Date: Thu, 26 Jan 2012 18:18:28 +0100
->
->> On Wed, Jan 25, 2012 at 20:07, Randy Dunlap<rdunlap@xenotime.net>  wrote:
->>> back to net/sock.h and jump_label:
->>>
->>> (on i386:)
->>>
->>> /next/linux-next-20120125/include/net/sock.h:953:2: error: implicit declaration of function 'static_branch'
->>> /next/linux-next-20120125/include/linux/jump_label.h:43:29: error: conflicting types for 'static_branch'
->>>
->>> Full randconfig file is attached.
->>
->> Without having to add randomness, also in m68k/allmodconfig, now in Linus'
->> tree :-(
->> http://kisskb.ellerman.id.au/kisskb/buildresult/5491860/
->
-> Glauber are you actually going to fix this or are you going to ignore
-> this bug report for another couple days?!?!
-Dave,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I am going to work on it right now, with no further delays, as I've been 
-doing with all the reports I've got. I didn't receive any report
-about this one for some reason, and that's why I didn't say anything.
-So thanks for nagging.
+On 1/26/2012 2:01 PM, Vivek Goyal wrote:
+> I thought update will always happen with mutex lock held. That's
+> what sequence counter expects so that two updaters don't race. Just
+> that while updating under mutex lock, we still need to use sequence
+> counter mecahinsm to update values so that any readers out there
+> not holding mutex don't get confused.
 
->
-> Frankly, I'm so sick and tired of all of these socket mem cgroup
-> regressions, this is way out of control and every "fix" seems to add
-> more build or runtime regressions.
->
-> Glauber, this has to stabilize soon or I will revert every single one
-> of your changes, and it will take a nuclear war and a multi-month
-> audit of your code to get those changes into the tree again.
+Yes, but holding the mutex while writing does no good for the reader.
+ When the writer doesn't use the seqcounter, then the reader that is
+using it is not actually protected.
 
-So for the normal scenarios with my code disabled, aside for one problem 
-in day1, all of the failures were build problems.
+> Right now readers can afford not to take lock. Introducing mutex on
+> read side with just add to the cost. Especially IO submission path
+> where we map IO to a partitiona and we wouldn't want to take
+> mutexes there?
 
-To be quite honest, the interactions between configs are being quite 
-"funny", and spanning more problems than I anticipated.
+Yes, it does look like readers can't afford that overhead.
 
-What I am doing here, is building the patches against a couple of 
-randconfigs, and some more targeted ones before I send them to you.
+> Are you still pursuing this pathset? Sounds like a useful
+> functionality to have.
 
-If you have any other advise on how to handle this, I'd be happy to take 
-them.
+Yes, but I hadn't yet heard back about my question about this being a
+broader issue that is already a bug in the kernel because things like
+loop and md already change nr_sects ( on the whole disk partition )
+without any protection.
 
-On the specifics of this bug, I verified this config compiles okay in 
-your tree + my patches at the day I last sent them. I also verified it 
-breaks on the tree today.
+Maybe what we need is a read/write lock on struct genhd, then all
+readers need to acquire the read lock, which should only slow them
+down if they collide with a writer.
 
-The reason seems to be that some other patch tweaked with the header 
-files in an unrelated patch, and the static_branch definition that was 
-getting to us in sock.h, is no longer getting there.
+Another idea that I had but have not yet checked to see if it is
+actually feasible is to copy the struct genhd, change the size of the
+copy, and replace the existing one since updating the pointer will be
+atomic.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (MingW32)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-Including it explicitly fixes it here. I will again pass through a 
-battery of randconfigs on my own, and send you a fix.
-
-Sorry again for the trouble.
+iQEcBAEBAgAGBQJPIbkeAAoJEJrBOlT6nu75Bx8IAKgTgA4czpng+JaQkja7n8j9
+8B+e+9Asnyp/ND3qkxdUHwmRwJxmC+fJV9PVT84neoBHugN63rX3afc4KGJp5elg
+k21kziCy46cbIOOeYQDkTZnkHoqHL3dd1sJhO6tv7bDjtRKW0PVY855sKQKW8cNk
+zjX0WA+iaePs0+Yhd921MwKisRyWtpUr5Sm3Ib0h4kTjRKL7Nyk6cHNH516HpuD2
+mXTDCbK5eRhljiadd7igCbbUQNVyFNHm3JGcgLLw35dnarzobZFDlrN1ybXoPExC
+31FhDG2Vbo5kLlUNibIsuuf9DoYzBilMTyE/aHN1EtjkTk8bKMg3lZoUi1sVV7c=
+=TMsc
+-----END PGP SIGNATURE-----
