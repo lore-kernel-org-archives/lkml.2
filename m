@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab2AZQU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 11:20:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46105 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752972Ab2AZQUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 11:20:22 -0500
-Date: Thu, 26 Jan 2012 14:17:58 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Ronen Hod <rhod@redhat.com>
-Cc: leonid.moiseichuk@nokia.com, penberg@kernel.org, riel@redhat.com,
-        minchan@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
-        kosaki.motohiro@gmail.com, hannes@cmpxchg.org,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC 1/3] /dev/low_mem_notify
-Message-ID: <20120126161758.GA28367@amt.cnet>
-References: <4F17DCED.4020908@redhat.com>
- <CAOJsxLG3x_R5xq85hh5RvPoD+nhgYbHJfbLW=YMxCZockAXJqw@mail.gmail.com>
- <4F17E058.8020008@redhat.com>
- <84FF21A720B0874AA94B46D76DB9826904559D46@008-AM1MPN1-003.mgdnok.nokia.com>
- <20120124153835.GA10990@amt.cnet>
- <4F1ED77F.4090900@redhat.com>
- <20120124181034.GA19186@amt.cnet>
- <4F1FC2C8.10103@redhat.com>
- <20120125101209.GB29167@amt.cnet>
- <4F1FDDE2.9050609@redhat.com>
+	id S1753001Ab2AZQVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 11:21:49 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33631 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752128Ab2AZQVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 11:21:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F1FDDE2.9050609@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F1ED780.3010305@gmail.com>
+References: <1326127761-2723-1-git-send-email-eranian@google.com>
+	<CABPqkBTYrEeSefnXr4-ezmXHjNv1XkfVZGULzY5-=FE3tr3pfg@mail.gmail.com>
+	<1327321532.2446.6.camel@twins>
+	<CABPqkBSqA071Yt4KcCH25P6HZ1C8OOGFfcjOQ_aLmBRc3ir=9A@mail.gmail.com>
+	<CABPqkBSALpYBTpaJo4Wor6weM-XM3PRxj23u8N+Kihvm36Hj8w@mail.gmail.com>
+	<4F1ED780.3010305@gmail.com>
+Date: Thu, 26 Jan 2012 17:21:47 +0100
+Message-ID: <CABPqkBQhz2KBJSikQMWz4M5JZwBM7_9OY60ae85UWrwCO1mbFQ@mail.gmail.com>
+Subject: Re: [PATCH 00/13] perf_events: add support for sampling taken
+ branches (v3)
+From: Stephane Eranian <eranian@google.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, acme@infradead.org, robert.richter@amd.com,
+        ming.m.lin@intel.com, andi@firstfloor.org, asharma@fb.com,
+        ravitillo@lbl.gov, vweaver1@eecs.utk.edu
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >it should free for each notification received, that is, its part?
-> >
-> >Its easier if there is a goal, a hint of how many pages the process
-> >should release.
-> 
-> I have to agree.
-> Still, the amount of memory that an app should free per memory-pressure-level can be best calculated inside the application (based on comfortable_free_pages relative to process RSS, as you suggested).
+On Tue, Jan 24, 2012 at 5:08 PM, David Ahern <dsahern@gmail.com> wrote:
+>
+> On 01/24/2012 08:39 AM, Stephane Eranian wrote:
+>> Hi,
+>>
+>> The branch stack sampling patch exposes a flaw in the sampling
+>> buffer format as currently exported by the kernel.
+>>
+>> In the current format, sample records (RECORD_SAMPLE) are NOT
+>> self-describing. That means that by looking at the fixed size header, it
+>> is not possible to determine which event caused the sample to be recorded
+>> and what's in the body of the variable length sample.
+>>
+>> Such introspection is only possible once we know the event unique id
+>> (PERF_SAMPLE_ID). But to get the event ID, we need to parse the
+>> sample. But, given that a sample has a variable length, there is no
+>> predefined position for that ID in the sample. You have a chicken
+>> and egg problem here. There is no room left in the fixed size header
+>> to fit this in.
+>
+> I brought this up last Fall as well. As I recall the response is to move
+> each sample_type based stream into its own data file and then merge the
+> data files while processing.
+>
+But then, if you merge the files as is, it does not buy you anything.
+You need to
+add or overwrite some information in the headers. Unless, you rewrite
+the tool to
+handle multiple inputs files.
 
-It is easier if the kernel calculates the target (the application is
-free to ignore the hint, of course), because it depends on information 
-not readily available in userspace.
-
->  Fairness is also an issue.
-> And, if in the meantime the memory pressure ended, would you recommend that the application will continue with its work?
-
-There appears to be interest in an event to notify that higher levels
-of memory are available (see Leonid's email).
-
+> David
