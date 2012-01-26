@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab2AZQUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 11:20:13 -0500
-Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:46039 "EHLO
-	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab2AZQUM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 11:20:12 -0500
-X-Greylist: delayed 7090 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jan 2012 11:20:11 EST
-Message-ID: <1327594823.2062.0.camel@scapa>
-Subject: Re: [3.2+] BUG: scheduling while atomic: swapper/0/0/0x10000100
-From: Yves-Alexis Perez <corsac@debian.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        linux-usb@vger.kernel.org
-Date: Thu, 26 Jan 2012 17:20:23 +0100
-In-Reply-To: <20120126161539.GA2098@kroah.com>
-References: <1327587732.2296.25.camel@scapa>
-	 <20120126161539.GA2098@kroah.com>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-V4n4T/ZdGDJu1d3Rm0d0"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	id S1753033Ab2AZQU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 11:20:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46105 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752972Ab2AZQUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 11:20:22 -0500
+Date: Thu, 26 Jan 2012 14:17:58 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Ronen Hod <rhod@redhat.com>
+Cc: leonid.moiseichuk@nokia.com, penberg@kernel.org, riel@redhat.com,
+        minchan@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, rientjes@google.com,
+        kosaki.motohiro@gmail.com, hannes@cmpxchg.org,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC 1/3] /dev/low_mem_notify
+Message-ID: <20120126161758.GA28367@amt.cnet>
+References: <4F17DCED.4020908@redhat.com>
+ <CAOJsxLG3x_R5xq85hh5RvPoD+nhgYbHJfbLW=YMxCZockAXJqw@mail.gmail.com>
+ <4F17E058.8020008@redhat.com>
+ <84FF21A720B0874AA94B46D76DB9826904559D46@008-AM1MPN1-003.mgdnok.nokia.com>
+ <20120124153835.GA10990@amt.cnet>
+ <4F1ED77F.4090900@redhat.com>
+ <20120124181034.GA19186@amt.cnet>
+ <4F1FC2C8.10103@redhat.com>
+ <20120125101209.GB29167@amt.cnet>
+ <4F1FDDE2.9050609@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F1FDDE2.9050609@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> >it should free for each notification received, that is, its part?
+> >
+> >Its easier if there is a goal, a hint of how many pages the process
+> >should release.
+> 
+> I have to agree.
+> Still, the amount of memory that an app should free per memory-pressure-level can be best calculated inside the application (based on comfortable_free_pages relative to process RSS, as you suggested).
 
---=-V4n4T/ZdGDJu1d3Rm0d0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+It is easier if the kernel calculates the target (the application is
+free to ignore the hint, of course), because it depends on information 
+not readily available in userspace.
 
-On jeu., 2012-01-26 at 08:15 -0800, Greg KH wrote:
-> Very odd, it wouldn't seem that this patch would cause such a problem,
-> as it is "obviously" correct.
->=20
-> Kuninori, any thoughts about this?  Should I revert this from the
-> tree?=20
+>  Fairness is also an issue.
+> And, if in the meantime the memory pressure ended, would you recommend that the application will continue with its work?
 
-Something puzzles me. Just after posting I noticed that 3.2.2 was
-released, so i tried it (vanilla), and I didn't get the BUG().
+There appears to be interest in an event to notify that higher levels
+of memory are available (see Leonid's email).
 
-Will git bisect work in a forward way (3.2.1 is bad, 3.2.2 is good).
-
-Regards,
---=20
-Yves-Alexis
-
---=-V4n4T/ZdGDJu1d3Rm0d0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABCAAGBQJPIX1HAAoJEDBVD3hx7wuozvkP/ArldgNDOXMXnw72EMQElCp3
-h+Uzng/QfNXB+QL2L1gG5rDFDcogRvjcS9lH6GX6oALIvocJ7izu0oq/WPqrziFA
-Tt7oZAGNpz0qDRWjXKaSkGZh1LesZL3ibod7ORnzlJ210nskY0+GssIDo3GGMTeH
-IJgh7XQCoQ7lVVZHmb7k1pZaP/iwquMwT/3GB8Z1YVDS3EO29GMb/yxjx4HTfH5h
-SHhRK4SVEYmyOA98tEJzz/hUeg13lx8kBp2wAt2aehZXt7KPs5e0F+y3TeuhRscf
-LHGAEtEUO/9Ks426J1zaPK3byHTxGzzGWgXV5Z6Tb0pFfztyFCGaYoCwFg3uz6FC
-PHaL7vpRvyFajfllBnynPFn2EljQeGGn8E1sCNPjInZvYBjK9re/0pcwXgJAL4iV
-ePNT14CmERx8KgjTmaMgit4ZusKkzj+imBxKqZrypjBGS0zarI3cFfYQhFYIzkZW
-mfNwIpp+DIPs96uQHVgaw+oXxcNFcnjGte8+JutJc1Zz/SOXkAE2mB3Rh1r6ably
-it2XlVYnqHO5GkiJWSiVaSS5TdSKRGKzYxvSqiG9hWkSwuPyH1KVId7NOHCy643p
-tOsS1lMvpP6VtepHBmb8aW9rSKs01427IQ/LV5ybbEX7Ps3iRD+rMrc7hKBrKf4z
-Lv0ORq+ZWnf6D8zUmy4S
-=ROJM
------END PGP SIGNATURE-----
-
---=-V4n4T/ZdGDJu1d3Rm0d0--
