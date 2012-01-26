@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab2AZBWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 20:22:52 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45811 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab2AZBWt (ORCPT
+	id S1752681Ab2AZBXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 20:23:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58568 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab2AZBXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 20:22:49 -0500
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Jamie Lokier <jamie@shareable.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-Date: Thu, 26 Jan 2012 02:22:44 +0100
-User-Agent: KMail/1.8.2
-Cc: Indan Zupancic <indan@nul.nu>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Andrew Lutomirski <luto@mit.edu>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl> <20120126010858.GD18613@jl-vm1.vm.bytemark.co.uk>
-In-Reply-To: <20120126010858.GD18613@jl-vm1.vm.bytemark.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Wed, 25 Jan 2012 20:23:21 -0500
+Date: Wed, 25 Jan 2012 17:23:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Adrian Drzewieki <z@drze.net>
+Subject: Re: [PATCH v4 -mm] make swapin readahead skip over holes
+Message-Id: <20120125172319.edbbde73.akpm@linux-foundation.org>
+In-Reply-To: <20120124141400.6d33b7c4@annuminas.surriel.com>
+References: <20120124131351.05309a2a@annuminas.surriel.com>
+	<20120124141400.6d33b7c4@annuminas.surriel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201201260222.44225.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 January 2012 02:08, Jamie Lokier wrote:
-> Indan Zupancic wrote:
-> > > (2) syscall exit compat-ness is known from entry type - no need to indicate it; and
-> > > (3) if we would flag syscall entry with an event value in wait status, then syscall
-> > > exit will be already distinquisable.
-> > 
-> > False for execve which messes everything up by changing TID sometimes.
+On Tue, 24 Jan 2012 14:14:00 -0500
+Rik van Riel <riel@redhat.com> wrote:
+
+> Ever since abandoning the virtual scan of processes, for scalability
+> reasons, swap space has been a little more fragmented than before.
+> This can lead to the situation where a large memory user is killed,
+> swap space ends up full of "holes" and swapin readahead is totally
+> ineffective.
 > 
-> Is it disambiguated by PTRACE_EVENT_EXEC happening before the execve
-> returns, and you knowing the TID always changes to the PID?  I haven't
-> yet checked which TID gets the PTRACE_EVENT_EXEC event,
+> On my home system, after killing a leaky firefox it took over an
+> hour to page just under 2GB of memory back in, slowing the virtual
+> machines down to a crawl.
+> 
+> This patch makes swapin readahead simply skip over holes, instead
+> of stopping at them.  This allows the system to swap things back in
+> at rates of several MB/second, instead of a few hundred kB/second.
+> 
+> The checks done in valid_swaphandles are already done in 
+> read_swap_cache_async as well, allowing us to remove a fair amount
+> of code.
 
-tid change happens before PTRACE_EVENT_EXEC event generation.
+Just to show that I'm paying attention...
 
--- 
-vda
+> --- a/mm/swap_state.c
+> +++ b/mm/swap_state.c
+> @@ -382,25 +382,23 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+>  struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
+>  			struct vm_area_struct *vma, unsigned long addr)
+>  {
+> -	int nr_pages;
+>  	struct page *page;
+> -	unsigned long offset;
+> -	unsigned long end_offset;
+> +	unsigned long offset = swp_offset(entry);
+> +	unsigned long start_offset, end_offset;
+> +	unsigned long mask = (1 << page_cluster) - 1;
+
+This is broken for page_cluster > 31.  Fix:
+
+--- a/mm/swap_state.c~make-swapin-readahead-skip-over-holes-fix
++++ a/mm/swap_state.c
+@@ -385,7 +385,7 @@ struct page *swapin_readahead(swp_entry_
+ 	struct page *page;
+ 	unsigned long offset = swp_offset(entry);
+ 	unsigned long start_offset, end_offset;
+-	unsigned long mask = (1 << page_cluster) - 1;
++	unsigned long mask = (1UL << page_cluster) - 1;
+ 
+ 	/* Read a page_cluster sized and aligned cluster around offset. */
+ 	start_offset = offset & ~mask;
+_
+
