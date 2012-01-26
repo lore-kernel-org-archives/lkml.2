@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab2AZRvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:51:37 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:15083 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab2AZRvg (ORCPT
+	id S1753230Ab2AZSEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:04:10 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55279 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab2AZSEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:51:36 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18FE/RUwbb/cMof3St77B0y
-Date: Thu, 26 Jan 2012 09:51:23 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Pinmux bindings proposal V2
-Message-ID: <20120126175122.GX22818@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
- <20120123210052.GS22818@atomide.com>
- <20120126093610.GD2287@S2101-09.ap.freescale.net>
+	Thu, 26 Jan 2012 13:04:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120126093610.GD2287@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFzDZhGoa1TH=RAtjK3Ti3=NPAYvreSxiTxTu3wnu8Z61g@mail.gmail.com>
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+ <201201260032.57937.vda.linux@googlemail.com> <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
+ <201201260209.54513.vda.linux@googlemail.com> <CA+55aFzDZhGoa1TH=RAtjK3Ti3=NPAYvreSxiTxTu3wnu8Z61g@mail.gmail.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Thu, 26 Jan 2012 19:03:43 +0100
+Message-ID: <CAK1hOcNFmG+3NTfQ559T-LkbcmcVfk9eF=JesdOqqj97tJncaw@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Indan Zupancic <indan@nul.nu>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
+        Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Linus,
 
-* Shawn Guo <shawn.guo@linaro.org> [120126 00:53]:
-> 
-> On Mon, Jan 23, 2012 at 01:00:52PM -0800, Tony Lindgren wrote:
-> ...
-> > So to summarize: I suggest we'll just stick to basics to get the system
-> > booting and devices working using device tree. In most cases the device
-> > drivers should be able to configure the suspend and off states in a generic
-> > way using pinctrl API. Everything else, like debugging, we can probably
-> > do with userspace tools.
-> > 
-> > This would mean just using a minimal subset of your binding, probably
-> > very close to what you originally suggested.
-> > 
-> IMHO, as a generic device tree binding, it should be able to cope with
-> different use cases.  It's really free for you to use the minimal
-> subset of the binding as your need, but we should not make the binding
-> design just be that minimal subset to force that everyone else can
-> only use the minimal subset.
+On Thu, Jan 26, 2012 at 4:47 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>> Please look at strace source, get_scno() function, where
+>> it reads syscall no and parameters. Let's see....
+>> - POWERPC: has 32-bit and 64-bit mode
+>> - X86_64: has 32-bit and 64-bit mode
+>> - IA64: has i386-compat mode
+>> - ARM: has more than one ABI
+>> - SPARC: has 32-bit and 64-bit mode
+>>
+>> Do you want to re-invent a different arch-specific way to report
+>> syscall type for each of these arches?
+>
+> I think an arch-specific one is better than trying to make some
+> generic one that is messy.
+>
+> As you say, many architectures have multiple system call ABIs.
+>
+> But they tend to be very *different* issues. They can be about
+> multiple ABI's, as you mention, and even when they *look* similar
+> (32-bit vs 64-bit ABI's) they are actually totally different issues.
+> [skip]
 
-The main issue I have is that the example posted in this thread repeats
-the same registers five times for one driver entry alone in the device
-tree data. The repeated registers are TEGRA_PMX_PG_DTA and TEGRA_PMX_PG_DTD
-in the example.
+I don't have a particular attachment to my solution,
+and I think we already talk about this problem for
+far too long.
 
-The alternative values are something that the pinmux/pinconf driver can
-set based on state changes communicated from the driver using these pins.
+Looks like nobody is _strongly_ opposed to your patch
+which uses a few bits in eflags to report bitness
+of the x86 syscall.
 
-That's why I think these alternative states should not be listed in the
-device tree.
+Lets just do that already. If you commit it to kernel git,
+I will immediately change strace accordingly.
 
-Regards,
-
-Tony
+-- 
+vda
