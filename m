@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2AZPrU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:47:20 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:51664 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720Ab2AZPrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 10:47:19 -0500
-Message-ID: <4F217585.2070302@msgid.tls.msk.ru>
-Date: Thu, 26 Jan 2012 19:47:17 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111120 Icedove/8.0
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Renninger <trenn@suse.de>, Bruno Friedmann <bruno@ioda-net.ch>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [67/90] intel idle: Make idle driver more robust
-References: <20120123234211.GA19504@kroah.com> <20120123234028.628058547@clark.kroah.org> <20120126144533.GA1731@shutemov.name>
-In-Reply-To: <20120126144533.GA1731@shutemov.name>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752732Ab2AZPsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:48:36 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:38091 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab2AZPsf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 10:48:35 -0500
+Date: Thu, 26 Jan 2012 16:48:29 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCHv19 00/15] Contiguous Memory Allocator
+In-reply-to: <201201261531.40551.arnd@arndb.de>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>
+Message-id: <009f01ccdc41$f30a5f70$d91f1e50$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AczcP9RQ2kMsLTQhQVSJXu324doBbgAASk8w
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <201201261531.40551.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-26.01.2012 18:45, Kirill A. Shutemov wrote:
+Hello,
 
->> From: Thomas Renninger<trenn@suse.de>
->>
->> commit 5c2a9f06a9cd7194f884cdc88144866235dec07d upstream.
->>
->> kvm -cpu host passes the original cpuid info to the guest.
->>
->> Latest kvm version seem to return true for mwait_leaf cpuid
->> function on recent Intel CPUs. But it does not return mwait
->> C-states (mwait_substates), instead zero is returned.
->>
-[]
->>   drivers/idle/intel_idle.c |    3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> --- a/drivers/idle/intel_idle.c
->> +++ b/drivers/idle/intel_idle.c
->> @@ -321,7 +321,8 @@ static int intel_idle_probe(void)
->>   	cpuid(CPUID_MWAIT_LEAF,&eax,&ebx,&ecx,&mwait_substates);
->>
->>   	if (!(ecx&  CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
->> -		!(ecx&  CPUID5_ECX_INTERRUPT_BREAK))
->> +	    !(ecx&  CPUID5_ECX_INTERRUPT_BREAK) ||
->> +	    !mwait_substates)
->>   			return -ENODEV;
->
-> It breaks build for me.
-[]
->    CC      drivers/idle/intel_idle.o
-> /home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c: In function ‘intel_idle_probe’:
-> /home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c:508:7: error: ‘mwait_substates’ undeclared (first use in this function)
-> /home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c:508:7: note: each undeclared identifier is reported only once for each function it appears in
-> make[3]: *** [drivers/idle/intel_idle.o] Error 1
->
-> Variable 'substates' hasn't renamed to 'mwait_substates' in 3.0.
-> See c423628 intel_idle: delete substates DEBUG modparam
+On Thursday, January 26, 2012 4:32 PM Arnd Bergmann wrote:
 
-I wonder why in my 3.0.18 this variable is properly defined
-in the same file, in line 77:
+> On Thursday 26 January 2012, Marek Szyprowski wrote:
+> > Welcome everyone!
+> >
+> > Yes, that's true. This is yet another release of the Contiguous Memory
+> > Allocator patches. This version mainly includes code cleanups requested
+> > by Mel Gorman and a few minor bug fixes.
+> 
+> Hi Marek,
+> 
+> Thanks for keeping up this work! I really hope it works out for the
+> next merge window.
+> 
+> > TODO (optional):
+> > - implement support for contiguous memory areas placed in HIGHMEM zone
+> > - resolve issue with movable pages with pending io operations
+> 
+> Can you clarify these? I believe the contiguous memory areas in highmem
+> is something that should really be after the existing code is merged
+> into the upstream kernel and should better not be listed as TODO here.
 
-...
-74 /* intel_idle.max_cstate=0 disables driver */
-75 static int max_cstate = MWAIT_MAX_NUM_CSTATES - 1;
-76
-77 static unsigned int mwait_substates;
-78
-79 #define LAPIC_TIMER_ALWAYS_RELIABLE 0xFFFFFFFF
-...
+Ok, I will remove it from the TODO list. Core memory management is very 
+little dependence on HIGHMEM, it is more about DMA-mapping framework to 
+be aware that there might be no lowmem mappings for the allocated pages.
+This can be easily added once the initial version got merged.
+ 
+> I haven't followed the last two releases so closely. It seems that
+> in v17 the movable pages with pending i/o was still a major problem
+> but in v18 you added a solution. Is that right? What is still left
+> to be done here then?
 
-> Signed-off-by: Kirill A. Shutemov<kirill.shutemov@linux.intel.com>
-> ---
->   drivers/idle/intel_idle.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 15d72ca..a1aecc3 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -505,7 +505,7 @@ static int intel_idle_probe(void)
->
->   	if (!(ecx&  CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
->   	    !(ecx&  CPUID5_ECX_INTERRUPT_BREAK) ||
-> -	    !mwait_substates)
-> +	    !substates)
+Since v18 the failed allocation is retried in a bit different place in 
+the contiguous memory area what heavily increased overall reliability.
 
-With this patch my build of 3.0.18 fails with "substates undeclared"
-message...
+This can be improved by making cma a bit more aware about pending io 
+operations, but I want to leave this after the initial merge.
 
->
->   	if (substates == 0)	/* can over-ride via modparam */
+I think that there are no major issues left to be resolved now.
 
-And I don't have this context line in my version.
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-It is 3.0 from kernel.org patched by patch-3.0.18.xz
 
-Thanks,
-
-/mjt
