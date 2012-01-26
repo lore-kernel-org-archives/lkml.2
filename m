@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab2AZSlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:41:20 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:50972 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab2AZSlL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 13:41:11 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LYF58H-02-HLE-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stuart Yoder <b08248@gmail.com>, Scott Wood <scottwood@freescale.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 5/6] iommu/msm: Implement DOMAIN_ATTR_GEOMETRY attribute
-Date: Thu, 26 Jan 2012 19:40:56 +0100
-Message-ID: <1327603257-17028-6-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
-References: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	id S1753697Ab2AZSlu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:41:50 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64407 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753542Ab2AZSlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 13:41:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="111079381"
+From: Allen Kay <allen.m.kay@intel.com>
+To: linux-pci-owner@vger.kernel.org
+Cc: jesse.barnes@intel.com, matthew.r.wilcox@intel.com,
+        linux-kernel@vger.kernel.org, jean.guyader@eu.citrix.com,
+        eric.chanudet@citrix.com, allen.m.kay@intel.com
+Subject: [PATCH 1/1][resend]  check for pci bar restore completion and retry
+Date: Thu, 26 Jan 2012 10:25:53 -0800
+Message-Id: <1327602353-30966-1-git-send-email-allen.m.kay@intel.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the attribute for the MSM IOMMU driver.
+On some OEM systems, pci_restore_state() is called while FLR has not yet
+completed.  As a result, PCI BAR register restore is not successful.  This fix
+reads back the restored value and compares it with saved value and re-tries 10
+times before giving up.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Jean Guyader <jean.guyader@eu.citrix.com>
+Signed-off-by: Eric Chanudet <eric.chanudet@citrix.com>
+Signed-off-by: Allen Kay <allen.m.kay@intel.com>
 ---
- drivers/iommu/msm_iommu.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/pci/pci.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/iommu/msm_iommu.c b/drivers/iommu/msm_iommu.c
-index 08a90b8..ea6b7f7 100644
---- a/drivers/iommu/msm_iommu.c
-+++ b/drivers/iommu/msm_iommu.c
-@@ -226,6 +226,11 @@ static int msm_iommu_domain_init(struct iommu_domain *domain)
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index af295bb..0549050 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -959,6 +959,7 @@ void pci_restore_state(struct pci_dev *dev)
+ {
+ 	int i;
+ 	u32 val;
++	int tries;
  
- 	memset(priv->pgtable, 0, SZ_16K);
- 	domain->priv = priv;
-+
-+	domain->geometry.aperture_start = 0;
-+	domain->geometry.aperture_end   = (1ULL << 32) - 1;
-+	domain->geometry.force_aperture = true;
-+
- 	return 0;
- 
- fail_nomem:
+ 	if (!dev->state_saved)
+ 		return;
+@@ -973,12 +974,16 @@ void pci_restore_state(struct pci_dev *dev)
+ 	 */
+ 	for (i = 15; i >= 0; i--) {
+ 		pci_read_config_dword(dev, i * 4, &val);
+-		if (val != dev->saved_config_space[i]) {
++		tries = 10;		
++		while (tries && val != dev->saved_config_space[i]) {
+ 			dev_dbg(&dev->dev, "restoring config "
+ 				"space at offset %#x (was %#x, writing %#x)\n",
+ 				i, val, (int)dev->saved_config_space[i]);
+ 			pci_write_config_dword(dev,i * 4,
+ 				dev->saved_config_space[i]);
++			pci_read_config_dword(dev, i * 4, &val);
++			mdelay(10);
++			tries--;
+ 		}
+ 	}
+ 	pci_restore_pcix_state(dev);
 -- 
-1.7.5.4
-
+1.6.0.6
 
