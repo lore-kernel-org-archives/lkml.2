@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab2AZJER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:04:17 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:59815 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab2AZJBJ (ORCPT
+	id S1752524Ab2AZJFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:05:09 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:18825 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab2AZJFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:01:09 -0500
-Date: Thu, 26 Jan 2012 10:00:53 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 11/15] mm: trigger page reclaim in alloc_contig_range() to
- stabilize watermarks
-In-reply-to: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Message-id: <1327568457-27734-12-git-send-email-m.szyprowski@samsung.com>
+	Thu, 26 Jan 2012 04:05:02 -0500
+X-AuditID: cbfee61a-b7cd2ae000004fa5-a8-4f2117382111
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: linux-mmc@vger.kernel.org
+Cc: "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/2] mmc: core: Support packed command feature of eMMC4.5
+Date: Thu, 26 Jan 2012 18:04:56 +0900
+Message-id: <000901ccdc09$92daf020$b890d060$%jun@samsung.com>
 MIME-version: 1.0
-X-Mailer: git-send-email 1.7.7.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczcCZLCbTHoLWdPRhCEPYQOLGKvHw==
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_contig_range() performs memory allocation so it also should keep
-track on keeping the correct level of memory watermarks. This commit adds
-a call to *_slowpath style reclaim to grab enough pages to make sure that
-the final collection of contiguous pages from freelists will not starve
-the system.
+This patch-set adds support of packed command feature
+for eMMC4.5 devices.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-CC: Michal Nazarewicz <mina86@mina86.com>
----
- mm/page_alloc.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+), 0 deletions(-)
+Changes in v4:
+	- Add Data-tag as CMD23 argument for packed header.
+	- Separate the capability of MMC_CAP2_PACKED_CMD into read and write.
+	- remove unnecessary initial value.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index e35d06b..05eaa82 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5613,6 +5613,34 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 	return ret;
- }
- 
-+/*
-+ * Trigger memory pressure bump to reclaim some pages in order to be able to
-+ * allocate 'count' pages in single page units. Does similar work as
-+ *__alloc_pages_slowpath() function.
-+ */
-+static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
-+{
-+	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
-+	struct zonelist *zonelist = node_zonelist(0, gfp_mask);
-+	int did_some_progress = 0;
-+	int order = 1;
-+	unsigned long watermark;
-+
-+	/* Obey watermarks as if the page was being allocated */
-+	watermark = low_wmark_pages(zone) + count;
-+	while (!zone_watermark_ok(zone, 0, watermark, 0, 0)) {
-+		wake_all_kswapd(order, zonelist, high_zoneidx, zone_idx(zone));
-+
-+		did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
-+						      NULL);
-+		if (!did_some_progress) {
-+			/* Exhausted what can be done so it's blamo time */
-+			out_of_memory(zonelist, gfp_mask, order, NULL);
-+		}
-+	}
-+	return count;
-+}
-+
- /**
-  * alloc_contig_range() -- tries to allocate given range of pages
-  * @start:	start PFN to allocate
-@@ -5707,6 +5735,14 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 		goto done;
- 	}
- 
-+	/*
-+	 * Reclaim enough pages to make sure that contiguous allocation
-+	 * will not starve the system.
-+	 */
-+	__reclaim_pages(page_zone(pfn_to_page(outer_start)),
-+		        GFP_HIGHUSER_MOVABLE, end-start);
-+
-+	/* Grab isolated pages from freelists. */
- 	outer_end = isolate_freepages_range(outer_start, end);
- 	if (!outer_end) {
- 		ret = -EBUSY;
--- 
-1.7.1.569.g6f426
+Changes in v3:
+	- Add a variable member in mmc_host for minimum number of packed entries.
+	  This value can be overridden by host.
+	- Fix a handling of error sequence.
+
+Changes in v2:
+	- Fix the packed read sequence and error handling.
+	- Apply checking the exception status for all cases with
+	  the comments from Maya Erez and Sahitya Tummala.
+	- Fix preparing the packed list with the comment from Maya Erez and Venkatraman.
+
+
+Seungwon Jeon (2):
+      mmc: core: Add packed command feature of eMMC4.5
+      mmc: core: Support packed command for eMMC4.5 device
+
+ drivers/mmc/card/block.c   |  475 +++++++++++++++++++++++++++++++++++++++++---
+ drivers/mmc/card/queue.c   |   48 ++++-
+ drivers/mmc/card/queue.h   |   13 ++
+ drivers/mmc/core/host.c    |    2 +
+ drivers/mmc/core/mmc.c     |   24 +++
+ drivers/mmc/core/mmc_ops.c |    1 +
+ include/linux/mmc/card.h   |    3 +
+ include/linux/mmc/core.h   |    4 +
+ include/linux/mmc/host.h   |    4 +
+ include/linux/mmc/mmc.h    |   15 ++
+ 10 files changed, 562 insertions(+), 27 deletions(-)
+
+Best regards,
+Seungwon Jeon.
+--
+1.7.2.3
+
 
