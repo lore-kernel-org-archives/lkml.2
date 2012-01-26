@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab2AZNhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 08:37:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36048 "EHLO
+	id S1752049Ab2AZNiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 08:38:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36061 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2AZNhd (ORCPT
+	with ESMTP id S1751113Ab2AZNiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 08:37:33 -0500
-Date: Thu, 26 Jan 2012 05:37:10 -0800
-From: tip-bot for Russ Anderson <rja@sgi.com>
-Message-ID: <tip-5a51467b146ab7948d2f6812892eac120a30529c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, rja@sgi.com, hpa@zytor.com, mingo@redhat.com,
-        stable@kernel.org, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, rja@sgi.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tglx@linutronix.de,
+	Thu, 26 Jan 2012 08:38:20 -0500
+Date: Thu, 26 Jan 2012 05:37:58 -0800
+From: tip-bot for Cliff Wickman <cpw@sgi.com>
+Message-ID: <tip-d2ebc71d472020bc30e29afe8c4d2a85a5b41f56@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de, sivanich@sgi.com,
         mingo@elte.hu
-In-Reply-To: <20120119020753.GA7228@sgi.com>
-References: <20120119020753.GA7228@sgi.com>
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de, sivanich@sgi.com,
+        mingo@elte.hu
+In-Reply-To: <E1RnXd1-0003wU-PM@eag09.americas.sgi.com>
+References: <E1RnXd1-0003wU-PM@eag09.americas.sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/uv: Fix uv_gpa_to_soc_phys_ram() shift
-Git-Commit-ID: 5a51467b146ab7948d2f6812892eac120a30529c
+Subject: [tip:x86/urgent] x86/uv: Fix uninitialized spinlocks
+Git-Commit-ID: d2ebc71d472020bc30e29afe8c4d2a85a5b41f56
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,48 +29,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 05:37:16 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 05:38:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5a51467b146ab7948d2f6812892eac120a30529c
-Gitweb:     http://git.kernel.org/tip/5a51467b146ab7948d2f6812892eac120a30529c
-Author:     Russ Anderson <rja@sgi.com>
-AuthorDate: Wed, 18 Jan 2012 20:07:54 -0600
+Commit-ID:  d2ebc71d472020bc30e29afe8c4d2a85a5b41f56
+Gitweb:     http://git.kernel.org/tip/d2ebc71d472020bc30e29afe8c4d2a85a5b41f56
+Author:     Cliff Wickman <cpw@sgi.com>
+AuthorDate: Wed, 18 Jan 2012 09:40:47 -0600
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 26 Jan 2012 10:58:27 +0100
+CommitDate: Thu, 26 Jan 2012 10:58:34 +0100
 
-x86/uv: Fix uv_gpa_to_soc_phys_ram() shift
+x86/uv: Fix uninitialized spinlocks
 
-uv_gpa_to_soc_phys_ram() was inadvertently ignoring the
-shift values.  This fix takes the shift into account.
+Initialize two spinlocks in tlb_uv.c and also properly define/initialize
+the uv_irq_lock.
 
-Signed-off-by: Russ Anderson <rja@sgi.com>
+The lack of explicit initialization seems to be functionally
+harmless, but it is diagnosed when these are turned on:
+
+        CONFIG_DEBUG_SPINLOCK=y
+        CONFIG_DEBUG_MUTEXES=y
+        CONFIG_DEBUG_LOCK_ALLOC=y
+        CONFIG_LOCKDEP=y
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
 Cc: <stable@kernel.org>
-Link: http://lkml.kernel.org/r/20120119020753.GA7228@sgi.com
+Cc: Dimitri Sivanich <sivanich@sgi.com>
+Link: http://lkml.kernel.org/r/E1RnXd1-0003wU-PM@eag09.americas.sgi.com
+[ Added the uv_irq_lock initialization fix by Dimitri Sivanich ]
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/uv/uv_hub.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/platform/uv/tlb_uv.c |    2 ++
+ arch/x86/platform/uv/uv_irq.c |    2 +-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
-index 54a13aa..21f7385 100644
---- a/arch/x86/include/asm/uv/uv_hub.h
-+++ b/arch/x86/include/asm/uv/uv_hub.h
-@@ -318,13 +318,13 @@ uv_gpa_in_mmr_space(unsigned long gpa)
- /* UV global physical address --> socket phys RAM */
- static inline unsigned long uv_gpa_to_soc_phys_ram(unsigned long gpa)
- {
--	unsigned long paddr = gpa & uv_hub_info->gpa_mask;
-+	unsigned long paddr;
- 	unsigned long remap_base = uv_hub_info->lowmem_remap_base;
- 	unsigned long remap_top =  uv_hub_info->lowmem_remap_top;
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index 9be4cff..3ae0e61 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1851,6 +1851,8 @@ static void __init init_per_cpu_tunables(void)
+ 		bcp->cong_reps			= congested_reps;
+ 		bcp->cong_period		= congested_period;
+ 		bcp->clocks_per_100_usec =	usec_2_cycles(100);
++		spin_lock_init(&bcp->queue_lock);
++		spin_lock_init(&bcp->uvhub_lock);
+ 	}
+ }
  
- 	gpa = ((gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
- 		((gpa >> uv_hub_info->n_lshift) << uv_hub_info->m_val);
--	gpa = gpa & uv_hub_info->gpa_mask;
-+	paddr = gpa & uv_hub_info->gpa_mask;
- 	if (paddr >= remap_base && paddr < remap_base + remap_top)
- 		paddr -= remap_base;
- 	return paddr;
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index 374a05d..f25c276 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -25,7 +25,7 @@ struct uv_irq_2_mmr_pnode{
+ 	int			irq;
+ };
+ 
+-static spinlock_t		uv_irq_lock;
++static DEFINE_SPINLOCK(uv_irq_lock);
+ static struct rb_root		uv_irq_root;
+ 
+ static int uv_set_irq_affinity(struct irq_data *, const struct cpumask *, bool);
