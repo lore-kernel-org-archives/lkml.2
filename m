@@ -1,139 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab2AZJuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:50:04 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:1524 "EHLO MMS3.broadcom.com"
+	id S1751624Ab2AZJwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:52:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21027 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934Ab2AZJuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:50:00 -0500
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4F2121BB.4050001@broadcom.com>
-Date: Thu, 26 Jan 2012 10:49:47 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111229
- Thunderbird/9.0
+	id S1750865Ab2AZJwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 04:52:53 -0500
+Message-ID: <4F21220E.9080404@redhat.com>
+Date: Thu, 26 Jan 2012 09:51:10 +0000
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: "Francis Moreau" <francis.moro@gmail.com>
-cc: "Josh Boyer" <jwboyer@gmail.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Greg KH" <greg@kroah.com>
-Subject: Re: kernel 3.2.1: BUG: scheduling while atomic:
- swapper/0/0/0x10000100
-References: <CAC9WiBgpBCWZVjAQkJWSpXhC_dK1KKPfAHZvxVgaLV8BUsc41Q@mail.gmail.com>
- <4F1FBAA9.4040405@broadcom.com>
- <CAC9WiBjpsLuJhzw+vZsPC2bA73mad444Gq32DRL_gCri2MqaMw@mail.gmail.com>
- <4F1FD2AA.9020708@broadcom.com>
- <CA+5PVA73WHfnurWiyY4w9f4_mw=vUdpaNmAavHZtt+xYfo8Kcw@mail.gmail.com>
- <CAC9WiBgzg-dD5Sba9Cd_uvsfMxqQib+vsXXDyMSMSR_Y7P_CCw@mail.gmail.com>
- <CA+5PVA4Cq5BRfKEa1uckVbtCGKhKmuw1tujQ19T3wk3c5CcsAQ@mail.gmail.com>
- <4F21173A.9060405@broadcom.com>
- <CAC9WiBjmsaH2NYaCLjoihw_O4NCM1LiUVst8PJCZwP2xTE=BMA@mail.gmail.com>
-In-Reply-To: <CAC9WiBjmsaH2NYaCLjoihw_O4NCM1LiUVst8PJCZwP2xTE=BMA@mail.gmail.com>
-X-Enigmail-Version: 1.3.4
-OpenPGP: id=B5E1A116
-X-WSS-ID: 633FFC2450417451375-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
+To: Denys Vlasenko <vda.linux@googlemail.com>
+CC: Pedro Alves <palves@redhat.com>, Jamie Lokier <jamie@shareable.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com> <20120125193635.GA30311@redhat.com> <201201260032.57937.vda.linux@googlemail.com> <20120126005901.GC18613@jl-vm1.vm.bytemark.co.uk> <4F210D9B.3030808@redhat.com> <CAK1hOcPnDkCdv_c3tXVDKPVeDePgm-1o1z2U2-ipjwS-=ekT5Q@mail.gmail.com>
+In-Reply-To: <CAK1hOcPnDkCdv_c3tXVDKPVeDePgm-1o1z2U2-ipjwS-=ekT5Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 10:16 AM, Francis Moreau wrote:
-> On Thu, Jan 26, 2012 at 10:04 AM, Arend van Spriel <arend@broadcom.com> wrote:
->> On 01/25/2012 05:49 PM, Josh Boyer wrote:
->>> On Wed, Jan 25, 2012 at 11:37 AM, Francis Moreau <francis.moro@gmail.com> wrote:
->>>> Hello,
->>>>
->>>> On Wed, Jan 25, 2012 at 1:11 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->>>>>
->>>>> We've had a few similar issues reported in Fedora yesterday after we
->>>>> rebased to 3.2.1.
->>>>
->>>> From which kernel did you rebase to 3.2.1 ?
->>>
->>> Fedora 16 went from 3.1.9 to 3.2.1 earlier this week.  We hadn't been getting
->>> reports like this until 3.2.1 showed up.  I asked one of the reporters to try
->>> 3.2.0 and they say it recreates there still, so it seems the issue showed up
->>> with the 3.2 release.  One user managed to capture the trace below using a
->>> kernel with a variety of debug options turned on.  It isn't the same backtrace
->>> but it might be related.
->>>
->>> backtrace:
->>> :BUG: sleeping function called from invalid context at
->>> drivers/base/power/runtime.c:785
->>> :in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/0
->>> :1 lock held by swapper/0/0:
->>> : #0:  (&chip->rts51x_suspend_timer){+.-...}, at: [<ffffffff8108d711>]
->>> run_timer_softirq+0x111/0x600
->>> :Pid: 0, comm: swapper/0 Tainted: G        W    3.2.0-2.fc17.x86_64.debug #1
->>> :Call Trace:
->>> : <IRQ>  [<ffffffff8105ee7a>] __might_sleep+0x13a/0x1f0
->>> : [<ffffffffa00180b0>] ? rts51x_modi_suspend_timer+0x50/0x50 [ums_realtek]
->>> : [<ffffffff813fdee3>] __pm_runtime_idle+0xa3/0xb0
->>> : [<ffffffffa00180b0>] ? rts51x_modi_suspend_timer+0x50/0x50 [ums_realtek]
->>> : [<ffffffff8146ed30>] usb_autopm_put_interface+0x30/0x40
+On 01/26/2012 08:53 AM, Denys Vlasenko wrote:
+> On Thu, Jan 26, 2012 at 9:23 AM, Pedro Alves <palves@redhat.com> wrote:
+>> On 01/26/2012 12:59 AM, Jamie Lokier wrote:
+>>> Tracers mainly want to know if it's a 32-bit or 64-bit syscall, not
+>>> whether it's compat as such.
 >>
->> This trace seems to indicate what is wrong. At least for this one user.
->> The usb_autopm_put_interface() call seems result in a sleep and the
->> rts51x_suspend_timer_fn is holding a lock. Below the code indicated in
->> the trace.
+>> Another idea, avoiding new PTRACE_EVENTs per arch, would be to make
+>> the abi32/abi64/compat/whatnot discriminator retrievable with PTRACE_GETEVENTMSG
+>> instead.  So you'd get PTRACE_EVENT_SYSCALL_ENTRY|EXIT, or the regular old
+>> 0x80|SIGTRAP, you'd still fetch the syscall number from $orig_ax (or whatever means
+>> for other archs), as usual, then have extra syscall info in PTRACE_GETEVENTMSG.
+>> I don't know if it'd be simple to make it possible to do PTRACE_GETEVENTMSG
+>> on a 0x80|SIGTRAP trap, but I imagine it so.
 >>
->> runtime.c:
->> 768 /**
->> 769  * __pm_runtime_idle - Entry point for runtime idle operations.
->> 770  * @dev: Device to send idle notification for.
->> 771  * @rpmflags: Flag bits.
->> 772  *
->> 773  * If the RPM_GET_PUT flag is set, decrement the device's usage
->> count and
->> 774  * return immediately if it is larger than zero.  Then carry out an idle
->> 775  * notification, either synchronous or asynchronous.
->> 776  *
->> 777  * This routine may be called in atomic context if the RPM_ASYNC
->> flag is set,
->> 778  * or if pm_runtime_irq_safe() has been called.
->> 779  */
->> 780 int __pm_runtime_idle(struct device *dev, int rpmflags)
->> 781 {
->> 782         unsigned long flags;
->> 783         int retval;
->> 784
->> 785         might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
->>
->> This issue can either be caused in ums_realtek module or the usb autopm
->> code. Have not looked into that.
->>
+>> -> wait
+>>  <- 0x80|SIGTRAP   (or PTRACE_EVENT_SYSCALL_ENTRY)
+>> -> read regs, find out syscall number
+>> -> PTRACE_GETEVENTMSG, figure out which entry mode was used.
 > 
-> Just a wild guess: it seems that we're affected using different HW
-> configs with different USB devices, so it would indicate that usb
-> autopm is the culprit.
-> 
+> This would require additional ptrace op per syscall entry.
+> Linus' method and event method wouldn't.
 
-Did a git log between the versions (git log v3.1.9..v3.2.1 --
-drivers/usb/core). One commit caught my eye:
+Yes.
 
-commit d727b60659a1173eb4142a5fc521ce67c28b34e1
-Merge: 3ee72ca 2a5306c
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Fri Oct 7 23:16:55 2011 +0200
+In any case, ptrace events leave recording the state in core files
+behind; possibly also important for userspace c/r.
+Linus' method or a new regset don't have that drawback.  A new regset requires
+an additional ptrace op too, while the former abuses an architecture register,
+possibly leading to headaches later on.
 
-    Merge branch 'pm-runtime' into pm-for-linus
-
-    * pm-runtime:
-      PM / Tracing: build rpm-traces.c only if CONFIG_PM_RUNTIME is set
-      PM / Runtime: Replace dev_dbg() with trace_rpm_*()
-      PM / Runtime: Introduce trace points for tracing rpm_* functions
-      PM / Runtime: Don't run callbacks under lock for power.irq_safe set
-      USB: Add wakeup info to debugging messages
-      PM / Runtime: pm_runtime_idle() can be called in atomic context
-      PM / Runtime: Add macro to test for runtime PM events
-      PM / Runtime: Add might_sleep() to runtime PM functions
-
-Might be worth to try with CONFIG_PM_RUNTIME disabled. However, I have
-not yet found how to reproduce the problem.
-
-Gr. AvS
-
+-- 
+Pedro Alves
