@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab2AZFbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 00:31:53 -0500
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:45424 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab2AZFbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 00:31:52 -0500
-Message-ID: <4F20E536.7090808@cs.wisc.edu>
-Date: Wed, 25 Jan 2012 23:31:34 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1751166Ab2AZFfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 00:35:52 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:51132 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750809Ab2AZFfv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 00:35:51 -0500
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: JBottomley@parallels.com, open-iscsi@googlegroups.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iscsi: don't hang in endless loop if no targets present
-References: <1327547776-2890-1-git-send-email-levinsasha928@gmail.com>
-In-Reply-To: <1327547776-2890-1-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <20120125200701.GH3896@phenom.ffwll.local>
+References: <1324891397-10877-1-git-send-email-sumit.semwal@ti.com>
+ <1324891397-10877-2-git-send-email-sumit.semwal@ti.com> <4F2035B1.4020204@samsung.com>
+ <20120125200701.GH3896@phenom.ffwll.local>
+From: "Semwal, Sumit" <sumit.semwal@ti.com>
+Date: Thu, 26 Jan 2012 11:05:30 +0530
+Message-ID: <CAB2ybb_5Co38kpahe5PmO5b_uevr0=_3ODnwD1Xy9V0HQ7mPwg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] dma-buf: Introduce dma buffer sharing mechanism
+To: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, arnd@arndb.de, airlied@redhat.com,
+        linux@arm.linux.org.uk, jesse.barker@linaro.org,
+        m.szyprowski@samsung.com, rob@ti.com, patches@linaro.org,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Cc: daniel@ffwll.ch
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 09:16 PM, Sasha Levin wrote:
-> iscsi_if_send_reply() may return -ESRCH if there were no targets to send
-> data to. Currently we're ignoring this value and looping in attempt to do it
-> over and over, which will usually lead in a hung task like this one:
-> 
-> [ 4920.817298] INFO: task trinity:9074 blocked for more than 120 seconds.
-> [ 4920.818527] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [ 4920.819982] trinity         D 0000000000000000  5504  9074   2756 0x00000004
-> [ 4920.825374]  ffff880003961a98 0000000000000086 ffff8800001aa000 ffff8800001aa000
-> [ 4920.826791]  00000000001d4340 ffff880003961fd8 ffff880003960000 00000000001d4340
-> [ 4920.828241]  00000000001d4340 00000000001d4340 ffff880003961fd8 00000000001d4340
-> [ 4920.833231]
-> [ 4920.833519] Call Trace:
-> [ 4920.834010]  [<ffffffff826363fa>] schedule+0x3a/0x50
-> [ 4920.834953]  [<ffffffff82634ac9>] __mutex_lock_common+0x209/0x5b0
-> [ 4920.836226]  [<ffffffff81af805d>] ? iscsi_if_rx+0x2d/0x990
-> [ 4920.837281]  [<ffffffff81053943>] ? sched_clock+0x13/0x20
-> [ 4920.838305]  [<ffffffff81af805d>] ? iscsi_if_rx+0x2d/0x990
-> [ 4920.839336]  [<ffffffff82634eb0>] mutex_lock_nested+0x40/0x50
-> [ 4920.840423]  [<ffffffff81af805d>] iscsi_if_rx+0x2d/0x990
-> [ 4920.841434]  [<ffffffff810dffed>] ? sub_preempt_count+0x9d/0xd0
-> [ 4920.842548]  [<ffffffff82637bb0>] ? _raw_read_unlock+0x30/0x60
-> [ 4920.843666]  [<ffffffff821f71de>] netlink_unicast+0x1ae/0x1f0
-> [ 4920.844751]  [<ffffffff821f7997>] netlink_sendmsg+0x227/0x350
-> [ 4920.845850]  [<ffffffff821857bd>] ? sock_update_netprioidx+0xdd/0x1b0
-> [ 4920.847060]  [<ffffffff82185732>] ? sock_update_netprioidx+0x52/0x1b0
-> [ 4920.848276]  [<ffffffff8217f226>] sock_aio_write+0x166/0x180
-> [ 4920.849348]  [<ffffffff810dfe41>] ? get_parent_ip+0x11/0x50
-> [ 4920.850428]  [<ffffffff811d0d9a>] do_sync_write+0xda/0x120
-> [ 4920.851465]  [<ffffffff810dffed>] ? sub_preempt_count+0x9d/0xd0
-> [ 4920.852579]  [<ffffffff810dfe41>] ? get_parent_ip+0x11/0x50
-> [ 4920.853608]  [<ffffffff81791887>] ? security_file_permission+0x27/0xb0
-> [ 4920.854821]  [<ffffffff811d0f4c>] vfs_write+0x16c/0x180
-> [ 4920.855781]  [<ffffffff811d104f>] sys_write+0x4f/0xa0
-> [ 4920.856798]  [<ffffffff82638e79>] system_call_fastpath+0x16/0x1b
-> [ 4920.877487] 1 lock held by trinity/9074:
-> [ 4920.878239]  #0:  (rx_queue_mutex){+.+...}, at: [<ffffffff81af805d>] iscsi_if_rx+0x2d/0x990
-> [ 4920.880005] Kernel panic - not syncing: hung_task: blocked tasks
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  drivers/scsi/scsi_transport_iscsi.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_transport_iscsi.c b/drivers/scsi/scsi_transport_iscsi.c
-> index cfd4914..c26707a 100644
-> --- a/drivers/scsi/scsi_transport_iscsi.c
-> +++ b/drivers/scsi/scsi_transport_iscsi.c
-> @@ -2110,7 +2110,7 @@ iscsi_if_rx(struct sk_buff *skb)
->  				break;
->  			err = iscsi_if_send_reply(group, nlh->nlmsg_seq,
->  				nlh->nlmsg_type, 0, 0, ev, sizeof(*ev));
-> -		} while (err < 0 && err != -ECONNREFUSED);
-> +		} while (err < 0 && err != -ECONNREFUSED && err != -ESRCH);
->  		skb_pull(skb, rlen);
->  	}
->  	mutex_unlock(&rx_queue_mutex);
+On Thu, Jan 26, 2012 at 1:37 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Wed, Jan 25, 2012 at 06:02:41PM +0100, Tomasz Stanislawski wrote:
+>> Hi Sumit,
+>>
+>> On 12/26/2011 10:23 AM, Sumit Semwal wrote:
+>> >This is the first step in defining a dma buffer sharing mechanism.
+>> >
+>> [snip]
+>>
+>> >+struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *,
+>> >+                                    enum dma_data_direction);
+>> >+void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *);
+>>
+>> I think that you should add enum dma_data_direction as an argument
+>> unmap function. It was mentioned that the dma_buf_attachment should keep
+>> cached and mapped sg_table for performance reasons. The field
+>> dma_buf_attachment::priv seams to be a natural place to keep this sg_table.
+>> To map a buffer the exporter calls dma_map_sg. It needs dma direction
+>> as an argument. The problem is that dma_unmap_sg also needs this
+>> argument but dma direction is not available neither in
+>> dma_buf_unmap_attachment nor in unmap callback. Therefore the exporter
+>> is forced to embed returned sg_table into a bigger structure where
+>> dma direction is remembered. Refer to function vb2_dc_dmabuf_ops_map
+>> at
+>
+> Oops, makes sense. I've totally overlooked that we need to pass in the dma
+> direction also for the unmap call to the dma subsystem. Sumit, can you
+> stitch together that small patch?
 
+Right, of course. I will do that by tomorrow; it is a bank holiday
+today here in India, so.
 
-Looks ok. Thanks for debugging and the patch.
-
-Acked-by: Mike Christie <michaelc@cs.wisc.edu>
+regards,
+~Sumit.
+> -Daniel
+> --
+> Daniel Vetter
+> Mail: daniel@ffwll.ch
+> Mobile: +41 (0)79 365 57 48
