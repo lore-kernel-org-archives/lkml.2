@@ -1,93 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab2AZNiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 08:38:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36061 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2AZNiU (ORCPT
+	id S1752235Ab2AZNi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 08:38:27 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:44532 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab2AZNiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 08:38:20 -0500
-Date: Thu, 26 Jan 2012 05:37:58 -0800
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Message-ID: <tip-d2ebc71d472020bc30e29afe8c4d2a85a5b41f56@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de, sivanich@sgi.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de, sivanich@sgi.com,
-        mingo@elte.hu
-In-Reply-To: <E1RnXd1-0003wU-PM@eag09.americas.sgi.com>
-References: <E1RnXd1-0003wU-PM@eag09.americas.sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/uv: Fix uninitialized spinlocks
-Git-Commit-ID: d2ebc71d472020bc30e29afe8c4d2a85a5b41f56
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 26 Jan 2012 08:38:24 -0500
+X-AuditID: b753bd60-9f483ba000000655-7e-4f21574dc100
+X-AuditID: b753bd60-9f483ba000000655-7e-4f21574dc100
+Message-ID: <4F21574A.9030507@hitachi.com>
+Date: Thu, 26 Jan 2012 22:38:18 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 05:38:03 -0800 (PST)
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v9 3.2 1/9] uprobes: Install and remove breakpoints.
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com> <20120110114831.17610.88468.sendpatchset@srdronam.in.ibm.com> <CAK1hOcO3pz+zBLQKfdty3UwQG8zxXwBWo9euFaE+zKawiqTE2g@mail.gmail.com>
+In-Reply-To: <CAK1hOcO3pz+zBLQKfdty3UwQG8zxXwBWo9euFaE+zKawiqTE2g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d2ebc71d472020bc30e29afe8c4d2a85a5b41f56
-Gitweb:     http://git.kernel.org/tip/d2ebc71d472020bc30e29afe8c4d2a85a5b41f56
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Wed, 18 Jan 2012 09:40:47 -0600
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 26 Jan 2012 10:58:34 +0100
+(2012/01/26 0:13), Denys Vlasenko wrote:
+> On Tue, Jan 10, 2012 at 12:48 PM, Srikar Dronamraju
+> <srikar@linux.vnet.ibm.com> wrote:
+>> +/*
+>> + * If uprobe->insn doesn't use rip-relative addressing, return
+>> + * immediately.  Otherwise, rewrite the instruction so that it accesses
+>> + * its memory operand indirectly through a scratch register.  Set
+>> + * uprobe->arch_info.fixups and uprobe->arch_info.rip_rela_target_address
+>> + * accordingly.  (The contents of the scratch register will be saved
+>> + * before we single-step the modified instruction, and restored
+>> + * afterward.)
+>> + *
+>> + * We do this because a rip-relative instruction can access only a
+>> + * relatively small area (+/- 2 GB from the instruction), and the XOL
+>> + * area typically lies beyond that area.  At least for instructions
+>> + * that store to memory, we can't execute the original instruction
+>> + * and "fix things up" later, because the misdirected store could be
+>> + * disastrous.
+>> + *
+>> + * Some useful facts about rip-relative instructions:
+>> + * - There's always a modrm byte.
+>> + * - There's never a SIB byte.
+>> + * - The displacement is always 4 bytes.
+>> + */
+>> +static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe,
+>> +                                                       struct insn *insn)
+>> +{
+>> +       u8 *cursor;
+>> +       u8 reg;
+>> +
+>> +       if (mm->context.ia32_compat)
+>> +               return;
+>> +
+>> +       uprobe->arch_info.rip_rela_target_address = 0x0;
+>> +       if (!insn_rip_relative(insn))
+>> +               return;
+>> +
+>> +       /*
+>> +        * Point cursor at the modrm byte.  The next 4 bytes are the
+>> +        * displacement.  Beyond the displacement, for some instructions,
+>> +        * is the immediate operand.
+>> +        */
+>> +       cursor = uprobe->insn + insn->prefixes.nbytes
+>> +                       + insn->rex_prefix.nbytes + insn->opcode.nbytes;
+>> +       insn_get_length(insn);
+>> +
+>> +       /*
+>> +        * Convert from rip-relative addressing to indirect addressing
+>> +        * via a scratch register.  Change the r/m field from 0x5 (%rip)
+>> +        * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
+>> +        */
+>> +       reg = MODRM_REG(insn);
+>> +       if (reg == 0) {
+>> +               /*
+>> +                * The register operand (if any) is either the A register
+>> +                * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
+>> +                * REX prefix) %r8.  In any case, we know the C register
+>> +                * is NOT the register operand, so we use %rcx (register
+>> +                * #1) for the scratch register.
+>> +                */
+>> +               uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
+>> +               /* Change modrm from 00 000 101 to 00 000 001. */
+>> +               *cursor = 0x1;
+>> +       } else {
+>> +               /* Use %rax (register #0) for the scratch register. */
+>> +               uprobe->arch_info.fixups = UPROBES_FIX_RIP_AX;
+>> +               /* Change modrm from 00 xxx 101 to 00 xxx 000 */
+>> +               *cursor = (reg << 3);
+>> +       }
+>> +
+>> +       /* Target address = address of next instruction + (signed) offset */
+>> +       uprobe->arch_info.rip_rela_target_address = (long)insn->length
+>> +                                       + insn->displacement.value;
+>> +       /* Displacement field is gone; slide immediate field (if any) over. */
+>> +       if (insn->immediate.nbytes) {
+>> +               cursor++;
+>> +               memmove(cursor, cursor + insn->displacement.nbytes,
+>> +                                               insn->immediate.nbytes);
+>> +       }
+>> +       return;
+>> +}
+> 
+> It seems to be possible to store RIP value *without displacement*
+> into AX/CX and convert rip-relative instruction into AX/CX *relative* one.
+> Example:
+> c7 05 78 56 34 12 2a 00 00 00 	movl   $0x2a,0x12345678(%rip)
+> converts to:
+> c7 81 78 56 34 12 2a 00 00 00 	movl   $0x2a,0x12345678(%rcx)
+> 
+> This way instruction size stays the same and you don't need
+> to memmove immediate value.
 
-x86/uv: Fix uninitialized spinlocks
+Right, I agree there is a possibility of optimizing.
+However, for ease of review, I think it's better to be
+a separate patch.
 
-Initialize two spinlocks in tlb_uv.c and also properly define/initialize
-the uv_irq_lock.
+Thank you,
 
-The lack of explicit initialization seems to be functionally
-harmless, but it is diagnosed when these are turned on:
-
-        CONFIG_DEBUG_SPINLOCK=y
-        CONFIG_DEBUG_MUTEXES=y
-        CONFIG_DEBUG_LOCK_ALLOC=y
-        CONFIG_LOCKDEP=y
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Cc: <stable@kernel.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Link: http://lkml.kernel.org/r/E1RnXd1-0003wU-PM@eag09.americas.sgi.com
-[ Added the uv_irq_lock initialization fix by Dimitri Sivanich ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/platform/uv/tlb_uv.c |    2 ++
- arch/x86/platform/uv/uv_irq.c |    2 +-
- 2 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 9be4cff..3ae0e61 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1851,6 +1851,8 @@ static void __init init_per_cpu_tunables(void)
- 		bcp->cong_reps			= congested_reps;
- 		bcp->cong_period		= congested_period;
- 		bcp->clocks_per_100_usec =	usec_2_cycles(100);
-+		spin_lock_init(&bcp->queue_lock);
-+		spin_lock_init(&bcp->uvhub_lock);
- 	}
- }
- 
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index 374a05d..f25c276 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -25,7 +25,7 @@ struct uv_irq_2_mmr_pnode{
- 	int			irq;
- };
- 
--static spinlock_t		uv_irq_lock;
-+static DEFINE_SPINLOCK(uv_irq_lock);
- static struct rb_root		uv_irq_root;
- 
- static int uv_set_irq_affinity(struct irq_data *, const struct cpumask *, bool);
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
