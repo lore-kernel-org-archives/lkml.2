@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab2AZLGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 06:06:00 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48930 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2AZLF7 (ORCPT
+	id S1752222Ab2AZLIa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 06:08:30 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42213 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab2AZLI3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 06:05:59 -0500
-Message-ID: <4F213392.2090203@suse.cz>
-Date: Thu, 26 Jan 2012 12:05:54 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120118 Thunderbird/10.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Jiri Slaby <jirislaby@gmail.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Baohua.Song@csr.com,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
-References: <4F1EC8D5.5040102@suse.cz> <4F202721.6050900@linux.vnet.ibm.com> <4F204D90.7010105@linux.vnet.ibm.com> <201201260051.45000.rjw@sisk.pl>
-In-Reply-To: <201201260051.45000.rjw@sisk.pl>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Jan 2012 06:08:29 -0500
+Message-ID: <1327576091.2446.87.camel@twins>
+Subject: Re: [RFC PATCH v1 1/2] sched: unified sched_powersavings sysfs
+ tunable
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Indan Zupancic <indan@nul.nu>, Youquan Song <youquan.song@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 26 Jan 2012 12:08:11 +0100
+In-Reply-To: <4F212DFF.8060802@kernel.dk>
+References: <20120116161740.29759.4679.stgit@localhost>
+	  <20120116162241.29759.13220.stgit@localhost>
+	 <1327503181.2614.76.camel@laptop> <4F212DFF.8060802@kernel.dk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 12:51 AM, Rafael J. Wysocki wrote:
-> IOW, Jiri, does the patch below help?
+On Thu, 2012-01-26 at 11:42 +0100, Jens Axboe wrote:
+> On 01/25/2012 03:53 PM, Peter Zijlstra wrote:
 
-Yeah, this fixes the issue as well. Thanks.
-
-> [BTW, the freeze_tasks()'s kerneldoc seems to be outdated.  Tejun?]
+> > Jens, what is this thing trying to do?
 > 
-> ---
->  include/linux/freezer.h |    2 ++
->  kernel/power/process.c  |   19 +++++++++++++++++++
->  kernel/power/user.c     |    1 +
->  3 files changed, 22 insertions(+)
-> 
-> Index: linux/include/linux/freezer.h
-> ===================================================================
-> --- linux.orig/include/linux/freezer.h
-> +++ linux/include/linux/freezer.h
-> @@ -39,6 +39,7 @@ extern bool __refrigerator(bool check_kt
->  extern int freeze_processes(void);
->  extern int freeze_kernel_threads(void);
->  extern void thaw_processes(void);
-> +extern void thaw_kernel_threads(void);
->  
->  static inline bool try_to_freeze(void)
->  {
-> @@ -174,6 +175,7 @@ static inline bool __refrigerator(bool c
->  static inline int freeze_processes(void) { return -ENOSYS; }
->  static inline int freeze_kernel_threads(void) { return -ENOSYS; }
->  static inline void thaw_processes(void) {}
-> +static inline void thaw_kernel_threads(void) {}
->  
->  static inline bool try_to_freeze(void) { return false; }
->  
-> Index: linux/kernel/power/process.c
-> ===================================================================
-> --- linux.orig/kernel/power/process.c
-> +++ linux/kernel/power/process.c
-> @@ -188,3 +188,22 @@ void thaw_processes(void)
->  	printk("done.\n");
->  }
->  
-> +void thaw_kernel_threads(void)
-> +{
-> +	struct task_struct *g, *p;
-> +
-> +	pm_nosig_freezing = false;
-> +	printk("Restarting kernel threads ... ");
-> +
-> +	thaw_workqueues();
-> +
-> +	read_lock(&tasklist_lock);
-> +	do_each_thread(g, p) {
-> +		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
-> +			__thaw_task(p);
-> +	} while_each_thread(g, p);
-> +	read_unlock(&tasklist_lock);
-> +
-> +	schedule();
-> +	printk("done.\n");
-> +}
-> Index: linux/kernel/power/user.c
-> ===================================================================
-> --- linux.orig/kernel/power/user.c
-> +++ linux/kernel/power/user.c
-> @@ -274,6 +274,7 @@ static long snapshot_ioctl(struct file *
->  		swsusp_free();
->  		memset(&data->handle, 0, sizeof(struct snapshot_handle));
->  		data->ready = 0;
-> +		thaw_kernel_threads();
->  		break;
->  
->  	case SNAPSHOT_PREF_IMAGE_SIZE:
+>The intent of the code
+> is to return the first CPU in the "group" that the passed in core/thread
+> belongs to. This is used to decide whether to perform a completion
+> locally, or to send it off to a different "group".
 
+Would you perhaps have meant to identify some shared cache domain?
 
--- 
-js
-suse labs
+In the scheduler core code we have (for CONFIG_SMP):
+
+  static int ttwu_share_cache(int this_cpu, int that_cpu);
+
+which returns true if this and that share a cache and false otherwise.
+Would that suffice or do you need a slightly different form? That is, we
+should provide you with some API and avoid you having to poke around
+with CONFIG_SCHED* and topology bits methinks.
+
