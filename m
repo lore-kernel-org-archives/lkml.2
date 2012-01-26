@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab2AZSkV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:40:21 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35809 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab2AZSkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 13:40:17 -0500
-Date: Thu, 26 Jan 2012 19:39:46 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
-Message-ID: <20120126183946.GA14709@elte.hu>
-References: <1326807145.17534.26.camel@gandalf.stny.rr.com>
- <20120118120711.GB14863@elte.hu>
- <1326909412.17534.91.camel@gandalf.stny.rr.com>
- <877h0jgx80.fsf@rustcorp.com.au>
- <1327545664.22710.78.camel@gandalf.stny.rr.com>
- <20120126102836.GD3853@elte.hu>
- <1327585945.22710.87.camel@gandalf.stny.rr.com>
- <20120126135504.GA13107@elte.hu>
- <1327586669.22710.89.camel@gandalf.stny.rr.com>
- <1327588606.22710.100.camel@gandalf.stny.rr.com>
+	id S1753497Ab2AZSkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:40:05 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39915 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753473Ab2AZSkC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 13:40:02 -0500
+X-Sasl-enc: XG12rOGduMPtsT1lMzpL2RKgoQMchPNIeA3lxMC6QZdP 1327603201
+Date: Thu, 26 Jan 2012 10:35:24 -0800
+From: Greg KH <greg@kroah.com>
+To: David Miller <davem@davemloft.net>
+Cc: nbowler@elliptictech.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/40] 3.0.17-stable review
+Message-ID: <20120126183524.GD22334@kroah.com>
+References: <20120110214630.GA14384@kroah.com>
+ <20120111222158.GA20915@elliptictech.com>
+ <20120112230133.GC3360@kroah.com>
+ <20120112.151548.979442119186542472.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327588606.22710.100.camel@gandalf.stny.rr.com>
+In-Reply-To: <20120112.151548.979442119186542472.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Thu, 2012-01-26 at 09:04 -0500, Steven Rostedt wrote:
-> > [ Added Li who added the original tracepoint ]
+On Thu, Jan 12, 2012 at 03:15:48PM -0800, David Miller wrote:
+> From: Greg KH <greg@kroah.com>
+> Date: Thu, 12 Jan 2012 15:01:33 -0800
+> 
+> > On Wed, Jan 11, 2012 at 05:21:58PM -0500, Nick Bowler wrote:
+> >> Hi Greg,
+> >> 
+> >> On 2012-01-10 13:46 -0800, Greg KH wrote:
+> >> > This is the start of the stable review cycle for the 3.0.17 release.
+> >> > There are 40 patches in this series, all will be posted as a response
+> >> > to this one.  If anyone has any issues with these being applied, please
+> >> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> >> > wants to add a Signed-off-by: line to the patch, please respond with it.
+> >> 
+> >> These upstream commits (in 3.2):
+> >> 
+> >>   b7ea81a58adc ("ah: Read nexthdr value before overwriting it in ahash input callback.")
+> >>   069294e813ed ("ah: Correctly pass error codes in ahash output callback.")
+> >> 
+> >> made it into the 3.1.y series but they appear to not have made it into
+> >> 3.0.y, where they're also applicable.  Also, the following one fixes a
+> >> real bug so it may be 3.0.y material, although I'm not sure if any
+> >> in-tree drivers can trigger it (this one requires a real ahash driver
+> >> for real hardware to trigger; unlike the previous two, cryptd won't do):
+> >> 
+> >>   4b90a603a1b2 ("ah: Don't return NET_XMIT_DROP on input")
 > > 
-> > On Thu, 2012-01-26 at 14:55 +0100, Ingo Molnar wrote:
-> > > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > 
-> > > > On Thu, 2012-01-26 at 11:28 +0100, Ingo Molnar wrote:
-> > > > 
-> > > > > How much more do we save if we move all of try_module_get() out 
-> > > > > of line? It still seems a rather thick inline function with 
-> > > > > preempt section and all. I'd *really* suggest that it should all 
-> > > > > be uninlined.
-> > > > > 
-> > > > 
-> > > > Here's the #'s
-> > > > 
-> > > >    text	   data	    bss	    dec	    hex	filename
-> > > > 7489488	2249584	9719808	19458880	128eb40	vmlinux-prepatch
-> > > >    text	   data	    bss	    dec	    hex	filename
-> > > > 7482458	2248048	9719808	19450314	128c9ca	vmlinux-postpatch
-> > > >    text	   data	    bss	    dec	    hex	filename
-> > > > 7477393	2248080	9719808	19445281	128b621	vmlinux-updatedpatch
+> > I rely on the networking maintainer (i.e. David) to send me network
+> > patches.  If he acks these, I'll be glad to queue them up for the next
+> > 3.0-stable release.
 > 
-> 
-> New numbers:
-> 
->    text	   data	    bss	    dec	    hex	filename
-> 7476509	2248048	9719808	19444365	128b28d	vmlinux-updatedpatch2
-> 
-> Just 916 bytes savings more. But gets rid of the hot path changes.
-> 
-> New patch below: (and the IP still works)
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Ok, i like this one best. Rusty, does it look good to you too?
+Thanks for the ack, now queued up the last patch as well.
 
-Thanks,
-
-	Ingo
+greg k-h
