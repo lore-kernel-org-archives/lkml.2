@@ -1,137 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab2AZAlC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 19:41:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57906 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865Ab2AZAlA (ORCPT
+	id S1752196Ab2AZAlK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 19:41:10 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:58230 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2AZAlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 19:41:00 -0500
-Date: Wed, 25 Jan 2012 16:40:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: arjan@linux.intel.com, richard@nod.at, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] kmod: Avoid deadlock by recursive kmod call.
-Message-Id: <20120125164059.05a3bf39.akpm@linux-foundation.org>
-In-Reply-To: <201201240432.q0O4WeMu031016@www262.sakura.ne.jp>
-References: <201112270701.pBR713wO005588@www262.sakura.ne.jp>
-	<201201040743.q047h9OD055670@www262.sakura.ne.jp>
-	<201201042208.JHG52695.OLStHFQOFFMVJO@I-love.SAKURA.ne.jp>
-	<201201062139.JFC73472.SMQFOFOFHLVOtJ@I-love.SAKURA.ne.jp>
-	<20120118164558.a10d7821.akpm@linux-foundation.org>
-	<201201190207.q0J27Mr5099912@www262.sakura.ne.jp>
-	<201201240432.q0O4WeMu031016@www262.sakura.ne.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jan 2012 19:41:04 -0500
+Message-ID: <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201201260032.57937.vda.linux@googlemail.com>
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+    <20120125193635.GA30311@redhat.com>
+    <201201260032.57937.vda.linux@googlemail.com>
+Date: Thu, 26 Jan 2012 01:40:35 +0100
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Denys Vlasenko" <vda.linux@googlemail.com>
+Cc: "Oleg Nesterov" <oleg@redhat.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "Jamie Lokier" <jamie@shareable.org>,
+        "Andrew Lutomirski" <luto@mit.edu>, "Will Drewry" <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        "Roland McGrath" <mcgrathr@chromium.org>
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 1.4
+X-Scan-Signature: f4db13d1ab50da585241c80c5e12767b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012 13:32:40 +0900
-Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
+On Thu, January 26, 2012 00:32, Denys Vlasenko wrote:
+> On Wednesday 25 January 2012 20:36, Oleg Nesterov wrote:
+>> On 01/18, Linus Torvalds wrote:
+>> >
+>> > Using the high bits of 'eflags' might work.
+>>
+>> I thought about changing eflags too, this looks very natural to me.
+>>
+>> But I do not understand the result of this discussion, are you going
+>> to apply this change?
+>>
+>> If not...
+>>
+>> Not sure this is really better, but there is another idea. Currently we
+>> have PTRACE_O_TRACESYSGOOD to avoid the confusion with the real SIGTRAP.
+>> Perhaps we can add PTRACE_O_TRACESYS_VERY_GOOD (or we can look at
+>> PT_SEIZED instead) and report TS_COMPAT via ptrace_report_syscall ?
 
-> Tetsuo Handa wrote:
-> > Andrew Morton wrote:
-> > > > --- linux-3.2.orig/fs/exec.c
-> > > > +++ linux-3.2/fs/exec.c
-> > > > @@ -1406,6 +1406,7 @@ int search_binary_handler(struct linux_b
-> > > >  					fput(bprm->file);
-> > > >  				bprm->file = NULL;
-> > > >  				current->did_exec = 1;
-> > > > +				current->kmod_thread = 0;
-> > > >  				proc_exec_connector(current);
-> > > >  				return retval;
-> > > >  			}
-> > > 
-> > > Special-casing this assignment down in this particular client of kmod
-> > > looks bad.  We need to find somewhere else to do this.  Perferably
-> > > within the kmod code itself, or possibly over in exec.c or fork.c.
-> > > 
-> > Well, kmod code is no longer called if do_execve() succeeded.
-> > 
-> > In "[PATCH v2] kmod: Avoid deadlock by recursive kmod call"
-> > ( https://lkml.org/lkml/2012/1/4/111 ), I forgot to do
-> > 
-> > 	current->kmod_thread = 0;
-> > 
-> > when do_execve() succeeded. Not clearing this flag might overkill functionality
-> > of /sbin/hotplug and its descendants. If we want to clear this flag, I think we
-> > cannot help doing it in fork.c or exec.c (or do like patch B which does not
-> > need this flag).
+Disadvantage of that is that all archs have to add support for this,
+while it only affects x86_64.
 
-(This email is difficult to reply to :(.  I think I'll reorganise it for you)
-
-> I found another approach which mixed patch A and patch B.
+>>
+>> IOW. Currently ptrace_report_syscall() does
+>>
+>> 	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
+>>
+>> We can add the new events,
+>>
+>> 	PTRACE_EVENT_SYSCALL_ENTRY
+>> 	PTRACE_EVENT_SYSCALL_COMPAT_ENTRY
+>> 	PTRACE_EVENT_SYSCALL_EXIT
+>> 	PTRACE_EVENT_SYSCALL_COMPAT_EXIT
 >
-> ----------------------------------------
-> [PATCH v4] kmod: Avoid deadlock by recursive kmod call.
-> 
-> The system deadlocks (at least since 2.6.10) when
-> call_usermodehelper(UMH_WAIT_EXEC) request triggered
-> call_usermodehelper(UMH_WAIT_PROC) request.
-> 
-> This is because "khelper thread is waiting for the worker thread at
-> wait_for_completion() in do_fork() since the worker thread was created with
-> CLONE_VFORK flag" and "the worker thread cannot call complete() because
-> do_execve() is blocked at UMH_WAIT_PROC request" and "the khelper thread cannot
-> start processing UMH_WAIT_PROC request because the khelper thread is waiting
-> for the worker thread at wait_for_completion() in do_fork()".
-> 
-> In order to avoid deadlock, do not try to call wait_for_completion() in
-> call_usermodehelper_exec() if the worker thread was created by khelper thread
-> with CLONE_VFORK flag.
-> 
-> The easiest example to observe this deadlock is to use a corrupted
-> /sbin/hotplug binary (like shown below).
-> 
->   # : > /tmp/dummy
->   # chmod 755 /tmp/dummy
->   # echo /tmp/dummy > /proc/sys/kernel/hotplug
->   # modprobe whatever
-> 
-> call_usermodehelper("/tmp/dummy", UMH_WAIT_EXEC) is called from
-> kobject_uevent_env() in lib/kobject_uevent.c upon loading/unloading a module.
-> do_execve("/tmp/dummy") triggers a call to request_module("binfmt-0000") from
-> search_binary_handler() which in turn calls call_usermodehelper(UMH_WAIT_PROC).
-> 
-> There are various hooks called during do_execve() operation (e.g.
-> security_bprm_check(), audit_bprm(), "struct linux_binfmt"->load_binary()).
-> If one of such hooks triggers UMH_WAIT_EXEC, this deadlock will happen even if
-> /sbin/hotplug is not corrupted.
+> We can get away with just the first one.
+> (1) It's unlikely people would want to get native sysentry events but not compat ones,
+> thus first two options can be combined into one;
 
+True.
 
-> Since __call_usermodehelper() is exclusively called (am I right?), we don't
-> need to use per "struct task_struct" flag.
+> (2) syscall exit compat-ness is known from entry type - no need to indicate it; and
+> (3) if we would flag syscall entry with an event value in wait status, then syscall
+> exit will be already distinquisable.
 
-The locking for the new kmod_thread_locker global is quite unobvious. 
->From a quick look I can't say that I obviously agree with the above
-claim.
+False for execve which messes everything up by changing TID sometimes.
 
-Maybe it relies upon there only ever being a single khelper thread,
-system wide?  If so then, err, maybe this is OK.  But I think the
-analysis should be fully spelled out in the changelog and described in
-the code in some manner which will prevent us from accidentally
-breaking this exclusivity as the code evolves.
+>
+> Thus, minimally we need one new option, PTRACE_O_TRACE_SYSENTRY -
+> "on syscall entry ptrace stop, set a nonzero event value in wait status"
+> , and two event values: PTRACE_EVENT_SYSCALL_ENTRY (for native entry),
+> PTRACE_EVENT_SYSCALL_ENTRY1 for compat one.
 
-Does this look truthful and complete?
+Not all code wants to receive a syscall exit event all the time, so
+if you add PTRACE_O_TRACE_SYSENTRY, please add PTRACE_O_TRACE_SYSEXIT
+too. That would pretty much halve ptrace's overhead for my use case.
+But this is orthogonal to the compat problem.
 
---- a/kernel/kmod.c~kmod-avoid-deadlock-by-recursive-kmod-call-fix
-+++ a/kernel/kmod.c
-@@ -44,6 +44,12 @@
- extern int max_threads;
- 
- static struct workqueue_struct *khelper_wq;
-+
-+/*
-+ * kmod_thread_locker is used for deadlock avoidance.  There is no explicit
-+ * locking to protect this global - it is private to the singleton khelper
-+ * thread and should only ever be modified by that thread.
-+ */
- static const struct task_struct *kmod_thread_locker;
- 
- #define CAP_BSET	(void *)1
-_
+> To future-proof this scheme we may reserve a few more event values
+> PTRACE_EVENT_SYSCALL_ENTRY2, PTRACE_EVENT_SYSCALL_ENTRY3, etc,
+> if we'll ever have arches with more than one non-native syscall
+> entry. I'm no expert, but looking at strace code, ARM may already have
+> more than one additional convention how to pass syscall args.
+
+Please, no! This way lays madness, just one PTRACE_EVENT_SYSCALL_ENTRY,
+no PTRACE_EVENT_SYSCALL_ENTRY1 or PTRACE_EVENT_SYSCALL_ENTRY2, that
+would be horrible. Keep arch specific stuff in arch specific areas,
+please don't spread it around.
+
+What was wrong with using eflags again? Is it too simple or something?
+
+Greetings,
+
+Indan
+
 
