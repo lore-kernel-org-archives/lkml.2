@@ -1,136 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2AZVRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:17:30 -0500
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:35498 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752123Ab2AZVR1 (ORCPT
+	id S1753217Ab2AZVVx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:21:53 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34738 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab2AZVVw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:17:27 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Viresh Kumar <viresh.kumar@st.com>,
-        Chris Blair <chris.blair@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 2/2 v2] gpio/stmpe: support no-irq mode
-Date: Thu, 26 Jan 2012 22:17:15 +0100
-Message-ID: <1327612635-9171-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	Thu, 26 Jan 2012 16:21:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1327486224.2614.45.camel@laptop>
+References: <1324633794.24803.48.camel@twins> <20111223154137.GA27901@redhat.com>
+ <20111226172357.CE4D.E1E9C6FF@jp.fujitsu.com> <20111226171151.GA4472@redhat.com>
+ <4EFB8523.6080708@gmail.com> <1327486224.2614.45.camel@laptop>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Thu, 26 Jan 2012 16:21:30 -0500
+Message-ID: <CAHGf_=pLJcoSuKZb+P0c_7uW16hO35cMkQfJQB1SUJt8uLkGYw@mail.gmail.com>
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Yasunori Goto <y-goto@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Blair <chris.blair@stericsson.com>
+2012/1/25 Peter Zijlstra <peterz@infradead.org>:
+> On Wed, 2011-12-28 at 16:07 -0500, KOSAKI Motohiro wrote:
+>>
+>> CPU0                    CPU1
+>> --------------------------------------------------------
+>> deactivate_task()
+>>                         task->state = TASK_UNINTERRUPTIBLE;
+>> activate_task()
+>>    rq->nr_uninterruptible--;
+>>
+>>                         schedule()
+>>                           deactivate_task()
+>>                             rq->nr_uninterruptible++;
+>>
+>>
+>
+> Hmm, I think you're right, when CPU0 does __sched_setscheduler() on the
+> task running on CPU1 and CPU1's @task is current.
+>
+> I think only __sched_setscheduler() is really a problem, the other
+> activate/deactivate users not schedule or wakeup are __migrate_task()
+> and normalize_task().
+>
+> __migrate_task() will only run on tasks that aren't actually running
+> anywhere so the above scenario can't happen, normalize_task() is never
+> used on normal systems (sysrq-n).
+>
+> So I guess the below cures things and cleans up a bit.. no?
 
-Adds support for boards which have an STMPE GPIO device without the
-interrupt pin connected. This means that no interrupt can be received
-but the GPIO pins can still be driven and read.
+Sorry for the delay. Yeah, I think this should work. (even though I
+don't understand __migrate_task() detail)
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: Viresh Kumar <viresh.kumar@st.com>
-Tested-by: Michel Jaouen <michel.jaouen@stericsson.com>
-Signed-off-by: Chris Blair <chris.blair@stericsson.com>
----
-ChangeLog v1->v2:
-- Removes the use of the new no_irq platform data member and
-  instead uses the value obtained for the cell irq to know if irqs
-  are supported or not. If irqs are not supported, the device
-  will not have been given an irq resource and the irq value
-  will be invalid.
+Thank you!
 
-This depends on the previous patch to the MFD
-code so should better be merged into the MFD tree with the
-previous patch.
----
- drivers/gpio/gpio-stmpe.c |   41 +++++++++++++++++++++++++----------------
- 1 files changed, 25 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-index 87a68a8..094c5c4 100644
---- a/drivers/gpio/gpio-stmpe.c
-+++ b/drivers/gpio/gpio-stmpe.c
-@@ -307,13 +307,11 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
- 	struct stmpe_gpio_platform_data *pdata;
- 	struct stmpe_gpio *stmpe_gpio;
- 	int ret;
--	int irq;
-+	int irq = 0;
- 
- 	pdata = stmpe->pdata->gpio;
- 
- 	irq = platform_get_irq(pdev, 0);
--	if (irq < 0)
--		return irq;
- 
- 	stmpe_gpio = kzalloc(sizeof(struct stmpe_gpio), GFP_KERNEL);
- 	if (!stmpe_gpio)
-@@ -330,21 +328,28 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
- 	stmpe_gpio->chip.dev = &pdev->dev;
- 	stmpe_gpio->chip.base = pdata ? pdata->gpio_base : -1;
- 
--	stmpe_gpio->irq_base = stmpe->irq_base + STMPE_INT_GPIO(0);
-+	if (irq >= 0)
-+		stmpe_gpio->irq_base = stmpe->irq_base + STMPE_INT_GPIO(0);
-+	else
-+		dev_info(&pdev->dev,
-+			"device configured in no-irq mode; "
-+			"irqs are not available\n");
- 
- 	ret = stmpe_enable(stmpe, STMPE_BLOCK_GPIO);
- 	if (ret)
- 		goto out_free;
- 
--	ret = stmpe_gpio_irq_init(stmpe_gpio);
--	if (ret)
--		goto out_disable;
-+	if (irq >= 0) {
-+		ret = stmpe_gpio_irq_init(stmpe_gpio);
-+		if (ret)
-+			goto out_disable;
- 
--	ret = request_threaded_irq(irq, NULL, stmpe_gpio_irq, IRQF_ONESHOT,
--				   "stmpe-gpio", stmpe_gpio);
--	if (ret) {
--		dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
--		goto out_removeirq;
-+		ret = request_threaded_irq(irq, NULL, stmpe_gpio_irq,
-+				IRQF_ONESHOT, "stmpe-gpio", stmpe_gpio);
-+		if (ret) {
-+			dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
-+			goto out_removeirq;
-+		}
- 	}
- 
- 	ret = gpiochip_add(&stmpe_gpio->chip);
-@@ -361,9 +366,11 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
- 	return 0;
- 
- out_freeirq:
--	free_irq(irq, stmpe_gpio);
-+	if (irq >= 0)
-+		free_irq(irq, stmpe_gpio);
- out_removeirq:
--	stmpe_gpio_irq_remove(stmpe_gpio);
-+	if (irq >= 0)
-+		stmpe_gpio_irq_remove(stmpe_gpio);
- out_disable:
- 	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
- out_free:
-@@ -391,8 +398,10 @@ static int __devexit stmpe_gpio_remove(struct platform_device *pdev)
- 
- 	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
- 
--	free_irq(irq, stmpe_gpio);
--	stmpe_gpio_irq_remove(stmpe_gpio);
-+	if (irq >= 0) {
-+		free_irq(irq, stmpe_gpio);
-+		stmpe_gpio_irq_remove(stmpe_gpio);
-+	}
- 	platform_set_drvdata(pdev, NULL);
- 	kfree(stmpe_gpio);
- 
--- 
-1.7.8
-
+Ack-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
