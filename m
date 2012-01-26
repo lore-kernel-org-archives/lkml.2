@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab2AZOLr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 09:11:47 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:17084
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751163Ab2AZOLp (ORCPT
+	id S1751772Ab2AZOOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 09:14:45 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:33053 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab2AZOOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 09:11:45 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bhz2fhc1bhc31hc1ah2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <jbottomley@parallels.com>, Greg KH <gregkh@suse.de>
-CC: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Index: AQHM0W763o2pXZK11UadxuudCK0AbpYMmkCA//+5EwCAA1dLgIANnEvAgACMXQCAAAJOgIAAAkoAgAAR/4CAAAJNgIAAU15A
-Date: Thu, 26 Jan 2012 14:11:20 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B6FE5C1@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1326402943-14031-1-git-send-email-kys@microsoft.com>
-	 <20120114164228.GB9682@infradead.org>
-	 <6E21E5352C11B742B20C142EB499E0481B6F0307@TK5EX14MBXC126.redmond.corp.microsoft.com>
-	 <20120116152951.GA9720@infradead.org>
-	 <6E21E5352C11B742B20C142EB499E0481B6FE0E2@TK5EX14MBXC122.redmond.corp.microsoft.com>
-	 <20120125154300.GA19509@infradead.org> <20120125155115.GA3608@suse.de>
-	 <1327507166.2776.32.camel@dabdike.int.hansenpartnership.com>
-	 <20120125170351.GB5461@suse.de>
- <1327511525.2776.40.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1327511525.2776.40.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.35]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 26 Jan 2012 09:14:44 -0500
+X-AuditID: b753bd60-95b8eba000007b1b-0f-4f215fd1d3ff
+X-AuditID: b753bd60-95b8eba000007b1b-0f-4f215fd1d3ff
+Message-ID: <4F215FCE.8010209@hitachi.com>
+Date: Thu, 26 Jan 2012 23:14:38 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v9 3.2 1/9] uprobes: Install and remove breakpoints.
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com> <20120110114831.17610.88468.sendpatchset@srdronam.in.ibm.com> <CAK1hOcO3pz+zBLQKfdty3UwQG8zxXwBWo9euFaE+zKawiqTE2g@mail.gmail.com> <CAK1hOcMeYDrLpgbyQXFAkrqk3Le-rLkoVwCN3wjkT61YJg0G6Q@mail.gmail.com>
+In-Reply-To: <CAK1hOcMeYDrLpgbyQXFAkrqk3Le-rLkoVwCN3wjkT61YJg0G6Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0QEBo2X011250
 
-
-
-> -----Original Message-----
-> From: James Bottomley [mailto:jbottomley@parallels.com]
-> Sent: Wednesday, January 25, 2012 12:12 PM
-> To: Greg KH
-> Cc: Christoph Hellwig; KY Srinivasan; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com
-> Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
-> staging area
+(2012/01/26 0:32), Denys Vlasenko wrote:
+> On Wed, Jan 25, 2012 at 4:13 PM, Denys Vlasenko
+> <vda.linux@googlemail.com> wrote:
+>>> +       /*
+>>> +        * Convert from rip-relative addressing to indirect addressing
+>>> +        * via a scratch register.  Change the r/m field from 0x5 (%rip)
+>>> +        * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
+>>> +        */
+>>> +       reg = MODRM_REG(insn);
+>>> +       if (reg == 0) {
+>>> +               /*
+>>> +                * The register operand (if any) is either the A register
+>>> +                * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
+>>> +                * REX prefix) %r8.  In any case, we know the C register
+>>> +                * is NOT the register operand, so we use %rcx (register
+>>> +                * #1) for the scratch register.
+>>> +                */
+>>> +               uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
+>>> +               /* Change modrm from 00 000 101 to 00 000 001. */
+>>> +               *cursor = 0x1;
 > 
-> On Wed, 2012-01-25 at 09:03 -0800, Greg KH wrote:
-> > On Wed, Jan 25, 2012 at 03:59:26PM +0000, James Bottomley wrote:
-> > > On Wed, 2012-01-25 at 07:51 -0800, Greg KH wrote:
-> > > > On Wed, Jan 25, 2012 at 10:43:00AM -0500, Christoph Hellwig wrote:
-> > > > > On Wed, Jan 25, 2012 at 03:29:05PM +0000, KY Srinivasan wrote:
-> > > > > > James,
-> > > > > > Any updates here?
-> > > > >
-> > > > > Given that this is a new driver without external dependencies it seems
-> > > > > fine even for a 3.3 merge to me.
-> > > >
-> > > > Fine with me as well.
-> > >
-> > > OK, so what I need to linux-scsi is an applyable patch moving it out of
-> > > staging.
-> >
-> > I think there have been about 3-4 copies of this in your email archives,
-> > but if that didn't work, I'm sure that KY can create it again :)
+> Hmm. I think we have a bug here.
 > 
-> Actually, no ... I've got a patch adding it to staging.  What I need to
-> add it in -rc is the motion piece (remove from staging and add to SCSI)
-> so that git doesn't say I'm trying to add 1600 lines during rc but am
-> just quietly moving a file ...
+> What if this instruction has REX.B = 1? Granted, REX.B = 1 has no effect on
+> rip-relative addressing and therefore normally won't be generated by gcc/as,
+> but still. If you replace md and r/m fields as above, you are trying to convert
+> 0x12345678(%rip) reference to (%rcx), but if REX.B = 1, then you in fact
+> converted it to (%r9)!
 
-Given that the final set of patches that addressed Christoph's comments were against
-Greg's staging tree and the patch I sent  that moves this driver from
-staging to the scsi directory is also against the staging tree, would it make sense to
-take this driver through Greg's staging tree; assuming it is ok with both James and Greg. 
+Right, thanks for finding :)
+And %rax register reference encoding has same problem, doesn't it?
 
-Regards,
+Thank you,
 
-K. Y
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
