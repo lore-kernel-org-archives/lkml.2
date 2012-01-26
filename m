@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab2AZGFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 01:05:07 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:12129 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab2AZGFF (ORCPT
+	id S1751559Ab2AZGOo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 01:14:44 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42852 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab2AZGOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 01:05:05 -0500
-X-AuditID: cbfee61b-b7be3ae0000039aa-a7-4f20ed0fdb5c
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Namjae Jeon'" <linkinjeon@gmail.com>
-Cc: "'Saugata Das'" <saugata.das@linaro.org>, linux-mmc@vger.kernel.org,
-        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
-References: <002701ccd728$edab9350$c902b9f0$%jun@samsung.com>
- <CAKLKtzddDXhbT6o8XUsMxad9+_a_StJCQz+eBnfQ+q+xLuJQKg@mail.gmail.com>
- <CAKYAXd8A70X1gb-NFHVDMXd-aSG6+Y3PWvRTZDMT3-Ze3aF5Yw@mail.gmail.com>
- <002501ccdb20$c98b2e80$5ca18b80$%jun@samsung.com>
- <CAKYAXd_jdGfpC9kcYht=qnfaTPwE+YEx1fo89GkpRyWcN6igig@mail.gmail.com>
- <CAKYAXd-pCS4kRsg0PJp98YRqz_P0CtTKWEWiQJarE_iHqiesYQ@mail.gmail.com>
-In-reply-to: <CAKYAXd-pCS4kRsg0PJp98YRqz_P0CtTKWEWiQJarE_iHqiesYQ@mail.gmail.com>
-Subject: RE: [PATCH v3 2/2] mmc: core: Support packed command for eMMC4.5 device
-Date: Thu, 26 Jan 2012 15:05:03 +0900
-Message-id: <000c01ccdbf0$71fe58b0$55fb0a10$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Aczb4321bQ7+6paDTHidsRFNNxPpDAABgJPg
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 26 Jan 2012 01:14:24 -0500
+Message-ID: <1327558458.2605.23.camel@edumazet-laptop>
+Subject: Re: [PATCH net] caif: Fix crash due to uninitialized net name-space.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sjur =?ISO-8859-1?Q?Br=E6ndeland?= 
+	<sjur.brandeland@stericsson.com>
+Cc: levinsasha928@gmail.com, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, davej@redhat.com, sjurbren@gmail.com
+Date: Thu, 26 Jan 2012 07:14:18 +0100
+In-Reply-To: <1327523631-3480-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>
+	 <1327523631-3480-1-git-send-email-sjur.brandeland@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com>:
-> 2012/1/25 Namjae Jeon <linkinjeon@gmail.com>:
-> >>> >> +
-> >>> >> +static int mmc_blk_issue_packed_rd(struct mmc_queue *mq,
-> >>> >> +               struct mmc_queue_req *mq_rq)
-> >>> >> +{
-> >>> >> +       struct mmc_blk_data *md = mq->data;
-> >>> >> +       struct mmc_card *card = md->queue.card;
-> >>> >> +       int status, ret = -EIO, retry = 2;
-> > Hi. Seungwon.
-> > First Thansk for your reply.
-> > There is one more my review comment.
-> > I think that EIO of ret is not needed. there is no case to be skipped
-> > if/ese condition in do while loop.
-Oh, no need practically.
-Thank you for your inspection.
-
+Le mercredi 25 janvier 2012 à 21:33 +0100, Sjur Brændeland a écrit :
+> net_generic() calls BUG_ON() if called with uninitialized
+> network name-space. Add check if net is initialized before
+> calling net_generic(). This fixes the following oops:
 > 
-> Hi. Seungwon.
+> [  200.752016] kernel BUG at include/net/netns/generic.h:40!
+> ...
+> [  200.752016]  [<ffffffff825c3cea>] ? get_cfcnfg+0x3a/0x180
+> [  200.752016]  [<ffffffff821cf0b0>] ? lockdep_rtnl_is_held+0x10/0x20
+> [  200.752016]  [<ffffffff825c41be>] caif_device_notify+0x2e/0x530
+> [  200.752016]  [<ffffffff810d61b7>] notifier_call_chain+0x67/0x110
+> [  200.752016]  [<ffffffff810d67c1>] raw_notifier_call_chain+0x11/0x20
+> [  200.752016]  [<ffffffff821bae82>] call_netdevice_notifiers+0x32/0x60
+> [  200.752016]  [<ffffffff821c2b26>] register_netdevice+0x196/0x300
+> [  200.752016]  [<ffffffff821c2ca9>] register_netdev+0x19/0x30
+> [  200.752016]  [<ffffffff81c1c67a>] loopback_net_init+0x4a/0xa0
+> [  200.752016]  [<ffffffff821b5e62>] ops_init+0x42/0x180
+> [  200.752016]  [<ffffffff821b600b>] setup_net+0x6b/0x100
+> [  200.752016]  [<ffffffff821b6466>] copy_net_ns+0x86/0x110
+> [  200.752016]  [<ffffffff810d5789>] create_new_namespaces+0xd9/0x190
 > 
->   if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) ||
-> +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR)) {
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> Tested-by: Sasha Levin <levinsasha928@gmail.com>
 > 
-> it seems more better that upper if condition is changed like the below.
-Do you have any reason for your comment?
-Packed command(4.5 feature) is regardless of SPI.
-SPI mode has been removed since version 4.3.
-
+> ---
 > 
-> if (!mmc_host_is_spi(card->host) && ((rq_data_dir(req) != READ) ||
-> +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR))) {
+> Hi Sasha and Dave,
 > 
+> [Sasha]
+> >Works for me.
+> Thank you Sasha for reporting this bug and testing my patch,
+> I appreciate it.
 > 
-> +++ b/drivers/mmc/core/host.c
-> @@ -346,6 +346,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct
-> device *dev)
->        host->max_blk_size = 512;
->        host->max_blk_count = PAGE_CACHE_SIZE / 512;
+> [Dave]
+> >Please post all networking patches CC:'d
+> Sorry, I missed the obvious.
+> I'm resending the same patch as yesterday, this time to:netdev
+> and with "Tested-by: Sasha". Please apply to net.
 > 
-> +       host->packed_min = 2;
+> Thanks,
+> Sjur
+> 
+>  net/caif/caif_dev.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/caif/caif_dev.c b/net/caif/caif_dev.c
+> index 673728a..6110ade 100644
+> --- a/net/caif/caif_dev.c
+> +++ b/net/caif/caif_dev.c
+> @@ -371,6 +371,14 @@ static int caif_device_notify(struct notifier_block *me, unsigned long what,
+>  	struct cflayer *layer, *link_support;
+>  	int head_room = 0;
+>  	struct caif_device_entry_list *caifdevs;
+> +	int len;
 > +
->        return host;
-> 
-> if packed_min is fixed value without increasing/decreasing,  it seems
-> more better to use macro.
-> Thanks.
-packed_min is not fixed value.
-Could you refer the following is changes log about v3?
+> +	rcu_read_lock();
+> +	len = rcu_dereference(dev_net(dev)->gen)->len;
+> +	rcu_read_unlock();
+> +
+> +	if (caif_net_id == 0 || caif_net_id > len)
+> +		return 0;
+>  
+>  	cfg = get_cfcnfg(dev_net(dev));
+>  	caifdevs = caif_device_list(dev_net(dev));
 
-Changes in v3:
-	- Add a variable member in mmc_host for minimum number of packed entries.
-	  This value can be overridden by host.
-	  
-Best regards,
-Seungwon Jeon.
+This looks wrong.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This should not be needed, something is broken elsewhere.
+
+
 
