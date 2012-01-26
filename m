@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab2AZQct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 11:32:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751991Ab2AZQcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 11:32:48 -0500
-Date: Thu, 26 Jan 2012 17:26:11 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
-	condition
-Message-ID: <20120126162611.GA1982@redhat.com>
-References: <20120117090605.GD7612@elte.hu> <20120117151242.GA13290@redhat.com> <20120118094219.GE5842@elte.hu> <20120118142005.GB10105@redhat.com> <1327400349.2614.10.camel@laptop> <1327402527.2614.17.camel@laptop> <20120125154547.GA6671@redhat.com> <1327510290.2614.95.camel@laptop> <20120125174330.GA23303@redhat.com> <1327591943.2446.111.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327591943.2446.111.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753126Ab2AZQf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 11:35:56 -0500
+Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:43362 "EHLO
+	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab2AZQfz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 11:35:55 -0500
+Message-ID: <1327595767.2062.7.camel@scapa>
+Subject: Re: [3.2+] BUG: scheduling while atomic: swapper/0/0/0x10000100
+From: Yves-Alexis Perez <corsac@debian.org>
+To: balbi@ti.com
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        linux-usb@vger.kernel.org
+Date: Thu, 26 Jan 2012 17:36:07 +0100
+In-Reply-To: <20120126163130.GB8665@legolas.emea.dhcp.ti.com>
+References: <1327587732.2296.25.camel@scapa>
+	 <20120126161539.GA2098@kroah.com>
+	 <20120126163130.GB8665@legolas.emea.dhcp.ti.com>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-2TVWU/bDsrqAfEYOgoN8"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26, Peter Zijlstra wrote:
->
-> So since we never call schedule() the p->on_rq thing will always be
-> true. This means we don't need to consider all the icky ttwu after that,
-> it also means the whole thing is inside ->pi_lock.
->
-> So we only have to consider the exact case Yasunori-San illustrated, and
-> waiting on ->pi_lock is sufficient.
 
-Yes, and this is why I think Yasunori-san's patch should work. Because,
-to remind, it adds unlock_wait(pi_lock).
+--=-2TVWU/bDsrqAfEYOgoN8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> However I think your proposal:
->
-> >                 for (;;) {
-> >                         tsk->state = TASK_DEAD;
-> >                         schedule();
-> >                 }
->
-> should equally work, if we hit the race and call schedule() with ->state
-> = TASK_RUNNING,
+On jeu., 2012-01-26 at 18:31 +0200, Felipe Balbi wrote:
+> > Very odd, it wouldn't seem that this patch would cause such a problem,
+> > as it is "obviously" correct.
+>=20
+> The funny thing is that I don't think there's any x86 system out there
+> with this *DRD* controller :-)=20
 
-Yes, in this case everything is fine, but we can shedule() with TASK_DEAD
-state. preempt_disable() can't (and shouldn't) prevent deactivate_task().
+Out of curiosity, what is a DRD controler?
 
-To simplify, try_to_wake_up() does
+> Specially when you consider the fact that
+> it's very recently that we dropped the ARCH dependency with commit
+> d242c110c43b55aaf3ebb3ceac1eeab0d452a177
+>=20
+> > Kuninori, any thoughts about this?  Should I revert this from the
+> > tree?
+>=20
+> I don't think so, I think this was a bad bisection.
+>=20
+Maybe (especially since the first bad commit is a merge commit, so I'm
+not completely sure I did correctly the second bisect). But I'm puzzled
+why reverting the commit on top of 3.2.1 fixes that. And now that Felipe
+mentions it, USB Gadget is not even compiled, so I'm completely lost.
+--=20
+Yves-Alexis
 
-		spin_lock(pi_lock);
+--=-2TVWU/bDsrqAfEYOgoN8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-		if (!(p->state & state))
-			goto out;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-		/* WINDOW */
+iQIcBAABCAAGBQJPIYD3AAoJEDBVD3hx7wuoTF8QAKtSkFYJ5lnqfAKRlu8pvMPw
+FP605BCXc4hsElm2H7RmcUd1iPaitOcrMP0OMF4CVf1FnLqYItAUhBxXGkgJ6yrg
+d90ro5fEcgOSsgYNQIXRck/wb2PwP77CvGwshL95xl3NiZgAE9GgUP1Pqmu/vNVM
+mCGjQhZB8g0r/4TXjEkW5jYQ7BLHZhLi744hS+zqabLmTb0/Z2pZ7H1H9A2Fdr2X
+XfhWj/CZjiretwPH48CcjUvegGUhOCLlOHM8B3Dtj1423RM34iOKJgG0pXjfvFiM
+IiaO0WTaRdKZ06xsCW7Cb7IeWkmBjDuPLdxPcn1rR9bZSM6fDujdNVwEgtbmzny4
+46Ae0hgavc0i64gICJZzVJ7ugsaBBsX6/S5brlrX0hR+OQp+zuTa6gdVqVG7kl5h
+pfp0NQVGgFti7uITFrfhD+qbfWhvavTRJvjdg8qlRVdnZdYHn+Ut47lguQoAb9Dn
+JVuqlWYSNdkJlM4/+FCLH1S5G2rJ7QZFk2PKRkqy64susKPVT20/kSUoEYxfnj3m
+YB1LjcoZ54cWSEOK21ApFUFBXJT3fvH41bypS7j5v72DozFFFaqhNN3EMruWV+JS
+iQQNB4OlldgjewAXZxxCmdCpS5xj9vVwGwxQ83MnoNkueXcPgZK6nTjNi7WU7kde
+ZiTLVoNEJ+uAuV0yjWt+
+=oD2s
+-----END PGP SIGNATURE-----
 
-		if (p->on_rq) {
-			... everything is fine ...
-		}
-
-		p->state = TASK_WAKING;
-		ttwu_queue(p, cpu);
-
-And the exiting task does
-
-	// but do not sleep ...
-	current->state = TASK_UNINTERRUPTIBLE;
-							// ttwu() checks ->state
-	...
-	tsk->state = TASK_DEAD;
-	schedule();
-		-> deactivate_task();
-		-> tsk->on_rq = 0;
-		-> finish_task_switch();
-
-							// ttwu() checks ->on_rq
-
-In theory it can do this all in the WINDOW above. In this case we
-can wake it up again, after finish_task_switch()-put_task_struct().
-
-No?
-
-Oleg.
-
+--=-2TVWU/bDsrqAfEYOgoN8--
