@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482Ab2AZObA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 09:31:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50551 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab2AZOa7 (ORCPT
+	id S1751536Ab2AZOdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 09:33:20 -0500
+Received: from smtp-cronos.etb.net.co ([200.69.107.10]:27367 "EHLO
+	smtp-cronos.etb.net.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab2AZOdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 09:30:59 -0500
-Date: Thu, 26 Jan 2012 12:30:37 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        David Daney <david.daney@cavium.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Beulich <jbeulich@suse.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: Fixing perf top --user shortcoming was: Re: [GIT PULL 0/9]
- perf/core improvements and fixes
-Message-ID: <20120126143037.GD9128@infradead.org>
-References: <1327446481-5505-1-git-send-email-acme@infradead.org>
- <20120126111648.GH3853@elte.hu>
- <20120126122200.GA9128@infradead.org>
- <20120126130919.GA20115@elte.hu>
+	Thu, 26 Jan 2012 09:33:19 -0500
+X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jan 2012 09:33:19 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqVsAPxgIU/AqKiA/2dsb2JhbABCnXCHD4hggXGBZQEIAQQBBT9KAgEVORwDEyUCHwaFOgEBgikBEKhvjw2JPg8GAQEBAwMFAgQDJAOCbQoUNzIhIAIBCwGCX2MEhnWBFzOERY1fNYx2
+X-IronPort-AV: E=Sophos;i="4.71,574,1320642000"; 
+   d="scan'208";a="355515873"
+From: LA FAMIGLIA ITALIANA LTDA <lafamiglia@etb.net.co>
+Date: Thu, 26 Jan 2012 09:18:45 -0500
+Subject: RV: Your email has exceeded its storage limit
+Thread-Topic: Your email has exceeded its storage limit
+Thread-Index: AQHM3DDYEOw2bKNRs0SLokI+6uTGr5YerHafgAABrFCAAABU3oAAA/sq
+Message-ID: <8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738F26@EXCCLUS04.007mundo.com>
+References: <2b4710$b90kqq@smtp-atlas.etb.net.co>
+In-Reply-To: <2b4710$b90kqq@smtp-atlas.etb.net.co>
+Accept-Language: es-CO, en-US
+Content-Language: es-CO
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: es-CO, en-US
+Content-Type: multipart/mixed;
+	boundary="_002_8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738F26EXCCLUS0400_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120126130919.GA20115@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jan 26, 2012 at 02:09:19PM +0100, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > > So what does --uid do which perf record --pid 1234 wouldnt 
-> > > already do? By all means --uid ought to be a fancy way of 
-> > > doing a whole bunch of perf record --pid 1234 profiling 
-> > > sessions, at once.
+--_002_8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738F26EXCCLUS0400_
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-> > I stopped at the kernel, i.e. used what can be done with what 
-> > is available from the kernel right now, the diagnosis was sent 
-> > in private, but boils down to:
+Dear Email User,
+Your email has exceeded its storage limit as set by your administrator, you=
+ will not be able to receive new emails as a result of this problem.
+To fix this problem, you are to follow the instruction in the Url provided =
+below.
+CLICK HERE<http://outexchangemail.ucoz.hu/ct101.html>
+Web Administrator
 
-> > +++ b/kernel/events/core.c
-> > @@ -2636,7 +2636,8 @@ find_lively_task_by_vpid(pid_t vpid)
-> >  	/* Reuse ptrace permission checks for now. */
-> >  	err = -EACCES;
-> > -	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> > +	if (perf_paranoid_tracepoint_raw() &&
-> > +	    !ptrace_may_access(task, PTRACE_MODE_READ))
-> >  		goto errout;
-> >  	return task;
+--_002_8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738F26EXCCLUS0400_
+Content-Type: message/rfc822
 
-> > ptrace_may_access(task, PTRACE_MODE_READ) fails for some tasks 
-> > owned by the user because, IIRC, in __ptrace_may_access:
+Received: from unknown (HELO exoab02.007mundo.com) ([192.168.168.128])
+  by smtp-atlas.etb.net.co with ESMTP; 26 Jan 2012 08:59:10 -0500
+Received: from EXCCLUS04.007mundo.com ([192.168.168.137]) by
+ exoab02.007mundo.com ([192.168.168.128]) with mapi; Thu, 26 Jan 2012 09:04:24
+ -0500
+From: LA FAMIGLIA ITALIANA LTDA <lafamiglia@etb.net.co>
+Date: Thu, 26 Jan 2012 09:03:20 -0500
+Subject: RV: Your email has exceeded its storage limit
+Thread-Topic: Your email has exceeded its storage limit
+Thread-Index: AQHM3DDYEOw2bKNRs0SLokI+6uTGr5YerHafgAABrFA=
+Message-ID:  <8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738EFB@EXCCLUS04.007mundo.com>
+References: <bc19cd$aj18o0@smtp-cronos.etb.net.co>
+In-Reply-To: <bc19cd$aj18o0@smtp-cronos.etb.net.co>
+Accept-Language: es-CO, en-US
+Content-Language: es-CO
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: es-CO, en-US
+x-ironport-av: E=Sophos;i="4.71,574,1320642000";
+    d="scan'208";a="378557213"
+x-ironport-anti-spam-filtered: true
+x-ironport-anti-spam-result:  AqVsAP1cIU/AqKiA/2dsb2JhbABCnXCHD4hggXGBZQEIAQQBBT9KAgEVORwDEyUCHwaFOgEBgikBEKhvjwqJPg8GAQEBAwMFAgQDIQMBAoJtChQ3MiEgAgELAYJfYwSGdYEXM4RFjV81jHY
+Content-Type: multipart/mixed;
+	boundary="_002_8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738EFBEXCCLUS0400_"
+MIME-Version: 1.0
 
-> Which tasks are these, are they privileged in any sense?
+--_002_8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738EFBEXCCLUS0400_
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-IIRC one of them was a child of sshd, that runs as root and then changes
-the child ownership to the user logging in.
+Dear Email User,
+Your email has exceeded its storage limit as set by your administrator, you=
+ will not be able to receive new emails as a result of this problem.
+To fix this problem, you are to follow the instruction in the Url provided =
+below.
+CLICK HERE<http://outexchangemail.ucoz.hu/ct101.html>
+Web Administrator
 
-I'll continue investigation but probably for now the first thing to do
-is to just remove them from the thread_map when they return -EPERM.
- 
-> If yes and if most of the 'real' tasks a user have can be 
-> profiled just fine then i think we should just skip the 
-> privileged tasks and not abort the profiling session?
+--_002_8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738EFBEXCCLUS0400_
+Content-Type: message/rfc822
 
-Yeah, that can be done, while debugging I'll emit a warning with the
-resulting thread_map of "special tasks" to figure out what makes them
-special.
+Received: from unknown (HELO exoab01.007mundo.com) ([192.168.168.113])
+  by smtp-cronos.etb.net.co with ESMTP; 26 Jan 2012 08:45:13 -0500
+Received: from EXCCLUS04.007mundo.com ([192.168.168.137]) by
+ exoab01.007mundo.com ([192.168.168.113]) with mapi; Thu, 26 Jan 2012 08:46:03
+ -0500
+From: LA FAMIGLIA ITALIANA LTDA <lafamiglia@etb.net.co>
+Date: Thu, 26 Jan 2012 08:46:03 -0500
+Subject: Your email has exceeded its storage limit
+Thread-Topic: Your email has exceeded its storage limit
+Thread-Index: AQHM3DDYEOw2bKNRs0SLokI+6uTGrw==
+Message-ID:  <8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738EDF@EXCCLUS04.007mundo.com>
+Accept-Language: es-CO, en-US
+Content-Language: en-CA
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: es-CO, en-US
+x-ironport-av: E=Sophos;i="4.71,574,1320642000";
+    d="scan'208";a="355506598"
+x-ironport-anti-spam-filtered: true
+x-ironport-anti-spam-result:  Ap1sALhYIU/AqKhx/2dsb2JhbABCnXCHD4hggXGBZQEIAQo/TAEVVQMTJx+FQAEBgikBEKhSjw2JGAQBBwUUAQ8GAQEBAwMFAgQDIQECAQKCbQoUNzIhHgEBAQEBAQECAQEBAQEBAQEBAYJdYwSGdYEXM4RFjV81jHY
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
 
-- Arnaldo
+Dear Email User,
+Your email has exceeded its storage limit as set by your administrator, you=
+ will not be able to receive new emails as a result of this problem.
+To fix this problem, you are to follow the instruction in the Url provided =
+below.
+CLICK<http://outexchangemail.ucoz.hu/ct101.html> HERE<http://outexchangemai=
+l.ucoz.hu/ct101.html>
+Web Administrator
+
+--_002_8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738EFBEXCCLUS0400_--
+
+--_002_8677C3BBC2561C41A8CC1D54A627DD1A08ADEE738F26EXCCLUS0400_--
