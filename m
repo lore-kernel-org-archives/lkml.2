@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab2AZSjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:39:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12851 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752484Ab2AZSjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 13:39:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="103068461"
-From: Allen Kay <allen.m.kay@intel.com>
-To: linux-pci-owner@vger.kernel.org
-Cc: jesse.barnes@intel.com, matthew.wilcox@intel.com,
-        linux-kernel@vger.kernel.org, jean.guyader@eu.citrix.com,
-        eric.chanudet@citrix.com, allen.m.kay@intel.com
-Subject: [PATCH 1/1] check for pci bar restore completion and retry
-Date: Thu, 26 Jan 2012 10:23:44 -0800
-Message-Id: <1327602224-30710-1-git-send-email-allen.m.kay@intel.com>
-X-Mailer: git-send-email 1.6.0.6
+	id S1753469Ab2AZSkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:40:01 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43880 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753355Ab2AZSj7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 13:39:59 -0500
+X-Sasl-enc: x6AczDa/PBYchALjdBnrPHVobKawIuYW48qfzkyFnyir 1327603198
+Date: Thu, 26 Jan 2012 10:28:29 -0800
+From: Greg KH <greg@kroah.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [PATCH stable 3/4] block: fail SCSI passthrough ioctls on
+ partition devices
+Message-ID: <20120126182829.GB22334@kroah.com>
+References: <1326772723.2819.167.camel@deadeye>
+ <1326773222.2819.172.camel@deadeye>
+ <4F1545A4.3000809@redhat.com>
+ <1326862077.2819.210.camel@deadeye>
+ <4F168A49.8000606@redhat.com>
+ <1326902676.3271.10.camel@deadeye>
+ <4F1EAA6A.6020207@redhat.com>
+ <20120126001926.GA1058@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120126001926.GA1058@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some OEM systems, pci_restore_state() is called while FLR has not yet
-completed.  As a result, PCI BAR register restore is not successful.  This fix
-reads back the restored value and compares it with saved value and re-tries 10
-times before giving up.
+On Wed, Jan 25, 2012 at 04:19:26PM -0800, Greg KH wrote:
+> On Tue, Jan 24, 2012 at 01:56:10PM +0100, Paolo Bonzini wrote:
+> > On 01/18/2012 05:04 PM, Ben Hutchings wrote:
+> > >>  There is harm.  You'll be blacklisting also the standard block device
+> > >>  ioctls, and those won't work on 32-on-64 anymore.  A system with 32-bit
+> > >>  userland will likely not boot anymore.
+> > >
+> > >It does (yes, I tested that myself now).  The standard block device
+> > >ioctls are handled without calling the driver's compat_ioctl.
+> > 
+> > What about the non-compat path when done by non-root?
+> > 
+> > * Does BLKROSET still return EACCES when run by non-root and without
+> > CAP_SYS_ADMIN?  I suspect your patch is changing it to EINVAL.
+> > 
+> > * Does BLKFLSBUF work when run by non-root but with CAP_SYS_ADMIN?
+> 
+> I'm confused here as well.
+> 
+> Can someone please send me the proper patch that I need to apply to
+> resolve this issue on the 2.6.32.y kernel?
 
-Signed-off-by: Jean Guyader <jean.guyader@eu.citrix.com>
-Signed-off-by: Eric Chanudet <eric.chanudet@citrix.com>
-Signed-off-by: Allen Kay <allen.m.kay@intel.com>
----
- drivers/pci/pci.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+Ok, I think I've queued up the correct ones, please let me know if I
+messed something up.
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index af295bb..0549050 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -959,6 +959,7 @@ void pci_restore_state(struct pci_dev *dev)
- {
- 	int i;
- 	u32 val;
-+	int tries;
- 
- 	if (!dev->state_saved)
- 		return;
-@@ -973,12 +974,16 @@ void pci_restore_state(struct pci_dev *dev)
- 	 */
- 	for (i = 15; i >= 0; i--) {
- 		pci_read_config_dword(dev, i * 4, &val);
--		if (val != dev->saved_config_space[i]) {
-+		tries = 10;		
-+		while (tries && val != dev->saved_config_space[i]) {
- 			dev_dbg(&dev->dev, "restoring config "
- 				"space at offset %#x (was %#x, writing %#x)\n",
- 				i, val, (int)dev->saved_config_space[i]);
- 			pci_write_config_dword(dev,i * 4,
- 				dev->saved_config_space[i]);
-+			pci_read_config_dword(dev, i * 4, &val);
-+			mdelay(10);
-+			tries--;
- 		}
- 	}
- 	pci_restore_pcix_state(dev);
--- 
-1.6.0.6
+thanks,
 
+greg k-h
