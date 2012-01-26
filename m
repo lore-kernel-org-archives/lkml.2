@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2AZLaC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 06:30:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15419 "EHLO mx1.redhat.com"
+	id S1752744Ab2AZLer (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 06:34:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab2AZLaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 06:30:00 -0500
-Date: Thu, 26 Jan 2012 12:29:42 +0100
+	id S1751450Ab2AZLeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 06:34:46 -0500
+Date: Thu, 26 Jan 2012 12:34:22 +0100
 From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Greg KH <greg@kroah.com>, Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+To: Arend van Spriel <arend@broadcom.com>
 Cc: Francis Moreau <francis.moro@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Arend van Spriel <arend@broadcom.com>, linux-usb@vger.kernel.org
-Subject: [PATCH] USB: Realtek cr: fix autopm scheduling while atomic 
-Message-ID: <20120126112942.GC2451@redhat.com>
+        "John W. Linville" <linville@tuxdriver.com>, Greg KH <greg@kroah.com>
+Subject: Re: kernel 3.2.1: BUG: scheduling while atomic:
+ swapper/0/0/0x10000100
+Message-ID: <20120126113414.GD2451@redhat.com>
 References: <CAC9WiBgpBCWZVjAQkJWSpXhC_dK1KKPfAHZvxVgaLV8BUsc41Q@mail.gmail.com>
  <4F1FBAA9.4040405@broadcom.com>
  <CAC9WiBjpsLuJhzw+vZsPC2bA73mad444Gq32DRL_gCri2MqaMw@mail.gmail.com>
@@ -35,26 +35,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=784345
+On Thu, Jan 26, 2012 at 10:49:47AM +0100, Arend van Spriel wrote:
+> >>> backtrace:
+> >>> :BUG: sleeping function called from invalid context at
+> >>> drivers/base/power/runtime.c:785
+> >>> :in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/0
+> >>> :1 lock held by swapper/0/0:
+> >>> : #0:  (&chip->rts51x_suspend_timer){+.-...}, at: [<ffffffff8108d711>]
+> >>> run_timer_softirq+0x111/0x600
+> >>> :Pid: 0, comm: swapper/0 Tainted: G        W    3.2.0-2.fc17.x86_64.debug #1
+> >>> :Call Trace:
+> >>> : <IRQ>  [<ffffffff8105ee7a>] __might_sleep+0x13a/0x1f0
+> >>> : [<ffffffffa00180b0>] ? rts51x_modi_suspend_timer+0x50/0x50 [ums_realtek]
+> >>> : [<ffffffff813fdee3>] __pm_runtime_idle+0xa3/0xb0
+> >>> : [<ffffffffa00180b0>] ? rts51x_modi_suspend_timer+0x50/0x50 [ums_realtek]
+> >>> : [<ffffffff8146ed30>] usb_autopm_put_interface+0x30/0x40
+> >>
+> >> This trace seems to indicate what is wrong. At least for this one user.
+> >> The usb_autopm_put_interface() call seems result in a sleep and the
+> >> rts51x_suspend_timer_fn is holding a lock. Below the code indicated in
+> >> the trace.
+> >>
+> >> runtime.c:
+> >> 768 /**
+> >> 769  * __pm_runtime_idle - Entry point for runtime idle operations.
+> >> 770  * @dev: Device to send idle notification for.
+> >> 771  * @rpmflags: Flag bits.
+> >> 772  *
+> >> 773  * If the RPM_GET_PUT flag is set, decrement the device's usage
+> >> count and
+> >> 774  * return immediately if it is larger than zero.  Then carry out an idle
+> >> 775  * notification, either synchronous or asynchronous.
+> >> 776  *
+> >> 777  * This routine may be called in atomic context if the RPM_ASYNC
+> >> flag is set,
+> >> 778  * or if pm_runtime_irq_safe() has been called.
+> >> 779  */
+> >> 780 int __pm_runtime_idle(struct device *dev, int rpmflags)
+> >> 781 {
+> >> 782         unsigned long flags;
+> >> 783         int retval;
+> >> 784
+> >> 785         might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
+> >>
+> >> This issue can either be caused in ums_realtek module or the usb autopm
+> >> code. Have not looked into that.
+> >>
+> > 
+> > Just a wild guess: it seems that we're affected using different HW
+> > configs with different USB devices, so it would indicate that usb
+> > autopm is the culprit.
 
-Reported-by: Francis Moreau <francis.moro@gmail.com>
-Reported-and-tested-by: Christian D <chrisudeussen@gmail.com>
-Reported-and-tested-by: Jimmy Dorff <jdorff@phy.duke.edu>
-Reported-and-tested-by: collura@ieee.org
-Cc: stable@vger.kernel.org # 3.2+
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Except Arend, all other users reporting that have ums_realtek, so they
+hit that driver issue. I just posted ums_realtek fix.
 
-diff --git a/drivers/usb/storage/realtek_cr.c b/drivers/usb/storage/realtek_cr.c
-index 1f62723..d32f720 100644
---- a/drivers/usb/storage/realtek_cr.c
-+++ b/drivers/usb/storage/realtek_cr.c
-@@ -789,7 +789,7 @@ static void rts51x_suspend_timer_fn(unsigned long data)
- 			rts51x_set_stat(chip, RTS51X_STAT_SS);
- 			/* ignore mass storage interface's children */
- 			pm_suspend_ignore_children(&us->pusb_intf->dev, true);
--			usb_autopm_put_interface(us->pusb_intf);
-+			usb_autopm_put_interface_async(us->pusb_intf);
- 			US_DEBUGP("%s: RTS51X_STAT_SS 01,"
- 				"intf->pm_usage_cnt:%d, power.usage:%d\n",
- 				__func__,
+Arend issue is different, it happens on different kernel version 3.3-rc1 vs 3.2.
+
+Stanislaw 
+ 
