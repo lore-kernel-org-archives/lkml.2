@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab2AZPEr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:04:47 -0500
-Received: from cpanel23.proisp.no ([88.87.44.74]:32939 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583Ab2AZPEq (ORCPT
+	id S1752624Ab2AZPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:07:28 -0500
+Received: from paperboy.avencall.com ([91.194.178.22]:37457 "EHLO
+	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751574Ab2AZPH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 10:04:46 -0500
-Message-ID: <4F216B85.7010208@numascale.com>
-Date: Thu, 26 Jan 2012 16:04:37 +0100
-From: Steffen Persvold <sp@numascale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Daniel J Blueman <daniel@numascale-asia.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: RCU qsmask !=0 warnings on large-SMP...
-References: <4F1FCF02.9060209@numascale-asia.com> <20120125140029.GA2534@linux.vnet.ibm.com> <4F200F4D.5000201@numascale.com> <20120125181441.GD2849@linux.vnet.ibm.com> <4F2070B9.2000104@numascale.com> <20120125213450.GJ2849@linux.vnet.ibm.com> <4F2086DA.4040203@numascale.com> <20120126015843.GN2849@linux.vnet.ibm.com>
-In-Reply-To: <20120126015843.GN2849@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 26 Jan 2012 10:07:26 -0500
+Date: Thu, 26 Jan 2012 16:07:19 +0100
+From: Guillaume Knispel <gknispel@proformatique.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Guillaume Knispel <gknispel@proformatique.com>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Xavier Carcelle <xcarcelle@avencall.com>,
+        =?ISO-8859-1?Q?No=E9?= Rubinstein <nrubinstein@avencall.com>
+Subject: Re: How to "register" a GSI for a non PCI non ISA device
+Message-ID: <20120126160719.3b9be3b3@xilun>
+In-Reply-To: <20120125190214.GC18606@phenom.dumpdata.com>
+References: <20120124184203.1b0878c2@xilun>
+	<4F1F99A5.1000206@kernel.org>
+	<20120125182314.7834c75b@xilun>
+	<20120125190214.GC18606@phenom.dumpdata.com>
+Organization: Avencall
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/26/2012 02:58, Paul E. McKenney wrote:
-> On Wed, Jan 25, 2012 at 11:48:58PM +0100, Steffen Persvold wrote:
-[]
->
-> This looks like it will produce useful information, but I am not seeing
-> output from it below.
->
-> 							Thanx, Paul
->
->> This run it was CPU24 that triggered the issue :
->>
+On Wed, 25 Jan 2012 14:02:14 -0500
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-This line is the printout for the root level :
+> On Wed, Jan 25, 2012 at 06:23:14PM +0100, Guillaume Knispel wrote:
+> > On Wed, 25 Jan 2012 00:56:53 -0500
+> > Len Brown <lenb@kernel.org> wrote:
+> > 
+> > > What is the benefit of implementing ACPI on this custom system?
+> > 
+> > For our short term project it seems to be more a necessity than a
+> > benefit. ACPI is supported by the SoC, tables are already largely
+> > provided by Coreboot, the whole x86 ecosystem including Linux is more
+> > or less based around ACPI, and my whole interrogation comes from the
+> > fact that *acpi*_register_gsi() seems to be necessary to configure a
+> > GSI in the APIC but is not exported anymore, so my guess is that if I
+> 
+> Hm, isn't it __acpi_register_gsi?
 
->> [  231.572688] CPU 24, treason uncloaked, rsp @ ffffffff81a1cd80 (rcu_sched), rnp @ ffffffff81a1cd80(r) qsmask=0x1f, c=5132 g=5132 nc=5132 ng=5133 sc=5132 sg=5133 mc=5132 mg=5133
+__acpi_register_gsi exists on recent kernels, it is the pointer to
+the underlying implementation of that function depending on the
+platform (x86 / xen-x86) and on the variant of the platform (pic/apic).
+acpi_register_gsi still exists and it calls __acpi_register_gsi.
 
-(this is the WARN_ON printout) :
->> [  231.576167] ------------[ cut here ]------------
->> [  231.576167] WARNING: at kernel/rcutree_plugin.h:1011 rcu_preempt_check_blocked_tasks+0x27/0x30()
->> [  231.576167] Hardware name: H8QI6
->> [  231.576167] Modules linked in: rcutorture
->> [  231.576167] Pid: 4603, comm: rcu_torture_rea Not tainted 3.2.1-numaconnect10+ #77
->> [  231.576167] Call Trace:
->> [  231.576167]<IRQ>   [<ffffffff810bb217>] ? rcu_preempt_check_blocked_tasks+0x27/0x30
->> [  231.576167]  [<ffffffff8106f47b>] warn_slowpath_common+0x8b/0xc0
->> [  231.576167]  [<ffffffff8106f4c5>] warn_slowpath_null+0x15/0x20
->> [  231.576167]  [<ffffffff810bb217>] rcu_preempt_check_blocked_tasks+0x27/0x30
->> [  231.576167]  [<ffffffff810bb330>] rcu_start_gp+0x110/0x1b0
->> [  231.576167]  [<ffffffff810bbf3b>] __rcu_process_callbacks+0x8b/0xd0
->> [  231.576167]  [<ffffffff810bc7a0>] rcu_process_callbacks+0x20/0x40
->> [  231.576167]  [<ffffffff8107580d>] __do_softirq+0x9d/0x140
->> [  231.576167]  [<ffffffff815d982c>] call_softirq+0x1c/0x30
->> [  231.576167]  [<ffffffff8103451a>] do_softirq+0x4a/0x80
->> [  231.576167]  [<ffffffff81075b83>] irq_exit+0x43/0x60
->> [  231.576167]  [<ffffffff8104aed5>] smp_apic_timer_interrupt+0x45/0x60
->> [  231.576167]  [<ffffffff815d834b>] apic_timer_interrupt+0x6b/0x70
->> [  231.576167]<EOI>   [<ffffffff81067aa9>] ? finish_task_switch+0x59/0xc0
->> [  231.576167]  [<ffffffff815d4d37>] __schedule+0x337/0x710
->> [  231.576167]  [<ffffffff81090425>] ? sched_clock_local+0x15/0x80
->> [  231.576167]  [<ffffffff8107b826>] ? lock_timer_base+0x36/0x70
->> [  231.576167]  [<ffffffff8107baa2>] ? mod_timer+0xf2/0x1d0
->> [  231.576167]  [<ffffffffa0001510>] ? rcu_torture_shuffle+0x80/0x80 [rcutorture]
->> [  231.576167]  [<ffffffff815d53ea>] schedule+0x3a/0x60
->> [  231.576167]  [<ffffffffa0001640>] rcu_torture_reader+0x130/0x230 [rcutorture]
->> [  231.576167]  [<ffffffffa0001dc0>] ? rcu_torture_writer+0x160/0x160 [rcutorture]
->> [  231.576167]  [<ffffffffa0001510>] ? rcu_torture_shuffle+0x80/0x80 [rcutorture]
->> [  231.576167]  [<ffffffff8108a726>] kthread+0x96/0xa0
->> [  231.576167]  [<ffffffff815d9734>] kernel_thread_helper+0x4/0x10
->> [  231.576167]  [<ffffffff8108a690>] ? kthread_stop+0x70/0x70
->> [  231.576167]  [<ffffffff815d9730>] ? gs_change+0xb/0xb
->> [  231.576167] ---[ end trace 828c8d7afbd02d1b ]---
->>
+> > can't call it explicitly from my LKM, there should better be a way to
+> > make it be called when an ACPI thing is done, or maybe a legacy table
+> > parsed.
+> 
+> Can you do it the way xen does? Look in arch/x86/xen/pci.c
 
-I didn't include the leaf node printout, but the counters were 
-indentical to the root printout (with the exception of the rnp address 
-and qsmask of course).
+Did not found this file. Besides, isn't Xen a separate architecture
+from mainline x86, compiled built-in? My goal is to only touch LKM and
+system firmware if necessary.
 
-Cheers,
+> > As we first target an unmodified (if possible) 2.6.32 kernel from
+> > Debian Squeeze, I can't just re-export acpi_register_gsi() and call it
+> > a day. (If I've no other choice I'll obviously do it, but this would be
+> > quite bad for future maintenance).
+> 
+> Oh wow. That is ancient. 3.2?
+
+3.2 when a Debian stable will feature 3.2 :)
+
 -- 
-Steffen Persvold, Chief Architect NumaChip
-Numascale AS - www.numascale.com
-Tel: +47 92 49 25 54 Skype: spersvold
+Guillaume Knispel
+Avencall - 10 bis, rue Lucien Voilin - 92800 Puteaux
