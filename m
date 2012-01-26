@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab2AZAUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 19:20:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57727 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837Ab2AZAUh (ORCPT
+	id S1751842Ab2AZAhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 19:37:54 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:34213 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2AZAhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 19:20:37 -0500
-Date: Wed, 25 Jan 2012 16:20:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: adjust rss counters for migration entiries
-Message-Id: <20120125162035.32766a1c.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1201251453550.2141@eggly.anvils>
-References: <20120106173827.11700.74305.stgit@zurg>
-	<20120106173856.11700.98858.stgit@zurg>
-	<20120111144125.0c61f35f.kamezawa.hiroyu@jp.fujitsu.com>
-	<4F0D46EF.4060705@openvz.org>
-	<20120111174126.f35e708a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120118152131.45a47966.akpm@linux-foundation.org>
-	<alpine.LSU.2.00.1201231719580.14979@eggly.anvils>
-	<4F1E58DD.6030607@openvz.org>
-	<alpine.LSU.2.00.1201251453550.2141@eggly.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jan 2012 19:37:53 -0500
+Date: Thu, 26 Jan 2012 09:37:35 +0900
+From: Norbert Preining <preining@logic.at>
+To: Emmanuel Grumbach <egrumbach@gmail.com>
+Cc: linux-kernel@vger.kernel.org, ipw3945-devel@lists.sourceforge.net,
+        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>
+Subject: Re: iwlagn is getting even worse with 3.3-rc1
+Message-ID: <20120126003735.GA2346@gamma.logic.tuwien.ac.at>
+References: <20120124013625.GB18436@gamma.logic.tuwien.ac.at> <CANUX_P3er0orBy8OhDuY1DfgD810UD-_HB_ukJnCA+W8e-VazQ@mail.gmail.com> <20120125002250.GA20431@gamma.logic.tuwien.ac.at> <CANUX_P0UREz_jZABu+Y_QYOh9tx_sKZSSkZpYHBEVtcU4QQdSA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANUX_P0UREz_jZABu+Y_QYOh9tx_sKZSSkZpYHBEVtcU4QQdSA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jan 2012 15:01:38 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+Hi Emmanuel,
 
-> > > > : From: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> > > > : Subject: mm: postpone migrated page mapping reset
-> > > > :
-> > > > : Postpone resetting page->mapping until the final
-> > > > remove_migration_ptes().
-> > > > : Otherwise the expression PageAnon(migration_entry_to_page(entry)) does
-> > > > not
-> > > > : work.
-> > > > :
-> > > > : Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> > > > : Cc: Hugh Dickins<hughd@google.com>
-> > > > : Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> > > 
-> > > Isn't this one actually an essential part of the fix?  It should have
-> > > been part of the same patch, but you split them apart, now Andrew has
-> > > reordered them and pushed one part to 3.3, but this needs to go in too?
-> > > 
-> > 
-> > Oops. I missed that. Yes. race-fix does not work for anon-memory without that
-> > patch.
-> > But this is non-fatal, there are no new bugs.
-> 
-> Non-fatal and no new bug, yes, but it makes the fix which has already
-> gone in rather less of a fix than was intended (it'll get the total right,
-> but misreport anon as file).  Andrew, please add this one to your next
-> push to Linus - thanks.
+On Di, 24 Jan 2012, Emmanuel Grumbach wrote:
+> yeah... looks like the same issue as Dave. Can you please try with 0xc0000000 ?
+> it will be noisy so be prepared...
 
-Shall do.
+syslog output is at http://www.logic.at/people/preining/syslog.log
+this is after a suspend and resume.
+
+first connection after resume succeeded at around kernel time 378.859794
+then it worked for say 20sec or so, hard to say when exactely it dropped,
+but defeinitely at kernel time 451 it was finished.
+
+After that nothing went out or in again.
+
+Hope you can make something out of that.
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+SKETTY (n.)
+Apparently self-propelled little dance a beer glass performs in its
+own puddle.
+			--- Douglas Adams, The Meaning of Liff
