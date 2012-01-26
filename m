@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2AZS1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:27:09 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:47957
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751601Ab2AZS1H (ORCPT
+	id S1753372Ab2AZS2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:28:51 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64609 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab2AZS2t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 13:27:07 -0500
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dhc1bhc31hc1ah2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4F219AF2.6070108@freescale.com>
-Date: Thu, 26 Jan 2012 12:26:58 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Thu, 26 Jan 2012 13:28:49 -0500
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Joerg Roedel <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Stuart Yoder <b08248@gmail.com>, Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-References: <1326983405-319-1-git-send-email-joerg.roedel@amd.com> <201201191646.13798.laurent.pinchart@ideasonboard.com> <20120119160739.GB2205@amd.com> <201201191727.10176.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201201191727.10176.laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+In-Reply-To: <4F215FCE.8010209@hitachi.com>
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com>
+ <20120110114831.17610.88468.sendpatchset@srdronam.in.ibm.com>
+ <CAK1hOcO3pz+zBLQKfdty3UwQG8zxXwBWo9euFaE+zKawiqTE2g@mail.gmail.com>
+ <CAK1hOcMeYDrLpgbyQXFAkrqk3Le-rLkoVwCN3wjkT61YJg0G6Q@mail.gmail.com> <4F215FCE.8010209@hitachi.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Thu, 26 Jan 2012 19:28:28 +0100
+Message-ID: <CAK1hOcP-+gXcfCV6zJFEu381R9XPR=qxNFQTOT8Y2o4L-1mwhA@mail.gmail.com>
+Subject: Re: [PATCH v9 3.2 1/9] uprobes: Install and remove breakpoints.
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2012 10:27 AM, Laurent Pinchart wrote:
-> Hi Joerg,
-> 
-> On Thursday 19 January 2012 17:07:39 Joerg Roedel wrote:
->> On Thu, Jan 19, 2012 at 04:46:13PM +0100, Laurent Pinchart wrote:
->>>> +struct iommu_domain_geometry {
->>>> +	u64 aperture_start;	/* First address that can be mapped    */
->>>> +	u64 aperture_end;	/* Last address that can be mapped     */
->>>
->>> Would it make sense to use a platform-dependent type that represents
->>> physical addresses instead of u64 ?
+On Thu, Jan 26, 2012 at 3:14 PM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+> (2012/01/26 0:32), Denys Vlasenko wrote:
+>> On Wed, Jan 25, 2012 at 4:13 PM, Denys Vlasenko
+>> <vda.linux@googlemail.com> wrote:
+>>>> +       /*
+>>>> +        * Convert from rip-relative addressing to indirect addressing
+>>>> +        * via a scratch register.  Change the r/m field from 0x5 (%rip)
+>>>> +        * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
+>>>> +        */
+>>>> +       reg = MODRM_REG(insn);
+>>>> +       if (reg == 0) {
+>>>> +               /*
+>>>> +                * The register operand (if any) is either the A register
+>>>> +                * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
+>>>> +                * REX prefix) %r8.  In any case, we know the C register
+>>>> +                * is NOT the register operand, so we use %rcx (register
+>>>> +                * #1) for the scratch register.
+>>>> +                */
+>>>> +               uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
+>>>> +               /* Change modrm from 00 000 101 to 00 000 001. */
+>>>> +               *cursor = 0x1;
 >>
->> Well, u64 is a catch-all datatype which should suit all drivers. Is this
->> a problem at ARM?
-> 
-> No, it's not a problem for ARM, at least to my knowledge. It just struck me as 
-> weird, as we have specific data types for other kinds of addresses (such as 
-> dma_addr_t).
+>> Hmm. I think we have a bug here.
+>>
+>> What if this instruction has REX.B = 1? Granted, REX.B = 1 has no effect on
+>> rip-relative addressing and therefore normally won't be generated by gcc/as,
+>> but still. If you replace md and r/m fields as above, you are trying to convert
+>> 0x12345678(%rip) reference to (%rcx), but if REX.B = 1, then you in fact
+>> converted it to (%r9)!
+>
+> Right, thanks for finding :)
+> And %rax register reference encoding has same problem, doesn't it?
 
-If we want to be able to expose these attribute structs to userspace via
-vfio, we'll want to stick with fixed size types.
+Yes.
 
--Scott
+The solution is trivial: "if (REX pfx exists) REX.B = 0;"
 
+Also, I don't remember whether (%rip) addressing is
+affected by 0x67 (address size) prefix. If it is, then
+nothing needs to be done.
+
+But if there is an exception and CPU ignores 0x67 pfx
+for (%rip) addressing, we will need to check for and
+remove this pfx.
+
+Otherwise, it'll instruct to use 32-bit registers
+for addressing, thus it will turn our (%rax) operand
+into (%eax). Not good.
+
+-- 
+vda
