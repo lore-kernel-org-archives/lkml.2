@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab2AZIyL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 03:54:11 -0500
-Received: from shutemov.name ([176.9.204.213]:40889 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601Ab2AZIyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 03:54:09 -0500
-Date: Thu, 26 Jan 2012 10:54:48 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-mm@kvack.org, "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: fix compile warning on non-numa systems
-Message-ID: <20120126085448.GA32013@shutemov.name>
-References: <4F13BE05.70505@cn.fujitsu.com>
- <20120116084715.GA1639@tiehlicka.suse.cz>
- <20120126005521.07ac0faf.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120126005521.07ac0faf.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751717Ab2AZI7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 03:59:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33377 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab2AZI7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 03:59:21 -0500
+Date: Thu, 26 Jan 2012 01:05:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        patches@linaro.org
+Subject: Re: [PATCH] hrtimers: teach usleep_range() to return how many usecs
+ was slept
+Message-Id: <20120126010516.c5af4a4e.akpm@linux-foundation.org>
+In-Reply-To: <1326718403-28156-1-git-send-email-dmitry.antipov@linaro.org>
+References: <1326718403-28156-1-git-send-email-dmitry.antipov@linaro.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 12:55:21AM -0800, Andrew Morton wrote:
-> On Mon, 16 Jan 2012 09:47:15 +0100 Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Mon 16-01-12 14:04:53, Li Zefan wrote:
-> > > Fix this warning:
-> > > 
-> > >   CC      mm/memcontrol.o
-> > > mm/memcontrol.c: In function 'memcg_check_events':
-> > > mm/memcontrol.c:779:22: warning: unused variable 'do_numainfo'
-> > 
-> > This has been already posted by Kirill and I didn't like the solution
-> > (https://lkml.org/lkml/2011/12/27/86). He then reposted with a different
-> > version (https://lkml.org/lkml/2012/1/6/281).
-> > The later one looks better but I still think this is not worth
-> > complicate the code just to get rid of this warning.
-> 
-> This?
-> 
-> --- a/mm/memcontrol.c~a
-> +++ a/mm/memcontrol.c
-> @@ -776,7 +776,8 @@ static void memcg_check_events(struct me
->  	/* threshold event is triggered in finer grain than soft limit */
->  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_THRESH))) {
-> -		bool do_softlimit, do_numainfo;
-> +		bool do_softlimit;
-> +		bool do_numainfo __maybe_unused;
->  
->  		do_softlimit = mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_SOFTLIMIT);
-> _
+On Mon, 16 Jan 2012 16:53:23 +0400 Dmitry Antipov <dmitry.antipov@linaro.org> wrote:
 
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+> Teach usleep_range() to return how many usecs was actually spent
+> in sleep. The rationale beyond this is to convert jiffies-based
+> wait-for-hardware loops like:
+> 
+> unsigned long timeout = jiffies + msecs_to_jiffies(1000);
+> while (hw_is_not_ready()) {
+> 	if (time_after(jiffies, timeout))
+> 		return -ETIMEDOUT;
+> 	msleep(1);
+> }
+> 
+> to:
+> 
+> unsigned long timeout = 0;
+> while (hw_is_not_ready()) {
+>       if (timeout > USEC_PER_SEC)
+> 	      return -ETIMEDOUT;
+>       timeout += usleep_range(1000, 2000);
+> }
+> 
 
--- 
- Kirill A. Shutemov
+Is that useful enough to justify making the change?
+
+>
+>  int __sched schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
+> -				     const enum hrtimer_mode mode)
+> +				     const enum hrtimer_mode mode, unsigned long *elapsed)
+
+Rather than adding another argument, I suggest you change the return
+type to long and use return value semantics similar to schedule_timeout().
+
+schedule_timeout() never returns -ve numbers and it returns jiffies,
+but it will be close(r).
+
+Returning usecs is odd.  One would expect it to return a ktime_t.  That
+might inflict some code-size cost in callers.
+
