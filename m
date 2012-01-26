@@ -1,73 +1,449 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2AZROU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:14:20 -0500
-Received: from jdl.com ([208.123.74.7]:40988 "EHLO jdl.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258Ab2AZROS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:14:18 -0500
-Message-Id: <E1RqStl-0008Di-0z@jdl.com>
-To: Stephen Warren <swarren@nvidia.com>
-cc: Felipe Balbi <balbi@ti.com>,
-        "David Gibson (david@gibson.dropbear.id.au)" 
-	<david@gibson.dropbear.id.au>,
-        "mmarek@suse.cz" <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH] scripts: dtc: fix compile warnings
-In-reply-to: <74CDBE0F657A3D45AFBB94109FB122FF178CB8233B@HQMAIL01.nvidia.com>
-References: <1327576807-19216-1-git-send-email-balbi@ti.com> <74CDBE0F657A3D45AFBB94109FB122FF178CB8233B@HQMAIL01.nvidia.com>
-Comments: In-reply-to Stephen Warren <swarren@nvidia.com>
-   message dated "Thu, 26 Jan 2012 08:58:31 -0800."
-Date: Thu, 26 Jan 2012 11:14:08 -0600
-From: Jon Loeliger <jdl@jdl.com>
-X-Spam-Score: -0.0
+	id S1753235Ab2AZROA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:14:00 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:29361 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab2AZRNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 12:13:07 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
+        Dan Liang <dan.liang@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 5/6] ARM: at91/at91sam9x5: SoC basic support
+Date: Thu, 26 Jan 2012 18:12:36 +0100
+Message-Id: <583cb79d4f2f65f1392bcc1cd7998fc49318b806.1327596859.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1327597957-32662-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1327597957-32662-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <15809998b6ca8f1bf69546bfcac18301a70625ef.1327596859.git.nicolas.ferre@atmel.com>
+References: <15809998b6ca8f1bf69546bfcac18301a70625ef.1327596859.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> RmVsaXBlIEJhbGJpIHdyb3RlIGF0IFRodXJzZGF5LCBKYW51YXJ5IDI2LCAyMDEyIDQ6MjAgQU06
-> DQo+IEZpeCBmb2xsb3dpbmcgY29tcGlsZSB3YXJuaW5nczoNCj4gDQo+IHNjcmlwdHMvZHRjL2Zs
-> YXR0cmVlLmM6IEluIGZ1bmN0aW9uIOKAmGZsYXRfcmVhZF9tZW1fcmVzZXJ2ZeKAmToNCj4gc2Ny
-> aXB0cy9kdGMvZmxhdHRyZWUuYzo3MDA6MTQ6IHdhcm5pbmc6IHZhcmlhYmxlIOKAmHDigJkgc2V0
-> IGJ1dCBub3QgdXNlZA0KPiAJWy1XdW51c2VkLWJ1dC1zZXQtdmFyaWFibGVdDQo+IA0KPiBzY3Jp
-> cHRzL2R0Yy9kdGMuYzogSW4gZnVuY3Rpb24g4oCYbWFpbuKAmToNCj4gc2NyaXB0cy9kdGMvZHRj
-> LmM6MTA0OjE3OiB3YXJuaW5nOiB2YXJpYWJsZSDigJhjaGVja+KAmSBzZXQgYnV0IG5vdCB1c2Vk
-> DQo+IAlbLVd1bnVzZWQtYnV0LXNldC12YXJpYWJsZV0NCj4gDQo+IFNpZ25lZC1vZmYtYnk6IEZl
-> bGlwZSBCYWxiaSA8YmFsYmlAdGkuY29tPg0KDQpJIHRoaW5rIHlvdSB3YW50IHRvIHNlbmQgdGhp
-> cyB0byB0aGUgdXBzdHJlYW0gZHRjIG1haW50YWluZXJzOyBJJ3ZlIENDJ2QNCnRoZW0gb24gdGhp
-> cyBtYWlsLg0KDQo+IC0tLQ0KPiAgc2NyaXB0cy9kdGMvZHRjLmMgICAgICB8ICAgIDUgKy0tLS0N
-> Cj4gIHNjcmlwdHMvZHRjL2ZsYXR0cmVlLmMgfCAgICAyIC0tDQo+ICAyIGZpbGVzIGNoYW5nZWQs
-> IDEgaW5zZXJ0aW9ucygrKSwgNiBkZWxldGlvbnMoLSkNCj4gDQo+IGRpZmYgLS1naXQgYS9zY3Jp
-> cHRzL2R0Yy9kdGMuYyBiL3NjcmlwdHMvZHRjL2R0Yy5jDQo+IGluZGV4IDQ1MWM5MmQuLjJlZjVl
-> MmUgMTAwNjQ0DQo+IC0tLSBhL3NjcmlwdHMvZHRjL2R0Yy5jDQo+ICsrKyBiL3NjcmlwdHMvZHRj
-> L2R0Yy5jDQo+IEBAIC0xMDEsNyArMTAxLDcgQEAgaW50IG1haW4oaW50IGFyZ2MsIGNoYXIgKmFy
-> Z3ZbXSkNCj4gIAljb25zdCBjaGFyICpvdXRmb3JtID0gImR0cyI7DQo+ICAJY29uc3QgY2hhciAq
-> b3V0bmFtZSA9ICItIjsNCj4gIAljb25zdCBjaGFyICpkZXBuYW1lID0gTlVMTDsNCj4gLQlpbnQg
-> Zm9yY2UgPSAwLCBjaGVjayA9IDAsIHNvcnQgPSAwOw0KPiArCWludCBmb3JjZSA9IDAsIHNvcnQg
-> PSAwOw0KPiAgCWNvbnN0IGNoYXIgKmFyZzsNCj4gIAlpbnQgb3B0Ow0KPiAgCUZJTEUgKm91dGYg
-> PSBOVUxMOw0KPiBAQCAtMTQzLDkgKzE0Myw2IEBAIGludCBtYWluKGludCBhcmdjLCBjaGFyICph
-> cmd2W10pDQo+ICAJCWNhc2UgJ2YnOg0KPiAgCQkJZm9yY2UgPSAxOw0KPiAgCQkJYnJlYWs7DQo+
-> IC0JCWNhc2UgJ2MnOg0KPiAtCQkJY2hlY2sgPSAxOw0KPiAtCQkJYnJlYWs7DQo+ICAJCWNhc2Ug
-> J3EnOg0KPiAgCQkJcXVpZXQrKzsNCj4gIAkJCWJyZWFrOw0KPiBkaWZmIC0tZ2l0IGEvc2NyaXB0
-> cy9kdGMvZmxhdHRyZWUuYyBiL3NjcmlwdHMvZHRjL2ZsYXR0cmVlLmMNCj4gaW5kZXggZWFkMDMz
-> Mi4uMjhkMGIyMyAxMDA2NDQNCj4gLS0tIGEvc2NyaXB0cy9kdGMvZmxhdHRyZWUuYw0KPiArKysg
-> Yi9zY3JpcHRzL2R0Yy9mbGF0dHJlZS5jDQo+IEBAIC02OTcsNyArNjk3LDYgQEAgc3RhdGljIHN0
-> cnVjdCByZXNlcnZlX2luZm8gKmZsYXRfcmVhZF9tZW1fcmVzZXJ2ZShzdHJ1Y3QgaW5idWYgKmlu
-> YikNCj4gIHsNCj4gIAlzdHJ1Y3QgcmVzZXJ2ZV9pbmZvICpyZXNlcnZlbGlzdCA9IE5VTEw7DQo+
-> ICAJc3RydWN0IHJlc2VydmVfaW5mbyAqbmV3Ow0KPiAtCWNvbnN0IGNoYXIgKnA7DQo+ICAJc3Ry
-> dWN0IGZkdF9yZXNlcnZlX2VudHJ5IHJlOw0KPiANCj4gIAkvKg0KPiBAQCAtNzA2LDcgKzcwNSw2
-> IEBAIHN0YXRpYyBzdHJ1Y3QgcmVzZXJ2ZV9pbmZvICpmbGF0X3JlYWRfbWVtX3Jlc2VydmUoc3Ry
-> dWN0IGluYnVmICppbmIpDQo+ICAJICoNCj4gIAkgKiBGaXJzdCBwYXNzLCBjb3VudCBlbnRyaWVz
-> Lg0KPiAgCSAqLw0KPiAtCXAgPSBpbmItPnB0cjsNCj4gIAl3aGlsZSAoMSkgew0KPiAgCQlmbGF0
-> X3JlYWRfY2h1bmsoaW5iLCAmcmUsIHNpemVvZihyZSkpOw0KPiAgCQlyZS5hZGRyZXNzICA9IGZk
-> dDY0X3RvX2NwdShyZS5hZGRyZXNzKTsNCj4gLS0NCj4gMS43LjguMg0KDQotLSANCm52cHVibGlj
-> DQoNCg==
+From: Dan Liang <dan.liang@atmel.com>
 
-Yeah, that issue has been fixed in the main DTC repo already.
+Add at91sam9x5.c SoC file: Define clock resources
+and some initialization code.
 
-jdl
+Signed-off-by: Dan Liang <dan.liang@atmel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+---
+ arch/arm/mach-at91/at91sam9x5.c            |  373 ++++++++++++++++++++++++++++
+ arch/arm/mach-at91/board-dt.c              |    1 +
+ arch/arm/mach-at91/include/mach/hardware.h |    2 +
+ 3 files changed, 376 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-at91/at91sam9x5.c
 
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+new file mode 100644
+index 0000000..1c3444d
+--- /dev/null
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -0,0 +1,373 @@
++/*
++ *  Chip-specific setup code for the AT91SAM9x5 family
++ *
++ *  Copyright (C) 2010-2012 Atmel Corporation.
++ *
++ * Licensed under GPLv2 or later.
++ */
++
++#include <linux/module.h>
++#include <linux/dma-mapping.h>
++
++#include <asm/irq.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++#include <mach/at91sam9x5.h>
++#include <mach/at91_pmc.h>
++#include <mach/cpu.h>
++#include <mach/board.h>
++
++#include "soc.h"
++#include "generic.h"
++#include "clock.h"
++#include "sam9_smc.h"
++
++/* --------------------------------------------------------------------
++ *  Clocks
++ * -------------------------------------------------------------------- */
++
++/*
++ * The peripheral clocks.
++ */
++static struct clk pioAB_clk = {
++	.name		= "pioAB_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_PIOAB,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk pioCD_clk = {
++	.name		= "pioCD_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_PIOCD,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk smd_clk = {
++	.name		= "smd_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_SMD,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk usart0_clk = {
++	.name		= "usart0_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_USART0,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk usart1_clk = {
++	.name		= "usart1_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_USART1,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk usart2_clk = {
++	.name		= "usart2_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_USART2,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++/* USART3 clock - Only for sam9g25/sam9x25 */
++static struct clk usart3_clk = {
++	.name		= "usart3_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_USART3,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk twi0_clk = {
++	.name		= "twi0_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI0,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk twi1_clk = {
++	.name		= "twi1_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI1,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk twi2_clk = {
++	.name		= "twi2_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI2,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk mmc0_clk = {
++	.name		= "mci0_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_MCI0,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk spi0_clk = {
++	.name		= "spi0_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_SPI0,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk spi1_clk = {
++	.name		= "spi1_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_SPI1,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk uart0_clk = {
++	.name		= "uart0_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_UART0,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk uart1_clk = {
++	.name		= "uart1_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_UART1,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk tcb0_clk = {
++	.name		= "tcb0_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_TCB,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk pwm_clk = {
++	.name		= "pwm_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_PWM,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk adc_clk = {
++	.name		= "adc_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_ADC,
++	.type	= CLK_TYPE_PERIPHERAL,
++};
++static struct clk dma0_clk = {
++	.name		= "dma0_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_DMA0,
++	.type	= CLK_TYPE_PERIPHERAL,
++};
++static struct clk dma1_clk = {
++	.name		= "dma1_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_DMA1,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk uhphs_clk = {
++	.name		= "uhphs_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_UHPHS,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk udphs_clk = {
++	.name		= "udphs_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_UDPHS,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++/* emac0 clock - Only for sam9g25/sam9x25/sam9g35/sam9x35 */
++static struct clk macb0_clk = {
++	.name		= "pclk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_EMAC0,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++/* lcd clock - Only for sam9g15/sam9g35/sam9x35 */
++static struct clk lcdc_clk = {
++	.name		= "lcdc_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_LCDC,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++/* isi clock - Only for sam9g25 */
++static struct clk isi_clk = {
++	.name		= "isi_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_ISI,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk mmc1_clk = {
++	.name		= "mci1_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_MCI1,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++/* emac1 clock - Only for sam9x25 */
++static struct clk macb1_clk = {
++	.name		= "pclk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_EMAC1,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++static struct clk ssc_clk = {
++	.name		= "ssc_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_SSC,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++/* can0 clock - Only for sam9x35 */
++static struct clk can0_clk = {
++	.name		= "can0_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_CAN0,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++/* can1 clock - Only for sam9x35 */
++static struct clk can1_clk = {
++	.name		= "can1_clk",
++	.pmc_mask	= 1 << AT91SAM9X5_ID_CAN1,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
++
++static struct clk *periph_clocks[] __initdata = {
++	&pioAB_clk,
++	&pioCD_clk,
++	&smd_clk,
++	&usart0_clk,
++	&usart1_clk,
++	&usart2_clk,
++	&twi0_clk,
++	&twi1_clk,
++	&twi2_clk,
++	&mmc0_clk,
++	&spi0_clk,
++	&spi1_clk,
++	&uart0_clk,
++	&uart1_clk,
++	&tcb0_clk,
++	&pwm_clk,
++	&adc_clk,
++	&dma0_clk,
++	&dma1_clk,
++	&uhphs_clk,
++	&udphs_clk,
++	&mmc1_clk,
++	&ssc_clk,
++	// irq0
++};
++
++static struct clk_lookup periph_clocks_lookups[] = {
++	/* lookup table for DT entries */
++	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
++	CLKDEV_CON_DEV_ID("usart", "f801c000.serial", &usart0_clk),
++	CLKDEV_CON_DEV_ID("usart", "f8020000.serial", &usart1_clk),
++	CLKDEV_CON_DEV_ID("usart", "f8024000.serial", &usart2_clk),
++	CLKDEV_CON_DEV_ID("usart", "f8028000.serial", &usart3_clk),
++	CLKDEV_CON_DEV_ID("t0_clk", "f8008000.timer", &tcb0_clk),
++	CLKDEV_CON_DEV_ID("t0_clk", "f800c000.timer", &tcb0_clk),
++	CLKDEV_CON_ID("pioA", &pioAB_clk),
++	CLKDEV_CON_ID("pioB", &pioAB_clk),
++	CLKDEV_CON_ID("pioC", &pioCD_clk),
++	CLKDEV_CON_ID("pioD", &pioCD_clk),
++	/* additional fake clock for macb_hclk */
++	CLKDEV_CON_DEV_ID("hclk", "f802c000.ethernet", &macb0_clk),
++	CLKDEV_CON_DEV_ID("hclk", "f8030000.ethernet", &macb1_clk),
++};
++
++/*
++ * The two programmable clocks.
++ * You must configure pin multiplexing to bring these signals out.
++ */
++static struct clk pck0 = {
++	.name		= "pck0",
++	.pmc_mask	= AT91_PMC_PCK0,
++	.type		= CLK_TYPE_PROGRAMMABLE,
++	.id		= 0,
++};
++static struct clk pck1 = {
++	.name		= "pck1",
++	.pmc_mask	= AT91_PMC_PCK1,
++	.type		= CLK_TYPE_PROGRAMMABLE,
++	.id		= 1,
++};
++
++static void __init at91sam9x5_register_clocks(void)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(periph_clocks); i++)
++		clk_register(periph_clocks[i]);
++
++	clkdev_add_table(periph_clocks_lookups,
++			 ARRAY_SIZE(periph_clocks_lookups));
++
++	if (cpu_is_at91sam9g25()
++	|| cpu_is_at91sam9x25())
++		clk_register(&usart3_clk);
++
++	if (cpu_is_at91sam9g25()
++	|| cpu_is_at91sam9x25()
++	|| cpu_is_at91sam9g35()
++	|| cpu_is_at91sam9x35())
++		clk_register(&macb0_clk);
++
++	if (cpu_is_at91sam9g15()
++	|| cpu_is_at91sam9g35()
++	|| cpu_is_at91sam9x35())
++		clk_register(&lcdc_clk);
++
++	if (cpu_is_at91sam9g25())
++		clk_register(&isi_clk);
++
++	if (cpu_is_at91sam9x25())
++		clk_register(&macb1_clk);
++
++	if (cpu_is_at91sam9x25()
++	|| cpu_is_at91sam9x35()) {
++		clk_register(&can0_clk);
++		clk_register(&can1_clk);
++	}
++
++	clk_register(&pck0);
++	clk_register(&pck1);
++}
++
++/* --------------------------------------------------------------------
++ *  AT91SAM9x5 processor initialization
++ * -------------------------------------------------------------------- */
++
++static void __init at91sam9x5_map_io(void)
++{
++	at91_init_sram(0, AT91SAM9X5_SRAM_BASE, AT91SAM9X5_SRAM_SIZE);
++}
++
++static void __init at91sam9x5_ioremap_registers(void)
++{
++	if (of_at91sam926x_pit_init() < 0)
++		panic("Impossible to find PIT\n");
++}
++
++void __init at91sam9x5_initialize(void)
++{
++	arm_pm_restart = at91sam9g45_restart;
++	at91_extern_irq = (1 << AT91SAM9X5_ID_IRQ0);
++
++	/* Register GPIO subsystem (using DT) */
++	at91_gpio_init(NULL, 0);
++}
++
++/* --------------------------------------------------------------------
++ *  AT91SAM9x5 devices (temporary before modification of code)
++ * -------------------------------------------------------------------- */
++void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins) {}
++void __init at91_set_serial_console(unsigned portnr) {}
++struct platform_device *atmel_default_console_device = NULL;
++
++void __init at91_add_device_nand(struct atmel_nand_data *data) {}
++
++/* --------------------------------------------------------------------
++ *  Interrupt initialization
++ * -------------------------------------------------------------------- */
++/*
++ * The default interrupt priority levels (0 = lowest, 7 = highest).
++ */
++static unsigned int at91sam9x5_default_irq_priority[NR_AIC_IRQS] __initdata = {
++	7,	/* Advanced Interrupt Controller (FIQ) */
++	7,	/* System Peripherals */
++	1,	/* Parallel IO Controller A and B */
++	1,	/* Parallel IO Controller C and D */
++	4,	/* Soft Modem */
++	5,	/* USART 0 */
++	5,	/* USART 1 */
++	5,	/* USART 2 */
++	5,	/* USART 3 */
++	6,	/* Two-Wire Interface 0 */
++	6,	/* Two-Wire Interface 1 */
++	6,	/* Two-Wire Interface 2 */
++	0,	/* Multimedia Card Interface 0 */
++	5,	/* Serial Peripheral Interface 0 */
++	5,	/* Serial Peripheral Interface 1 */
++	5,	/* UART 0 */
++	5,	/* UART 1 */
++	0,	/* Timer Counter 0, 1, 2, 3, 4 and 5 */
++	0,	/* Pulse Width Modulation Controller */
++	0,	/* ADC Controller */
++	0,	/* DMA Controller 0 */
++	0,	/* DMA Controller 1 */
++	2,	/* USB Host High Speed port */
++	2,	/* USB Device High speed port */
++	3,	/* Ethernet MAC 0 */
++	3,	/* LDC Controller or Image Sensor Interface */
++	0,	/* Multimedia Card Interface 1 */
++	3,	/* Ethernet MAC 1 */
++	4,	/* Synchronous Serial Interface */
++	4,	/* CAN Controller 0 */
++	4,	/* CAN Controller 1 */
++	0,	/* Advanced Interrupt Controller (IRQ0) */
++};
++
++struct at91_init_soc __initdata at91sam9x5_soc = {
++	.map_io = at91sam9x5_map_io,
++	.default_irq_priority = at91sam9x5_default_irq_priority,
++	.ioremap_registers = at91sam9x5_ioremap_registers,
++	.register_clocks = at91sam9x5_register_clocks,
++	.init = at91sam9x5_initialize,
++};
+diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
+index bb6b434..0579315 100644
+--- a/arch/arm/mach-at91/board-dt.c
++++ b/arch/arm/mach-at91/board-dt.c
+@@ -109,6 +109,7 @@ static void __init at91_dt_device_init(void)
+ 
+ static const char *at91_dt_board_compat[] __initdata = {
+ 	"atmel,at91sam9m10g45ek",
++	"atmel,at91sam9x5ek",
+ 	"calao,usb-a9g20",
+ 	NULL
+ };
+diff --git a/arch/arm/mach-at91/include/mach/hardware.h b/arch/arm/mach-at91/include/mach/hardware.h
+index c213f2862..fd7dce4 100644
+--- a/arch/arm/mach-at91/include/mach/hardware.h
++++ b/arch/arm/mach-at91/include/mach/hardware.h
+@@ -34,6 +34,8 @@
+ #include <mach/at91sam9rl.h>
+ #elif defined(CONFIG_ARCH_AT91SAM9G45)
+ #include <mach/at91sam9g45.h>
++#elif defined(CONFIG_ARCH_AT91SAM9X5)
++#include <mach/at91sam9x5.h>
+ #elif defined(CONFIG_ARCH_AT91X40)
+ #include <mach/at91x40.h>
+ #else
+-- 
+1.7.5.4
 
-PS -- No point.  Nope.
