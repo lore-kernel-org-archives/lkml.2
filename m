@@ -1,150 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab2AZB7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 20:59:19 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:37944 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab2AZB7R (ORCPT
+	id S1751791Ab2AZCD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 21:03:26 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59451 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab2AZCDZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 20:59:17 -0500
-Date: Wed, 25 Jan 2012 17:58:43 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steffen Persvold <sp@numascale.com>
-Cc: Daniel J Blueman <daniel@numascale-asia.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: RCU qsmask !=0 warnings on large-SMP...
-Message-ID: <20120126015843.GN2849@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4F1FCF02.9060209@numascale-asia.com>
- <20120125140029.GA2534@linux.vnet.ibm.com>
- <4F200F4D.5000201@numascale.com>
- <20120125181441.GD2849@linux.vnet.ibm.com>
- <4F2070B9.2000104@numascale.com>
- <20120125213450.GJ2849@linux.vnet.ibm.com>
- <4F2086DA.4040203@numascale.com>
+	Wed, 25 Jan 2012 21:03:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F2086DA.4040203@numascale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12012601-3352-0000-0000-0000022DCB46
+In-Reply-To: <CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+	<CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+	<CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+	<CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
+	<CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
+	<CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
+	<CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
+	<CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
+	<CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
+	<CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
+	<CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
+	<CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
+Date: Wed, 25 Jan 2012 18:03:24 -0800
+X-Google-Sender-Auth: WOc5Gb76h--H4BHQk4gmimwUWwU
+Message-ID: <CAE9FiQU5239LD-e7FdpKq1iY3k80BFg2pLVw28YScufuai0R4w@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: Yinghai Lu <yinghai@kernel.org>
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 11:48:58PM +0100, Steffen Persvold wrote:
-> On 1/25/2012 22:34, Paul E. McKenney wrote:
-> > On Wed, Jan 25, 2012 at 10:14:33PM +0100, Steffen Persvold wrote:
-> >> On 1/25/2012 19:14, Paul E. McKenney wrote:
-> >> []
-> >>>
-> >>> So, it would be very interesting to add the values rdp->mynode->gpnum
-> >>> and rdp->mynode->completed to your list, perhaps labeling them something
-> >>> like "rng" and "rnc" respectively.
-> >>>
-> >>
-> >> I added them to the printout. This time I ran with NR_CPUS=512 so there's only two levels but we see more qsmask bits set on the root node :
-> >>
-> >> [  738.329672] CPU 48, treason uncloaked, rsp @ ffffffff81a1cd80 (rcu_sched), gpnum=10568, completed=10567, n_force_qs=69, n_force_qs_lh=0, n_force_qs_ngp=0, rnp @ ffffffff81a1cd80, qsmask=0x1f
-> >> [  738.330137]   0 ffff8803f840d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=66 ql=1 qs=..W. b=10 ci=158068 co=0 ca=0 rng=10568 rnc=10567
-> >> [  738.330137]  12 ffff880bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=1 ri=0 ql=0 qs=.... b=10 ci=715 co=0 ca=0 rng=10568 rnc=10567
-> >> [  738.330137]  24 ffff8813d040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=0 ql=0 qs=.... b=10 ci=484 co=0 ca=0 rng=10568 rnc=10567
-> >> [  738.330137]  36 ffff881bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=1 ri=0 ql=0 qs=.... b=10 ci=369 co=0 ca=0 rng=10568 rnc=10567
-> >> [  738.330137]  48 ffff8823d040d660 c=10567 g=10567 pq=1 pgp=10567 qp=0 of=0 ri=0 ql=28 qs=.RWD b=10 ci=9292 co=0 ca=0 rng=10568 rnc=10567
-> >> [  738.330137]  60 ffff882bd040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=1 ql=0 qs=.... b=10 ci=32 co=0 ca=0 rng=10568 rnc=10567
-> >> [  738.330137]  72 ffff8833d040d660 c=10567 g=10568 pq=1 pgp=10568 qp=0 of=0 ri=0 ql=0 qs=.... b=10 ci=43 co=0 ca=0 rng=10568 rnc=10567
-> > 
-> > Yow!!!  This is the message from the root rcu_node, right?
-> > 
-> > One way to check is to print (rnp -&rsp->node[0]), which will be zero
-> > for the root node.
-> 
-> Yes.
-> 
-> > 
-> > So this is very very strange.  This error is happening out of
-> > rcu_start_gp(), which updates rsp->gpnum, and then updates each rnp->gpnum
-> > in rcu_node array order.  When you get the error on the root rcu_node
-> > structure, the new ->gpnum value should not have yet propagated to the
-> > leaf rcu_node structures.  Or is the error print happening asynchronously?
-> > 
-> > If it is happening asynchronously, so that the actual printing of the
-> > first set of messages above isn't happening until after initialization
-> > is complete, could you please copy the relevant values out so that the
-> > printout is consistent with the state at the time of the error?
-> > 
-> 
-> I've changed the debug_print function to only print the different completed and gpnum values (for rdp, rnp, rsp and rnp->mynode)  :
-> 
-> static void
-> rcu_debug_print(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
-> {
-> 	unsigned long c, g, nc, ng, sc, sg, mc, mg;
-> 	if (rnp->qsmask) {
-> 		c = ACCESS_ONCE(rdp->completed);
-> 		g = ACCESS_ONCE(rdp->gpnum);
-> 		nc = ACCESS_ONCE(rnp->completed);
-> 		ng = ACCESS_ONCE(rnp->gpnum);
-> 		sc = ACCESS_ONCE(rsp->completed);
-> 		sg = ACCESS_ONCE(rsp->gpnum);
-> 		mc = ACCESS_ONCE(rdp->mynode->completed);
-> 		mg = ACCESS_ONCE(rdp->mynode->gpnum);
-> 		printk(KERN_ERR "CPU %d, treason uncloaked, rsp @ %p (%s), rnp @ %p%3s qsmask=0x%lx, c=%lu g=%lu nc=%lu ng=%lu sc=%lu sg=%lu mc=%lu mg=%lu\n",
-> 		       rdp->cpu, rsp, rsp->name, rnp, (rnp == &rsp->node[0]) ? "(r)" : "", rnp->qsmask, c, g, nc, ng, sc, sg, mc, mg);
-> 
-> 	}
-> }
+2012/1/25 Rogério Brito <rbrito@ime.usp.br>:
+>
+> Wild thoughts: I just saw that nouveau calls some ACPI stuff to get
+> EDID information and, as ACPI is broken on this notebook, could that
+> be a potential reason for the panic that I'm seeing? (Yes, I can take
+> a photo of the screen).
+>
 
-This looks like it will produce useful information, but I am not seeing
-output from it below.
+Which 2.6.x kernel works on your laptop without disabling acpi?
 
-							Thanx, Paul
+looks like we should make linux without disabling acpi work on your
+system at first.
 
-> This run it was CPU24 that triggered the issue :
-> 
-> [  231.572688] CPU 24, treason uncloaked, rsp @ ffffffff81a1cd80 (rcu_sched), rnp @ ffffffff81a1cd80(r) qsmask=0x1f, c=5132 g=5132 nc=5132 ng=5133 sc=5132 sg=5133 mc=5132 mg=5133
-> [  231.576167] ------------[ cut here ]------------
-> [  231.576167] WARNING: at kernel/rcutree_plugin.h:1011 rcu_preempt_check_blocked_tasks+0x27/0x30()
-> [  231.576167] Hardware name: H8QI6
-> [  231.576167] Modules linked in: rcutorture
-> [  231.576167] Pid: 4603, comm: rcu_torture_rea Not tainted 3.2.1-numaconnect10+ #77
-> [  231.576167] Call Trace:
-> [  231.576167]  <IRQ>  [<ffffffff810bb217>] ? rcu_preempt_check_blocked_tasks+0x27/0x30
-> [  231.576167]  [<ffffffff8106f47b>] warn_slowpath_common+0x8b/0xc0
-> [  231.576167]  [<ffffffff8106f4c5>] warn_slowpath_null+0x15/0x20
-> [  231.576167]  [<ffffffff810bb217>] rcu_preempt_check_blocked_tasks+0x27/0x30
-> [  231.576167]  [<ffffffff810bb330>] rcu_start_gp+0x110/0x1b0
-> [  231.576167]  [<ffffffff810bbf3b>] __rcu_process_callbacks+0x8b/0xd0
-> [  231.576167]  [<ffffffff810bc7a0>] rcu_process_callbacks+0x20/0x40
-> [  231.576167]  [<ffffffff8107580d>] __do_softirq+0x9d/0x140
-> [  231.576167]  [<ffffffff815d982c>] call_softirq+0x1c/0x30
-> [  231.576167]  [<ffffffff8103451a>] do_softirq+0x4a/0x80
-> [  231.576167]  [<ffffffff81075b83>] irq_exit+0x43/0x60
-> [  231.576167]  [<ffffffff8104aed5>] smp_apic_timer_interrupt+0x45/0x60
-> [  231.576167]  [<ffffffff815d834b>] apic_timer_interrupt+0x6b/0x70
-> [  231.576167]  <EOI>  [<ffffffff81067aa9>] ? finish_task_switch+0x59/0xc0
-> [  231.576167]  [<ffffffff815d4d37>] __schedule+0x337/0x710
-> [  231.576167]  [<ffffffff81090425>] ? sched_clock_local+0x15/0x80
-> [  231.576167]  [<ffffffff8107b826>] ? lock_timer_base+0x36/0x70
-> [  231.576167]  [<ffffffff8107baa2>] ? mod_timer+0xf2/0x1d0
-> [  231.576167]  [<ffffffffa0001510>] ? rcu_torture_shuffle+0x80/0x80 [rcutorture]
-> [  231.576167]  [<ffffffff815d53ea>] schedule+0x3a/0x60
-> [  231.576167]  [<ffffffffa0001640>] rcu_torture_reader+0x130/0x230 [rcutorture]
-> [  231.576167]  [<ffffffffa0001dc0>] ? rcu_torture_writer+0x160/0x160 [rcutorture]
-> [  231.576167]  [<ffffffffa0001510>] ? rcu_torture_shuffle+0x80/0x80 [rcutorture]
-> [  231.576167]  [<ffffffff8108a726>] kthread+0x96/0xa0
-> [  231.576167]  [<ffffffff815d9734>] kernel_thread_helper+0x4/0x10
-> [  231.576167]  [<ffffffff8108a690>] ? kthread_stop+0x70/0x70
-> [  231.576167]  [<ffffffff815d9730>] ? gs_change+0xb/0xb
-> [  231.576167] ---[ end trace 828c8d7afbd02d1b ]---
-> 
-> 
-> Cheers,
-> -- 
-> Steffen Persvold, Chief Architect NumaChip
-> Numascale AS - www.numascale.com
-> Tel: +47 92 49 25 54 Skype: spersvold
-> 
+BTW, can you post you .config?
 
+Thanks
+
+Yinghai
