@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab2AZXv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 18:51:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58150 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab2AZXv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 18:51:56 -0500
-Date: Thu, 26 Jan 2012 15:51:29 -0800
-From: Greg KH <gregkh@suse.de>
-To: Simon Glass <sjg@chromium.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot time
-Message-ID: <20120126235129.GA13095@suse.de>
-References: <CAPnjgZ0-VdAzudGFopBd+5j4HhOp10C=x0kPuJEZyaYSzwjBAA@mail.gmail.com>
- <Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
- <20120124165711.GC3836@linutronix.de>
- <20120124172231.GA27273@suse.de>
- <CAPnjgZ0a4i1eGRK_pjKuiaG=sXKGCHT8kO4segHxqN6L2wm8Qw@mail.gmail.com>
+	id S1754318Ab2AZXyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 18:54:46 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:36778 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab2AZXyp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 18:54:45 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, xemul@parallels.com,
+        sjur.brandeland@stericsson.com, levinsasha928@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
+        sjurbren@gmail.com
+Subject: Re: [PATCH] netns: fix net_alloc_generic()
+References: <4F212E7E.2040801@parallels.com>
+	<1327575108.2500.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<m1zkdacbsx.fsf@fess.ebiederm.org>
+	<20120126.180754.679593869814492219.davem@davemloft.net>
+Date: Thu, 26 Jan 2012 15:57:18 -0800
+In-Reply-To: <20120126.180754.679593869814492219.davem@davemloft.net> (David
+	Miller's message of "Thu, 26 Jan 2012 18:07:54 -0500 (EST)")
+Message-ID: <m1liouc90h.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPnjgZ0a4i1eGRK_pjKuiaG=sXKGCHT8kO4segHxqN6L2wm8Qw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18tszV6W07R1k6MeXmYFwemYrJUfAh4tC0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 03:48:43PM -0800, Simon Glass wrote:
-> Hi Greg,
-> 
-> On Tue, Jan 24, 2012 at 9:22 AM, Greg KH <gregkh@suse.de> wrote:
-> > On Tue, Jan 24, 2012 at 05:57:11PM +0100, Sebastian Andrzej Siewior wrote:
-> >> * Alan Stern | 2012-01-21 11:11:09 [-0500]:
-> >>
-> >> >Doing time-consuming things later won't make any difference.  That is,
-> >> >suppose the boot sequence performs activities A and B, where A takes a
-> >> >long time.  Doing A later, so that the boot sequence performs B and
-> >> >then A, won't change the total time required.
-> >>
-> >> That is true. However if you show the gui _now_ and look for USB later
-> >> then it feels faster and this is usually enough.
-> >
-> > Which has been done before, with great success (i.e. we did it for
-> > Moblin boot times), so it shouldn't be that big of an issue.
-> >
-> > Which points out the question, exactly what is the issue here?  We have
-> > "multithreaded" pci driver startup for a long time now, did that stop
-> > working here?  If you use bootchart, does it show that the USB host
-> > driver is stoping the machine from proceeding to the next stage in the
-> > boot process?
-> >
-> > From my experience, I never saw the USB host controller get in the way
-> > at all, it was always somethine else happening that caused problems
-> > (i.e. video.)
-> >
-> > Simon, do you have boot charts anywhere showing this?
-> 
-> I did have initcall timing when I last looked at this. USB was holding
-> up progress. Sorry for the delay - I hope to get back to this next
-> week.
+David Miller <davem@davemloft.net> writes:
 
-Are you building your USB host controllers into the kernel, or are they
-modules?
+> From: ebiederm@xmission.com (Eric W. Biederman)
+> Date: Thu, 26 Jan 2012 14:57:02 -0800
+>
+>> It is not a chicken and egg problem.  It is a bug in caif.
+>> caif is claiming to be a network device when it is acting as a subsytem.
+>> That means it is being initialized too late.
+>> 
+>> Untested but this should trivially fix the problem, and a bunch
+>> of others of the same ilk.
+>> 
+>> It is not safe to shutdown subsystems until all of the devices
+>> are gone, otherwise there will be problems with packets in flight.
+>
+> If you guys can agree that this is the better fix, and we can
+> get testing showing that it works, I'll revert Eric D.'s patch
+> and apply the final version of this one.
 
-What is sitting on the USB bus that is needed for the boot process to
-continue on to init and then later?  Is the root disk on it?
+Eric D.'s change is correct, but it is just an optimization of
+net_assign_generic.  Eric D.'s change is not a bug fix.
 
-thanks,
+Tested fix in a moment.
 
-greg k-h
+Eric
