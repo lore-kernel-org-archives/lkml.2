@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab2AZOCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 09:02:46 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:45333 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2AZOCo (ORCPT
+	id S1752370Ab2AZOEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 09:04:31 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:38450 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab2AZOEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 09:02:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120126110149.GF18613@jl-vm1.vm.bytemark.co.uk>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
- <20120125193635.GA30311@redhat.com> <201201260032.57937.vda.linux@googlemail.com>
- <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
- <20120126010858.GD18613@jl-vm1.vm.bytemark.co.uk> <88753c7d600bee39c06bbda32b08daae.squirrel@webmail.greenhost.nl>
- <20120126103157.GE18613@jl-vm1.vm.bytemark.co.uk> <CAK1hOcPbamBW9KdnL8ORG4=u6R6ydvRX8tBJGB-pnXL6z1Y_sw@mail.gmail.com>
- <20120126110149.GF18613@jl-vm1.vm.bytemark.co.uk>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Thu, 26 Jan 2012 15:02:21 +0100
-Message-ID: <CAK1hOcNvOFLero8Mw+j2chhY8WxFCxtx3ZQpYZLkLqNGtaSMrw@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Indan Zupancic <indan@nul.nu>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Andrew Lutomirski <luto@mit.edu>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Jan 2012 09:04:30 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0LOP1KteNnsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=70fqYcBpVrWJcohhfMQA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1327586669.22710.89.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Date: Thu, 26 Jan 2012 09:04:29 -0500
+In-Reply-To: <20120126135504.GA13107@elte.hu>
+References: <1326754637.7642.177.camel@gandalf.stny.rr.com>
+	 <20120117095418.GG10397@elte.hu>
+	 <1326807145.17534.26.camel@gandalf.stny.rr.com>
+	 <20120118120711.GB14863@elte.hu>
+	 <1326909412.17534.91.camel@gandalf.stny.rr.com>
+	 <877h0jgx80.fsf@rustcorp.com.au>
+	 <1327545664.22710.78.camel@gandalf.stny.rr.com>
+	 <20120126102836.GD3853@elte.hu>
+	 <1327585945.22710.87.camel@gandalf.stny.rr.com>
+	 <20120126135504.GA13107@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 12:01 PM, Jamie Lokier <jamie@shareable.org> wrote:
-> Denys Vlasenko wrote:
->> On Thu, Jan 26, 2012 at 11:31 AM, Jamie Lokier <jamie@shareable.org> wrote:
->> >> It's still unclear if the PTRACE_EVENT_EXEC comes before or after
->> >> or instead of the post-execve ptrace event.
->>
->> Denis <- confused.
->> Was ist das "post-execve ptrace event"? I know no such thing.
->> I know about PTRACE_EVENT_EXEC, and "post-execve SIGTRAP".
->
-> Sorry, I meant to write execve-syscall-exit event.
+[ Added Li who added the original tracepoint ]
 
-PTRACE_EVENT_EXEC happens before syscall exit. syscall exit
-is not lost. Basically, the sequence is:
+On Thu, 2012-01-26 at 14:55 +0100, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > On Thu, 2012-01-26 at 11:28 +0100, Ingo Molnar wrote:
+> > 
+> > > How much more do we save if we move all of try_module_get() out 
+> > > of line? It still seems a rather thick inline function with 
+> > > preempt section and all. I'd *really* suggest that it should all 
+> > > be uninlined.
+> > > 
+> > 
+> > Here's the #'s
+> > 
+> >    text	   data	    bss	    dec	    hex	filename
+> > 7489488	2249584	9719808	19458880	128eb40	vmlinux-prepatch
+> >    text	   data	    bss	    dec	    hex	filename
+> > 7482458	2248048	9719808	19450314	128c9ca	vmlinux-postpatch
+> >    text	   data	    bss	    dec	    hex	filename
+> > 7477393	2248080	9719808	19445281	128b621	vmlinux-updatedpatch
+> > 
+> > Thus we get an additional 5k it seems, for a total of 13k savings.
+> > 
+> > The below patch is what I used. Note, since the tracepoint 
+> > requires the instruction pointer, I created stub versions that 
+> > call a "do_" version of the function to pass in the local 
+> > instruction counter.
+> 
+> Hm, why does this tracepoint include a flat RIP? It's pretty 
+> superfluous as there's various other (orghogonal) ways to get at 
+> the RIP.
+> 
+> If the field is needed for compatibility then lets set it to 
+> zero at the tracepoint level and not burden the module.h 
+> hotpath.
 
-tracer               tracee with tid N, tgid M
-   <------------- syscall entry for execve, pid=N
-PTRACE_SYSCALL--->
-   <------------- PTRACE_EVENT_EXEC, pid=M
-PTRACE_GETEVENTMSG-->
-   <------------- returns N ("I used to be tid N")
-PTRACE_SYSCALL--->
-   <------------- syscall exit for execve, pid=M
-...
+Perhaps I could use "__builtin_return_address(0)" instead. I'll try that
+out. That way, we don't burden the module hotpath, and we keep the old
+behavior.
 
--- 
-vda
+-- Steve
+
+
