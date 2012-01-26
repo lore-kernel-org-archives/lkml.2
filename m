@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab2AZXqx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 18:46:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44742 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab2AZXqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 18:46:52 -0500
-Date: Thu, 26 Jan 2012 15:46:51 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Richard Purdie" <rpurdie@rpsys.net>
-Subject: Re: [PATCH v2] backlight: new backlight driver for LP855x devices
-Message-Id: <20120126154651.767c4e55.akpm@linux-foundation.org>
-In-Reply-To: <B567DBAB974C0544994013492B949F8E3812CD3EE5@EXMAIL03.scwf.nsc.com>
-References: <B567DBAB974C0544994013492B949F8E3812CD3EE5@EXMAIL03.scwf.nsc.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753743Ab2AZXsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 18:48:46 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47757 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751323Ab2AZXso convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 18:48:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120124172231.GA27273@suse.de>
+References: <CAPnjgZ0-VdAzudGFopBd+5j4HhOp10C=x0kPuJEZyaYSzwjBAA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
+	<20120124165711.GC3836@linutronix.de>
+	<20120124172231.GA27273@suse.de>
+Date: Thu, 26 Jan 2012 15:48:43 -0800
+X-Google-Sender-Auth: QZTMXEZBRuzXh00QV2IUDiNsFH4
+Message-ID: <CAPnjgZ0a4i1eGRK_pjKuiaG=sXKGCHT8kO4segHxqN6L2wm8Qw@mail.gmail.com>
+Subject: Re: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot time
+From: Simon Glass <sjg@chromium.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012 22:24:02 -0800
-"Kim, Milo" <Milo.Kim@ti.com> wrote:
+Hi Greg,
 
-> This patch supports TI LP8550/LP8551/LP8852/LP8553/LP8556 backlight driver.
-> 
-> The brightness can be controlled by the I2C or PWM input.
-> The lp855x driver provides both modes.
-> For the PWM control, pwm-specific functions can be defined in the platform data.
-> And some information can be read via the sysfs(lp855x device attributes).
-> 
-> For the details, please refer to 'Documentation/backlight/lp855x-driver.txt'.
-> 
+On Tue, Jan 24, 2012 at 9:22 AM, Greg KH <gregkh@suse.de> wrote:
+> On Tue, Jan 24, 2012 at 05:57:11PM +0100, Sebastian Andrzej Siewior wrote:
+>> * Alan Stern | 2012-01-21 11:11:09 [-0500]:
+>>
+>> >Doing time-consuming things later won't make any difference.  That is,
+>> >suppose the boot sequence performs activities A and B, where A takes a
+>> >long time.  Doing A later, so that the boot sequence performs B and
+>> >then A, won't change the total time required.
+>>
+>> That is true. However if you show the gui _now_ and look for USB later
+>> then it feels faster and this is usually enough.
+>
+> Which has been done before, with great success (i.e. we did it for
+> Moblin boot times), so it shouldn't be that big of an issue.
+>
+> Which points out the question, exactly what is the issue here?  We have
+> "multithreaded" pci driver startup for a long time now, did that stop
+> working here?  If you use bootchart, does it show that the USB host
+> driver is stoping the machine from proceeding to the next stage in the
+> boot process?
+>
+> From my experience, I never saw the USB host controller get in the way
+> at all, it was always somethine else happening that caused problems
+> (i.e. video.)
+>
+> Simon, do you have boot charts anywhere showing this?
 
-I had a few little problems here.
+I did have initcall timing when I last looked at this. USB was holding
+up progress. Sorry for the delay - I hope to get back to this next
+week.
 
-- For some reason my email client doesn't like MIME quoted-printable
-  and cannot correctly extract the plain text.  It appears that
-  globally deleting =\n and globally replacing =3D with = fixes things.
-  Ho hum.  I really should go see if this has been fixed, or hassle
-  the sylpheed developer(s).
+Regards,
+Simon
 
-- The driver generates a great storm of scripts/checkpatch.pl
-  whitespace warnings.  Things like using eight spaces instead of a
-  tab.  These really should be fixed, so please take a look at the
-  checkpatch output then resend?
-
+>
+> thanks,
+>
+> greg k-h
