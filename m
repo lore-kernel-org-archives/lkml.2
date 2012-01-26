@@ -1,114 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab2AZUCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 15:02:38 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:42833
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753799Ab2AZUCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 15:02:35 -0500
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dhc1bhc31hc1ah2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4F21B152.3010103@freescale.com>
-Date: Thu, 26 Jan 2012 14:02:26 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        David Brown <davidb@codeaurora.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-References: <1326983405-319-1-git-send-email-joerg.roedel@amd.com> <1326983405-319-3-git-send-email-joerg.roedel@amd.com> <C5ECD7A89D1DC44195F34B25E172658D038749@039-SN2MPN1-011.039d.mgd.msft.net> <20120120160344.GG2205@amd.com> <4F219A9C.8000400@freescale.com> <20120126183116.GI19255@amd.com> <4F219E82.106@freescale.com> <20120126185101.GJ19255@amd.com> <4F21A2D5.6000204@freescale.com> <20120126194428.GH6269@8bytes.org>
-In-Reply-To: <20120126194428.GH6269@8bytes.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1753859Ab2AZUC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 15:02:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830Ab2AZUCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 15:02:53 -0500
+Date: Thu, 26 Jan 2012 14:59:58 -0500
+From: Rik van Riel <riel@redhat.com>
+To: linux-mm@kvack.org
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH v3 -mm 2/3] mm: kswapd carefully call compaction
+Message-ID: <20120126145958.4c37ea04@cuia.bos.redhat.com>
+In-Reply-To: <20120126145450.2d3d2f4c@cuia.bos.redhat.com>
+References: <20120126145450.2d3d2f4c@cuia.bos.redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 01:44 PM, Joerg Roedel wrote:
-> On Thu, Jan 26, 2012 at 01:00:37PM -0600, Scott Wood wrote:
->> On 01/26/2012 12:51 PM, Joerg Roedel wrote:
->>> Because this is a flag that makes sense for all IOMMU. Every IOMMU
->>> either allows DMA outside its aperture or it doesn't.
->>>
->>> Another reason why it must be in the generic struct is the intended
->>> generic dma-ops layer on-top. This code can decide on this flag wheter a
->>> address needs to be remapped at all.
->>
->> So the DMA API would just read this, not write it?
-> 
-> The whole geometry thing is only implemented on the read side. There is
-> no implementation in domain_set_attr for it. So the geometry
-> information is read-only by default.
+With CONFIG_COMPACTION enabled, kswapd does not try to free
+contiguous free pages, even when it is woken for a higher order
+request.
 
-We will need to be able to set this, for some vfio+kvm uses.
+This could be bad for eg. jumbo frame network allocations, which
+are done from interrupt context and cannot compact memory themselves.
+Higher than before allocation failure rates in the network receive
+path have been observed in kernels with compaction enabled.
 
->> Still no reason why it couldn't be a separate attribute.  Then if you
->> get a failure trying to write it, it's more obvious why.
-> 
-> This would mean iommu specific hacks, which are not necessary in this
-> case.
+Teach kswapd to defragment the memory zones in a node, but only
+if required and compaction is not deferred in a zone.
 
-Why would making it a separate generic attribute require iommu specific
-hacks?
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+---
+ include/linux/compaction.h |    6 +++++
+ mm/compaction.c            |   53 +++++++++++++++++++++++++++++---------------
+ mm/vmscan.c                |    9 +++++++
+ 3 files changed, 50 insertions(+), 18 deletions(-)
 
->>> Setting this flag wrong does not create unintended identity mappings.
->>
->> Failing to set it means that DMA can go through that is not limited to
->> explicitly created mappings.  In some contexts (e.g. vfio) this is a
->> security hole.
-> 
-> No, when the hardware does not allow this, then software can't enforce
-> it.
-
-OK, it looked like an option that could be enabled or disabled --
-because I didn't realize you were considering geometry as read-only.
-
-> Again, the whole geometry attribute is only for iommu drivers to
-> export what the hardware can do. It is not for software to configure the
-> iommu driver.
-
-So how would a vfio user set up the iommu so a kvm guest sees iova ==
-guest physical, for at least its main memory, if the default aperture
-doesn't cover it?
-
-We also will gain performance by being able to set custom geometry,
-because we will not be as hard on the IOMMU cache if we can use fewer,
-larger subwindows.
-
-It's not configuring the iommu driver, just this particular domain.
-
->>> But I don't understand what you mean by 'restrictions on possible values'. The
->>> geometry attribute is filled by the IOMMU driver dependent on the
->>> hardware capabilities. There are no limits from the iommu-code side.
->>
->> How does the user of the iommu API discover the hardware capabilities?
-> 
-> Which hardware capabilities besides the geometry do you mean?
-
-Well, we have things like stash target (automatic cache prefetch after
-DMA) configuration, but in this case I was thinking about restrictions
-on what kind of aperture you can set, and what sort of mappings you can
-create with the result.
-
-On current Freescale PAMUs, the aperture must be a size-aligned
-power-of-two region, which is carved into up to 256 equal-size
-subwindows.  A mapping can be any power of 2 up to the subwindow size,
-but its iova must be the subwindow start address.
-
-We cannot just say "oh look, an aperture from here to there, we can
-create all the mappings we want within that space", at least not with an
-aperture over 1 MiB (256 contiguous 4k subwindows).
-
--Scott
-
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index bb2bbdb..7a9323a 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -23,6 +23,7 @@ extern int fragmentation_index(struct zone *zone, unsigned int order);
+ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *mask,
+ 			bool sync);
++extern int compact_pgdat(pg_data_t *pgdat, int order);
+ extern unsigned long compaction_suitable(struct zone *zone, int order);
+ 
+ /* Do not skip compaction more than 64 times */
+@@ -62,6 +63,11 @@ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 	return COMPACT_CONTINUE;
+ }
+ 
++static inline int compact_pgdat(pg_data_t *pgdat, int order)
++{
++	return COMPACT_CONTINUE;
++}
++
+ static inline unsigned long compaction_suitable(struct zone *zone, int order)
+ {
+ 	return COMPACT_SKIPPED;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 71a58f6..51ece75 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -653,44 +653,61 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 
+ 
+ /* Compact all zones within a node */
+-static int compact_node(int nid)
++static int __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
+ {
+ 	int zoneid;
+-	pg_data_t *pgdat;
+ 	struct zone *zone;
+ 
+-	if (nid < 0 || nid >= nr_node_ids || !node_online(nid))
+-		return -EINVAL;
+-	pgdat = NODE_DATA(nid);
+-
+ 	/* Flush pending updates to the LRU lists */
+ 	lru_add_drain_all();
+ 
+ 	for (zoneid = 0; zoneid < MAX_NR_ZONES; zoneid++) {
+-		struct compact_control cc = {
+-			.nr_freepages = 0,
+-			.nr_migratepages = 0,
+-			.order = -1,
+-			.sync = true,
+-		};
+ 
+ 		zone = &pgdat->node_zones[zoneid];
+ 		if (!populated_zone(zone))
+ 			continue;
+ 
+-		cc.zone = zone;
+-		INIT_LIST_HEAD(&cc.freepages);
+-		INIT_LIST_HEAD(&cc.migratepages);
++		cc->nr_freepages = 0;
++		cc->nr_migratepages = 0;
++		cc->zone = zone;
++		INIT_LIST_HEAD(&cc->freepages);
++		INIT_LIST_HEAD(&cc->migratepages);
+ 
+-		compact_zone(zone, &cc);
++		if (cc->order < 0 || !compaction_deferred(zone))
++			compact_zone(zone, cc);
+ 
+-		VM_BUG_ON(!list_empty(&cc.freepages));
+-		VM_BUG_ON(!list_empty(&cc.migratepages));
++		VM_BUG_ON(!list_empty(&cc->freepages));
++		VM_BUG_ON(!list_empty(&cc->migratepages));
+ 	}
+ 
+ 	return 0;
+ }
+ 
++int compact_pgdat(pg_data_t *pgdat, int order)
++{
++	struct compact_control cc = {
++		.order = order,
++		.sync = false,
++	};
++
++	return __compact_pgdat(pgdat, &cc);
++}
++
++static int compact_node(int nid)
++{
++	pg_data_t *pgdat;
++	struct compact_control cc = {
++		.order = -1,
++		.sync = true,
++	};
++
++	if (nid < 0 || nid >= nr_node_ids || !node_online(nid))
++		return -EINVAL;
++	pgdat = NODE_DATA(nid);
++
++	return __compact_pgdat(pgdat, &cc);
++}
++
+ /* Compact all nodes in the system */
+ static int compact_nodes(void)
+ {
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 0398fab..fa17794 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2673,6 +2673,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 	int priority;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
++	int zones_need_compaction = 1;
+ 	unsigned long total_scanned;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	unsigned long nr_soft_reclaimed;
+@@ -2937,9 +2938,17 @@ out:
+ 				goto loop_again;
+ 			}
+ 
++			/* Check if the memory needs to be defragmented. */
++			if (zone_watermark_ok(zone, order,
++				    low_wmark_pages(zone), *classzone_idx, 0))
++				zones_need_compaction = 0;
++
+ 			/* If balanced, clear the congested flag */
+ 			zone_clear_flag(zone, ZONE_CONGESTED);
+ 		}
++
++		if (zones_need_compaction)
++			compact_pgdat(pgdat, order);
+ 	}
+ 
+ 	/*
