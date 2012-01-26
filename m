@@ -1,182 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab2AZVOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:14:55 -0500
-Received: from fieldses.org ([174.143.236.118]:56484 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544Ab2AZVOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:14:53 -0500
-Date: Thu, 26 Jan 2012 16:14:50 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
-        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
-Subject: Re: [PATCH 3/4] SUNRPC: service destruction in network namespace
- context
-Message-ID: <20120126211450.GD700@fieldses.org>
-References: <20120125134132.13662.83447.stgit@localhost6.localdomain6>
- <20120125134726.13662.97179.stgit@localhost6.localdomain6>
+	id S1753300Ab2AZVRY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:17:24 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:42546 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751544Ab2AZVRX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 16:17:23 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Viresh Kumar <viresh.kumar@st.com>,
+        Chris Blair <chris.blair@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2 v3] mfd/stmpe: Add support for no-interrupt config
+Date: Thu, 26 Jan 2012 22:17:03 +0100
+Message-ID: <1327612623-9135-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120125134726.13662.97179.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 05:47:26PM +0400, Stanislav Kinsbursky wrote:
-> This patch introduces network namespace filter for service destruction
-> function.
-> Nothing special here - just do exactly the same operations, but only for
-> tranports in passed networks namespace context.
-> BTW, BUG_ON() checks for empty service transports lists were returned into
-> svc_destroy() function. This is because of swithing generic svc_close_all() to
-> networks namespace dependable svc_close_net().
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
-> ---
->  include/linux/sunrpc/svcsock.h |    2 +-
->  net/sunrpc/svc.c               |    9 +++++++--
->  net/sunrpc/svc_xprt.c          |   27 +++++++++++++++++----------
->  3 files changed, 25 insertions(+), 13 deletions(-)
-> 
-> diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
-> index c84e974..cb4ac69 100644
-> --- a/include/linux/sunrpc/svcsock.h
-> +++ b/include/linux/sunrpc/svcsock.h
-> @@ -34,7 +34,7 @@ struct svc_sock {
->  /*
->   * Function prototypes.
->   */
-> -void		svc_close_all(struct svc_serv *);
-> +void		svc_close_net(struct svc_serv *, struct net *);
->  int		svc_recv(struct svc_rqst *, long);
->  int		svc_send(struct svc_rqst *);
->  void		svc_drop(struct svc_rqst *);
-> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> index a8b49a0..279bbd8 100644
-> --- a/net/sunrpc/svc.c
-> +++ b/net/sunrpc/svc.c
-> @@ -517,6 +517,8 @@ EXPORT_SYMBOL_GPL(svc_create_pooled);
->  void
->  svc_destroy(struct svc_serv *serv)
->  {
-> +	struct net *net = current->nsproxy->net_ns;
-> +
->  	dprintk("svc: svc_destroy(%s, %d)\n",
->  				serv->sv_program->pg_name,
->  				serv->sv_nrthreads);
-> @@ -539,10 +541,13 @@ svc_destroy(struct svc_serv *serv)
->  	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
->  	 * safe to traverse those lists and shut everything down:
->  	 */
-> -	svc_close_all(serv);
-> +	svc_close_net(serv, net);
-> +
-> +	BUG_ON(!list_empty(&serv->sv_permsocks));
-> +	BUG_ON(!list_empty(&serv->sv_tempsocks));
+From: Chris Blair <chris.blair@stericsson.com>
 
-I'm confused--what guarantees this is true, at this point?
+Adds support for boards which have an STMPE device without the
+interrupt pin connected.
 
-There are two ways I could imagine containerizing svc_serv: either we
-create a new one for each namespace, or we share a single global one
-between them.
+Acked-by: Viresh Kumar <viresh.kumar@st.com>
+Signed-off-by: Chris Blair <chris.blair@stericsson.com>
+Tested-by: Michel Jaouen <michel.jaouen@stericsson.com>
+Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Corrects initialisation, error condition and driver removal cleanup
+  for the no-irq configuration.
+ChangeLog v2->v3:
+- Removes the extra platform data member added to support no-irq
+  mode and instead implements it using an invalid value for the
+  existing irq member. This is propagated through to the sub-device
+  drivers by having alternate versions of the cell data structures
+  which do not have an irq resource defined.
+---
+ drivers/mfd/stmpe.c       |  134 ++++++++++++++++++++++++++++++++-------------
+ include/linux/mfd/stmpe.h |    1 +
+ 2 files changed, 97 insertions(+), 38 deletions(-)
 
-If the former, then something that takes a "serv" argument shouldn't
-also need a "net" argument--the serv should already know which namespace
-it belongs to.
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index e07947e..2dd8d49 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -298,6 +298,11 @@ static struct mfd_cell stmpe_gpio_cell = {
+ 	.num_resources	= ARRAY_SIZE(stmpe_gpio_resources),
+ };
+ 
++static struct mfd_cell stmpe_gpio_cell_noirq = {
++	.name		= "stmpe-gpio",
++	/* gpio cell resources consist of an irq only so no resources here */
++};
++
+ /*
+  * Keypad (1601, 2401, 2403)
+  */
+@@ -346,6 +351,13 @@ static struct stmpe_variant_block stmpe801_blocks[] = {
+ 	},
+ };
+ 
++static struct stmpe_variant_block stmpe801_blocks_noirq[] = {
++	{
++		.cell	= &stmpe_gpio_cell_noirq,
++		.block	= STMPE_BLOCK_GPIO,
++	},
++};
++
+ static int stmpe801_enable(struct stmpe *stmpe, unsigned int blocks,
+ 			   bool enable)
+ {
+@@ -367,6 +379,17 @@ static struct stmpe_variant_info stmpe801 = {
+ 	.enable		= stmpe801_enable,
+ };
+ 
++static struct stmpe_variant_info stmpe801_noirq = {
++	.name		= "stmpe801",
++	.id_val		= STMPE801_ID,
++	.id_mask	= 0xffff,
++	.num_gpios	= 8,
++	.regs		= stmpe801_regs,
++	.blocks		= stmpe801_blocks_noirq,
++	.num_blocks	= ARRAY_SIZE(stmpe801_blocks_noirq),
++	.enable		= stmpe801_enable,
++};
++
+ /*
+  * Touchscreen (STMPE811 or STMPE610)
+  */
+@@ -712,7 +735,7 @@ static struct stmpe_variant_info stmpe2403 = {
+ 	.enable_autosleep	= stmpe1601_autosleep, /* same as stmpe1601 */
+ };
+ 
+-static struct stmpe_variant_info *stmpe_variant_info[] = {
++static struct stmpe_variant_info *stmpe_variant_info[STMPE_NBR_PARTS] = {
+ 	[STMPE610]	= &stmpe610,
+ 	[STMPE801]	= &stmpe801,
+ 	[STMPE811]	= &stmpe811,
+@@ -721,6 +744,16 @@ static struct stmpe_variant_info *stmpe_variant_info[] = {
+ 	[STMPE2403]	= &stmpe2403,
+ };
+ 
++/*
++ * These devices can be connected in a 'no-irq' configuration - the irq pin
++ * is not used and the device cannot interrupt the CPU. Here we only list
++ * devices which support this configuration - the driver will fail probing
++ * for any devices not listed here which are configured in this way.
++ */
++static struct stmpe_variant_info *stmpe_noirq_variant_info[STMPE_NBR_PARTS] = {
++	[STMPE801]	= &stmpe801_noirq,
++};
++
+ static irqreturn_t stmpe_irq(int irq, void *data)
+ {
+ 	struct stmpe *stmpe = data;
+@@ -864,7 +897,7 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
+ 	unsigned int irq_trigger = stmpe->pdata->irq_trigger;
+ 	int autosleep_timeout = stmpe->pdata->autosleep_timeout;
+ 	struct stmpe_variant_info *variant = stmpe->variant;
+-	u8 icr;
++	u8 icr = 0;
+ 	unsigned int id;
+ 	u8 data[2];
+ 	int ret;
+@@ -887,31 +920,33 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (id == STMPE801_ID)
+-		icr = STMPE801_REG_SYS_CTRL_INT_EN;
+-	else
+-		icr = STMPE_ICR_LSB_GIM;
+-
+-	/* STMPE801 doesn't support Edge interrupts */
+-	if (id != STMPE801_ID) {
+-		if (irq_trigger == IRQF_TRIGGER_FALLING ||
+-				irq_trigger == IRQF_TRIGGER_RISING)
+-			icr |= STMPE_ICR_LSB_EDGE;
+-	}
+-
+-	if (irq_trigger == IRQF_TRIGGER_RISING ||
+-			irq_trigger == IRQF_TRIGGER_HIGH) {
++	if (stmpe->irq >= 0) {
+ 		if (id == STMPE801_ID)
+-			icr |= STMPE801_REG_SYS_CTRL_INT_HI;
++			icr = STMPE801_REG_SYS_CTRL_INT_EN;
+ 		else
+-			icr |= STMPE_ICR_LSB_HIGH;
+-	}
++			icr = STMPE_ICR_LSB_GIM;
+ 
+-	if (stmpe->pdata->irq_invert_polarity) {
+-		if (id == STMPE801_ID)
+-			icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
+-		else
+-			icr ^= STMPE_ICR_LSB_HIGH;
++		/* STMPE801 doesn't support Edge interrupts */
++		if (id != STMPE801_ID) {
++			if (irq_trigger == IRQF_TRIGGER_FALLING ||
++					irq_trigger == IRQF_TRIGGER_RISING)
++				icr |= STMPE_ICR_LSB_EDGE;
++		}
++
++		if (irq_trigger == IRQF_TRIGGER_RISING ||
++				irq_trigger == IRQF_TRIGGER_HIGH) {
++			if (id == STMPE801_ID)
++				icr |= STMPE801_REG_SYS_CTRL_INT_HI;
++			else
++				icr |= STMPE_ICR_LSB_HIGH;
++		}
++
++		if (stmpe->pdata->irq_invert_polarity) {
++			if (id == STMPE801_ID)
++				icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
++			else
++				icr ^= STMPE_ICR_LSB_HIGH;
++		}
+ 	}
+ 
+ 	if (stmpe->pdata->autosleep) {
+@@ -1001,19 +1036,38 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 		stmpe->irq = ci->irq;
+ 	}
+ 
++	if (stmpe->irq < 0) {
++		/* use alternate variant info for no-irq mode, if supported */
++		dev_info(stmpe->dev,
++			"%s configured in no-irq mode by platform data\n",
++			stmpe->variant->name);
++		if (!stmpe_noirq_variant_info[stmpe->partnum]) {
++			dev_err(stmpe->dev,
++				"%s does not support no-irq mode!\n",
++				stmpe->variant->name);
++			ret = -ENODEV;
++			goto free_gpio;
++		}
++		stmpe->variant = stmpe_noirq_variant_info[stmpe->partnum];
++	}
++
+ 	ret = stmpe_chip_init(stmpe);
+ 	if (ret)
+ 		goto free_gpio;
+ 
+-	ret = stmpe_irq_init(stmpe);
+-	if (ret)
+-		goto free_gpio;
++	if (stmpe->irq >= 0) {
++		ret = stmpe_irq_init(stmpe);
++		if (ret)
++			goto free_gpio;
+ 
+-	ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
+-			pdata->irq_trigger | IRQF_ONESHOT, "stmpe", stmpe);
+-	if (ret) {
+-		dev_err(stmpe->dev, "failed to request IRQ: %d\n", ret);
+-		goto out_removeirq;
++		ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
++				pdata->irq_trigger | IRQF_ONESHOT,
++				"stmpe", stmpe);
++		if (ret) {
++			dev_err(stmpe->dev, "failed to request IRQ: %d\n",
++					ret);
++			goto out_removeirq;
++		}
+ 	}
+ 
+ 	ret = stmpe_devices_init(stmpe);
+@@ -1026,9 +1080,11 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 
+ out_removedevs:
+ 	mfd_remove_devices(stmpe->dev);
+-	free_irq(stmpe->irq, stmpe);
++	if (stmpe->irq >= 0)
++		free_irq(stmpe->irq, stmpe);
+ out_removeirq:
+-	stmpe_irq_remove(stmpe);
++	if (stmpe->irq >= 0)
++		stmpe_irq_remove(stmpe);
+ free_gpio:
+ 	if (pdata->irq_over_gpio)
+ 		gpio_free(pdata->irq_gpio);
+@@ -1041,8 +1097,10 @@ int stmpe_remove(struct stmpe *stmpe)
+ {
+ 	mfd_remove_devices(stmpe->dev);
+ 
+-	free_irq(stmpe->irq, stmpe);
+-	stmpe_irq_remove(stmpe);
++	if (stmpe->irq >= 0) {
++		free_irq(stmpe->irq, stmpe);
++		stmpe_irq_remove(stmpe);
++	}
+ 
+ 	if (stmpe->pdata->irq_over_gpio)
+ 		gpio_free(stmpe->pdata->irq_gpio);
+@@ -1057,7 +1115,7 @@ static int stmpe_suspend(struct device *dev)
+ {
+ 	struct stmpe *stmpe = dev_get_drvdata(dev);
+ 
+-	if (device_may_wakeup(dev))
++	if (stmpe->irq >= 0 && device_may_wakeup(dev))
+ 		enable_irq_wake(stmpe->irq);
+ 
+ 	return 0;
+@@ -1067,7 +1125,7 @@ static int stmpe_resume(struct device *dev)
+ {
+ 	struct stmpe *stmpe = dev_get_drvdata(dev);
+ 
+-	if (device_may_wakeup(dev))
++	if (stmpe->irq >= 0 && device_may_wakeup(dev))
+ 		disable_irq_wake(stmpe->irq);
+ 
+ 	return 0;
+diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+index ca1d7a3..a1c6aa7 100644
+--- a/include/linux/mfd/stmpe.h
++++ b/include/linux/mfd/stmpe.h
+@@ -26,6 +26,7 @@ enum stmpe_partnum {
+ 	STMPE1601,
+ 	STMPE2401,
+ 	STMPE2403,
++	STMPE_NBR_PARTS
+ };
+ 
+ /*
+-- 
+1.7.8
 
-If the latter, then these lists could have sockets from multiple
-namespaces, and they aren't guaranteed to be empty here.
-
-?
-
---b.
-
->  
->  	if (serv->sv_shutdown)
-> -		serv->sv_shutdown(serv, current->nsproxy->net_ns);
-> +		serv->sv_shutdown(serv, net);
->  
->  	cache_clean_deferred(serv);
->  
-> diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-> index 493e70b..4bda09d 100644
-> --- a/net/sunrpc/svc_xprt.c
-> +++ b/net/sunrpc/svc_xprt.c
-> @@ -922,17 +922,19 @@ void svc_close_xprt(struct svc_xprt *xprt)
->  }
->  EXPORT_SYMBOL_GPL(svc_close_xprt);
->  
-> -static void svc_close_list(struct list_head *xprt_list)
-> +static void svc_close_list(struct list_head *xprt_list, struct net *net)
->  {
->  	struct svc_xprt *xprt;
->  
->  	list_for_each_entry(xprt, xprt_list, xpt_list) {
-> +		if (xprt->xpt_net != net)
-> +			continue;
->  		set_bit(XPT_CLOSE, &xprt->xpt_flags);
->  		set_bit(XPT_BUSY, &xprt->xpt_flags);
->  	}
->  }
->  
-> -static void svc_clear_pools(struct svc_serv *serv)
-> +static void svc_clear_pools(struct svc_serv *serv, struct net *net)
->  {
->  	struct svc_pool *pool;
->  	struct svc_xprt *xprt;
-> @@ -944,36 +946,41 @@ static void svc_clear_pools(struct svc_serv *serv)
->  
->  		spin_lock_bh(&pool->sp_lock);
->  		list_for_each_entry_safe(xprt, tmp, &pool->sp_sockets, xpt_ready) {
-> +			if (xprt->xpt_net != net)
-> +				continue;
->  			list_del_init(&xprt->xpt_ready);
->  		}
->  		spin_unlock_bh(&pool->sp_lock);
->  	}
->  }
->  
-> -static void svc_clear_list(struct list_head *xprt_list)
-> +static void svc_clear_list(struct list_head *xprt_list, struct net *net)
->  {
->  	struct svc_xprt *xprt;
->  	struct svc_xprt *tmp;
->  
->  	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
-> +		if (xprt->xpt_net != net)
-> +			continue;
->  		svc_delete_xprt(xprt);
->  	}
-> -	BUG_ON(!list_empty(xprt_list));
-> +	list_for_each_entry(xprt, xprt_list, xpt_list)
-> +		BUG_ON(xprt->xpt_net == net);
->  }
->  
-> -void svc_close_all(struct svc_serv *serv)
-> +void svc_close_net(struct svc_serv *serv, struct net *net)
->  {
-> -	svc_close_list(&serv->sv_tempsocks);
-> -	svc_close_list(&serv->sv_permsocks);
-> +	svc_close_list(&serv->sv_tempsocks, net);
-> +	svc_close_list(&serv->sv_permsocks, net);
->  
-> -	svc_clear_pools(serv);
-> +	svc_clear_pools(serv, net);
->  	/*
->  	 * At this point the sp_sockets lists will stay empty, since
->  	 * svc_enqueue will not add new entries without taking the
->  	 * sp_lock and checking XPT_BUSY.
->  	 */
-> -	svc_clear_list(&serv->sv_tempsocks);
-> -	svc_clear_list(&serv->sv_permsocks);
-> +	svc_clear_list(&serv->sv_tempsocks, net);
-> +	svc_clear_list(&serv->sv_permsocks, net);
->  }
->  
->  /*
-> 
