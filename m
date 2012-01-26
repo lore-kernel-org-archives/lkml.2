@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab2AZKrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 05:47:04 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38649 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751048Ab2AZKrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 05:47:01 -0500
-Date: Thu, 26 Jan 2012 11:46:46 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] MCE recovery changes
-Message-ID: <20120126104646.GF3853@elte.hu>
-References: <4f1f396019579c94fb@agluck-desktop.sc.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4f1f396019579c94fb@agluck-desktop.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752329Ab2AZKvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 05:51:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35835 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab2AZKvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 05:51:53 -0500
+Message-ID: <1327575108.2500.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] netns: fix net_alloc_generic()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Sjur =?ISO-8859-1?Q?Br=E6ndeland?= 
+	<sjur.brandeland@stericsson.com>,
+        "levinsasha928@gmail.com" <levinsasha928@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "sjurbren@gmail.com" <sjurbren@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Thu, 26 Jan 2012 11:51:48 +0100
+In-Reply-To: <4F212E7E.2040801@parallels.com>
+References: <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>
+		 <1327523631-3480-1-git-send-email-sjur.brandeland@stericsson.com>
+	 <1327574498.2500.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <4F212E7E.2040801@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le jeudi 26 janvier 2012 à 14:44 +0400, Pavel Emelyanov a écrit :
+> > I believe the problem is in net_namespace infrastructure, not in CAIF.
+> > 
+> > Could you test following patch instead ?
+> > 
+> > [PATCH] netns: fix net_alloc_generic()
+> > 
+> > When a new net namespace is created, we should attach to it a "struct
+> > net_generic" with enough slots (even empty), or we can hit the following
+> > BUG_ON() :
+> > 
+> > [  200.752016] kernel BUG at include/net/netns/generic.h:40!
+> > ...
+> > [  200.752016]  [<ffffffff825c3cea>] ? get_cfcnfg+0x3a/0x180
+> > [  200.752016]  [<ffffffff821cf0b0>] ? lockdep_rtnl_is_held+0x10/0x20
+> > [  200.752016]  [<ffffffff825c41be>] caif_device_notify+0x2e/0x530
+> > [  200.752016]  [<ffffffff810d61b7>] notifier_call_chain+0x67/0x110
+> > [  200.752016]  [<ffffffff810d67c1>] raw_notifier_call_chain+0x11/0x20
+> > [  200.752016]  [<ffffffff821bae82>] call_netdevice_notifiers+0x32/0x60
+> > [  200.752016]  [<ffffffff821c2b26>] register_netdevice+0x196/0x300
+> > [  200.752016]  [<ffffffff821c2ca9>] register_netdev+0x19/0x30
+> > [  200.752016]  [<ffffffff81c1c67a>] loopback_net_init+0x4a/0xa0
+> > [  200.752016]  [<ffffffff821b5e62>] ops_init+0x42/0x180
+> > [  200.752016]  [<ffffffff821b600b>] setup_net+0x6b/0x100
+> > [  200.752016]  [<ffffffff821b6466>] copy_net_ns+0x86/0x110
+> > [  200.752016]  [<ffffffff810d5789>] create_new_namespaces+0xd9/0x190
+> > 
+> > net_alloc_generic() should take into account the maximum index into the
+> > ptr array, as a subsystem might use net_generic() anytime.
+> 
+> I'm not sure I understand it correctly, but subsystem can only use the
+> net_generic() only (!) after the net_assign_generic() is performed.
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+Yes, but here, loopback_net_init() calls register_netdev()
 
-> Ingo,
-> 
-> Time to move these from "ras" tree to "tip" so they will be nicely
-> seasoned for the 3.4 merge window.
-> 
-> I tried to follow the instructions in
->  http://git-blame.blogspot.com/2012/01/using-signed-tag-in-pull-requests.html
-> to use the fancy new signed tag scheme. If something is wrong here, then it
-> is most likely that I typoed (or thinkoed) while following them.
+So every subsystems _notify are called, even if subsystem _init_net()
+was not yet called.
 
-It worked perfectly.
+Its a chicken and egg problem.
 
-> 
-> -Tony
-> 
-> The following changes since commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50:
-> 
->   Linux 3.2-rc5 (2011-12-09 15:09:32 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git mce-recovery-for-tip
-> 
-> for you to fetch changes up to 5f7b88d51e89771f64c15903b96b5933dd0bc6d8:
-> 
->   x86/mce: Recognise machine check bank signature for data path error (2012-01-03 12:07:07 -0800)
-> 
-> ----------------------------------------------------------------
-> MCE recovery (data path only)
-> 
-> ----------------------------------------------------------------
-> Tony Luck (6):
->       HWPOISON: Clean up memory_failure() vs. __memory_failure()
->       HWPOISON: Add code to handle "action required" errors.
->       x86/mce: Create helper function to save addr/misc when needed
->       x86/mce: Add mechanism to safely save information in MCE handler
->       x86/mce: Handle "action required" errors
->       x86/mce: Recognise machine check bank signature for data path error
-> 
->  arch/x86/kernel/cpu/mcheck/mce-severity.c |   16 +++-
->  arch/x86/kernel/cpu/mcheck/mce.c          |  179 ++++++++++++++++++++---------
->  drivers/base/memory.c                     |    2 +-
->  include/linux/mm.h                        |    4 +-
->  mm/hwpoison-inject.c                      |    4 +-
->  mm/madvise.c                              |    2 +-
->  mm/memory-failure.c                       |   96 ++++++++--------
->  7 files changed, 197 insertions(+), 106 deletions(-)
 
-Pulled, thanks!
 
-One thing i noticed was the magic constant 0x134:
-
-+               SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
-
-don't we want that defined a bit more clearly?
-
-Thanks,
-
-	Ingo
