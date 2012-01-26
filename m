@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547Ab2AZMSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 07:18:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36040 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab2AZMSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 07:18:22 -0500
-Message-ID: <4F214465.9010600@redhat.com>
-Date: Thu, 26 Jan 2012 07:17:41 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1751823Ab2AZMW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 07:22:29 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43139 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab2AZMW2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 07:22:28 -0500
+Date: Thu, 26 Jan 2012 10:22:00 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        David Daney <david.daney@cavium.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jan Beulich <jbeulich@suse.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Fixing perf top --user shortcoming was: Re: [GIT PULL 0/9] perf/core
+ improvements and fixes
+Message-ID: <20120126122200.GA9128@infradead.org>
+References: <1327446481-5505-1-git-send-email-acme@infradead.org>
+ <20120126111648.GH3853@elte.hu>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Edward Shishkin <edward@redhat.com>
-Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
-References: <1325774407-28531-1-git-send-email-jack@suse.cz> <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com> <20120116160136.GC16431@quack.suse.cz> <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com> <20120117003613.GA28571@dastard> <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com> <20120123030422.GE15102@dastard> <20120123214709.GB17974@thunk.org> <20120124003657.GJ15102@dastard>
-In-Reply-To: <20120124003657.GJ15102@dastard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120126111648.GH3853@elte.hu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2012 07:36 PM, Dave Chinner wrote:
-> On Mon, Jan 23, 2012 at 04:47:09PM -0500, Ted Ts'o wrote:
->>> The thing is, transient write errors tend to be isolated and go away
->>> when a retry occurs (think of IO timeouts when multipath failover
->>> occurs). When non-isolated IO or unrecoverable problems occur (e.g.
->>> no paths left to fail over onto), critical other metadata reads and
->>> writes will fail and shut down the filesystem, thereby terminating
->>> the "try forever" background writeback loop those delayed write
->>> buffers may be in. So the truth is that "trying forever" on write
->>> errors can handle a whole class of write IO errors very
->>> effectively....
->> So how does XFS decide whether a write should fail and shutdown the
->> file system, or just "try forever"?
-> The IO dispatcher decides that. If the dispatcher has handed the IO
-> off to the delayed write queue, then failed writes will be tried
-> again. If the caller is catching the IO completion (e.g. sync
-> writes) or attaching a completion callback (journal IO), then the
-> completion context will handle the error appropriately. Journal IO
-> errors tend to shutdown the filesystem on the first error, other
-> contexts may handle the error, retry or shutdown the filesystem
-> depending on their current state when the error occurs.
->
-> Reads are even more complex, because ithe dispatch context can be
-> within a transaction and the correct error handling is then
-> dependent on the current state of the transaction....
->
-> Cheers,
->
-> Dave.
+Em Thu, Jan 26, 2012 at 12:16:48PM +0100, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> > 	The --uid feature works for root, we still need to 
+> > sort out that paranoia with some threads owned by a user that 
+> > prevents 'perf --uid non-root-user' to work for 
+> > 'non-root-user'.
 
-I think that having retry logic at the file system layer is really putting the 
-fix in the wrong place.
+> Just wondering what detail causes that failure - the whole point 
+> of --uid mingo would be to enable nonprivileged users to do 
+> 'session wide' profiling, *especially* if paranoia is high.
 
-Specifically, if we have multipath configured under a file system, it is up to 
-the multipath logic to handle the failure (and use another path, retry, etc).  
-If we see a failed IO further up the stack, it is *really* dead at that point.
+> So what does --uid do which perf record --pid 1234 wouldnt 
+> already do? By all means --uid ought to be a fancy way of doing 
+> a whole bunch of perf record --pid 1234 profiling sessions, at 
+> once.
 
-Transient errors on normal drives are also rarely worth re-trying since pretty 
-much all modern storage devices have firmware that will have done exhaustive 
-retries on a failed write. Definitely not worth retrying forever for a normal 
-device.
+I stopped at the kernel, i.e. used what can be done with what is
+available from the kernel right now, the diagnosis was sent in private,
+but boils down to:
 
-At one end of the spectrum, think of a box with dozens of storage devices 
-attached (either via SAN or local S-ATA devices). If we are doing large, 
-streaming writes, we could get a large amount of memory dirtied while writing. 
-If that one device dies and we keep that memory in use for the endless retry 
-loop, we have really cripple the box which still has multiple happy storage 
-devices and file systems....
++++ b/kernel/events/core.c
+@@ -2636,7 +2636,8 @@ find_lively_task_by_vpid(pid_t vpid)
+ 
+ 	/* Reuse ptrace permission checks for now. */
+ 	err = -EACCES;
+-	if (!ptrace_may_access(task, PTRACE_MODE_READ))
++	if (perf_paranoid_tracepoint_raw() &&
++	    !ptrace_may_access(task, PTRACE_MODE_READ))
+ 		goto errout;
+ 
+ 	return task;
 
-Ric
+ptrace_may_access(task, PTRACE_MODE_READ) fails for some tasks owned by
+the user because, IIRC, in __ptrace_may_access:
 
+        const struct cred *cred = current_cred(), *tcred;
 
+        /* May we inspect the given task?
+         * This check is used both for attaching with ptrace
+         * and for allowing access to sensitive information in /proc.
+         *
+         * ptrace_attach denies several cases that /proc allows
+         * because setting up the necessary parent/child relationship
+         * or halting the specified task is impossible.
+         */
+        int dumpable = 0;
+<SNIP>
+        if (!dumpable && !task_ns_capable(task, CAP_SYS_PTRACE))
+                return -EPERM;
 
+fails.
 
+The patch above is not any kind of solution, just a way to make it work
+when paranoia is set to -1 (thus perf_paranoid_tracepoint_raw in the
+POC) and show where the problem lies, ideas? Peter?
+
+> [ Btw, we should probably alias --user to --uid as well, as that 
+>   might be the intuitive thing people would typically use? ]
+
+I'll do that
+ 
+> Anyway, pulled, thanks a lot Arnaldo!
+> 
+> One detail: don't we want some of these fixes cherry-picked into 
+> perf/urgent as well?
+
+Yeah, I'll prepare a perf-urgent-for-ingo signed tag.
+ 
+> Thanks,
+> 
+> 	Ingo
