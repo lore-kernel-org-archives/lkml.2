@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab2AZNlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 08:41:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36120 "EHLO
+	id S1751960Ab2AZNmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 08:42:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36138 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab2AZNla (ORCPT
+	with ESMTP id S1751241Ab2AZNmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 08:41:30 -0500
-Date: Thu, 26 Jan 2012 05:41:05 -0800
+	Thu, 26 Jan 2012 08:42:15 -0500
+Date: Thu, 26 Jan 2012 05:41:53 -0800
 From: tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com>
-Message-ID: <tip-652847aa449cfe364d40018849223f57f31a38e2@git.kernel.org>
+Message-ID: <tip-5b68edc91cdc972c46f76f85eded7ffddc3ff5c2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        andreas.herrmann3@amd.com, tglx@linutronix.de, mingo@elte.hu
+        andreas.herrmann3@amd.com, stable@kernel.org, tglx@linutronix.de,
+        borislav.petkov@amd.com, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andreas.herrmann3@amd.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20120120163823.GC24508@alberich.amd.com>
-References: <20120120163823.GC24508@alberich.amd.com>
+        andreas.herrmann3@amd.com, stable@kernel.org, tglx@linutronix.de,
+        borislav.petkov@amd.com, mingo@elte.hu
+In-Reply-To: <20120120164412.GD24508@alberich.amd.com>
+References: <20120120164412.GD24508@alberich.amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/amd:
-  Add missing feature flag for fam15h models 10h-1fh processors
-Git-Commit-ID: 652847aa449cfe364d40018849223f57f31a38e2
+Subject: [tip:x86/urgent] x86/microcode_amd:
+  Add support for CPU family specific container files
+Git-Commit-ID: 5b68edc91cdc972c46f76f85eded7ffddc3ff5c2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,48 +30,80 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 05:41:11 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 05:41:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  652847aa449cfe364d40018849223f57f31a38e2
-Gitweb:     http://git.kernel.org/tip/652847aa449cfe364d40018849223f57f31a38e2
+Commit-ID:  5b68edc91cdc972c46f76f85eded7ffddc3ff5c2
+Gitweb:     http://git.kernel.org/tip/5b68edc91cdc972c46f76f85eded7ffddc3ff5c2
 Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
-AuthorDate: Fri, 20 Jan 2012 17:38:23 +0100
+AuthorDate: Fri, 20 Jan 2012 17:44:12 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 26 Jan 2012 12:06:38 +0100
+CommitDate: Thu, 26 Jan 2012 12:06:39 +0100
 
-x86/amd: Add missing feature flag for fam15h models 10h-1fh processors
+x86/microcode_amd: Add support for CPU family specific container files
 
-That is the last one missing for those CPUs.
+We've decided to provide CPU family specific container files
+(starting with CPU family 15h). E.g. for family 15h we have to
+load microcode_amd_fam15h.bin instead of microcode_amd.bin
 
-Others were recently added with commits
+Rationale is that starting with family 15h patch size is larger
+than 2KB which was hard coded as maximum patch size in various
+microcode loaders (not just Linux).
 
- fb215366b3c7320ac25dca766a0152df16534932
- (KVM: expose latest Intel cpu new features (BMI1/BMI2/FMA/AVX2) to guest)
-
-and
-
- commit 969df4b82904a30fef19a67398a0c854d223ea67
- (x86: Report cpb and eff_freq_ro flags correctly)
+Container files which include patches larger than 2KB cause
+different kinds of trouble with such old patch loaders. Thus we
+have to ensure that the default container file provides only
+patches with size less than 2KB.
 
 Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Link: http://lkml.kernel.org/r/20120120163823.GC24508@alberich.amd.com
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/20120120164412.GD24508@alberich.amd.com
+[ documented the naming convention and tidied the code a bit. ]
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/cpufeature.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/x86/kernel/microcode_amd.c |   24 ++++++++++++++++++++++--
+ 1 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 17c5d4b..8d67d42 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -159,6 +159,7 @@
- #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
- #define X86_FEATURE_LWP		(6*32+15) /* Light Weight Profiling */
- #define X86_FEATURE_FMA4	(6*32+16) /* 4 operands MAC instructions */
-+#define X86_FEATURE_TCE		(6*32+17) /* translation cache extension */
- #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
- #define X86_FEATURE_TBM		(6*32+21) /* trailing bit manipulations */
- #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index fe86493..ac0417b 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -311,13 +311,33 @@ out:
+ 	return state;
+ }
+ 
++/*
++ * AMD microcode firmware naming convention, up to family 15h they are in
++ * the legacy file:
++ *
++ *    amd-ucode/microcode_amd.bin
++ *
++ * This legacy file is always smaller than 2K in size.
++ *
++ * Starting at family 15h they are in family specific firmware files:
++ *
++ *    amd-ucode/microcode_amd_fam15h.bin
++ *    amd-ucode/microcode_amd_fam16h.bin
++ *    ...
++ *
++ * These might be larger than 2K.
++ */
+ static enum ucode_state request_microcode_amd(int cpu, struct device *device)
+ {
+-	const char *fw_name = "amd-ucode/microcode_amd.bin";
++	char fw_name[36] = "amd-ucode/microcode_amd.bin";
+ 	const struct firmware *fw;
+ 	enum ucode_state ret = UCODE_NFOUND;
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++
++	if (c->x86 >= 0x15)
++		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+ 
+-	if (request_firmware(&fw, fw_name, device)) {
++	if (request_firmware(&fw, (const char *)fw_name, device)) {
+ 		pr_err("failed to load file %s\n", fw_name);
+ 		goto out;
+ 	}
