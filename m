@@ -1,205 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab2AZR0D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:26:03 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55292 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab2AZR0A (ORCPT
+	id S1753326Ab2AZR0L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:26:11 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:7538 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753266Ab2AZR0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:26:00 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 4/5] platform-x86: intel_mid_thermal: convert to use Intel
- MSIC API
-To: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 26 Jan 2012 17:39:32 +0000
-Message-ID: <20120126173927.16719.25711.stgit@bob.linux.org.uk>
-In-Reply-To: <20120126173729.16719.15431.stgit@bob.linux.org.uk>
-References: <20120126173729.16719.15431.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Thu, 26 Jan 2012 12:26:10 -0500
+X-IronPort-AV: E=Sophos;i="4.71,574,1320620400"; 
+   d="scan'208";a="141576246"
+Date: Thu, 26 Jan 2012 18:26:08 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: linux-kernel@vger.kernel.org
+Subject: Hardware locality (hwloc) v1.4 released
+Message-ID: <20120126172608.GD4366@type.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+The Hardware Locality (hwloc) team is pleased to announce the release
+of v1.4:
 
-Intel MSIC MFD driver provides common register access interface to the
-devices in the MSIC die so we use that instead of SCU IPC.
+   http://www.open-mpi.org/projects/hwloc/
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+v1.4 is a major new release series.  It includes many new features and
+changes over the v1.3.x series. The most noticeable improvement is the
+ability to assemble the topologies of multiple nodes into a single
+global one. See the Multi-node Topologies section in the documentation
+for details.
 
- drivers/platform/x86/Kconfig             |    2 +-
- drivers/platform/x86/intel_mid_thermal.c |   39 ++++++++++++++----------------
- 2 files changed, 19 insertions(+), 22 deletions(-)
+Also please note that 64bits windows builds are now available for
+download.
 
-
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 5715e4d..86720bc 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -672,7 +672,7 @@ config INTEL_MID_POWER_BUTTON
- 
- config INTEL_MFLD_THERMAL
-        tristate "Thermal driver for Intel Medfield platform"
--       depends on INTEL_SCU_IPC && THERMAL
-+       depends on MFD_INTEL_MSIC && THERMAL
-        help
-          Say Y here to enable thermal driver support for the  Intel Medfield
-          platform.
-diff --git a/drivers/platform/x86/intel_mid_thermal.c b/drivers/platform/x86/intel_mid_thermal.c
-index de2e62e..aef4979 100644
---- a/drivers/platform/x86/intel_mid_thermal.c
-+++ b/drivers/platform/x86/intel_mid_thermal.c
-@@ -33,18 +33,15 @@
- #include <linux/slab.h>
- #include <linux/pm.h>
- #include <linux/thermal.h>
--
--#include <asm/intel_scu_ipc.h>
-+#include <linux/mfd/intel_msic.h>
- 
- /* Number of thermal sensors */
- #define MSIC_THERMAL_SENSORS	4
- 
- /* ADC1 - thermal registers */
--#define MSIC_THERM_ADC1CNTL1	0x1C0
- #define MSIC_ADC_ENBL		0x10
- #define MSIC_ADC_START		0x08
- 
--#define MSIC_THERM_ADC1CNTL3	0x1C2
- #define MSIC_ADCTHERM_ENBL	0x04
- #define MSIC_ADCRRDATA_ENBL	0x05
- #define MSIC_CHANL_MASK_VAL	0x0F
-@@ -75,8 +72,8 @@
- #define ADC_VAL60C		315
- 
- /* ADC base addresses */
--#define ADC_CHNL_START_ADDR	0x1C5	/* increments by 1 */
--#define ADC_DATA_START_ADDR	0x1D4	/* increments by 2 */
-+#define ADC_CHNL_START_ADDR	INTEL_MSIC_ADC1ADDR0	/* increments by 1 */
-+#define ADC_DATA_START_ADDR	INTEL_MSIC_ADC1SNS0H	/* increments by 2 */
- 
- /* MSIC die attributes */
- #define MSIC_DIE_ADC_MIN	488
-@@ -189,17 +186,17 @@ static int mid_read_temp(struct thermal_zone_device *tzd, unsigned long *temp)
- 	addr = td_info->chnl_addr;
- 
- 	/* Enable the msic for conversion before reading */
--	ret = intel_scu_ipc_iowrite8(MSIC_THERM_ADC1CNTL3, MSIC_ADCRRDATA_ENBL);
-+	ret = intel_msic_reg_write(INTEL_MSIC_ADC1CNTL3, MSIC_ADCRRDATA_ENBL);
- 	if (ret)
- 		return ret;
- 
- 	/* Re-toggle the RRDATARD bit (temporary workaround) */
--	ret = intel_scu_ipc_iowrite8(MSIC_THERM_ADC1CNTL3, MSIC_ADCTHERM_ENBL);
-+	ret = intel_msic_reg_write(INTEL_MSIC_ADC1CNTL3, MSIC_ADCTHERM_ENBL);
- 	if (ret)
- 		return ret;
- 
- 	/* Read the higher bits of data */
--	ret = intel_scu_ipc_ioread8(addr, &data);
-+	ret = intel_msic_reg_read(addr, &data);
- 	if (ret)
- 		return ret;
- 
-@@ -207,7 +204,7 @@ static int mid_read_temp(struct thermal_zone_device *tzd, unsigned long *temp)
- 	adc_val = (data << 2);
- 	addr++;
- 
--	ret = intel_scu_ipc_ioread8(addr, &data);/* Read lower bits */
-+	ret = intel_msic_reg_read(addr, &data);/* Read lower bits */
- 	if (ret)
- 		return ret;
- 
-@@ -235,7 +232,7 @@ static int configure_adc(int val)
- 	int ret;
- 	uint8_t data;
- 
--	ret = intel_scu_ipc_ioread8(MSIC_THERM_ADC1CNTL1, &data);
-+	ret = intel_msic_reg_read(INTEL_MSIC_ADC1CNTL1, &data);
- 	if (ret)
- 		return ret;
- 
-@@ -246,7 +243,7 @@ static int configure_adc(int val)
- 		/* Just stop the ADC */
- 		data &= (~MSIC_ADC_START);
- 	}
--	return intel_scu_ipc_iowrite8(MSIC_THERM_ADC1CNTL1, data);
-+	return intel_msic_reg_write(INTEL_MSIC_ADC1CNTL1, data);
- }
- 
- /**
-@@ -262,21 +259,21 @@ static int set_up_therm_channel(u16 base_addr)
- 	int ret;
- 
- 	/* Enable all the sensor channels */
--	ret = intel_scu_ipc_iowrite8(base_addr, SKIN_SENSOR0_CODE);
-+	ret = intel_msic_reg_write(base_addr, SKIN_SENSOR0_CODE);
- 	if (ret)
- 		return ret;
- 
--	ret = intel_scu_ipc_iowrite8(base_addr + 1, SKIN_SENSOR1_CODE);
-+	ret = intel_msic_reg_write(base_addr + 1, SKIN_SENSOR1_CODE);
- 	if (ret)
- 		return ret;
- 
--	ret = intel_scu_ipc_iowrite8(base_addr + 2, SYS_SENSOR_CODE);
-+	ret = intel_msic_reg_write(base_addr + 2, SYS_SENSOR_CODE);
- 	if (ret)
- 		return ret;
- 
- 	/* Since this is the last channel, set the stop bit
- 	 * to 1 by ORing the DIE_SENSOR_CODE with 0x10 */
--	ret = intel_scu_ipc_iowrite8(base_addr + 3,
-+	ret = intel_msic_reg_write(base_addr + 3,
- 			(MSIC_DIE_SENSOR_CODE | 0x10));
- 	if (ret)
- 		return ret;
-@@ -295,11 +292,11 @@ static int reset_stopbit(uint16_t addr)
- {
- 	int ret;
- 	uint8_t data;
--	ret = intel_scu_ipc_ioread8(addr, &data);
-+	ret = intel_msic_reg_read(addr, &data);
- 	if (ret)
- 		return ret;
- 	/* Set the stop bit to zero */
--	return intel_scu_ipc_iowrite8(addr, (data & 0xEF));
-+	return intel_msic_reg_write(addr, (data & 0xEF));
- }
- 
- /**
-@@ -322,7 +319,7 @@ static int find_free_channel(void)
- 	uint8_t data;
- 
- 	/* check whether ADC is enabled */
--	ret = intel_scu_ipc_ioread8(MSIC_THERM_ADC1CNTL1, &data);
-+	ret = intel_msic_reg_read(INTEL_MSIC_ADC1CNTL1, &data);
- 	if (ret)
- 		return ret;
- 
-@@ -331,7 +328,7 @@ static int find_free_channel(void)
- 
- 	/* ADC is already enabled; Looking for an empty channel */
- 	for (i = 0; i < ADC_CHANLS_MAX; i++) {
--		ret = intel_scu_ipc_ioread8(ADC_CHNL_START_ADDR + i, &data);
-+		ret = intel_msic_reg_read(ADC_CHNL_START_ADDR + i, &data);
- 		if (ret)
- 			return ret;
- 
-@@ -359,7 +356,7 @@ static int mid_initialize_adc(struct device *dev)
- 	 * Ensure that adctherm is disabled before we
- 	 * initialize the ADC
- 	 */
--	ret = intel_scu_ipc_ioread8(MSIC_THERM_ADC1CNTL3, &data);
-+	ret = intel_msic_reg_read(INTEL_MSIC_ADC1CNTL3, &data);
- 	if (ret)
- 		return ret;
- 
-
+* Major features
+  + Add "custom" interface and "assembler" tools to build multi-node
+    topology. See the Multi-node Topologies section in the documentation
+    for details.
+* Interface improvements
+  + Add symmetric_subtree object attribute to ease assumptions when consulting
+    regular symmetric topologies.
+  + Add a CPUModel and CPUType info attribute to Socket objects on Linux
+    and Solaris.
+  + Add hwloc_get_obj_index_inside_cpuset() to retrieve the "logical" index
+    of an object within a subtree of the topology.
+  + Add more NVIDIA CUDA helpers in cuda.h and cudart.h to find hwloc objects
+    corresponding to CUDA devices.
+* Discovery improvements
+  + Add a group object above partial distance matrices to make sure
+    the matrices are available in the final topology, except when this
+    new object would contradict the existing hierarchy.
+  + Grouping by distances now also works when loading from XML.
+  + Fix some corner cases in object insertion, for instance when dealing
+    with NUMA nodes without any CPU.
+* Backends
+  + Implement hwloc_get_area_membind() on Linux.
+  + Honor I/O topology flags when importing from XML.
+  + Further improve XML-related error checking and reporting.
+  + Hide synthetic topology error messages unless HWLOC_SYNTHETIC_VERBOSE=1.
+* Tools
+  + Add synthetic exporting of symmetric topologies to lstopo.
+  + lstopo --horiz and --vert can now be applied to some specific object types.
+  + lstopo -v -p now displays distance matrices with physical indexes.
+  + Add hwloc-distances utility to list distances.
+* Documentation
+  + Fix and/or document the behavior of most inline functions in hwloc/helper.h
+    when the topology contains some I/O or Misc objects.
+  + Backend documentation enhancements.
+* Bug fixes
+  + Fix missing last bit in hwloc_linux_get_thread_cpubind().
+    Thanks to Carolina Gómez-Tostón Gutiérrez for reporting the issue.
+  + Fix FreeBSD build without cpuid support.
+  + Fix several Windows build issues.
+  + Fix inline keyword definition in public headers.
+  + Fix dependencies in the embedded library.
+  + Improve visibility support detection. Thanks to Dave Love for providing
+    the patch.
+  + Remove references to internal symbols in the tools.
