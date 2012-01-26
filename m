@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab2AZPCV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:02:21 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:49014 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751471Ab2AZPCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 10:02:19 -0500
-X-Greylist: delayed 1348 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jan 2012 10:02:19 EST
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH] fix DAC960_V2_IOCTL_Opcode_T -Wenum-compare warning
-Date: Thu, 26 Jan 2012 15:39:10 +0100
-Message-Id: <1327588750-25965-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
+	id S1752570Ab2AZPEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:04:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751720Ab2AZPEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 10:04:34 -0500
+Date: Thu, 26 Jan 2012 10:04:20 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Suresh Jayaraman <sjayaraman@suse.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+Subject: Re: Slab corruption in floppy driver module
+Message-ID: <20120126150420.GD1891@redhat.com>
+References: <4F1EAFE9.5000306@suse.com>
+ <20120124223153.GG17291@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327590139;2f202322;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120124223153.GG17291@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed compiler warning:
+On Tue, Jan 24, 2012 at 05:31:53PM -0500, Vivek Goyal wrote:
 
-comparison between ‘DAC960_V2_IOCTL_Opcode_T’ and ‘enum <anonymous>’
+[..]
+> > Reverting f992ae80 makes the oops and the slab corruption messages disappear.
+> > The "no floppy controllers found" message was found in the dmesg.
+> 
+> I am wondering if extra queue reference for gendisk should be taken by driver
+> and not by add_disk(). Why? Because disk->queue association is setup by
+> driver and not by add_disk(). That way even if we don't call, add_disk(),
+> we should be fine.
 
-Renamed enum, added a new enum for SCSI_10.CommandOpcode in
-DAC960_V2_ProcessCompletedCommand().
+Well, changing above assumption will require lots of drivers to be
+changed. So probably an easier fix would be to clear disk->queue before
+calling put_disk() if we never called add_disk().
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Suresh,  does following patch help?
+
+Thanks
+Vivek
+
+floppy: Cleanup disk->queue before caling put_disk() if add_disk() was never called
+
+add_disk() takes gendisk reference on request queue. If driver failed during
+initialization and never called add_disk() then that extra reference is not
+taken. That reference is put in put_disk(). floppy driver allocates the
+disk, allocates queue, sets disk->queue and then relizes that floppy
+controller is not present. It tries to tear down everything and tries to
+put a reference down in put_disk() which was never taken.
+
+In such error cases cleanup disk->queue before calling put_disk() so that
+we never try to put down a reference which was never taken in first place.
+
+Reported-by: Suresh Jayaraman <sjayaraman@suse.com>
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- drivers/block/DAC960.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/block/floppy.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/DAC960.c b/drivers/block/DAC960.c
-index e086fbb..66b8729 100644
---- a/drivers/block/DAC960.c
-+++ b/drivers/block/DAC960.c
-@@ -4627,7 +4627,8 @@ static void DAC960_V2_ProcessCompletedCommand(DAC960_Command_T *Command)
-   DAC960_Controller_T *Controller = Command->Controller;
-   DAC960_CommandType_T CommandType = Command->CommandType;
-   DAC960_V2_CommandMailbox_T *CommandMailbox = &Command->V2.CommandMailbox;
--  DAC960_V2_IOCTL_Opcode_T CommandOpcode = CommandMailbox->Common.IOCTL_Opcode;
-+  DAC960_V2_IOCTL_Opcode_T IOCTLOpcode = CommandMailbox->Common.IOCTL_Opcode;
-+  DAC960_V2_CommandOpcode_T CommandOpcode = CommandMailbox->SCSI_10.CommandOpcode;   
-   DAC960_V2_CommandStatus_T CommandStatus = Command->V2.CommandStatus;
- 
-   if (CommandType == DAC960_ReadCommand ||
-@@ -4699,7 +4700,7 @@ static void DAC960_V2_ProcessCompletedCommand(DAC960_Command_T *Command)
-     {
-       if (Controller->ShutdownMonitoringTimer)
- 	      return;
--      if (CommandOpcode == DAC960_V2_GetControllerInfo)
-+      if (IOCTLOpcode == DAC960_V2_GetControllerInfo)
- 	{
- 	  DAC960_V2_ControllerInfo_T *NewControllerInfo =
- 	    Controller->V2.NewControllerInformation;
-@@ -4719,14 +4720,14 @@ static void DAC960_V2_ProcessCompletedCommand(DAC960_Command_T *Command)
- 	  memcpy(ControllerInfo, NewControllerInfo,
- 		 sizeof(DAC960_V2_ControllerInfo_T));
+Index: linux-2.6/drivers/block/floppy.c
+===================================================================
+--- linux-2.6.orig/drivers/block/floppy.c	2012-01-15 09:49:14.000000000 -0500
++++ linux-2.6/drivers/block/floppy.c	2012-01-26 09:51:24.389205883 -0500
+@@ -4368,8 +4368,21 @@ out_unreg_blkdev:
+ out_put_disk:
+ 	while (dr--) {
+ 		del_timer_sync(&motor_off_timer[dr]);
+-		if (disks[dr]->queue)
++		if (disks[dr]->queue) {
+ 			blk_cleanup_queue(disks[dr]->queue);
++			/*
++			 * The request queue reference we took at device
++			 * creation time has been put by above
++			 * blk_cleanup_queue(). We have not called add_disk()
++			 * yet and due to failure calling put_disk(). Put disk
++			 * will try to put a reference to disk->queue which is
++			 * taken in add_disk(). As we have not taken that
++			 * extra reference, putting extra reference down
++			 * will try to access already freed queue. Clear
++			 * disk->queue before calling put_disk().
++			 */
++			disks[dr]->queue = NULL;
++		}
+ 		put_disk(disks[dr]);
  	}
--      else if (CommandOpcode == DAC960_V2_GetEvent)
-+      else if (IOCTLOpcode == DAC960_V2_GetEvent)
- 	{
- 	  if (CommandStatus == DAC960_V2_NormalCompletion) {
- 	    DAC960_V2_ReportEvent(Controller, Controller->V2.Event);
- 	  }
- 	  Controller->V2.NextEventSequenceNumber++;
- 	}
--      else if (CommandOpcode == DAC960_V2_GetPhysicalDeviceInfoValid &&
-+      else if (IOCTLOpcode == DAC960_V2_GetPhysicalDeviceInfoValid &&
- 	       CommandStatus == DAC960_V2_NormalCompletion)
- 	{
- 	  DAC960_V2_PhysicalDeviceInfo_T *NewPhysicalDeviceInfo =
-@@ -4915,7 +4916,7 @@ static void DAC960_V2_ProcessCompletedCommand(DAC960_Command_T *Command)
- 	  NewPhysicalDeviceInfo->LogicalUnit++;
- 	  Controller->V2.PhysicalDeviceIndex++;
- 	}
--      else if (CommandOpcode == DAC960_V2_GetPhysicalDeviceInfoValid)
-+      else if (IOCTLOpcode == DAC960_V2_GetPhysicalDeviceInfoValid)
- 	{
- 	  unsigned int DeviceIndex;
- 	  for (DeviceIndex = Controller->V2.PhysicalDeviceIndex;
-@@ -4938,7 +4939,7 @@ static void DAC960_V2_ProcessCompletedCommand(DAC960_Command_T *Command)
- 	    }
- 	  Controller->V2.NeedPhysicalDeviceInformation = false;
- 	}
--      else if (CommandOpcode == DAC960_V2_GetLogicalDeviceInfoValid &&
-+      else if (IOCTLOpcode == DAC960_V2_GetLogicalDeviceInfoValid &&
- 	       CommandStatus == DAC960_V2_NormalCompletion)
- 	{
- 	  DAC960_V2_LogicalDeviceInfo_T *NewLogicalDeviceInfo =
-@@ -5065,7 +5066,7 @@ static void DAC960_V2_ProcessCompletedCommand(DAC960_Command_T *Command)
- 			 [LogicalDeviceNumber] = true;
- 	  NewLogicalDeviceInfo->LogicalDeviceNumber++;
- 	}
--      else if (CommandOpcode == DAC960_V2_GetLogicalDeviceInfoValid)
-+      else if (IOCTLOpcode == DAC960_V2_GetLogicalDeviceInfoValid)
- 	{
- 	  int LogicalDriveNumber;
- 	  for (LogicalDriveNumber = 0;
--- 
-1.7.7.3
-
+ 	return err;
