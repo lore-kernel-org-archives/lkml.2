@@ -1,83 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab2AZQts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 11:49:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752180Ab2AZQtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 11:49:46 -0500
-Date: Thu, 26 Jan 2012 14:48:05 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Johannes Stezenbach <js@sig21.net>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-3.2.1 + KVM: TSC unstable on Core i5-2400S / H67
-Message-ID: <20120126164805.GB28367@amt.cnet>
-References: <20120124113608.GA16876@sig21.net>
- <20120125122702.GA30888@amt.cnet>
- <20120125132503.GA3399@sig21.net>
- <20120126094659.GA25282@sig21.net>
- <4F21668F.8080005@siemens.com>
- <20120126153513.GA2963@sig21.net>
+	id S1753157Ab2AZQx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 11:53:56 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5375 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab2AZQxz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 11:53:55 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 26 Jan 2012 08:53:45 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 26 Jan 2012 08:53:45 -0800
+Subject: RE: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
+Thread-Topic: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
+Thread-Index: AczbzEcGETkYSdMXSDiMGNPm0QbCLgAfLEdg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178CB82335@HQMAIL01.nvidia.com>
+References: <1327490378-10904-1-git-send-email-ldewangan@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178CB8202B@HQMAIL01.nvidia.com>
+ <4F20B03A.3030303@nvidia.com>
+In-Reply-To: <4F20B03A.3030303@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120126153513.GA2963@sig21.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 04:35:13PM +0100, Johannes Stezenbach wrote:
-> On Thu, Jan 26, 2012 at 03:43:27PM +0100, Jan Kiszka wrote:
-> > On 2012-01-26 10:46, Johannes Stezenbach wrote:
-> > > [16353.270435] Restarting tasks ... 
-> > > [16353.270612] BUG: spinlock bad magic on CPU#2, dhclient3/2590
-> > > [16353.274702]  lock: ffff880127b9ce08, .magic: 00000000, .owner: dhclient3/2590, .owner_cpu: 2
-> > > [16353.276594] Pid: 2590, comm: dhclient3 Not tainted 3.2.1 #2
-> > > [16353.278294] done.
-> > > [16353.278314] video LNXVIDEO:00: Restoring backlight state
-> > > [16353.281627] Call Trace:
-> > > [16353.281633]  [<ffffffff81552515>] spin_dump+0x8a/0x8f
-> > > [16353.281636]  [<ffffffff81552540>] spin_bug+0x26/0x28
-> > > [16353.281639]  [<ffffffff81285af8>] do_raw_spin_unlock+0x1e/0x83
-> > > [16353.281643]  [<ffffffff8155912e>] _raw_spin_unlock_irq+0x28/0x5b
-> > > [16353.281647]  [<ffffffff8105e427>] get_signal_to_deliver+0x546/0x57c
-> > > [16353.281651]  [<ffffffff81001572>] do_signal+0x3e/0x62f
-> > > [16353.281654]  [<ffffffff815595b8>] ? retint_restore_args+0x13/0x13
-> > > [16353.281657]  [<ffffffff81280079>] ? copy_user_generic_string+0x19/0x40
-> > > [16353.281661]  [<ffffffff81142e8c>] ? poll_select_copy_remaining+0xc5/0xe9
-> > > [16353.281664]  [<ffffffff81001ba8>] do_notify_resume+0x2c/0x53
-> > > [16353.281666]  [<ffffffff8128137e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> > > [16353.281669]  [<ffffffff8155a1d6>] int_signal+0x12/0x17
-> > > [16353.472289] tsc = fffffd60248a9f39 last_guest_tsc = 229a823d4b88
-> > > [    0.006666] Marking TSC unstable due to KVM discovered backwards TSC
-> > > [16362.155512] Switching to clocksource hpet
-> > > [16363.617844] atl1c 0000:06:00.0: atl1c: eth0 NIC Link is Up<1000 Mbps Full Duplex>
-> > > [16363.618145] br0: port 1(eth0) entering forwarding state
-> > > [16363.618153] br0: port 1(eth0) entering forwarding state
-> > 
-> > Are you suspending your host while a VM is running? There is mosto
+Laxman Dewangan wrote at Wednesday, January 25, 2012 6:46 PM:
+> On Wednesday 25 January 2012 10:33 PM, Stephen Warren wrote:
+> > Laxman Dewangan wrote at Wednesday, January 25, 2012 4:20 AM:
+> >> Allow the transfer size to vary in each DMA request,
+> >> rather than assuming all requests to be the same size
+> >> as the first request made.
+> > ...
+> >> diff --git a/arch/arm/mach-tegra/dma.c b/arch/arm/mach-tegra/dma.c
+> > ...
+> >> @@ -434,6 +435,15 @@ static void tegra_dma_update_hw_partial(struct tegra_dma_channel *ch,
+> >>   	writel(apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
+> >>   	writel(ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
+> >>
+> >> +	if (ch->mode&  TEGRA_DMA_MODE_CONTINOUS)
+> >> +		ch->req_transfer_count = (req->size>>  3) - 1;
+> >> +	else
+> >> +		ch->req_transfer_count = (req->size>>  2) - 1;
+> > There are cases in the current continuous mode where HW is working on
+> > one buffer and the next buffer is queued in HW. Once we've written the
+> > new request to HW, we don't know exactly which buffer HW is operating
+> > on. Hence, we don't know which buffer ch->req_transfer_count refers to.
+> > If req->size changes, might this change cause the new req->size value
+> > to be used when the old buffer's final completion interrupt goes off
+> > and hence the old buffer's req->bytes_transferred be wrong?
 > 
-> Yes, that's what I'm doing.
-> 
-> > probably a long-pending bug in the KVM TSC check logic that declares
-> > that clocksource unstable after resume. I'm seeing this here for ages
-> > and complained about it from the beginning (but I never debugged it :-/).
-> 
-> Hm, OK.  I hope someone has an idea how to fix it.  I'm ready to test patches.
-> 
-> > Of course, this doesn't explain your corrupted spin lock. That might be
-> > a different issue.
-> 
-> Yes, most probably it is something different since I haven't seen this
-> before.  However, I didn't use 3.2.1 long.  Now I updated
-> to 3.2.2 and enabled a few more debug options.  We'll see if it
-> triggers again.
+> Then byte_transferred should be calculated based on req->size, not based
+> on ch->req_transfer_count.
 
-There is a fix available:
+Yes, I think that makes sense.
 
-http://lists.openwall.net/linux-kernel/2011/06/21/5
+> Still issue may come when we need to read the transfered count from dma
+> through status register whether it has completed the old and started new
+> one or still on old req. This can be resolved by having proper lock
+> between the isr and reading status so that if isr clears the
+> interrupt_done, just raise a flag that int_done arrive and so
+> get-active_count() function can handle it properly before workqueu get
+> scheduled. I am seeing that there is  missing synchronization between
+> int_done status and get_active_count().
+> I am also thinking that we can remove the work queue and handle the
+> queue management in isr only
 
-It should be integrated.
+So I assume you need to make some/all of those modifications before we can
+apply this patch?
+
+> > Actually looking at the current continuous mode, I'm not convinced that
+> > it correctly handles replacing an in-progress buffer with a new buffer;
+> > I certainly see where handle_continuous_dma() checks for a second (SW)
+> > queued buffer and tells the HW to use that buffer instead, but I don't
+> > see where the (SW) queue management is done; where is the old req removed
+> > from the head of ch->list and marked complete? I assume the "out of sync"
+> > case is only intended to be an error condition and not part of the
+> > buffer switch?
+>
+> We are removing the old req from list in handling of full buffer
+> interrupt handling.
+> 
+> 660                 } else if (req->buffer_status ==
+> 661                         TEGRA_DMA_REQ_BUF_STATUS_HALF_FULL) {
+> :::::::::::::::::::::::::::::::::::::::
+> 670                         req->buffer_status =
+> TEGRA_DMA_REQ_BUF_STATUS_FULL;
+> 671                         req->bytes_transferred = bytes_transferred;
+> 672                         req->status = TEGRA_DMA_REQ_SUCCESS;
+> 673                         list_del(&req->node);
+
+Oh right... Maybe I'm misunderstanding continuous mode works then; I
+thought that the client driver queued a request once, and it continued
+to execute forever until either a new request was queued to replace it,
+or the original request for dequeued. It looks like instead, the req
+is always removed from the queue once we've seen both the ping and the
+pong interrupts. Am I totally misunderstanding what's happening?
+
+-- 
+nvpublic
 
