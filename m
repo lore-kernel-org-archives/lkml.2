@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab2AZLLv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 06:11:51 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:30514 "EHLO relay.sw.ru"
+	id S1752783Ab2AZLMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 06:12:10 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:32312 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab2AZLLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 06:11:49 -0500
-Subject: [PATCH 2/5] NFS: build fixed in case of NFS_USE_NEW_IDMAPPER is
- undefined
+	id S1752725Ab2AZLMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 06:12:06 -0500
+Subject: [PATCH 4/5] NFS: pass current net to rpc_pton() while parsing mount
+ options
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Thu, 26 Jan 2012 15:11:41 +0400
-Message-ID: <20120126111141.8386.95788.stgit@localhost6.localdomain6>
+Date: Thu, 26 Jan 2012 15:11:57 +0400
+Message-ID: <20120126111157.8386.76201.stgit@localhost6.localdomain6>
 In-Reply-To: <20120126110955.8386.34551.stgit@localhost6.localdomain6>
 References: <20120126110955.8386.34551.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -31,19 +31,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/nfs/idmap.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/nfs/super.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index aed3d2e..04f58d4 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -378,6 +378,7 @@ int nfs_map_gid_to_group(const struct nfs_server *server, __u32 gid, char *buf,
- 
- #include "nfs4_fs.h"
- #include "internal.h"
-+#include "netns.h"
- 
- #define IDMAP_HASH_SZ          128
- 
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index b79f2a1..5ed6071 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1408,7 +1408,7 @@ static int nfs_parse_mount_options(char *raw,
+ 			if (string == NULL)
+ 				goto out_nomem;
+ 			mnt->nfs_server.addrlen =
+-				rpc_pton(&init_net, string, strlen(string),
++				rpc_pton(mnt->net, string, strlen(string),
+ 					(struct sockaddr *)
+ 					&mnt->nfs_server.address,
+ 					sizeof(mnt->nfs_server.address));
+@@ -1430,7 +1430,7 @@ static int nfs_parse_mount_options(char *raw,
+ 			if (string == NULL)
+ 				goto out_nomem;
+ 			mnt->mount_server.addrlen =
+-				rpc_pton(&init_net, string, strlen(string),
++				rpc_pton(mnt->net, string, strlen(string),
+ 					(struct sockaddr *)
+ 					&mnt->mount_server.address,
+ 					sizeof(mnt->mount_server.address));
 
