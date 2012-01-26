@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab2AZLUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 06:20:24 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:42880 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab2AZLUS (ORCPT
+	id S1752758Ab2AZLUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 06:20:21 -0500
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:53869 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751047Ab2AZLUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 06:20:18 -0500
-Message-ID: <29acd271cd920259e9703c438295d7b3.squirrel@webmail.greenhost.nl>
-In-Reply-To: <CAK1hOcPbamBW9KdnL8ORG4=u6R6ydvRX8tBJGB-pnXL6z1Y_sw@mail.gmail.com>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
-    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
-    <20120125193635.GA30311@redhat.com>
-    <201201260032.57937.vda.linux@googlemail.com>
-    <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
-    <20120126010858.GD18613@jl-vm1.vm.bytemark.co.uk>
-    <88753c7d600bee39c06bbda32b08daae.squirrel@webmail.greenhost.nl>
-    <20120126103157.GE18613@jl-vm1.vm.bytemark.co.uk>
-    <CAK1hOcPbamBW9KdnL8ORG4=u6R6ydvRX8tBJGB-pnXL6z1Y_sw@mail.gmail.com>
-Date: Thu, 26 Jan 2012 12:19:42 +0100
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Denys Vlasenko" <vda.linux@googlemail.com>
-Cc: "Jamie Lokier" <jamie@shareable.org>, "Oleg Nesterov" <oleg@redhat.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andi Kleen" <andi@firstfloor.org>, "Andrew Lutomirski" <luto@mit.edu>,
-        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        "Roland McGrath" <mcgrathr@chromium.org>
-User-Agent: SquirrelMail/1.4.22
+	Thu, 26 Jan 2012 06:20:19 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: swarren@nvidia.com
+Cc: mmarek@suse.cz, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] scripts: dtc: fix compile warnings
+Date: Thu, 26 Jan 2012 13:20:07 +0200
+Message-Id: <1327576807-19216-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.8.2
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 1.4
-X-Scan-Signature: dfea3049d3b923820beb462d65569822
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, January 26, 2012 11:40, Denys Vlasenko wrote:
-> On Thu, Jan 26, 2012 at 11:31 AM, Jamie Lokier <jamie@shareable.org> wrote:
->> Indan Zupancic wrote:
->>> On Thu, January 26, 2012 02:08, Jamie Lokier wrote:
->>> > Is it disambiguated by PTRACE_EVENT_EXEC happening before the execve
->>> > returns, and you knowing the TID always changes to the PID? �I haven't
->>> > yet checked which TID gets the PTRACE_EVENT_EXEC event, but if it's
->>> > not the old one, perhaps that could be changed.
->>>
->>> Please don't ever change the behaviour of PTRACE_EVENT_EXEC, it's
->>> barely documented already, but if if ever changes it will be also
->>> unreliable.
->>>
->>> It's still unclear if the PTRACE_EVENT_EXEC comes before or after
->>> or instead of the post-execve ptrace event.
->
-> Denis <- confused.
-> Was ist das "post-execve ptrace event"? I know no such thing.
-> I know about PTRACE_EVENT_EXEC, and "post-execve SIGTRAP".
+Fix following compile warnings:
 
-I mean the second SIGTRAP | 0x80 event, the syscall return of execve.
+scripts/dtc/flattree.c: In function ‘flat_read_mem_reserve’:
+scripts/dtc/flattree.c:700:14: warning: variable ‘p’ set but not used
+	[-Wunused-but-set-variable]
 
-> All ptrace stops (events and other stops) are synchronous.
-> Tracee stops, tracer notices it, tracer restarts tracee,
-> and only after this tracee can generate next event.
-> Therefore ptrace stops can't get reordered.
+scripts/dtc/dtc.c: In function ‘main’:
+scripts/dtc/dtc.c:104:17: warning: variable ‘check’ set but not used
+	[-Wunused-but-set-variable]
 
-That's good to know and what I expected.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ scripts/dtc/dtc.c      |    5 +----
+ scripts/dtc/flattree.c |    2 --
+ 2 files changed, 1 insertions(+), 6 deletions(-)
 
-Since which kernel version does the PTRACE_GETEVENTMSG work and
-is there a way to find out before it returns zero?
-
-Greetings,
-
-Indan
-
+diff --git a/scripts/dtc/dtc.c b/scripts/dtc/dtc.c
+index 451c92d..2ef5e2e 100644
+--- a/scripts/dtc/dtc.c
++++ b/scripts/dtc/dtc.c
+@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
+ 	const char *outform = "dts";
+ 	const char *outname = "-";
+ 	const char *depname = NULL;
+-	int force = 0, check = 0, sort = 0;
++	int force = 0, sort = 0;
+ 	const char *arg;
+ 	int opt;
+ 	FILE *outf = NULL;
+@@ -143,9 +143,6 @@ int main(int argc, char *argv[])
+ 		case 'f':
+ 			force = 1;
+ 			break;
+-		case 'c':
+-			check = 1;
+-			break;
+ 		case 'q':
+ 			quiet++;
+ 			break;
+diff --git a/scripts/dtc/flattree.c b/scripts/dtc/flattree.c
+index ead0332..28d0b23 100644
+--- a/scripts/dtc/flattree.c
++++ b/scripts/dtc/flattree.c
+@@ -697,7 +697,6 @@ static struct reserve_info *flat_read_mem_reserve(struct inbuf *inb)
+ {
+ 	struct reserve_info *reservelist = NULL;
+ 	struct reserve_info *new;
+-	const char *p;
+ 	struct fdt_reserve_entry re;
+ 
+ 	/*
+@@ -706,7 +705,6 @@ static struct reserve_info *flat_read_mem_reserve(struct inbuf *inb)
+ 	 *
+ 	 * First pass, count entries.
+ 	 */
+-	p = inb->ptr;
+ 	while (1) {
+ 		flat_read_chunk(inb, &re, sizeof(re));
+ 		re.address  = fdt64_to_cpu(re.address);
+-- 
+1.7.8.2
 
