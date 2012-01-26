@@ -1,116 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab2AZQx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 11:53:56 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5375 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab2AZQxz convert rfc822-to-8bit (ORCPT
+	id S1753178Ab2AZQ6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 11:58:32 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:41259 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753134Ab2AZQ6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 11:53:55 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 26 Jan 2012 08:53:45 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 26 Jan 2012 08:53:45 -0800
-Subject: RE: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
-Thread-Topic: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
-Thread-Index: AczbzEcGETkYSdMXSDiMGNPm0QbCLgAfLEdg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178CB82335@HQMAIL01.nvidia.com>
-References: <1327490378-10904-1-git-send-email-ldewangan@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF178CB8202B@HQMAIL01.nvidia.com>
- <4F20B03A.3030303@nvidia.com>
-In-Reply-To: <4F20B03A.3030303@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Jan 2012 11:58:31 -0500
+X-Sasl-enc: L59k0KtlRgzWe/gbWNsbnswDzhba3AYSNsjWi3Cn80Py 1327597110
+Date: Thu, 26 Jan 2012 08:27:27 -0800
+From: Greg KH <greg@kroah.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFCv3 0/9] perf tool: parser generator for events parsing
+Message-ID: <20120126162727.GA2744@kroah.com>
+References: <20120109152855.GA1597@m.brq.redhat.com>
+ <1326717103-10287-1-git-send-email-jolsa@redhat.com>
+ <1327422364.2446.75.camel@twins>
+ <20120125005342.GA24662@kroah.com>
+ <1327488573.2614.59.camel@laptop>
+ <20120125143711.GD2582@m.brq.redhat.com>
+ <1327594989.2446.114.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327594989.2446.114.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Laxman Dewangan wrote at Wednesday, January 25, 2012 6:46 PM:
-> On Wednesday 25 January 2012 10:33 PM, Stephen Warren wrote:
-> > Laxman Dewangan wrote at Wednesday, January 25, 2012 4:20 AM:
-> >> Allow the transfer size to vary in each DMA request,
-> >> rather than assuming all requests to be the same size
-> >> as the first request made.
-> > ...
-> >> diff --git a/arch/arm/mach-tegra/dma.c b/arch/arm/mach-tegra/dma.c
-> > ...
-> >> @@ -434,6 +435,15 @@ static void tegra_dma_update_hw_partial(struct tegra_dma_channel *ch,
-> >>   	writel(apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
-> >>   	writel(ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
-> >>
-> >> +	if (ch->mode&  TEGRA_DMA_MODE_CONTINOUS)
-> >> +		ch->req_transfer_count = (req->size>>  3) - 1;
-> >> +	else
-> >> +		ch->req_transfer_count = (req->size>>  2) - 1;
-> > There are cases in the current continuous mode where HW is working on
-> > one buffer and the next buffer is queued in HW. Once we've written the
-> > new request to HW, we don't know exactly which buffer HW is operating
-> > on. Hence, we don't know which buffer ch->req_transfer_count refers to.
-> > If req->size changes, might this change cause the new req->size value
-> > to be used when the old buffer's final completion interrupt goes off
-> > and hence the old buffer's req->bytes_transferred be wrong?
+On Thu, Jan 26, 2012 at 05:23:09PM +0100, Peter Zijlstra wrote:
+> On Wed, 2012-01-25 at 15:37 +0100, Jiri Olsa wrote:
+> > please check attached patch, would something like this be ok?
 > 
-> Then byte_transferred should be calculated based on req->size, not based
-> on ch->req_transfer_count.
+> Looks fine to me, Greg is that Documentation thing good enough
 
-Yes, I think that makes sense.
-
-> Still issue may come when we need to read the transfered count from dma
-> through status register whether it has completed the old and started new
-> one or still on old req. This can be resolved by having proper lock
-> between the isr and reading status so that if isr clears the
-> interrupt_done, just raise a flag that int_done arrive and so
-> get-active_count() function can handle it properly before workqueu get
-> scheduled. I am seeing that there is  missing synchronization between
-> int_done status and get_active_count().
-> I am also thinking that we can remove the work queue and handle the
-> queue management in isr only
-
-So I assume you need to make some/all of those modifications before we can
-apply this patch?
-
-> > Actually looking at the current continuous mode, I'm not convinced that
-> > it correctly handles replacing an in-progress buffer with a new buffer;
-> > I certainly see where handle_continuous_dma() checks for a second (SW)
-> > queued buffer and tells the HW to use that buffer instead, but I don't
-> > see where the (SW) queue management is done; where is the old req removed
-> > from the head of ch->list and marked complete? I assume the "out of sync"
-> > case is only intended to be an error condition and not part of the
-> > buffer switch?
->
-> We are removing the old req from list in handling of full buffer
-> interrupt handling.
-> 
-> 660                 } else if (req->buffer_status ==
-> 661                         TEGRA_DMA_REQ_BUF_STATUS_HALF_FULL) {
-> :::::::::::::::::::::::::::::::::::::::
-> 670                         req->buffer_status =
-> TEGRA_DMA_REQ_BUF_STATUS_FULL;
-> 671                         req->bytes_transferred = bytes_transferred;
-> 672                         req->status = TEGRA_DMA_REQ_SUCCESS;
-> 673                         list_del(&req->node);
-
-Oh right... Maybe I'm misunderstanding continuous mode works then; I
-thought that the client driver queued a request once, and it continued
-to execute forever until either a new request was queued to replace it,
-or the original request for dequeued. It looks like instead, the req
-is always removed from the queue once we've seen both the ping and the
-pong interrupts. Am I totally misunderstanding what's happening?
-
--- 
-nvpublic
-
+Yes, looks good to me, thanks.
