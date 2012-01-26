@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab2AZWXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 17:23:47 -0500
-Received: from tex.lwn.net ([70.33.254.29]:44568 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051Ab2AZWXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 17:23:45 -0500
-Date: Thu, 26 Jan 2012 15:23:43 -0700
-From: Jonathan Corbet <corbet@lwn.net>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heungjun Kim <riverful.kim@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Andrew Chew <achew@nvidia.com>, Paul Mundt <lethal@linux-sh.org>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Johannes Obermaier <johannes.obermaier@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Steven Toth <stoth@kernellabs.com>, linux-media@vger.kernel.org
-Subject: Re: [PATCH] [media] convert drivers/media/* to use
- module_i2c_driver()
-Message-ID: <20120126152343.7c5da11c@dt>
-In-Reply-To: <1327140645.3928.1.camel@phoenix>
-References: <1327140645.3928.1.camel@phoenix>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1754110Ab2AZWYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 17:24:23 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65282 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753051Ab2AZWYW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 17:24:22 -0500
+MIME-Version: 1.0
+X-Originating-IP: [59.167.234.130]
+In-Reply-To: <20120126.133033.964571202129052712.davem@davemloft.net>
+References: <CAGsizzJnRy74ni-HH=5q1VR4g6sfDPg9SFw4UKgSjJjkSR8OJA@mail.gmail.com>
+	<20120125.203746.1977019610549185259.davem@davemloft.net>
+	<CAGsizzLYxsc2MGxF7yK_QzS+3bexHa1F_6+NE87u3F18m7=R1g@mail.gmail.com>
+	<20120126.133033.964571202129052712.davem@davemloft.net>
+Date: Fri, 27 Jan 2012 09:24:19 +1100
+Message-ID: <CAOzFzEj-UCXwhw0NA=Y=qExG=RdVJB3RAdqU0HrsMo7V+4eGcQ@mail.gmail.com>
+Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+From: Joseph Glanville <joseph.glanville@orionvm.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: steweg@ynet.sk, jesse@nicira.com, eric.dumazet@gmail.com,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Jan 2012 18:10:45 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
+David is correct, the forwarding speed of Open vSwitch is at parity
+with the Linux Bridging module and its tunneling speed is actually
+slightly faster than the in kernel GRE implementation. I have tested
+this across a variety of configurations.
 
-> This patch converts the drivers in drivers/media/* to use the
-> module_i2_driver() macro which makes the code smaller and a bit simpler.
+Joseph.
 
-For ov7670.c (belatedly):
+On 27 January 2012 05:30, David Miller <davem@davemloft.net> wrote:
+> From: Štefan Gula <steweg@ynet.sk>
+> Date: Thu, 26 Jan 2012 11:57:30 +0100
+>
+>> 2012/1/26 David Miller <davem@davemloft.net>:
+>>> From: Štefan Gula <steweg@ynet.sk>
+>>> Date: Wed, 25 Jan 2012 23:57:18 +0100
+>>>
+>>>> The performance is one of the most critical thing why I have chosen to
+>>>> build kernel patch in the first place instead of some user-space app.
+>>>> If I used this approach, I would probably end up with patch for
+>>>> OpenVPN project instead in that time. I am not telling that
+>>>> openvswitch is not a good place for prototyping, but I believe that
+>>>> this patch is beyond that border as it successfully run in environment
+>>>> with more 98 linux-based APs, used for 4K+ users, with no issue for
+>>>> more than 2 years. The performance results from Joseph Glanville even
+>>>> adds value to it. So I still don't get the point, why my patch and
+>>>> openvswitch cannot coexists in the kernel together and let user/admin
+>>>> to choose to correct solution for him/her.
+>>>
+>>> You don't even know if openvswitch could provide acceptable levels
+>>> of performance, because you haven't even tried.
+>>>
+>>> I'm not applying your patch.
+>> Performance of any user-space application is lower than performance of
+>> something running purely inside the kernel-space only. So still don't
+>> see any valid reason, why it simply cannot coexists as it doesn't
+>> breaks any existing functionality at all?
+>
+> The only userspace component is setting up the rules, the actual
+> packet processing occurs in the openvswitch kernel code.
+>
+> Are you really unable to understand this?
 
-	Acked-by: Jonathan Corbet <corbet@lwn.net>
 
-jon
+
+-- 
+Founder | Director | VP Research
+Orion Virtualisation Solutions | www.orionvm.com.au | Phone: 1300 56
+99 52 | Mobile: 0428 754 846
