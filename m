@@ -1,84 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab2AZLFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 06:05:15 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40863 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab2AZLFN (ORCPT
+	id S1752645Ab2AZLGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 06:06:00 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48930 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab2AZLF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 06:05:13 -0500
-Date: Thu, 26 Jan 2012 12:05:06 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Takashi Iwai <tiwai@suse.de>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [alsa-devel] [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add
- missing iounmap
-Message-ID: <20120126110506.GB2611@pengutronix.de>
-References: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr>
- <7FE21149F4667147B645348EC605788508FBDB@039-SN2MPN1-013.039d.mgd.msft.net>
- <alpine.DEB.2.02.1201241828480.1779@localhost6.localdomain6>
- <20120124202203.GD1135@opensource.wolfsonmicro.com>
- <alpine.DEB.2.02.1201242144580.1998@hadrien>
+	Thu, 26 Jan 2012 06:05:59 -0500
+Message-ID: <4F213392.2090203@suse.cz>
+Date: Thu, 26 Jan 2012 12:05:54 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120118 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1201242144580.1998@hadrien>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Jiri Slaby <jirislaby@gmail.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Baohua.Song@csr.com,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
+References: <4F1EC8D5.5040102@suse.cz> <4F202721.6050900@linux.vnet.ibm.com> <4F204D90.7010105@linux.vnet.ibm.com> <201201260051.45000.rjw@sisk.pl>
+In-Reply-To: <201201260051.45000.rjw@sisk.pl>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/26/2012 12:51 AM, Rafael J. Wysocki wrote:
+> IOW, Jiri, does the patch below help?
 
---i0/AhcQY5QxfSsSZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah, this fixes the issue as well. Thanks.
 
-> @@ -666,18 +666,19 @@ static int mxs_saif_probe(struct platform_device *p=
-dev)
->   		goto failed_get_resource;
->   	}
->=20
-> -	if (!request_mem_region(iores->start, resource_size(iores),
-> -				"mxs-saif")) {
-> +	if (!devm_request_mem_region(&pdev->dev, iores->start,
-> +				     resource_size(iores), "mxs-saif")) {
->   		dev_err(&pdev->dev, "request_mem_region failed\n");
->   		ret =3D -EBUSY;
->   		goto failed_get_resource;
->   	}
->=20
-> -	saif->base =3D ioremap(iores->start, resource_size(iores));
-> +	saif->base =3D devm_ioremap(&pdev->dev, iores->start,
-> +				  resource_size(iores));
+> [BTW, the freeze_tasks()'s kerneldoc seems to be outdated.  Tejun?]
+> 
+> ---
+>  include/linux/freezer.h |    2 ++
+>  kernel/power/process.c  |   19 +++++++++++++++++++
+>  kernel/power/user.c     |    1 +
+>  3 files changed, 22 insertions(+)
+> 
+> Index: linux/include/linux/freezer.h
+> ===================================================================
+> --- linux.orig/include/linux/freezer.h
+> +++ linux/include/linux/freezer.h
+> @@ -39,6 +39,7 @@ extern bool __refrigerator(bool check_kt
+>  extern int freeze_processes(void);
+>  extern int freeze_kernel_threads(void);
+>  extern void thaw_processes(void);
+> +extern void thaw_kernel_threads(void);
+>  
+>  static inline bool try_to_freeze(void)
+>  {
+> @@ -174,6 +175,7 @@ static inline bool __refrigerator(bool c
+>  static inline int freeze_processes(void) { return -ENOSYS; }
+>  static inline int freeze_kernel_threads(void) { return -ENOSYS; }
+>  static inline void thaw_processes(void) {}
+> +static inline void thaw_kernel_threads(void) {}
+>  
+>  static inline bool try_to_freeze(void) { return false; }
+>  
+> Index: linux/kernel/power/process.c
+> ===================================================================
+> --- linux.orig/kernel/power/process.c
+> +++ linux/kernel/power/process.c
+> @@ -188,3 +188,22 @@ void thaw_processes(void)
+>  	printk("done.\n");
+>  }
+>  
+> +void thaw_kernel_threads(void)
+> +{
+> +	struct task_struct *g, *p;
+> +
+> +	pm_nosig_freezing = false;
+> +	printk("Restarting kernel threads ... ");
+> +
+> +	thaw_workqueues();
+> +
+> +	read_lock(&tasklist_lock);
+> +	do_each_thread(g, p) {
+> +		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
+> +			__thaw_task(p);
+> +	} while_each_thread(g, p);
+> +	read_unlock(&tasklist_lock);
+> +
+> +	schedule();
+> +	printk("done.\n");
+> +}
+> Index: linux/kernel/power/user.c
+> ===================================================================
+> --- linux.orig/kernel/power/user.c
+> +++ linux/kernel/power/user.c
+> @@ -274,6 +274,7 @@ static long snapshot_ioctl(struct file *
+>  		swsusp_free();
+>  		memset(&data->handle, 0, sizeof(struct snapshot_handle));
+>  		data->ready = 0;
+> +		thaw_kernel_threads();
+>  		break;
+>  
+>  	case SNAPSHOT_PREF_IMAGE_SIZE:
 
-devm_request_and_ioremap() to save even more code?
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---i0/AhcQY5QxfSsSZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk8hM2IACgkQD27XaX1/VRvl4wCeIArqrtl8+wIySL0w/s4TqXzx
-lqEAnAhHR20GfGR2Q7lfl1+fj7lcw7Z2
-=Skak
------END PGP SIGNATURE-----
-
---i0/AhcQY5QxfSsSZ--
+-- 
+js
+suse labs
