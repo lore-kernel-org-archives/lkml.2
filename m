@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab2AZCdR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 21:33:17 -0500
-Received: from victor.provo.novell.com ([137.65.250.26]:46248 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab2AZCdP (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 25 Jan 2012 21:33:15 -0500
-Subject: Re: [PATCH] acer-wmi: support for P key on TM8372
-From: joeyli <jlee@suse.com>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Merlin Schumacher <merlin.schumacher@gmail.com>,
-        Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>
-In-Reply-To: <1327350935-19145-1-git-send-email-ike.pan@canonical.com>
-References: <1327350935-19145-1-git-send-email-ike.pan@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Jan 2012 10:28:41 +0800
-Message-ID: <1327544921.15260.7.camel@linux-s257.site>
+	id S1752766Ab2AZCgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 21:36:14 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:54866 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab2AZCgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 21:36:13 -0500
+Date: Wed, 25 Jan 2012 21:36:09 -0500 (EST)
+Message-Id: <20120125.213609.1699401522361877843.davem@davemloft.net>
+To: steweg@ynet.sk
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v1, kernel 3.2.1] RTNETLINK adjusting values of
+ min_ifinfo_dump_size
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <26709175.701327480995351.JavaMail.root@5-MeO-DMT.ynet.sk>
+References: <30372884.681327480899559.JavaMail.root@5-MeO-DMT.ynet.sk>
+	<26709175.701327480995351.JavaMail.root@5-MeO-DMT.ynet.sk>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 25 Jan 2012 18:36:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ike,
+From: Stefan Gula <steweg@ynet.sk>
+Date: Wed, 25 Jan 2012 09:43:15 +0100 (CET)
 
-於 二，2012-01-24 於 04:35 +0800，Ike Panhc 提到：
-> From: Merlin Schumacher <merlin.schumacher@gmail.com>
+> From: Stefan Gula <steweg@gmail.com>
 > 
-> BugLink: http://launchpad.net/bugs/865807
+> This patch extends the rtnetlink.c. The problem is that calcit, which
+> returns the value min_ifinfo_dump_size, is called without ability to
+> get device info as well (struct net_device *dev is not accessible from
+> it). This create a problem if required size of struct sk_buff *skb is
+> not enough big to comply with all data returned by fill_info function
+> for the interface that required size can vary over time, e.g. some
+> dynamic structures will be putted to skb like hlists or lists. To do
+> this patch extends the do_setlink function with recalculating of
+> min_ifinfo_dump_size accordingly to device type and get_size
+> functions.
 > 
-> There is no entry for P key on TM8372, so when P key is pressed, only
-> "acer_wmi: Unknown key number - 0x29" in dmesg.
-> 
-> Signed-off-by: Merlin Schumacher <merlin.schumacher@gmail.com>
-> Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+> Signed-off-by: Stefan Gula <steweg@gmail.com>
 
-Reviewed-by: Lee, Chun-Yi <jlee@suse.com>
+This commit message is terrible, and the reason I know it's terrible
+is because even after reading it I still had to go read the code
+in order to understand what your change even does or why it's even
+necessary.
 
-> ---
->  drivers/platform/x86/acer-wmi.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index b848277..d48262c 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -105,6 +105,7 @@ static const struct key_entry acer_wmi_keymap[] = {
->  	{KE_KEY, 0x22, {KEY_PROG2} },    /* Arcade */
->  	{KE_KEY, 0x23, {KEY_PROG3} },    /* P_Key */
->  	{KE_KEY, 0x24, {KEY_PROG4} },    /* Social networking_Key */
-> +	{KE_KEY, 0x29, {KEY_PROG3} },    /* P_Key for TM8372 */
->  	{KE_IGNORE, 0x41, {KEY_MUTE} },
->  	{KE_IGNORE, 0x42, {KEY_PREVIOUSSONG} },
->  	{KE_IGNORE, 0x43, {KEY_NEXTSONG} },
+How about this:
 
-This patch has no problem, but could you please provide the dmidecode
-result to me for reference?
-
-
-Thanks a lot!
-Joey Lee
+	Setting link parameters on a netdevice changes the value
+	of if_nlmsg_size(), therefore it is necessary to recalculate
+	min_ifinfo_dump_size.
 
