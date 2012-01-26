@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab2AZVjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:39:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40319 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456Ab2AZVjD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:39:03 -0500
-Date: Thu, 26 Jan 2012 13:38:46 -0800
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-9d8e22777e66f420e46490e9fc6f8cb7e0e2222b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, jbeulich@suse.com, JBeulich@suse.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, JBeulich@suse.com, jbeulich@suse.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4F218584020000780006F422@nat28.tlf.novell.com>
-References: <4F218584020000780006F422@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86-64: Handle byte-wise tail copying in memcpy()
-  without a loop
-Git-Commit-ID: 9d8e22777e66f420e46490e9fc6f8cb7e0e2222b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 13:38:51 -0800 (PST)
+	id S1753927Ab2AZVjP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:39:15 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:43055 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753831Ab2AZVjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 16:39:13 -0500
+X-Greylist: delayed 867 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jan 2012 16:39:12 EST
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, vinod.koul@intel.com,
+        dan.j.williams@intel.com
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
+Subject: [RFC] dmaengine/dma_slave: add context parameter to prep_slave_sg callback
+Date: Thu, 26 Jan 2012 16:22:26 -0500
+Message-Id: <1327612946-29397-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9d8e22777e66f420e46490e9fc6f8cb7e0e2222b
-Gitweb:     http://git.kernel.org/tip/9d8e22777e66f420e46490e9fc6f8cb7e0e2222b
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Thu, 26 Jan 2012 15:55:32 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 26 Jan 2012 21:19:20 +0100
+As we agreed during our discussion about adding DMA Engine support for RapidIO
+subsystem, RapidIO and similar clients may benefit from adding an extra context
+parameter to device_prep_slave_sg() callback.
+See https://lkml.org/lkml/2011/10/24/275 for more details.
 
-x86-64: Handle byte-wise tail copying in memcpy() without a loop
+Adding the context parameter will allow to pass client/target specific
+information associated with an individual data transfer request.
 
-While hard to measure, reducing the number of possibly/likely
-mis-predicted branches can generally be expected to be slightly
-better.
+In the case of RapidIO support this additional information consists of target
+destination ID and its buffer address (which is not mapped into the local CPU
+memory space). Because a single RapidIO-capable DMA channel may queue data
+transfer requests to different target devices, the per-request configuration
+is required.
 
-Other than apparent at the first glance, this also doesn't grow
-the function size (the alignment gap to the next function just
-gets smaller).
+The proposed change eliminates need for new subsystem-specific API.
+Existing DMA_SLAVE clients will ignore the new parameter.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/4F218584020000780006F422@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+This RFC only demonstrates the API change and does not include corresponding
+changes to existing DMA_SLAVE clients. Complete set of patches will be provided
+after (if) this API change is accepted.
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Russell King <rmk@arm.linux.org.uk> 
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
 ---
- arch/x86/lib/memcpy_64.S |   19 ++++++++++---------
- 1 files changed, 10 insertions(+), 9 deletions(-)
+ include/linux/dmaengine.h |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
-index 1235b04..1c273be 100644
---- a/arch/x86/lib/memcpy_64.S
-+++ b/arch/x86/lib/memcpy_64.S
-@@ -164,18 +164,19 @@ ENTRY(memcpy)
- 	retq
- 	.p2align 4
- .Lless_3bytes:
--	cmpl $0, %edx
--	je .Lend
-+	subl $1, %edx
-+	jb .Lend
- 	/*
- 	 * Move data from 1 bytes to 3 bytes.
- 	 */
--.Lloop_1:
--	movb (%rsi), %r8b
--	movb %r8b, (%rdi)
--	incq %rdi
--	incq %rsi
--	decl %edx
--	jnz .Lloop_1
-+	movzbl (%rsi), %ecx
-+	jz .Lstore_1byte
-+	movzbq 1(%rsi), %r8
-+	movzbq (%rsi, %rdx), %r9
-+	movb %r8b, 1(%rdi)
-+	movb %r9b, (%rdi, %rdx)
-+.Lstore_1byte:
-+	movb %cl, (%rdi)
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 679b349..79d71bb 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -575,7 +575,7 @@ struct dma_device {
+ 	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+ 		struct dma_chan *chan, struct scatterlist *sgl,
+ 		unsigned int sg_len, enum dma_transfer_direction direction,
+-		unsigned long flags);
++		unsigned long flags, void *context);
+ 	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+ 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+ 		size_t period_len, enum dma_transfer_direction direction);
+@@ -607,12 +607,13 @@ static inline int dmaengine_slave_config(struct dma_chan *chan,
  
- .Lend:
- 	retq
+ static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
+ 	struct dma_chan *chan, void *buf, size_t len,
+-	enum dma_transfer_direction dir, unsigned long flags)
++	enum dma_transfer_direction dir, unsigned long flags, void *context)
+ {
+ 	struct scatterlist sg;
+ 	sg_init_one(&sg, buf, len);
+ 
+-	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
++	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags,
++						  context);
+ }
+ 
+ static inline int dmaengine_terminate_all(struct dma_chan *chan)
+-- 
+1.7.8.4
+
