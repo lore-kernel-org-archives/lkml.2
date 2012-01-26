@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2AZVjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:39:15 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:43055 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753831Ab2AZVjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:39:13 -0500
-X-Greylist: delayed 867 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jan 2012 16:39:12 EST
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, vinod.koul@intel.com,
-        dan.j.williams@intel.com
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-Subject: [RFC] dmaengine/dma_slave: add context parameter to prep_slave_sg callback
-Date: Thu, 26 Jan 2012 16:22:26 -0500
-Message-Id: <1327612946-29397-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1753923Ab2AZVjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:39:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40347 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884Ab2AZVjt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 16:39:49 -0500
+Date: Thu, 26 Jan 2012 13:39:33 -0800
+From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
+Message-ID: <tip-kzvj4xp9tmicuoqoh2w05iay@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        dirk.brandewie@gmail.com, tglx@linutronix.de,
+        jacob.jun.pan@linux.intel.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dirk.brandewie@gmail.com, tglx@linutronix.de,
+        jacob.jun.pan@linux.intel.com, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/ioapic:
+  Use legacy_pic to set correct gsi-irq mapping
+Git-Commit-ID: b3eea29c189a0e3e2ac921e85fabfa4989ee58d7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 13:39:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we agreed during our discussion about adding DMA Engine support for RapidIO
-subsystem, RapidIO and similar clients may benefit from adding an extra context
-parameter to device_prep_slave_sg() callback.
-See https://lkml.org/lkml/2011/10/24/275 for more details.
+Commit-ID:  b3eea29c189a0e3e2ac921e85fabfa4989ee58d7
+Gitweb:     http://git.kernel.org/tip/b3eea29c189a0e3e2ac921e85fabfa4989ee58d7
+Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
+AuthorDate: Thu, 26 Jan 2012 17:32:04 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 26 Jan 2012 21:23:50 +0100
 
-Adding the context parameter will allow to pass client/target specific
-information associated with an individual data transfer request.
+x86/ioapic: Use legacy_pic to set correct gsi-irq mapping
 
-In the case of RapidIO support this additional information consists of target
-destination ID and its buffer address (which is not mapped into the local CPU
-memory space). Because a single RapidIO-capable DMA channel may queue data
-transfer requests to different target devices, the per-request configuration
-is required.
+Using compile time NR_LEGACY_IRQS causes the wrong gsi-irq
+mapping on non-PC platforms, such as Moorestown. This patch uses
+legacy_pic abstraction to set the correct number of legacy
+interrupts at runtime. For Moorestown, nr_legacy_irqs = 0. We
+have 1:1 mapping for gsi-irq even within the legacy irq range.
 
-The proposed change eliminates need for new subsystem-specific API.
-Existing DMA_SLAVE clients will ignore the new parameter.
-
-This RFC only demonstrates the API change and does not include corresponding
-changes to existing DMA_SLAVE clients. Complete set of patches will be provided
-after (if) this API change is accepted.
-
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Russell King <rmk@arm.linux.org.uk> 
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+Link: http://lkml.kernel.org/n/tip-kzvj4xp9tmicuoqoh2w05iay@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/dmaengine.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 679b349..79d71bb 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -575,7 +575,7 @@ struct dma_device {
- 	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
- 		struct dma_chan *chan, struct scatterlist *sgl,
- 		unsigned int sg_len, enum dma_transfer_direction direction,
--		unsigned long flags);
-+		unsigned long flags, void *context);
- 	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
- 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
- 		size_t period_len, enum dma_transfer_direction direction);
-@@ -607,12 +607,13 @@ static inline int dmaengine_slave_config(struct dma_chan *chan,
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fb07275..9e75366 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1010,7 +1010,7 @@ static int pin_2_irq(int idx, int apic, int pin)
+ 	} else {
+ 		u32 gsi = gsi_cfg->gsi_base + pin;
  
- static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
- 	struct dma_chan *chan, void *buf, size_t len,
--	enum dma_transfer_direction dir, unsigned long flags)
-+	enum dma_transfer_direction dir, unsigned long flags, void *context)
+-		if (gsi >= NR_IRQS_LEGACY)
++		if (gsi >= legacy_pic->nr_legacy_irqs)
+ 			irq = gsi;
+ 		else
+ 			irq = gsi_top + gsi;
+@@ -3610,7 +3610,7 @@ static void __init probe_nr_irqs_gsi(void)
  {
- 	struct scatterlist sg;
- 	sg_init_one(&sg, buf, len);
+ 	int nr;
  
--	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
-+	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags,
-+						  context);
- }
+-	nr = gsi_top + NR_IRQS_LEGACY;
++	nr = gsi_top + legacy_pic->nr_legacy_irqs;
+ 	if (nr > nr_irqs_gsi)
+ 		nr_irqs_gsi = nr;
  
- static inline int dmaengine_terminate_all(struct dma_chan *chan)
--- 
-1.7.8.4
-
