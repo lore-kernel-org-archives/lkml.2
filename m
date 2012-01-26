@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab2AZPfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:35:22 -0500
-Received: from bar.sig21.net ([80.81.252.164]:32878 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751483Ab2AZPfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 10:35:20 -0500
-Date: Thu, 26 Jan 2012 16:35:13 +0100
-From: Johannes Stezenbach <js@sig21.net>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-3.2.1 + KVM: TSC unstable on Core i5-2400S / H67
-Message-ID: <20120126153513.GA2963@sig21.net>
-References: <20120124113608.GA16876@sig21.net>
- <20120125122702.GA30888@amt.cnet>
- <20120125132503.GA3399@sig21.net>
- <20120126094659.GA25282@sig21.net>
- <4F21668F.8080005@siemens.com>
+	id S1752806Ab2AZPfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:35:19 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:42398 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab2AZPfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 10:35:17 -0500
+Date: Thu, 26 Jan 2012 10:32:39 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Guillaume Knispel <gknispel@proformatique.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Xavier Carcelle <xcarcelle@avencall.com>,
+        =?iso-8859-1?B?Tm/p?= Rubinstein <nrubinstein@avencall.com>
+Subject: Re: How to "register" a GSI for a non PCI non ISA device
+Message-ID: <20120126153239.GA14367@phenom.dumpdata.com>
+References: <20120124184203.1b0878c2@xilun>
+ <4F1F99A5.1000206@kernel.org>
+ <20120125182314.7834c75b@xilun>
+ <20120125190214.GC18606@phenom.dumpdata.com>
+ <20120126160719.3b9be3b3@xilun>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F21668F.8080005@siemens.com>
+In-Reply-To: <20120126160719.3b9be3b3@xilun>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F2172AA.0101,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 03:43:27PM +0100, Jan Kiszka wrote:
-> On 2012-01-26 10:46, Johannes Stezenbach wrote:
-> > [16353.270435] Restarting tasks ... 
-> > [16353.270612] BUG: spinlock bad magic on CPU#2, dhclient3/2590
-> > [16353.274702]  lock: ffff880127b9ce08, .magic: 00000000, .owner: dhclient3/2590, .owner_cpu: 2
-> > [16353.276594] Pid: 2590, comm: dhclient3 Not tainted 3.2.1 #2
-> > [16353.278294] done.
-> > [16353.278314] video LNXVIDEO:00: Restoring backlight state
-> > [16353.281627] Call Trace:
-> > [16353.281633]  [<ffffffff81552515>] spin_dump+0x8a/0x8f
-> > [16353.281636]  [<ffffffff81552540>] spin_bug+0x26/0x28
-> > [16353.281639]  [<ffffffff81285af8>] do_raw_spin_unlock+0x1e/0x83
-> > [16353.281643]  [<ffffffff8155912e>] _raw_spin_unlock_irq+0x28/0x5b
-> > [16353.281647]  [<ffffffff8105e427>] get_signal_to_deliver+0x546/0x57c
-> > [16353.281651]  [<ffffffff81001572>] do_signal+0x3e/0x62f
-> > [16353.281654]  [<ffffffff815595b8>] ? retint_restore_args+0x13/0x13
-> > [16353.281657]  [<ffffffff81280079>] ? copy_user_generic_string+0x19/0x40
-> > [16353.281661]  [<ffffffff81142e8c>] ? poll_select_copy_remaining+0xc5/0xe9
-> > [16353.281664]  [<ffffffff81001ba8>] do_notify_resume+0x2c/0x53
-> > [16353.281666]  [<ffffffff8128137e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> > [16353.281669]  [<ffffffff8155a1d6>] int_signal+0x12/0x17
-> > [16353.472289] tsc = fffffd60248a9f39 last_guest_tsc = 229a823d4b88
-> > [    0.006666] Marking TSC unstable due to KVM discovered backwards TSC
-> > [16362.155512] Switching to clocksource hpet
-> > [16363.617844] atl1c 0000:06:00.0: atl1c: eth0 NIC Link is Up<1000 Mbps Full Duplex>
-> > [16363.618145] br0: port 1(eth0) entering forwarding state
-> > [16363.618153] br0: port 1(eth0) entering forwarding state
+On Thu, Jan 26, 2012 at 04:07:19PM +0100, Guillaume Knispel wrote:
+> On Wed, 25 Jan 2012 14:02:14 -0500
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 > 
-> Are you suspending your host while a VM is running? There is mosto
+> > On Wed, Jan 25, 2012 at 06:23:14PM +0100, Guillaume Knispel wrote:
+> > > On Wed, 25 Jan 2012 00:56:53 -0500
+> > > Len Brown <lenb@kernel.org> wrote:
+> > > 
+> > > > What is the benefit of implementing ACPI on this custom system?
+> > > 
+> > > For our short term project it seems to be more a necessity than a
+> > > benefit. ACPI is supported by the SoC, tables are already largely
+> > > provided by Coreboot, the whole x86 ecosystem including Linux is more
+> > > or less based around ACPI, and my whole interrogation comes from the
+> > > fact that *acpi*_register_gsi() seems to be necessary to configure a
+> > > GSI in the APIC but is not exported anymore, so my guess is that if I
+> > 
+> > Hm, isn't it __acpi_register_gsi?
+> 
+> __acpi_register_gsi exists on recent kernels, it is the pointer to
+> the underlying implementation of that function depending on the
+> platform (x86 / xen-x86) and on the variant of the platform (pic/apic).
+> acpi_register_gsi still exists and it calls __acpi_register_gsi.
+> 
+> > > can't call it explicitly from my LKM, there should better be a way to
+> > > make it be called when an ACPI thing is done, or maybe a legacy table
+> > > parsed.
+> > 
+> > Can you do it the way xen does? Look in arch/x86/xen/pci.c
+> 
+> Did not found this file. Besides, isn't Xen a separate architecture
 
-Yes, that's what I'm doing.
+Duh! I meant arch/x86/pci/xen.c
 
-> probably a long-pending bug in the KVM TSC check logic that declares
-> that clocksource unstable after resume. I'm seeing this here for ages
-> and complained about it from the beginning (but I never debugged it :-/).
+> from mainline x86, compiled built-in? My goal is to only touch LKM and
 
-Hm, OK.  I hope someone has an idea how to fix it.  I'm ready to test patches.
+Not anymore. It is dynamically on if the kernel detects its running under the
+hypervisor.
 
-> Of course, this doesn't explain your corrupted spin lock. That might be
-> a different issue.
+I am still unclear what you are trying to do. Is it that
+you have _PRT ACPI tables and your want to have your module be called
+when those are parsed? If so, then __acpi_register_gsi is your guy - 
+and you can over-write it to your platform. Granted at that point that
+function parameter should be guarded by some form of locking. Perhaps
+provide a acpi_register_gsi_fnc() that can be exported out. Would
+that work for you (I can cook up a patch for that)?
 
-Yes, most probably it is something different since I haven't seen this
-before.  However, I didn't use 3.2.1 long.  Now I updated
-to 3.2.2 and enabled a few more debug options.  We'll see if it
-triggers again.
+But this a bit complicated by the fact that ACPI parsing is done
+early in the bootup processes - so your module should be compiled in
+- otherwise you might miss the the 'request_irq' calls done by drivers
+that are done _before_ your module is loaded.
 
+Unless you want to re-trigger the ACPI _PRT parsing and call your
+module once more for all interrupts? But that would imply unload
+all existing modules, then reload them once more..
 
-Thanks
-Johannes
+Or is it that you just want to set the APIC parameters differently?
+Wouldn't then the be better of implementing an ' struct apic ' which
+would have most, of them set to the existing (apic_physflat) and just
+over-write the ones you really care about - like write and read?
+
+> system firmware if necessary.
+> 
+> > > As we first target an unmodified (if possible) 2.6.32 kernel from
+> > > Debian Squeeze, I can't just re-export acpi_register_gsi() and call it
+> > > a day. (If I've no other choice I'll obviously do it, but this would be
+> > > quite bad for future maintenance).
+> > 
+> > Oh wow. That is ancient. 3.2?
+> 
+> 3.2 when a Debian stable will feature 3.2 :)
+
+Ah OK.
