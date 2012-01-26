@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2AZSd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:33:29 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:44892 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752122Ab2AZSd1 (ORCPT
+	id S1753423Ab2AZSeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:34:37 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16325 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab2AZSef convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 13:33:27 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: linux-kernel@vger.kernel.org
-Cc: Roland Dreier <roland@kernel.org>, Jiri Kosina <trivial@kernel.org>
-Subject: [PATCH] trivial: fix compiler warning
-Date: Thu, 26 Jan 2012 19:32:58 +0100
-Message-Id: <1327602778-25186-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 26 Jan 2012 13:34:35 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 26 Jan 2012 10:34:24 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 26 Jan 2012 10:33:40 -0800
+Subject: RE: [PATCH v1 0/3] Add support for LP3
+Thread-Topic: [PATCH v1 0/3] Add support for LP3
+Thread-Index: AczcRrBL+IV7cappQieuFa6EA8nZogAEhj/g
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178CB823CD@HQMAIL01.nvidia.com>
+References: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327602807;217687f3;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial fix for "‘vlan’ may be used uninitialized in
-build_mlx_header()" compiler warning.
+Peter De Schrijver wrote at Thursday, January 26, 2012 9:22 AM:
+> Introduce support for LP3 (CPU core clockgating) for Tegra20 and Tegra30.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/infiniband/hw/mlx4/qp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The series,
 
-diff --git a/drivers/infiniband/hw/mlx4/qp.c b/drivers/infiniband/hw/mlx4/qp.c
-index aa2aefa..9e2b6df 100644
---- a/drivers/infiniband/hw/mlx4/qp.c
-+++ b/drivers/infiniband/hw/mlx4/qp.c
-@@ -1363,7 +1363,7 @@ static int build_mlx_header(struct mlx4_ib_sqp *sqp, struct ib_send_wr *wr,
- 	int is_eth;
- 	int is_vlan = 0;
- 	int is_grh;
--	u16 vlan;
-+	u16 vlan = 0;
- 
- 	send_size = 0;
- 	for (i = 0; i < wr->num_sge; ++i)
+Acked-by: Stephen Warren <swarren@nvidia.com>
+
+(although I'm not very familiar with cpuidle, so a review from e.g.
+Colin would be great too)
+
+Tested-by: Stephen Warren <swarren@nvidia.com>
+
+(On Harmony, observed /sys/devices/system/cpu/cpu*/cpuidle/state0/usage
+incrementing over time. Tested audio playback as well)
+
 -- 
-1.7.7.3
+nvpublic
 
