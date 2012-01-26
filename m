@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab2AZJMW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:12:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62353 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab2AZJMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:12:18 -0500
-Date: Thu, 26 Jan 2012 17:24:04 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Pinmux bindings proposal V2
-Message-ID: <20120126092402.GC2287@S2101-09.ap.freescale.net>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751970Ab2AZJQS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:16:18 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:6890 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab2AZJQQ convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 26 Jan 2012 04:16:16 -0500
+Message-Id: <4F212835020000780006F264@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 26 Jan 2012 09:17:25 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <socketpair@gmail.com>, <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Fwd: BUG in
+ linux+v3.2.1/drivers/xen/xen-pciback/pci_stub.c
+References: <CAEmTpZHkKB29FLWqs0R=uD1zXBOJkfSstGgMM=8bA1VVXGT+wQ@mail.gmail.com>
+ <CAEmTpZH+OeQO=RNBFh_+j_QCmPa8sGhV_OOqqsiKUMmjhBwESw@mail.gmail.com>
+ <20120125163910.GC23999@phenom.dumpdata.com>
+ <20120125212214.GA29571@phenom.dumpdata.com>
+In-Reply-To: <20120125212214.GA29571@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 20, 2012 at 02:22:20PM -0800, Stephen Warren wrote:
-> Here's V2 of my pinmux binding proposal, after incorporating some feedback
-> from Shawn Guo and Dong Aisheng. Main changes:
-> 
-It looks all good to me.
+>>> On 25.01.12 at 22:22, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> --- a/drivers/xen/xen-pciback/xenbus.c
+> +++ b/drivers/xen/xen-pciback/xenbus.c
+> @@ -206,8 +206,9 @@ static int xen_pcibk_publish_pci_dev(struct 
+> xen_pcibk_device *pdev,
+>  		goto out;
+>  	}
+>  
+> +	/* TODO: implement feature-use-decimal-for-devfn */
+>  	err = xenbus_printf(XBT_NIL, pdev->xdev->nodename, str,
+> -			    "%04x:%02x:%02x.%02x", domain, bus,
+> +			    "%04x:%02x:%02x.%1x", domain, bus,
+>  			    PCI_SLOT(devfn), PCI_FUNC(devfn));
+>  
+>  out:
 
--- 
-Regards,
-Shawn
+If you are concerned about compatibility (as the added comment
+suggests), then removing the leading zero is not an option either.
+
+However, as long as all parsers of the string use plain %x or %d,
+there's no issue here and you could as well use %d here too (as
+PCI functions are always in the 0-7 range, which is identically
+represented in octal [important for the case of a leading zero],
+decimal, and hex).
+
+Bottom line - just add the comment here, and leave the format
+unchanged, or change the format to %d right away.
+
+Jan
+
