@@ -1,92 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab2AZK2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 05:28:53 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54508 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934Ab2AZK2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 05:28:52 -0500
-Date: Thu, 26 Jan 2012 11:28:37 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
-Message-ID: <20120126102836.GD3853@elte.hu>
-References: <1326754637.7642.177.camel@gandalf.stny.rr.com>
- <20120117095418.GG10397@elte.hu>
- <1326807145.17534.26.camel@gandalf.stny.rr.com>
- <20120118120711.GB14863@elte.hu>
- <1326909412.17534.91.camel@gandalf.stny.rr.com>
- <877h0jgx80.fsf@rustcorp.com.au>
- <1327545664.22710.78.camel@gandalf.stny.rr.com>
+	id S1751867Ab2AZKcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 05:32:55 -0500
+Received: from mail2.shareable.org ([80.68.89.115]:38412 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2AZKcv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 05:32:51 -0500
+Date: Thu, 26 Jan 2012 10:31:57 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Andrew Lutomirski <luto@mit.edu>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+Message-ID: <20120126103157.GE18613@jl-vm1.vm.bytemark.co.uk>
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <20120125193635.GA30311@redhat.com>
+ <201201260032.57937.vda.linux@googlemail.com>
+ <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
+ <20120126010858.GD18613@jl-vm1.vm.bytemark.co.uk>
+ <88753c7d600bee39c06bbda32b08daae.squirrel@webmail.greenhost.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327545664.22710.78.camel@gandalf.stny.rr.com>
+In-Reply-To: <88753c7d600bee39c06bbda32b08daae.squirrel@webmail.greenhost.nl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Mon, 2012-01-23 at 09:29 +1030, Rusty Russell wrote:
-> > > could just move the "if" part out.
-> > 
-> > Agreed.  Since GCC should be able to eliminate that branch in almost all
-> > cases, since it's usually a literal NULL or address of a (non-weak)
-> > symbol.
-> > 
-> > Be interesting to see the before/after sizes with this out-of-line.
+Indan Zupancic wrote:
+> On Thu, January 26, 2012 02:08, Jamie Lokier wrote:
+> > Is it disambiguated by PTRACE_EVENT_EXEC happening before the execve
+> > returns, and you knowing the TID always changes to the PID?  I haven't
+> > yet checked which TID gets the PTRACE_EVENT_EXEC event, but if it's
+> > not the old one, perhaps that could be changed.
 > 
-> Using my default test config I got:
+> Please don't ever change the behaviour of PTRACE_EVENT_EXEC, it's
+> barely documented already, but if if ever changes it will be also
+> unreliable.
 > 
->    text	   data	    bss	    dec	    hex	filename
-> 7489488	2249584	9719808	19458880	128eb40	vmlinux-prepatch
-> 7482458	2248048	9719808	19450314	128c9ca	vmlinux-postpatch
+> It's still unclear if the PTRACE_EVENT_EXEC comes before or after
+> or instead of the post-execve ptrace event. I guess before, but
+> can I count on that? If it is after then I get a stray weird
+> execve event that messes up the system call cadence.
+
+It should be *sent* before because the exec steps must finish before
+the execve() syscall "returns".
+
+I'm not sure if the events are guaranteed to be received in the same
+order as they are sent.
+
+> >> > Thus, minimally we need one new option, PTRACE_O_TRACE_SYSENTRY -
+> >> > "on syscall entry ptrace stop, set a nonzero event value in wait status"
+> >> > , and two event values: PTRACE_EVENT_SYSCALL_ENTRY (for native entry),
+> >> > PTRACE_EVENT_SYSCALL_ENTRY1 for compat one.
+> >>
+> >> Not all code wants to receive a syscall exit event all the time, so
+> >> if you add PTRACE_O_TRACE_SYSENTRY, please add PTRACE_O_TRACE_SYSEXIT
+> >> too. That would pretty much halve ptrace's overhead for my use case.
+> >> But this is orthogonal to the compat problem.
+> >
+> > I agree.  I would like to ignore the exit for most syscalls but see a
+> > few of them.  I guess PTRACE_SETOPTIONS could be used to toggle it,
+> > with some overhead.
 > 
-> An 8k savings!
+> Yes, that's what I had in mind.
+> 
+> > But in the spirit of this thread,
+> > PTRACE_O_TRACE_BPF would be even better, to completely ignore
+> > irrelevant syscalls :-)
+> 
+> Yes, that's the only reason I'm interested in BPF, really.
+> Most system calls are either always allowed, or always denied.
+> Of the ones that need checking, most of them have file paths.
+> For those I'm not interested in the post-syscall event.
 
-Lovely!
+Same here, though for tracing file paths rather than blocking anything.
 
-> @@ -445,8 +444,7 @@ static inline void __module_get(struct module *module)
->  {
->  	if (module) {
->  		preempt_disable();
-> -		__this_cpu_inc(module->refptr->incs);
-> -		trace_module_get(module, _THIS_IP_);
-> +		inc_module(module, _THIS_IP_);
->  		preempt_enable();
->  	}
->  }
-> @@ -458,10 +456,9 @@ static inline int try_module_get(struct module *module)
->  	if (module) {
->  		preempt_disable();
->  
-> -		if (likely(module_is_live(module))) {
-> -			__this_cpu_inc(module->refptr->incs);
-> -			trace_module_get(module, _THIS_IP_);
-> -		} else
-> +		if (likely(module_is_live(module)))
-> +			inc_module(module, _THIS_IP_);
-> +		else
->  			ret = 0;
+> >> > To future-proof this scheme we may reserve a few more event values
+> >> > PTRACE_EVENT_SYSCALL_ENTRY2, PTRACE_EVENT_SYSCALL_ENTRY3, etc,
+> >> > if we'll ever have arches with more than one non-native syscall
+> >> > entry. I'm no expert, but looking at strace code, ARM may already have
+> >> > more than one additional convention how to pass syscall args.
+> >>
+> >> Please, no! This way lays madness, just one PTRACE_EVENT_SYSCALL_ENTRY,
+> >> no PTRACE_EVENT_SYSCALL_ENTRY1 or PTRACE_EVENT_SYSCALL_ENTRY2, that
+> >> would be horrible. Keep arch specific stuff in arch specific areas,
+> >> please don't spread it around.
+> >>
+> >> What was wrong with using eflags again? Is it too simple or something?
+> >
+> > Well it doesn't deal with the equivalent issue on ARM and PA-RISC.
+> 
+> Those issues are not equivalent. ARM only has that OABI thing which
+> is hopefully not used in practice.
 
-How much more do we save if we move all of try_module_get() out 
-of line? It still seems a rather thick inline function with 
-preempt section and all. I'd *really* suggest that it should all 
-be uninlined.
+I am still using OABI on some currently-sold and still-developed
+devices with userspace libraries that I can't replace or rebuild.
+Maybe I'm the only one, but the issue is still there.  It should be
+supported in ptrace() as long as it's supported in the kernel at all.
 
-Thanks,
+I don't know if the PA-RISC thing is real.
 
-	Ingo
+But it's occurred to me that there are a lot of 32/64 archs now (I was
+extracting all their syscall number tables last night), and it would
+be good if there were a consistent, arch-independent way to signal if
+the syscall number is in the 32 or 64-bit table - or at least, in the
+same ABI as the tracer gets from <asm/unistd.h>.  For tracers doing
+simple things to avoid needing a ton of arch-specific knowledge.
+
+-- Jamie
