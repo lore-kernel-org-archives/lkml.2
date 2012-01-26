@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab2AZWmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 17:42:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45819 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab2AZWmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 17:42:01 -0500
+	id S1754139Ab2AZWmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 17:42:04 -0500
+Received: from smtp1.powertech.no ([195.159.0.145]:54058 "EHLO
+	smtp1.powertech.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab2AZWmA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 17:42:00 -0500
+X-Greylist: delayed 1851 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jan 2012 17:42:00 EST
+Message-ID: <58311.79.160.186.248.1327615864.squirrel@www.nlc.no>
+In-Reply-To: <CAFLxGvw85fWdsAodBn1Z0vFYZx0U+vYg6hgsBYbmfuyaFTgznA@mail.gmail.com>
+References: <CAFLxGvw85fWdsAodBn1Z0vFYZx0U+vYg6hgsBYbmfuyaFTgznA@mail.gmail.com>
+Date: Thu, 26 Jan 2012 23:11:04 +0100 (CET)
+Subject: Re: [uml-devel] /sys/class/tty/tty0/active?
+From: stian@nixia.no
+To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        "Linux-Arch" <linux-arch@vger.kernel.org>, "Greg KH" <gregkh@suse.de>,
+        user-mode-linux-devel@lists.sourceforge.net
+User-Agent: SquirrelMail/1.4.8-5.el5_4.10
 MIME-Version: 1.0
-In-Reply-To: <20120126.173202.2207050843577467461.davem@davemloft.net>
-References: <20120126.173202.2207050843577467461.davem@davemloft.net>
-Date: Fri, 27 Jan 2012 00:41:59 +0200
-Message-ID: <CALLzPKZbruWK2LFjqOZFimSfryPGJ2c95HhePiQ7+EsU2-jBjA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Fix the sparc32 mpilib build mess.
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 12:32 AM, David Miller <davem@davemloft.net> wrote:
+> Hi!
 >
-> The long and short of it is that the longlong.h header added by
-> the mpilib code is quite old and out of date.
->
-> Here I've solved the clz_tab[] multiple definition problem as
-> well as the outdated udiv_qrnnd() definition, but long term
-> we should probably have a more uptodate longlong.h header
-> provides at include/linux/longlong.h to avoid this kind of
-> stuff in the future.
->
-> It's a part of the libgcc interface and therefore has no
-> business being tucked down deep under lib/foo/ somewhere.
+> systemd goes nuts on UML.
+> While hunting down all issues I found out that systemd wants to read from
+> /sys/class/tty/tty0/active.
 
-Hello,
+Kernel version?
+http://comments.gmane.org/gmane.comp.sysutils.systemd.devel/3079 indicates
+that the given file appears in 2.6.37
 
-There is newer version of longlong.h in libgcrypt.
-I will definitely try it...
+Stian Skjelstad
 
-- Dmitry
