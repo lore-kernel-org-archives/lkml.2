@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab2AZNiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 08:38:54 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33972 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab2AZNix convert rfc822-to-8bit (ORCPT
+	id S1752346Ab2AZNjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 08:39:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36074 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab2AZNjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 08:38:53 -0500
+	Thu, 26 Jan 2012 08:39:07 -0500
+Date: Thu, 26 Jan 2012 05:38:45 -0800
+From: tip-bot for Daniel J Blueman <daniel@numascale-asia.com>
+Message-ID: <tip-3fe54564a61f72982032423d24041dca30617ca2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        sp@numascale.com, tglx@linutronix.de, mingo@elte.hu,
+        daniel@numascale-asia.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, sp@numascale.com, daniel@numascale-asia.com,
+        mingo@elte.hu
+In-Reply-To: <1327473349-28395-1-git-send-email-daniel@numascale-asia.com>
+References: <1327473349-28395-1-git-send-email-daniel@numascale-asia.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/numachip: Drop unnecessary conflict with EDAC
+Git-Commit-ID: 3fe54564a61f72982032423d24041dca30617ca2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1327532011.24169.6.camel@deneb.redhat.com>
-References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca> <1327532011.24169.6.camel@deneb.redhat.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 26 Jan 2012 06:38:33 -0700
-X-Google-Sender-Auth: DGPvKHuxy5a8rwH-9eKZUow9Vfc
-Message-ID: <CACxGe6t9VO14uY4amSd=s=htQpRn7H40rmB3k6jnmptW9ffxtQ@mail.gmail.com>
-Subject: Re: [RFCv2 00/14]
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, Milton Miller <miltonm@bga.com>,
-        benh@kernel.crashing.org, Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 05:38:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 3:53 PM, Mark Salter <msalter@redhat.com> wrote:
-> On Mon, 2012-01-23 at 14:07 -0700, Grant Likely wrote:
->> Hey everyone,
->>
->> Here's the second RFC for the irq_domain patches.  I could use some
->> help testing now.  I still expect there will be a few bugs.  The
->> series is based on v3.3-rc1, and I've pushed it out to my git server:
->
-> Hi Grant,
->
-> I converted arch/c6x over to the generic irq_domain support and have not
-> had any problems in testing. The c6x virtual irq support was a nearly
-> identical copy of the powerpc code, so the patch I ended up with mostly
-> copied what you did in arch/powerpc. The c6x patch is on the tip of:
->
->  git@linux-c6x.org:/git/projects/linux-c6x-upstreaming irq-testing
->
-> I think this probably belongs in your series, but I can push it
-> separately if not.
+Commit-ID:  3fe54564a61f72982032423d24041dca30617ca2
+Gitweb:     http://git.kernel.org/tip/3fe54564a61f72982032423d24041dca30617ca2
+Author:     Daniel J Blueman <daniel@numascale-asia.com>
+AuthorDate: Wed, 25 Jan 2012 14:35:49 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 26 Jan 2012 11:03:03 +0100
 
-Yes, it should be in my series.  Please post the patches and cc me so
-there is record of them in the mailing list archives and I'll pick
-them up.
+x86/numachip: Drop unnecessary conflict with EDAC
 
-g.
+EDAC detection no longer crashes multi-node systems, so don't
+conflict on it with NumaChip.
+
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Steffen Persvold <sp@numascale.com>
+Link: http://lkml.kernel.org/r/1327473349-28395-1-git-send-email-daniel@numascale-asia.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 864cc6e..5bed94e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -360,7 +360,6 @@ config X86_NUMACHIP
+ 	depends on NUMA
+ 	depends on SMP
+ 	depends on X86_X2APIC
+-	depends on !EDAC_AMD64
+ 	---help---
+ 	  Adds support for Numascale NumaChip large-SMP systems. Needed to
+ 	  enable more than ~168 cores.
