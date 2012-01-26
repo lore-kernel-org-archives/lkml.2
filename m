@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2AZU7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 15:59:31 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:51887 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab2AZU7a (ORCPT
+	id S1752756Ab2AZVEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:04:36 -0500
+Received: from 5-meo-dmt.ynet.sk ([147.175.167.220]:34224 "EHLO
+	5-meo-dmt.ynet.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab2AZVEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 15:59:30 -0500
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: lm-sensors@lm-sensors.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] hwmon: (SHT15) fix bad error code
-Date: Thu, 26 Jan 2012 15:59:00 -0500
-Message-Id: <1327611540-21023-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 1.7.6.5
+	Thu, 26 Jan 2012 16:04:35 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -0.717
+Date: Thu, 26 Jan 2012 22:01:06 +0100 (CET)
+From: Stefan Gula <steweg@ynet.sk>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <3280801.2791327611666778.JavaMail.root@5-MeO-DMT.ynet.sk>
+Subject: [patch v2, kernel 3.2.1] RTNETLINK adjusting values of
+ min_ifinfo_dump_size
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [78.98.170.234]
+X-Mailer: Zimbra 5.0.8_GA_2462.UBUNTU6 (ZimbraWebClient - FF3.0 (Win)/5.0.8_GA_2462.UBUNTU6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When no platform data was supplied, returned error code was 0.
+From: Stefan Gula <steweg@gmail.com>
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Setting link parameters on a netdevice changes the value
+of if_nlmsg_size(), therefore it is necessary to recalculate
+min_ifinfo_dump_size.
+
+Signed-off-by: Stefan Gula <steweg@gmail.com>
+
 ---
- drivers/hwmon/sht15.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+V2-changelog: adjusted commit message
 
-diff --git a/drivers/hwmon/sht15.c b/drivers/hwmon/sht15.c
-index fe4104c..5357925 100644
---- a/drivers/hwmon/sht15.c
-+++ b/drivers/hwmon/sht15.c
-@@ -883,7 +883,7 @@ static int sht15_invalidate_voltage(struct notifier_block *nb,
+--- linux-3.2.1-orig/net/core/rtnetlink.c	2012-01-12 20:42:45.000000000 +0100
++++ linux/net/core/rtnetlink.c	2012-01-24 14:26:58.083219352 +0100
+@@ -1506,6 +1506,9 @@ errout:
  
- static int __devinit sht15_probe(struct platform_device *pdev)
- {
--	int ret = 0;
-+	int ret;
- 	struct sht15_data *data = kzalloc(sizeof(*data), GFP_KERNEL);
- 	u8 status = 0;
- 
-@@ -901,6 +901,7 @@ static int __devinit sht15_probe(struct platform_device *pdev)
- 	init_waitqueue_head(&data->wait_queue);
- 
- 	if (pdev->dev.platform_data == NULL) {
-+		ret = -EINVAL;
- 		dev_err(&pdev->dev, "no platform data supplied\n");
- 		goto err_free_data;
- 	}
--- 
-1.7.6.5
-
+ 	if (send_addr_notify)
+ 		call_netdevice_notifiers(NETDEV_CHANGEADDR, dev);
++	min_ifinfo_dump_size = max_t(u16, if_nlmsg_size(dev),
++					min_ifinfo_dump_size);
++
+ 	return err;
+ }
