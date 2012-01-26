@@ -1,111 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab2AZLMB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 06:12:01 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:30440 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab2AZLL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 06:11:57 -0500
-Subject: [PATCH 3/5] NFS: search for client session id in proper network
- namespace
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Thu, 26 Jan 2012 15:11:49 +0400
-Message-ID: <20120126111149.8386.51043.stgit@localhost6.localdomain6>
-In-Reply-To: <20120126110955.8386.34551.stgit@localhost6.localdomain6>
-References: <20120126110955.8386.34551.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1752652Ab2AZLQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 06:16:53 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49661 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751506Ab2AZLQw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 06:16:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAE9FiQU5239LD-e7FdpKq1iY3k80BFg2pLVw28YScufuai0R4w@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+	<CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+	<CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+	<CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
+	<CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
+	<CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
+	<CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
+	<CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
+	<CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
+	<CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
+	<CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
+	<CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
+	<CAE9FiQU5239LD-e7FdpKq1iY3k80BFg2pLVw28YScufuai0R4w@mail.gmail.com>
+Date: Thu, 26 Jan 2012 09:16:51 -0200
+X-Google-Sender-Auth: uOmqKHyZT4kjUDjSKRYRWBaF1Yw
+Message-ID: <CAOtrxKMb==2aR-BF2_XJy+y2_7JAhxHF2H60het19BQE163J8g@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Network namespace is taken from request transport and passed as a part of
-cb_process_state structure.
+On Thu, Jan 26, 2012 at 00:03, Yinghai Lu <yinghai@kernel.org> wrote:
+> 2012/1/25 Rogério Brito <rbrito@ime.usp.br>:
+>>
+>> Wild thoughts: I just saw that nouveau calls some ACPI stuff to get
+>> EDID information and, as ACPI is broken on this notebook, could that
+>> be a potential reason for the panic that I'm seeing? (Yes, I can take
+>> a photo of the screen).
+>
+> Which 2.6.x kernel works on your laptop without disabling acpi?
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Unfortunately, no 2.6 kernel has worked on this laptop without
+acpi=off. I also once booted FreeBSD here just to see how it would
+behave and it also hang with ACPI enabled.
 
----
- fs/nfs/callback.h      |    1 +
- fs/nfs/callback_proc.c |    2 +-
- fs/nfs/callback_xdr.c  |    1 +
- fs/nfs/client.c        |    4 ++--
- fs/nfs/internal.h      |    3 ++-
- 5 files changed, 7 insertions(+), 4 deletions(-)
+>From what I see on this notebook, if ACPI is not turned off, the
+computer simply hangs once the ACPI is started (it gives one layman
+like me the impression of entering an infinite loop). But, again, this
+is just a layman observation of what the system appears to be doing.
 
-diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
-index c89d3b9..197e0d3 100644
---- a/fs/nfs/callback.h
-+++ b/fs/nfs/callback.h
-@@ -39,6 +39,7 @@ struct cb_process_state {
- 	__be32			drc_status;
- 	struct nfs_client	*clp;
- 	int			slotid;
-+	struct net		*net;
- };
- 
- struct cb_compound_hdr_arg {
-diff --git a/fs/nfs/callback_proc.c b/fs/nfs/callback_proc.c
-index 0e6e63f..f71978d 100644
---- a/fs/nfs/callback_proc.c
-+++ b/fs/nfs/callback_proc.c
-@@ -461,7 +461,7 @@ __be32 nfs4_callback_sequence(struct cb_sequenceargs *args,
- 	int i;
- 	__be32 status = htonl(NFS4ERR_BADSESSION);
- 
--	clp = nfs4_find_client_sessionid(args->csa_addr, &args->csa_sessionid);
-+	clp = nfs4_find_client_sessionid(cps->net, args->csa_addr, &args->csa_sessionid);
- 	if (clp == NULL)
- 		goto out;
- 
-diff --git a/fs/nfs/callback_xdr.c b/fs/nfs/callback_xdr.c
-index f2be3e1e..8c2a969 100644
---- a/fs/nfs/callback_xdr.c
-+++ b/fs/nfs/callback_xdr.c
-@@ -861,6 +861,7 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp, void *argp, void *r
- 		.drc_status = 0,
- 		.clp = NULL,
- 		.slotid = -1,
-+		.net = rqstp->rq_xprt->xpt_net,
- 	};
- 	unsigned int nops = 0;
- 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 9e11d29..2328dcb 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1232,11 +1232,11 @@ nfs4_find_client_ident(struct net *net, int cb_ident)
-  * Returns NULL if no such client
-  */
- struct nfs_client *
--nfs4_find_client_sessionid(const struct sockaddr *addr,
-+nfs4_find_client_sessionid(struct net *net, const struct sockaddr *addr,
- 			   struct nfs4_sessionid *sid)
- {
- 	struct nfs_client *clp;
--	struct nfs_net *nn = net_generic(&init_net, nfs_net_id);
-+	struct nfs_net *nn = net_generic(net, nfs_net_id);
- 
- 	spin_lock(&nn->nfs_client_lock);
- 	list_for_each_entry(clp, &nn->nfs_client_list, cl_share_link) {
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index b38b733..0c3648a 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -152,7 +152,8 @@ extern void nfs_cleanup_cb_ident_idr(struct net *);
- extern void nfs_put_client(struct nfs_client *);
- extern struct nfs_client *nfs4_find_client_ident(struct net *, int);
- extern struct nfs_client *
--nfs4_find_client_sessionid(const struct sockaddr *, struct nfs4_sessionid *);
-+nfs4_find_client_sessionid(struct net *, const struct sockaddr *,
-+				struct nfs4_sessionid *);
- extern struct nfs_server *nfs_create_server(
- 					const struct nfs_parsed_mount_data *,
- 					struct nfs_fh *);
+> looks like we should make linux without disabling acpi work on your
+> system at first.
 
+I'm OK with whatever you people want me to do to get things right.
+
+> BTW, can you post you .config?
+
+Sure, it is here:
+
+    http://www.ime.usp.br/~rbrito/linux/clevo/linux-configs/config-3.2.0-rc5-12270-g6fe13a6-yinghai
+
+If you want me to change anything, please let me know and I'll try to
+do my best.
+
+
+Regards,
+
+-- 
+Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
+http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
+DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
