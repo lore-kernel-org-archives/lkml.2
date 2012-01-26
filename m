@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab2AZO56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 09:57:58 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:59447 "EHLO
+	id S1752762Ab2AZO54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 09:57:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:64750 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab2AZO4e (ORCPT
+	with ESMTP id S1752527Ab2AZO4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 09:56:34 -0500
+	Thu, 26 Jan 2012 09:56:35 -0500
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
@@ -14,64 +14,58 @@ Cc: linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
         Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
         linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
         linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 5/7 v2] serial: sh-sci: prepare for conversion to simple DMA
-Date: Thu, 26 Jan 2012 15:56:22 +0100
-Message-Id: <1327589784-4287-6-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH 0/7 v2] extract a simple dmaengine library from shdma.c
+Date: Thu, 26 Jan 2012 15:56:17 +0100
+Message-Id: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
-References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:uYnHs/EGebhMSNt1ATVlWju827O0CUJM7ipc4DcJ/43
- jSQCUzadx6v5Dy+AJvGkpESZNpJ5hu0PUeFL4nf6yE0Alzdu+U
- 1qj3vQRYIFPFRxKborrmyzRcRsb7wu0FBFxRH+dQlj969+fcqS
- mrSXdUR2ipLnDnppOhIFO33nYDHjDIKlAQC5yjOHMymWPkPoJY
- XRal2ihhhZHYgA4bynwEyZbjBYfLn+cOD8LGGOZXaYaPmgn8tR
- hS0WG+0CqBVQw22jiW2HLbN8cI9oF75fEV/FiZMQWgJM60PCpG
- FKta90y8rlPDIR2IetVNOGXqWv9h6vqQ4jGMm9R/n/4LiK6wD5
- t3Kp5NL0sL9XEngaQbbe+DB/QUqy5nA0FHv6w3Yjz+tua0Xbtj
- KHFumFX7V4xGQ==
+X-Provags-ID: V02:K0:V30xrhOVXt5yY6dgAUpLR1T2DmaaSZjdIYLyx8DwOZI
+ 3I2zBVgh4KVl3kTSj4zX/DhVbep0VEP/RGxBqgFt0VWkizfovh
+ V0a9TE/wXZT5I5a2/iuiS+yEJVdcecHrwNNrj0GujaYXIcenKS
+ XNsgY6uzR4A4OypxvNgj9tSwTvBM2x0zTq/c1fAGYtOVser34U
+ 2IUgJ21JMnvcpJaOOt0BU4lN2vI3T70XaeGCQbgJhR3EOlAGUe
+ sH3Otmf5rJKOpXuiTdvvRRhbT/Qh9MyRyFUUKj1Tuh2onEhL4t
+ ebDo/mn9XE9ZTf1qOGZizh+9MRW3u+BfXZvM3Bhuow/YqyIX3m
+ ukGdRHVVzbX24SuzPjgosdeWfPRJIhutAci2NsQa23yfyZhxYD
+ SQEEOqvsZ7fDg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
- drivers/tty/serial/sh-sci.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+This is v2 of the simple DMA dmaengine library. It addresses Paul's 
+comments to v1 - thanks, adds some comments.
 
-diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
-index 7508579..8b99aac 100644
---- a/drivers/tty/serial/sh-sci.c
-+++ b/drivers/tty/serial/sh-sci.c
-@@ -1574,9 +1574,9 @@ static bool filter(struct dma_chan *chan, void *slave)
- 	struct sh_dmae_slave *param = slave;
- 
- 	dev_dbg(chan->device->dev, "%s: slave ID %d\n", __func__,
--		param->slave_id);
-+		param->simple_slave.slave_id);
- 
--	chan->private = param;
-+	chan->private = &param->simple_slave;
- 	return true;
- }
- 
-@@ -1615,7 +1615,7 @@ static void sci_request_dma(struct uart_port *port)
- 	param = &s->param_tx;
- 
- 	/* Slave ID, e.g., SHDMA_SLAVE_SCIF0_TX */
--	param->slave_id = s->cfg->dma_slave_tx;
-+	param->simple_slave.slave_id = s->cfg->dma_slave_tx;
- 
- 	s->cookie_tx = -EINVAL;
- 	chan = dma_request_channel(mask, filter, param);
-@@ -1643,7 +1643,7 @@ static void sci_request_dma(struct uart_port *port)
- 	param = &s->param_rx;
- 
- 	/* Slave ID, e.g., SHDMA_SLAVE_SCIF0_RX */
--	param->slave_id = s->cfg->dma_slave_rx;
-+	param->simple_slave.slave_id = s->cfg->dma_slave_rx;
- 
- 	chan = dma_request_channel(mask, filter, param);
- 	dev_dbg(port->dev, "%s: RX: got channel %p\n", __func__, chan);
+Guennadi Liakhovetski (7):
+  dmaengine: add a simple dma library
+  dma: shdma: prepare for simple DMA conversion
+  mmc: sh_mmcif: remove unneeded struct sh_mmcif_dma, prepare for
+    simple DMA
+  mmc: sh_mobile_sdhi: prepare for conversion to simple DMA
+  serial: sh-sci: prepare for conversion to simple DMA
+  ASoC: SIU: prepare for conversion to simple DMA
+  dma: shdma: convert to the simple DMA library
+
+ drivers/dma/Kconfig               |    4 +
+ drivers/dma/Makefile              |    1 +
+ drivers/dma/dma-simple.c          |  873 ++++++++++++++++++++++++++++
+ drivers/dma/shdma.c               | 1138 +++++++++----------------------------
+ drivers/dma/shdma.h               |   45 +-
+ drivers/mmc/host/sh_mmcif.c       |   24 +-
+ drivers/mmc/host/sh_mobile_sdhi.c |    8 +-
+ drivers/tty/serial/sh-sci.c       |    8 +-
+ include/linux/dma-simple.h        |  124 ++++
+ include/linux/mmc/sh_mmcif.h      |    8 +-
+ include/linux/sh_dma.h            |   39 +-
+ sound/soc/sh/siu_pcm.c            |    8 +-
+ 12 files changed, 1334 insertions(+), 946 deletions(-)
+ create mode 100644 drivers/dma/dma-simple.c
+ create mode 100644 include/linux/dma-simple.h
+
 -- 
 1.7.2.5
 
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
