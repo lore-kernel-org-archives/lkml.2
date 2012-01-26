@@ -1,111 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab2AZQRs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 11:17:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41089 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752358Ab2AZQRr (ORCPT
+	id S1752896Ab2AZQUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 11:20:13 -0500
+Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:46039 "EHLO
+	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab2AZQUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 11:17:47 -0500
-Date: Thu, 26 Jan 2012 16:17:44 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org,
-        rpurdie@rpsys.net, rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        kgene.kim@samsung.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, dg77.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH v2 2/2] regulator: add device tree support for max8997
-Message-ID: <20120126161744.GB19703@opensource.wolfsonmicro.com>
-References: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
- <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
- <4F1FD1A5.1060305@samsung.com>
- <20120125112602.GB2991@opensource.wolfsonmicro.com>
- <4F1FEF55.8030604@samsung.com>
- <20120125133254.GJ3687@opensource.wolfsonmicro.com>
- <4F217100.6020105@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6sX45UoQRIJXqkqR"
-Content-Disposition: inline
-In-Reply-To: <4F217100.6020105@samsung.com>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Jan 2012 11:20:12 -0500
+X-Greylist: delayed 7090 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jan 2012 11:20:11 EST
+Message-ID: <1327594823.2062.0.camel@scapa>
+Subject: Re: [3.2+] BUG: scheduling while atomic: swapper/0/0/0x10000100
+From: Yves-Alexis Perez <corsac@debian.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        linux-usb@vger.kernel.org
+Date: Thu, 26 Jan 2012 17:20:23 +0100
+In-Reply-To: <20120126161539.GA2098@kroah.com>
+References: <1327587732.2296.25.camel@scapa>
+	 <20120126161539.GA2098@kroah.com>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-V4n4T/ZdGDJu1d3Rm0d0"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---6sX45UoQRIJXqkqR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-V4n4T/ZdGDJu1d3Rm0d0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jan 26, 2012 at 04:28:00PM +0100, Karol Lewandowski wrote:
-> On 25.01.2012 14:32, Mark Brown wrote:
+On jeu., 2012-01-26 at 08:15 -0800, Greg KH wrote:
+> Very odd, it wouldn't seem that this patch would cause such a problem,
+> as it is "obviously" correct.
+>=20
+> Kuninori, any thoughts about this?  Should I revert this from the
+> tree?=20
 
-> >Well, they're different things.  Device tree isn't Linux specific at
-> >all.
+Something puzzles me. Just after posting I noticed that 3.2.2 was
+released, so i tried it (vanilla), and I didn't get the BUG().
 
-> There is no official platform-agnostic regulator API, nor DT-bindings
-> document I'm aware of.  Thus, I don't see why, while transitioning to
+Will git bisect work in a forward way (3.2.1 is bad, 3.2.2 is good).
 
-The binding for the regulator API is supposed to be the one true
-platform agnostic binding, none of the device tree stuff is supposed to
-be Linux specific.
+Regards,
+--=20
+Yves-Alexis
 
-> DT, should we lose ability to describe certain hardware configurations.
-
-We don't loose anything, a single voltage constraint that didn't set
-apply_uV was always meaningless.  I keep meaning to make the core
-complain about things like that and people specifying voltage ranges
-without SET_VOLTAGE.
-
-> On 25.01.2012 12:22, Mark Brown wrote:
-> > The big problem there seems like specifying voltages in the first
-> > place, if we know what device it is we should already know what's
-> > going on.
-
-> Driver which handles said regulator might know what's going on, but
-> that might not be case for its consumers.  Should we limit ability to
-> query given parameter just because its value is hardcoded in hardware?
-
-I'm sorry, this makes no sense.  Setting a value in the constraints is
-not going to have any impact on the value reported by the driver, it
-never has.
-
-> Consequently, if it's property of hardware that it provides fixed
-> voltage somewhere shouldn't it be possible to describe this fact
-> in DT?
-
-If the device has a fixed voltage output the driver should just know
-this without having to read the information from device tree, device
-tree is for configuration.  If the device has some hardware fixed
-configurability it should define this in a sensible fashion in the
-bindings (which may for example be a case of specifying the values of
-the passive components for ease of use).
-
---6sX45UoQRIJXqkqR
+--=-V4n4T/ZdGDJu1d3Rm0d0
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPIXyhAAoJEBus8iNuMP3d38wP/3jUE+mCpEE+txlP06zNwDRb
-lg0DZnvNhH3UkcCrnDTwWDp2T1TW6vDr6PcA/iELuvXutyeC3eYCQgIu/LhIkcYt
-Qc6yJjSpFQho44/QUzKX5kPXgVlfoz90M1mKcwlMw0vw6Jbqt1b6uufcTJSz341n
-TVu43IMSl1WElBQkUEI8t/xUomF6bM2KTnx+7+32xUXRcFMh+kZZk7eLTcgJObl2
-n07q00MLu5IMJoa7D6FG9/t+YPZdHAkNzcJwIFvKnkMhnf590Dm9bi3aPdfoQbAC
-iTXx70R2lGOf5BSpZDmLVCfGzkQwtTdxVdXKwMJCowzJUux3UnQXteUKYpxhkpf7
-Ks5/mdfbEECRag2XDqzks8OQ1xDYg0n3CDKP8+Vt+My5h4hAeFmoCLE1jTyzQQh4
-KMd/jExT1Buc6tQUo18DAC0iIi/S8a3qjnsD+CJz9ynEOk0h4uzHfOhdbznKjzbw
-1/kFC/dGwXTArtaCUMkLea/knrMxTzTw6YnPcIFG2I8v09np6UFIndVqjlLX8k4Z
-oRgRjLi6Y+6YzUKH7wAsfY2isAex7lfa0DwR1Vi+ugvAaPRsCemD5GYEgP5W8OQo
-ViH8+gSmb7V9k6iCGrkvv3QMnNaQCGDZqt3DoSFXfSUgAGpwz2cGfu25uJ444Xnw
-lP7nPiywa1AV446G/+uw
-=L/Vv
+iQIcBAABCAAGBQJPIX1HAAoJEDBVD3hx7wuozvkP/ArldgNDOXMXnw72EMQElCp3
+h+Uzng/QfNXB+QL2L1gG5rDFDcogRvjcS9lH6GX6oALIvocJ7izu0oq/WPqrziFA
+Tt7oZAGNpz0qDRWjXKaSkGZh1LesZL3ibod7ORnzlJ210nskY0+GssIDo3GGMTeH
+IJgh7XQCoQ7lVVZHmb7k1pZaP/iwquMwT/3GB8Z1YVDS3EO29GMb/yxjx4HTfH5h
+SHhRK4SVEYmyOA98tEJzz/hUeg13lx8kBp2wAt2aehZXt7KPs5e0F+y3TeuhRscf
+LHGAEtEUO/9Ks426J1zaPK3byHTxGzzGWgXV5Z6Tb0pFfztyFCGaYoCwFg3uz6FC
+PHaL7vpRvyFajfllBnynPFn2EljQeGGn8E1sCNPjInZvYBjK9re/0pcwXgJAL4iV
+ePNT14CmERx8KgjTmaMgit4ZusKkzj+imBxKqZrypjBGS0zarI3cFfYQhFYIzkZW
+mfNwIpp+DIPs96uQHVgaw+oXxcNFcnjGte8+JutJc1Zz/SOXkAE2mB3Rh1r6ably
+it2XlVYnqHO5GkiJWSiVaSS5TdSKRGKzYxvSqiG9hWkSwuPyH1KVId7NOHCy643p
+tOsS1lMvpP6VtepHBmb8aW9rSKs01427IQ/LV5ybbEX7Ps3iRD+rMrc7hKBrKf4z
+Lv0ORq+ZWnf6D8zUmy4S
+=ROJM
 -----END PGP SIGNATURE-----
 
---6sX45UoQRIJXqkqR--
+--=-V4n4T/ZdGDJu1d3Rm0d0--
