@@ -1,138 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab2AZRe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:34:58 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:38954
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751637Ab2AZRe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:34:57 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/2] Staging: hv: storvsc: Move the storage driver out of the staging area
-Date: Thu, 26 Jan 2012 09:38:35 -0800
-Message-Id: <1327599515-12679-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1327599515-12679-1-git-send-email-kys@microsoft.com>
-References: <1327599460-12593-1-git-send-email-kys@microsoft.com>
- <1327599515-12679-1-git-send-email-kys@microsoft.com>
+	id S1753360Ab2AZRfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:35:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34098 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab2AZRfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 12:35:00 -0500
+Date: Thu, 26 Jan 2012 18:34:44 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-mmc@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 1/7 v2] dmaengine: add a simple dma library
+Message-ID: <20120126173444.GM5446@pengutronix.de>
+References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
+ <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 18:25:56 up 75 days,  1:13, 59 users,  load average: 2.73, 5.58,
+ 6.82
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The storage driver (storvsc_drv.c) handles all block storage devices
-assigned to Linux guests hosted on Hyper-V. This driver has been in the
-staging tree for a while and this patch moves it out of the staging area.
+Hi Guennadi,
 
-This patch is based on the storvsc patches that are already on Greg's queue
-for the staging tree that addressed Christoph's review comments.
+On Thu, Jan 26, 2012 at 03:56:18PM +0100, Guennadi Liakhovetski wrote:
+> This patch adds a library of functions, helping to implement dmaengine
+> drivers for hardware, unable to handle scatter-gather lists natively.
+> The first version of this driver only supports memcpy and slave DMA
+> operation.
+> 
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+> 
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/scsi/Kconfig                       |    7 +++++++
- drivers/scsi/Makefile                      |    3 +++
- drivers/{staging/hv => scsi}/storvsc_drv.c |    0
- drivers/staging/Kconfig                    |    2 --
- drivers/staging/hv/Kconfig                 |    5 -----
- drivers/staging/hv/Makefile                |    3 ---
- drivers/staging/hv/TODO                    |    5 -----
- 7 files changed, 10 insertions(+), 15 deletions(-)
- rename drivers/{staging/hv => scsi}/storvsc_drv.c (100%)
- delete mode 100644 drivers/staging/hv/Kconfig
- delete mode 100644 drivers/staging/hv/Makefile
- delete mode 100644 drivers/staging/hv/TODO
+[...]
 
-diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-index 16570aa..d3d18e8 100644
---- a/drivers/scsi/Kconfig
-+++ b/drivers/scsi/Kconfig
-@@ -662,6 +662,13 @@ config VMWARE_PVSCSI
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called vmw_pvscsi.
- 
-+config HYPERV_STORAGE
-+	tristate "Microsoft Hyper-V virtual storage driver"
-+	depends on SCSI && HYPERV
-+	default HYPERV
-+	help
-+	  Select this option to enable the Hyper-V virtual storage driver.
-+
- config LIBFC
- 	tristate "LibFC module"
- 	select SCSI_FC_ATTRS
-diff --git a/drivers/scsi/Makefile b/drivers/scsi/Makefile
-index 2b88749..e4c1a69 100644
---- a/drivers/scsi/Makefile
-+++ b/drivers/scsi/Makefile
-@@ -142,6 +142,7 @@ obj-$(CONFIG_SCSI_BNX2_ISCSI)	+= libiscsi.o bnx2i/
- obj-$(CONFIG_BE2ISCSI)		+= libiscsi.o be2iscsi/
- obj-$(CONFIG_SCSI_PMCRAID)	+= pmcraid.o
- obj-$(CONFIG_VMWARE_PVSCSI)	+= vmw_pvscsi.o
-+obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
- 
- obj-$(CONFIG_ARM)		+= arm/
- 
-@@ -170,6 +171,8 @@ scsi_mod-$(CONFIG_SCSI_PROC_FS)	+= scsi_proc.o
- scsi_mod-y			+= scsi_trace.o
- scsi_mod-$(CONFIG_PM)		+= scsi_pm.o
- 
-+hv_storvsc-y			:= storvsc_drv.o
-+
- scsi_tgt-y			+= scsi_tgt_lib.o scsi_tgt_if.o
- 
- sd_mod-objs	:= sd.o
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-similarity index 100%
-rename from drivers/staging/hv/storvsc_drv.c
-rename to drivers/scsi/storvsc_drv.c
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index 21e2f4b..87beded 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -78,8 +78,6 @@ source "drivers/staging/vt6655/Kconfig"
- 
- source "drivers/staging/vt6656/Kconfig"
- 
--source "drivers/staging/hv/Kconfig"
--
- source "drivers/staging/vme/Kconfig"
- 
- source "drivers/staging/sep/Kconfig"
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-deleted file mode 100644
-index 60ac479..0000000
---- a/drivers/staging/hv/Kconfig
-+++ /dev/null
-@@ -1,5 +0,0 @@
--config HYPERV_STORAGE
--	tristate "Microsoft Hyper-V virtual storage driver"
--	depends on HYPERV && SCSI
--	help
--	 Select this option to enable the Hyper-V virtual storage driver.
-diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
-deleted file mode 100644
-index af95a6b..0000000
---- a/drivers/staging/hv/Makefile
-+++ /dev/null
-@@ -1,3 +0,0 @@
--obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
--
--hv_storvsc-y := storvsc_drv.o
-diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
-deleted file mode 100644
-index dea7d92..0000000
---- a/drivers/staging/hv/TODO
-+++ /dev/null
-@@ -1,5 +0,0 @@
--TODO:
--	- audit the scsi driver
--
--Please send patches for this code to Greg Kroah-Hartman <gregkh@suse.de>,
--Haiyang Zhang <haiyangz@microsoft.com>, and K. Y. Srinivasan <kys@microsoft.com>
+> +
+> +/*
+> + * For slave DMA we assume, that there is a finite number of DMA slaves in the
+> + * system, and that each such slave can only use a finite number of channels.
+> + * We use slave channel IDs to make sure, that no such slave channel ID is
+> + * allocated more than once.
+> + */
+> +static unsigned int slave_num = 256;
+> +module_param(slave_num, uint, 0444);
+> +
+> +/* A bitmask with slave_num bits */
+> +static unsigned long *simple_slave_used;
+
+You never check that the slave ids passed into this code are
+within the range of slave_num. Given that this is a user changeable
+value this is a bit flawy.
+
+Sascha
+
 -- 
-1.7.4.1
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
