@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab2AZR10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:27:26 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49485 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2AZR1Z (ORCPT
+	id S1752621Ab2AZR3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:29:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49719 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2AZR3e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:27:25 -0500
-Message-ID: <4F218CF2.4020409@linux.vnet.ibm.com>
-Date: Thu, 26 Jan 2012 22:57:14 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Thu, 26 Jan 2012 12:29:34 -0500
 MIME-Version: 1.0
-To: Venkatesh Pallipadi <venki@google.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
- -v4
-References: <CABeCy1ZA1nkWSmbN2LE+V1SxKEHX4XrpN5xfdzY=NSsS8=L0DA@mail.gmail.com> <1327447541-3040-1-git-send-email-venki@google.com>
-In-Reply-To: <1327447541-3040-1-git-send-email-venki@google.com>
+In-Reply-To: <20120126104646.GF3853@elte.hu>
+References: <4f1f396019579c94fb@agluck-desktop.sc.intel.com>
+	<20120126104646.GF3853@elte.hu>
+Date: Thu, 26 Jan 2012 09:29:33 -0800
+X-Google-Sender-Auth: Wj4qSv1RT4bl38ljT8vnua1LhKE
+Message-ID: <CA+8MBbKyoM330hL830PtUz9+EVxkxVVyHcL_PbN+zYRs-BXQiw@mail.gmail.com>
+Subject: Re: [GIT PULL] MCE recovery changes
+From: Tony Luck <tony.luck@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12012617-8256-0000-0000-00000107E259
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 04:55 AM, Venkatesh Pallipadi wrote:
+On Thu, Jan 26, 2012 at 2:46 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> It worked perfectly.
 
-> Kernel's notion of possible cpus (from include/linux/cpumask.h)
->  *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
-> 
->  *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
->  *  that it is possible might ever be plugged in at anytime during the
->  *  life of that system boot.
-> 
->  #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
-> 
-> and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
-> and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
-> 
-> i.e, We needlessly go through this mask based calculation everytime
-> num_possible_cpus() is called.
-> 
-> The problem is there with cpu_online_mask() as well, which is fixed value at
-> boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
-> in HOTPLUG case.
-> 
-> Though most of the callers of these two routines are init time (with few
-> exceptions of runtime calls), it is cleaner to use variables
-> and not go through this repeated mask based calculation.
-> 
-> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-> ---
+Hurrah!
 
+> Pulled, thanks!
 
-Looks good to me now :-)
+Thank you.
 
-Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> One thing i noticed was the magic constant 0x134:
+>
+> +               SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
+>
+> don't we want that defined a bit more clearly?
 
-Regards,
-Srivatsa S. Bhat
+Stylistically it is compatible with the existing:
+MASK(MCI_STATUS_OVER|MCI_UC_SAR|0xfff0, MCI_UC_S|0x00c0)
+and
+MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCACOD, MCI_UC_S|0x017a)
 
+... but that's just a sign that they need some love too :-)
+
+I'll see what I can do - but meaningful names will clearly be longer than
+the hex constants that they replace - and I'm already pushing line length
+limits here, so it will need more than a trivial restructure.
+
+-Tony
