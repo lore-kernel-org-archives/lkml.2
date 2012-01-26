@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab2AZKDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 05:03:15 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57241 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab2AZKDI (ORCPT
+	id S1752426Ab2AZKD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 05:03:29 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33004 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269Ab2AZKDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 05:03:08 -0500
+	Thu, 26 Jan 2012 05:03:24 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.org>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>
-Subject: [v7 3/8] tile: move tile to use generic on_each_cpu_mask
-Date: Thu, 26 Jan 2012 12:01:56 +0200
-Message-Id: <1327572121-13673-4-git-send-email-gilad@benyossef.com>
+        Michal Nazarewicz <mina86@mina86.com>, Milton Miller <miltonm@bga.com>
+Subject: [v7 7/8] mm: only IPI CPUs to drain local pages if they exist
+Date: Thu, 26 Jan 2012 12:02:00 +0200
+Message-Id: <1327572121-13673-8-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
 References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
@@ -32,91 +32,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API is the same as the tile private one, but the generic version
-also calls the function on the with interrupts disabled in UP case
+Calculate a cpumask of CPUs with per-cpu pages in any zone
+and only send an IPI requesting CPUs to drain these pages
+to the buddy allocator if they actually have pages when
+asked to flush.
 
-This is OK since the function is called on the other CPUs
-with interrupts disabled.
+This patch saves 85%+ of IPIs asking to drain per-cpu
+pages in case of severe memory preassure that leads
+to OOM since in these cases multiple, possibly concurrent,
+allocation requests end up in the direct reclaim code
+path so when the per-cpu pages end up reclaimed on first
+allocation failure for most of the proceeding allocation
+attempts until the memory pressure is off (possibly via
+the OOM killer) there are no per-cpu pages on most CPUs
+(and there can easily be hundreds of them).
+
+This also has the side effect of shortening the average
+latency of direct reclaim by 1 or more order of magnitude
+since waiting for all the CPUs to ACK the IPI takes a
+long time.
+
+Tested by running "hackbench 400" on a 8 CPU x86 VM and
+observing the difference between the number of direct
+reclaim attempts that end up in drain_all_pages() and
+those were more then 1/2 of the online CPU had any per-cpu
+page in them, using the vmstat counters introduced
+in the next patch in the series and using proc/interrupts.
+
+In the test sceanrio, this was seen to save around 3600 global
+IPIs after trigerring an OOM on a concurrent workload:
+
+$ cat /proc/vmstat | tail -n 2
+pcp_global_drain 0
+pcp_global_ipi_saved 0
+
+$ cat /proc/interrupts | grep CAL
+CAL:          1          2          1          2
+          2          2          2          2   Function call interrupts
+
+$ hackbench 400
+[OOM messages snipped]
+
+$ cat /proc/vmstat | tail -n 2
+pcp_global_drain 3647
+pcp_global_ipi_saved 3642
+
+$ cat /proc/interrupts | grep CAL
+CAL:          6         13          6          3
+          3          3         1 2          7   Function call interrupts
+
+Please note that if the global drain is removed from the
+direct reclaim path as a patch from Mel Gorman currently
+suggests this should be replaced with an on_each_cpu_cond
+invocation.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Chris Metcalf <cmetcalf@tilera.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Russell King <linux@arm.linux.org.uk>
 CC: linux-mm@kvack.org
-CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
+CC: Sasha Levin <levinsasha928@gmail.com>
 CC: Rik van Riel <riel@redhat.com>
 CC: Andi Kleen <andi@firstfloor.org>
-CC: Sasha Levin <levinsasha928@gmail.com>
-CC: Mel Gorman <mel@csn.ul.ie>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Alexander Viro <viro@zeniv.linux.org.uk>
 CC: linux-fsdevel@vger.kernel.org
 CC: Avi Kivity <avi@redhat.com>
-CC: Michal Nazarewicz <mina86@mina86.org>
-CC: Kosaki Motohiro <kosaki.motohiro@gmail.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
+CC: Milton Miller <miltonm@bga.com>
 ---
- arch/tile/include/asm/smp.h |    7 -------
- arch/tile/kernel/smp.c      |   19 -------------------
- 2 files changed, 0 insertions(+), 26 deletions(-)
+ mm/page_alloc.c |   31 ++++++++++++++++++++++++++++++-
+ 1 files changed, 30 insertions(+), 1 deletions(-)
 
-diff --git a/arch/tile/include/asm/smp.h b/arch/tile/include/asm/smp.h
-index 532124a..1aa759a 100644
---- a/arch/tile/include/asm/smp.h
-+++ b/arch/tile/include/asm/smp.h
-@@ -43,10 +43,6 @@ void evaluate_message(int tag);
- /* Boot a secondary cpu */
- void online_secondary(void);
- 
--/* Call a function on a specified set of CPUs (may include this one). */
--extern void on_each_cpu_mask(const struct cpumask *mask,
--			     void (*func)(void *), void *info, bool wait);
--
- /* Topology of the supervisor tile grid, and coordinates of boot processor */
- extern HV_Topology smp_topology;
- 
-@@ -91,9 +87,6 @@ void print_disabled_cpus(void);
- 
- #else /* !CONFIG_SMP */
- 
--#define on_each_cpu_mask(mask, func, info, wait)		\
--  do { if (cpumask_test_cpu(0, (mask))) func(info); } while (0)
--
- #define smp_master_cpu		0
- #define smp_height		1
- #define smp_width		1
-diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
-index c52224d..a44e103 100644
---- a/arch/tile/kernel/smp.c
-+++ b/arch/tile/kernel/smp.c
-@@ -87,25 +87,6 @@ void send_IPI_allbutself(int tag)
- 	send_IPI_many(&mask, tag);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d2186ec..4135983 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1165,7 +1165,36 @@ void drain_local_pages(void *arg)
+  */
+ void drain_all_pages(void)
+ {
+-	on_each_cpu(drain_local_pages, NULL, 1);
++	int cpu;
++	struct per_cpu_pageset *pcp;
++	struct zone *zone;
++
++	/* Allocate in the BSS so we wont require allocation in
++	 * direct reclaim path for CONFIG_CPUMASK_OFFSTACK=y
++	 */
++	static cpumask_t cpus_with_pcps;
++
++	/*
++	 * We don't care about racing with CPU hotplug event
++	 * as offline notification will cause the notified
++	 * cpu to drain that CPU pcps and on_each_cpu_mask
++	 * disables preemption as part of its processing
++	 */
++	for_each_online_cpu(cpu) {
++		bool has_pcps = false;
++		for_each_populated_zone(zone) {
++			pcp = per_cpu_ptr(zone->pageset, cpu);
++			if (pcp->pcp.count) {
++				has_pcps = true;
++				break;
++			}
++		}
++		if (has_pcps)
++			cpumask_set_cpu(cpu, &cpus_with_pcps);
++		else
++			cpumask_clear_cpu(cpu, &cpus_with_pcps);
++	}
++	on_each_cpu_mask(&cpus_with_pcps, drain_local_pages, NULL, 1);
  }
  
--
--/*
-- * Provide smp_call_function_mask, but also run function locally
-- * if specified in the mask.
-- */
--void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
--		      void *info, bool wait)
--{
--	int cpu = get_cpu();
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(cpu, mask)) {
--		local_irq_disable();
--		func(info);
--		local_irq_enable();
--	}
--	put_cpu();
--}
--
--
- /*
-  * Functions related to starting/stopping cpus.
-  */
+ #ifdef CONFIG_HIBERNATION
 -- 
 1.7.0.4
 
