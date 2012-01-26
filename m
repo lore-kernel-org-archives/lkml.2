@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2AZJEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:04:20 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:57648 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab2AZJBG (ORCPT
+	id S1752402Ab2AZJER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:04:17 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:59815 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176Ab2AZJBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:01:06 -0500
-Date: Thu, 26 Jan 2012 10:00:49 +0100
+	Thu, 26 Jan 2012 04:01:09 -0500
+Date: Thu, 26 Jan 2012 10:00:53 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 07/15] mm: page_alloc: change fallbacks array handling
+Subject: [PATCH 11/15] mm: trigger page reclaim in alloc_contig_range() to
+ stabilize watermarks
 In-reply-to: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -27,7 +28,7 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Chunsang Jeong <chunsang.jeong@linaro.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Message-id: <1327568457-27734-8-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1327568457-27734-12-git-send-email-m.szyprowski@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.7.3
 Content-type: TEXT/PLAIN
@@ -37,54 +38,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+alloc_contig_range() performs memory allocation so it also should keep
+track on keeping the correct level of memory watermarks. This commit adds
+a call to *_slowpath style reclaim to grab enough pages to make sure that
+the final collection of contiguous pages from freelists will not starve
+the system.
 
-This commit adds a row for MIGRATE_ISOLATE type to the fallbacks array
-which was missing from it.  It also, changes the array traversal logic
-a little making MIGRATE_RESERVE an end marker.  The letter change,
-removes the implicit MIGRATE_UNMOVABLE from the end of each row which
-was read by __rmqueue_fallback() function.
-
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
 ---
- mm/page_alloc.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ mm/page_alloc.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+), 0 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index b4f50532..0a9cc8e 100644
+index e35d06b..05eaa82 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -875,11 +875,12 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
-  * This array describes the order lists are fallen back to when
-  * the free lists for the desirable migrate type are depleted
-  */
--static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
-+static int fallbacks[MIGRATE_TYPES][3] = {
- 	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
- 	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
- 	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
--	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
-+	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
-+	[MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
- };
+@@ -5613,6 +5613,34 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+ 	return ret;
+ }
  
- /*
-@@ -974,12 +975,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- 	/* Find the largest possible block of pages in the other list */
- 	for (current_order = MAX_ORDER-1; current_order >= order;
- 						--current_order) {
--		for (i = 0; i < MIGRATE_TYPES - 1; i++) {
-+		for (i = 0;; i++) {
- 			migratetype = fallbacks[start_migratetype][i];
++/*
++ * Trigger memory pressure bump to reclaim some pages in order to be able to
++ * allocate 'count' pages in single page units. Does similar work as
++ *__alloc_pages_slowpath() function.
++ */
++static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
++{
++	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
++	struct zonelist *zonelist = node_zonelist(0, gfp_mask);
++	int did_some_progress = 0;
++	int order = 1;
++	unsigned long watermark;
++
++	/* Obey watermarks as if the page was being allocated */
++	watermark = low_wmark_pages(zone) + count;
++	while (!zone_watermark_ok(zone, 0, watermark, 0, 0)) {
++		wake_all_kswapd(order, zonelist, high_zoneidx, zone_idx(zone));
++
++		did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
++						      NULL);
++		if (!did_some_progress) {
++			/* Exhausted what can be done so it's blamo time */
++			out_of_memory(zonelist, gfp_mask, order, NULL);
++		}
++	}
++	return count;
++}
++
+ /**
+  * alloc_contig_range() -- tries to allocate given range of pages
+  * @start:	start PFN to allocate
+@@ -5707,6 +5735,14 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 		goto done;
+ 	}
  
- 			/* MIGRATE_RESERVE handled later if necessary */
- 			if (migratetype == MIGRATE_RESERVE)
--				continue;
-+				break;
- 
- 			area = &(zone->free_area[current_order]);
- 			if (list_empty(&area->free_list[migratetype]))
++	/*
++	 * Reclaim enough pages to make sure that contiguous allocation
++	 * will not starve the system.
++	 */
++	__reclaim_pages(page_zone(pfn_to_page(outer_start)),
++		        GFP_HIGHUSER_MOVABLE, end-start);
++
++	/* Grab isolated pages from freelists. */
+ 	outer_end = isolate_freepages_range(outer_start, end);
+ 	if (!outer_end) {
+ 		ret = -EBUSY;
 -- 
 1.7.1.569.g6f426
 
