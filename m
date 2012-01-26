@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2AZPq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:46:27 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:29870 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab2AZPq1 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Thu, 26 Jan 2012 10:46:27 -0500
-Message-Id: <4F2183A9020000780006F3E6@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 26 Jan 2012 15:47:37 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: properly parenthesize cmpxchg() macro arguments
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752785Ab2AZPrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:47:20 -0500
+Received: from isrv.corpit.ru ([86.62.121.231]:51664 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751720Ab2AZPrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 10:47:19 -0500
+Message-ID: <4F217585.2070302@msgid.tls.msk.ru>
+Date: Thu, 26 Jan 2012 19:47:17 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111120 Icedove/8.0
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Thomas Renninger <trenn@suse.de>, Bruno Friedmann <bruno@ioda-net.ch>,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [67/90] intel idle: Make idle driver more robust
+References: <20120123234211.GA19504@kroah.com> <20120123234028.628058547@clark.kroah.org> <20120126144533.GA1731@shutemov.name>
+In-Reply-To: <20120126144533.GA1731@shutemov.name>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quite oddly, all of the arguments passed through from the top level
-macros to the second level which didn't need parentheses had them,
-while the only expression (involving a parameter) needing them didn't.
+26.01.2012 18:45, Kirill A. Shutemov wrote:
 
-Very recently I got bitten by the lack thereof when using something
-like "array + index" for the first operand, with "array" being an
-array more narrow than int.
+>> From: Thomas Renninger<trenn@suse.de>
+>>
+>> commit 5c2a9f06a9cd7194f884cdc88144866235dec07d upstream.
+>>
+>> kvm -cpu host passes the original cpuid info to the guest.
+>>
+>> Latest kvm version seem to return true for mwait_leaf cpuid
+>> function on recent Intel CPUs. But it does not return mwait
+>> C-states (mwait_substates), instead zero is returned.
+>>
+[]
+>>   drivers/idle/intel_idle.c |    3 ++-
+>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> --- a/drivers/idle/intel_idle.c
+>> +++ b/drivers/idle/intel_idle.c
+>> @@ -321,7 +321,8 @@ static int intel_idle_probe(void)
+>>   	cpuid(CPUID_MWAIT_LEAF,&eax,&ebx,&ecx,&mwait_substates);
+>>
+>>   	if (!(ecx&  CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
+>> -		!(ecx&  CPUID5_ECX_INTERRUPT_BREAK))
+>> +	    !(ecx&  CPUID5_ECX_INTERRUPT_BREAK) ||
+>> +	    !mwait_substates)
+>>   			return -ENODEV;
+>
+> It breaks build for me.
+[]
+>    CC      drivers/idle/intel_idle.o
+> /home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c: In function ‘intel_idle_probe’:
+> /home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c:508:7: error: ‘mwait_substates’ undeclared (first use in this function)
+> /home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c:508:7: note: each undeclared identifier is reported only once for each function it appears in
+> make[3]: *** [drivers/idle/intel_idle.o] Error 1
+>
+> Variable 'substates' hasn't renamed to 'mwait_substates' in 3.0.
+> See c423628 intel_idle: delete substates DEBUG modparam
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+I wonder why in my 3.0.18 this variable is properly defined
+in the same file, in line 77:
 
----
- arch/x86/include/asm/cmpxchg.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+...
+74 /* intel_idle.max_cstate=0 disables driver */
+75 static int max_cstate = MWAIT_MAX_NUM_CSTATES - 1;
+76
+77 static unsigned int mwait_substates;
+78
+79 #define LAPIC_TIMER_ALWAYS_RELIABLE 0xFFFFFFFF
+...
 
---- 3.3-rc1/arch/x86/include/asm/cmpxchg.h
-+++ 3.3-rc1-x86-cmpxchg-parenthesize/arch/x86/include/asm/cmpxchg.h
-@@ -145,13 +145,13 @@ extern void __add_wrong_size(void)
- 
- #ifdef __HAVE_ARCH_CMPXCHG
- #define cmpxchg(ptr, old, new)						\
--	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
-+	__cmpxchg(ptr, old, new, sizeof(*(ptr)))
- 
- #define sync_cmpxchg(ptr, old, new)					\
--	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
-+	__sync_cmpxchg(ptr, old, new, sizeof(*(ptr)))
- 
- #define cmpxchg_local(ptr, old, new)					\
--	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
-+	__cmpxchg_local(ptr, old, new, sizeof(*(ptr)))
- #endif
- 
- /*
+> Signed-off-by: Kirill A. Shutemov<kirill.shutemov@linux.intel.com>
+> ---
+>   drivers/idle/intel_idle.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index 15d72ca..a1aecc3 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -505,7 +505,7 @@ static int intel_idle_probe(void)
+>
+>   	if (!(ecx&  CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
+>   	    !(ecx&  CPUID5_ECX_INTERRUPT_BREAK) ||
+> -	    !mwait_substates)
+> +	    !substates)
 
+With this patch my build of 3.0.18 fails with "substates undeclared"
+message...
 
+>
+>   	if (substates == 0)	/* can over-ride via modparam */
 
+And I don't have this context line in my version.
+
+It is 3.0 from kernel.org patched by patch-3.0.18.xz
+
+Thanks,
+
+/mjt
