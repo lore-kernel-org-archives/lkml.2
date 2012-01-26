@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2AZKEw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 05:04:52 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50372 "EHLO mx3.mail.elte.hu"
+	id S1752061Ab2AZKGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 05:06:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36705 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752219Ab2AZKEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 05:04:50 -0500
-Date: Thu, 26 Jan 2012 11:04:29 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Xiaotian Feng <xtfeng@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] sched: Accelerate "pick_next_entity" under special
- condition
-Message-ID: <20120126100429.GA3853@elte.hu>
-References: <4F13EFBE.1030002@linux.vnet.ibm.com>
- <1326707503.2442.219.camel@twins>
- <4F14DEAE.60702@linux.vnet.ibm.com>
- <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com>
- <4F14E54E.80904@linux.vnet.ibm.com>
- <1327506934.2614.87.camel@laptop>
+	id S1750865Ab2AZKGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 05:06:45 -0500
+Message-ID: <4F2125B3.4070000@suse.cz>
+Date: Thu, 26 Jan 2012 11:06:43 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327506934.2614.87.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kconfig: fix new choices being skipped upon config update
+References: <20120120164036.GO4066@pengutronix.de> <1327357745-9095-1-git-send-email-lacombar@gmail.com> <20120126092603.GQ6305@pengutronix.de>
+In-Reply-To: <20120126092603.GQ6305@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26.1.2012 10:26, Uwe Kleine-König wrote:
+> On Mon, Jan 23, 2012 at 05:29:05PM -0500, Arnaud Lacombe wrote:
+[...]
+>> will not cause the choice to be considered as NEW, and thus not be asked. The
+>> cause of this behavior is that choice's novelty are computed statically right
+>> after the saved configuration has been read. At this point, the new dependency's
+>> value is still unknown and asserted to be `no'. Moreover, no update to this
+>> decision is made afterward.
+>>
+>> Correct this by dynamically evaluating a choice's novelty, and removing the
+>> static evaluation.
+>>
+>> Cc: linux-kbuild@vger.kernel.org
+>> Cc: LKML <linux-kernel@vger.kernel.org>,
+>> Cc: Michal Marek <mmarek@suse.cz>
+>> Cc: Uwe Kleine-Konig <u.kleine-koenig@pengutronix.de>
+>> Reported-by: Uwe Kleine-Konig <u.kleine-koenig@pengutronix.de>
+> Tested-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+Thanks, applied to kbuild.git#kconfig.
 
-> On Tue, 2012-01-17 at 11:04 +0800, Michael Wang wrote:
-> > 
-> > > Then what if condition 1 is true now?
-> > 
-> > We can see in original code, even condition 1 is true, we
-> > still will use value3 if condition3 is true, like this:
-> > 
-> > original:
-> > 
-> > condition1      condition3      result
-> > true            true            value3
-> > true            false           value1
-> > 
-> > That means if condition3 is true, we don't care whether
-> > condition1 is true or not because we will finally use value3.
-> 
-> Right, so from the original 8 possible states we used to evaluate 3*8 =
-> 24 conditionals. The new code will reduce this to 1*4 + 2*2 + 2*3 = 14.
-> 
-> Now I guess the question is if it matters for the modal or average
-> state.
-> 
-> I've applied the patch since it can't be worse, but I've no idea if it
-> matters or not in practice.
 
-A before/after kernel/sched.o size comparison on 64-bit 
-defconfig typically gives a pretty good indication whether it's 
-a step forward or not.
+> (Please note the umlaut o in my name. If you have problems with that,
+> please at least write Kleine-Koenig.)
 
-Thanks,
+Fixed.
 
-	Ingo
+Michal
