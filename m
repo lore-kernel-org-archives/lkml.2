@@ -1,21 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab2AZWjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 17:39:33 -0500
-Received: from [124.207.246.100] ([124.207.246.100]:49721 "EHLO www.boka.cn"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751775Ab2AZWjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 17:39:32 -0500
-X-Greylist: delayed 111661 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jan 2012 17:39:32 EST
-Date: Wed, 25 Jan 2012 23:38:30 +0800 (CST)
-From: Owner of many system processes <daemon@www.boka.cn>
-Message-Id: <201201251538.q0PFcU0h023282@www.boka.cn>
-To: linux-kernel@vger.kernel.org
-Subject: Subject:
+	id S1754179Ab2AZWmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 17:42:05 -0500
+Received: from mga09.intel.com ([134.134.136.24]:45819 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697Ab2AZWmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 17:42:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120126.173202.2207050843577467461.davem@davemloft.net>
+References: <20120126.173202.2207050843577467461.davem@davemloft.net>
+Date: Fri, 27 Jan 2012 00:41:59 +0200
+Message-ID: <CALLzPKZbruWK2LFjqOZFimSfryPGJ2c95HhePiQ7+EsU2-jBjA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Fix the sparc32 mpilib build mess.
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: David Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mail@www.gec-cea.org.cn
+On Fri, Jan 27, 2012 at 12:32 AM, David Miller <davem@davemloft.net> wrote:
+>
+> The long and short of it is that the longlong.h header added by
+> the mpilib code is quite old and out of date.
+>
+> Here I've solved the clz_tab[] multiple definition problem as
+> well as the outdated udiv_qrnnd() definition, but long term
+> we should probably have a more uptodate longlong.h header
+> provides at include/linux/longlong.h to avoid this kind of
+> stuff in the future.
+>
+> It's a part of the libgcc interface and therefore has no
+> business being tucked down deep under lib/foo/ somewhere.
 
-本人免费赠送泡妞秘籍全套视频和电子书，免费赠送经典女明星A片放在我博客里面，欢迎到163博客观看，绝对经典，在赠送豪华大礼包一份，你懂的。加QQ:1914446363咨询。网址:http://553766437.blog.163.com。。!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Hello,
+
+There is newer version of longlong.h in libgcrypt.
+I will definitely try it...
+
+- Dmitry
