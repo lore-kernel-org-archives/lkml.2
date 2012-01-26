@@ -1,119 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab2AZOoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 09:44:55 -0500
-Received: from shutemov.name ([176.9.204.213]:40896 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab2AZOoy convert rfc822-to-8bit (ORCPT
+	id S1751893Ab2AZOqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 09:46:11 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3110 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab2AZOqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 09:44:54 -0500
-Date: Thu, 26 Jan 2012 16:45:33 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Renninger <trenn@suse.de>,
-        Bruno Friedmann <bruno@ioda-net.ch>, Len Brown <len.brown@intel.com>
-Subject: Re: [67/90] intel idle: Make idle driver more robust
-Message-ID: <20120126144533.GA1731@shutemov.name>
-References: <20120123234211.GA19504@kroah.com>
- <20120123234028.628058547@clark.kroah.org>
+	Thu, 26 Jan 2012 09:46:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 26 Jan 2012 06:45:58 -0800
+Date: Thu, 26 Jan 2012 16:45:56 +0200
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "joro@8bytes.org" <joro@8bytes.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig-bounces@lists.linaro.org" 
+	<linaro-mm-sig-bounces@lists.linaro.org>
+Subject: Re: [PATCH 1/2] ARM: IOMMU: Tegra20: Add iommu_ops for GART driver
+Message-ID: <20120126164556.75e2d38d09821fc1e0ff05d6@nvidia.com>
+In-Reply-To: <20120126115813.GF6269@8bytes.org>
+References: <20120123150048.GB6269@8bytes.org>
+	<20120125.094020.983282777619146490.hdoyu@nvidia.com>
+	<20120126115813.GF6269@8bytes.org>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20120123234028.628058547@clark.kroah.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 03:39:53PM -0800, Greg KH wrote:
-> 3.0-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Thomas Renninger <trenn@suse.de>
-> 
-> commit 5c2a9f06a9cd7194f884cdc88144866235dec07d upstream.
-> 
-> kvm -cpu host passes the original cpuid info to the guest.
-> 
-> Latest kvm version seem to return true for mwait_leaf cpuid
-> function on recent Intel CPUs. But it does not return mwait
-> C-states (mwait_substates), instead zero is returned.
-> 
-> While real CPUs seem to always return non-zero values, the intel
-> idle driver should not get active in kvm (mwait_substates == 0)
-> case and bail out.
-> Otherwise a Null pointer exception will happen later when the
-> cpuidle subsystem tries to get active:
-> [0.984807] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [0.984807] IP: [<(null)>] (null)
-> ...
-> [0.984807][<ffffffff8143cf34>] ? cpuidle_idle_call+0xb4/0x340
-> [0.984807][<ffffffff8159e7bc>] ? __atomic_notifier_call_chain+0x4c/0x70
-> [0.984807][<ffffffff81001198>] ? cpu_idle+0x78/0xd0
-> 
-> Reference:
-> https://bugzilla.novell.com/show_bug.cgi?id=726296
-> 
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> CC: Bruno Friedmann <bruno@ioda-net.ch>
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  drivers/idle/intel_idle.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -321,7 +321,8 @@ static int intel_idle_probe(void)
->  	cpuid(CPUID_MWAIT_LEAF, &eax, &ebx, &ecx, &mwait_substates);
->  
->  	if (!(ecx & CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
-> -		!(ecx & CPUID5_ECX_INTERRUPT_BREAK))
-> +	    !(ecx & CPUID5_ECX_INTERRUPT_BREAK) ||
-> +	    !mwait_substates)
->  			return -ENODEV;
+On Thu, 26 Jan 2012 12:58:13 +0100
+"joro@8bytes.org" <joro@8bytes.org> wrote:
 
-It breaks build for me.
+> On Wed, Jan 25, 2012 at 08:40:20AM +0100, Hiroshi Doyu wrote:
+> > From: Hiroshi DOYU <hdoyu@nvidia.com>
+> > Date: Wed, 16 Nov 2011 17:36:37 +0200
+> > Subject: [PATCH 1/2] ARM: IOMMU: Tegra20: Add iommu_ops for GART driver
+> > 
+> > Tegra 20 IOMMU H/W, GART (Graphics Address Relocation Table). This
+> > patch implements struct iommu_ops for GART for the upper IOMMU API.
+> > 
+> > This H/W module supports only single virtual address space(domain),
+> > and manages a single level 1-to-1 mapping H/W translation page table.
+> 
+> Thanks. Applied with a few minor changes and fixes. Please see below.
 
->From 4b26a35ab3bf4094efb31911587b676158f675b5 Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Thu, 26 Jan 2012 16:24:50 +0200
-Subject: [PATCH] intel_idle: fix build issue
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+All fixes are valid. Thanks.
 
-  CC      drivers/idle/intel_idle.o
-/home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c: In function ‘intel_idle_probe’:
-/home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c:508:7: error: ‘mwait_substates’ undeclared (first use in this function)
-/home/space/kas/git/public/linux-3.0-mid/drivers/idle/intel_idle.c:508:7: note: each undeclared identifier is reported only once for each function it appears in
-make[3]: *** [drivers/idle/intel_idle.o] Error 1
-
-Variable 'substates' hasn't renamed to 'mwait_substates' in 3.0.
-See c423628 intel_idle: delete substates DEBUG modparam
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- drivers/idle/intel_idle.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 15d72ca..a1aecc3 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -505,7 +505,7 @@ static int intel_idle_probe(void)
- 
- 	if (!(ecx & CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
- 	    !(ecx & CPUID5_ECX_INTERRUPT_BREAK) ||
--	    !mwait_substates)
-+	    !substates)
- 			return -ENODEV;
- 
- 	if (substates == 0)	/* can over-ride via modparam */
--- 
- Kirill A. Shutemov
+> > +config TEGRA_IOMMU_GART
+> > +	bool "Tegra GART IOMMU Support"
+> > +	depends on ARCH_TEGRA_2x_SOC
+> > +	default y
+> 
+> I removed 'default y'. New drivers shouldn't be selected by default.
+> 
+> > +static int gart_iommu_map(struct iommu_domain *domain, unsigned long iova,
+> > +			  phys_addr_t pa, size_t bytes, int prot)
+> > +{
+> > +	struct gart_device *gart = domain->priv;
+> > +	unsigned long flags;
+> > +	unsigned long pfn;
+> > +
+> > +	if (!gart_iova_range_valid(gart, iova, bytes))
+> > +		return -EINVAL;
+> > +
+> > +	spin_lock_irqsave(&gart->pte_lock, flags);
+> > +	pfn = __phys_to_pfn(pa);
+> > +	if (!pfn_valid(pfn)) {
+> > +		dev_err(gart->dev, "Invalid page: %08x\n", pa);
+> > +		spin_unlock(&gart->pte_lock);
+> 
+> Changed this to spin_unlock_irqrestore().
+> 
+> > +		return -EINVAL;
+> > +	}
+> > +	gart_set_pte(gart, iova, GART_PTE(pfn));
+> > +	FLUSH_GART_REGS(gart);
+> > +	spin_unlock_irqrestore(&gart->pte_lock, flags);
+> > +	return 0;
+> > +}
+> > +
+> > +static size_t gart_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+> > +			       size_t bytes)
+> > +{
+> > +	struct gart_device *gart = domain->priv;
+> > +	unsigned long flags;
+> > +
+> > +	if (!gart_iova_range_valid(gart, iova, bytes))
+> > +		return -EINVAL;
+> 
+> Return 0 here instead of -EINVAL. Size_t is unsigned and the unmap path
+> returns 0 on failure.
+> 
