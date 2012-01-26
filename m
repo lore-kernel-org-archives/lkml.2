@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab2AZPUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:20:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45437 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab2AZPUR convert rfc822-to-8bit (ORCPT
+	id S1752638Ab2AZP2E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:28:04 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:33628 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab2AZP2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 10:20:17 -0500
-Message-ID: <1327591185.2446.102.camel@twins>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Date: Thu, 26 Jan 2012 16:19:45 +0100
-In-Reply-To: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Thu, 26 Jan 2012 10:28:03 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Date: Thu, 26 Jan 2012 16:28:00 +0100
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH v2 2/2] regulator: add device tree support for max8997
+In-reply-to: <20120125133254.GJ3687@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net, rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        kgene.kim@samsung.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, dg77.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Message-id: <4F217100.6020105@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
+References: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
+ <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
+ <4F1FD1A5.1060305@samsung.com>
+ <20120125112602.GB2991@opensource.wolfsonmicro.com>
+ <4F1FEF55.8030604@samsung.com>
+ <20120125133254.GJ3687@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-26 at 12:01 +0200, Gilad Ben-Yossef wrote:
-> Gilad Ben-Yossef (8):
->   smp: introduce a generic on_each_cpu_mask function
->   arm: move arm over to generic on_each_cpu_mask
->   tile: move tile to use generic on_each_cpu_mask
->   smp: add func to IPI cpus based on parameter func
->   slub: only IPI CPUs that have per cpu obj to flush
->   fs: only send IPI to invalidate LRU BH when needed
->   mm: only IPI CPUs to drain local pages if they exist
+On 25.01.2012 14:32, Mark Brown wrote:
+> On Wed, Jan 25, 2012 at 01:02:29PM +0100, Karol Lewandowski wrote:
+>> On 25.01.2012 12:26, Mark Brown wrote:
+>
+>> However, I still find it little problematic that dt and non-dt
+>> versions behave differently when given the same set of parameters
+>> (previously apply_uV wasn't the default and required explicit flag).
+>
+> Well, they're different things.  Device tree isn't Linux specific at
+> all.
 
-These patches look very nice!
+There is no official platform-agnostic regulator API, nor DT-bindings
+document I'm aware of.  Thus, I don't see why, while transitioning to
+DT, should we lose ability to describe certain hardware configurations.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On 25.01.2012 12:22, Mark Brown wrote:
+ > The big problem there seems like specifying voltages in the first
+ > place, if we know what device it is we should already know what's
+ > going on.
+
+Driver which handles said regulator might know what's going on, but
+that might not be case for its consumers.  Should we limit ability to
+query given parameter just because its value is hardcoded in hardware?
 
 
->   mm: add vmstat counters for tracking PCP drains
-> 
-I understood from previous postings this patch wasn't meant for
-inclusion, if it is, note that cpumask_weight() is a potentially very
-expensive operation.
+My understanding of this whole device tree effort was to provide
+ability to describe hardware properties which can't be queried from
+hardware itself.
+
+Consequently, if it's property of hardware that it provides fixed
+voltage somewhere shouldn't it be possible to describe this fact
+in DT?
+
+If device tree isn't good place for it then which one is?
+
+Regards,
+-- 
+Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
