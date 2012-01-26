@@ -1,96 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab2AZKow (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 05:44:52 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:44882 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab2AZKov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 05:44:51 -0500
-Message-ID: <4F212E9E.9060807@monstr.eu>
-Date: Thu, 26 Jan 2012 11:44:46 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1752378Ab2AZKpG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 05:45:06 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:3635 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000Ab2AZKpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 05:45:04 -0500
+Message-ID: <4F212E7E.2040801@parallels.com>
+Date: Thu, 26 Jan 2012 14:44:14 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory
- location
-References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com> <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com> <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com>
-In-Reply-To: <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: =?UTF-8?B?U2p1ciBCcsOmbmRlbGFuZA==?= 
+	<sjur.brandeland@stericsson.com>,
+        "levinsasha928@gmail.com" <levinsasha928@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "sjurbren@gmail.com" <sjurbren@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] netns: fix net_alloc_generic()
+References: <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>	 <1327523631-3480-1-git-send-email-sjur.brandeland@stericsson.com> <1327574498.2500.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1327574498.2500.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ohad Ben-Cohen wrote:
-> On Wed, Jan 25, 2012 at 4:19 PM, Michal Simek <monstr@monstr.eu> wrote:
->> I started with pur vanilla kernel and patches from your tree
->> git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
->> for-next branch
->> but then I had to moved to for-next-acked-merged because in the origin
->> one were some problems.
+> I believe the problem is in net_namespace infrastructure, not in CAIF.
 > 
-> Unlike for-next-acked-merged, the other branches aren't rebased and
-> therefore have merge conflicts with 3.3 material; that's intentional.
+> Could you test following patch instead ?
 > 
->> Do you have any kernel tree with CMA just for sure?
+> [PATCH] netns: fix net_alloc_generic()
 > 
-> Not a 3.3-based one, so I recommend you to just merge Marek's branch directly.
+> When a new net namespace is created, we should attach to it a "struct
+> net_generic" with enough slots (even empty), or we can hit the following
+> BUG_ON() :
 > 
-> I'll soon create a full-fledged 3.3 branch though, so you may want to
-> wait a bit until I get to it.
-
-I have done it and tested. It works as expected. Thanks.
-I have created region at phys addr 0x10000000 with selected size.
-I had to move carveout in resource table to be first in this area.
-Also removed that copying from kick function.
-
-
-
-I have one small problem which is that physical address is 0x10000000
-which means that firmware entry point is the same.
-In rproc_load_segments is da composed from phdr->p_paddr which is 0x10000000.
-And code is designed that this load addr is offset.
-
-Here is the code:
-	/* go through the available ELF segments */
-	for (i = 0; i < ehdr->e_phnum; i++, phdr++) {
-		u32 da = phdr->p_paddr; // OFFSET 0x10000000
-		u32 memsz = phdr->p_memsz;
-
-But for my case is physical address correct and it is not offset 0x10000000.
-I have created temporary fix which substract virtual address to get correct da.
-
-u32 da = phdr->p_paddr - phdr->p_vaddr;
-
-What should be correct solution?
-
+> [  200.752016] kernel BUG at include/net/netns/generic.h:40!
+> ...
+> [  200.752016]  [<ffffffff825c3cea>] ? get_cfcnfg+0x3a/0x180
+> [  200.752016]  [<ffffffff821cf0b0>] ? lockdep_rtnl_is_held+0x10/0x20
+> [  200.752016]  [<ffffffff825c41be>] caif_device_notify+0x2e/0x530
+> [  200.752016]  [<ffffffff810d61b7>] notifier_call_chain+0x67/0x110
+> [  200.752016]  [<ffffffff810d67c1>] raw_notifier_call_chain+0x11/0x20
+> [  200.752016]  [<ffffffff821bae82>] call_netdevice_notifiers+0x32/0x60
+> [  200.752016]  [<ffffffff821c2b26>] register_netdevice+0x196/0x300
+> [  200.752016]  [<ffffffff821c2ca9>] register_netdev+0x19/0x30
+> [  200.752016]  [<ffffffff81c1c67a>] loopback_net_init+0x4a/0xa0
+> [  200.752016]  [<ffffffff821b5e62>] ops_init+0x42/0x180
+> [  200.752016]  [<ffffffff821b600b>] setup_net+0x6b/0x100
+> [  200.752016]  [<ffffffff821b6466>] copy_net_ns+0x86/0x110
+> [  200.752016]  [<ffffffff810d5789>] create_new_namespaces+0xd9/0x190
 > 
->> What do you use for firmware replacing?
->> Just remove kernel module and load different one?
+> net_alloc_generic() should take into account the maximum index into the
+> ptr array, as a subsystem might use net_generic() anytime.
+
+I'm not sure I understand it correctly, but subsystem can only use the
+net_generic() only (!) after the net_assign_generic() is performed.
+
+> This also reduces number of reallocations in net_assign_generic()
 > 
-> If your driver boots the remote core on its ->probe() handler, then
-> yes, you need to unbind and bind the device.
+> Reported-by: Sasha Levin <levinsasha928@gmail.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Pavel Emelyanov <xemul@openvz.org>
+> ---
+>  net/core/net_namespace.c |   31 ++++++++++++++++---------------
+>  1 file changed, 16 insertions(+), 15 deletions(-)
 > 
-> One way is to unload and load the driver, but you can also use the
-> bind/unbind sysfs files of your driver (echo -n device-name >
-> /sys/..../{un}bind).
+> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> index aefcd7a..0e950fd 100644
+> --- a/net/core/net_namespace.c
+> +++ b/net/core/net_namespace.c
+> @@ -30,6 +30,20 @@ EXPORT_SYMBOL(init_net);
+>  
+>  #define INITIAL_NET_GEN_PTRS	13 /* +1 for len +2 for rcu_head */
+>  
+> +static unsigned int max_gen_ptrs = INITIAL_NET_GEN_PTRS;
+> +
+> +static struct net_generic *net_alloc_generic(void)
+> +{
+> +	struct net_generic *ng;
+> +	size_t generic_size = offsetof(struct net_generic, ptr[max_gen_ptrs]);
+> +
+> +	ng = kzalloc(generic_size, GFP_KERNEL);
+> +	if (ng)
+> +		ng->len = max_gen_ptrs;
+> +
+> +	return ng;
+> +}
+> +
+>  static int net_assign_generic(struct net *net, int id, void *data)
+>  {
+>  	struct net_generic *ng, *old_ng;
+> @@ -43,8 +57,7 @@ static int net_assign_generic(struct net *net, int id, void *data)
+>  	if (old_ng->len >= id)
+>  		goto assign;
+>  
+> -	ng = kzalloc(sizeof(struct net_generic) +
+> -			id * sizeof(void *), GFP_KERNEL);
+> +	ng = net_alloc_generic();
+>  	if (ng == NULL)
+>  		return -ENOMEM;
+>  
+> @@ -59,7 +72,6 @@ static int net_assign_generic(struct net *net, int id, void *data)
+>  	 * the old copy for kfree after a grace period.
+>  	 */
+>  
+> -	ng->len = id;
+>  	memcpy(&ng->ptr, &old_ng->ptr, old_ng->len * sizeof(void*));
+>  
+>  	rcu_assign_pointer(net->gen, ng);
+> @@ -161,18 +173,6 @@ out_undo:
+>  	goto out;
+>  }
+>  
+> -static struct net_generic *net_alloc_generic(void)
+> -{
+> -	struct net_generic *ng;
+> -	size_t generic_size = sizeof(struct net_generic) +
+> -		INITIAL_NET_GEN_PTRS * sizeof(void *);
+> -
+> -	ng = kzalloc(generic_size, GFP_KERNEL);
+> -	if (ng)
+> -		ng->len = INITIAL_NET_GEN_PTRS;
+> -
+> -	return ng;
+> -}
+>  
+>  #ifdef CONFIG_NET_NS
+>  static struct kmem_cache *net_cachep;
+> @@ -483,6 +483,7 @@ again:
+>  			}
+>  			return error;
+>  		}
+> +		max_gen_ptrs = max_t(unsigned int, max_gen_ptrs, *ops->id);
+>  	}
+>  	error = __register_pernet_operations(list, ops);
+>  	if (error) {
+> 
+> 
 
-ok. It also works.
-
-Thanks,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
