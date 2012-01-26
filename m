@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113Ab2AZFEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 00:04:44 -0500
-Received: from mail.nudt.edu.cn ([61.187.54.11]:37379 "HELO eyou.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750726Ab2AZFEm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 00:04:42 -0500
-X-EYOU-SPAMVALUE: 0
-X-EYOU-DEALDRC: 
-X-EMDG-VER: 2011-01-28
-Message-ID: <527553462.07149@eyou.net>
-X-EYOUMAIL-SMTPAUTH: liwang@nudt.edu.cn
-From: "Li Wang" <liwang@nudt.edu.cn>
-To: "'Tyler Hicks'" <tyhicks@canonical.com>
-Cc: <ecryptfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <527531938.27851@eyou.net>
-Subject: [PATCH v2] eCryptfs: write optimization
-Date: Thu, 26 Jan 2012 13:04:34 +0800
+	id S1751241Ab2AZFbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 00:31:53 -0500
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:45424 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809Ab2AZFbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 00:31:52 -0500
+Message-ID: <4F20E536.7090808@cs.wisc.edu>
+Date: Wed, 25 Jan 2012 23:31:34 -0600
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook, Build 11.0.5510
-X-MimeOLE: Produced By Microsoft MimeOLE V6.1.7600.16807
-Thread-Index: Aczbs/0rESicKC59TRG7/Z/LahKNIAAMznwg
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: JBottomley@parallels.com, open-iscsi@googlegroups.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iscsi: don't hang in endless loop if no targets present
+References: <1327547776-2890-1-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <1327547776-2890-1-git-send-email-levinsasha928@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  The new version adds the code to handle short copy issue which may occure
-in iov_iter_copy_from_user_atomic(). The idea is to let ecryptfs_write_end() return zero,
-therefore, give iov_iter_fault_in_readable() a chance to handle the page fault 
-for the current iovec, then restart the copy operation.
+On 01/25/2012 09:16 PM, Sasha Levin wrote:
+> iscsi_if_send_reply() may return -ESRCH if there were no targets to send
+> data to. Currently we're ignoring this value and looping in attempt to do it
+> over and over, which will usually lead in a hung task like this one:
+> 
+> [ 4920.817298] INFO: task trinity:9074 blocked for more than 120 seconds.
+> [ 4920.818527] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [ 4920.819982] trinity         D 0000000000000000  5504  9074   2756 0x00000004
+> [ 4920.825374]  ffff880003961a98 0000000000000086 ffff8800001aa000 ffff8800001aa000
+> [ 4920.826791]  00000000001d4340 ffff880003961fd8 ffff880003960000 00000000001d4340
+> [ 4920.828241]  00000000001d4340 00000000001d4340 ffff880003961fd8 00000000001d4340
+> [ 4920.833231]
+> [ 4920.833519] Call Trace:
+> [ 4920.834010]  [<ffffffff826363fa>] schedule+0x3a/0x50
+> [ 4920.834953]  [<ffffffff82634ac9>] __mutex_lock_common+0x209/0x5b0
+> [ 4920.836226]  [<ffffffff81af805d>] ? iscsi_if_rx+0x2d/0x990
+> [ 4920.837281]  [<ffffffff81053943>] ? sched_clock+0x13/0x20
+> [ 4920.838305]  [<ffffffff81af805d>] ? iscsi_if_rx+0x2d/0x990
+> [ 4920.839336]  [<ffffffff82634eb0>] mutex_lock_nested+0x40/0x50
+> [ 4920.840423]  [<ffffffff81af805d>] iscsi_if_rx+0x2d/0x990
+> [ 4920.841434]  [<ffffffff810dffed>] ? sub_preempt_count+0x9d/0xd0
+> [ 4920.842548]  [<ffffffff82637bb0>] ? _raw_read_unlock+0x30/0x60
+> [ 4920.843666]  [<ffffffff821f71de>] netlink_unicast+0x1ae/0x1f0
+> [ 4920.844751]  [<ffffffff821f7997>] netlink_sendmsg+0x227/0x350
+> [ 4920.845850]  [<ffffffff821857bd>] ? sock_update_netprioidx+0xdd/0x1b0
+> [ 4920.847060]  [<ffffffff82185732>] ? sock_update_netprioidx+0x52/0x1b0
+> [ 4920.848276]  [<ffffffff8217f226>] sock_aio_write+0x166/0x180
+> [ 4920.849348]  [<ffffffff810dfe41>] ? get_parent_ip+0x11/0x50
+> [ 4920.850428]  [<ffffffff811d0d9a>] do_sync_write+0xda/0x120
+> [ 4920.851465]  [<ffffffff810dffed>] ? sub_preempt_count+0x9d/0xd0
+> [ 4920.852579]  [<ffffffff810dfe41>] ? get_parent_ip+0x11/0x50
+> [ 4920.853608]  [<ffffffff81791887>] ? security_file_permission+0x27/0xb0
+> [ 4920.854821]  [<ffffffff811d0f4c>] vfs_write+0x16c/0x180
+> [ 4920.855781]  [<ffffffff811d104f>] sys_write+0x4f/0xa0
+> [ 4920.856798]  [<ffffffff82638e79>] system_call_fastpath+0x16/0x1b
+> [ 4920.877487] 1 lock held by trinity/9074:
+> [ 4920.878239]  #0:  (rx_queue_mutex){+.+...}, at: [<ffffffff81af805d>] iscsi_if_rx+0x2d/0x990
+> [ 4920.880005] Kernel panic - not syncing: hung_task: blocked tasks
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  drivers/scsi/scsi_transport_iscsi.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_transport_iscsi.c b/drivers/scsi/scsi_transport_iscsi.c
+> index cfd4914..c26707a 100644
+> --- a/drivers/scsi/scsi_transport_iscsi.c
+> +++ b/drivers/scsi/scsi_transport_iscsi.c
+> @@ -2110,7 +2110,7 @@ iscsi_if_rx(struct sk_buff *skb)
+>  				break;
+>  			err = iscsi_if_send_reply(group, nlh->nlmsg_seq,
+>  				nlh->nlmsg_type, 0, 0, ev, sizeof(*ev));
+> -		} while (err < 0 && err != -ECONNREFUSED);
+> +		} while (err < 0 && err != -ECONNREFUSED && err != -ESRCH);
+>  		skb_pull(skb, rlen);
+>  	}
+>  	mutex_unlock(&rx_queue_mutex);
 
-Cheers,
-Li Wang
 
-Signed-off-by: Li Wang <liwang@nudt.edu.cn>
-               Yunchuan Wen <wenyunchuan@kylinos.com.cn>
+Looks ok. Thanks for debugging and the patch.
 
----
- 
-fs/ecryptfs/mmap.c |   12 ++++++++++--
-1 files changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-index 6a44148..b3fa499 100644
---- a/fs/ecryptfs/mmap.c
-+++ b/fs/ecryptfs/mmap.c
-@@ -346,7 +346,8 @@ static int ecryptfs_write_begin(struct file *file,
- 			if (prev_page_end_size
- 			    >= i_size_read(page->mapping->host)) {
- 				zero_user(page, 0, PAGE_CACHE_SIZE);
--			} else {
-+				SetPageUptodate(page);
-+			} else if (len < PAGE_CACHE_SIZE) {
- 				rc = ecryptfs_decrypt_page(page);
- 				if (rc) {
- 					printk(KERN_ERR "%s: Error decrypting "
-@@ -356,8 +357,8 @@ static int ecryptfs_write_begin(struct file *file,
- 					ClearPageUptodate(page);
- 					goto out;
- 				}
-+				SetPageUptodate(page);
- 			}
--			SetPageUptodate(page);
- 		}
- 	}
- 	/* If creating a page or more of holes, zero them out via truncate.
-@@ -512,6 +513,13 @@ static int ecryptfs_write_end(struct file *file,
- 		}
- 		goto out;
- 	}
-+	if (!PageUptodate(page)) {
-+		if (copied < PAGE_CACHE_SIZE) {
-+			rc = 0;
-+			goto out;
-+		}
-+		SetPageUptodate(page);
-+	}
- 	/* Fills in zeros if 'to' goes beyond inode size */
- 	rc = fill_zeros_to_end_of_page(page, to);
- 	if (rc) {
-
-
+Acked-by: Mike Christie <michaelc@cs.wisc.edu>
