@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646Ab2AZMOn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 07:14:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59544 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab2AZMOm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 07:14:42 -0500
-Message-ID: <4F214380.2040601@kernel.dk>
-Date: Thu, 26 Jan 2012 13:13:52 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1751547Ab2AZMSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 07:18:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab2AZMSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 07:18:22 -0500
+Message-ID: <4F214465.9010600@redhat.com>
+Date: Thu, 26 Jan 2012 07:17:41 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Indan Zupancic <indan@nul.nu>, Youquan Song <youquan.song@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v1 1/2] sched: unified sched_powersavings sysfs tunable
-References: <20120116161740.29759.4679.stgit@localhost>    <20120116162241.29759.13220.stgit@localhost>   <1327503181.2614.76.camel@laptop> <4F212DFF.8060802@kernel.dk>  <1327576091.2446.87.camel@twins> <4F21386C.5000809@kernel.dk> <1327579450.2446.95.camel@twins>
-In-Reply-To: <1327579450.2446.95.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Chinner <david@fromorbit.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+References: <1325774407-28531-1-git-send-email-jack@suse.cz> <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com> <20120116160136.GC16431@quack.suse.cz> <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com> <20120117003613.GA28571@dastard> <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com> <20120123030422.GE15102@dastard> <20120123214709.GB17974@thunk.org> <20120124003657.GJ15102@dastard>
+In-Reply-To: <20120124003657.GJ15102@dastard>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 01:04 PM, Peter Zijlstra wrote:
-> On Thu, 2012-01-26 at 12:26 +0100, Jens Axboe wrote:
->> O
->> Yeah, I think that would suit my purpose nicely, in fact. What level of
->> cache sharing is being used here? The block code wanted a per-socket
->> type operation, but since it's a heuristic, perhaps the above is even
->> better (or equivelant, perhaps).
-> 
-> It uses the biggest shared cache exposed in the topology information the
-> scheduler has (which is currently somewhat funny but is on the todo list
-> for improvements).
-> 
-> Effectively it ends up being the socket wide LLC for modern Intel chips
-> though.
-> 
-> Would something like the below work for you (compile tested only).
+On 01/23/2012 07:36 PM, Dave Chinner wrote:
+> On Mon, Jan 23, 2012 at 04:47:09PM -0500, Ted Ts'o wrote:
+>>> The thing is, transient write errors tend to be isolated and go away
+>>> when a retry occurs (think of IO timeouts when multipath failover
+>>> occurs). When non-isolated IO or unrecoverable problems occur (e.g.
+>>> no paths left to fail over onto), critical other metadata reads and
+>>> writes will fail and shut down the filesystem, thereby terminating
+>>> the "try forever" background writeback loop those delayed write
+>>> buffers may be in. So the truth is that "trying forever" on write
+>>> errors can handle a whole class of write IO errors very
+>>> effectively....
+>> So how does XFS decide whether a write should fail and shutdown the
+>> file system, or just "try forever"?
+> The IO dispatcher decides that. If the dispatcher has handed the IO
+> off to the delayed write queue, then failed writes will be tried
+> again. If the caller is catching the IO completion (e.g. sync
+> writes) or attaching a completion callback (journal IO), then the
+> completion context will handle the error appropriately. Journal IO
+> errors tend to shutdown the filesystem on the first error, other
+> contexts may handle the error, retry or shutdown the filesystem
+> depending on their current state when the error occurs.
+>
+> Reads are even more complex, because ithe dispatch context can be
+> within a transaction and the correct error handling is then
+> dependent on the current state of the transaction....
+>
+> Cheers,
+>
+> Dave.
 
-Yep, looks good to me, and an improvement for me not to carry this code
-that doesn't really belong there.
+I think that having retry logic at the file system layer is really putting the 
+fix in the wrong place.
 
--- 
-Jens Axboe
+Specifically, if we have multipath configured under a file system, it is up to 
+the multipath logic to handle the failure (and use another path, retry, etc).  
+If we see a failed IO further up the stack, it is *really* dead at that point.
+
+Transient errors on normal drives are also rarely worth re-trying since pretty 
+much all modern storage devices have firmware that will have done exhaustive 
+retries on a failed write. Definitely not worth retrying forever for a normal 
+device.
+
+At one end of the spectrum, think of a box with dozens of storage devices 
+attached (either via SAN or local S-ATA devices). If we are doing large, 
+streaming writes, we could get a large amount of memory dirtied while writing. 
+If that one device dies and we keep that memory in use for the endless retry 
+loop, we have really cripple the box which still has multiple happy storage 
+devices and file systems....
+
+Ric
+
+
+
 
