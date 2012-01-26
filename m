@@ -1,103 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab2AZNfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 08:35:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab2AZNfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 08:35:11 -0500
-From: Niels de Vos <ndevos@redhat.com>
-To: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Niels de Vos <ndevos@redhat.com>, "Bryn M. Reeves" <bmr@redhat.com>
-Subject: [PATCH v3] fs: Invalidate the cache for a parent block-device if fsync() is called for a partition
-Date: Thu, 26 Jan 2012 13:33:22 +0000
-Message-Id: <1327584802-14298-1-git-send-email-ndevos@redhat.com>
-In-Reply-To: <4F213E1A.4060808@redhat.com>
-References: <4F213E1A.4060808@redhat.com>
+	id S1752071Ab2AZNf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 08:35:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36010 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab2AZNfY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 08:35:24 -0500
+Date: Thu, 26 Jan 2012 05:34:50 -0800
+From: tip-bot for David Daney <david.daney@cavium.com>
+Message-ID: <tip-2ef1ea3826434bdebe17b2941356a8f764ff5fcd@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        joerg.roedel@amd.com, namhyung.kim@lge.com, david.daney@cavium.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, joerg.roedel@amd.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, david.daney@cavium.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1326836461-11952-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1326836461-11952-1-git-send-email-ddaney.cavm@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Fix broken build by defining _GNU_SOURCE in Makefile
+Git-Commit-ID: 2ef1ea3826434bdebe17b2941356a8f764ff5fcd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 05:34:57 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Executing an fsync() on a file-descriptor of a partition flushes the
-caches for that partition by calling blkdev_fsync(). However, it seems
-that reading data through the parent device will still return the old
-cached data.
+Commit-ID:  2ef1ea3826434bdebe17b2941356a8f764ff5fcd
+Gitweb:     http://git.kernel.org/tip/2ef1ea3826434bdebe17b2941356a8f764ff5fcd
+Author:     David Daney <david.daney@cavium.com>
+AuthorDate: Tue, 17 Jan 2012 13:41:01 -0800
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 24 Jan 2012 20:26:33 -0200
 
-The problem can be worked around by forcing the caches to be flushed
-with either
-	# blockdev --flushbufs ${dev_disk}
-or
-	# echo 3 > /proc/sys/vm/drop_caches
+perf tools: Fix broken build by defining _GNU_SOURCE in Makefile
 
-One of the use-cases that shows this problem:
-1) create two or more partitions on a device
-   - use fdisk to create /dev/sdb1 and /dev/sdb2
-2) format and mount one of the partition
-   - mkfs -t ext3 /dev/sdb1
-3) read through the main device to have something in the cache
-   - read /dev/sdb with dd or use something like "parted /dev/sdb print"
-4) now write something to /dev/sdb2, format the partition for example
-   - mkfs -t ext3 /dev/sdb2
-5) read the blocks where sdb2 starts, through /dev/sdb
-   - use dd or do again a "parted /dev/sdb print"
+When building on my Debian/mips system, util/util.c fails to build
+because commit 1aed2671738785e8f5aea663a6fda91aa7ef59b5 (perf kvm: Do
+guest-only counting by default) indirectly includes stdio.h before the
+feature selection in util.h is done.  This prevents _GNU_SOURCE in
+util.h from enabling the declaration of getline(), from now second
+inclusion of stdio.h, and the build is broken.
 
-The cache for the block-device is not synced if the block-device is kept
-open (due to a mounted partition, for example). Only when all users for
-the disk have exited, the cache for the disk is made consistent again.
+There is another breakage in util/evsel.c caused by include ordering,
+but I didn't fully track down the commit that caused it.
 
-Without this patch, calling "blockdev --flushbufs" or dropping the
-caches, the result in 5) is the same as in 3). Reading the same area
-through /dev/sdb2 shows the inconsistancy between the two caches.
+The root cause of all this is an inconsistent definition of _GNU_SOURCE,
+so I move the definition into the Makefile so that it is passed to all
+invocations of the compiler and used uniformly for all system header
+files.  All other #define and #undef of _GNU_SOURCE are removed as they
+cause conflicts with the definition passed to the compiler.
 
-CC: Bryn M. Reeves <bmr@redhat.com>
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Niels de Vos <ndevos@redhat.com>
+All the features.h definitions (_LARGEFILE64_SOURCE _FILE_OFFSET_BITS=64
+and _GNU_SOURCE) are needed by the python glue code too, so they are
+moved to BASIC_CFLAGS, and the misleading comments about BASIC_CFLAGS
+are removed.
 
+This gives me a clean build on x86_64 (fc12) and mips (Debian).
+
+Cc: David Daney <david.daney@cavium.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1326836461-11952-1-git-send-email-ddaney.cavm@gmail.com
+Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-v3:
-- Correct commit message, no need to mention blkdev_issue_flush().
+ tools/perf/Makefile                 |    7 ++-----
+ tools/perf/builtin-probe.c          |    2 --
+ tools/perf/util/probe-event.c       |    2 --
+ tools/perf/util/symbol.c            |    1 -
+ tools/perf/util/trace-event-parse.c |    3 +--
+ tools/perf/util/ui/browsers/hists.c |    2 --
+ tools/perf/util/ui/helpline.c       |    1 -
+ tools/perf/util/util.h              |    1 -
+ 8 files changed, 3 insertions(+), 16 deletions(-)
 
-- Include a use-case for giving a clearer understaning of the problem
-  that is being addressed.
-
-- Include received Acked-by and Reviewed-by, only the commit message
-  changed in this v3.
-
-v2:
-- Do not call invalidate_bdev() from blkdev_issue_flush() and prevent
-  performance degration with journalled filesystems.
-
-  Suggested was to call invalidate_bdev() in fsync_bdev(), but this is
-  not in the call-path of mkfs.ext3 and similar tools. Hence the issue
-  persists.
-
-- Correct phrasing a little, changing ioctl-BLKFLSBUF is not required.
-
-- This issue also occurs when doing an ioctl-BLKFLSBUF on a partition.
-  Reading the whole disk will still return cached data. If this is an
-  issue, it will need a seperate patch.
----
- fs/block_dev.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 0e575d1..433c4de 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -424,6 +424,10 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
- 	if (error == -EOPNOTSUPP)
- 		error = 0;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 599031a..d64f581 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -104,7 +104,7 @@ endif
  
-+	/* invalidate parent block_device */
-+	if (!error && bdev != bdev->bd_contains)
-+		invalidate_bdev(bdev->bd_contains);
+ CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+-ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
++ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ ALL_LDFLAGS = $(LDFLAGS)
+ STRIP ?= strip
+ 
+@@ -168,10 +168,7 @@ endif
+ 
+ ### --- END CONFIGURATION SECTION ---
+ 
+-# Those must not be GNU-specific; they are shared with perl/ which may
+-# be built by a different compiler. (Note that this is an artifact now
+-# but it still might be nice to keep that distinction.)
+-BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include
++BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ BASIC_LDFLAGS =
+ 
+ # Guard against environment variables
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 59d43ab..fb85661 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -20,7 +20,6 @@
+  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+  *
+  */
+-#define _GNU_SOURCE
+ #include <sys/utsname.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -31,7 +30,6 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#undef _GNU_SOURCE
+ #include "perf.h"
+ #include "builtin.h"
+ #include "util/util.h"
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index eb25900..29cb654 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -19,7 +19,6 @@
+  *
+  */
+ 
+-#define _GNU_SOURCE
+ #include <sys/utsname.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -33,7 +32,6 @@
+ #include <limits.h>
+ #include <elf.h>
+ 
+-#undef _GNU_SOURCE
+ #include "util.h"
+ #include "event.h"
+ #include "string.h"
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 215d50f..0975438 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1,4 +1,3 @@
+-#define _GNU_SOURCE
+ #include <ctype.h>
+ #include <dirent.h>
+ #include <errno.h>
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 6c164dc..1a8d4dc 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -21,14 +21,13 @@
+  *  The parts for function graph printing was taken and modified from the
+  *  Linux Kernel that were written by Frederic Weisbecker.
+  */
+-#define _GNU_SOURCE
 +
- 	return error;
- }
- EXPORT_SYMBOL(blkdev_fsync);
--- 
-1.7.6.5
-
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <ctype.h>
+ #include <errno.h>
+ 
+-#undef _GNU_SOURCE
+ #include "../perf.h"
+ #include "util.h"
+ #include "trace-event.h"
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 7b6669d..bfba049 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -1,6 +1,4 @@
+-#define _GNU_SOURCE
+ #include <stdio.h>
+-#undef _GNU_SOURCE
+ #include "../libslang.h"
+ #include <stdlib.h>
+ #include <string.h>
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+index 6ef3c56..4f48f59 100644
+--- a/tools/perf/util/ui/helpline.c
++++ b/tools/perf/util/ui/helpline.c
+@@ -1,4 +1,3 @@
+-#define _GNU_SOURCE
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 061dbf8..232d17e 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -40,7 +40,6 @@
+ #define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
+ 
+ #define _ALL_SOURCE 1
+-#define _GNU_SOURCE 1
+ #define _BSD_SOURCE 1
+ #define HAS_BOOL
+ 
