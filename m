@@ -1,66 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab2AZI7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 03:59:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33377 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab2AZI7V (ORCPT
+	id S1752153Ab2AZJBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:01:06 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:57648 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab2AZJBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 03:59:21 -0500
-Date: Thu, 26 Jan 2012 01:05:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: Re: [PATCH] hrtimers: teach usleep_range() to return how many usecs
- was slept
-Message-Id: <20120126010516.c5af4a4e.akpm@linux-foundation.org>
-In-Reply-To: <1326718403-28156-1-git-send-email-dmitry.antipov@linaro.org>
-References: <1326718403-28156-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Jan 2012 04:01:03 -0500
+Date: Thu, 26 Jan 2012 10:00:46 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 04/15] mm: compaction: introduce isolate_freepages_range()
+In-reply-to: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Message-id: <1327568457-27734-5-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.7.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jan 2012 16:53:23 +0400 Dmitry Antipov <dmitry.antipov@linaro.org> wrote:
+From: Michal Nazarewicz <mina86@mina86.com>
 
-> Teach usleep_range() to return how many usecs was actually spent
-> in sleep. The rationale beyond this is to convert jiffies-based
-> wait-for-hardware loops like:
-> 
-> unsigned long timeout = jiffies + msecs_to_jiffies(1000);
-> while (hw_is_not_ready()) {
-> 	if (time_after(jiffies, timeout))
-> 		return -ETIMEDOUT;
-> 	msleep(1);
-> }
-> 
-> to:
-> 
-> unsigned long timeout = 0;
-> while (hw_is_not_ready()) {
->       if (timeout > USEC_PER_SEC)
-> 	      return -ETIMEDOUT;
->       timeout += usleep_range(1000, 2000);
-> }
-> 
+This commit introduces isolate_freepages_range() function which
+generalises isolate_freepages_block() so that it can be used on
+arbitrary PFN ranges.
 
-Is that useful enough to justify making the change?
+isolate_freepages_block() is left with only minor changes.
 
->
->  int __sched schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
-> -				     const enum hrtimer_mode mode)
-> +				     const enum hrtimer_mode mode, unsigned long *elapsed)
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ mm/compaction.c |  118 ++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 100 insertions(+), 18 deletions(-)
 
-Rather than adding another argument, I suggest you change the return
-type to long and use return value semantics similar to schedule_timeout().
-
-schedule_timeout() never returns -ve numbers and it returns jiffies,
-but it will be close(r).
-
-Returning usecs is odd.  One would expect it to return a ktime_t.  That
-might inflict some code-size cost in callers.
+diff --git a/mm/compaction.c b/mm/compaction.c
+index a42bbdd..63f82be 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -54,24 +54,20 @@ static unsigned long release_freepages(struct list_head *freelist)
+ 	return count;
+ }
+ 
+-/* Isolate free pages onto a private freelist. Must hold zone->lock */
+-static unsigned long isolate_freepages_block(struct zone *zone,
+-				unsigned long blockpfn,
+-				struct list_head *freelist)
++/*
++ * Isolate free pages onto a private freelist. Caller must hold zone->lock.
++ * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
++ * pages inside of the pageblock (even though it may still end up isolating
++ * some pages).
++ */
++static unsigned long isolate_freepages_block(unsigned long blockpfn,
++				unsigned long end_pfn,
++				struct list_head *freelist,
++				bool strict)
+ {
+-	unsigned long zone_end_pfn, end_pfn;
+ 	int nr_scanned = 0, total_isolated = 0;
+ 	struct page *cursor;
+ 
+-	/* Get the last PFN we should scan for free pages at */
+-	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+-	end_pfn = min(blockpfn + pageblock_nr_pages, zone_end_pfn);
+-
+-	/* Find the first usable PFN in the block to initialse page cursor */
+-	for (; blockpfn < end_pfn; blockpfn++) {
+-		if (pfn_valid_within(blockpfn))
+-			break;
+-	}
+ 	cursor = pfn_to_page(blockpfn);
+ 
+ 	/* Isolate free pages. This assumes the block is valid */
+@@ -79,15 +75,23 @@ static unsigned long isolate_freepages_block(struct zone *zone,
+ 		int isolated, i;
+ 		struct page *page = cursor;
+ 
+-		if (!pfn_valid_within(blockpfn))
++		if (!pfn_valid_within(blockpfn)) {
++			if (strict)
++				return 0;
+ 			continue;
++		}
+ 		nr_scanned++;
+ 
+-		if (!PageBuddy(page))
++		if (!PageBuddy(page)) {
++			if (strict)
++				return 0;
+ 			continue;
++		}
+ 
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
++		if (!isolated && strict)
++			return 0;
+ 		total_isolated += isolated;
+ 		for (i = 0; i < isolated; i++) {
+ 			list_add(&page->lru, freelist);
+@@ -105,6 +109,80 @@ static unsigned long isolate_freepages_block(struct zone *zone,
+ 	return total_isolated;
+ }
+ 
++/**
++ * isolate_freepages_range() - isolate free pages.
++ * @start_pfn: The first PFN to start isolating.
++ * @end_pfn:   The one-past-last PFN.
++ *
++ * Non-free pages, invalid PFNs, or zone boundaries within the
++ * [start_pfn, end_pfn) range are considered errors, cause function to
++ * undo its actions and return zero.
++ *
++ * Otherwise, function returns one-past-the-last PFN of isolated page
++ * (which may be greater then end_pfn if end fell in a middle of
++ * a free page).
++ */
++static unsigned long
++isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
++{
++	unsigned long isolated, pfn, block_end_pfn, flags;
++	struct zone *zone = NULL;
++	LIST_HEAD(freelist);
++	struct page *page;
++
++	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
++		if (!pfn_valid(pfn))
++			break;
++
++		if (!zone)
++			zone = page_zone(pfn_to_page(pfn));
++		else if (zone != page_zone(pfn_to_page(pfn)))
++			break;
++
++		/*
++		 * On subsequent iterations round_down() is actually not
++		 * needed, but we keep it that we not to complicate the code.
++		 */
++		block_end_pfn = round_down(pfn, pageblock_nr_pages)
++			+ pageblock_nr_pages;
++		block_end_pfn = min(block_end_pfn, end_pfn);
++
++		spin_lock_irqsave(&zone->lock, flags);
++		isolated = isolate_freepages_block(pfn, block_end_pfn,
++						   &freelist, true);
++		spin_unlock_irqrestore(&zone->lock, flags);
++
++		/*
++		 * In strict mode, isolate_freepages_block() returns 0 if
++		 * there are any holes in the block (ie. invalid PFNs or
++		 * non-free pages).
++		 */
++		if (!isolated)
++			break;
++
++		/*
++		 * If we managed to isolate pages, it is always (1 << n) *
++		 * pageblock_nr_pages for some non-negative n.  (Max order
++		 * page may span two pageblocks).
++		 */
++	}
++
++	/* split_free_page does not map the pages */
++	list_for_each_entry(page, &freelist, lru) {
++		arch_alloc_page(page, 0);
++		kernel_map_pages(page, 1, 1);
++	}
++
++	if (pfn < end_pfn) {
++		/* Loop terminated early, cleanup. */
++		release_freepages(&freelist);
++		return 0;
++	}
++
++	/* We don't use freelists for anything. */
++	return pfn;
++}
++
+ /* Returns true if the page is within a block suitable for migration to */
+ static bool suitable_migration_target(struct page *page)
+ {
+@@ -135,7 +213,7 @@ static void isolate_freepages(struct zone *zone,
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn;
++	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
+ 	unsigned long flags;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
+@@ -155,6 +233,8 @@ static void isolate_freepages(struct zone *zone,
+ 	 */
+ 	high_pfn = min(low_pfn, pfn);
+ 
++	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
++
+ 	/*
+ 	 * Isolate free pages until enough are available to migrate the
+ 	 * pages on cc->migratepages. We stop searching if the migrate
+@@ -191,7 +271,9 @@ static void isolate_freepages(struct zone *zone,
+ 		isolated = 0;
+ 		spin_lock_irqsave(&zone->lock, flags);
+ 		if (suitable_migration_target(page)) {
+-			isolated = isolate_freepages_block(zone, pfn, freelist);
++			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
++			isolated = isolate_freepages_block(pfn, end_pfn,
++							   freelist, false);
+ 			nr_freepages += isolated;
+ 		}
+ 		spin_unlock_irqrestore(&zone->lock, flags);
+-- 
+1.7.1.569.g6f426
 
