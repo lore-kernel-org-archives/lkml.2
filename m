@@ -1,144 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab2AZA7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 19:59:49 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:36987 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab2AZA7r (ORCPT
+	id S1752610Ab2AZBBD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 20:01:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58149 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab2AZBBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 19:59:47 -0500
-Date: Thu, 26 Jan 2012 00:59:01 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-Message-ID: <20120126005901.GC18613@jl-vm1.vm.bytemark.co.uk>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
- <20120125193635.GA30311@redhat.com>
- <201201260032.57937.vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201201260032.57937.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Jan 2012 20:01:00 -0500
+Date: Wed, 25 Jan 2012 17:00:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: vmscan: fix malused nr_reclaimed in shrinking zone
+Message-Id: <20120125170054.affb676b.akpm@linux-foundation.org>
+In-Reply-To: <CAJd=RBByNhLSiBtyaYOHeMRQpXmAO=hEKTOanPTzrb2gRZTOSg@mail.gmail.com>
+References: <CAJd=RBDVxT5Pc2HZjz15LUb7xhFbztpFmXqLXVB3nCoQLKHiHg@mail.gmail.com>
+	<20120123170354.82b9f127.akpm@linux-foundation.org>
+	<CAJd=RBByNhLSiBtyaYOHeMRQpXmAO=hEKTOanPTzrb2gRZTOSg@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denys Vlasenko wrote:
-> On Wednesday 25 January 2012 20:36, Oleg Nesterov wrote:
-> > On 01/18, Linus Torvalds wrote:
-> > >
-> > > Using the high bits of 'eflags' might work.
-> > 
-> > I thought about changing eflags too, this looks very natural to me.
-> > 
-> > But I do not understand the result of this discussion, are you going
-> > to apply this change?
-> > 
-> > If not...
-> > 
-> > Not sure this is really better, but there is another idea. Currently we
-> > have PTRACE_O_TRACESYSGOOD to avoid the confusion with the real SIGTRAP.
-> > Perhaps we can add PTRACE_O_TRACESYS_VERY_GOOD (or we can look at
-> > PT_SEIZED instead) and report TS_COMPAT via ptrace_report_syscall ?
-> > 
-> > IOW. Currently ptrace_report_syscall() does
-> > 
-> > 	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
-> > 
-> > We can add the new events,
-> > 
-> > 	PTRACE_EVENT_SYSCALL_ENTRY
-> > 	PTRACE_EVENT_SYSCALL_COMPAT_ENTRY
-> > 	PTRACE_EVENT_SYSCALL_EXIT
-> > 	PTRACE_EVENT_SYSCALL_COMPAT_EXIT
+On Tue, 24 Jan 2012 19:00:19 +0800
+Hillf Danton <dhillf@gmail.com> wrote:
+
+> On Tue, Jan 24, 2012 at 9:03 AM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> >
+> >
+> > - The names of these things are terrible! __Why not
+> > __reclaimed_this_pass and reclaimed_total or similar?
+> >
+> > - It would be cleaner to do the "reclaimed += nr_reclaimed" at the
+> > __end of the loop, if we've decided to goto restart. __(But better
+> > __to do it within the loop!)
+> >
+> > - Only need to update sc->nr_reclaimed at the end of the function
+> > __(assumes that callees of this function aren't interested in
+> > __sc->nr_reclaimed, which seems a future-safe assumption to me).
+> >
+> > - Should be able to avoid the temporary addition of nr_reclaimed to
+> > __reclaimed inside the loop by updating `reclaimed' at an appropriate
+> > __place.
+> >
+> >
+> > Or whatever. __That code's handling of `reclaimed' and `nr_reclaimed' is
+> > a twisty mess. __Please clean it up! __If it is done correctly,
+> > `nr_reclaimed' can (and should) be local to the internal loop.
 > 
-> We can get away with just the first one.
-> (1) It's unlikely people would want to get native sysentry events but not compat ones,
-> thus first two options can be combined into one;
+> Hi Andrew
+> 
+> The mess is cleaned up, please review again.
 
-Tracers mainly want to know if it's a 32-bit or 64-bit syscall, not
-whether it's compat as such.
+umph.  It's still not exactly a thing of beautiful clarity :(
 
-I'm thinking it might be a little kinder like this:
+> The value of nr_reclaimed is the amount of pages reclaimed in the current
+> round of loop, whereas nr_to_reclaim should be compared with pages reclaimed
+> in all rounds.
+> 
+> In each round of loop, reclaimed pages are cut off from the reclaim goal,
+> and loop stops once goal achieved.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+> 
+> --- a/mm/vmscan.c	Mon Jan 23 00:23:10 2012
+> +++ b/mm/vmscan.c	Tue Jan 24 17:10:34 2012
+> @@ -2113,7 +2113,12 @@ restart:
+>  		 * with multiple processes reclaiming pages, the total
+>  		 * freeing target can get unreasonably large.
+>  		 */
+> -		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
+> +		if (nr_reclaimed >= nr_to_reclaim)
+> +			nr_to_reclaim = 0;
+> +		else
+> +			nr_to_reclaim -= nr_reclaimed;
+> +
+> +		if (!nr_to_reclaim && priority < DEF_PRIORITY)
+>  			break;
+>  	}
+>  	blk_finish_plug(&plug);
 
-#define PTRACE_EVENT_SYSCALL_ENTRY_ABI32 (...)
-#define PTRACE_EVENT_SYSCALL_ENTRY_ABI64 (...)
+So local variable nr_to_reclaim has had its meaning changed.  It used
+to be a function-wide constant (should have actually been marked
+"const") telling us how many pages we are asked to reclaim.
 
-#ifdef CONFIG_64BIT
-# define PTRACE_EVENT_SYSCALL_ENTRY         PTRACE_EVENT_SYSCALL_ENTRY_ABI64
-# define PTRACE_EVENT_SYSCALL_ENTRY_COMPAT  PTRACE_EVENT_SYSCALL_ENTRY_ABI32
-#else
-# define PTRACE_EVENT_SYSCALL_ENTRY         PTRACE_EVENT_SYSCALL_ENTRY_ABI32
-#endif
+But now it becomes "remaining number of pages to reclaim".  And the
+name happens to still be sufficiently appropriate, so fair enough.
 
-So the ABI is represented directly, with the _ENTRY referring to the
-tracer's own.  (Other ABI numbers can exist, e.g. OABI and EABI for
-ARM, see below.)
 
-This has the two specific advantages:
+I'm thinking we have a bit of code rot happening here.  This comment:
 
-  1. It can match on specific ABI or regular/compat, as suits the tracer's code.
-  2. When a 32-bit *tracer* is running a 64-bit *tracee* as least it knows ;-)
+		/*
+		 * On large memory systems, scan >> priority can become
+		 * really large. This is fine for the starting priority;
+		 * we want to put equal scanning pressure on each zone.
+		 * However, if the VM has a harder time of freeing pages,
+		 * with multiple processes reclaiming pages, the total
+		 * freeing target can get unreasonably large.
+		 */
 
-With your idea, what happens in situation 2?  I'm not sure a 32-bit
-tracee can do anything useful, because it can't get the 64-bit
-registers, but at least it can see when it's got the wrong registers :-)
+seems to have little to do with the code which it is trying to
+describe.  Or at least, I'm not sure this is the best we can possibly
+do :(
 
-> (2) syscall exit compat-ness is known from entry type - no need to indicate it; and
-> (3) if we would flag syscall entry with an event value in wait status, then syscall
-> exit will be already distinquisable.
->
-> Thus, minimally we need one new option, PTRACE_O_TRACE_SYSENTRY -
-> "on syscall entry ptrace stop, set a nonzero event value in wait status"
-> , and two event values: PTRACE_EVENT_SYSCALL_ENTRY (for native entry),
-> PTRACE_EVENT_SYSCALL_ENTRY1 for compat one.
 
-PTRACE_EVENT_SYSCALL_EXIT would cleanly indicate that the new option
-is actually working without the tracer needing to do a fork+test, if
-PTRACE_ATTACH is used and for some reason the tracer sees a syscall
-exit first.  I'm not sure if this can happen but I've heard rumour of
-it on some archs or kernel versions.
+Also, your email client is adding MIME goop to the emails which mine
+(sylpheed) is unable to decrypt.  It turns "=" into "=3D" everywhere. 
+This:
 
-> To future-proof this scheme we may reserve a few more event values
-> PTRACE_EVENT_SYSCALL_ENTRY2, PTRACE_EVENT_SYSCALL_ENTRY3, etc,
-> if we'll ever have arches with more than one non-native syscall
-> entry.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> I'm no expert, but looking at strace code, ARM may already have
-> more than one additional convention how to pass syscall args.
+I blame sylpheed for this, but if you can make it stop, that would make
+my life easier, and perhaps others.
 
-I was just looking at ARM and see exactly the same thing.  The
-difference between EABI and OABI calls is significant on ARM, even
-though syscall numbers are the same; and the ABI is selected by the
-syscall instruction used, not process personality.  The __NR_name
-values differ for each ABI, but (if I read arm/kernel/entry-common.S
-properly) strace sees the same _NR_name values for both ABIs.
-
-MIPS also has two different 32-bit ABIs, as well as 64-bit, but on
-MIPS the syscall numbers are distinct, and should be seen by ptrace.
-(Again if I read mips/kernel/ correctly.)
-
-PA-RISC also has two different ABIs, the Linux one and the HPUX one.
-The syscall numbers are different but overlap.  I don't know if they
-are distinct to ptrace, in which case using the HPUX entry point might
-be used to subvert a ptracer unless the ABI number is exposed.
-
--- Jamie
