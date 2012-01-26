@@ -1,180 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab2AZNkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 08:40:42 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:30009
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751836Ab2AZNkk (ORCPT
+	id S1752395Ab2AZNkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 08:40:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36109 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab2AZNkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 08:40:40 -0500
-X-IronPort-AV: E=Sophos;i="4.71,574,1320620400"; 
-   d="scan'208";a="128949934"
-Date: Thu, 26 Jan 2012 14:40:37 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Wolfram Sang <w.sang@pengutronix.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Takashi Iwai <tiwai@suse.de>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [alsa-devel] [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing
- iounmap
-In-Reply-To: <20120126112242.GA9401@opensource.wolfsonmicro.com>
-Message-ID: <alpine.DEB.2.02.1201261439460.1851@localhost6.localdomain6>
-References: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr> <7FE21149F4667147B645348EC605788508FBDB@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1201241828480.1779@localhost6.localdomain6> <20120124202203.GD1135@opensource.wolfsonmicro.com>
- <alpine.DEB.2.02.1201242144580.1998@hadrien> <20120126110506.GB2611@pengutronix.de> <alpine.DEB.2.02.1201261220460.1851@localhost6.localdomain6> <20120126112242.GA9401@opensource.wolfsonmicro.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 26 Jan 2012 08:40:43 -0500
+Date: Thu, 26 Jan 2012 05:40:18 -0800
+From: tip-bot for Jan Beulich <JBeulich@suse.com>
+Message-ID: <tip-5d7244e7c984cecead412bde6395ce18618a4a37@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, jbeulich@suse.com,
+        akpm@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <4F05D992020000780006AA09@nat28.tlf.novell.com>
+References: <4F05D992020000780006AA09@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86-64: Fix memset()
+  to support sizes of 4Gb and above
+Git-Commit-ID: 5d7244e7c984cecead412bde6395ce18618a4a37
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 05:40:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Commit-ID:  5d7244e7c984cecead412bde6395ce18618a4a37
+Gitweb:     http://git.kernel.org/tip/5d7244e7c984cecead412bde6395ce18618a4a37
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Thu, 5 Jan 2012 16:10:42 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 26 Jan 2012 11:50:04 +0100
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+x86-64: Fix memset() to support sizes of 4Gb and above
 
-By removing the need for kfree and iounmap, this also eliminates missing
-resource-release problems.
+While currently there doesn't appear to be any reachable in-tree
+case where such large memory blocks may be passed to memset()
+(alloc_bootmem() being the primary non-reachable one, as it gets
+called with suitably large sizes in FLATMEM configurations), we
+have recently hit the problem a second time in our Xen kernels.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Rather than working around it a second time, prevent others from
+falling into the same trap by fixing this long standing
+limitation.
 
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/4F05D992020000780006AA09@nat28.tlf.novell.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
-This is a patch against the version in
-git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
+ arch/x86/lib/memset_64.S |   33 +++++++++++++++------------------
+ 1 files changed, 15 insertions(+), 18 deletions(-)
 
-  sound/soc/mxs/mxs-saif.c |   47 ++++++++++++-----------------------------------
-  1 file changed, 12 insertions(+), 35 deletions(-)
-
-diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
---- a/sound/soc/mxs/mxs-saif.c
-+++ b/sound/soc/mxs/mxs-saif.c
-@@ -632,7 +632,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
-  			return ret;
-  	}
-
--	saif = kzalloc(sizeof(*saif), GFP_KERNEL);
-+	saif = devm_kzalloc(&pdev->dev, sizeof(*saif), GFP_KERNEL);
-  	if (!saif)
-  		return -ENOMEM;
-
-@@ -652,7 +652,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
-  		ret = PTR_ERR(saif->clk);
-  		dev_err(&pdev->dev, "Cannot get the clock: %d\n",
-  			ret);
--		goto failed_clk;
-+		return ret;
-  	}
-
-  	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -663,18 +663,11 @@ static int mxs_saif_probe(struct platform_device *pdev)
-  		goto failed_get_resource;
-  	}
-
--	if (!request_mem_region(iores->start, resource_size(iores),
--				"mxs-saif")) {
--		dev_err(&pdev->dev, "request_mem_region failed\n");
--		ret = -EBUSY;
--		goto failed_get_resource;
--	}
--
--	saif->base = ioremap(iores->start, resource_size(iores));
-+	saif->base = devm_request_and_ioremap(&pdev->dev, iores);
-  	if (!saif->base) {
--		dev_err(&pdev->dev, "ioremap failed\n");
-+		dev_err(&pdev->dev, "devm_request_and_ioremap failed\n");
-  		ret = -ENODEV;
--		goto failed_ioremap;
-+		goto failed_get_resource;
-  	}
-
-  	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-@@ -682,7 +675,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
-  		ret = -ENODEV;
-  		dev_err(&pdev->dev, "failed to get dma resource: %d\n",
-  			ret);
--		goto failed_ioremap;
-+		goto failed_get_resource;
-  	}
-  	saif->dma_param.chan_num = dmares->start;
-
-@@ -691,14 +684,15 @@ static int mxs_saif_probe(struct platform_device *pdev)
-  		ret = saif->irq;
-  		dev_err(&pdev->dev, "failed to get irq resource: %d\n",
-  			ret);
--		goto failed_get_irq1;
-+		goto failed_get_resource;
-  	}
-
-  	saif->dev = &pdev->dev;
--	ret = request_irq(saif->irq, mxs_saif_irq, 0, "mxs-saif", saif);
-+	ret = devm_request_irq(&pdev->dev, saif->irq, mxs_saif_irq, 0,
-+			       "mxs-saif", saif);
-  	if (ret) {
-  		dev_err(&pdev->dev, "failed to request irq\n");
--		goto failed_get_irq1;
-+		goto failed_get_resource;
-  	}
-
-  	saif->dma_param.chan_irq = platform_get_irq(pdev, 1);
-@@ -706,7 +700,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
-  		ret = saif->dma_param.chan_irq;
-  		dev_err(&pdev->dev, "failed to get dma irq resource: %d\n",
-  			ret);
--		goto failed_get_irq2;
-+		goto failed_get_resource;
-  	}
-
-  	platform_set_drvdata(pdev, saif);
-@@ -714,7 +708,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
-  	ret = snd_soc_register_dai(&pdev->dev, &mxs_saif_dai);
-  	if (ret) {
-  		dev_err(&pdev->dev, "register DAI failed\n");
--		goto failed_register;
-+		goto failed_get_resource;
-  	}
-
-  	saif->soc_platform_pdev = platform_device_alloc(
-@@ -737,36 +731,19 @@ failed_pdev_add:
-  	platform_device_put(saif->soc_platform_pdev);
-  failed_pdev_alloc:
-  	snd_soc_unregister_dai(&pdev->dev);
--failed_register:
--failed_get_irq2:
--	free_irq(saif->irq, saif);
--failed_get_irq1:
--	iounmap(saif->base);
--failed_ioremap:
--	release_mem_region(iores->start, resource_size(iores));
-  failed_get_resource:
-  	clk_put(saif->clk);
--failed_clk:
--	kfree(saif);
-
-  	return ret;
-  }
-
-  static int __devexit mxs_saif_remove(struct platform_device *pdev)
-  {
--	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-  	struct mxs_saif *saif = platform_get_drvdata(pdev);
-
-  	platform_device_unregister(saif->soc_platform_pdev);
--
-  	snd_soc_unregister_dai(&pdev->dev);
--
--	iounmap(saif->base);
--	release_mem_region(res->start, resource_size(res));
--	free_irq(saif->irq, saif);
--
-  	clk_put(saif->clk);
--	kfree(saif);
-
-  	return 0;
-  }
-
+diff --git a/arch/x86/lib/memset_64.S b/arch/x86/lib/memset_64.S
+index 79bd454..2dcb380 100644
+--- a/arch/x86/lib/memset_64.S
++++ b/arch/x86/lib/memset_64.S
+@@ -19,16 +19,15 @@
+ 	.section .altinstr_replacement, "ax", @progbits
+ .Lmemset_c:
+ 	movq %rdi,%r9
+-	movl %edx,%r8d
+-	andl $7,%r8d
+-	movl %edx,%ecx
+-	shrl $3,%ecx
++	movq %rdx,%rcx
++	andl $7,%edx
++	shrq $3,%rcx
+ 	/* expand byte value  */
+ 	movzbl %sil,%esi
+ 	movabs $0x0101010101010101,%rax
+-	mulq %rsi		/* with rax, clobbers rdx */
++	imulq %rsi,%rax
+ 	rep stosq
+-	movl %r8d,%ecx
++	movl %edx,%ecx
+ 	rep stosb
+ 	movq %r9,%rax
+ 	ret
+@@ -50,7 +49,7 @@
+ .Lmemset_c_e:
+ 	movq %rdi,%r9
+ 	movb %sil,%al
+-	movl %edx,%ecx
++	movq %rdx,%rcx
+ 	rep stosb
+ 	movq %r9,%rax
+ 	ret
+@@ -61,12 +60,11 @@ ENTRY(memset)
+ ENTRY(__memset)
+ 	CFI_STARTPROC
+ 	movq %rdi,%r10
+-	movq %rdx,%r11
+ 
+ 	/* expand byte value  */
+ 	movzbl %sil,%ecx
+ 	movabs $0x0101010101010101,%rax
+-	mul    %rcx		/* with rax, clobbers rdx */
++	imulq  %rcx,%rax
+ 
+ 	/* align dst */
+ 	movl  %edi,%r9d
+@@ -75,13 +73,13 @@ ENTRY(__memset)
+ 	CFI_REMEMBER_STATE
+ .Lafter_bad_alignment:
+ 
+-	movl %r11d,%ecx
+-	shrl $6,%ecx
++	movq  %rdx,%rcx
++	shrq  $6,%rcx
+ 	jz	 .Lhandle_tail
+ 
+ 	.p2align 4
+ .Lloop_64:
+-	decl   %ecx
++	decq  %rcx
+ 	movq  %rax,(%rdi)
+ 	movq  %rax,8(%rdi)
+ 	movq  %rax,16(%rdi)
+@@ -97,7 +95,7 @@ ENTRY(__memset)
+ 	   to predict jump tables. */
+ 	.p2align 4
+ .Lhandle_tail:
+-	movl	%r11d,%ecx
++	movl	%edx,%ecx
+ 	andl    $63&(~7),%ecx
+ 	jz 		.Lhandle_7
+ 	shrl	$3,%ecx
+@@ -109,12 +107,11 @@ ENTRY(__memset)
+ 	jnz    .Lloop_8
+ 
+ .Lhandle_7:
+-	movl	%r11d,%ecx
+-	andl	$7,%ecx
++	andl	$7,%edx
+ 	jz      .Lende
+ 	.p2align 4
+ .Lloop_1:
+-	decl    %ecx
++	decl    %edx
+ 	movb 	%al,(%rdi)
+ 	leaq	1(%rdi),%rdi
+ 	jnz     .Lloop_1
+@@ -125,13 +122,13 @@ ENTRY(__memset)
+ 
+ 	CFI_RESTORE_STATE
+ .Lbad_alignment:
+-	cmpq $7,%r11
++	cmpq $7,%rdx
+ 	jbe	.Lhandle_7
+ 	movq %rax,(%rdi)	/* unaligned store */
+ 	movq $8,%r8
+ 	subq %r9,%r8
+ 	addq %r8,%rdi
+-	subq %r8,%r11
++	subq %r8,%rdx
+ 	jmp .Lafter_bad_alignment
+ .Lfinal:
+ 	CFI_ENDPROC
