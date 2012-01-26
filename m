@@ -1,147 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab2AZU1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 15:27:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39661 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab2AZU1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 15:27:41 -0500
-Date: Thu, 26 Jan 2012 12:27:09 -0800
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-71325960d16cd68ea0e22a8da15b2495b0f363f7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, sergey.senozhatsky@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, sergey.senozhatsky@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1327026538.16150.40.camel@sbsiddha-desk.sc.intel.com>
-References: <1327026538.16150.40.camel@sbsiddha-desk.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/nohz:
-  Fix nohz cpu idle load balancing state with cpu hotplug
-Git-Commit-ID: 71325960d16cd68ea0e22a8da15b2495b0f363f7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753805Ab2AZUcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 15:32:09 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:55213 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443Ab2AZUcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 15:32:07 -0500
+Message-ID: <4F21B811.90904@parallels.com>
+Date: Fri, 27 Jan 2012 00:31:13 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 12:27:14 -0800 (PST)
+To: David Miller <davem@davemloft.net>
+CC: <geert@linux-m68k.org>, <rdunlap@xenotime.net>, <sfr@canb.auug.org.au>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gleb@redhat.com>, <netdev@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jan 25 (net/sock.h, jump_label, memcg)
+References: <20120125141938.c1a9460d56948e1c7b26d3f8@canb.auug.org.au> <4F2052DB.4060602@xenotime.net> <CAMuHMdWp1wEHqPXNs+kaMYpomJnfbZPJjRk5GVFCuCL4Q5zK7g@mail.gmail.com> <20120126.134333.31948964659222759.davem@davemloft.net>
+In-Reply-To: <20120126.134333.31948964659222759.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  71325960d16cd68ea0e22a8da15b2495b0f363f7
-Gitweb:     http://git.kernel.org/tip/71325960d16cd68ea0e22a8da15b2495b0f363f7
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Thu, 19 Jan 2012 18:28:57 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 26 Jan 2012 19:38:13 +0100
+On 01/26/2012 10:43 PM, David Miller wrote:
+> From: Geert Uytterhoeven<geert@linux-m68k.org>
+> Date: Thu, 26 Jan 2012 18:18:28 +0100
+>
+>> On Wed, Jan 25, 2012 at 20:07, Randy Dunlap<rdunlap@xenotime.net>  wrote:
+>>> back to net/sock.h and jump_label:
+>>>
+>>> (on i386:)
+>>>
+>>> /next/linux-next-20120125/include/net/sock.h:953:2: error: implicit declaration of function 'static_branch'
+>>> /next/linux-next-20120125/include/linux/jump_label.h:43:29: error: conflicting types for 'static_branch'
+>>>
+>>> Full randconfig file is attached.
+>>
+>> Without having to add randomness, also in m68k/allmodconfig, now in Linus'
+>> tree :-(
+>> http://kisskb.ellerman.id.au/kisskb/buildresult/5491860/
+>
+> Glauber are you actually going to fix this or are you going to ignore
+> this bug report for another couple days?!?!
+Dave,
 
-sched/nohz: Fix nohz cpu idle load balancing state with cpu hotplug
+I am going to work on it right now, with no further delays, as I've been 
+doing with all the reports I've got. I didn't receive any report
+about this one for some reason, and that's why I didn't say anything.
+So thanks for nagging.
 
-With the recent nohz scheduler changes, rq's nohz flag
-'NOHZ_TICK_STOPPED' and its associated state doesn't get cleared
-immediately after the cpu exits idle. This gets cleared as part
-of the next tick seen on that cpu.
+>
+> Frankly, I'm so sick and tired of all of these socket mem cgroup
+> regressions, this is way out of control and every "fix" seems to add
+> more build or runtime regressions.
+>
+> Glauber, this has to stabilize soon or I will revert every single one
+> of your changes, and it will take a nuclear war and a multi-month
+> audit of your code to get those changes into the tree again.
 
-For the cpu offline support, we need to clear this state
-manually. Fix it by registering a cpu notifier, which clears the
-nohz idle load balance state for this rq explicitly during the
-CPU_DYING notification.
+So for the normal scenarios with my code disabled, aside for one problem 
+in day1, all of the failures were build problems.
 
-There won't be any nohz updates for that cpu, after the
-CPU_DYING notification. But lets be extra paranoid and skip
-updating the nohz state in the select_nohz_load_balancer() if
-the cpu is not in active state anymore.
+To be quite honest, the interactions between configs are being quite 
+"funny", and spanning more problems than I anticipated.
 
-Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Reviewed-and-tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1327026538.16150.40.camel@sbsiddha-desk.sc.intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched/fair.c |   34 +++++++++++++++++++++++++++++-----
- 1 files changed, 29 insertions(+), 5 deletions(-)
+What I am doing here, is building the patches against a couple of 
+randconfigs, and some more targeted ones before I send them to you.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 84adb2d..7c6414f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4866,6 +4866,15 @@ static void nohz_balancer_kick(int cpu)
- 	return;
- }
- 
-+static inline void clear_nohz_tick_stopped(int cpu)
-+{
-+	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
-+		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
-+		atomic_dec(&nohz.nr_cpus);
-+		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
-+	}
-+}
-+
- static inline void set_cpu_sd_state_busy(void)
- {
- 	struct sched_domain *sd;
-@@ -4904,6 +4913,12 @@ void select_nohz_load_balancer(int stop_tick)
- {
- 	int cpu = smp_processor_id();
- 
-+	/*
-+	 * If this cpu is going down, then nothing needs to be done.
-+	 */
-+	if (!cpu_active(cpu))
-+		return;
-+
- 	if (stop_tick) {
- 		if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
- 			return;
-@@ -4914,6 +4929,18 @@ void select_nohz_load_balancer(int stop_tick)
- 	}
- 	return;
- }
-+
-+static int __cpuinit sched_ilb_notifier(struct notifier_block *nfb,
-+					unsigned long action, void *hcpu)
-+{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_DYING:
-+		clear_nohz_tick_stopped(smp_processor_id());
-+		return NOTIFY_OK;
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+}
- #endif
- 
- static DEFINE_SPINLOCK(balancing);
-@@ -5070,11 +5097,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 	* busy tick after returning from idle, we will update the busy stats.
- 	*/
- 	set_cpu_sd_state_busy();
--	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
--		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
--		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
--		atomic_dec(&nohz.nr_cpus);
--	}
-+	clear_nohz_tick_stopped(cpu);
- 
- 	/*
- 	 * None are in tickless mode and hence no need for NOHZ idle load
-@@ -5590,6 +5613,7 @@ __init void init_sched_fair_class(void)
- 
- #ifdef CONFIG_NO_HZ
- 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
-+	cpu_notifier(sched_ilb_notifier, 0);
- #endif
- #endif /* SMP */
- 
+If you have any other advise on how to handle this, I'd be happy to take 
+them.
+
+On the specifics of this bug, I verified this config compiles okay in 
+your tree + my patches at the day I last sent them. I also verified it 
+breaks on the tree today.
+
+The reason seems to be that some other patch tweaked with the header 
+files in an unrelated patch, and the static_branch definition that was 
+getting to us in sock.h, is no longer getting there.
+
+Including it explicitly fixes it here. I will again pass through a 
+battery of randconfigs on my own, and send you a fix.
+
+Sorry again for the trouble.
