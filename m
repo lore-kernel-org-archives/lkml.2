@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab2AZRSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:18:31 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56949 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab2AZRSa convert rfc822-to-8bit (ORCPT
+	id S1753097Ab2AZRXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:23:14 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:59288 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab2AZRXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:18:30 -0500
+	Thu, 26 Jan 2012 12:23:12 -0500
+Message-ID: <4F218BF1.6050303@linux.vnet.ibm.com>
+Date: Thu, 26 Jan 2012 22:52:57 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <4F2052DB.4060602@xenotime.net>
-References: <20120125141938.c1a9460d56948e1c7b26d3f8@canb.auug.org.au>
-	<4F2052DB.4060602@xenotime.net>
-Date: Thu, 26 Jan 2012 18:18:28 +0100
-X-Google-Sender-Auth: miduRyICJJMKZgyeGAQFxaYAPtA
-Message-ID: <CAMuHMdWp1wEHqPXNs+kaMYpomJnfbZPJjRk5GVFCuCL4Q5zK7g@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 25 (net/sock.h, jump_label, memcg)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Venkatesh Pallipadi <venki@google.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+ -v4
+References: <CABeCy1ZA1nkWSmbN2LE+V1SxKEHX4XrpN5xfdzY=NSsS8=L0DA@mail.gmail.com> <1327447541-3040-1-git-send-email-venki@google.com>
+In-Reply-To: <1327447541-3040-1-git-send-email-venki@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12012607-5490-0000-0000-0000009F5358
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 20:07, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> back to net/sock.h and jump_label:
->
-> (on i386:)
->
-> /next/linux-next-20120125/include/net/sock.h:953:2: error: implicit declaration of function 'static_branch'
-> /next/linux-next-20120125/include/linux/jump_label.h:43:29: error: conflicting types for 'static_branch'
->
-> Full randconfig file is attached.
+On 01/25/2012 04:55 AM, Venkatesh Pallipadi wrote:
 
-Without having to add randomness, also in m68k/allmodconfig, now in Linus'
-tree :-(
-http://kisskb.ellerman.id.au/kisskb/buildresult/5491860/
+> Kernel's notion of possible cpus (from include/linux/cpumask.h)
+>  *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
+> 
+>  *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
+>  *  that it is possible might ever be plugged in at anytime during the
+>  *  life of that system boot.
+> 
+>  #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
+> 
+> and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
+> and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
+> 
+> i.e, We needlessly go through this mask based calculation everytime
+> num_possible_cpus() is called.
+> 
+> The problem is there with cpu_online_mask() as well, which is fixed value at
+> boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
+> in HOTPLUG case.
+> 
+> Though most of the callers of these two routines are init time (with few
+> exceptions of runtime calls), it is cleaner to use variables
+> and not go through this repeated mask based calculation.
+> 
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+> ---
 
-Gr{oetje,eeting}s,
 
-                        Geert
+Looks good to me now :-)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Regards,
+Srivatsa S. Bhat
+
