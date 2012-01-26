@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab2AZP2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:28:04 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:33628 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab2AZP2D (ORCPT
+	id S1752661Ab2AZPb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:31:26 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:48645 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752004Ab2AZPbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 10:28:03 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Date: Thu, 26 Jan 2012 16:28:00 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH v2 2/2] regulator: add device tree support for max8997
-In-reply-to: <20120125133254.GJ3687@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org,
-        rpurdie@rpsys.net, rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        kgene.kim@samsung.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, dg77.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Message-id: <4F217100.6020105@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
- <1326353738-26864-3-git-send-email-thomas.abraham@linaro.org>
- <4F1FD1A5.1060305@samsung.com>
- <20120125112602.GB2991@opensource.wolfsonmicro.com>
- <4F1FEF55.8030604@samsung.com>
- <20120125133254.GJ3687@opensource.wolfsonmicro.com>
+	Thu, 26 Jan 2012 10:31:25 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: KVRJ7ocVM1lA65D37RZYAgtdAFokZBJPuDv_MTKvJCV.mvr
+ iuWqZ8UJKQsjSmZgNTAjOL6hxqwXk5_dKa32MS9ek1mbhRXM1fnIa7mGOnBJ
+ 4pKBMUQDr_87Z0FNIlZ5ds9GpGwK39u5vY5_6NCnq.2tNTCAGWtEJ6eq_t5x
+ 9lJrMaA_mz0ZS5TtnLEMrlQOFJ.sJk1bivZQTiQH5BJxX05RO6MsSbHjNYJ5
+ QgUV.hUvUTAuqvd_MVIc8SASWCDU9AZQGt1Dr8vhpVk2RLJboDijuJdbKjLW
+ tGNcdEdIiEejlco3TDSyY49Cyi7LoGrs.hGXv.VAOAbJWMMo9Z4S9tB3mItP
+ jmQw7xotzU2aimHqDa.WF95nnKNXKbxXAqDTVXURI8EzP4boulS6D2_Foc9W
+ TVETX
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 26 Jan 2012 09:09:47 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.org>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 5/8] slub: only IPI CPUs that have per cpu obj to flush
+In-Reply-To: <1327572121-13673-6-git-send-email-gilad@benyossef.com>
+Message-ID: <alpine.DEB.2.00.1201260909190.23426@router.home>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327572121-13673-6-git-send-email-gilad@benyossef.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.01.2012 14:32, Mark Brown wrote:
-> On Wed, Jan 25, 2012 at 01:02:29PM +0100, Karol Lewandowski wrote:
->> On 25.01.2012 12:26, Mark Brown wrote:
->
->> However, I still find it little problematic that dt and non-dt
->> versions behave differently when given the same set of parameters
->> (previously apply_uV wasn't the default and required explicit flag).
->
-> Well, they're different things.  Device tree isn't Linux specific at
-> all.
+On Thu, 26 Jan 2012, Gilad Ben-Yossef wrote:
 
-There is no official platform-agnostic regulator API, nor DT-bindings
-document I'm aware of.  Thus, I don't see why, while transitioning to
-DT, should we lose ability to describe certain hardware configurations.
+> produces 166 IPIs on an cpuset isolated CPU. With it it produces none.
 
-On 25.01.2012 12:22, Mark Brown wrote:
- > The big problem there seems like specifying voltages in the first
- > place, if we know what device it is we should already know what's
- > going on.
+Acked-by: Christoph Lameter <cl@linux.com>
 
-Driver which handles said regulator might know what's going on, but
-that might not be case for its consumers.  Should we limit ability to
-query given parameter just because its value is hardcoded in hardware?
-
-
-My understanding of this whole device tree effort was to provide
-ability to describe hardware properties which can't be queried from
-hardware itself.
-
-Consequently, if it's property of hardware that it provides fixed
-voltage somewhere shouldn't it be possible to describe this fact
-in DT?
-
-If device tree isn't good place for it then which one is?
-
-Regards,
--- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
