@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2AZPwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:52:17 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:62374 "EHLO mail.gnudd.com"
+	id S1752925Ab2AZPxO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:53:14 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:62378 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752889Ab2AZPwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 10:52:13 -0500
-Date: Thu, 26 Jan 2012 16:52:02 +0100
+	id S1752892Ab2AZPxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 10:53:07 -0500
+Date: Thu, 26 Jan 2012 16:52:55 +0100
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
-Cc: giancarlo.asnaghi@st.com, alan@linux.intel.com, sameo@linux.intel.com
-Subject: [RFC PATCH 1/2] mfd: Add driver for STA2X11 MFD block
-Message-ID: <8323484b491b0d0522b757a8276053d835ca0067.1327592191.git.rubini@gnudd.com>
+Cc: giancarlo.asnaghi@st.com, alan@linux.intel.com, grant.likely@secretlab.ca,
+        linus.walleij@stericsson.com
+Subject: [RFC PATCH 2/2] gpio: add STA2X11 GPIO block
+Message-ID: <2db596c8eca4631b51945d817347553d6ec10b57.1327592191.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,57 +23,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an RFC as described in the cover letter 0/2
+This introduces 128 gpio bits (for each device) and with interrupt support.
+It is tested and working, but it's still an RFC.
+
+It still misses the alternate-function and pull-up/pull-down support.
+I don't know if it should be a different patch or merged in this the
+next time I submit.
+
+Moreover, this is an RFC as described in the cover letter 0/2
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 ---
- drivers/mfd/Kconfig             |    6 +
- drivers/mfd/Makefile            |    1 +
- drivers/mfd/sta2x11-mfd.c       |  470 +++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/sta2x11-mfd.h |  186 +++++++++++++++
- 4 files changed, 663 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/sta2x11-mfd.c
- create mode 100644 include/linux/mfd/sta2x11-mfd.h
+ drivers/gpio/Kconfig        |    9 +
+ drivers/gpio/Makefile       |    1 +
+ drivers/gpio/gpio-sta2x11.c |  380 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 390 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/gpio-sta2x11.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index cd13e9f..36bee4a 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -830,6 +830,12 @@ config MFD_INTEL_MSIC
- 	  Passage) chip. This chip embeds audio, battery, GPIO, etc.
- 	  devices used in Intel Medfield platforms.
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index d0c4118..fab6ca7 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -149,6 +149,14 @@ config GPIO_PXA
+ 	help
+ 	  Say yes here to support the PXA GPIO device
  
-+config MFD_STA2X11
-+	bool "STA2X11 multi function device support"
-+	depends on STA2X11
-+	select MFD_CORE
-+	select GPIO_STA2X11
++config GPIO_STA2X11
++	bool "STA2x11/ConneXt GPIO support"
++	depends on MFD_STA2X11
++	select GENERIC_IRQ_CHIP
++	help
++	  Say yes here to support the STA2x11/ConneXt GPIO device.
++	  The GPIO module has 128 GPIO pins with alternate functions.
 +
- endmenu
+ config GPIO_XILINX
+ 	bool "Xilinx GPIO support"
+ 	depends on PPC_OF || MICROBLAZE
+@@ -489,4 +497,5 @@ config GPIO_TPS65910
+ 	help
+ 	  Select this option to enable GPIO driver for the TPS65910
+ 	  chip family.
++
  endif
- 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index b953bab..c5db71b 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -15,6 +15,7 @@ obj-$(CONFIG_MFD_DAVINCI_VOICECODEC)	+= davinci_voicecodec.o
- obj-$(CONFIG_MFD_DM355EVM_MSP)	+= dm355evm_msp.o
- obj-$(CONFIG_MFD_TI_SSP)	+= ti-ssp.o
- 
-+obj-$(CONFIG_MFD_STA2X11)	+= sta2x11-mfd.o
- obj-$(CONFIG_MFD_STMPE)		+= stmpe.o
- obj-$(CONFIG_STMPE_I2C)		+= stmpe-i2c.o
- obj-$(CONFIG_STMPE_SPI)		+= stmpe-spi.o
-diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index fa10df6..81a28cf 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -45,6 +45,7 @@ obj-$(CONFIG_GPIO_RDC321X)	+= gpio-rdc321x.o
+ obj-$(CONFIG_PLAT_SAMSUNG)	+= gpio-samsung.o
+ obj-$(CONFIG_ARCH_SA1100)	+= gpio-sa1100.o
+ obj-$(CONFIG_GPIO_SCH)		+= gpio-sch.o
++obj-$(CONFIG_GPIO_STA2X11)	+= gpio-sta2x11.o
+ obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
+ obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
+ obj-$(CONFIG_GPIO_TC3589X)	+= gpio-tc3589x.o
+diff --git a/drivers/gpio/gpio-sta2x11.c b/drivers/gpio/gpio-sta2x11.c
 new file mode 100644
-index 0000000..3446f02
+index 0000000..377dcb1
 --- /dev/null
-+++ b/drivers/mfd/sta2x11-mfd.c
-@@ -0,0 +1,470 @@
++++ b/drivers/gpio/gpio-sta2x11.c
+@@ -0,0 +1,380 @@
 +/*
-+ * Copyright (c) 2009-2011 Wind River Systems, Inc.
-+ * Copyright (c) 2011 ST Microelectronics (Alessandro Rubini)
++ * STMicroelectronics ConneXt (STA2X11) GPIO driver
++ *
++ * Copyright 2012 ST Microelectronics (Alessandro Rubini)
++ * Based on gpio-ml-ioh.c, Copyright 2010 OKI Semiconductors Ltd.
++ * Also based on previous sta2x11 work, Copyright 2011 Wind River Systems, Inc.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -89,648 +106,363 @@ index 0000000..3446f02
 + *
 + */
 +
-+#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/spinlock.h>
-+#include <linux/errno.h>
-+#include <linux/device.h>
++#include <linux/kernel.h>
 +#include <linux/slab.h>
-+#include <linux/list.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
++#include <linux/gpio.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
 +#include <linux/pci.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
 +#include <linux/platform_device.h>
-+#include <linux/mfd/core.h>
 +#include <linux/mfd/sta2x11-mfd.h>
 +
-+#include <asm/sta2x11.h>
-+
-+/* This describes STA2X11 MFD chip for us, we may have several */
-+struct sta2x11_mfd {
-+	struct sta2x11_instance *instance;
-+	spinlock_t lock;
-+	struct list_head list;
-+	void __iomem *sctl_regs;
-+	void __iomem *apbreg_regs;
++struct gsta_regs {
++	u32 dat;		/* 0x00 */
++	u32 dats;
++	u32 datc;
++	u32 pdis;
++	u32 dir;		/* 0x10 */
++	u32 dirs;
++	u32 dirc;
++	u32 unused_1c;
++	u32 afsela;		/* 0x20 */
++	u32 unused_24[7];
++	u32 rimsc;		/* 0x40 */
++	u32 fimsc;
++	u32 is;
++	u32 ic;
 +};
 +
-+static LIST_HEAD(sta2x11_mfd_list);
-+
-+/* Three functions to act on the list */
-+static struct sta2x11_mfd *sta2x11_mfd_find(struct pci_dev *pdev)
-+{
-+	struct sta2x11_instance *instance;
-+	struct sta2x11_mfd *mfd;
-+
-+	if (!pdev && !list_empty(&sta2x11_mfd_list)) {
-+		dev_warn(&pdev->dev, "%s: Unspecified device, "
-+			    "using first instance\n", __func__);
-+		return list_entry(sta2x11_mfd_list.next,
-+				  struct sta2x11_mfd, list);
-+	}
-+
-+	instance = sta2x11_get_instance(pdev);
-+	if (!instance)
-+		return NULL;
-+	list_for_each_entry(mfd, &sta2x11_mfd_list, list) {
-+		if (mfd->instance == instance)
-+			return mfd;
-+	}
-+	return NULL;
-+}
-+
-+static int __devinit sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
-+{
-+	struct sta2x11_mfd *mfd = sta2x11_mfd_find(pdev);
-+	struct sta2x11_instance *instance;
-+
-+	if (mfd)
-+		return -EBUSY;
-+	instance = sta2x11_get_instance(pdev);
-+	if (!instance)
-+		return -EINVAL;
-+	mfd = kzalloc(sizeof(*mfd), flags);
-+	if (!mfd)
-+		return -ENOMEM;
-+	INIT_LIST_HEAD(&mfd->list);
-+	spin_lock_init(&mfd->lock);
-+	mfd->instance = instance;
-+	list_add(&mfd->list, &sta2x11_mfd_list);
-+	return 0;
-+}
-+
-+static int __devexit mfd_remove(struct pci_dev *pdev)
-+{
-+	struct sta2x11_mfd *mfd = sta2x11_mfd_find(pdev);
-+
-+	if (!mfd)
-+		return -ENODEV;
-+	list_del(&mfd->list);
-+	kfree(mfd);
-+	return 0;
-+}
-+
-+/* These two functions are exported and are not expected to fail */
-+u32 sta2x11_sctl_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val)
-+{
-+	struct sta2x11_mfd *mfd = sta2x11_mfd_find(pdev);
-+	u32 r;
-+	unsigned long flags;
-+
-+	if (!mfd) {
-+		dev_warn(&pdev->dev, ": can't access sctl regs\n");
-+		return 0;
-+	}
-+	if (!mfd->sctl_regs) {
-+		dev_warn(&pdev->dev, ": system ctl not initialized\n");
-+		return 0;
-+	}
-+	spin_lock_irqsave(&mfd->lock, flags);
-+	r = readl(mfd->sctl_regs + reg);
-+	r &= ~mask;
-+	r |= val;
-+	if (mask)
-+		writel(r, mfd->sctl_regs + reg);
-+	spin_unlock_irqrestore(&mfd->lock, flags);
-+	return r;
-+}
-+EXPORT_SYMBOL(sta2x11_sctl_mask);
-+
-+u32 sta2x11_apbreg_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val)
-+{
-+	struct sta2x11_mfd *mfd = sta2x11_mfd_find(pdev);
-+	u32 r;
-+	unsigned long flags;
-+
-+	if (!mfd) {
-+		dev_warn(&pdev->dev, ": can't access apb regs\n");
-+		return 0;
-+	}
-+	if (!mfd->apbreg_regs) {
-+		dev_warn(&pdev->dev, ": apb bridge not initialized\n");
-+		return 0;
-+	}
-+	spin_lock_irqsave(&mfd->lock, flags);
-+	r = readl(mfd->apbreg_regs + reg);
-+	r &= ~mask;
-+	r |= val;
-+	if (mask)
-+		writel(r, mfd->apbreg_regs + reg);
-+	spin_unlock_irqrestore(&mfd->lock, flags);
-+	return r;
-+}
-+EXPORT_SYMBOL(sta2x11_apbreg_mask);
-+
-+/* Two debugfs files, for our registers (FIXME: one instance only) */
-+#define REG(regname) {.name = #regname, .offset = SCTL_ ## regname}
-+static struct debugfs_reg32 sta2x11_sctl_regs[] = {
-+	REG(SCCTL), REG(ARMCFG), REG(SCPLLCTL), REG(SCPLLFCTRL),
-+	REG(SCRESFRACT), REG(SCRESCTRL1), REG(SCRESXTRL2), REG(SCPEREN0),
-+	REG(SCPEREN1), REG(SCPEREN2), REG(SCGRST), REG(SCPCIPMCR1),
-+	REG(SCPCIPMCR2), REG(SCPCIPMSR1), REG(SCPCIPMSR2), REG(SCPCIPMSR3),
-+	REG(SCINTREN), REG(SCRISR), REG(SCCLKSTAT0), REG(SCCLKSTAT1),
-+	REG(SCCLKSTAT2), REG(SCRSTSTA),
-+};
-+#undef REG
-+
-+static struct debugfs_regset32 sctl_regset = {
-+	.regs = sta2x11_sctl_regs,
-+	.nregs = ARRAY_SIZE(sta2x11_sctl_regs),
++struct gsta_gpio {
++	spinlock_t		lock;
++	struct device		*dev;
++	void __iomem		*reg_base;
++	struct gsta_regs	*regs[GSTA_NR_BLOCKS];
++	struct gpio_chip	gpio;
++	int			irq_base;
++	/* FIXME: save the whole config here (AF, ...) */
++	unsigned		irq_type[GSTA_NR_GPIO];
 +};
 +
-+#define REG(regname) {.name = #regname, .offset = regname}
-+static struct debugfs_reg32 sta2x11_apbreg_regs[] = {
-+	REG(APBREG_BSR), REG(APBREG_PAER), REG(APBREG_PWAC), REG(APBREG_PRAC),
-+	REG(APBREG_PCG), REG(APBREG_PUR), REG(APBREG_EMU_PCG),
-+};
-+#undef REG
-+
-+static struct debugfs_regset32 apbreg_regset = {
-+	.regs = sta2x11_apbreg_regs,
-+	.nregs = ARRAY_SIZE(sta2x11_apbreg_regs),
-+};
-+
-+static struct dentry *sta2x11_sctl_debugfs;
-+static struct dentry *sta2x11_apbreg_debugfs;
-+
-+/* Probe for the two platform devices */
-+static int sta2x11_sctl_probe(struct platform_device *dev)
++static inline struct gsta_regs __iomem *__regs(struct gsta_gpio *chip, int nr)
 +{
-+	struct pci_dev **pdev;
-+	struct sta2x11_mfd *mfd;
-+	struct resource *res;
-+
-+	pdev = dev->dev.platform_data;
-+	mfd = sta2x11_mfd_find(*pdev);
-+	if (!mfd)
-+		return -ENODEV;
-+
-+	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENOMEM;
-+
-+	if (!request_mem_region(res->start, resource_size(res),
-+				"sta2x11-sctl"))
-+		return -EBUSY;
-+
-+	mfd->sctl_regs = ioremap(res->start, resource_size(res));
-+	if (!mfd->sctl_regs) {
-+		release_mem_region(res->start, resource_size(res));
-+		return -ENOMEM;
-+	}
-+	sctl_regset.base = mfd->sctl_regs;
-+	sta2x11_sctl_debugfs = debugfs_create_regset32("sta2x11-sctl",
-+						  S_IFREG | S_IRUGO,
-+						  NULL, &sctl_regset);
-+	return 0;
++	return chip->regs[nr / GSTA_GPIO_PER_BLOCK];
 +}
 +
-+static int sta2x11_apbreg_probe(struct platform_device *dev)
++static inline u32 __bit(int nr)
 +{
-+	struct pci_dev **pdev;
-+	struct sta2x11_mfd *mfd;
-+	struct resource *res;
-+
-+	pdev = dev->dev.platform_data;
-+	dev_dbg(&dev->dev, "%s: pdata is %p\n", __func__, pdev);
-+	dev_dbg(&dev->dev, "%s: *pdata is %p\n", __func__, *pdev);
-+
-+	mfd = sta2x11_mfd_find(*pdev);
-+	if (!mfd)
-+		return -ENODEV;
-+
-+	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENOMEM;
-+
-+	if (!request_mem_region(res->start, resource_size(res),
-+				"sta2x11-apbreg"))
-+		return -EBUSY;
-+
-+	mfd->apbreg_regs = ioremap(res->start, resource_size(res));
-+	if (!mfd->apbreg_regs) {
-+		release_mem_region(res->start, resource_size(res));
-+		return -ENOMEM;
-+	}
-+	dev_dbg(&dev->dev, "%s: regbase %p\n", __func__, mfd->apbreg_regs);
-+
-+	apbreg_regset.base = mfd->apbreg_regs;
-+	sta2x11_apbreg_debugfs = debugfs_create_regset32("sta2x11-apbreg",
-+						  S_IFREG | S_IRUGO,
-+						  NULL, &apbreg_regset);
-+	return 0;
-+}
-+
-+/* The two platform drivers */
-+static struct platform_driver sta2x11_sctl_platform_driver = {
-+	.driver = {
-+		.name	= "sta2x11-sctl",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= sta2x11_sctl_probe,
-+};
-+
-+static int __init sta2x11_sctl_init(void)
-+{
-+	pr_info("%s\n", __func__);
-+	return platform_driver_register(&sta2x11_sctl_platform_driver);
-+}
-+
-+static struct platform_driver sta2x11_platform_driver = {
-+	.driver = {
-+		.name	= "sta2x11-apbreg",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= sta2x11_apbreg_probe,
-+};
-+
-+static int __init sta2x11_apbreg_init(void)
-+{
-+	pr_info("%s\n", __func__);
-+	return platform_driver_register(&sta2x11_platform_driver);
++	return 1U << (nr % GSTA_GPIO_PER_BLOCK);
 +}
 +
 +/*
-+ * What follows is the PCI device that hosts the above two pdevs.
-+ * Each logic block is 4kB and they are all consecutive: we use this info.
++ * gpio methods
 + */
 +
-+/* Bar 0 */
-+enum bar0_cells {
-+	GPIO_0 = 0,
-+	GPIO_1,
-+	GPIO_2,
-+	GPIO_3,
-+	SCTL,
-+	SCR,
-+	TIME,
-+};
-+/* Bar 1 */
-+enum bar1_cells {
-+	APBREG = 0,
-+};
-+#define CELL_4K(_name, _cell) { \
-+		.name = _name, \
-+		.start = _cell * 4096, .end = _cell * 4096 + 4095, \
-+		.flags = IORESOURCE_MEM, \
++static void gsta_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
++{
++	struct gsta_gpio *chip = container_of(gpio, struct gsta_gpio, gpio);
++	struct gsta_regs __iomem *regs = __regs(chip, nr);
++	u32 bit = __bit(nr);
++
++	if (val)
++		writel(bit, &regs->dats);
++	else
++		writel(bit, &regs->datc);
++}
++
++static int gsta_gpio_get(struct gpio_chip *gpio, unsigned nr)
++{
++	struct gsta_gpio *chip = container_of(gpio, struct gsta_gpio, gpio);
++	struct gsta_regs __iomem *regs = __regs(chip, nr);
++	u32 bit = __bit(nr);
++
++	return readl(&regs->dat) & bit;
++}
++
++static int gsta_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
++				      int val)
++{
++	struct gsta_gpio *chip = container_of(gpio, struct gsta_gpio, gpio);
++	struct gsta_regs __iomem *regs = __regs(chip, nr);
++	u32 bit = __bit(nr);
++
++	writel(bit, &regs->dirs);
++	/* Data register after direction, otherwise pullup/down is selected */
++	if (val)
++		writel(bit, &regs->dats);
++	else
++		writel(bit, &regs->datc);
++	return 0;
++}
++
++static int gsta_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
++{
++	struct gsta_gpio *chip = container_of(gpio, struct gsta_gpio, gpio);
++	struct gsta_regs __iomem *regs = __regs(chip, nr);
++	u32 bit = __bit(nr);
++
++	writel(bit, &regs->dirc);
++	return 0;
++}
++
++static int gsta_gpio_to_irq(struct gpio_chip *gpio, unsigned offset)
++{
++	struct gsta_gpio *chip = container_of(gpio, struct gsta_gpio, gpio);
++	return chip->irq_base + offset;
++}
++
++static void gsta_gpio_setup(struct gsta_gpio *chip) /* called from probe */
++{
++	struct gpio_chip *gpio = &chip->gpio;
++
++	/*
++	 * ARCH_NR_GPIOS is currently 256 and dynamic allocation starts
++	 * from the end. However, for compatiility, we need the first
++	 * ConneXt device to start from gpio 0, because it's the main
++	 * chipset on most boards both documents and drivers assume that.
++	 */
++	static int gpio_base;
++
++	gpio->label = dev_name(chip->dev);
++	gpio->owner = THIS_MODULE;
++	gpio->direction_input = gsta_gpio_direction_input;
++	gpio->get = gsta_gpio_get;
++	gpio->direction_output = gsta_gpio_direction_output;
++	gpio->set = gsta_gpio_set;
++	gpio->dbg_show = NULL;
++	gpio->base = gpio_base;
++	gpio->base = 0;
++	gpio->ngpio = GSTA_NR_GPIO;
++	gpio->can_sleep = 0;
++	gpio->to_irq = gsta_gpio_to_irq;
++
++
++	/*
++	 * After the first device, turn to dynamic gpio numbers.
++	 * With ARCH_NR_GPIOS = 256 we can fit for example two steval cards
++	 */
++	if (!gpio_base)
++		gpio_base = 1;
++}
++
++/*
++ * Special methods: alternate functins and pullup/pulldown
++ */
++
++/* FIXME */
++
++/*
++ * Irq methods
++ */
++
++static void gsta_irq_disable(struct irq_data *data)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
++	struct gsta_gpio *chip = gc->private;
++	int nr = data->irq - chip->irq_base;
++	struct gsta_regs __iomem *regs = __regs(chip, nr);
++	u32 bit = __bit(nr);
++	u32 val;
++	unsigned long flags;
++
++	spin_lock_irqsave(&chip->lock, flags);
++	if (chip->irq_type[nr] & IRQ_TYPE_EDGE_RISING) {
++		val = readl(&regs->rimsc) & ~bit;
++		writel(val, &regs->rimsc);
++	}
++	if (chip->irq_type[nr] & IRQ_TYPE_EDGE_FALLING) {
++		val = readl(&regs->fimsc) & ~bit;
++		writel(val, &regs->fimsc);
++	}
++	return;
++}
++
++static void gsta_irq_enable(struct irq_data *data)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
++	struct gsta_gpio *chip = gc->private;
++	int nr = data->irq - chip->irq_base;
++	struct gsta_regs __iomem *regs = __regs(chip, nr);
++	u32 bit = __bit(nr);
++	u32 val;
++	int type;
++	unsigned long flags;
++
++	type = chip->irq_type[nr];
++
++	spin_lock_irqsave(&chip->lock, flags);
++	val = readl(&regs->rimsc);
++	if (type & IRQ_TYPE_EDGE_RISING)
++		writel(val | bit, &regs->rimsc);
++	else
++		writel(val & ~bit, &regs->rimsc);
++	val = readl(&regs->rimsc);
++	if (type & IRQ_TYPE_EDGE_FALLING)
++		writel(val | bit, &regs->fimsc);
++	else
++		writel(val & ~bit, &regs->fimsc);
++	spin_unlock_irqrestore(&chip->lock, flags);
++	return;
++}
++
++static int gsta_irq_type(struct irq_data *d, unsigned int type)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct gsta_gpio *chip = gc->private;
++	int nr = d->irq - chip->irq_base;
++
++	/* We only support edge interrupts */
++	if (!(type & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING))) {
++		pr_debug("%s: unsupported type 0x%x\n", __func__, type);
++		return -EINVAL;
++	}
++
++	chip->irq_type[nr] = type; /* used for enable/disable */
++
++	gsta_irq_enable(d);
++	return 0;
++}
++
++static irqreturn_t gsta_gpio_handler(int irq, void *dev_id)
++{
++	struct gsta_gpio *chip = dev_id;
++	struct gsta_regs __iomem *regs;
++	u32 is;
++	int i, nr, base;
++	irqreturn_t ret = IRQ_NONE;
++
++	for (i = 0; i < GSTA_NR_BLOCKS; i++) {
++		regs = chip->regs[i];
++		base = chip->irq_base + i * GSTA_GPIO_PER_BLOCK;
++		while ((is = readl(&regs->is))) {
++			nr = __ffs(is);
++			irq = base + nr;
++			generic_handle_irq(irq);
++			writel(1 << nr, &regs->ic);
++			ret = IRQ_HANDLED;
 +		}
++	}
++	return ret;
++}
 +
-+static const __devinitconst struct resource gpio_resources[] = {
++static __devinit void gsta_alloc_irq_chip(struct gsta_gpio *chip)
++{
++	struct irq_chip_generic *gc;
++	struct irq_chip_type *ct;
++
++	gc = irq_alloc_generic_chip(KBUILD_MODNAME, 1, chip->irq_base,
++				     chip->reg_base, handle_simple_irq);
++	gc->private = chip;
++	ct = gc->chip_types;
++
++	ct->chip.irq_set_type = gsta_irq_type;
++	ct->chip.irq_disable = gsta_irq_disable;
++	ct->chip.irq_enable = gsta_irq_enable;
++
++	/* FIXME: this makes at most 32 interrupts. Request 0 by now */
++	irq_setup_generic_chip(gc, 0 /* IRQ_MSK(GSTA_GPIO_PER_BLOCK) */, 0,
++			       IRQ_NOREQUEST | IRQ_NOPROBE, 0);
++
++	/* Set up all all 128 interrupts: code from setup_generic_chip */
 +	{
-+		.name = "sta2x11_gpio", /* 4 consecutive cells, 1 driver */
-+		.start = 0,
-+		.end = (4 * 4096) - 1,
-+		.flags = IORESOURCE_MEM,
++		struct irq_chip_type *ct = gc->chip_types;
++		int i, j;
++		for (j = 0; j < GSTA_NR_GPIO; j++) {
++			i = chip->irq_base + j;
++			irq_set_chip_and_handler(i, &ct->chip, ct->handler);
++			irq_set_chip_data(i, gc);
++			irq_modify_status(i, IRQ_NOREQUEST | IRQ_NOPROBE, 0);
++		}
++		gc->irq_cnt = i - gc->irq_base;
 +	}
-+};
-+static const __devinitconst struct resource sctl_resources[] = {
-+	CELL_4K("sta2x11-sctl", SCTL),
-+};
-+static const __devinitconst struct resource scr_resources[] = {
-+	CELL_4K("sta2x11-scr", SCR),
-+};
-+static const __devinitconst struct resource time_resources[] = {
-+	CELL_4K("sta2x11-time", TIME),
-+};
-+
-+static const __devinitconst struct resource apbreg_resources[] = {
-+	CELL_4K("sta2x11-apbreg", APBREG),
-+};
-+
-+#define DEV(_name, _r) \
-+	{ .name = _name, .num_resources = ARRAY_SIZE(_r), .resources = _r, }
-+
-+static __devinitdata struct mfd_cell sta2x11_mfd_bar0[] = {
-+	DEV("sta2x11-gpio", gpio_resources), /* offset 0: we add pdata later */
-+	DEV("sta2x11-sctl", sctl_resources),
-+	DEV("sta2x11-scr", scr_resources),
-+	DEV("sta2x11-time", time_resources),
-+};
-+
-+static __devinitdata struct mfd_cell sta2x11_mfd_bar1[] = {
-+	DEV("sta2x11-apbreg", apbreg_resources),
-+};
-+
-+static int sta2x11_mfd_suspend(struct pci_dev *pdev, pm_message_t state)
-+{
-+	pci_save_state(pdev);
-+	pci_disable_device(pdev);
-+	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-+
-+	return 0;
 +}
 +
-+static int sta2x11_mfd_resume(struct pci_dev *pdev)
++/* The platform device used here is instantiated by the MFD device */
++static int __devinit gsta_probe(struct platform_device *dev)
 +{
-+	int err;
-+
-+	pci_set_power_state(pdev, 0);
-+	err = pci_enable_device(pdev);
-+	if (err)
-+		return err;
-+	pci_restore_state(pdev);
-+
-+	return 0;
-+}
-+
-+static int __devinit sta2x11_mfd_probe(struct pci_dev *pdev,
-+				       const struct pci_device_id *pci_id)
-+{
-+	int err, i;
++	int i, err;
++	struct pci_dev *pdev;
 +	struct sta2x11_gpio_pdata *gpio_data;
++	struct gsta_gpio *chip;
++	struct resource *res;
 +
-+	dev_info(&pdev->dev, "%s\n", __func__);
++	pdev = *(struct pci_dev **)(dev->dev.platform_data);
++	gpio_data = dev_get_platdata(&pdev->dev);
 +
-+	err = pci_enable_device(pdev);
-+	if (err) {
-+		dev_err(&pdev->dev, "Can't enable device.\n");
++	if (gpio_data == NULL)
++		dev_err(&dev->dev, "%s, NULL gpio config\n", __func__);
++	/* FIXME: use gpio_data */
++
++	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
++	request_mem_region(res->start, resource_size(res), KBUILD_MODNAME);
++
++
++	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
++	chip->dev = &dev->dev;
++	chip->reg_base = ioremap(res->start, resource_size(res));
++	chip->irq_base = -1;
++	spin_lock_init(&chip->lock);
++	gsta_gpio_setup(chip);
++	err = gpiochip_add(&chip->gpio);
++	if (err < 0) {
++		dev_err(&dev->dev, "sta2x11 gpio: Can't register (%i)\n",
++			-err);
++		kfree(chip);
 +		return err;
 +	}
++	/* 384 was used in previous code: be compatible for other drivers */
++	err = irq_alloc_descs(-1, 384, GSTA_NR_GPIO, NUMA_NO_NODE);
 +
-+	err = pci_enable_msi(pdev);
-+	if (err)
-+		dev_info(&pdev->dev, "Enable msi failed\n");
-+
-+	/* Read gpio config data as pci device's platform data */
-+	gpio_data = dev_get_platdata(&pdev->dev);
-+	if (!gpio_data)
-+		dev_warn(&pdev->dev, "no gpio configuration\n");
-+
-+#if 1
-+	dev_dbg(&pdev->dev, "%s, gpio_data = %p (%p)\n", __func__,
-+		gpio_data, &gpio_data);
-+#endif
-+	dev_dbg(&pdev->dev, "%s, pdev = %p (%p)\n", __func__,
-+		pdev, &pdev);
-+
-+
-+	/* platform data is the pci device for all of them */
-+	for (i = 0; i < ARRAY_SIZE(sta2x11_mfd_bar0); i++) {
-+		sta2x11_mfd_bar0[i].pdata_size = sizeof(pdev);
-+		sta2x11_mfd_bar0[i].platform_data = &pdev;
++	if (err < 0) {
++		dev_warn(&dev->dev, "sta2x11 gpio: Can't get irq base (%i)\n",
++			 -err);
++		goto err_out;
 +	}
-+	sta2x11_mfd_bar1[0].pdata_size = sizeof(pdev);
-+	sta2x11_mfd_bar1[0].platform_data = &pdev;
++	chip->irq_base = err;
++	gsta_alloc_irq_chip(chip);
 +
-+	/* Record this pdev before mfd_add_devices: their probe looks for it */
-+	sta2x11_mfd_add(pdev, GFP_ATOMIC);
-+
-+
-+	err = mfd_add_devices(&pdev->dev, -1,
-+			      sta2x11_mfd_bar0,
-+			      ARRAY_SIZE(sta2x11_mfd_bar0),
-+			      &pdev->resource[0],
-+			      0);
-+	if (err) {
-+		dev_err(&pdev->dev, "mfd_add_devices[0] failed: %d\n", err);
-+		goto err_disable;
++	for (i = 0; i < GSTA_NR_BLOCKS; i++) {
++		chip->regs[i] = chip->reg_base + i * 4096;
++		/* disable all irqs */
++		writel(0, &chip->regs[i]->rimsc);
++		writel(0, &chip->regs[i]->fimsc);
++		writel(~0, &chip->regs[i]->ic);
 +	}
 +
-+	err = mfd_add_devices(&pdev->dev, -1,
-+			      sta2x11_mfd_bar1,
-+			      ARRAY_SIZE(sta2x11_mfd_bar1),
-+			      &pdev->resource[1],
-+			      0);
-+	if (err) {
-+		dev_err(&pdev->dev, "mfd_add_devices[1] failed: %d\n", err);
-+		goto err_disable;
++	err = request_irq(pdev->irq, gsta_gpio_handler,
++			     IRQF_SHARED, KBUILD_MODNAME, chip);
++	if (err < 0) {
++		dev_err(&dev->dev, "sta2x11 gpio: Can't request irq (%i)\n",
++			-err);
++		goto err_out;
 +	}
 +
++	platform_set_drvdata(dev, chip);
 +	return 0;
 +
-+err_disable:
-+	pci_disable_device(pdev);
-+	pci_disable_msi(pdev);
-+	/* mfd_remove(pdev); -- it is in an exit section, I can't call it */
++err_out:
++	if (chip->irq_base > 0)
++		irq_free_descs(chip->irq_base, GSTA_NR_GPIO);
++	kfree(chip);
 +	return err;
 +}
 +
-+static DEFINE_PCI_DEVICE_TABLE(sta2x11_mfd_tbl) = {
-+	{PCI_DEVICE(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_GPIO)},
-+	{0,},
++static struct platform_driver sta2x11_gpio_platform_driver = {
++	.driver = {
++		.name	= "sta2x11-gpio",
++		.owner	= THIS_MODULE,
++	},
++	.probe = gsta_probe,
 +};
 +
-+static struct pci_driver sta2x11_mfd_driver = {
-+	.name =		"sta2x11-mfd",
-+	.id_table =	sta2x11_mfd_tbl,
-+	.probe =	sta2x11_mfd_probe,
-+	.suspend =	sta2x11_mfd_suspend,
-+	.resume =	sta2x11_mfd_resume,
-+};
-+
-+static int __init sta2x11_mfd_init(void)
++static int __init sta2x11_gpio_init(void)
 +{
-+	pr_info("%s\n", __func__);
-+	return pci_register_driver(&sta2x11_mfd_driver);
++	return platform_driver_register(&sta2x11_gpio_platform_driver);
 +}
 +
-+/*
-+ * All of this must be ready before "normal" devices like MMCI appear.
-+ * But MFD (the pci device) can't be too early. The following choice
-+ * prepares platform drivers very early and probe the PCI device later,
-+ * but before other PCI devices.
-+ */
-+subsys_initcall(sta2x11_apbreg_init);
-+subsys_initcall(sta2x11_sctl_init);
-+rootfs_initcall(sta2x11_mfd_init);
++module_init(sta2x11_gpio_init);
 +
 +MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Wind River");
-+MODULE_DESCRIPTION("STA2x11 mfd for GPIO, SCTL and APBREG");
-+MODULE_DEVICE_TABLE(pci, sta2x11_mfd_tbl);
-diff --git a/include/linux/mfd/sta2x11-mfd.h b/include/linux/mfd/sta2x11-mfd.h
-new file mode 100644
-index 0000000..b53af98
---- /dev/null
-+++ b/include/linux/mfd/sta2x11-mfd.h
-@@ -0,0 +1,186 @@
-+/*
-+ * Copyright (c) 2009-2011 Wind River Systems, Inc.
-+ * Copyright (c) 2011 ST Microelectronics (Alessandro Rubini)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-+ * See the GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * The STMicroelectronics ConneXt (STA2X11) chip has several unrelated
-+ * functions in one PCI endpoint functions. This driver simply
-+ * registers the platform devices in this iomemregion and exports a few
-+ * functions to access common registers
-+ */
-+
-+#ifndef __STA2X11_MFD_H
-+#define __STA2X11_MFD_H
-+#include <linux/types.h>
-+
-+/*
-+ * The MFD PCI block includes the GPIO peripherals and other register blocks.
-+ * For GPIO, we have 32*4 bits (I use "gsta" for "gpio sta2x11".)
-+ */
-+#define GSTA_GPIO_PER_BLOCK	32
-+#define GSTA_NR_BLOCKS		4
-+#define GSTA_NR_GPIO		(GSTA_GPIO_PER_BLOCK * GSTA_NR_BLOCKS)
-+
-+/* Pinconfig is set by the board definition: altfunc, pull-up, pull-down */
-+struct sta2x11_gpio_pdata {
-+	unsigned pinconfig[GSTA_NR_GPIO];
-+};
-+
-+/*
-+ * The APB bridge has its own registers, needed by our users as well.
-+ * They are accessed with the following read/mask/write function.
-+ */
-+u32 sta2x11_apbreg_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val);
-+
-+
-+
-+/* CAN and MLB */
-+#define APBREG_BSR	0x00	/* Bridge Status Reg */
-+#define APBREG_PAER	0x08	/* Peripherals Address Error Reg */
-+#define APBREG_PWAC	0x20	/* Peripheral Write Access Control reg */
-+#define APBREG_PRAC	0x40	/* Peripheral Read Access Control reg */
-+#define APBREG_PCG	0x60	/* Peripheral Clock Gating Reg */
-+#define APBREG_PUR	0x80	/* Peripheral Under Reset Reg */
-+#define APBREG_EMU_PCG	0xA0	/* Emulator Peripheral Clock Gating Reg */
-+
-+#define APBREG_CAN	(1 << 1)
-+#define APBREG_MLB	(1 << 3)
-+
-+/* SARAC */
-+#define APBREG_BSR_SARAC     0x100 /* Bridge Status Reg */
-+#define APBREG_PAER_SARAC    0x108 /* Peripherals Address Error Reg */
-+#define APBREG_PWAC_SARAC    0x120 /* Peripheral Write Access Control reg */
-+#define APBREG_PRAC_SARAC    0x140 /* Peripheral Read Access Control reg */
-+#define APBREG_PCG_SARAC     0x160 /* Peripheral Clock Gating Reg */
-+#define APBREG_PUR_SARAC     0x180 /* Peripheral Under Reset Reg */
-+#define APBREG_EMU_PCG_SARAC 0x1A0 /* Emulator Peripheral Clock Gating Reg */
-+
-+#define APBREG_SARAC	(1 << 2)
-+
-+/*
-+ * The system controller has its own registers. Some of these are accessed
-+ * by out users as well, using the following read/mask/write/function
-+ */
-+u32 sta2x11_sctl_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val);
-+
-+#define SCTL_SCCTL		0x00	/* System controller control register */
-+#define SCTL_ARMCFG		0x04	/* ARM configuration register */
-+#define SCTL_SCPLLCTL		0x08	/* PLL control status register */
-+#define SCTL_SCPLLFCTRL		0x0c	/* PLL frequency control register */
-+#define SCTL_SCRESFRACT		0x10	/* PLL fractional input register */
-+#define SCTL_SCRESCTRL1		0x14	/* Peripheral reset control 1 */
-+#define SCTL_SCRESXTRL2		0x18	/* Peripheral reset control 2 */
-+#define SCTL_SCPEREN0		0x1c	/* Peripheral clock enable register 0 */
-+#define SCTL_SCPEREN1		0x20	/* Peripheral clock enable register 1 */
-+#define SCTL_SCPEREN2		0x24	/* Peripheral clock enable register 2 */
-+#define SCTL_SCGRST		0x28	/* Peripheral global reset */
-+#define SCTL_SCPCIPMCR1		0x30	/* PCI power management control 1 */
-+#define SCTL_SCPCIPMCR2		0x34	/* PCI power management control 2 */
-+#define SCTL_SCPCIPMSR1		0x38	/* PCI power management status 1 */
-+#define SCTL_SCPCIPMSR2		0x3c	/* PCI power management status 2 */
-+#define SCTL_SCPCIPMSR3		0x40	/* PCI power management status 3 */
-+#define SCTL_SCINTREN		0x44	/* Interrupt enable */
-+#define SCTL_SCRISR		0x48	/* RAW interrupt status */
-+#define SCTL_SCCLKSTAT0		0x4c	/* Peripheral clocks status 0 */
-+#define SCTL_SCCLKSTAT1		0x50	/* Peripheral clocks status 1 */
-+#define SCTL_SCCLKSTAT2		0x54	/* Peripheral clocks status 2 */
-+#define SCTL_SCRSTSTA		0x58	/* Reset status register */
-+
-+#define SCTL_SCRESCTRL1_USB_PHY_POR	(1 << 0)
-+#define SCTL_SCRESCTRL1_USB_OTG	(1 << 1)
-+#define SCTL_SCRESCTRL1_USB_HRST	(1 << 2)
-+#define SCTL_SCRESCTRL1_USB_PHY_HOST	(1 << 3)
-+#define SCTL_SCRESCTRL1_SATAII	(1 << 4)
-+#define SCTL_SCRESCTRL1_VIP		(1 << 5)
-+#define SCTL_SCRESCTRL1_PER_MMC0	(1 << 6)
-+#define SCTL_SCRESCTRL1_PER_MMC1	(1 << 7)
-+#define SCTL_SCRESCTRL1_PER_GPIO0	(1 << 8)
-+#define SCTL_SCRESCTRL1_PER_GPIO1	(1 << 9)
-+#define SCTL_SCRESCTRL1_PER_GPIO2	(1 << 10)
-+#define SCTL_SCRESCTRL1_PER_GPIO3	(1 << 11)
-+#define SCTL_SCRESCTRL1_PER_MTU0	(1 << 12)
-+#define SCTL_SCRESCTRL1_KER_SPI0	(1 << 13)
-+#define SCTL_SCRESCTRL1_KER_SPI1	(1 << 14)
-+#define SCTL_SCRESCTRL1_KER_SPI2	(1 << 15)
-+#define SCTL_SCRESCTRL1_KER_MCI0	(1 << 16)
-+#define SCTL_SCRESCTRL1_KER_MCI1	(1 << 17)
-+#define SCTL_SCRESCTRL1_PRE_HSI2C0	(1 << 18)
-+#define SCTL_SCRESCTRL1_PER_HSI2C1	(1 << 19)
-+#define SCTL_SCRESCTRL1_PER_HSI2C2	(1 << 20)
-+#define SCTL_SCRESCTRL1_PER_HSI2C3	(1 << 21)
-+#define SCTL_SCRESCTRL1_PER_MSP0	(1 << 22)
-+#define SCTL_SCRESCTRL1_PER_MSP1	(1 << 23)
-+#define SCTL_SCRESCTRL1_PER_MSP2	(1 << 24)
-+#define SCTL_SCRESCTRL1_PER_MSP3	(1 << 25)
-+#define SCTL_SCRESCTRL1_PER_MSP4	(1 << 26)
-+#define SCTL_SCRESCTRL1_PER_MSP5	(1 << 27)
-+#define SCTL_SCRESCTRL1_PER_MMC	(1 << 28)
-+#define SCTL_SCRESCTRL1_KER_MSP0	(1 << 29)
-+#define SCTL_SCRESCTRL1_KER_MSP1	(1 << 30)
-+#define SCTL_SCRESCTRL1_KER_MSP2	(1 << 31)
-+
-+#define SCTL_SCPEREN0_UART0		(1 << 0)
-+#define SCTL_SCPEREN0_UART1		(1 << 1)
-+#define SCTL_SCPEREN0_UART2		(1 << 2)
-+#define SCTL_SCPEREN0_UART3		(1 << 3)
-+#define SCTL_SCPEREN0_MSP0		(1 << 4)
-+#define SCTL_SCPEREN0_MSP1		(1 << 5)
-+#define SCTL_SCPEREN0_MSP2		(1 << 6)
-+#define SCTL_SCPEREN0_MSP3		(1 << 7)
-+#define SCTL_SCPEREN0_MSP4		(1 << 8)
-+#define SCTL_SCPEREN0_MSP5		(1 << 9)
-+#define SCTL_SCPEREN0_SPI0		(1 << 10)
-+#define SCTL_SCPEREN0_SPI1		(1 << 11)
-+#define SCTL_SCPEREN0_SPI2		(1 << 12)
-+#define SCTL_SCPEREN0_I2C0		(1 << 13)
-+#define SCTL_SCPEREN0_I2C1		(1 << 14)
-+#define SCTL_SCPEREN0_I2C2		(1 << 15)
-+#define SCTL_SCPEREN0_I2C3		(1 << 16)
-+#define SCTL_SCPEREN0_SVDO_LVDS		(1 << 17)
-+#define SCTL_SCPEREN0_USB_HOST		(1 << 18)
-+#define SCTL_SCPEREN0_USB_OTG		(1 << 19)
-+#define SCTL_SCPEREN0_MCI0		(1 << 20)
-+#define SCTL_SCPEREN0_MCI1		(1 << 21)
-+#define SCTL_SCPEREN0_MCI2		(1 << 22)
-+#define SCTL_SCPEREN0_MCI3		(1 << 23)
-+#define SCTL_SCPEREN0_SATA		(1 << 24)
-+#define SCTL_SCPEREN0_ETHERNET		(1 << 25)
-+#define SCTL_SCPEREN0_VIC		(1 << 26)
-+#define SCTL_SCPEREN0_DMA_AUDIO		(1 << 27)
-+#define SCTL_SCPEREN0_DMA_SOC		(1 << 28)
-+#define SCTL_SCPEREN0_RAM		(1 << 29)
-+#define SCTL_SCPEREN0_VIP		(1 << 30)
-+#define SCTL_SCPEREN0_ARM		(1 << 31)
-+
-+#define SCTL_SCPEREN1_UART0		(1 << 0)
-+#define SCTL_SCPEREN1_UART1		(1 << 1)
-+#define SCTL_SCPEREN1_UART2		(1 << 2)
-+#define SCTL_SCPEREN1_UART3		(1 << 3)
-+#define SCTL_SCPEREN1_MSP0		(1 << 4)
-+#define SCTL_SCPEREN1_MSP1		(1 << 5)
-+#define SCTL_SCPEREN1_MSP2		(1 << 6)
-+#define SCTL_SCPEREN1_MSP3		(1 << 7)
-+#define SCTL_SCPEREN1_MSP4		(1 << 8)
-+#define SCTL_SCPEREN1_MSP5		(1 << 9)
-+#define SCTL_SCPEREN1_SPI0		(1 << 10)
-+#define SCTL_SCPEREN1_SPI1		(1 << 11)
-+#define SCTL_SCPEREN1_SPI2		(1 << 12)
-+#define SCTL_SCPEREN1_I2C0		(1 << 13)
-+#define SCTL_SCPEREN1_I2C1		(1 << 14)
-+#define SCTL_SCPEREN1_I2C2		(1 << 15)
-+#define SCTL_SCPEREN1_I2C3		(1 << 16)
-+#define SCTL_SCPEREN1_USB_PHY		(1 << 17)
-+
-+#endif /* __STA2X11_MFD_H */
++MODULE_DESCRIPTION("sta2x11_gpio GPIO driver");
 -- 
 1.7.7.2
