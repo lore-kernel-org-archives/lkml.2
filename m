@@ -1,424 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab2AZKLD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 05:11:03 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57278 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab2AZKK6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 05:10:58 -0500
-Message-ID: <1327572645.25187.2.camel@phoenix>
-Subject: [PATCH v3] watchdog: Convert jz4740_wdt driver to watchdog core
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paul Cercueil <paul@crapouillou.net>, Lars-Peter Clausen <lars@metafoo.de>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>
-Date: Thu, 26 Jan 2012 18:10:45 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752009Ab2AZK2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 05:28:53 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54508 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750934Ab2AZK2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 05:28:52 -0500
+Date: Thu, 26 Jan 2012 11:28:37 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
+Message-ID: <20120126102836.GD3853@elte.hu>
+References: <1326754637.7642.177.camel@gandalf.stny.rr.com>
+ <20120117095418.GG10397@elte.hu>
+ <1326807145.17534.26.camel@gandalf.stny.rr.com>
+ <20120118120711.GB14863@elte.hu>
+ <1326909412.17534.91.camel@gandalf.stny.rr.com>
+ <877h0jgx80.fsf@rustcorp.com.au>
+ <1327545664.22710.78.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327545664.22710.78.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts jz4740_wdt driver to use watchdog core APIs.
-Also use devm_* APIs to save a few error handling code.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Paul Cercueil <paul@crapouillou.net>
----
-v3: - Remove unused define for WDT_IN_USE and WDT_OK_TO_CLOSE
-    - Remove mem from struct jz4740_wdt_drvdata
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-v2: Address all the comments by Wolfram.
-    - Remove unneed header file inclusion
-    - Drop 'heartbeat' usage in jz4740_wdt_set_heartbeat and jz4740_wdt_start
-    - Init wdt_dev->timeout in probe using the global 'heartbeat'
-    - Remove unneed pointer check for drvdata->mem
+> On Mon, 2012-01-23 at 09:29 +1030, Rusty Russell wrote:
+> > > could just move the "if" part out.
+> > 
+> > Agreed.  Since GCC should be able to eliminate that branch in almost all
+> > cases, since it's usually a literal NULL or address of a (non-weak)
+> > symbol.
+> > 
+> > Be interesting to see the before/after sizes with this out-of-line.
+> 
+> Using my default test config I got:
+> 
+>    text	   data	    bss	    dec	    hex	filename
+> 7489488	2249584	9719808	19458880	128eb40	vmlinux-prepatch
+> 7482458	2248048	9719808	19450314	128c9ca	vmlinux-postpatch
+> 
+> An 8k savings!
 
- drivers/watchdog/Kconfig      |    1 +
- drivers/watchdog/jz4740_wdt.c |  257 +++++++++++++----------------------------
- 2 files changed, 84 insertions(+), 174 deletions(-)
+Lovely!
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 2c89da6..a297f01 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -965,6 +965,7 @@ config INDYDOG
- config JZ4740_WDT
- 	tristate "Ingenic jz4740 SoC hardware watchdog"
- 	depends on MACH_JZ4740
-+	select WATCHDOG_CORE
- 	help
- 	  Hardware driver for the built-in watchdog timer on Ingenic jz4740 SoCs.
- 
-diff --git a/drivers/watchdog/jz4740_wdt.c b/drivers/watchdog/jz4740_wdt.c
-index 17ef300..792e9dd 100644
---- a/drivers/watchdog/jz4740_wdt.c
-+++ b/drivers/watchdog/jz4740_wdt.c
-@@ -17,18 +17,15 @@
- #include <linux/moduleparam.h>
- #include <linux/types.h>
- #include <linux/kernel.h>
--#include <linux/fs.h>
- #include <linux/miscdevice.h>
- #include <linux/watchdog.h>
- #include <linux/init.h>
--#include <linux/bitops.h>
- #include <linux/platform_device.h>
--#include <linux/spinlock.h>
--#include <linux/uaccess.h>
- #include <linux/io.h>
- #include <linux/device.h>
- #include <linux/clk.h>
- #include <linux/slab.h>
-+#include <linux/err.h>
- 
- #include <asm/mach-jz4740/timer.h>
- 
-@@ -41,9 +38,6 @@
- #define JZ_WDT_CLOCK_RTC  0x2
- #define JZ_WDT_CLOCK_EXT  0x4
- 
--#define WDT_IN_USE        0
--#define WDT_OK_TO_CLOSE   1
--
- #define JZ_WDT_CLOCK_DIV_SHIFT   3
- 
- #define JZ_WDT_CLOCK_DIV_1    (0 << JZ_WDT_CLOCK_DIV_SHIFT)
-@@ -56,32 +50,44 @@
- #define DEFAULT_HEARTBEAT 5
- #define MAX_HEARTBEAT     2048
- 
--static struct {
--	void __iomem *base;
--	struct resource	*mem;
--	struct clk *rtc_clk;
--	unsigned long status;
--} jz4740_wdt;
-+static int nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, int, 0);
-+MODULE_PARM_DESC(nowayout,
-+		 "Watchdog cannot be stopped once started (default="
-+		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
- 
- static int heartbeat = DEFAULT_HEARTBEAT;
-+module_param(heartbeat, int, 0);
-+MODULE_PARM_DESC(heartbeat,
-+		"Watchdog heartbeat period in seconds from 1 to "
-+		__MODULE_STRING(MAX_HEARTBEAT) ", default "
-+		__MODULE_STRING(DEFAULT_HEARTBEAT));
- 
-+struct jz4740_wdt_drvdata {
-+	struct watchdog_device wdt;
-+	void __iomem *base;
-+	struct clk *rtc_clk;
-+};
- 
--static void jz4740_wdt_service(void)
-+static int jz4740_wdt_ping(struct watchdog_device *wdt_dev)
- {
--	writew(0x0, jz4740_wdt.base + JZ_REG_WDT_TIMER_COUNTER);
-+	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
-+
-+	writew(0x0, drvdata->base + JZ_REG_WDT_TIMER_COUNTER);
-+	return 0;
- }
- 
--static void jz4740_wdt_set_heartbeat(int new_heartbeat)
-+static int jz4740_wdt_set_heartbeat(struct watchdog_device *wdt_dev,
-+				    unsigned int new_heartbeat)
- {
-+	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
- 	unsigned int rtc_clk_rate;
- 	unsigned int timeout_value;
- 	unsigned short clock_div = JZ_WDT_CLOCK_DIV_1;
- 
--	heartbeat = new_heartbeat;
-+	rtc_clk_rate = clk_get_rate(drvdata->rtc_clk);
- 
--	rtc_clk_rate = clk_get_rate(jz4740_wdt.rtc_clk);
--
--	timeout_value = rtc_clk_rate * heartbeat;
-+	timeout_value = rtc_clk_rate * new_heartbeat;
- 	while (timeout_value > 0xffff) {
- 		if (clock_div == JZ_WDT_CLOCK_DIV_1024) {
- 			/* Requested timeout too high;
-@@ -93,199 +99,109 @@ static void jz4740_wdt_set_heartbeat(int new_heartbeat)
- 		clock_div += (1 << JZ_WDT_CLOCK_DIV_SHIFT);
- 	}
- 
--	writeb(0x0, jz4740_wdt.base + JZ_REG_WDT_COUNTER_ENABLE);
--	writew(clock_div, jz4740_wdt.base + JZ_REG_WDT_TIMER_CONTROL);
-+	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
-+	writew(clock_div, drvdata->base + JZ_REG_WDT_TIMER_CONTROL);
- 
--	writew((u16)timeout_value, jz4740_wdt.base + JZ_REG_WDT_TIMER_DATA);
--	writew(0x0, jz4740_wdt.base + JZ_REG_WDT_TIMER_COUNTER);
-+	writew((u16)timeout_value, drvdata->base + JZ_REG_WDT_TIMER_DATA);
-+	writew(0x0, drvdata->base + JZ_REG_WDT_TIMER_COUNTER);
- 	writew(clock_div | JZ_WDT_CLOCK_RTC,
--		jz4740_wdt.base + JZ_REG_WDT_TIMER_CONTROL);
--
--	writeb(0x1, jz4740_wdt.base + JZ_REG_WDT_COUNTER_ENABLE);
--}
-+		drvdata->base + JZ_REG_WDT_TIMER_CONTROL);
- 
--static void jz4740_wdt_enable(void)
--{
--	jz4740_timer_enable_watchdog();
--	jz4740_wdt_set_heartbeat(heartbeat);
--}
-+	writeb(0x1, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
- 
--static void jz4740_wdt_disable(void)
--{
--	jz4740_timer_disable_watchdog();
--	writeb(0x0, jz4740_wdt.base + JZ_REG_WDT_COUNTER_ENABLE);
-+	return 0;
- }
- 
--static int jz4740_wdt_open(struct inode *inode, struct file *file)
-+static int jz4740_wdt_start(struct watchdog_device *wdt_dev)
- {
--	if (test_and_set_bit(WDT_IN_USE, &jz4740_wdt.status))
--		return -EBUSY;
--
--	jz4740_wdt_enable();
-+	jz4740_timer_enable_watchdog();
-+	jz4740_wdt_set_heartbeat(wdt_dev, wdt_dev->timeout);
- 
--	return nonseekable_open(inode, file);
-+	return 0;
- }
- 
--static ssize_t jz4740_wdt_write(struct file *file, const char *data,
--		size_t len, loff_t *ppos)
-+static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
- {
--	if (len) {
--		size_t i;
--
--		clear_bit(WDT_OK_TO_CLOSE, &jz4740_wdt.status);
--		for (i = 0; i != len; i++) {
--			char c;
-+	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
- 
--			if (get_user(c, data + i))
--				return -EFAULT;
--
--			if (c == 'V')
--				set_bit(WDT_OK_TO_CLOSE, &jz4740_wdt.status);
--		}
--		jz4740_wdt_service();
--	}
-+	jz4740_timer_disable_watchdog();
-+	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
- 
--	return len;
-+	return 0;
- }
- 
--static const struct watchdog_info ident = {
--	.options = WDIOF_KEEPALIVEPING,
-+static const struct watchdog_info jz4740_wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
- 	.identity = "jz4740 Watchdog",
- };
- 
--static long jz4740_wdt_ioctl(struct file *file,
--					unsigned int cmd, unsigned long arg)
--{
--	int ret = -ENOTTY;
--	int heartbeat_seconds;
--
--	switch (cmd) {
--	case WDIOC_GETSUPPORT:
--		ret = copy_to_user((struct watchdog_info *)arg, &ident,
--				sizeof(ident)) ? -EFAULT : 0;
--		break;
--
--	case WDIOC_GETSTATUS:
--	case WDIOC_GETBOOTSTATUS:
--		ret = put_user(0, (int *)arg);
--		break;
--
--	case WDIOC_KEEPALIVE:
--		jz4740_wdt_service();
--		return 0;
--
--	case WDIOC_SETTIMEOUT:
--		if (get_user(heartbeat_seconds, (int __user *)arg))
--			return -EFAULT;
--
--		jz4740_wdt_set_heartbeat(heartbeat_seconds);
--		return 0;
--
--	case WDIOC_GETTIMEOUT:
--		return put_user(heartbeat, (int *)arg);
--
--	default:
--		break;
--	}
--
--	return ret;
--}
--
--static int jz4740_wdt_release(struct inode *inode, struct file *file)
--{
--	jz4740_wdt_service();
--
--	if (test_and_clear_bit(WDT_OK_TO_CLOSE, &jz4740_wdt.status))
--		jz4740_wdt_disable();
--
--	clear_bit(WDT_IN_USE, &jz4740_wdt.status);
--	return 0;
--}
--
--static const struct file_operations jz4740_wdt_fops = {
-+static const struct watchdog_ops jz4740_wdt_ops = {
- 	.owner = THIS_MODULE,
--	.llseek = no_llseek,
--	.write = jz4740_wdt_write,
--	.unlocked_ioctl = jz4740_wdt_ioctl,
--	.open = jz4740_wdt_open,
--	.release = jz4740_wdt_release,
--};
--
--static struct miscdevice jz4740_wdt_miscdev = {
--	.minor = WATCHDOG_MINOR,
--	.name = "watchdog",
--	.fops = &jz4740_wdt_fops,
-+	.start = jz4740_wdt_start,
-+	.stop = jz4740_wdt_stop,
-+	.ping = jz4740_wdt_ping,
-+	.set_timeout = jz4740_wdt_set_heartbeat,
- };
- 
- static int __devinit jz4740_wdt_probe(struct platform_device *pdev)
- {
--	int ret = 0, size;
--	struct resource *res;
--	struct device *dev = &pdev->dev;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
--		dev_err(dev, "failed to get memory region resource\n");
--		return -ENXIO;
-+	struct jz4740_wdt_drvdata *drvdata;
-+	struct watchdog_device *jz4740_wdt;
-+	struct resource	*res;
-+	int ret;
-+
-+	drvdata = devm_kzalloc(&pdev->dev, sizeof(struct jz4740_wdt_drvdata),
-+			       GFP_KERNEL);
-+	if (!drvdata) {
-+		dev_err(&pdev->dev, "Unable to alloacate watchdog device\n");
-+		return -ENOMEM;
- 	}
- 
--	size = resource_size(res);
--	jz4740_wdt.mem = request_mem_region(res->start, size, pdev->name);
--	if (jz4740_wdt.mem == NULL) {
--		dev_err(dev, "failed to get memory region\n");
--		return -EBUSY;
--	}
-+	jz4740_wdt = &drvdata->wdt;
-+	jz4740_wdt->info = &jz4740_wdt_info;
-+	jz4740_wdt->ops = &jz4740_wdt_ops;
-+	jz4740_wdt->timeout = heartbeat;
-+	watchdog_set_nowayout(jz4740_wdt, nowayout);
-+	watchdog_set_drvdata(jz4740_wdt, drvdata);
- 
--	jz4740_wdt.base = ioremap_nocache(res->start, size);
--	if (jz4740_wdt.base == NULL) {
--		dev_err(dev, "failed to map memory region\n");
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	drvdata->base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (drvdata->base == NULL) {
- 		ret = -EBUSY;
--		goto err_release_region;
-+		goto err_out;
- 	}
- 
--	jz4740_wdt.rtc_clk = clk_get(NULL, "rtc");
--	if (IS_ERR(jz4740_wdt.rtc_clk)) {
--		dev_err(dev, "cannot find RTC clock\n");
--		ret = PTR_ERR(jz4740_wdt.rtc_clk);
--		goto err_iounmap;
-+	drvdata->rtc_clk = clk_get(NULL, "rtc");
-+	if (IS_ERR(drvdata->rtc_clk)) {
-+		dev_err(&pdev->dev, "cannot find RTC clock\n");
-+		ret = PTR_ERR(drvdata->rtc_clk);
-+		goto err_out;
- 	}
- 
--	ret = misc_register(&jz4740_wdt_miscdev);
--	if (ret < 0) {
--		dev_err(dev, "cannot register misc device\n");
-+	ret = watchdog_register_device(&drvdata->wdt);
-+	if (ret < 0)
- 		goto err_disable_clk;
--	}
- 
-+	platform_set_drvdata(pdev, drvdata);
- 	return 0;
- 
- err_disable_clk:
--	clk_put(jz4740_wdt.rtc_clk);
--err_iounmap:
--	iounmap(jz4740_wdt.base);
--err_release_region:
--	release_mem_region(jz4740_wdt.mem->start,
--			resource_size(jz4740_wdt.mem));
-+	clk_put(drvdata->rtc_clk);
-+err_out:
- 	return ret;
- }
- 
--
- static int __devexit jz4740_wdt_remove(struct platform_device *pdev)
- {
--	jz4740_wdt_disable();
--	misc_deregister(&jz4740_wdt_miscdev);
--	clk_put(jz4740_wdt.rtc_clk);
--
--	iounmap(jz4740_wdt.base);
--	jz4740_wdt.base = NULL;
-+	struct jz4740_wdt_drvdata *drvdata = platform_get_drvdata(pdev);
- 
--	release_mem_region(jz4740_wdt.mem->start,
--				resource_size(jz4740_wdt.mem));
--	jz4740_wdt.mem = NULL;
-+	jz4740_wdt_stop(&drvdata->wdt);
-+	watchdog_unregister_device(&drvdata->wdt);
-+	clk_put(drvdata->rtc_clk);
- 
- 	return 0;
- }
- 
--
- static struct platform_driver jz4740_wdt_driver = {
- 	.probe = jz4740_wdt_probe,
- 	.remove = __devexit_p(jz4740_wdt_remove),
-@@ -299,13 +215,6 @@ module_platform_driver(jz4740_wdt_driver);
- 
- MODULE_AUTHOR("Paul Cercueil <paul@crapouillou.net>");
- MODULE_DESCRIPTION("jz4740 Watchdog Driver");
--
--module_param(heartbeat, int, 0);
--MODULE_PARM_DESC(heartbeat,
--		"Watchdog heartbeat period in seconds from 1 to "
--		__MODULE_STRING(MAX_HEARTBEAT) ", default "
--		__MODULE_STRING(DEFAULT_HEARTBEAT));
--
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
- MODULE_ALIAS("platform:jz4740-wdt");
--- 
-1.7.5.4
+> @@ -445,8 +444,7 @@ static inline void __module_get(struct module *module)
+>  {
+>  	if (module) {
+>  		preempt_disable();
+> -		__this_cpu_inc(module->refptr->incs);
+> -		trace_module_get(module, _THIS_IP_);
+> +		inc_module(module, _THIS_IP_);
+>  		preempt_enable();
+>  	}
+>  }
+> @@ -458,10 +456,9 @@ static inline int try_module_get(struct module *module)
+>  	if (module) {
+>  		preempt_disable();
+>  
+> -		if (likely(module_is_live(module))) {
+> -			__this_cpu_inc(module->refptr->incs);
+> -			trace_module_get(module, _THIS_IP_);
+> -		} else
+> +		if (likely(module_is_live(module)))
+> +			inc_module(module, _THIS_IP_);
+> +		else
+>  			ret = 0;
 
+How much more do we save if we move all of try_module_get() out 
+of line? It still seems a rather thick inline function with 
+preempt section and all. I'd *really* suggest that it should all 
+be uninlined.
 
+Thanks,
 
+	Ingo
