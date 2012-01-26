@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab2AZXyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 18:54:46 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:36778 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab2AZXyp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 18:54:45 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, xemul@parallels.com,
-        sjur.brandeland@stericsson.com, levinsasha928@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
-        sjurbren@gmail.com
-Subject: Re: [PATCH] netns: fix net_alloc_generic()
-References: <4F212E7E.2040801@parallels.com>
-	<1327575108.2500.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<m1zkdacbsx.fsf@fess.ebiederm.org>
-	<20120126.180754.679593869814492219.davem@davemloft.net>
-Date: Thu, 26 Jan 2012 15:57:18 -0800
-In-Reply-To: <20120126.180754.679593869814492219.davem@davemloft.net> (David
-	Miller's message of "Thu, 26 Jan 2012 18:07:54 -0500 (EST)")
-Message-ID: <m1liouc90h.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1754347Ab2AZX43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 18:56:29 -0500
+Received: from isrv.corpit.ru ([86.62.121.231]:43589 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753332Ab2AZX41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 18:56:27 -0500
+Message-ID: <4F21E828.8090502@msgid.tls.msk.ru>
+Date: Fri, 27 Jan 2012 03:56:24 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110805 Icedove/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18tszV6W07R1k6MeXmYFwemYrJUfAh4tC0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>, Paolo Bonzini <pbonzini@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>, mmarek@suse.cz
+Subject: Re: Ioctl warning for a partition
+References: <20120126223037.GE28368@quack.suse.cz> <CA+55aFwkRhsdAYwP-S5_qPkRX=dMSnxv5Ow1ULaSJjKe3aTy2w@mail.gmail.com>
+In-Reply-To: <CA+55aFwkRhsdAYwP-S5_qPkRX=dMSnxv5Ow1ULaSJjKe3aTy2w@mail.gmail.com>
+X-Enigmail-Version: 1.2.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
+On 27.01.2012 03:01, Linus Torvalds wrote:
+> On Thu, Jan 26, 2012 at 2:30 PM, Jan Kara <jack@suse.cz> wrote:
+>>
+>> It's easy enough to silence the warning the same way as
+>> CDROM_GET_CAPABILITY since the ioctl is safe but it's not so simple for
+>> 32-bit userspace.  MTIOCGET32 is defined only in fs/compat_ioctl.c so we
+>> cannot easily add it to scsi_verify_blk_ioctl(). Any opinion how to cleanly
+>> solve this? The only idea I had was to define compat structures and ioctl
+>> numbers in a special header and use it both in fs/compat_ioctl.c and in
+>> block/scsi_ioctl.c.
+> 
+> I suspect we can just remove the warning entirely - once we've gotten
+> enough coverage with the -rc kernels that people (me in particular)
+> are happy that no normal load really needs it, and returning an error
+> is fine.
+> 
+> So I don't really consider the warning to be something long-term - I
+> wanted it to make sure that some random binary in some odd
+> distribution wouldn't break in mysterious ways that would take a lot
+> of debugging to find. And so that we really know what we end up
+> blocking in practice.
+> 
+> I'm not sure how good the -rc kernel coverage is, but I think it's
+> good enough that we can drop the warning before doing a real 3.3
+> release. And I don't think the stable kernel versions ever got that
+> warning printout, did they? That would be great for coverage, of
+> course, if they did.
 
-> From: ebiederm@xmission.com (Eric W. Biederman)
-> Date: Thu, 26 Jan 2012 14:57:02 -0800
->
->> It is not a chicken and egg problem.  It is a bug in caif.
->> caif is claiming to be a network device when it is acting as a subsytem.
->> That means it is being initialized too late.
->> 
->> Untested but this should trivially fix the problem, and a bunch
->> of others of the same ilk.
->> 
->> It is not safe to shutdown subsystems until all of the devices
->> are gone, otherwise there will be problems with packets in flight.
->
-> If you guys can agree that this is the better fix, and we can
-> get testing showing that it works, I'll revert Eric D.'s patch
-> and apply the final version of this one.
+They did, 3.0 and 3.2.
 
-Eric D.'s change is correct, but it is just an optimization of
-net_assign_generic.  Eric D.'s change is not a bug fix.
+For example, 3.0.18:
 
-Tested fix in a moment.
+[  610.488489] kvm: sending ioctl 5326 to a partition!
+[  610.488540] kvm: sending ioctl 80200204 to a partition!
 
-Eric
+mdadm ioctls reported in various places apparently got fixed by
+ENOTTY/ENOIOCTLCMD change.
+
+Thanks,
+
+/mjt
