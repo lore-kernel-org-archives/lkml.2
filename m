@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab2AZSXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:23:15 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:52049 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753348Ab2AZSXN (ORCPT
+	id S1753381Ab2AZSZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:25:44 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:16090
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751660Ab2AZSZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 13:23:13 -0500
-Message-ID: <4F2199E4.3020107@fb.com>
-Date: Thu, 26 Jan 2012 10:22:28 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Thu, 26 Jan 2012 13:25:43 -0500
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dhc1bhc31hc1ah2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F219A9C.8000400@freescale.com>
+Date: Thu, 26 Jan 2012 12:25:32 -0600
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
-        <mingo@elte.hu>, <gleb@redhat.com>, <wcohen@redhat.com>,
-        <vince@deater.net>, <andi@firstfloor.org>
-Subject: Re: [PATCH] perf_events: fix broken intr throttling (v3)
-References: <20120126160319.GA5655@quad> <1327594589.2446.112.camel@twins>
-In-Reply-To: <1327594589.2446.112.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Sethi Varun-B16395 <B16395@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        David Brown <davidb@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+References: <1326983405-319-1-git-send-email-joerg.roedel@amd.com> <1326983405-319-3-git-send-email-joerg.roedel@amd.com> <C5ECD7A89D1DC44195F34B25E172658D038749@039-SN2MPN1-011.039d.mgd.msft.net> <20120120160344.GG2205@amd.com>
+In-Reply-To: <20120120160344.GG2205@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.211,0.0.0000
- definitions=2012-01-26_07:2012-01-26,2012-01-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/26/12 8:16 AM, Peter Zijlstra wrote:
-> On Thu, 2012-01-26 at 17:03 +0100, Stephane Eranian wrote:
->> This patch fixes the throttling mechanism. It was broken
->> in 3.2.0. Events were not being unthrottled. The unthrottling
->> mechanism required that events be checked at each timer tick.
->>
->> This patch solves this problem and also separates:
->>    - unthrottling
->>    - multiplexing
->>    - frequency-mode period adjustments
->
-> Thanks!
+On 01/20/2012 10:03 AM, Joerg Roedel wrote:
+> On Thu, Jan 19, 2012 at 05:16:48PM +0000, Sethi Varun-B16395 wrote:
+>>>  struct iommu_domain {
+>>>  	struct iommu_ops *ops;
+>>>  	void *priv;
+>>>  	iommu_fault_handler_t handler;
+>>> +	struct iommu_domain_geometry geometry;
+>>>  };
+>> In case of our iommu implementation the iommu_domain_geometry would
+>> include additional attributes. Why can't we let the geometry be
+>> Implementation dependent?
+> 
+> Because the values in this generic geometry-struct make sense for more
+> than one IOMMU (short-term for Tegra GART and Freescale PAMU). If you
+> have additional vendor-specific ones you could add them via a
+> vendor-specific attribute.
 
-Should this be Cc'ed to stable@?
+Freescale PAMU is the IOMMU that Varun is talking about, that needs
+additional geometry attributes (in particular, subwindow count).
 
-  -Arun
+How should a PAMU driver interpret "force_aperture"?  When would DMA
+ever be allowed outside the specified range?  What does the range mean
+in that case?
+
+-Scott
+
