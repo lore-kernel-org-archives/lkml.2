@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab2AZTOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 14:14:06 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:54298 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752632Ab2AZTOC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 14:14:02 -0500
-Message-ID: <4F21A5E6.9030305@fb.com>
-Date: Thu, 26 Jan 2012 11:13:42 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1752666Ab2AZTQi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 14:16:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752061Ab2AZTQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 14:16:37 -0500
+Date: Thu, 26 Jan 2012 14:01:14 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Phillip Susi <psusi@cfl.rr.com>
+Cc: Maxim Patlasov <maxim.patlasov@gmail.com>, joe@perches.com,
+        kzak@redhat.com, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
+Message-ID: <20120126190114.GG1891@redhat.com>
+References: <CA+X1aCQRpJ_NwJBSBp+vDN37p+oipJNz=6T5LdJdqzxTiSWWWA@mail.gmail.com>
+ <4EFD012D.7040602@cfl.rr.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andrew Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] trace: reset sleep/block start time on task switch
-References: <1327318449.2446.5.camel@twins> <4F1DA9D0.6090208@fb.com> <1327352631.2446.22.camel@twins> <4F1DE6FE.4000603@fb.com> <1327415255.2614.33.camel@laptop> <4F1F26CC.4040109@fb.com> <20120125092008.GB20878@somewhere> <4F205D1D.1020304@fb.com> <1327522558.22710.47.camel@gandalf.stny.rr.com> <4F20823A.6010808@fb.com> <20120126022732.GH20878@somewhere>
-In-Reply-To: <20120126022732.GH20878@somewhere>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.211,0.0.0000
- definitions=2012-01-26_07:2012-01-26,2012-01-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EFD012D.7040602@cfl.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/25/12 6:27 PM, Frederic Weisbecker wrote:
+On Thu, Dec 29, 2011 at 07:09:17PM -0500, Phillip Susi wrote:
 
->> Even if we resolve the sampling rate related problems, there is the
->> issue of: can we trust that a sampled sched_switch event and a
->> sampled sched_stat_sleep event actually match each other?
->
-> Well, a sched_stat_sleep event should match the sched_switch with
-> prev as the last targeted task.
->
-> Or am I missing something?
+[..]
+> > Btw, do we really need both part_nr_sects_write_begin and
+> > part_nr_sects_write_end? What about:
+> 
+> Good points.  I also noticed that the read/write functions were only being called when not holding the mutex.  If anyone is touching nr_sects without the mutex, then everyone must use the read/write functions, whether they hold the mutex or not.  Otherwise, a mutex holder that touches it directly will race with a non mutex holder using the seqcounter.
 
-I was thinking about large systems with 100k+ sched_switch events, where 
-the user wants to just sample 1k events/sec.
+Sorry for a very late reply. I was on vacation.
 
-perf record -F 1000 -e sched:sched_switch -a -- sleep 1
+I thought update will always happen with mutex lock held. That's what
+sequence counter expects so that two updaters don't race. Just that while
+updating under mutex lock, we still need to use sequence counter mecahinsm
+to update values so that any readers out there not holding mutex don't
+get confused.
 
-Doesn't look like we're using sampling for tracepoint events? The rest 
-of this makes sense only if we're sampling tracepoint events (eg: to 
-limit the impact on the system being profiled/traced).
+Did I miss some code where nr_sects is being read without mutex and I
+have not use sequence counter version to read it?
 
-On a system with 50k sched_switch and 10k sched_stat_sleep events, if we 
-sample at 1000 events/sec, we may lose an event of interest either due 
-to finite buffer sizes or to sampling, which is why a single event based 
-sleep profiling is of interest to us.
+> Vivek, rather than fix the rest of the references to nr_sects to use the read/write functions, why not just fix the few sites that were accessing it without the mutex to take the mutex fist instead of using a seqcounter?
 
-On 1/25/12 6:21 PM, Frederic Weisbecker wrote:
- >
- > Have you tried to tweak the -m options to increase the size of the 
-buffer?
+Right now readers can afford not to take lock. Introducing mutex on read
+side with just add to the cost. Especially IO submission path where we
+map IO to a partitiona and we wouldn't want to take mutexes there?
 
--m4:
+Are you still pursuing this pathset? Sounds like a useful functionality
+to have.
 
-Processed 276875 events and lost 4772 chunks!
-
-Check IO/CPU overload!
-
--m5:
-
-   Fatal: failed to mmap with 22 (Invalid argument)
-
-  -Arun
+Thanks
+Vivek
