@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab2AZDfl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 22:35:41 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35084 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2AZDfj convert rfc822-to-8bit (ORCPT
+	id S1752034Ab2AZDrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 22:47:35 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51227 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607Ab2AZDrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 22:35:39 -0500
+	Wed, 25 Jan 2012 22:47:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120126024342.GA12492@gondor.apana.org.au>
-References: <20100427135547.GA4008@gondor.apana.org.au> <20100603100550.GA30681@gondor.apana.org.au>
- <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au>
- <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au>
- <20101215115035.GA25248@gondor.apana.org.au> <20110216053911.GA10999@gondor.apana.org.au>
- <20110328071322.GA6569@gondor.apana.org.au> <20110629235153.GA16559@gondor.apana.org.au>
- <20120126024342.GA12492@gondor.apana.org.au>
+In-Reply-To: <201201260209.54513.vda.linux@googlemail.com>
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+ <201201260032.57937.vda.linux@googlemail.com> <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
+ <201201260209.54513.vda.linux@googlemail.com>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 Jan 2012 19:35:19 -0800
-X-Google-Sender-Auth: zmHK3W-DNFCNJU2KmxxArti9l0o
-Message-ID: <CA+55aFzFecPSQverH7VQBDZY+gS7_RALwh3W4oqWLbWBcBzLqg@mail.gmail.com>
-Subject: Re: Crypto Fixes for 3.3
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Date: Wed, 25 Jan 2012 19:47:12 -0800
+X-Google-Sender-Auth: WZKh_48T_FXRIpBpWUzsmKnKbio
+Message-ID: <CA+55aFzDZhGoa1TH=RAtjK3Ti3=NPAYvreSxiTxTu3wnu8Z61g@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Indan Zupancic <indan@nul.nu>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
+        Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 6:43 PM, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+On Wed, Jan 25, 2012 at 5:09 PM, Denys Vlasenko
+<vda.linux@googlemail.com> wrote:
 >
-> This push fixes a race condition in sha512 that affects users
-> who use it in process context and softirq context concurrently,
-> in particular, this affects IPsec.  The result of the race is
-> the production of incorrect hashes, which for IPsec leands to
-> loss of connectivity.
+> Please look at strace source, get_scno() function, where
+> it reads syscall no and parameters. Let's see....
+> - POWERPC: has 32-bit and 64-bit mode
+> - X86_64: has 32-bit and 64-bit mode
+> - IA64: has i386-compat mode
+> - ARM: has more than one ABI
+> - SPARC: has 32-bit and 64-bit mode
+>
+> Do you want to re-invent a different arch-specific way to report
+> syscall type for each of these arches?
 
-Ugh. This once more has the crazy signed integer modulus operator,
-which can be quite expensive depending on whether the compiler can
-tell whether it is always positive or not.
+I think an arch-specific one is better than trying to make some
+generic one that is messy.
 
-Also, that modulus is exposed everywhere.
+As you say, many architectures have multiple system call ABIs.
 
-In git, the sha1 implementation (which has many of the same issues) does this:
+But they tend to be very *different* issues. They can be about
+multiple ABI's, as you mention, and even when they *look* similar
+(32-bit vs 64-bit ABI's) they are actually totally different issues.
 
-  /* This "rolls" over the 512-bit array */
-  #define W(x) (array[(x)&15])
+On x86, the real issue is not so much "32-bit vs 64-bit" as "multiple
+system call entry models", where a 64-bit process can use the system
+call entry for a 32-bit one. That is not true on POWER, for example,
+and trying to make it out to be the same issue only muddles the point,
+and confuses things. It really is NOT AT ALL the same issue, even if
+you can make it "look" like the same issue by calling it a 32-bit vs
+64-bit thing.
 
-which means that the modulus exists in just one place (and is the
-correct binary 'and', not the possibly-expensive division).
+So for POWER, it really is about the mode of the CPU/process. For x86,
+it really isn't. Trying to equate the two is *wrong*.
 
-We also avoid the problem with absolutely horrible gcc register usage
-by having an arch-specific "accessor macro":
+I seriously think it's better to be architecture-specific than to be
+that kind of totally confused, and try to "consolidate" the issue,
+when they are actually two totally different issues.
 
-  /*
-   * If you have 32 registers or more, the compiler can (and should)
-   * try to change the array[] accesses into registers. However, on
-   * machines with less than ~25 registers, that won't really work,
-   * and at least gcc will make an unholy mess of it.
-   *
-   * So to avoid that mess which just slows things down, we force
-   * the stores to memory to actually happen (we might be better off
-   * with a 'W(t)=(val);asm("":"+m" (W(t))' there instead, as
-   * suggested by Artur Skawina - that will also make gcc unable to
-   * try to do the silly "optimize away loads" part because it won't
-   * see what the value will be).
-   *
-   * Ben Herrenschmidt reports that on PPC, the C version comes close
-   * to the optimized asm with this (ie on PPC you don't want that
-   * 'volatile', since there are lots of registers).
-   *
-   * On ARM we get the best code generation by forcing a full memory barrier
-   * between each SHA_ROUND, otherwise gcc happily get wild with spilling and
-   * the stack frame size simply explode and performance goes down the drain.
-   */
-
-  #if defined(__i386__) || defined(__x86_64__)
-    #define setW(x, val) (*(volatile unsigned int *)&W(x) = (val))
-  #elif defined(__GNUC__) && defined(__arm__)
-    #define setW(x, val) do { W(x) = (val); __asm__("":::"memory"); } while (0)
-  #else
-    #define setW(x, val) (W(x) = (val))
-  #endif
-
-which is not pretty, but as you guys found out, the alternative can be
-much worse (ie totally crazy gcc register spilling)
-
-                    Linus
+                        Linus
