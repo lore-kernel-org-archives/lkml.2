@@ -1,70 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388Ab2AZFw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 00:52:29 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62128 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab2AZFw1 (ORCPT
+	id S1751390Ab2AZF5v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 00:57:51 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:33247 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab2AZF5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 00:52:27 -0500
-Message-ID: <4F20EA10.9070607@vlnb.net>
-Date: Thu, 26 Jan 2012 00:52:16 -0500
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111108 Mnenhy/0.8.3 Thunderbird/3.1.16
+	Thu, 26 Jan 2012 00:57:47 -0500
+Message-ID: <0fac69b7cf4ddb2a87065646d8c0309c.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201201260209.54513.vda.linux@googlemail.com>
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+    <201201260032.57937.vda.linux@googlemail.com>
+    <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
+    <201201260209.54513.vda.linux@googlemail.com>
+Date: Thu, 26 Jan 2012 06:57:18 +0100
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Denys Vlasenko" <vda.linux@googlemail.com>
+Cc: "Oleg Nesterov" <oleg@redhat.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "Jamie Lokier" <jamie@shareable.org>,
+        "Andrew Lutomirski" <luto@mit.edu>, "Will Drewry" <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        "Roland McGrath" <mcgrathr@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: scst-devel <scst-devel@lists.sourceforge.net>
-CC: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: [ANNOUNCE]: Released version 2.2 of SCST core, target drivers iSCSI-SCST,
- qla2x00t (QLogic FC), ib_srpt (InfiniBand SRP) and scst_local with scstadmin
- utility and fileio_tgt user space backend handler
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:4VGA81Nu96IJ4k5AUKjJqOV8CLcaxgNevfgVO1h8koV
- KDnthvtRZKSLbOhk+ICZPfjErsVuxNzxfMTHNWCrP/+zZizusD
- q6E/JYLnL2bN1uTtxMa5t8YVNqA3EpdkVv2IF6BE/QCDxWx57I
- Nf9oglbJhSp5D5Q4oRxD2mIBvz9ZkkKSlFai5Dma84SMU0GyYb
- IB6UG+rxmIl2eAW7vjgXbdu0eaRhBsCGxbYz5XpvfeyEYp0KJL
- Sv0T3KtO4CZPggNPVMmR60HDRqOIXNZ5ummWJ2JOgRn4MaGe8u
- wjmDtfSUzOiv3wOHJfVx/g07HxLMQSIhduxgozX0k3nqlPKtUI
- jDIdQoSDCLsWotYSHKUk=
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 1.4
+X-Scan-Signature: 12808661ad9e64cdb46d03b2a0987e23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm glad to announce a stable release 2.2 of SCST, alternative SCSI target
-stack for Linux with target drivers for iSCSI (iSCSI-SCST), QLogic Fibre Channel
-22xx/23xx/24xx/25xx (qla2x00t), InfiniBand SRP (ib_srpt), scst_local as well as
-user space scstadmin management utility and fileio_tgt user space backend handler.
+On Thu, January 26, 2012 02:09, Denys Vlasenko wrote:
+> Dealt with in Linus tree already: set PTRACE_O_TRACEEXEC option,
+> and use PTRACE_GETEVENTMSG in PTRACE_EVENT_EXEC stop to get
+> the old TID.
 
-SCST allows creation of sophisticated storage devices, which provide advanced
-functionality, like replication, thin provisioning, deduplication, high
-availability, automatic backup, etc. Another class of such devices are Virtual
-Tape Libraries (VTL) as well as other disk-based backup solutions. SCST created
-devices not limited by IP network interface only, but they can use any link
-supporting SCSI-style data exchange, including Fibre Channel, SAS and parallel
-SCSI. It might well be that your favorite storage appliance running SCST in the
-firmware.
+Thanks, getting the old TID is useful, that was the missing bit to
+handle execve statelessly.
 
-More info about SCST core and modules you can find on:
+>
+>
+>> > To future-proof this scheme we may reserve a few more event values
+>> > PTRACE_EVENT_SYSCALL_ENTRY2, PTRACE_EVENT_SYSCALL_ENTRY3, etc,
+>> > if we'll ever have arches with more than one non-native syscall
+>> > entry. I'm no expert, but looking at strace code, ARM may already have
+>> > more than one additional convention how to pass syscall args.
+>>
+>> Please, no! This way lays madness, just one PTRACE_EVENT_SYSCALL_ENTRY,
+>> no PTRACE_EVENT_SYSCALL_ENTRY1 or PTRACE_EVENT_SYSCALL_ENTRY2, that
+>> would be horrible. Keep arch specific stuff in arch specific areas,
+>> please don't spread it around.
+>
+> The situation when an architecture has 32- and 64-bit varieties,
+> and sometimes different ABIs (parameter passing comventions),
+> is rather typical, it's not a quirk of just one unfortunate
+> architecture.
 
-   - SCST core: http://scst.sourceforge.net
+The question is how many of those have a different ABI and can not
+be reliably detected at system call entry time. If the ABI can't
+be changed at runtime then there's no problem either.
 
-   - iSCSI target driver iSCSI-SCST: http://iscsi-scst.sourceforge.net/index.html
+x86_64's case is very peculiar because it can execute a 32-bit compat
+syscall while the process itself is in 64-bit mode.
 
-   - QLogic 22xx/23xx/24xx/25xx Fibre Channel target driver:
-http://scst.sourceforge.net/target_qla2x00t.html
+> Please look at strace source, get_scno() function, where
+> it reads syscall no and parameters. Let's see....
+> - POWERPC: has 32-bit and 64-bit mode
+> - X86_64: has 32-bit and 64-bit mode
+> - IA64: has i386-compat mode
+> - ARM: has more than one ABI
+> - SPARC: has 32-bit and 64-bit mode
 
-   - InfiniBand SRP: http://scst.sourceforge.net/target_srp.html
+Fow most of them you can reliably check the mode by looking at registers.
 
-   - scst_local: http://scst.sourceforge.net/target_local.html
+x86_64 and apparently ARM are problematic. Others may too in similar subtle
+ways as x86_64, but I can't tell that from strace's code.
 
-   - fileio_tgt backend handler:
-http://scst.sourceforge.net/handler_fileio_tgt.html.
+ARM looks ok when old cruft isn't enabled (much more likely than compat
+mode being disabled in x86_64).
 
-You can download SCST core and modules from
-http://scst.sourceforge.net/downloads.html.
+Can SPARC change mode on the fly without detection? Otherwise it looks
+like it may be slightly problematic too, though it seems that at least
+the ABI is pretty much the same between 32 and 64 bit mode. Same for
+PA-RISC. So all in all not sure if they have a problem or not.
 
-Thanks to all who made it happen!
+To be a problem the only way to figure our what mode the system call
+will be is by looking at the trapping/syscall instruction itself. If
+that isn't needed, or if there isn't much difference between the modes
+anyway, then there's no problem.
 
-Vlad
+>
+> Do you want to re-invent a different arch-specific way to report
+> syscall type for each of these arches?
+
+Thing is, it is not just 32 versus 64 bit mode. So one way or the other,
+you do end up with an arch-specific way of saying what syscall type it is.
+
+It doesn't matter much where that info is stuffed, it will always be arch
+specific, because depending on that value people have to do different
+arch specific things.
+
+It's fine to somehow give that info together with PTRACE_EVENT_SYSCALL_ENTRY,
+but I don't think it's a good idea to have different syscall entry events
+depending on what type they are. I suppose the only reason to do that would
+be because we're running out of bits elsewhere.
+
+>
+>> What was wrong with using eflags again? Is it too simple or something?
+>
+> It's x86-specific, and abuses a bit in a real register.
+
+If the problem is limited to only a couple of archs, and we can stuff this
+info in the register set for all of them, then I'm all for it.
+
+So far it's just x86_64 and ARM with OABI enabled, with the rest either
+fine or unclear.
+
+Greetings,
+
+Indan
+
 
