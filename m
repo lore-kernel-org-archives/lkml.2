@@ -1,141 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab2AZQWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 11:22:46 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1547 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab2AZQWm (ORCPT
+	id S1753193Ab2AZQW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 11:22:58 -0500
+Received: from paperboy.avencall.com ([91.194.178.22]:47148 "EHLO
+	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752641Ab2AZQW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 11:22:42 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 26 Jan 2012 08:22:30 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v1 2/3] ARM: tegra: assembler code for LP3
-Date: Thu, 26 Jan 2012 18:22:02 +0200
-Message-Id: <1327594923-21822-3-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	Thu, 26 Jan 2012 11:22:56 -0500
+Date: Thu, 26 Jan 2012 17:22:48 +0100
+From: Guillaume Knispel <gknispel@proformatique.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Guillaume Knispel <gknispel@proformatique.com>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Xavier Carcelle <xcarcelle@avencall.com>,
+        =?ISO-8859-1?Q?No=E9?= Rubinstein <nrubinstein@avencall.com>
+Subject: Re: How to "register" a GSI for a non PCI non ISA device
+Message-ID: <20120126172248.72b0efa5@xilun>
+In-Reply-To: <20120126153239.GA14367@phenom.dumpdata.com>
+References: <20120124184203.1b0878c2@xilun>
+	<4F1F99A5.1000206@kernel.org>
+	<20120125182314.7834c75b@xilun>
+	<20120125190214.GC18606@phenom.dumpdata.com>
+	<20120126160719.3b9be3b3@xilun>
+	<20120126153239.GA14367@phenom.dumpdata.com>
+Organization: Avencall
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Configure the flow controller for clockgating and enter WFI
+On Thu, 26 Jan 2012 10:32:39 -0500
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-Based on work by:
+> On Thu, Jan 26, 2012 at 04:07:19PM +0100, Guillaume Knispel wrote:
+> > On Wed, 25 Jan 2012 14:02:14 -0500
+> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > 
+> > > On Wed, Jan 25, 2012 at 06:23:14PM +0100, Guillaume Knispel wrote:
+> > >
+> > > > can't call it explicitly from my LKM, there should better be a way to
+> > > > make it be called when an ACPI thing is done, or maybe a legacy table
+> > > > parsed.
+> > > 
+> > > Can you do it the way xen does? Look in arch/x86/xen/pci.c
+> > 
+> > Did not found this file. Besides, isn't Xen a separate architecture
+> 
+> Duh! I meant arch/x86/pci/xen.c
+> 
+> > from mainline x86, compiled built-in? My goal is to only touch LKM and
+> 
+> Not anymore. It is dynamically on if the kernel detects its running under the
+> hypervisor.
+> 
+> I am still unclear what you are trying to do. Is it that
+> you have _PRT ACPI tables and your want to have your module be called
+> when those are parsed? If so, then __acpi_register_gsi is your guy - 
+> and you can over-write it to your platform. Granted at that point that
+> function parameter should be guarded by some form of locking. Perhaps
+> provide a acpi_register_gsi_fnc() that can be exported out. Would
+> that work for you (I can cook up a patch for that)?
 
-Colin Cross <ccross@android.com>
-Gary King <gking@nvidia.com>
+Sorry if I was unclear, I'll try to make things more explicit.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/sleep.S |   91 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 91 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-tegra/sleep.S
+We build the platform which obviously differs a little from a PC (but
+just because of the presence of those additional non-ISA non-PCI
+devices), but as far as software is concerned we are trying to make the
+system run with a standard unmodified Linux kernel already built by
+Debian (because rebuilding our own would shift the maintenance of
+that kernel on us instead of Debian, and we would not be good at that)
 
-diff --git a/arch/arm/mach-tegra/sleep.S b/arch/arm/mach-tegra/sleep.S
-new file mode 100644
-index 0000000..8f9fde1
---- /dev/null
-+++ b/arch/arm/mach-tegra/sleep.S
-@@ -0,0 +1,91 @@
-+/*
-+ * arch/arm/mach-tegra/sleep.S
-+ *
-+ * Copyright (c) 2010-2011, NVIDIA Corporation.
-+ * Copyright (c) 2011, Google, Inc.
-+ *
-+ * Author: Colin Cross <ccross@android.com>
-+ *         Gary King <gking@nvidia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
-+
-+#include <linux/linkage.h>
-+#include <mach/io.h>
-+#include <mach/iomap.h>
-+
-+#include "flowctrl.h"
-+
-+#define TEGRA_FLOW_CTRL_VIRT (TEGRA_FLOW_CTRL_BASE - IO_PPSB_PHYS \
-+					+ IO_PPSB_VIRT)
-+
-+/* returns the offset of the flow controller halt register for a cpu */
-+.macro cpu_to_halt_reg rd, rcpu
-+	cmp	\rcpu, #0
-+	subne	\rd, \rcpu, #1
-+	movne	\rd, \rd, lsl #3
-+	addne	\rd, \rd, #0x14
-+	moveq	\rd, #0
-+.endm
-+
-+/* returns the offset of the flow controller csr register for a cpu */
-+.macro cpu_to_csr_reg rd, rcpu
-+	cmp	\rcpu, #0
-+	subne	\rd, \rcpu, #1
-+	movne	\rd, \rd, lsl #3
-+	addne	\rd, \rd, #0x18
-+	moveq	\rd, #8
-+.endm
-+
-+/* returns the ID of the current processor */
-+.macro cpu_id, rd
-+	mrc	p15, 0, \rd, c0, c0, 5
-+	and	\rd, \rd, #0xF
-+.endm
-+
-+/* loads a 32-bit value into a register without a data access */
-+.macro mov32, reg, val
-+	movw	\reg, #:lower16:\val
-+	movt	\reg, #:upper16:\val
-+.endm
-+
-+/*
-+ * tegra_cpu_wfi
-+ *
-+ * puts current CPU in clock-gated wfi using the flow controller
-+ *
-+ * corrupts r0-r3
-+ * must be called with MMU on
-+ */
-+
-+ENTRY(tegra_cpu_wfi)
-+	cpu_id	r0
-+	cpu_to_halt_reg r1, r0
-+	cpu_to_csr_reg r2, r0
-+	mov32	r0, TEGRA_FLOW_CTRL_VIRT
-+	mov	r3, #FLOW_CTRL_CSR_INTR_FLAG | FLOW_CTRL_CSR_EVENT_FLAG
-+	str	r3, [r0, r2]	@ clear event & interrupt status
-+	mov	r3, #FLOW_CTRL_WAIT_FOR_INTERRUPT | FLOW_CTRL_JTAG_RESUME
-+	str	r3, [r0, r1]	@ put flow controller in wait irq mode
-+	dsb
-+	wfi
-+	mov	r3, #0
-+	str	r3, [r0, r1]	@ clear flow controller halt status
-+	mov	r3, #FLOW_CTRL_CSR_INTR_FLAG | FLOW_CTRL_CSR_EVENT_FLAG
-+	str	r3, [r0, r2]	@ clear event & interrupt status
-+	dsb
-+	mov	pc, lr
-+ENDPROC(tegra_cpu_wfi)
-+
+So what we can act on are the LKM and the system firmware, but not the
+bzImage.
+
+The problem I'm facing is that I don't know how to setup a GSI, what
+used to be done by directly calling acpi_register_gsi(), which was
+possible from an LKM when it was exported (for example in 2.6.18,
+which was the kernel used by Intel for their dev board).
+
+Because acpi_register_gsi() is not exported anymore, I'm trying to find
+a way to make it be called during system startup. My current best guess
+is that if I write the right magic spell somewhere in the DSDT or maybe
+a kind of legacy BIOS table, the acpi_register_gsi() will be called
+during the boot and will configure the GSI with the desired level
+triggering, so that the LKM will just have to request_irq() (but on
+which irq number? same as gsi number?) and everything will work fine.
+
+I don't think I've to replace acpi_register_gsi() by my own
+implementation; the GSI in question is a standard one on the only
+IO APIC in the system. So everything looks pretty simple. The only
+question is how to make use of that GSI from the software side,
+first how to configure it to level trigger active low, then how to
+request it from a LKM given that the LKM in question does not drive
+a PCI device that makes use of the interrupt we want.
+
+The simplified architecture is the following:
+
+ Intel 80579 System on Chip                | External chip
+                                           |
++----------+            +-----+            |  +---------+
+| CPU + NB |--- PCI ----| LEB |--- // bus ----| telecom |
++----------+            +-----+            |  |  chip   |
+     |                                     |  +---------+
+ +--------+                                |   |
+ | IOAPIC |----------------- GSI 32 -----------+
+ +--------+                                |
+
+The LKM will register as a driver for the PCI enumerable LEB then use
+it to drive the telecom chip. GSI 32 is unrelated to the LEB.
+
+> But this a bit complicated by the fact that ACPI parsing is done
+> early in the bootup processes - so your module should be compiled in
+> - otherwise you might miss the the 'request_irq' calls done by drivers
+> that are done _before_ your module is loaded.
+> 
+> Unless you want to re-trigger the ACPI _PRT parsing and call your
+> module once more for all interrupts? But that would imply unload
+> all existing modules, then reload them once more..
+> 
+> Or is it that you just want to set the APIC parameters differently?
+> Wouldn't then the be better of implementing an ' struct apic ' which
+> would have most, of them set to the existing (apic_physflat) and just
+> over-write the ones you really care about - like write and read?
+> 
+> > system firmware if necessary.
+> > 
+> > > > As we first target an unmodified (if possible) 2.6.32 kernel from
+> > > > Debian Squeeze, I can't just re-export acpi_register_gsi() and call it
+> > > > a day. (If I've no other choice I'll obviously do it, but this would be
+> > > > quite bad for future maintenance).
+> > > 
+> > > Oh wow. That is ancient. 3.2?
+> > 
+> > 3.2 when a Debian stable will feature 3.2 :)
+> 
+> Ah OK.
+
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+Guillaume Knispel
+Avencall - 10 bis, rue Lucien Voilin - 92800 Puteaux
