@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab2AZVkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:40:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40379 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab2AZVkg (ORCPT
+	id S1753952Ab2AZVky (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:40:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43484 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2AZVkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:40:36 -0500
-Date: Thu, 26 Jan 2012 13:40:20 -0800
-From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
-Message-ID: <tip-8h3rc1igpp8ir94aas69qmhk@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        dirk.brandewie@gmail.com, tglx@linutronix.de,
-        jacob.jun.pan@linux.intel.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dirk.brandewie@gmail.com, tglx@linutronix.de,
-        jacob.jun.pan@linux.intel.com, mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/mrst: Set ISA bus type for fake MP IRQs
-Git-Commit-ID: d450c088fb00d5a744b1fe8648a488035a10a03c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 13:40:26 -0800 (PST)
+	Thu, 26 Jan 2012 16:40:52 -0500
+Date: Thu, 26 Jan 2012 13:40:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Niels de Vos <ndevos@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Mikulas Patocka <mpatocka@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        "Bryn M. Reeves" <bmr@redhat.com>
+Subject: Re: [PATCH v3] fs: Invalidate the cache for a parent block-device
+ if fsync() is called for a partition
+Message-Id: <20120126134051.6add3cd2.akpm@linux-foundation.org>
+In-Reply-To: <1327584802-14298-1-git-send-email-ndevos@redhat.com>
+References: <4F213E1A.4060808@redhat.com>
+	<1327584802-14298-1-git-send-email-ndevos@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d450c088fb00d5a744b1fe8648a488035a10a03c
-Gitweb:     http://git.kernel.org/tip/d450c088fb00d5a744b1fe8648a488035a10a03c
-Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
-AuthorDate: Thu, 26 Jan 2012 17:32:33 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 26 Jan 2012 21:23:52 +0100
+On Thu, 26 Jan 2012 13:33:22 +0000
+Niels de Vos <ndevos@redhat.com> wrote:
 
-x86/mrst: Set ISA bus type for fake MP IRQs
+> Executing an fsync() on a file-descriptor of a partition flushes the
+> caches for that partition by calling blkdev_fsync(). However, it seems
+> that reading data through the parent device will still return the old
+> cached data.
+> 
+> The problem can be worked around by forcing the caches to be flushed
+> with either
+> 	# blockdev --flushbufs ${dev_disk}
+> or
+> 	# echo 3 > /proc/sys/vm/drop_caches
+> 
+> One of the use-cases that shows this problem:
+> 1) create two or more partitions on a device
+>    - use fdisk to create /dev/sdb1 and /dev/sdb2
+> 2) format and mount one of the partition
+>    - mkfs -t ext3 /dev/sdb1
+> 3) read through the main device to have something in the cache
+>    - read /dev/sdb with dd or use something like "parted /dev/sdb print"
+> 4) now write something to /dev/sdb2, format the partition for example
+>    - mkfs -t ext3 /dev/sdb2
+> 5) read the blocks where sdb2 starts, through /dev/sdb
+>    - use dd or do again a "parted /dev/sdb print"
+> 
+> The cache for the block-device is not synced if the block-device is kept
+> open (due to a mounted partition, for example). Only when all users for
+> the disk have exited, the cache for the disk is made consistent again.
+> 
+> Without this patch, calling "blockdev --flushbufs" or dropping the
+> caches, the result in 5) is the same as in 3). Reading the same area
+> through /dev/sdb2 shows the inconsistancy between the two caches.
+> 
+> ...
+>
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -424,6 +424,10 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
+>  	if (error == -EOPNOTSUPP)
+>  		error = 0;
+>  
+> +	/* invalidate parent block_device */
+> +	if (!error && bdev != bdev->bd_contains)
+> +		invalidate_bdev(bdev->bd_contains);
+> +
+>  	return error;
+>  }
+>  EXPORT_SYMBOL(blkdev_fsync);
 
-We use MP IRQs for SFI presented timer interrupts, we should
-also set mp_bus_not_pci for MP_ISA_BUS so that pin_2_irq mapping
-is correct.
+I can't say I'm a huge fan of this.  It just isn't logical to drop
+/dev/sda's pagecache in here.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Link: http://lkml.kernel.org/n/tip-8h3rc1igpp8ir94aas69qmhk@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/apic/io_apic.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+We're adapting the kernel to the behavior of existing userspace by
+inserting a useful side-effect into a suprising place.  The result is
+pretty darned hacky.
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 9e75366..fb07275 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1010,7 +1010,7 @@ static int pin_2_irq(int idx, int apic, int pin)
- 	} else {
- 		u32 gsi = gsi_cfg->gsi_base + pin;
- 
--		if (gsi >= legacy_pic->nr_legacy_irqs)
-+		if (gsi >= NR_IRQS_LEGACY)
- 			irq = gsi;
- 		else
- 			irq = gsi_top + gsi;
-@@ -3610,7 +3610,7 @@ static void __init probe_nr_irqs_gsi(void)
- {
- 	int nr;
- 
--	nr = gsi_top + legacy_pic->nr_legacy_irqs;
-+	nr = gsi_top + NR_IRQS_LEGACY;
- 	if (nr > nr_irqs_gsi)
- 		nr_irqs_gsi = nr;
- 
+The Right Thing To Do here is to make the kernel behave logically and
+predictably, then modify the userspace tools.  But if we're modifying
+the userspace tools then we would just change userspace to issue a
+BLKFLSBUF to /dev/sda and leave the kernel alone.
+
+So hm.  I think I might prefer to leave the issue unfixed rather than
+doing this to the poor old kernel :(
+
