@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab2AZJkG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:40:06 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59800 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842Ab2AZJkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:40:04 -0500
-Date: Thu, 26 Jan 2012 10:39:36 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-Message-ID: <20120126093936.GA13963@elte.hu>
-References: <20120116205140.6120.E1E9C6FF@jp.fujitsu.com>
- <1326721082.2442.234.camel@twins>
- <20120117174031.3118.E1E9C6FF@jp.fujitsu.com>
- <20120117090605.GD7612@elte.hu>
- <20120117151242.GA13290@redhat.com>
- <20120118094219.GE5842@elte.hu>
- <1327399885.2614.5.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327399885.2614.5.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1751447Ab2AZJmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:42:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33769 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab2AZJmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 04:42:43 -0500
+Date: Thu, 26 Jan 2012 01:48:36 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org
+Subject: Re: Linux 3.3-1 out - merge window closed
+Message-Id: <20120126014836.aaf79457.akpm@linux-foundation.org>
+In-Reply-To: <20120120151452.2fe57bb87218f575e8909caf@canb.auug.org.au>
+References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
+	<20120120151452.2fe57bb87218f575e8909caf@canb.auug.org.au>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 20 Jan 2012 15:14:52 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> > It can generate delays at the exact same place, and can 
-> > generate much longer delays than an SMI, if a high-prio RT 
-> > task comes along.
+> Hi all,
 > 
-> No it can't, since do_exit() plays silly games with 
-> preempt_disable().
+> On Thu, 19 Jan 2012 15:58:28 -0800 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> >
+> > (Stats for those that like them: 20% arch updates (arm, power, mips,
+> > x86), 60% drivers (networking - wireless in particular, staging,
+> > media, dri, sound, misc - including getting rid of 'struct sysdev'),
+> > and 20% random stuff: filesystems, networking, perf etc)
+> 
+> More stats for the bored:
+> 
+> (I don't count merge commits below and everything is relative to v3.2)
+> 
+> Of the 8899 commits in v3.3-rc1, 6918 were in next-20120106 (the first
+> -next based on v3.2).  A further 792 commits have the same subject line as
+> commits in next-20120116 and a further 16 have the same patch-id.
+> 
+> This leaves 1174 commits (13%) in v3.3-rc1 that were not in next-20120106
+> for some reason (not too bad really, I guess).
 
-ok, it being a critical section on both -rt and vanilla upstream 
-explains it.
+That's a lot.  Please name names!
 
-Thanks,
+I was impacted by several busted patches which had not appeared in
+-next.
 
-	Ingo
+Also, I saw numerous patches which were significantly altered during
+their trip from -next to mainline, which is cheating.  These showed up
+as a massive reject storm when I attempted to git-merge linus-now with
+next-from-12-hours-ago.  I went in and checked.  tools/perf was a major
+culprit.
+
+> Some will clearly be bug
+> fixes, of course.  Some will be quilt trees (probably rebased before
+> being sent to Linus).  Some will be patches that depend on work by others.
+
+The quilt trees would have been eliminated by the "commits have the
+same subject line" test?
+
+
+I don't think this is all a huuuge problem - we sort this stuff out
+fairly quickly.  But things could be improved a bit.
