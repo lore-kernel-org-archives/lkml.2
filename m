@@ -1,89 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab2AYX6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 18:58:07 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:35096 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751401Ab2AYX6F convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 18:58:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
-References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-	<20120108221342.GA7058@ime.usp.br>
-	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
-	<20120109112207.7f993845@jbarnes-desktop>
-	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
-	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
-	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
-	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
-	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
-	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
-	<20120113115946.GA10615@ime.usp.br>
-	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
-	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
-	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
-	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
-	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
-	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
-	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
-	<CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
-	<CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
-	<CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
-	<CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
-	<CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
-	<CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
-	<CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
-	<CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
-	<CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
-	<CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
-Date: Wed, 25 Jan 2012 21:58:04 -0200
-X-Google-Sender-Auth: UwRH0uI1r4TXFgFVkIIvPobj6os
-Message-ID: <CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
-Content-Type: text/plain; charset=UTF-8
+	id S1752550Ab2AZACr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 19:02:47 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:28867 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab2AZACp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jan 2012 19:02:45 -0500
+From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+To: Maxim Uvarov <maxim.uvarov@oracle.com>
+CC: Wim Van Sebroeck <wim@iguana.be>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        dann frazier <dannf@hp.com>
+Subject: RE: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
+Thread-Topic: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
+Thread-Index: AQHM1AQmvgYktPlZTkqNjF1gWE474ZYcA0YAgAAEtwCAAAZWcIABub+AgAALDoA=
+Date: Thu, 26 Jan 2012 00:01:14 +0000
+Message-ID: <9774516974AF5F4C8A2C3C69CD3412332032F8AA@G9W0755.americas.hpqcorp.net>
+References: <1326686570-19303-1-git-send-email-maxim.uvarov@oracle.com>
+ <1326686570-19303-2-git-send-email-maxim.uvarov@oracle.com>
+ <CA+55aFxzfCxwYUcRbSyf+U7nr5GPjH4Qfine_TcY6Oxj8WQrWw@mail.gmail.com>
+ <20120124203738.GA27296@infomag.iguana.be>
+ <9774516974AF5F4C8A2C3C69CD3412332032E846@G9W0755.americas.hpqcorp.net>
+ <4F208E73.3070103@oracle.com>
+In-Reply-To: <4F208E73.3070103@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.216.12.11]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another update:
+Yes I will do this before the end of the week.
 
-On Wed, Jan 25, 2012 at 00:39, Rogério Brito <rbrito@ime.usp.br> wrote:
-> On Wed, Jan 25, 2012 at 00:33, Rogério Brito <rbrito@ime.usp.br> wrote:
->> Unfortunately, it died with a kernel panic and didn't reach the point
->> of X firing up.
+
+Tom
+
+-----Original Message-----
+From: Maxim Uvarov [mailto:maxim.uvarov@oracle.com] 
+Sent: Wednesday, January 25, 2012 5:21 PM
+To: Mingarelli, Thomas
+Cc: Wim Van Sebroeck; Linus Torvalds; linux-kernel@vger.kernel.org; akpm@linux-foundation.org; stable@vger.kernel.org; dann frazier
+Subject: Re: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
+
+Thomas, will you be able to test patch accoring to  Linus's nr_page note?
+
+Maxim.
+
+On 01/24/2012 01:05 PM, Mingarelli, Thomas wrote:
+> Yes I agree that Maxim's patch is correct. The original set_memory_x call for 64 bit was done correctly and the newer calls are wrong.
 >
-> Update: X *does* start and the panic occurs when GNOME is loading. I
-> will try next to run a kernel with the nvidia tco thing blacklisted
-> *but* with the transparent bridging resizing thing on to see if the
-> notebook is at least usable (as I suspect that nouveau may be having a
-> hard time with the current status of the PCI rework).
+> The 2 pages for the BIOS SD is a known value so it should be safe to use as is.
+>
+>
+>
+> Tom
+> -----Original Message-----
+> From: Wim Van Sebroeck [mailto:wim@iguana.be]
+> Sent: Tuesday, January 24, 2012 2:38 PM
+> To: Linus Torvalds
+> Cc: Maxim Uvarov; linux-kernel@vger.kernel.org; akpm@linux-foundation.org; stable@vger.kernel.org; Mingarelli, Thomas; dann frazier
+> Subject: Re: [PATCH] hpwdt: clean up set_memory_x call for 32 bit
+>
+> Hi Linus,
+>
+>> So I don't know who is supposed to be handling this (Wim?), but the
+>> patch itself looks suspicious.
+>
+> I asked Tom to look at Maxim's patch and see what it does. Tom was going to look at the patch and
+> I'm waiting on feedback from him first. (That's why I din't sent it upstream yet).
+>
+>> On Sun, Jan 15, 2012 at 8:02 PM, Maxim Uvarov<maxim.uvarov@oracle.com>  wrote:
+>>> -       set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
+>>> +       set_memory_x((unsigned long)bios32_entrypoint&  PAGE_MASK, 2);
+>>
+>> If it wasn't page-aligned to begin with, then maybe it needs three pages now?
+>>
+>>> -                               set_memory_x((unsigned long)cru_rom_addr, cru_length);
+>>> +                               set_memory_x((unsigned long)cru_rom_addr&  PAGE_MASK, cru_length>>  PAGE_SHIFT);
+>>
+>> Same here. If we align the start address down, we should fix up the
+>> length. And should we not align the number of pages up?
+>>
+>> In general, a "start/length" conversion to a "page/nr" model needs to be roughly
+>>
+>>     len += start&  ~PAGE_MASK;
+>>     start&= PAGE_MASK;
+>>     nr_pages = (len + PAGE_SIZE - 1)>>  PAGE_SHIFT;
+>>
+>> to do things right. But I don't know where those magic numbers come
+>> from. Maybe the "2" is already due to the code possibly traversing a
+>> page boundary, and has already been fixed up. Somebody who knows the
+>> driver and the requirements should take a look at this.
+>
+> Valid comments indeed. Tom please take Linus comments with you when you look at the patch.
+>
+> Dan: I put you in Cc: also so that you can have a look at it also.
+>
+> Kind regards,
+> Wim.
+>
+>
 
-The kernel panic is indeed there when I compile nouveau in, *after*
-some time that X is loaded.
-
-Wild thoughts: I just saw that nouveau calls some ACPI stuff to get
-EDID information and, as ACPI is broken on this notebook, could that
-be a potential reason for the panic that I'm seeing? (Yes, I can take
-a photo of the screen).
-
-I'm simply curious about what knowledgeable people would think.
-
-
-Regards,
-
--- 
-Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
-http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
-DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
