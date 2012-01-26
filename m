@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab2AZKy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 05:54:56 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44705 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751047Ab2AZKyy (ORCPT
+	id S1752521Ab2AZK5w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 05:57:52 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49200 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab2AZK5u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 05:54:54 -0500
-Date: Thu, 26 Jan 2012 10:54:53 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
-        gg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V2] mfd: tps65910: Add wakeup support
-Message-ID: <20120126105452.GB8041@opensource.wolfsonmicro.com>
-References: <1327304775-12202-1-git-send-email-ldewangan@nvidia.com>
+	Thu, 26 Jan 2012 05:57:50 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zx4FCpZtqtKETZ7O"
-Content-Disposition: inline
-In-Reply-To: <1327304775-12202-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120125.203746.1977019610549185259.davem@davemloft.net>
+References: <CAEP_g=9H9dV9=qtFPh4YeTNQ-t+UZGw-YqZ6hFWVNXjFy+GCZg@mail.gmail.com>
+ <20120125.165548.596418893115900979.davem@davemloft.net> <CAGsizzJnRy74ni-HH=5q1VR4g6sfDPg9SFw4UKgSjJjkSR8OJA@mail.gmail.com>
+ <20120125.203746.1977019610549185259.davem@davemloft.net>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
+Date: Thu, 26 Jan 2012 11:57:30 +0100
+X-Google-Sender-Auth: MU7EKenMW1PKYs5fJtQ5TtERe7I
+Message-ID: <CAGsizzLYxsc2MGxF7yK_QzS+3bexHa1F_6+NE87u3F18m7=R1g@mail.gmail.com>
+Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: David Miller <davem@davemloft.net>
+Cc: jesse@nicira.com, joseph.glanville@orionvm.com.au, eric.dumazet@gmail.com,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---zx4FCpZtqtKETZ7O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Jan 23, 2012 at 01:16:15PM +0530, Laxman Dewangan wrote:
-> Implementing irq_set_wake() so that device should able
-> to wakeup the system through different interrupt provided
-> by this device like gpios, onkey, rtc etc.
-
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-It will have the side effect of making all interrupts on the PMIC wake
-if any of them does but I suspect this is actually going to be fine in
-practice.
-
---zx4FCpZtqtKETZ7O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPITD2AAoJEBus8iNuMP3d7FUP/iL/NwRCNdLdMYyLds2P7Ipg
-7PWeb61jfrbpaclypnLSvDbwMzywCQI7ltVq9GCvY87L/ukw2E18fLXJf+J4AQZD
-O3TFqesMJpsi8fxWvppZwIdIjIGgYH4HReEXtOaRo6wHVOadixA94chSNbNXY4rr
-rb9RUYKUk7pJszkBhqXRLjtdDqdFLepzU+Do8tKsSPJDZB8kmXyBOlj8uDLPAGlo
-B3xkrqxgzcb748aTK6EGz/QVACeI2+hrRM1Fh4Ew9NRqfjZm7S5cOm/eWkDWuSG/
-/3KGtljNMpAeVKgkdemVm05r0YRlxQYcH0I3NTMAihZmN4kvPWUmo/qO7szXRoZQ
-fSuc+Gv0WKm53DyG6z5UzzPTMDtogaIPNcHArA+l2ilT3AzmZL6DaLASIGXx1Dg5
-2M6zwear3Yk0WJaQnqmeshy2zcj0/JDjUQNL86KFJDhNZ4Gl9pm6QzV8iVdyuREX
-Ssed5LTQIv6MrTmGZAg9Dt2VI9+XCDHjNe56VeENf71KyPvZuNMelCFxGU8aPlkk
-eNkdn2NtnFmBUibP43imLb8/AE57PDpznvf2O8+0mxq5FkEkvPsGTVWe+HTPDsR6
-gNE2v6fn7ZfGmxXS6xfayiXn2//IJqacPHAg2N3FggPkJJVvhCyHGqoNqBwW9QdZ
-MRdL5E4xHl2c8YQSihpr
-=L0QZ
------END PGP SIGNATURE-----
-
---zx4FCpZtqtKETZ7O--
+2012/1/26 David Miller <davem@davemloft.net>:
+> From: Štefan Gula <steweg@ynet.sk>
+> Date: Wed, 25 Jan 2012 23:57:18 +0100
+>
+>> The performance is one of the most critical thing why I have chosen to
+>> build kernel patch in the first place instead of some user-space app.
+>> If I used this approach, I would probably end up with patch for
+>> OpenVPN project instead in that time. I am not telling that
+>> openvswitch is not a good place for prototyping, but I believe that
+>> this patch is beyond that border as it successfully run in environment
+>> with more 98 linux-based APs, used for 4K+ users, with no issue for
+>> more than 2 years. The performance results from Joseph Glanville even
+>> adds value to it. So I still don't get the point, why my patch and
+>> openvswitch cannot coexists in the kernel together and let user/admin
+>> to choose to correct solution for him/her.
+>
+> You don't even know if openvswitch could provide acceptable levels
+> of performance, because you haven't even tried.
+>
+> I'm not applying your patch.
+Performance of any user-space application is lower than performance of
+something running purely inside the kernel-space only. So still don't
+see any valid reason, why it simply cannot coexists as it doesn't
+breaks any existing functionality at all?
