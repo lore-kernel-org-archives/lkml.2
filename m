@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab2AZU0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 15:26:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39646 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185Ab2AZU0m (ORCPT
+	id S1753833Ab2AZU0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 15:26:53 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11767 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab2AZU0u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 15:26:42 -0500
-Date: Thu, 26 Jan 2012 12:26:21 -0800
-From: tip-bot for Christian Borntraeger <borntraeger@de.ibm.com>
-Message-ID: <tip-db7e527da41560f597ccdc4417cefa6b7657c0c0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, borntraeger@de.ibm.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, borntraeger@de.ibm.com,
-        mingo@elte.hu
-In-Reply-To: <1326268696-30904-1-git-send-email-borntraeger@de.ibm.com>
-References: <1326268696-30904-1-git-send-email-borntraeger@de.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/s390: Fix compile error in sched/core.c
-Git-Commit-ID: db7e527da41560f597ccdc4417cefa6b7657c0c0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 26 Jan 2012 15:26:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 26 Jan 2012 12:26:37 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 26 Jan 2012 12:25:53 -0800
+Subject: RE: [PATCH v1 3/8] ARM: tegra: rework Tegra secondary CPU core
+ bringup
+Thread-Topic: [PATCH v1 3/8] ARM: tegra: rework Tegra secondary CPU core
+ bringup
+Thread-Index: AczcTRDPkL9m+qbFQ5uJUhtF7lemZwAGz9Bg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178CB8246B@HQMAIL01.nvidia.com>
+References: <1327597641-7519-1-git-send-email-pdeschrijver@nvidia.com>
+ <1327597641-7519-4-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1327597641-7519-4-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 12:26:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db7e527da41560f597ccdc4417cefa6b7657c0c0
-Gitweb:     http://git.kernel.org/tip/db7e527da41560f597ccdc4417cefa6b7657c0c0
-Author:     Christian Borntraeger <borntraeger@de.ibm.com>
-AuthorDate: Wed, 11 Jan 2012 08:58:16 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 26 Jan 2012 19:38:11 +0100
+Peter De Schrijver wrote at Thursday, January 26, 2012 10:07 AM:
+> Prepare the Tegra secondary CPU core bringup code for other Tegra variants.
+> The reset handler is also generalized to allow for future introduction of
+> powersaving modes which turn off the CPU cores.
 
-sched/s390: Fix compile error in sched/core.c
+> diff --git a/arch/arm/mach-tegra/headsmp.S b/arch/arm/mach-tegra/headsmp.S
 
-Commit 029632fbb7b7c9d85063cc9eb470de6c54873df3 ("sched: Make
-separate sched*.c translation units") removed the include of
-asm/mutex.h from sched.c.
+>  ENTRY(tegra_secondary_startup)
+...
+> +	enable_coresight r0
 
-This breaks the combination of:
+> +ENTRY(__tegra_cpu_reset_handler)
+> +
+> +#if DEBUG_CPU_RESET_HANDLER
+> +	enable_coresight r0
+> +	b	.
+> +#endif
 
- CONFIG_MUTEX_SPIN_ON_OWNER=yes
- CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX=yes
+I'm not sure why the macro call enable_coresight is ifdef'd in one place
+but not the other... Should just the instruction "b ." be inside the
+ifdef?
 
-like s390 without mutex debugging:
+> diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
 
-  CC      kernel/sched/core.o
-  kernel/sched/core.c: In function ‘mutex_spin_on_owner’:
-  kernel/sched/core.c:3287: error: implicit declaration of function ‘arch_mutex_cpu_relax’
+> +static void tegra_cpu_reset_handler_enable(void)
 
-Lets re-add the include to kernel/sched/core.c
+> +	/*
+> +	 * Prevent further modifications to the physical reset vector.
+> +	 *  NOTE: Has no effect on chips prior to Tegra30.
+> +	 */
+> +	reg = readl(sb_ctrl);
+> +	reg |= 2;
+> +	writel(reg, sb_ctrl);
+> +	wmb();
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1326268696-30904-1-git-send-email-borntraeger@de.ibm.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched/core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Should we skip that on Tegra20 then?
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e067df1..5255c9d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -74,6 +74,7 @@
- 
- #include <asm/tlb.h>
- #include <asm/irq_regs.h>
-+#include <asm/mutex.h>
- #ifdef CONFIG_PARAVIRT
- #include <asm/paravirt.h>
- #endif
+> +void __init tegra_cpu_reset_handler_init(void)
+> +{
+> +	unsigned long *cpu_reset_data_start, *cpu_reset_data_end;
+
+Those variables are unused.
+
+-- 
+nvpublic
+
