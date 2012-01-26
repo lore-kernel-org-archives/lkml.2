@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351Ab2AZRRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:17:41 -0500
-Received: from mail.sf-mail.de ([62.27.20.61]:48952 "EHLO www.sf-tec.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751601Ab2AZRRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:17:40 -0500
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the staging area
-Date: Thu, 26 Jan 2012 18:17:02 +0100
-Message-ID: <4414328.OlPOtXe4lZ@eto>
-User-Agent: KMail/4.8.0 (Linux/3.2.0-6-desktop; KDE/4.8.0; x86_64; ; )
-In-Reply-To: <1327516187-21793-1-git-send-email-kys@microsoft.com>
-References: <1327516187-21793-1-git-send-email-kys@microsoft.com>
+	id S1752876Ab2AZRSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:18:31 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56949 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab2AZRSa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 12:18:30 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2296618.8EdTuqZGIM"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+In-Reply-To: <4F2052DB.4060602@xenotime.net>
+References: <20120125141938.c1a9460d56948e1c7b26d3f8@canb.auug.org.au>
+	<4F2052DB.4060602@xenotime.net>
+Date: Thu, 26 Jan 2012 18:18:28 +0100
+X-Google-Sender-Auth: miduRyICJJMKZgyeGAQFxaYAPtA
+Message-ID: <CAMuHMdWp1wEHqPXNs+kaMYpomJnfbZPJjRk5GVFCuCL4Q5zK7g@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 25 (net/sock.h, jump_label, memcg)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 25, 2012 at 20:07, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> back to net/sock.h and jump_label:
+>
+> (on i386:)
+>
+> /next/linux-next-20120125/include/net/sock.h:953:2: error: implicit declaration of function 'static_branch'
+> /next/linux-next-20120125/include/linux/jump_label.h:43:29: error: conflicting types for 'static_branch'
+>
+> Full randconfig file is attached.
 
---nextPart2296618.8EdTuqZGIM
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Without having to add randomness, also in m68k/allmodconfig, now in Linus'
+tree :-(
+http://kisskb.ellerman.id.au/kisskb/buildresult/5491860/
 
-Am Mittwoch 25 Januar 2012, 10:29:47 schrieb K. Y. Srinivasan:
-> The storage driver (storvsc_drv.c) handles all block storage devices
-> assigned to Linux guests hosted on Hyper-V. This driver has been in the
-> staging tree for a while and this patch moves it out of the staging area.
-> 
-> This patch is based on the storvsc patches that are already on Greg's queue
-> for the staging tree. This patch-set addressed Christoph's review comments.
-> If need be, I can re-send this patch-set in Greg's queue
-> or I can  send the fully patched storvsc_drv.c.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/scsi/Kconfig                       |    7 +++++++
->  drivers/scsi/Makefile                      |    3 +++
->  drivers/{staging/hv => scsi}/storvsc_drv.c |    0
->  3 files changed, 10 insertions(+), 0 deletions(-)
->  rename drivers/{staging/hv => scsi}/storvsc_drv.c (100%)
-> 
-> diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-> index 16570aa..d3d18e8 100644
-> --- a/drivers/scsi/Kconfig
-> +++ b/drivers/scsi/Kconfig
-> @@ -662,6 +662,13 @@ config VMWARE_PVSCSI
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called vmw_pvscsi.
-> 
-> +config HYPERV_STORAGE
-> +	tristate "Microsoft Hyper-V virtual storage driver"
-> +	depends on SCSI && HYPERV
-> +	default HYPERV
-> +	help
-> +	  Select this option to enable the Hyper-V virtual storage driver.
-> +
->  config LIBFC
->  	tristate "LibFC module"
->  	select SCSI_FC_ATTRS
-> diff --git a/drivers/scsi/Makefile b/drivers/scsi/Makefile
-> index 2b88749..e4c1a69 100644
+Gr{oetje,eeting}s,
 
-I still miss a "this driver will be called ..." message here, as it is used 
-e.g. by the entry before:
+                        Geert
 
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called vmw_pvscsi.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Eike
---nextPart2296618.8EdTuqZGIM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iEYEABECAAYFAk8hipQACgkQXKSJPmm5/E47fwCeLkwc81RH61GNDCFr7QTD1rpT
-W/sAn3EGkVbcLskF21oYsfrCFZ8hDYQD
-=Q4s+
------END PGP SIGNATURE-----
-
---nextPart2296618.8EdTuqZGIM--
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
