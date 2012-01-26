@@ -1,200 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab2AZJBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:01:39 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:59815 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab2AZJBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:01:13 -0500
-Date: Thu, 26 Jan 2012 10:00:55 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 13/15] X86: integrate CMA with DMA-mapping subsystem
-In-reply-to: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Message-id: <1327568457-27734-14-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.7.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+	id S1752366Ab2AZJBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:01:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33659 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752316Ab2AZJBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 04:01:18 -0500
+Date: Thu, 26 Jan 2012 10:01:15 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-mm@kvack.org,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH] memcg: fix compile warning on non-numa systems
+Message-ID: <20120126090115.GB13421@tiehlicka.suse.cz>
+References: <4F13BE05.70505@cn.fujitsu.com>
+ <20120116084715.GA1639@tiehlicka.suse.cz>
+ <20120126005521.07ac0faf.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120126005521.07ac0faf.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for CMA to dma-mapping subsystem for x86
-architecture that uses common pci-dma/pci-nommu implementation. This
-allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
+On Thu 26-01-12 00:55:21, Andrew Morton wrote:
+> On Mon, 16 Jan 2012 09:47:15 +0100 Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Mon 16-01-12 14:04:53, Li Zefan wrote:
+> > > Fix this warning:
+> > > 
+> > >   CC      mm/memcontrol.o
+> > > mm/memcontrol.c: In function 'memcg_check_events':
+> > > mm/memcontrol.c:779:22: warning: unused variable 'do_numainfo'
+> > 
+> > This has been already posted by Kirill and I didn't like the solution
+> > (https://lkml.org/lkml/2011/12/27/86). He then reposted with a different
+> > version (https://lkml.org/lkml/2012/1/6/281).
+> > The later one looks better but I still think this is not worth
+> > complicate the code just to get rid of this warning.
+> 
+> This?
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-CC: Michal Nazarewicz <mina86@mina86.com>
----
- arch/x86/Kconfig                      |    1 +
- arch/x86/include/asm/dma-contiguous.h |   13 +++++++++++++
- arch/x86/include/asm/dma-mapping.h    |    4 ++++
- arch/x86/kernel/pci-dma.c             |   18 ++++++++++++++++--
- arch/x86/kernel/pci-nommu.c           |    8 +-------
- arch/x86/kernel/setup.c               |    2 ++
- 6 files changed, 37 insertions(+), 9 deletions(-)
- create mode 100644 arch/x86/include/asm/dma-contiguous.h
+Haven't seen this one but it looks sane.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 864cc6e..1e00736 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -31,6 +31,7 @@ config X86
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_WANT_FRAME_POINTERS
- 	select HAVE_DMA_ATTRS
-+	select HAVE_DMA_CONTIGUOUS if !SWIOTLB
- 	select HAVE_KRETPROBES
- 	select HAVE_OPTPROBES
- 	select HAVE_FTRACE_MCOUNT_RECORD
-diff --git a/arch/x86/include/asm/dma-contiguous.h b/arch/x86/include/asm/dma-contiguous.h
-new file mode 100644
-index 0000000..8fb117d
---- /dev/null
-+++ b/arch/x86/include/asm/dma-contiguous.h
-@@ -0,0 +1,13 @@
-+#ifndef ASMX86_DMA_CONTIGUOUS_H
-+#define ASMX86_DMA_CONTIGUOUS_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/device.h>
-+#include <linux/dma-contiguous.h>
-+#include <asm-generic/dma-contiguous.h>
-+
-+static inline void dma_contiguous_early_fixup(phys_addr_t base, unsigned long size) { }
-+
-+#endif
-+#endif
-diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
-index ed3065f..90ac6f0 100644
---- a/arch/x86/include/asm/dma-mapping.h
-+++ b/arch/x86/include/asm/dma-mapping.h
-@@ -13,6 +13,7 @@
- #include <asm/io.h>
- #include <asm/swiotlb.h>
- #include <asm-generic/dma-coherent.h>
-+#include <linux/dma-contiguous.h>
- 
- #ifdef CONFIG_ISA
- # define ISA_DMA_BIT_MASK DMA_BIT_MASK(24)
-@@ -61,6 +62,9 @@ extern int dma_set_mask(struct device *dev, u64 mask);
- extern void *dma_generic_alloc_coherent(struct device *dev, size_t size,
- 					dma_addr_t *dma_addr, gfp_t flag);
- 
-+extern void dma_generic_free_coherent(struct device *dev, size_t size,
-+				      void *vaddr, dma_addr_t dma_addr);
-+
- static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
- {
- 	if (!dev->dma_mask)
-diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-index 1c4d769..d3c3723 100644
---- a/arch/x86/kernel/pci-dma.c
-+++ b/arch/x86/kernel/pci-dma.c
-@@ -99,14 +99,18 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
- 				 dma_addr_t *dma_addr, gfp_t flag)
- {
- 	unsigned long dma_mask;
--	struct page *page;
-+	struct page *page = NULL;
-+	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
- 	dma_addr_t addr;
- 
- 	dma_mask = dma_alloc_coherent_mask(dev, flag);
- 
- 	flag |= __GFP_ZERO;
- again:
--	page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
-+	if (!(flag & GFP_ATOMIC))
-+		page = dma_alloc_from_contiguous(dev, count, get_order(size));
-+	if (!page)
-+		page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
- 	if (!page)
- 		return NULL;
- 
-@@ -126,6 +130,16 @@ again:
- 	return page_address(page);
- }
- 
-+void dma_generic_free_coherent(struct device *dev, size_t size, void *vaddr,
-+			       dma_addr_t dma_addr)
-+{
-+	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
-+	struct page *page = virt_to_page(vaddr);
-+
-+	if (!dma_release_from_contiguous(dev, page, count))
-+		free_pages((unsigned long)vaddr, get_order(size));
-+}
-+
- /*
-  * See <Documentation/x86/x86_64/boot-options.txt> for the iommu kernel
-  * parameter documentation.
-diff --git a/arch/x86/kernel/pci-nommu.c b/arch/x86/kernel/pci-nommu.c
-index 3af4af8..656566f 100644
---- a/arch/x86/kernel/pci-nommu.c
-+++ b/arch/x86/kernel/pci-nommu.c
-@@ -74,12 +74,6 @@ static int nommu_map_sg(struct device *hwdev, struct scatterlist *sg,
- 	return nents;
- }
- 
--static void nommu_free_coherent(struct device *dev, size_t size, void *vaddr,
--				dma_addr_t dma_addr)
--{
--	free_pages((unsigned long)vaddr, get_order(size));
--}
--
- static void nommu_sync_single_for_device(struct device *dev,
- 			dma_addr_t addr, size_t size,
- 			enum dma_data_direction dir)
-@@ -97,7 +91,7 @@ static void nommu_sync_sg_for_device(struct device *dev,
- 
- struct dma_map_ops nommu_dma_ops = {
- 	.alloc_coherent		= dma_generic_alloc_coherent,
--	.free_coherent		= nommu_free_coherent,
-+	.free_coherent		= dma_generic_free_coherent,
- 	.map_sg			= nommu_map_sg,
- 	.map_page		= nommu_map_page,
- 	.sync_single_for_device = nommu_sync_single_for_device,
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d7d5099..be6795f 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -50,6 +50,7 @@
- #include <asm/pci-direct.h>
- #include <linux/init_ohci1394_dma.h>
- #include <linux/kvm_para.h>
-+#include <linux/dma-contiguous.h>
- 
- #include <linux/errno.h>
- #include <linux/kernel.h>
-@@ -938,6 +939,7 @@ void __init setup_arch(char **cmdline_p)
- 	}
- #endif
- 	memblock.current_limit = get_max_mapped();
-+	dma_contiguous_reserve(0);
- 
- 	/*
- 	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
+> 
+> --- a/mm/memcontrol.c~a
+> +++ a/mm/memcontrol.c
+> @@ -776,7 +776,8 @@ static void memcg_check_events(struct me
+>  	/* threshold event is triggered in finer grain than soft limit */
+>  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+>  						MEM_CGROUP_TARGET_THRESH))) {
+> -		bool do_softlimit, do_numainfo;
+> +		bool do_softlimit;
+> +		bool do_numainfo __maybe_unused;
+>  
+>  		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+>  						MEM_CGROUP_TARGET_SOFTLIMIT);
+> _
+> 
+
 -- 
-1.7.1.569.g6f426
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
