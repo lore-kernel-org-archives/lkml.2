@@ -1,97 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab2AZThz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 14:37:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854Ab2AZThy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 14:37:54 -0500
-Date: Thu, 26 Jan 2012 14:37:35 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Suresh Jayaraman <sjayaraman@suse.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-Subject: Re: Slab corruption in floppy driver module
-Message-ID: <20120126193735.GA11297@redhat.com>
-References: <4F1EAFE9.5000306@suse.com>
- <20120124223153.GG17291@redhat.com>
- <20120126150420.GD1891@redhat.com>
- <20120126180532.GA4077@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1753770Ab2AZTjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 14:39:25 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40850 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578Ab2AZTjY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 14:39:24 -0500
+Message-ID: <4F21ABE2.1060302@linux.vnet.ibm.com>
+Date: Fri, 27 Jan 2012 01:09:14 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120126180532.GA4077@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Baohua.Song@csr.com, Tejun Heo <tj@kernel.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>
+Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at	kernel/workqueue.c:3659
+References: <4F1EC8D5.5040102@suse.cz> <201201250002.37916.rjw@sisk.pl> <4F1F4717.2090704@gmail.com> <201201250110.44360.rjw@sisk.pl> <4F20204F.6040606@linux.vnet.ibm.com>
+In-Reply-To: <4F20204F.6040606@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12012609-0260-0000-0000-00000072E7B7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 10:05:32AM -0800, Tejun Heo wrote:
-> Hello,
+
+Hi Rafael,
+
+On 01/25/2012 09:01 PM, Srivatsa S. Bhat wrote:
+
 > 
-> On Thu, Jan 26, 2012 at 10:04:20AM -0500, Vivek Goyal wrote:
-> >  out_put_disk:
-> >  	while (dr--) {
-> >  		del_timer_sync(&motor_off_timer[dr]);
-> > -		if (disks[dr]->queue)
-> > +		if (disks[dr]->queue) {
-> >  			blk_cleanup_queue(disks[dr]->queue);
-> > +			/*
-> > +			 * The request queue reference we took at device
-> > +			 * creation time has been put by above
-> > +			 * blk_cleanup_queue(). We have not called add_disk()
-> > +			 * yet and due to failure calling put_disk(). Put disk
-> > +			 * will try to put a reference to disk->queue which is
-> > +			 * taken in add_disk(). As we have not taken that
-> > +			 * extra reference, putting extra reference down
-> > +			 * will try to access already freed queue. Clear
-> > +			 * disk->queue before calling put_disk().
-> > +			 */
-> > +			disks[dr]->queue = NULL;
+> Ok, I will need to quote a part of the userspace utility to explain the
+> problem.
 > 
-> Yeah, this looks correct to me.  It might be better to tone down the
-> comment a bit tho.  Wouldn't it be sufficient to say put_disk() isn't
-> paired with add_disk() and will put one extra time?
+> In suspend.c inside the suspend-utils userspace package, I see a loop such
+> as:
+> 
+>         error = freeze(snapshot_fd);
+> 	...
+>         attempts = 2;
+>         do {
+>                 if (set_image_size(snapshot_fd, image_size)) {
+>                         error = errno;
+>                         break;
+>                 }
+>                 if (atomic_snapshot(snapshot_fd, &in_suspend)) {
+>                         error = errno;
+>                         break;
+>                 }
+>                 if (!in_suspend) {
+>                         /* first unblank the console, see console_codes(4) */
+>                         printf("\e[13]");
+>                         printf("%s: returned to userspace\n", my_name);
+>                         free_snapshot(snapshot_fd);
+>                         break;
+>                 }
+> 
+>                 error = write_image(snapshot_fd, resume_fd, -1);
+>                 if (error) {
+>                         free_swap_pages(snapshot_fd);
+>                         free_snapshot(snapshot_fd);
+>                         image_size = 0;
+>                         error = -error;
+>                         if (error != ENOSPC)
+>                                 break;
+>                 } else {
+>                         splash.progress(100);
+> #ifdef CONFIG_BOTH
+>                         if (s2ram_kms || s2ram) {
+>                                 /* If we die (and allow system to continue)
+>                                  * between now and reset_signature(), very bad
+>                                  * things will happen. */
+>                                 error = suspend_to_ram(snapshot_fd);
+>                                 if (error)
+>                                         goto Shutdown;
+>                                 reset_signature(resume_fd);
+>                                 free_swap_pages(snapshot_fd);
+>                                 free_snapshot(snapshot_fd);
+>                                 if (!s2ram_kms)
+>                                         s2ram_resume();
 
-Sure. Toned down the comment as suggested. Here is the new patch.
 
-floppy: Cleanup disk->queue before caling put_disk() if add_disk() was never called
+Your patch alters how SNAPSHOT_FREE (IOW, free_snapshot() in this utility) is
+handled. So, I was trying to see if there are any points of concern...
 
-add_disk() takes gendisk reference on request queue. If driver failed during
-initialization and never called add_disk() then that extra reference is not
-taken. That reference is put in put_disk(). floppy driver allocates the
-disk, allocates queue, sets disk->queue and then relizes that floppy
-controller is not present. It tries to tear down everything and tries to
-put a reference down in put_disk() which was never taken.
+In the above code, s2ram_resume() gets invoked after free_snapshot(). Will that
+pose any problems because kernel threads would have been thawed at that point,
+after applying your patch?
 
-In such error cases cleanup disk->queue before calling put_disk() so that
-we never try to put down a reference which was never taken in first place.
+And other than that, do you foresee any problems arising from the change caused
+to SNAPSHOT_FREE by your patch? I mean, s2ram/s2disk/suspend-utils package are
+not the only userspace utilities after all... so I just wanted to ensure that
+we don't over-fit our solution to this particular utility and end up breaking
+others...
 
-Reported-by: Suresh Jayaraman <sjayaraman@suse.com>
-Tested-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- drivers/block/floppy.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+Regards,
+Srivatsa S. Bhat
 
-Index: linux-2.6/drivers/block/floppy.c
-===================================================================
---- linux-2.6.orig/drivers/block/floppy.c	2012-01-15 09:49:14.000000000 -0500
-+++ linux-2.6/drivers/block/floppy.c	2012-01-26 14:35:14.662374464 -0500
-@@ -4368,8 +4368,14 @@ out_unreg_blkdev:
- out_put_disk:
- 	while (dr--) {
- 		del_timer_sync(&motor_off_timer[dr]);
--		if (disks[dr]->queue)
-+		if (disks[dr]->queue) {
- 			blk_cleanup_queue(disks[dr]->queue);
-+			/*
-+			 * put_disk() is not paired with add_disk() and
-+			 * will put queue reference one extra time. fix it.
-+			 */
-+			disks[dr]->queue = NULL;
-+		}
- 		put_disk(disks[dr]);
- 	}
- 	return err;
+>                                 goto Unfreeze;
+>                         }
+> Shutdown:
+> #endif
+>                         close(resume_fd);
+>                         suspend_shutdown(snapshot_fd);
+>                 }
+>         } while (--attempts);
+> 
+> ...
+> Unfreeze:
+>         unfreeze(snapshot_fd);
+> 
+
+
