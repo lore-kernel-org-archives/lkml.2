@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab2AZSlQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:41:16 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:12882 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab2AZSlL (ORCPT
+	id S1753606Ab2AZSlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:41:14 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:3003 "EHLO
+	VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753584Ab2AZSlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jan 2012 13:41:11 -0500
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LYF58H-01-7NE-02
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LYF58G-02-HL9-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
@@ -20,9 +20,9 @@ CC: <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Stuart Yoder <b08248@gmail.com>, Scott Wood <scottwood@freescale.com>,
         Hiroshi Doyu <hdoyu@nvidia.com>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 3/6] iommu/vt-d: Implement DOMAIN_ATTR_GEOMETRY attribute
-Date: Thu, 26 Jan 2012 19:40:54 +0100
-Message-ID: <1327603257-17028-4-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 2/6] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Date: Thu, 26 Jan 2012 19:40:53 +0100
+Message-ID: <1327603257-17028-3-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
 References: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
@@ -33,27 +33,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the attribute for the Intel IOMMU driver.
+Implement the attribute itself and add the code for the
+AMD IOMMU driver.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/intel-iommu.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/iommu/amd_iommu.c |    4 ++++
+ drivers/iommu/iommu.c     |   19 ++++++++++++++++---
+ include/linux/iommu.h     |    8 ++++++++
+ 3 files changed, 28 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index c9c6053..12e7dc1 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3917,6 +3917,10 @@ static int intel_iommu_domain_init(struct iommu_domain *domain)
- 	domain_update_iommu_cap(dmar_domain);
- 	domain->priv = dmar_domain;
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index f75e060..aa90be3 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3033,6 +3033,10 @@ static int amd_iommu_domain_init(struct iommu_domain *dom)
  
-+	domain->geometry.aperture_start = 0;
-+	domain->geometry.aperture_end   = __DOMAIN_MAX_ADDR(dmar_domain->gaw);
-+	domain->geometry.force_aperture = true;
+ 	dom->priv = domain;
+ 
++	dom->geometry.aperture_start = 0;
++	dom->geometry.aperture_end   = ~0ULL;
++	dom->geometry.force_aperture = true;
 +
  	return 0;
+ 
+ out_free:
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index ef54718..3d0b0bf 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -345,10 +345,23 @@ EXPORT_SYMBOL_GPL(iommu_device_group);
+ int iommu_domain_get_attr(struct iommu_domain *domain,
+ 			  enum iommu_attr attr, void *data)
+ {
+-	if (!domain->ops->domain_get_attr)
+-		return -EINVAL;
++	struct iommu_domain_geometry *geometry;
++	int ret = 0;
++
++	switch (attr) {
++	case DOMAIN_ATTR_GEOMETRY:
++		geometry  = data;
++		*geometry = domain->geometry;
++
++		break;
++	default:
++		if (!domain->ops->domain_get_attr)
++			return -EINVAL;
+ 
+-	return domain->ops->domain_get_attr(domain, attr, data);
++		ret = domain->ops->domain_get_attr(domain, attr, data);
++	}
++
++	return ret;
  }
+ EXPORT_SYMBOL_GPL(iommu_domain_get_attr);
+ 
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 8b66e84..ba77bf9 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -37,16 +37,24 @@ struct iommu_domain;
+ typedef int (*iommu_fault_handler_t)(struct iommu_domain *,
+ 				struct device *, unsigned long, int);
+ 
++struct iommu_domain_geometry {
++	dma_addr_t aperture_start; /* First address that can be mapped    */
++	dma_addr_t aperture_end;   /* Last address that can be mapped     */
++	bool force_aperture;	   /* DMA only allowed in mappable range? */
++};
++
+ struct iommu_domain {
+ 	struct iommu_ops *ops;
+ 	void *priv;
+ 	iommu_fault_handler_t handler;
++	struct iommu_domain_geometry geometry;
+ };
+ 
+ #define IOMMU_CAP_CACHE_COHERENCY	0x1
+ #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
+ 
+ enum iommu_attr {
++	DOMAIN_ATTR_GEOMETRY,	/* struct iommu_domain_geometry */
+ 	DOMAIN_ATTR_MAX,
+ };
  
 -- 
 1.7.5.4
