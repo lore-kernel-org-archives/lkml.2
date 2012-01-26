@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab2AZF7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 00:59:46 -0500
-Received: from na3sys010aog105.obsmtp.com ([74.125.245.78]:44630 "HELO
-	na3sys010aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750837Ab2AZF7o (ORCPT
+	id S1751485Ab2AZGFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 01:05:07 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:12129 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2AZGFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 00:59:44 -0500
-From: Roland Dreier <roland@kernel.org>
-To: linux-rdma@vger.kernel.org
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages() parameters
-Date: Wed, 25 Jan 2012 21:59:34 -0800
-Message-Id: <1327557574-6125-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.8.3
+	Thu, 26 Jan 2012 01:05:05 -0500
+X-AuditID: cbfee61b-b7be3ae0000039aa-a7-4f20ed0fdb5c
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Namjae Jeon'" <linkinjeon@gmail.com>
+Cc: "'Saugata Das'" <saugata.das@linaro.org>, linux-mmc@vger.kernel.org,
+        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
+References: <002701ccd728$edab9350$c902b9f0$%jun@samsung.com>
+ <CAKLKtzddDXhbT6o8XUsMxad9+_a_StJCQz+eBnfQ+q+xLuJQKg@mail.gmail.com>
+ <CAKYAXd8A70X1gb-NFHVDMXd-aSG6+Y3PWvRTZDMT3-Ze3aF5Yw@mail.gmail.com>
+ <002501ccdb20$c98b2e80$5ca18b80$%jun@samsung.com>
+ <CAKYAXd_jdGfpC9kcYht=qnfaTPwE+YEx1fo89GkpRyWcN6igig@mail.gmail.com>
+ <CAKYAXd-pCS4kRsg0PJp98YRqz_P0CtTKWEWiQJarE_iHqiesYQ@mail.gmail.com>
+In-reply-to: <CAKYAXd-pCS4kRsg0PJp98YRqz_P0CtTKWEWiQJarE_iHqiesYQ@mail.gmail.com>
+Subject: RE: [PATCH v3 2/2] mmc: core: Support packed command for eMMC4.5 device
+Date: Thu, 26 Jan 2012 15:05:03 +0900
+Message-id: <000c01ccdbf0$71fe58b0$55fb0a10$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Aczb4321bQ7+6paDTHidsRFNNxPpDAABgJPg
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <roland@purestorage.com>
+Namjae Jeon <linkinjeon@gmail.com>:
+> 2012/1/25 Namjae Jeon <linkinjeon@gmail.com>:
+> >>> >> +
+> >>> >> +static int mmc_blk_issue_packed_rd(struct mmc_queue *mq,
+> >>> >> +               struct mmc_queue_req *mq_rq)
+> >>> >> +{
+> >>> >> +       struct mmc_blk_data *md = mq->data;
+> >>> >> +       struct mmc_card *card = md->queue.card;
+> >>> >> +       int status, ret = -EIO, retry = 2;
+> > Hi. Seungwon.
+> > First Thansk for your reply.
+> > There is one more my review comment.
+> > I think that EIO of ret is not needed. there is no case to be skipped
+> > if/ese condition in do while loop.
+Oh, no need practically.
+Thank you for your inspection.
 
-Right now, we always pass write==1 to get_user_pages(), even when we
-only intend to read the memory.  We pass force==1 if we're going for
-read-only and force==0 if we want writable.  The reasoning behind this
-seems to be contained in this out-of-tree changelog from 2005:
+> 
+> Hi. Seungwon.
+> 
+>   if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) ||
+> +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR)) {
+> 
+> it seems more better that upper if condition is changed like the below.
+Do you have any reason for your comment?
+Packed command(4.5 feature) is regardless of SPI.
+SPI mode has been removed since version 4.3.
 
-    Always ask get_user_pages() for writable pages, but pass force=1
-    if the consumer has only asked for read-only pages.  This fixes a
-    problem registering memory that has just been allocated but not
-    touched yet, while allowing registration of read-only memory to
-    continue to work.
+> 
+> if (!mmc_host_is_spi(card->host) && ((rq_data_dir(req) != READ) ||
+> +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR))) {
+> 
+> 
+> +++ b/drivers/mmc/core/host.c
+> @@ -346,6 +346,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct
+> device *dev)
+>        host->max_blk_size = 512;
+>        host->max_blk_count = PAGE_CACHE_SIZE / 512;
+> 
+> +       host->packed_min = 2;
+> +
+>        return host;
+> 
+> if packed_min is fixed value without increasing/decreasing,  it seems
+> more better to use macro.
+> Thanks.
+packed_min is not fixed value.
+Could you refer the following is changes log about v3?
 
-However, I don't think the mm works like this today, and indeed GUP
-will fault in pages for an untouched read-only mapping just fine with
-write and force set to 0.  In fact, always passing 1 for write causes
-problems with modern kernels, because we end up hitting the "early
-C-O-W break" case in __do_fault(), even for read-only mappings where
-this makes no sense.
+Changes in v3:
+	- Add a variable member in mmc_host for minimum number of packed entries.
+	  This value can be overridden by host.
+	  
+Best regards,
+Seungwon Jeon.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
----
-This patch comes from me trying to do userspace RDMA on a memory
-region exported from a character driver and mapped with
-
-    mmap(... PROT_READ, MAP_PRIVATE ...)
-
-The character driver has a trivial mmap method that just sets vm_ops
-and and equally trivial fault method that essentially just does
-
-    vmf->page = vmalloc_to_page(buf + (vmf->pgoff << PAGE_SHIFT));
-
-ie the most elementary way to export a vmalloc'ed buffer to userspace.
-
-However, when I tried doing
-
-    ibv_reg_mr(... IBV_ACCESS_REMOTE_READ ...)
-
-in userspace on that mmap region, I found that COW was happening and
-so neither userspace nor the registered memory ended up pointing at
-the kernel buffer anymore, exactly because of the COW in __do_fault()
-I mention in the changelog above.
-
-The patch below fixes my test case, and doesn't seem to break any of
-the ibverbs examples and other simple tests of userspace verbs that I
-tried.  But that's far from an exhaustive test suite.
-
-I'd definitely appreciate comments from MM experts here, since I'm not
-positive of my understand of G-U-P and friends, and I don't want to
-apps because this is wrong in some special case I didn't try.
-
-Also testing from anyone with an RDMA app that does anything at all
-fancy with memory allocation or registration would be helpful.
-
-Thanks!
-
-PS Let me know if I didn't go on long enough about this one-line patch
-and I can write some more.
-
- drivers/infiniband/core/umem.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
-index 71f0c0f..fb5abd3 100644
---- a/drivers/infiniband/core/umem.c
-+++ b/drivers/infiniband/core/umem.c
-@@ -152,7 +152,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
- 		ret = get_user_pages(current, current->mm, cur_base,
- 				     min_t(unsigned long, npages,
- 					   PAGE_SIZE / sizeof (struct page *)),
--				     1, !umem->writable, page_list, vma_list);
-+				     umem->writable, 0, page_list, vma_list);
- 
- 		if (ret < 0)
- 			goto out;
--- 
-1.7.8.3
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
