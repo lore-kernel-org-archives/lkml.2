@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab2AZHYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 02:24:46 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:58475 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab2AZHYp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 02:24:45 -0500
-X-AuditID: cbfee61a-b7cd2ae000004fa5-f6-4f20ffbab9d9
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Namjae Jeon'" <linkinjeon@gmail.com>
-Cc: "'Saugata Das'" <saugata.das@linaro.org>, linux-mmc@vger.kernel.org,
-        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
-References: <002701ccd728$edab9350$c902b9f0$%jun@samsung.com>
- <CAKLKtzddDXhbT6o8XUsMxad9+_a_StJCQz+eBnfQ+q+xLuJQKg@mail.gmail.com>
- <CAKYAXd8A70X1gb-NFHVDMXd-aSG6+Y3PWvRTZDMT3-Ze3aF5Yw@mail.gmail.com>
- <002501ccdb20$c98b2e80$5ca18b80$%jun@samsung.com>
- <CAKYAXd_jdGfpC9kcYht=qnfaTPwE+YEx1fo89GkpRyWcN6igig@mail.gmail.com>
- <CAKYAXd-pCS4kRsg0PJp98YRqz_P0CtTKWEWiQJarE_iHqiesYQ@mail.gmail.com>
- <000c01ccdbf0$71fe58b0$55fb0a10$%jun@samsung.com>
- <CAKYAXd8zFf7AF5_X-divH51+B=Y2YC1ZjZF00D_=+R6eF8qe9g@mail.gmail.com>
-In-reply-to: <CAKYAXd8zFf7AF5_X-divH51+B=Y2YC1ZjZF00D_=+R6eF8qe9g@mail.gmail.com>
-Subject: RE: [PATCH v3 2/2] mmc: core: Support packed command for eMMC4.5 device
-Date: Thu, 26 Jan 2012 16:24:42 +0900
-Message-id: <000001ccdbfb$926d90b0$b748b210$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Aczb9bb23okNbr+ITDaI2CoyIz6sGAAA0nNA
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1751814Ab2AZHhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 02:37:37 -0500
+Received: from home.keithp.com ([63.227.221.253]:57536 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751475Ab2AZHhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 02:37:36 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Lubos Kolouch <lubos.kolouch@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: i915 wakes from suspend to RAM with blank screen after commit cd9dde44f47501394b9f0715b6a36a92aa74c0d0
+In-Reply-To: <20120123063313.GA2113@nbgentoo>
+References: <jfe47e$5dn$1@dough.gmane.org> <86mx9gkjlv.fsf@sumi.keithp.com> <20120121184453.GA2698@nbgentoo> <86hazokcb7.fsf@sumi.keithp.com> <20120122102912.GA2123@nbgentoo> <867h0j83vx.fsf@sumi.keithp.com> <20120123063313.GA2113@nbgentoo>
+User-Agent: Notmuch/0.11 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 25 Jan 2012 23:37:28 -0800
+Message-ID: <86vcnyc3t3.fsf@sumi.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com>:
-> 2012/1/26 Seungwon Jeon <tgih.jun@samsung.com>:
-> > Namjae Jeon <linkinjeon@gmail.com>:
-> >> 2012/1/25 Namjae Jeon <linkinjeon@gmail.com>:
-> >> >>> >> +
-> >> >>> >> +static int mmc_blk_issue_packed_rd(struct mmc_queue *mq,
-> >> >>> >> +               struct mmc_queue_req *mq_rq)
-> >> >>> >> +{
-> >> >>> >> +       struct mmc_blk_data *md = mq->data;
-> >> >>> >> +       struct mmc_card *card = md->queue.card;
-> >> >>> >> +       int status, ret = -EIO, retry = 2;
-> >> > Hi. Seungwon.
-> >> > First Thansk for your reply.
-> >> > There is one more my review comment.
-> >> > I think that EIO of ret is not needed. there is no case to be skipped
-> >> > if/ese condition in do while loop.
-> > Oh, no need practically.
-> > Thank you for your inspection.
-> >
-> >>
-> >> Hi. Seungwon.
-> >>
-> >>   if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) ||
-> >> +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR)) {
-> >>
-> >> it seems more better that upper if condition is changed like the below.
-> > Do you have any reason for your comment?
-> > Packed command(4.5 feature) is regardless of SPI.
-> > SPI mode has been removed since version 4.3.
-> >
-> >>
-> >> if (!mmc_host_is_spi(card->host) && ((rq_data_dir(req) != READ) ||
-> >> +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR))) {
-> >>
-> >>
-> >> +++ b/drivers/mmc/core/host.c
-> >> @@ -346,6 +346,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct
-> >> device *dev)
-> >>        host->max_blk_size = 512;
-> >>        host->max_blk_count = PAGE_CACHE_SIZE / 512;
-> >>
-> >> +       host->packed_min = 2;
-> >> +
-> >>        return host;
-> >>
-> >> if packed_min is fixed value without increasing/decreasing,  it seems
-> >> more better to use macro.
-> >> Thanks.
-> > packed_min is not fixed value.
-> > Could you refer the following is changes log about v3?
-> >
-> > Changes in v3:
-> >        - Add a variable member in mmc_host for minimum number of packed entries.
-> >          This value can be overridden by host.
-> Ah.. Okay~ I clearly understand about two queston.
-> Totally, Looks good to me.
-> Thanks for your reply.
-> And I heard that packed cmd is not good while reading small chunk,
-> If so, I want to use packed write cmd not read cmd.
-> Can I use packed only packed write cmd by seperating
-> MMC_CAP2_PACKED_READ_CMD and MMC_CAP2_PACKED_WRITE_CMD ?
-Do you think this separate use is common?
-Let me consider this more.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> >
-> > Best regards,
-> > Seungwon Jeon.
-> >
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Mon, 23 Jan 2012 07:33:14 +0100, Lubos Kolouch <lubos.kolouch@gmail.com>=
+ wrote:
 
+> dmesg after boot - http://paste.pocoo.org/show/539115/
+> dmesg after OK resume - http://paste.pocoo.org/show/539117/
+
+I've posted a couple of more comprehensive patches that you should have
+received; I'd like to know if you can test them to see if they resolve
+the issue as well.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTyECuTYtFsjWk68qAQhV3xAAwKE32mZvJHgfk+qB4u93N+R4tku/Z5gv
+O4y3+vy7DWIQJC6czaMeYdX9soIkyd1R/H7PnkStH9BLLVB+7zXWjbbENsX94/ec
+jerLaczmPqAM1o5bTUc9Js1+y6edCXt7ypSiG7iTldJEPpWHLHwy+cc/IeiC89wr
+WWQhY1VFDnX4aVKfO6px/nd42/7Tc3hUSP+rkGUGaniLaa1GGOnF0CDKrbDgxbSo
+StuHvqbzMUBvFUonkQ2TrrLpVjnUBaSCOp9dBo0xvzgWKOXiC/OqKR8/sckxC2RQ
+deaWeYAa2CDwHeSqaf22nL437IUugpJs+VdCOySv6JEhPLL5KmbVbK0T2OC206jG
+nRZ45pWHvg8asVedLcgUiPhBp5ikIumn5kZ0gCMp1YwgrzFkc4sWujj1HwE9yxU1
+ETGIvf3T+PSwnfMcrE5LfLsheFkHDYZ37PKFVaU9ymIWGjzpypzNwrD3h+d0TJJJ
+Tw2rageDVPrZ2wfPOFgJQ9Wmu45pOB7CStaOzhFZSwDCbO216P/9ux6oFOayv183
+oDhuLg6KOMI2XnM2N3xKh84WxVohO9v5SvlDCDZzZ1ugDj2lE0UlW+zXeMExwCxZ
+4yI1J0VksagUdKxuJ2j16PK7fxojdg7Ij/ecGjjazmuJt6O3C7nMXR2DuTWu3iAI
+JGTLXG6n0IU=
+=h+dS
+-----END PGP SIGNATURE-----
+--=-=-=--
