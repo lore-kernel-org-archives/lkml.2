@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab2AZEbq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 23:31:46 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53404 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab2AZEbo convert rfc822-to-8bit (ORCPT
+	id S1751113Ab2AZFEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 00:04:44 -0500
+Received: from mail.nudt.edu.cn ([61.187.54.11]:37379 "HELO eyou.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750726Ab2AZFEm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 23:31:44 -0500
+	Thu, 26 Jan 2012 00:04:42 -0500
+X-EYOU-SPAMVALUE: 0
+X-EYOU-DEALDRC: 
+X-EMDG-VER: 2011-01-28
+Message-ID: <527553462.07149@eyou.net>
+X-EYOUMAIL-SMTPAUTH: liwang@nudt.edu.cn
+From: "Li Wang" <liwang@nudt.edu.cn>
+To: "'Tyler Hicks'" <tyhicks@canonical.com>
+Cc: <ecryptfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <527531938.27851@eyou.net>
+Subject: [PATCH v2] eCryptfs: write optimization
+Date: Thu, 26 Jan 2012 13:04:34 +0800
 MIME-Version: 1.0
-In-Reply-To: <CAKYAXd_jdGfpC9kcYht=qnfaTPwE+YEx1fo89GkpRyWcN6igig@mail.gmail.com>
-References: <002701ccd728$edab9350$c902b9f0$%jun@samsung.com>
-	<CAKLKtzddDXhbT6o8XUsMxad9+_a_StJCQz+eBnfQ+q+xLuJQKg@mail.gmail.com>
-	<CAKYAXd8A70X1gb-NFHVDMXd-aSG6+Y3PWvRTZDMT3-Ze3aF5Yw@mail.gmail.com>
-	<002501ccdb20$c98b2e80$5ca18b80$%jun@samsung.com>
-	<CAKYAXd_jdGfpC9kcYht=qnfaTPwE+YEx1fo89GkpRyWcN6igig@mail.gmail.com>
-Date: Thu, 26 Jan 2012 13:31:42 +0900
-Message-ID: <CAKYAXd-pCS4kRsg0PJp98YRqz_P0CtTKWEWiQJarE_iHqiesYQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] mmc: core: Support packed command for eMMC4.5 device
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Saugata Das <saugata.das@linaro.org>, linux-mmc@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook, Build 11.0.5510
+X-MimeOLE: Produced By Microsoft MimeOLE V6.1.7600.16807
+Thread-Index: Aczbs/0rESicKC59TRG7/Z/LahKNIAAMznwg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/25 Namjae Jeon <linkinjeon@gmail.com>:
->>> >> +
->>> >> +static int mmc_blk_issue_packed_rd(struct mmc_queue *mq,
->>> >> +               struct mmc_queue_req *mq_rq)
->>> >> +{
->>> >> +       struct mmc_blk_data *md = mq->data;
->>> >> +       struct mmc_card *card = md->queue.card;
->>> >> +       int status, ret = -EIO, retry = 2;
-> Hi. Seungwon.
-> First Thansk for your reply.
-> There is one more my review comment.
-> I think that EIO of ret is not needed. there is no case to be skipped
-> if/ese condition in do while loop.
+Hi,
+  The new version adds the code to handle short copy issue which may occure
+in iov_iter_copy_from_user_atomic(). The idea is to let ecryptfs_write_end() return zero,
+therefore, give iov_iter_fault_in_readable() a chance to handle the page fault 
+for the current iovec, then restart the copy operation.
 
-Hi. Seungwon.
+Cheers,
+Li Wang
 
-  if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) ||
-+                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR)) {
+Signed-off-by: Li Wang <liwang@nudt.edu.cn>
+               Yunchuan Wen <wenyunchuan@kylinos.com.cn>
 
-it seems more better that upper if condition is changed like the below.
+---
+ 
+fs/ecryptfs/mmap.c |   12 ++++++++++--
+1 files changed, 10 insertions(+), 2 deletions(-)
 
-if (!mmc_host_is_spi(card->host) && ((rq_data_dir(req) != READ) ||
-+                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR))) {
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index 6a44148..b3fa499 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -346,7 +346,8 @@ static int ecryptfs_write_begin(struct file *file,
+ 			if (prev_page_end_size
+ 			    >= i_size_read(page->mapping->host)) {
+ 				zero_user(page, 0, PAGE_CACHE_SIZE);
+-			} else {
++				SetPageUptodate(page);
++			} else if (len < PAGE_CACHE_SIZE) {
+ 				rc = ecryptfs_decrypt_page(page);
+ 				if (rc) {
+ 					printk(KERN_ERR "%s: Error decrypting "
+@@ -356,8 +357,8 @@ static int ecryptfs_write_begin(struct file *file,
+ 					ClearPageUptodate(page);
+ 					goto out;
+ 				}
++				SetPageUptodate(page);
+ 			}
+-			SetPageUptodate(page);
+ 		}
+ 	}
+ 	/* If creating a page or more of holes, zero them out via truncate.
+@@ -512,6 +513,13 @@ static int ecryptfs_write_end(struct file *file,
+ 		}
+ 		goto out;
+ 	}
++	if (!PageUptodate(page)) {
++		if (copied < PAGE_CACHE_SIZE) {
++			rc = 0;
++			goto out;
++		}
++		SetPageUptodate(page);
++	}
+ 	/* Fills in zeros if 'to' goes beyond inode size */
+ 	rc = fill_zeros_to_end_of_page(page, to);
+ 	if (rc) {
 
 
-+++ b/drivers/mmc/core/host.c
-@@ -346,6 +346,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct
-device *dev)
-       host->max_blk_size = 512;
-       host->max_blk_count = PAGE_CACHE_SIZE / 512;
-
-+       host->packed_min = 2;
-+
-       return host;
-
-if packed_min is fixed value without increasing/decreasing,  it seems
-more better to use macro.
-Thanks.
