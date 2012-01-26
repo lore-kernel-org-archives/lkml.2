@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab2AZRYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:24:23 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:45873 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926Ab2AZRYV convert rfc822-to-8bit (ORCPT
+	id S1752692Ab2AZRYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:24:55 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38551 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab2AZRYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:24:21 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371I542M1432Nzz1202hzz8275bh8275dhz2fhc1bhc31hc1ah2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Rolf Eike Beer <eike-kernel@sf-tec.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Index: AQHM25aksotK5RCq0022C1tEJ6xUZZYfa5IA//97SjA=
-Date: Thu, 26 Jan 2012 17:24:03 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B6FE61C@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1327516187-21793-1-git-send-email-kys@microsoft.com>
- <4414328.OlPOtXe4lZ@eto>
-In-Reply-To: <4414328.OlPOtXe4lZ@eto>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Jan 2012 12:24:52 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <20120126172248.72b0efa5@xilun>
+References: <20120124184203.1b0878c2@xilun> <4F1F99A5.1000206@kernel.org>
+ <20120125182314.7834c75b@xilun> <20120125190214.GC18606@phenom.dumpdata.com>
+ <20120126160719.3b9be3b3@xilun> <20120126153239.GA14367@phenom.dumpdata.com> <20120126172248.72b0efa5@xilun>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 26 Jan 2012 10:24:31 -0700
+Message-ID: <CAErSpo5vCr4Y3Q6U1=yYLcSBH-85koMKDte4rzw4tyuKocYXYA@mail.gmail.com>
+Subject: Re: How to "register" a GSI for a non PCI non ISA device
+To: Guillaume Knispel <gknispel@proformatique.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Xavier Carcelle <xcarcelle@avencall.com>,
+        =?ISO-8859-1?Q?No=E9_Rubinstein?= <nrubinstein@avencall.com>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 26, 2012 at 9:22 AM, Guillaume Knispel
+<gknispel@proformatique.com> wrote:
+> On Thu, 26 Jan 2012 10:32:39 -0500
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>
+>> On Thu, Jan 26, 2012 at 04:07:19PM +0100, Guillaume Knispel wrote:
+>> > On Wed, 25 Jan 2012 14:02:14 -0500
+>> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> >
+>> > > On Wed, Jan 25, 2012 at 06:23:14PM +0100, Guillaume Knispel wrote:
+>> > >
+>> > > > can't call it explicitly from my LKM, there should better be a way to
+>> > > > make it be called when an ACPI thing is done, or maybe a legacy table
+>> > > > parsed.
+>> > >
+>> > > Can you do it the way xen does? Look in arch/x86/xen/pci.c
+>> >
+>> > Did not found this file. Besides, isn't Xen a separate architecture
+>>
+>> Duh! I meant arch/x86/pci/xen.c
+>>
+>> > from mainline x86, compiled built-in? My goal is to only touch LKM and
+>>
+>> Not anymore. It is dynamically on if the kernel detects its running under the
+>> hypervisor.
+>>
+>> I am still unclear what you are trying to do. Is it that
+>> you have _PRT ACPI tables and your want to have your module be called
+>> when those are parsed? If so, then __acpi_register_gsi is your guy -
+>> and you can over-write it to your platform. Granted at that point that
+>> function parameter should be guarded by some form of locking. Perhaps
+>> provide a acpi_register_gsi_fnc() that can be exported out. Would
+>> that work for you (I can cook up a patch for that)?
+>
+> Sorry if I was unclear, I'll try to make things more explicit.
+>
+> We build the platform which obviously differs a little from a PC (but
+> just because of the presence of those additional non-ISA non-PCI
+> devices), but as far as software is concerned we are trying to make the
+> system run with a standard unmodified Linux kernel already built by
+> Debian (because rebuilding our own would shift the maintenance of
+> that kernel on us instead of Debian, and we would not be good at that)
+>
+> So what we can act on are the LKM and the system firmware, but not the
+> bzImage.
+>
+> The problem I'm facing is that I don't know how to setup a GSI, what
+> used to be done by directly calling acpi_register_gsi(), which was
+> possible from an LKM when it was exported (for example in 2.6.18,
+> which was the kernel used by Intel for their dev board).
 
+A driver should never need to use acpi_register_gsi() directly.  It
+sounds like you have a non-PCI device that would be described as an
+ACPI device in the DSDT.  In the Device definition, you include a _CRS
+method that tells the kernel what GSI it is using.  The PNPACPI
+subsystem will parse _CRS and should do the acpi_register_gsi() for
+you.  Then your driver would use pnp_register_driver() and pnp_irq()
+to learn the IRQ.  drivers/tty/serial/8250_pnp.c is an example.
 
-> -----Original Message-----
-> From: Rolf Eike Beer [mailto:eike-kernel@sf-tec.de]
-> Sent: Thursday, January 26, 2012 12:17 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> jbottomley@parallels.com; hch@infradead.org; linux-scsi@vger.kernel.org
-> Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
-> staging area
-> 
-> Am Mittwoch 25 Januar 2012, 10:29:47 schrieb K. Y. Srinivasan:
-> > The storage driver (storvsc_drv.c) handles all block storage devices
-> > assigned to Linux guests hosted on Hyper-V. This driver has been in the
-> > staging tree for a while and this patch moves it out of the staging area.
-> >
-> > This patch is based on the storvsc patches that are already on Greg's queue
-> > for the staging tree. This patch-set addressed Christoph's review comments.
-> > If need be, I can re-send this patch-set in Greg's queue
-> > or I can  send the fully patched storvsc_drv.c.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > ---
-> >  drivers/scsi/Kconfig                       |    7 +++++++
-> >  drivers/scsi/Makefile                      |    3 +++
-> >  drivers/{staging/hv => scsi}/storvsc_drv.c |    0
-> >  3 files changed, 10 insertions(+), 0 deletions(-)
-> >  rename drivers/{staging/hv => scsi}/storvsc_drv.c (100%)
-> >
-> > diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-> > index 16570aa..d3d18e8 100644
-> > --- a/drivers/scsi/Kconfig
-> > +++ b/drivers/scsi/Kconfig
-> > @@ -662,6 +662,13 @@ config VMWARE_PVSCSI
-> >  	  To compile this driver as a module, choose M here: the
-> >  	  module will be called vmw_pvscsi.
-> >
-> > +config HYPERV_STORAGE
-> > +	tristate "Microsoft Hyper-V virtual storage driver"
-> > +	depends on SCSI && HYPERV
-> > +	default HYPERV
-> > +	help
-> > +	  Select this option to enable the Hyper-V virtual storage driver.
-> > +
-> >  config LIBFC
-> >  	tristate "LibFC module"
-> >  	select SCSI_FC_ATTRS
-> > diff --git a/drivers/scsi/Makefile b/drivers/scsi/Makefile
-> > index 2b88749..e4c1a69 100644
-> 
-> I still miss a "this driver will be called ..." message here, as it is used
-> e.g. by the entry before:
-
-After I moved the file to the scsi directory, in my haste I forgot to git add
-the file. Sorry for the confusion; I will send out the corrected patches soon.
-
-Regards,
-
-K. Y
-
-
+Bjorn
