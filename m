@@ -1,86 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab2AZVdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:33:41 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41187 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab2AZVdk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:33:40 -0500
+	id S1753864Ab2AZVgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:36:09 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:40486 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652Ab2AZVgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 16:36:07 -0500
+Message-ID: <1327613587.2649.231.camel@groeck-laptop>
+Subject: Re: [lm-sensors] [GIT PULL] hwmon updates for 3.3
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Date: Thu, 26 Jan 2012 13:33:07 -0800
+In-Reply-To: <20120125052313.GA11583@ericsson.com>
+References: <20120125052313.GA11583@ericsson.com>
+Organization: Ericsson
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-ZV1laEdCoddTcVq8j33+"
+X-Mailer: Evolution 3.2.1- 
 MIME-Version: 1.0
-In-Reply-To: <4F204F1C.70908@gmail.com>
-References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
- <4F1DD6DF.4080706@gmail.com> <4F200DFD.7070407@ti.com> <4F204F1C.70908@gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 26 Jan 2012 14:33:20 -0700
-X-Google-Sender-Auth: Za2tvaPIK3qfm4nVIjUAhnAkbe4
-Message-ID: <CACxGe6vA6CSCAU82uuMaycqDBt+JG3KvXzAURDWQ0Deyeg13Ow@mail.gmail.com>
-Subject: Re: [RFCv2 00/14]
-To: Rob Herring <robherring2@gmail.com>
-Cc: "Cousson, Benoit" <b-cousson@ti.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        Milton Miller <miltonm@bga.com>, benh@kernel.crashing.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 11:51 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On 01/25/2012 08:13 AM, Cousson, Benoit wrote:
->> On 1/23/2012 10:53 PM, Rob Herring wrote:
->>> On 01/23/2012 03:07 PM, Grant Likely wrote:
->>>>
->>>> Hey everyone,
->>>>
->>>> Here's the second RFC for the irq_domain patches.  I could use some
->>>> help testing now.  I still expect there will be a few bugs.  The
->>>> series is based on v3.3-rc1, and I've pushed it out to my git server:
->>>>
->>>> git://git.secretlab.ca/git/linux-2.6.git irqdomain/next
->>>
->>> Can you post to linux-arm-kernel too so people are aware of this work
->>> and stop posting dead-end irqdomain patches.
->>
->> Good point, I have two pending series that are using the
->> irq_domain_add() so far, so it will be good to have that branch pulled
->> in arm-soc.
->>
->>> I tested what you had as of this morning and it works fine for me. Looks
->>> like the only diff is the VExpress code. I'm working on rebasing my
->>> domain support for generic irqchip now.
->>
->> In fact your generic irqchip should even avoid us to use
->> irq_domain_add_legacy() since both GPIO and OMAP3 intc are already using
->> the irqchip.
->>
->> I guess you are not going to change the interface so the patches I did
->> on your previous branch to try them should be good already, isn't it?
->
-> I've got it rebased on top of Grant's tree. I will send it out soon.
->
-> One problem that still remains is it breaks x86 and any platform using
-> generic irq chip, but not selecting IRQ_DOMAIN. Grant, do you plan to
-> enable IRQ_DOMAIN for x86 in your series? MIPS may also need fixing.
+--=-ZV1laEdCoddTcVq8j33+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I've got the x86 fix in my tree now.  It will be part of the next
-merge.  MIPS, Microblaze and OpenRISC cannot turn on CONFIG_IRQ_DOMAIN
-without rework.  I just hacked together the microblaze version, but
-Michal will have to verify that it is correct.  I just posted it.  It
-will be similar for the other two.
+Linus,
 
-The real problem is sparc which does something entirely different for
-irqs.  Rather than resolving irqs on-demand, it calculates the Linux
-irq numbers at boot time for every node in the tree.  The irq_domains
-will need to be set up for all interrupt controllers before sparc
-begins it's big walk of the tree to resolve interrupts.  I haven't dug
-into everything that needs to be done to support this.
+I noticed you did not apply this set of patches. Please let me know if
+this was an oversight, still coming, too much for a release candidate,
+or some other problem.
 
-I don't think you can count on turning on IRQ_DOMAIN on all
-architectures just yet.  Adding irq_domain support directly to
-irq_generic_chip is going to be difficult for that reason.  However,
-it would be useful to have an irq_domain+irq_generic_chip wrapper that
-can be enabled only when IRQ_DOMAIN is enabled.
+Thanks,
+Guenter
 
-g.
+On Wed, 2012-01-25 at 00:23 -0500, Guenter Roeck wrote:
+> Hi Linus,
+>=20
+> Please pull hwmon subsystem updates for Linux 3.3 from:
+>=20
+>     git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.gi=
+t hwmon-for-linus
+>=20
+> Looks like a lot of changes, but almost all of it is cleanup, plus some
+> error handling improvements, MAINTAINERS updates, and a couple of
+> minor bug fixes.
+>=20
+> Thanks,
+> Guenter
+>=20
+> ------
+>=20
+> The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d=
+1f:
+>=20
+>   Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
+>=20
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git =
+hwmon-for-linus
+>=20
+> Axel Lin (2):
+>       hwmon: convert drivers/hwmon/* to use module_i2c_driver()
+>       hwmon: convert drivers/hwmon/* to use module_spi_driver()
+>=20
+> Frans Meulenbroeks (26):
+>       hwmon: (lm80) add error handling
+>       hwmon: (amc6821) fix initialisation
+>       hwmon: (mc13783-adc) remove space before tab
+>       hwmon: remove () used with return
+>       hwmon: use DEFINE_PCI_DEVICE_TABLE
+>       hwmon: (i5k_amb) fix checkpatch issues
+>       hwmon: (g760a) fix checkpatch issues
+>       hwmon: (adm1029) fix checkpatch issues
+>       hwmon: fix checkpatch issues
+>       hwmon: (wm831x-hwmon) fix checkpatch issues
+>       hwmon: (w83l785ts) fix checkpatch issues
+>       hwmon: (ad7418) fix checkpatch issues
+>       hwmon: (ad7414) fix checkpatch issues
+>       hwmon: (ibmaem) fix checkpatch issues
+>       hwmon: (sht15) fix checkpatch issues
+>       hwmon: (smm665) fix checkpatch issues
+>       hwmon: (adt7475) fix checkpatch issues
+>       hwmon: (asus_atk0110) fix checkpatch issues
+>       hwmon: (f71882fg) fix checkpatch issues
+>       hwmon: (lm70) fix checkpatch issues
+>       hwmon: (adt7411) fix checkpatch issues
+>       hwmon: (adt7470) fix checkpatch issues
+>       hwmon: (lm80) fix checkpatch warnings
+>       hwmon: (lm80) reset device if error occurred
+>       hwmon: (k8temp) fix checkpatch issues
+>       hwmon: (lm83) fix checkpatch issues
+>=20
+> Guenter Roeck (31):
+>       hwmon: (pmbus) Replace strict_strtol with kstrtol
+>       hwmon: (max6650) Fix checkpatch issues
+>       hwmon: (vt8231) Fix checkpatch issues
+>       hwmon: (abituguru3) Fix checkpatch issues
+>       hwmon: (adm1025) Fix checkpatch issues
+>       hwmon: (adm1025) Limit data range when writing cpu0_vid
+>       hwmon: (w83781d) Fix checkpatch issues
+>       hwmon: (max6650) Fix multi-line comments
+>       hwmon: (f71805f) Fix multi-line comments
+>       hwmon: (adt7475) Fix multi-line comments
+>       hwmon: (vt8231) Fix multi-line comments
+>       hwmon: (ds1621) Fix checkpatch issues
+>       hwmon: (ds1621) Fix multi-line comments
+>       hwmon: (f71805f) Fix checkpatch issues
+>       hwmon: (hwmon) Fix multi-line comments
+>       hwmon: (hwmon-vid) Fix multi-line comments
+>       hwmon: (it87) Fix multi-line comments
+>       hwmon: (asc7621) Fix multi-line comments
+>       hwmon: (smm665) Fix checkpatch error
+>       hwmon: (wm831x-hwmon) Fix multi-line comments
+>       hwmon: (pc87360) Fix multi-line comments
+>       hwmon: (coretemp) Fix checkpatch error
+>       hwmon: (jc42) Fix multi-line comments
+>       hwmon: (ad7414) Fix multi-line comments
+>       hwmon: (it87) Constify fixed string arrays
+>       hwmon: (asus_atk0110) Fix multi-line comments
+>       hwmon: (applesmc) Fix multi-line comments
+>       hwmon: (wm8350-hwmon) Constify fixed string array
+>       hwmon: (ltc4245) Fix multi-line comments
+>       hwmon: (ltc4215) Fix multi-line comments
+>       MAINTAINERS: Drop maintainer for MAX1668 hwmon driver
+>=20
+> Jean Delvare (1):
+>       hwmon: (f71805f) Fix clamping of temperature limits
+>=20
+> Mark Brown (1):
+>       MAINTAINERS: Add hwmon entries for Wolfson
+>=20
+>  MAINTAINERS                      |    8 +-
+>  drivers/hwmon/abituguru3.c       |   56 +++++---
+>  drivers/hwmon/ad7314.c           |   12 +--
+>  drivers/hwmon/ad7414.c           |   21 +--
+>  drivers/hwmon/ad7418.c           |   25 ++--
+>  drivers/hwmon/adcxx.c            |   13 +--
+>  drivers/hwmon/adm1021.c          |   13 +--
+>  drivers/hwmon/adm1025.c          |   76 ++++++----
+>  drivers/hwmon/adm1026.c          |   13 +--
+>  drivers/hwmon/adm1029.c          |   28 +---
+>  drivers/hwmon/adm1031.c          |   13 +--
+>  drivers/hwmon/adm9240.c          |   14 +--
+>  drivers/hwmon/ads1015.c          |   13 +--
+>  drivers/hwmon/ads7871.c          |   13 +--
+>  drivers/hwmon/adt7411.c          |   14 +--
+>  drivers/hwmon/adt7462.c          |   13 +--
+>  drivers/hwmon/adt7470.c          |   19 +--
+>  drivers/hwmon/adt7475.c          |  105 ++++++++------
+>  drivers/hwmon/amc6821.c          |   17 +--
+>  drivers/hwmon/applesmc.c         |    6 +-
+>  drivers/hwmon/asb100.c           |   13 +--
+>  drivers/hwmon/asc7621.c          |    8 +-
+>  drivers/hwmon/asus_atk0110.c     |   18 ++-
+>  drivers/hwmon/atxp1.c            |   15 +--
+>  drivers/hwmon/coretemp.c         |    4 +-
+>  drivers/hwmon/ds1621.c           |   93 ++++++-------
+>  drivers/hwmon/ds620.c            |   13 +--
+>  drivers/hwmon/emc1403.c          |   13 +--
+>  drivers/hwmon/emc2103.c          |   13 +--
+>  drivers/hwmon/emc6w201.c         |   12 +--
+>  drivers/hwmon/f71805f.c          |  211 ++++++++++++++++++++---------
+>  drivers/hwmon/f71882fg.c         |    4 +-
+>  drivers/hwmon/f75375s.c          |   13 +--
+>  drivers/hwmon/fschmd.c           |   13 +--
+>  drivers/hwmon/g760a.c            |   19 +--
+>  drivers/hwmon/gl518sm.c          |   13 +--
+>  drivers/hwmon/gl520sm.c          |   15 +--
+>  drivers/hwmon/hwmon-vid.c        |   36 +++---
+>  drivers/hwmon/hwmon.c            |   25 ++--
+>  drivers/hwmon/i5k_amb.c          |   18 ++-
+>  drivers/hwmon/ibmaem.c           |    2 +-
+>  drivers/hwmon/it87.c             |  176 +++++++++++++++---------
+>  drivers/hwmon/jc42.c             |   19 +--
+>  drivers/hwmon/k10temp.c          |    2 +-
+>  drivers/hwmon/k8temp.c           |   17 ++-
+>  drivers/hwmon/lineage-pem.c      |   13 +--
+>  drivers/hwmon/lm63.c             |   13 +--
+>  drivers/hwmon/lm70.c             |   15 +--
+>  drivers/hwmon/lm73.c             |   15 +--
+>  drivers/hwmon/lm75.c             |   17 +--
+>  drivers/hwmon/lm77.c             |   13 +--
+>  drivers/hwmon/lm80.c             |  171 +++++++++++++++++------
+>  drivers/hwmon/lm83.c             |   30 ++---
+>  drivers/hwmon/lm85.c             |   14 +--
+>  drivers/hwmon/lm87.c             |   13 +--
+>  drivers/hwmon/lm90.c             |   13 +--
+>  drivers/hwmon/lm92.c             |   13 +--
+>  drivers/hwmon/lm93.c             |   13 +--
+>  drivers/hwmon/lm95241.c          |   13 +--
+>  drivers/hwmon/lm95245.c          |   13 +--
+>  drivers/hwmon/ltc4151.c          |   13 +--
+>  drivers/hwmon/ltc4215.c          |   28 ++---
+>  drivers/hwmon/ltc4245.c          |   22 +--
+>  drivers/hwmon/ltc4261.c          |   13 +--
+>  drivers/hwmon/max1111.c          |   12 +--
+>  drivers/hwmon/max16065.c         |   13 +--
+>  drivers/hwmon/max1619.c          |   13 +--
+>  drivers/hwmon/max1668.c          |   13 +--
+>  drivers/hwmon/max6639.c          |   13 +--
+>  drivers/hwmon/max6642.c          |   13 +--
+>  drivers/hwmon/max6650.c          |  177 ++++++++++++-----------
+>  drivers/hwmon/mc13783-adc.c      |    2 +-
+>  drivers/hwmon/pc87360.c          |   73 ++++++----
+>  drivers/hwmon/pcf8591.c          |    4 +-
+>  drivers/hwmon/pmbus/adm1275.c    |   12 +--
+>  drivers/hwmon/pmbus/lm25066.c    |   12 +--
+>  drivers/hwmon/pmbus/ltc2978.c    |   12 +--
+>  drivers/hwmon/pmbus/max16064.c   |   12 +--
+>  drivers/hwmon/pmbus/max34440.c   |   12 +--
+>  drivers/hwmon/pmbus/max8688.c    |   12 +--
+>  drivers/hwmon/pmbus/pmbus.c      |   12 +--
+>  drivers/hwmon/pmbus/pmbus_core.c |    2 +-
+>  drivers/hwmon/pmbus/ucd9000.c    |   12 +--
+>  drivers/hwmon/pmbus/ucd9200.c    |   12 +--
+>  drivers/hwmon/pmbus/zl6100.c     |   12 +--
+>  drivers/hwmon/sht15.c            |    2 +-
+>  drivers/hwmon/sht21.c            |   23 +---
+>  drivers/hwmon/sis5595.c          |    2 +-
+>  drivers/hwmon/smm665.c           |   22 +--
+>  drivers/hwmon/smsc47m192.c       |   13 +--
+>  drivers/hwmon/thmc50.c           |   13 +--
+>  drivers/hwmon/tmp102.c           |   12 +--
+>  drivers/hwmon/tmp401.c           |   13 +--
+>  drivers/hwmon/tmp421.c           |   13 +--
+>  drivers/hwmon/via686a.c          |    2 +-
+>  drivers/hwmon/vt8231.c           |  285 ++++++++++++++++++++++++--------=
+------
+>  drivers/hwmon/w83627hf.c         |    8 +-
+>  drivers/hwmon/w83781d.c          |  146 ++++++++++++-------
+>  drivers/hwmon/w83791d.c          |   13 +--
+>  drivers/hwmon/w83792d.c          |   20 +---
+>  drivers/hwmon/w83793.c           |   19 +--
+>  drivers/hwmon/w83795.c           |   13 +--
+>  drivers/hwmon/w83l785ts.c        |   15 +--
+>  drivers/hwmon/w83l786ng.c        |   17 +--
+>  drivers/hwmon/wm831x-hwmon.c     |    8 +-
+>  drivers/hwmon/wm8350-hwmon.c     |    2 +-
+>  106 files changed, 1228 insertions(+), 1620 deletions(-)
+
+
+--=-ZV1laEdCoddTcVq8j33+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJPIcaTAAoJEANmWzN1g3l3CH0IAIwmnue5VUUJbozlddVB13HS
+eY50PwxtK/zn4vIP0yDIH9iQcSMr7HmsGbPfzjiEcHj+0vhXRDanjux3LNOYZilZ
+g4RGjoapU7E7ZjQpZZI8NYGBMY0ujpVgf90M1tNerxczFxO1KFEi3NRASKTVcMXt
+vMXmKldu8r540DxmH0UKD065GUc5Jd2GFkxeeAtPNBT8Q1mq94ZCWbU0xiYbue6i
+DWdfwULTl5cfEfXGIDaAn8Y+LLWNCNcXAmruBR1uYH10FpfCLHDKWIZ93s+D+N3F
+HgDFyOzFjxe/U5KfEa8nMRMDouqTEDnr6s3ZCnloRWVv8BiywYEy87wbL+dz5a8=
+=Gj8u
+-----END PGP SIGNATURE-----
+
+--=-ZV1laEdCoddTcVq8j33+--
