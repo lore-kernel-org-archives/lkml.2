@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab2AZJwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:52:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750865Ab2AZJwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:52:53 -0500
-Message-ID: <4F21220E.9080404@redhat.com>
-Date: Thu, 26 Jan 2012 09:51:10 +0000
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1751497Ab2AZJyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:54:54 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45442 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750842Ab2AZJyx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 04:54:53 -0500
 MIME-Version: 1.0
-To: Denys Vlasenko <vda.linux@googlemail.com>
-CC: Pedro Alves <palves@redhat.com>, Jamie Lokier <jamie@shareable.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com> <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com> <20120125193635.GA30311@redhat.com> <201201260032.57937.vda.linux@googlemail.com> <20120126005901.GC18613@jl-vm1.vm.bytemark.co.uk> <4F210D9B.3030808@redhat.com> <CAK1hOcPnDkCdv_c3tXVDKPVeDePgm-1o1z2U2-ipjwS-=ekT5Q@mail.gmail.com>
-In-Reply-To: <CAK1hOcPnDkCdv_c3tXVDKPVeDePgm-1o1z2U2-ipjwS-=ekT5Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <m2mx9ev85j.fsf@bob.laptop.org>
+References: <201201151255.41252.roucaries.bastien@gmail.com>
+	<CAE2SPAb3Ozk7LHrqE_asazZ7kEogXEH=2S8D5PUprqXZK2o9Ow@mail.gmail.com>
+	<m2mx9ev85j.fsf@bob.laptop.org>
+Date: Thu, 26 Jan 2012 10:54:50 +0100
+Message-ID: <CAE2SPAbpeHiz_JByYGrMJ6s1_yCM3SaQ8xjx4heuT2_i2Gyxcw@mail.gmail.com>
+Subject: Re: Need pci rescan in order to get my mmc reader
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 08:53 AM, Denys Vlasenko wrote:
-> On Thu, Jan 26, 2012 at 9:23 AM, Pedro Alves <palves@redhat.com> wrote:
->> On 01/26/2012 12:59 AM, Jamie Lokier wrote:
->>> Tracers mainly want to know if it's a 32-bit or 64-bit syscall, not
->>> whether it's compat as such.
->>
->> Another idea, avoiding new PTRACE_EVENTs per arch, would be to make
->> the abi32/abi64/compat/whatnot discriminator retrievable with PTRACE_GETEVENTMSG
->> instead.  So you'd get PTRACE_EVENT_SYSCALL_ENTRY|EXIT, or the regular old
->> 0x80|SIGTRAP, you'd still fetch the syscall number from $orig_ax (or whatever means
->> for other archs), as usual, then have extra syscall info in PTRACE_GETEVENTMSG.
->> I don't know if it'd be simple to make it possible to do PTRACE_GETEVENTMSG
->> on a 0x80|SIGTRAP trap, but I imagine it so.
->>
->> -> wait
->>  <- 0x80|SIGTRAP   (or PTRACE_EVENT_SYSCALL_ENTRY)
->> -> read regs, find out syscall number
->> -> PTRACE_GETEVENTMSG, figure out which entry mode was used.
-> 
-> This would require additional ptrace op per syscall entry.
-> Linus' method and event method wouldn't.
+On Mon, Jan 23, 2012 at 2:51 PM, Chris Ball <cjb@laptop.org> wrote:
+> Hi,
+>
+> On Mon, Jan 23 2012, Bastien ROUCARIES wrote:
+>> On Sun, Jan 15, 2012 at 12:55 PM, bastien ROUCARIES
+>> <roucaries.bastien@gmail.com> wrote:
+>>> I am hit by the same bug than here
+>>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/703180
+>>>
+>>> I order to get my mmc reader functionnal I need to put a mmc card
+>>> and do a pci rescan manualy.
+>>>
+>>> What could be done  ?
+>>>
+>>> What do you need in order to help ?
+>>>
+>>> Thanks
+>
+> I'm not sure there's anything I (at the MMC layer) can do to help;
+> having a visible PCI device is a prerequisite for working MMC.
+>
+> Have you tried a recent upstream kernel, and looked for any available
+> BIOS updates for your laptop?
 
-Yes.
+BIOS is lasted and kernel is 3.1.
 
-In any case, ptrace events leave recording the state in core files
-behind; possibly also important for userspace c/r.
-Linus' method or a new regset don't have that drawback.  A new regset requires
-an additional ptrace op too, while the former abuses an architecture register,
-possibly leading to headaches later on.
+I know that  PCI device is a prerequisite  but I believe it is
+possible to run some quirk on this laptop, in order to get the mmc
+reader up earlier.
 
--- 
-Pedro Alves
+See also https://bugzilla.kernel.org/show_bug.cgi?id=40802
+
+perhap loading by default pci hotplug and do a rescan every second ?
+
+Bastien
+>
+> Thanks,
+>
+> - Chris.
+> --
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
