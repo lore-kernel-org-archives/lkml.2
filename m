@@ -1,194 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab2AZUPx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 15:15:53 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35192 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752566Ab2AZUPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 15:15:52 -0500
-Date: Thu, 26 Jan 2012 21:15:34 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20120126201534.GA7933@elte.hu>
+	id S1753349Ab2AZUZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 15:25:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39636 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab2AZUZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 15:25:57 -0500
+Date: Thu, 26 Jan 2012 12:25:33 -0800
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, kosaki.motohiro@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, kosaki.motohiro@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1327486224.2614.45.camel@laptop>
+References: <1327486224.2614.45.camel@laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix rq->nr_uninterruptible update race
+Git-Commit-ID: 4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jan 2012 12:25:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Commit-ID:  4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b
+Gitweb:     http://git.kernel.org/tip/4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 25 Jan 2012 11:50:51 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 26 Jan 2012 19:38:09 +0100
 
-Please pull the latest x86-urgent-for-linus git tree from:
+sched: Fix rq->nr_uninterruptible update race
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+KOSAKI Motohiro noticed the following race:
 
-   HEAD: 5b68edc91cdc972c46f76f85eded7ffddc3ff5c2 x86/microcode_amd: Add support for CPU family specific container files
+ > CPU0                    CPU1
+ > --------------------------------------------------------
+ > deactivate_task()
+ >                         task->state = TASK_UNINTERRUPTIBLE;
+ > activate_task()
+ >    rq->nr_uninterruptible--;
+ >
+ >                         schedule()
+ >                           deactivate_task()
+ >                             rq->nr_uninterruptible++;
+ >
 
- Thanks,
+Kosaki-San's scenario is possible when CPU0 runs
+__sched_setscheduler() against CPU1's current @task.
 
-	Ingo
+__sched_setscheduler() does a dequeue/enqueue in order to move
+the task to its new queue (position) to reflect the newly provided
+scheduling parameters. However it should be completely invariant to
+nr_uninterruptible accounting, sched_setscheduler() doesn't affect
+readyness to run, merely policy on when to run.
 
------------------->
-Andreas Herrmann (2):
-      x86/amd: Add missing feature flag for fam15h models 10h-1fh processors
-      x86/microcode_amd: Add support for CPU family specific container files
+So convert the inappropriate activate/deactivate_task usage to
+enqueue/dequeue_task, which avoids the nr_uninterruptible accounting.
 
-Cliff Wickman (1):
-      x86/uv: Fix uninitialized spinlocks
+Also convert the two other sites: __migrate_task() and
+normalize_task() that still use activate/deactivate_task. These sites
+aren't really a problem since __migrate_task() will only be called on
+non-running task (and therefore are immume to the described problem)
+and normalize_task() isn't ever used on regular systems.
 
-Daniel J Blueman (1):
-      x86/numachip: Drop unnecessary conflict with EDAC
+Also remove the comments from activate/deactivate_task since they're
+misleading at best.
 
-Jesper Juhl (1):
-      x86/boot-image: Don't leak phdrs in arch/x86/boot/compressed/misc.c::Parse_elf()
+Reported-by: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1327486224.2614.45.camel@laptop
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched/core.c |   18 ++++++------------
+ 1 files changed, 6 insertions(+), 12 deletions(-)
 
-Russ Anderson (1):
-      x86/uv: Fix uv_gpa_to_soc_phys_ram() shift
-
-
- arch/x86/Kconfig                  |    1 -
- arch/x86/boot/compressed/misc.c   |    2 ++
- arch/x86/include/asm/cpufeature.h |    1 +
- arch/x86/include/asm/uv/uv_hub.h  |    4 ++--
- arch/x86/kernel/microcode_amd.c   |   24 ++++++++++++++++++++++--
- arch/x86/platform/uv/tlb_uv.c     |    2 ++
- arch/x86/platform/uv/uv_irq.c     |    2 +-
- 7 files changed, 30 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 864cc6e..5bed94e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -360,7 +360,6 @@ config X86_NUMACHIP
- 	depends on NUMA
- 	depends on SMP
- 	depends on X86_X2APIC
--	depends on !EDAC_AMD64
- 	---help---
- 	  Adds support for Numascale NumaChip large-SMP systems. Needed to
- 	  enable more than ~168 cores.
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 3a19d04..7116dcb 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -321,6 +321,8 @@ static void parse_elf(void *output)
- 		default: /* Ignore other PT_* */ break;
- 		}
- 	}
-+
-+	free(phdrs);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index df00cb0..e067df1 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -723,9 +723,6 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
+ 	p->sched_class->dequeue_task(rq, p, flags);
  }
  
- asmlinkage void decompress_kernel(void *rmode, memptr heap,
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 17c5d4b..8d67d42 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -159,6 +159,7 @@
- #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
- #define X86_FEATURE_LWP		(6*32+15) /* Light Weight Profiling */
- #define X86_FEATURE_FMA4	(6*32+16) /* 4 operands MAC instructions */
-+#define X86_FEATURE_TCE		(6*32+17) /* translation cache extension */
- #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
- #define X86_FEATURE_TBM		(6*32+21) /* trailing bit manipulations */
- #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
-diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
-index 54a13aa..21f7385 100644
---- a/arch/x86/include/asm/uv/uv_hub.h
-+++ b/arch/x86/include/asm/uv/uv_hub.h
-@@ -318,13 +318,13 @@ uv_gpa_in_mmr_space(unsigned long gpa)
- /* UV global physical address --> socket phys RAM */
- static inline unsigned long uv_gpa_to_soc_phys_ram(unsigned long gpa)
+-/*
+- * activate_task - move a task to the runqueue.
+- */
+ void activate_task(struct rq *rq, struct task_struct *p, int flags)
  {
--	unsigned long paddr = gpa & uv_hub_info->gpa_mask;
-+	unsigned long paddr;
- 	unsigned long remap_base = uv_hub_info->lowmem_remap_base;
- 	unsigned long remap_top =  uv_hub_info->lowmem_remap_top;
- 
- 	gpa = ((gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
- 		((gpa >> uv_hub_info->n_lshift) << uv_hub_info->m_val);
--	gpa = gpa & uv_hub_info->gpa_mask;
-+	paddr = gpa & uv_hub_info->gpa_mask;
- 	if (paddr >= remap_base && paddr < remap_base + remap_top)
- 		paddr -= remap_base;
- 	return paddr;
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index fe86493..ac0417b 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -311,13 +311,33 @@ out:
- 	return state;
+ 	if (task_contributes_to_load(p))
+@@ -734,9 +731,6 @@ void activate_task(struct rq *rq, struct task_struct *p, int flags)
+ 	enqueue_task(rq, p, flags);
  }
  
-+/*
-+ * AMD microcode firmware naming convention, up to family 15h they are in
-+ * the legacy file:
-+ *
-+ *    amd-ucode/microcode_amd.bin
-+ *
-+ * This legacy file is always smaller than 2K in size.
-+ *
-+ * Starting at family 15h they are in family specific firmware files:
-+ *
-+ *    amd-ucode/microcode_amd_fam15h.bin
-+ *    amd-ucode/microcode_amd_fam16h.bin
-+ *    ...
-+ *
-+ * These might be larger than 2K.
-+ */
- static enum ucode_state request_microcode_amd(int cpu, struct device *device)
+-/*
+- * deactivate_task - remove a task from the runqueue.
+- */
+ void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
  {
--	const char *fw_name = "amd-ucode/microcode_amd.bin";
-+	char fw_name[36] = "amd-ucode/microcode_amd.bin";
- 	const struct firmware *fw;
- 	enum ucode_state ret = UCODE_NFOUND;
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+
-+	if (c->x86 >= 0x15)
-+		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+ 	if (task_contributes_to_load(p))
+@@ -4134,7 +4128,7 @@ recheck:
+ 	on_rq = p->on_rq;
+ 	running = task_current(rq, p);
+ 	if (on_rq)
+-		deactivate_task(rq, p, 0);
++		dequeue_task(rq, p, 0);
+ 	if (running)
+ 		p->sched_class->put_prev_task(rq, p);
  
--	if (request_firmware(&fw, fw_name, device)) {
-+	if (request_firmware(&fw, (const char *)fw_name, device)) {
- 		pr_err("failed to load file %s\n", fw_name);
- 		goto out;
+@@ -4147,7 +4141,7 @@ recheck:
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
+ 	if (on_rq)
+-		activate_task(rq, p, 0);
++		enqueue_task(rq, p, 0);
+ 
+ 	check_class_changed(rq, p, prev_class, oldprio);
+ 	task_rq_unlock(rq, p, &flags);
+@@ -4998,9 +4992,9 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
+ 	 * placed properly.
+ 	 */
+ 	if (p->on_rq) {
+-		deactivate_task(rq_src, p, 0);
++		dequeue_task(rq_src, p, 0);
+ 		set_task_cpu(p, dest_cpu);
+-		activate_task(rq_dest, p, 0);
++		enqueue_task(rq_dest, p, 0);
+ 		check_preempt_curr(rq_dest, p, 0);
  	}
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 9be4cff..3ae0e61 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1851,6 +1851,8 @@ static void __init init_per_cpu_tunables(void)
- 		bcp->cong_reps			= congested_reps;
- 		bcp->cong_period		= congested_period;
- 		bcp->clocks_per_100_usec =	usec_2_cycles(100);
-+		spin_lock_init(&bcp->queue_lock);
-+		spin_lock_init(&bcp->uvhub_lock);
+ done:
+@@ -7032,10 +7026,10 @@ static void normalize_task(struct rq *rq, struct task_struct *p)
+ 
+ 	on_rq = p->on_rq;
+ 	if (on_rq)
+-		deactivate_task(rq, p, 0);
++		dequeue_task(rq, p, 0);
+ 	__setscheduler(rq, p, SCHED_NORMAL, 0);
+ 	if (on_rq) {
+-		activate_task(rq, p, 0);
++		enqueue_task(rq, p, 0);
+ 		resched_task(rq->curr);
  	}
- }
  
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index 374a05d..f25c276 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -25,7 +25,7 @@ struct uv_irq_2_mmr_pnode{
- 	int			irq;
- };
- 
--static spinlock_t		uv_irq_lock;
-+static DEFINE_SPINLOCK(uv_irq_lock);
- static struct rb_root		uv_irq_root;
- 
- static int uv_set_irq_affinity(struct irq_data *, const struct cpumask *, bool);
