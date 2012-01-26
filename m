@@ -1,58 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab2AZAhy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 19:37:54 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:34213 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865Ab2AZAhx (ORCPT
+	id S1751966Ab2AZAlC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 19:41:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57906 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2AZAlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 19:37:53 -0500
-Date: Thu, 26 Jan 2012 09:37:35 +0900
-From: Norbert Preining <preining@logic.at>
-To: Emmanuel Grumbach <egrumbach@gmail.com>
-Cc: linux-kernel@vger.kernel.org, ipw3945-devel@lists.sourceforge.net,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>
-Subject: Re: iwlagn is getting even worse with 3.3-rc1
-Message-ID: <20120126003735.GA2346@gamma.logic.tuwien.ac.at>
-References: <20120124013625.GB18436@gamma.logic.tuwien.ac.at> <CANUX_P3er0orBy8OhDuY1DfgD810UD-_HB_ukJnCA+W8e-VazQ@mail.gmail.com> <20120125002250.GA20431@gamma.logic.tuwien.ac.at> <CANUX_P0UREz_jZABu+Y_QYOh9tx_sKZSSkZpYHBEVtcU4QQdSA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANUX_P0UREz_jZABu+Y_QYOh9tx_sKZSSkZpYHBEVtcU4QQdSA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 25 Jan 2012 19:41:00 -0500
+Date: Wed, 25 Jan 2012 16:40:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: arjan@linux.intel.com, richard@nod.at, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] kmod: Avoid deadlock by recursive kmod call.
+Message-Id: <20120125164059.05a3bf39.akpm@linux-foundation.org>
+In-Reply-To: <201201240432.q0O4WeMu031016@www262.sakura.ne.jp>
+References: <201112270701.pBR713wO005588@www262.sakura.ne.jp>
+	<201201040743.q047h9OD055670@www262.sakura.ne.jp>
+	<201201042208.JHG52695.OLStHFQOFFMVJO@I-love.SAKURA.ne.jp>
+	<201201062139.JFC73472.SMQFOFOFHLVOtJ@I-love.SAKURA.ne.jp>
+	<20120118164558.a10d7821.akpm@linux-foundation.org>
+	<201201190207.q0J27Mr5099912@www262.sakura.ne.jp>
+	<201201240432.q0O4WeMu031016@www262.sakura.ne.jp>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Emmanuel,
+On Tue, 24 Jan 2012 13:32:40 +0900
+Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
 
-On Di, 24 Jan 2012, Emmanuel Grumbach wrote:
-> yeah... looks like the same issue as Dave. Can you please try with 0xc0000000 ?
-> it will be noisy so be prepared...
+> Tetsuo Handa wrote:
+> > Andrew Morton wrote:
+> > > > --- linux-3.2.orig/fs/exec.c
+> > > > +++ linux-3.2/fs/exec.c
+> > > > @@ -1406,6 +1406,7 @@ int search_binary_handler(struct linux_b
+> > > >  					fput(bprm->file);
+> > > >  				bprm->file = NULL;
+> > > >  				current->did_exec = 1;
+> > > > +				current->kmod_thread = 0;
+> > > >  				proc_exec_connector(current);
+> > > >  				return retval;
+> > > >  			}
+> > > 
+> > > Special-casing this assignment down in this particular client of kmod
+> > > looks bad.  We need to find somewhere else to do this.  Perferably
+> > > within the kmod code itself, or possibly over in exec.c or fork.c.
+> > > 
+> > Well, kmod code is no longer called if do_execve() succeeded.
+> > 
+> > In "[PATCH v2] kmod: Avoid deadlock by recursive kmod call"
+> > ( https://lkml.org/lkml/2012/1/4/111 ), I forgot to do
+> > 
+> > 	current->kmod_thread = 0;
+> > 
+> > when do_execve() succeeded. Not clearing this flag might overkill functionality
+> > of /sbin/hotplug and its descendants. If we want to clear this flag, I think we
+> > cannot help doing it in fork.c or exec.c (or do like patch B which does not
+> > need this flag).
 
-syslog output is at http://www.logic.at/people/preining/syslog.log
-this is after a suspend and resume.
+(This email is difficult to reply to :(.  I think I'll reorganise it for you)
 
-first connection after resume succeeded at around kernel time 378.859794
-then it worked for say 20sec or so, hard to say when exactely it dropped,
-but defeinitely at kernel time 451 it was finished.
+> I found another approach which mixed patch A and patch B.
+>
+> ----------------------------------------
+> [PATCH v4] kmod: Avoid deadlock by recursive kmod call.
+> 
+> The system deadlocks (at least since 2.6.10) when
+> call_usermodehelper(UMH_WAIT_EXEC) request triggered
+> call_usermodehelper(UMH_WAIT_PROC) request.
+> 
+> This is because "khelper thread is waiting for the worker thread at
+> wait_for_completion() in do_fork() since the worker thread was created with
+> CLONE_VFORK flag" and "the worker thread cannot call complete() because
+> do_execve() is blocked at UMH_WAIT_PROC request" and "the khelper thread cannot
+> start processing UMH_WAIT_PROC request because the khelper thread is waiting
+> for the worker thread at wait_for_completion() in do_fork()".
+> 
+> In order to avoid deadlock, do not try to call wait_for_completion() in
+> call_usermodehelper_exec() if the worker thread was created by khelper thread
+> with CLONE_VFORK flag.
+> 
+> The easiest example to observe this deadlock is to use a corrupted
+> /sbin/hotplug binary (like shown below).
+> 
+>   # : > /tmp/dummy
+>   # chmod 755 /tmp/dummy
+>   # echo /tmp/dummy > /proc/sys/kernel/hotplug
+>   # modprobe whatever
+> 
+> call_usermodehelper("/tmp/dummy", UMH_WAIT_EXEC) is called from
+> kobject_uevent_env() in lib/kobject_uevent.c upon loading/unloading a module.
+> do_execve("/tmp/dummy") triggers a call to request_module("binfmt-0000") from
+> search_binary_handler() which in turn calls call_usermodehelper(UMH_WAIT_PROC).
+> 
+> There are various hooks called during do_execve() operation (e.g.
+> security_bprm_check(), audit_bprm(), "struct linux_binfmt"->load_binary()).
+> If one of such hooks triggers UMH_WAIT_EXEC, this deadlock will happen even if
+> /sbin/hotplug is not corrupted.
 
-After that nothing went out or in again.
 
-Hope you can make something out of that.
+> Since __call_usermodehelper() is exclusively called (am I right?), we don't
+> need to use per "struct task_struct" flag.
 
-Best wishes
+The locking for the new kmod_thread_locker global is quite unobvious. 
+>From a quick look I can't say that I obviously agree with the above
+claim.
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-SKETTY (n.)
-Apparently self-propelled little dance a beer glass performs in its
-own puddle.
-			--- Douglas Adams, The Meaning of Liff
+Maybe it relies upon there only ever being a single khelper thread,
+system wide?  If so then, err, maybe this is OK.  But I think the
+analysis should be fully spelled out in the changelog and described in
+the code in some manner which will prevent us from accidentally
+breaking this exclusivity as the code evolves.
+
+Does this look truthful and complete?
+
+--- a/kernel/kmod.c~kmod-avoid-deadlock-by-recursive-kmod-call-fix
++++ a/kernel/kmod.c
+@@ -44,6 +44,12 @@
+ extern int max_threads;
+ 
+ static struct workqueue_struct *khelper_wq;
++
++/*
++ * kmod_thread_locker is used for deadlock avoidance.  There is no explicit
++ * locking to protect this global - it is private to the singleton khelper
++ * thread and should only ever be modified by that thread.
++ */
+ static const struct task_struct *kmod_thread_locker;
+ 
+ #define CAP_BSET	(void *)1
+_
+
