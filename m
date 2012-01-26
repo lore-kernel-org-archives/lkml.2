@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab2AZDrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jan 2012 22:47:35 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51227 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab2AZDrd (ORCPT
+	id S1752007Ab2AZEAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jan 2012 23:00:31 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:56021 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751630Ab2AZEAa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jan 2012 22:47:33 -0500
+	Wed, 25 Jan 2012 23:00:30 -0500
+X-WSS-ID: 0LYE0GQ-0A-0PG-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Anton Vorontsov" <cbouatmailru@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 25 Jan 2012 20:00:21 -0800
+Subject: [PATCH] power: lp8727_chager: permission change - header file
+Thread-Topic: [PATCH] power: lp8727_chager: permission change - header
+ file
+Thread-Index: Aczb3wX4cJ+6yaqzRZSeTXic76lIQQ==
+Message-ID: <B567DBAB974C0544994013492B949F8E3812CD42DD@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-In-Reply-To: <201201260209.54513.vda.linux@googlemail.com>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
- <201201260032.57937.vda.linux@googlemail.com> <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
- <201201260209.54513.vda.linux@googlemail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 Jan 2012 19:47:12 -0800
-X-Google-Sender-Auth: WZKh_48T_FXRIpBpWUzsmKnKbio
-Message-ID: <CA+55aFzDZhGoa1TH=RAtjK3Ti3=NPAYvreSxiTxTu3wnu8Z61g@mail.gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Indan Zupancic <indan@nul.nu>, Oleg Nesterov <oleg@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
-        Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 633E10451LS9936019-06-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 5:09 PM, Denys Vlasenko
-<vda.linux@googlemail.com> wrote:
->
-> Please look at strace source, get_scno() function, where
-> it reads syscall no and parameters. Let's see....
-> - POWERPC: has 32-bit and 64-bit mode
-> - X86_64: has 32-bit and 64-bit mode
-> - IA64: has i386-compat mode
-> - ARM: has more than one ABI
-> - SPARC: has 32-bit and 64-bit mode
->
-> Do you want to re-invent a different arch-specific way to report
-> syscall type for each of these arches?
+The 'x(execute)' permission is removed.
+(chmod from 0755 to 0644)
 
-I think an arch-specific one is better than trying to make some
-generic one that is messy.
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+ mode change 100755 => 100644 include/linux/lp8727.h
 
-As you say, many architectures have multiple system call ABIs.
+diff --git a/include/linux/lp8727.h b/include/linux/lp8727.h
+old mode 100755
+new mode 100644
+-- 
+1.7.4.1
 
-But they tend to be very *different* issues. They can be about
-multiple ABI's, as you mention, and even when they *look* similar
-(32-bit vs 64-bit ABI's) they are actually totally different issues.
 
-On x86, the real issue is not so much "32-bit vs 64-bit" as "multiple
-system call entry models", where a 64-bit process can use the system
-call entry for a 32-bit one. That is not true on POWER, for example,
-and trying to make it out to be the same issue only muddles the point,
-and confuses things. It really is NOT AT ALL the same issue, even if
-you can make it "look" like the same issue by calling it a 32-bit vs
-64-bit thing.
+Best Regards,
+Milo (Woogyom) Kim
+Texas Instruments Incorporated
 
-So for POWER, it really is about the mode of the CPU/process. For x86,
-it really isn't. Trying to equate the two is *wrong*.
-
-I seriously think it's better to be architecture-specific than to be
-that kind of totally confused, and try to "consolidate" the issue,
-when they are actually two totally different issues.
-
-                        Linus
