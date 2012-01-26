@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab2AZUpX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 15:45:23 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14059 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab2AZUpW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 15:45:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 26 Jan 2012 12:45:11 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 26 Jan 2012 12:44:45 -0800
-Subject: RE: [PATCH v1 8/8] ARM: tegra: support for secondary cores on
- Tegra30
-Thread-Topic: [PATCH v1 8/8] ARM: tegra: support for secondary cores on
- Tegra30
-Thread-Index: AczcTSojqjFirnaYSFi0erbpYX7mHgAHbr9g
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178CB8247E@HQMAIL01.nvidia.com>
-References: <1327597641-7519-1-git-send-email-pdeschrijver@nvidia.com>
- <1327597641-7519-9-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1327597641-7519-9-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753578Ab2AZUvL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 15:51:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50412 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752011Ab2AZUvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 15:51:09 -0500
+Date: Thu, 26 Jan 2012 21:51:05 +0100
+From: Jan Kara <jack@suse.cz>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Stop clearing uptodate flag on write IO error
+Message-ID: <20120126205105.GC27283@quack.suse.cz>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
+ <CA+55aFy0sidnCzPkP6yjnarLZx3a=7QSpgfaf2mUNVy14y3vCw@mail.gmail.com>
+ <20120116160136.GC16431@quack.suse.cz>
+ <CA+55aFyUiLq7UZeQD=-MU5ppvEDULiBP8xV0mJqVLL6nFAi7VA@mail.gmail.com>
+ <20120117003613.GA28571@dastard>
+ <CA+55aFxZ8dF8WagoyQPYTm92R1ZKd0G_tztqmAc+jrv0LkWGAA@mail.gmail.com>
+ <20120123030422.GE15102@dastard>
+ <20120123214709.GB17974@thunk.org>
+ <20120124003657.GJ15102@dastard>
+ <4F214465.9010600@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F214465.9010600@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Thursday, January 26, 2012 10:07 AM:
-> Add support for bringing up secondary cores on Tegra30. On Tegra30 secondary
-> CPU cores are powergated, so we need to turn on the domains before we can bring
-> the CPU cores online. Bringing secondary cores online happens early during the
-> ssytem boot, so we call powergating initialization from platform early_init
-> function.
+On Thu 26-01-12 07:17:41, Ric Wheeler wrote:
+> On 01/23/2012 07:36 PM, Dave Chinner wrote:
+> >On Mon, Jan 23, 2012 at 04:47:09PM -0500, Ted Ts'o wrote:
+> >>>The thing is, transient write errors tend to be isolated and go away
+> >>>when a retry occurs (think of IO timeouts when multipath failover
+> >>>occurs). When non-isolated IO or unrecoverable problems occur (e.g.
+> >>>no paths left to fail over onto), critical other metadata reads and
+> >>>writes will fail and shut down the filesystem, thereby terminating
+> >>>the "try forever" background writeback loop those delayed write
+> >>>buffers may be in. So the truth is that "trying forever" on write
+> >>>errors can handle a whole class of write IO errors very
+> >>>effectively....
+> >>So how does XFS decide whether a write should fail and shutdown the
+> >>file system, or just "try forever"?
+> >The IO dispatcher decides that. If the dispatcher has handed the IO
+> >off to the delayed write queue, then failed writes will be tried
+> >again. If the caller is catching the IO completion (e.g. sync
+> >writes) or attaching a completion callback (journal IO), then the
+> >completion context will handle the error appropriately. Journal IO
+> >errors tend to shutdown the filesystem on the first error, other
+> >contexts may handle the error, retry or shutdown the filesystem
+> >depending on their current state when the error occurs.
+> >
+> >Reads are even more complex, because ithe dispatch context can be
+> >within a transaction and the correct error handling is then
+> >dependent on the current state of the transaction....
 > 
-> Based on work by:
+> I think that having retry logic at the file system layer is really
+> putting the fix in the wrong place.
 > 
-> Scott Williams <scwilliams@nvidia.com>
-> Colin Cross <ccross@android.com>
-> Alex Frid <afrid@nvidia.com>
-> 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> Specifically, if we have multipath configured under a file system,
+> it is up to the multipath logic to handle the failure (and use
+> another path, retry, etc).  If we see a failed IO further up the
+> stack, it is *really* dead at that point.
+  Yes, that makes sense. Only, if my memory serves well, e.g. with iSCSI we
+do see transient errors so it's not like they don't happen.
 
-The series,
+> Transient errors on normal drives are also rarely worth re-trying
+> since pretty much all modern storage devices have firmware that will
+> have done exhaustive retries on a failed write. Definitely not worth
+> retrying forever for a normal device.
+  Agreed. But we could still be clever enough to write the data / metadata
+to a different place.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+> At one end of the spectrum, think of a box with dozens of storage
+> devices attached (either via SAN or local S-ATA devices). If we are
+> doing large, streaming writes, we could get a large amount of memory
+> dirtied while writing. If that one device dies and we keep that
+> memory in use for the endless retry loop, we have really cripple the
+> box which still has multiple happy storage devices and file
+> systems....
+  I agree that if we ever decide to keep unwriteable data in memory,
+kernel has to have a way to get rid of this data if it needs to.
 
-(I already saw this a few times before Peter posted it, so any concerns
-I had have been fixed. Still, I'm not very familiar with this part of
-the code, so it'd be awesome if e.g. Colin could review this too)
-
-Tested-by: Stephen Warren <swarren@nvidia.com>
-
-(Booted Tegra20 Harmony, validated 2 CPUs found in dmesg during boot,
-validated top showed 2 CPUs being actively used. Booted Tegra30 Cardhu,
-validated 4 CPUs found in dmesg during boot, but didn't validate anything
-from user-space since the SD controller doesn't work yet and I don't have
-an initrd set up to test with).
-
+								Honza
 -- 
-nvpublic
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
