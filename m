@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab2AZV2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:28:19 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17541 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab2AZV2R convert rfc822-to-8bit (ORCPT
+	id S1753850Ab2AZVdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:33:41 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41187 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab2AZVdk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:28:17 -0500
+	Thu, 26 Jan 2012 16:33:40 -0500
 MIME-Version: 1.0
-Message-ID: <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
-Date: Thu, 26 Jan 2012 13:28:02 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
-        Chris Mason <chris.mason@oracle.com>
-Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
- cleancache)
-References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
- <4F218D36.2060308@linux.vnet.ibm.com>
-In-Reply-To: <4F218D36.2060308@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <4F204F1C.70908@gmail.com>
+References: <1327352870-14687-1-git-send-email-grant.likely@secretlab.ca>
+ <4F1DD6DF.4080706@gmail.com> <4F200DFD.7070407@ti.com> <4F204F1C.70908@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 26 Jan 2012 14:33:20 -0700
+X-Google-Sender-Auth: Za2tvaPIK3qfm4nVIjUAhnAkbe4
+Message-ID: <CACxGe6vA6CSCAU82uuMaycqDBt+JG3KvXzAURDWQ0Deyeg13Ow@mail.gmail.com>
+Subject: Re: [RFCv2 00/14]
+To: Rob Herring <robherring2@gmail.com>
+Cc: "Cousson, Benoit" <b-cousson@ti.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
+        Milton Miller <miltonm@bga.com>, benh@kernel.crashing.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4F21C55E.0059,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dave Hansen [mailto:dave@linux.vnet.ibm.com]
-> Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
+On Wed, Jan 25, 2012 at 11:51 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On 01/25/2012 08:13 AM, Cousson, Benoit wrote:
+>> On 1/23/2012 10:53 PM, Rob Herring wrote:
+>>> On 01/23/2012 03:07 PM, Grant Likely wrote:
+>>>>
+>>>> Hey everyone,
+>>>>
+>>>> Here's the second RFC for the irq_domain patches.  I could use some
+>>>> help testing now.  I still expect there will be a few bugs.  The
+>>>> series is based on v3.3-rc1, and I've pushed it out to my git server:
+>>>>
+>>>> git://git.secretlab.ca/git/linux-2.6.git irqdomain/next
+>>>
+>>> Can you post to linux-arm-kernel too so people are aware of this work
+>>> and stop posting dead-end irqdomain patches.
+>>
+>> Good point, I have two pending series that are using the
+>> irq_domain_add() so far, so it will be good to have that branch pulled
+>> in arm-soc.
+>>
+>>> I tested what you had as of this morning and it works fine for me. Looks
+>>> like the only diff is the VExpress code. I'm working on rebasing my
+>>> domain support for generic irqchip now.
+>>
+>> In fact your generic irqchip should even avoid us to use
+>> irq_domain_add_legacy() since both GPIO and OMAP3 intc are already using
+>> the irqchip.
+>>
+>> I guess you are not going to change the interface so the patches I did
+>> on your previous branch to try them should be good already, isn't it?
+>
+> I've got it rebased on top of Grant's tree. I will send it out soon.
+>
+> One problem that still remains is it breaks x86 and any platform using
+> generic irq chip, but not selecting IRQ_DOMAIN. Grant, do you plan to
+> enable IRQ_DOMAIN for x86 in your series? MIPS may also need fixing.
 
-Thanks for the review Dave!
- 
-> On 01/25/2012 01:58 PM, Dan Magenheimer wrote:
-> > (Feedback welcome if there is a different/better way to do this
-> > without using a page flag!)
-> >
-> > Since about 2.6.27, the page replacement algorithm maintains
-> > an "active" bit to help decide which pages are most eligible
-> > to reclaim, see http://linux-mm.org/PageReplacementDesign
-> >
-> > This "active' information is also useful to cleancache but is lost
-> > by the time that cleancache has the opportunity to preserve the
-> > pageful of data.  This patch adds a new page flag "WasActive" to
-> > retain the state.  The flag may possibly be useful elsewhere.
-> 
-> I guess cleancache itself is clearing the bit, right?  I didn't see any
-> clearing going on in the patch.
+I've got the x86 fix in my tree now.  It will be part of the next
+merge.  MIPS, Microblaze and OpenRISC cannot turn on CONFIG_IRQ_DOMAIN
+without rework.  I just hacked together the microblaze version, but
+Michal will have to verify that it is correct.  I just posted it.  It
+will be similar for the other two.
 
-No, there are no changes in cleancache.c so it isn't clearing
-the bit.
+The real problem is sparc which does something entirely different for
+irqs.  Rather than resolving irqs on-demand, it calculates the Linux
+irq numbers at boot time for every node in the tree.  The irq_domains
+will need to be set up for all interrupt controllers before sparc
+begins it's big walk of the tree to resolve interrupts.  I haven't dug
+into everything that needs to be done to support this.
 
-> I do think it also needs to get cleared on the way in to the page
-> allocator.  Otherwise:
-> 
-> 	PageSetWasActive(page);
-> 	free_page(page);
-> 	...
-> 	another_user_page = get_free_page()
-> 	// now cleancache sees the active bit for the prev user
-> 
-> Or am I missing somewhere it gets cleared non-explicitly somewhere?
+I don't think you can count on turning on IRQ_DOMAIN on all
+architectures just yet.  Adding irq_domain support directly to
+irq_generic_chip is going to be difficult for that reason.  However,
+it would be useful to have an irq_domain+irq_generic_chip wrapper that
+can be enabled only when IRQ_DOMAIN is enabled.
 
-True, it is not getting cleared and it should be, good catch!
-
-I'll find the place to add the call to ClearPageWasActive() for v2.
-
-Thanks,
-Dan
-
+g.
