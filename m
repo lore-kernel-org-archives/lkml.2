@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab2AZLR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 06:17:28 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40524 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab2AZLR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 06:17:27 -0500
-Date: Thu, 26 Jan 2012 12:16:48 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        David Daney <david.daney@cavium.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Beulich <jbeulich@suse.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 0/9] perf/core improvements and fixes
-Message-ID: <20120126111648.GH3853@elte.hu>
-References: <1327446481-5505-1-git-send-email-acme@infradead.org>
+	id S1752794Ab2AZLUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 06:20:24 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:42880 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab2AZLUS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 06:20:18 -0500
+Message-ID: <29acd271cd920259e9703c438295d7b3.squirrel@webmail.greenhost.nl>
+In-Reply-To: <CAK1hOcPbamBW9KdnL8ORG4=u6R6ydvRX8tBJGB-pnXL6z1Y_sw@mail.gmail.com>
+References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+    <20120125193635.GA30311@redhat.com>
+    <201201260032.57937.vda.linux@googlemail.com>
+    <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
+    <20120126010858.GD18613@jl-vm1.vm.bytemark.co.uk>
+    <88753c7d600bee39c06bbda32b08daae.squirrel@webmail.greenhost.nl>
+    <20120126103157.GE18613@jl-vm1.vm.bytemark.co.uk>
+    <CAK1hOcPbamBW9KdnL8ORG4=u6R6ydvRX8tBJGB-pnXL6z1Y_sw@mail.gmail.com>
+Date: Thu, 26 Jan 2012 12:19:42 +0100
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Denys Vlasenko" <vda.linux@googlemail.com>
+Cc: "Jamie Lokier" <jamie@shareable.org>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>, "Andrew Lutomirski" <luto@mit.edu>,
+        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        "Roland McGrath" <mcgrathr@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327446481-5505-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 1.4
+X-Scan-Signature: dfea3049d3b923820beb462d65569822
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, January 26, 2012 11:40, Denys Vlasenko wrote:
+> On Thu, Jan 26, 2012 at 11:31 AM, Jamie Lokier <jamie@shareable.org> wrote:
+>> Indan Zupancic wrote:
+>>> On Thu, January 26, 2012 02:08, Jamie Lokier wrote:
+>>> > Is it disambiguated by PTRACE_EVENT_EXEC happening before the execve
+>>> > returns, and you knowing the TID always changes to the PID? �I haven't
+>>> > yet checked which TID gets the PTRACE_EVENT_EXEC event, but if it's
+>>> > not the old one, perhaps that could be changed.
+>>>
+>>> Please don't ever change the behaviour of PTRACE_EVENT_EXEC, it's
+>>> barely documented already, but if if ever changes it will be also
+>>> unreliable.
+>>>
+>>> It's still unclear if the PTRACE_EVENT_EXEC comes before or after
+>>> or instead of the post-execve ptrace event.
+>
+> Denis <- confused.
+> Was ist das "post-execve ptrace event"? I know no such thing.
+> I know about PTRACE_EVENT_EXEC, and "post-execve SIGTRAP".
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+I mean the second SIGTRAP | 0x80 event, the syscall return of execve.
 
-> Hi Ingo,
-> 
-> 	This is a signed tag, please lemme know if everything went well.
-> 
-> 	The --uid feature works for root, we still need to 
-> sort out that paranoia with some threads owned by a user that 
-> prevents 'perf --uid non-root-user' to work for 
-> 'non-root-user'.
+> All ptrace stops (events and other stops) are synchronous.
+> Tracee stops, tracer notices it, tracer restarts tracee,
+> and only after this tracee can generate next event.
+> Therefore ptrace stops can't get reordered.
 
-Just wondering what detail causes that failure - the whole point 
-of --uid mingo would be to enable nonprivileged users to do 
-'session wide' profiling, *especially* if paranoia is high.
+That's good to know and what I expected.
 
-So what does --uid do which perf record --pid 1234 wouldnt 
-already do? By all means --uid ought to be a fancy way of doing 
-a whole bunch of perf record --pid 1234 profiling sessions, at 
-once.
+Since which kernel version does the PTRACE_GETEVENTMSG work and
+is there a way to find out before it returns zero?
 
-[ Btw, we should probably alias --user to --uid as well, as that 
-  might be the intuitive thing people would typically use? ]
+Greetings,
 
-> 	http://git.kernel.org/?p=linux/kernel/git/acme/linux.git;a=tag;h=ce9600c4c664ce7f97e8aa5e756b0b4ea5b017c7
-> looks ok to me, need just to improve on the commit log message, I'll get
-> used to it :-)
-> 
-> - Arnaldo
-> 
-> The following changes since commit 172d1b0b73256551f100fc00c69e356d047103f5:
-> 
->   perf tools: Fix compile error on x86_64 Ubuntu (2012-01-08 13:34:55 -0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf-core-for-mingo
-> 
-> for you to fetch changes up to f8f4b2872295dca88339ec0c403b2217b1197353:
-> 
->   perf tools: Fix strlen() bug in perf_event__synthesize_event_type() (2012-01-24 20:31:34 -0200)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes
-> 
-> ----------------------------------------------------------------
+Indan
 
-Anyway, pulled, thanks a lot Arnaldo!
 
-One detail: don't we want some of these fixes cherry-picked into 
-perf/urgent as well?
-
-Thanks,
-
-	Ingo
