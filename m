@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab2AZSkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:40:53 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:42552 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753506Ab2AZSkt (ORCPT
+	id S1753634Ab2AZSlS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:41:18 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:8530 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578Ab2AZSlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 13:40:49 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Purdie <rpurdie@rpsys.net>, stable <stable@kernel.org>
-Subject: [PATCH] fix return value from __devinit
-Date: Thu, 26 Jan 2012 19:40:39 +0100
-Message-Id: <1327603239-25507-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327603249;915498ea;
+	Thu, 26 Jan 2012 13:41:11 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dhc1bhc31hc1ah668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LYF58G-02-HLA-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Stuart Yoder <b08248@gmail.com>, Scott Wood <scottwood@freescale.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 4/6] iommu/omap: Implement DOMAIN_ATTR_GEOMETRY attribute
+Date: Thu, 26 Jan 2012 19:40:55 +0100
+Message-ID: <1327603257-17028-5-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
+References: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix return value from __devinit and -Wuninitialized compiler
-warning.
----
- drivers/leds/leds-lp5521.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Implement the attribute for the OMAP IOMMU driver.
 
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 21301f6..b3ee64c 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -695,6 +695,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
- 	lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
- 	if (buf != LP5521_REG_R_CURR_DEFAULT) {
- 		dev_err(&client->dev, "error in reseting chip\n");
-+		ret = -EIO;
- 		goto fail2;
- 	}
- 	usleep_range(10000, 20000);
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/iommu/omap-iommu.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index d8edd97..40ad992 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -1140,6 +1140,10 @@ static int omap_iommu_domain_init(struct iommu_domain *domain)
+ 
+ 	domain->priv = omap_domain;
+ 
++	domain->geometry.aperture_start = 0;
++	domain->geometry.aperture_end   = (1ULL << 32) - 1;
++	domain->geometry.force_aperture = true;
++
+ 	return 0;
+ 
+ fail_nomem:
 -- 
-1.7.7.3
+1.7.5.4
+
 
