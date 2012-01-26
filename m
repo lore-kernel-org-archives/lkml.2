@@ -1,139 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390Ab2AZF5v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 00:57:51 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:33247 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab2AZF5r (ORCPT
+	id S1751438Ab2AZF7q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 00:59:46 -0500
+Received: from na3sys010aog105.obsmtp.com ([74.125.245.78]:44630 "HELO
+	na3sys010aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750837Ab2AZF7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 00:57:47 -0500
-Message-ID: <0fac69b7cf4ddb2a87065646d8c0309c.squirrel@webmail.greenhost.nl>
-In-Reply-To: <201201260209.54513.vda.linux@googlemail.com>
-References: <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
-    <201201260032.57937.vda.linux@googlemail.com>
-    <ca17a86f7c88f8884e4ffc9bafbf2dff.squirrel@webmail.greenhost.nl>
-    <201201260209.54513.vda.linux@googlemail.com>
-Date: Thu, 26 Jan 2012 06:57:18 +0100
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Denys Vlasenko" <vda.linux@googlemail.com>
-Cc: "Oleg Nesterov" <oleg@redhat.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andi Kleen" <andi@firstfloor.org>,
-        "Jamie Lokier" <jamie@shareable.org>,
-        "Andrew Lutomirski" <luto@mit.edu>, "Will Drewry" <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        "Roland McGrath" <mcgrathr@chromium.org>
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 1.4
-X-Scan-Signature: 12808661ad9e64cdb46d03b2a0987e23
+	Thu, 26 Jan 2012 00:59:44 -0500
+From: Roland Dreier <roland@kernel.org>
+To: linux-rdma@vger.kernel.org
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages() parameters
+Date: Wed, 25 Jan 2012 21:59:34 -0800
+Message-Id: <1327557574-6125-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, January 26, 2012 02:09, Denys Vlasenko wrote:
-> Dealt with in Linus tree already: set PTRACE_O_TRACEEXEC option,
-> and use PTRACE_GETEVENTMSG in PTRACE_EVENT_EXEC stop to get
-> the old TID.
+From: Roland Dreier <roland@purestorage.com>
 
-Thanks, getting the old TID is useful, that was the missing bit to
-handle execve statelessly.
+Right now, we always pass write==1 to get_user_pages(), even when we
+only intend to read the memory.  We pass force==1 if we're going for
+read-only and force==0 if we want writable.  The reasoning behind this
+seems to be contained in this out-of-tree changelog from 2005:
 
->
->
->> > To future-proof this scheme we may reserve a few more event values
->> > PTRACE_EVENT_SYSCALL_ENTRY2, PTRACE_EVENT_SYSCALL_ENTRY3, etc,
->> > if we'll ever have arches with more than one non-native syscall
->> > entry. I'm no expert, but looking at strace code, ARM may already have
->> > more than one additional convention how to pass syscall args.
->>
->> Please, no! This way lays madness, just one PTRACE_EVENT_SYSCALL_ENTRY,
->> no PTRACE_EVENT_SYSCALL_ENTRY1 or PTRACE_EVENT_SYSCALL_ENTRY2, that
->> would be horrible. Keep arch specific stuff in arch specific areas,
->> please don't spread it around.
->
-> The situation when an architecture has 32- and 64-bit varieties,
-> and sometimes different ABIs (parameter passing comventions),
-> is rather typical, it's not a quirk of just one unfortunate
-> architecture.
+    Always ask get_user_pages() for writable pages, but pass force=1
+    if the consumer has only asked for read-only pages.  This fixes a
+    problem registering memory that has just been allocated but not
+    touched yet, while allowing registration of read-only memory to
+    continue to work.
 
-The question is how many of those have a different ABI and can not
-be reliably detected at system call entry time. If the ABI can't
-be changed at runtime then there's no problem either.
+However, I don't think the mm works like this today, and indeed GUP
+will fault in pages for an untouched read-only mapping just fine with
+write and force set to 0.  In fact, always passing 1 for write causes
+problems with modern kernels, because we end up hitting the "early
+C-O-W break" case in __do_fault(), even for read-only mappings where
+this makes no sense.
 
-x86_64's case is very peculiar because it can execute a 32-bit compat
-syscall while the process itself is in 64-bit mode.
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+---
+This patch comes from me trying to do userspace RDMA on a memory
+region exported from a character driver and mapped with
 
-> Please look at strace source, get_scno() function, where
-> it reads syscall no and parameters. Let's see....
-> - POWERPC: has 32-bit and 64-bit mode
-> - X86_64: has 32-bit and 64-bit mode
-> - IA64: has i386-compat mode
-> - ARM: has more than one ABI
-> - SPARC: has 32-bit and 64-bit mode
+    mmap(... PROT_READ, MAP_PRIVATE ...)
 
-Fow most of them you can reliably check the mode by looking at registers.
+The character driver has a trivial mmap method that just sets vm_ops
+and and equally trivial fault method that essentially just does
 
-x86_64 and apparently ARM are problematic. Others may too in similar subtle
-ways as x86_64, but I can't tell that from strace's code.
+    vmf->page = vmalloc_to_page(buf + (vmf->pgoff << PAGE_SHIFT));
 
-ARM looks ok when old cruft isn't enabled (much more likely than compat
-mode being disabled in x86_64).
+ie the most elementary way to export a vmalloc'ed buffer to userspace.
 
-Can SPARC change mode on the fly without detection? Otherwise it looks
-like it may be slightly problematic too, though it seems that at least
-the ABI is pretty much the same between 32 and 64 bit mode. Same for
-PA-RISC. So all in all not sure if they have a problem or not.
+However, when I tried doing
 
-To be a problem the only way to figure our what mode the system call
-will be is by looking at the trapping/syscall instruction itself. If
-that isn't needed, or if there isn't much difference between the modes
-anyway, then there's no problem.
+    ibv_reg_mr(... IBV_ACCESS_REMOTE_READ ...)
 
->
-> Do you want to re-invent a different arch-specific way to report
-> syscall type for each of these arches?
+in userspace on that mmap region, I found that COW was happening and
+so neither userspace nor the registered memory ended up pointing at
+the kernel buffer anymore, exactly because of the COW in __do_fault()
+I mention in the changelog above.
 
-Thing is, it is not just 32 versus 64 bit mode. So one way or the other,
-you do end up with an arch-specific way of saying what syscall type it is.
+The patch below fixes my test case, and doesn't seem to break any of
+the ibverbs examples and other simple tests of userspace verbs that I
+tried.  But that's far from an exhaustive test suite.
 
-It doesn't matter much where that info is stuffed, it will always be arch
-specific, because depending on that value people have to do different
-arch specific things.
+I'd definitely appreciate comments from MM experts here, since I'm not
+positive of my understand of G-U-P and friends, and I don't want to
+apps because this is wrong in some special case I didn't try.
 
-It's fine to somehow give that info together with PTRACE_EVENT_SYSCALL_ENTRY,
-but I don't think it's a good idea to have different syscall entry events
-depending on what type they are. I suppose the only reason to do that would
-be because we're running out of bits elsewhere.
+Also testing from anyone with an RDMA app that does anything at all
+fancy with memory allocation or registration would be helpful.
 
->
->> What was wrong with using eflags again? Is it too simple or something?
->
-> It's x86-specific, and abuses a bit in a real register.
+Thanks!
 
-If the problem is limited to only a couple of archs, and we can stuff this
-info in the register set for all of them, then I'm all for it.
+PS Let me know if I didn't go on long enough about this one-line patch
+and I can write some more.
 
-So far it's just x86_64 and ARM with OABI enabled, with the rest either
-fine or unclear.
+ drivers/infiniband/core/umem.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Greetings,
-
-Indan
-
+diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
+index 71f0c0f..fb5abd3 100644
+--- a/drivers/infiniband/core/umem.c
++++ b/drivers/infiniband/core/umem.c
+@@ -152,7 +152,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
+ 		ret = get_user_pages(current, current->mm, cur_base,
+ 				     min_t(unsigned long, npages,
+ 					   PAGE_SIZE / sizeof (struct page *)),
+-				     1, !umem->writable, page_list, vma_list);
++				     umem->writable, 0, page_list, vma_list);
+ 
+ 		if (ret < 0)
+ 			goto out;
+-- 
+1.7.8.3
 
