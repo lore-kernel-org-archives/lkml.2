@@ -1,340 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab2AZJB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:01:58 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:59815 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab2AZJBM (ORCPT
+	id S1752319Ab2AZJDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:03:05 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:46585 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751415Ab2AZJCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:01:12 -0500
-Date: Thu, 26 Jan 2012 10:00:50 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 08/15] mm: mmzone: MIGRATE_CMA migration type added
-In-reply-to: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Message-id: <1327568457-27734-9-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.7.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+	Thu, 26 Jan 2012 04:02:53 -0500
+Date: Thu, 26 Jan 2012 11:02:47 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Pasupathy, Visuvanadan" <vichu@ti.com>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
+Message-ID: <20120126090245.GF15110@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/QKKmeG/X/bPShih"
+Content-Disposition: inline
+In-Reply-To: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
 
-The MIGRATE_CMA migration type has two main characteristics:
-(i) only movable pages can be allocated from MIGRATE_CMA
-pageblocks and (ii) page allocator will never change migration
-type of MIGRATE_CMA pageblocks.
+--/QKKmeG/X/bPShih
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This guarantees (to some degree) that page in a MIGRATE_CMA page
-block can always be migrated somewhere else (unless there's no
-memory left in the system).
+Hi,
 
-It is designed to be used for allocating big chunks (eg. 10MiB)
-of physically contiguous memory.  Once driver requests
-contiguous memory, pages from MIGRATE_CMA pageblocks may be
-migrated away to create a contiguous block.
+(please format your emails better next time)
 
-To minimise number of migrations, MIGRATE_CMA migration type
-is the last type tried when page allocator falls back to other
-migration types then requested.
+On Wed, Jan 25, 2012 at 03:22:32PM +0000, Gupta, Ajay Kumar wrote:
+> As a next step to dma-engine based cppi4.1 driver implementation
+> this RFC has the overview of changes in the musb driver.=20
+> RFC on CPPI slave driver changes will follow next.
+>=20
+> Overview of changes in the musb driver
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+>=20
+> 1)Add a dma-engine.c file in the drivers/usb/musb folder
+> 2)This file will host the current musb dma APIs and translates them to
+>   dmaengine APIs.
+> 3)This will help to keep the changes in drivers/usb/musb/musb* files=20
+>   minimal and also to retain compatibility other DMA (Mentor etc.)=20
+>   drivers which are yet to be moved to drivers/dma=20
+> 4)drivers/usb/musb/dma-engine.c, will wrap the dmaengine APIs to=20
+>   make existing musb APIs compatible.
+> 5)drivers/usb/musb/dma-engine.c file will implement the filter=20
+>   functions and also implement .dma_controller_create (allocates=20
+>   & provides "dma_controller" object) and .dma_controller_delete
+> 6)CPPI4.1 DMA specific queue and buffer management will be internal=20
+>   to slave CPPI DMA driver implementation.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- include/linux/mmzone.h         |   43 +++++++++++++++++++++----
- include/linux/page-isolation.h |    3 ++
- mm/Kconfig                     |    2 +-
- mm/compaction.c                |   11 +++++--
- mm/page_alloc.c                |   68 +++++++++++++++++++++++++++++++++-------
- mm/vmstat.c                    |    3 ++
- 6 files changed, 107 insertions(+), 23 deletions(-)
+looks good.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 650ba2f..fcd4a14 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -35,13 +35,37 @@
-  */
- #define PAGE_ALLOC_COSTLY_ORDER 3
- 
--#define MIGRATE_UNMOVABLE     0
--#define MIGRATE_RECLAIMABLE   1
--#define MIGRATE_MOVABLE       2
--#define MIGRATE_PCPTYPES      3 /* the number of types on the pcp lists */
--#define MIGRATE_RESERVE       3
--#define MIGRATE_ISOLATE       4 /* can't allocate from here */
--#define MIGRATE_TYPES         5
-+enum {
-+	MIGRATE_UNMOVABLE,
-+	MIGRATE_RECLAIMABLE,
-+	MIGRATE_MOVABLE,
-+	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
-+	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
-+#ifdef CONFIG_CMA
-+	/*
-+	 * MIGRATE_CMA migration type is designed to mimic the way
-+	 * ZONE_MOVABLE works.  Only movable pages can be allocated
-+	 * from MIGRATE_CMA pageblocks and page allocator never
-+	 * implicitly change migration type of MIGRATE_CMA pageblock.
-+	 *
-+	 * The way to use it is to change migratetype of a range of
-+	 * pageblocks to MIGRATE_CMA which can be done by
-+	 * __free_pageblock_cma() function.  What is important though
-+	 * is that a range of pageblocks must be aligned to
-+	 * MAX_ORDER_NR_PAGES should biggest page be bigger then
-+	 * a single pageblock.
-+	 */
-+	MIGRATE_CMA,
-+#endif
-+	MIGRATE_ISOLATE,	/* can't allocate from here */
-+	MIGRATE_TYPES
-+};
-+
-+#ifdef CONFIG_CMA
-+#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
-+#else
-+#  define is_migrate_cma(migratetype) false
-+#endif
- 
- #define for_each_migratetype_order(order, type) \
- 	for (order = 0; order < MAX_ORDER; order++) \
-@@ -54,6 +78,11 @@ static inline int get_pageblock_migratetype(struct page *page)
- 	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
- }
- 
-+static inline bool is_pageblock_cma(struct page *page)
-+{
-+	return is_migrate_cma(get_pageblock_migratetype(page));
-+}
-+
- struct free_area {
- 	struct list_head	free_list[MIGRATE_TYPES];
- 	unsigned long		nr_free;
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 430cf61..454dd29 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -45,6 +45,9 @@ extern void unset_migratetype_isolate(struct page *page);
- extern int alloc_contig_range(unsigned long start, unsigned long end);
- extern void free_contig_range(unsigned long pfn, unsigned nr_pages);
- 
-+/* CMA stuff */
-+extern void init_cma_reserved_pageblock(struct page *page);
-+
- #endif
- 
- #endif
-diff --git a/mm/Kconfig b/mm/Kconfig
-index e338407..3922002 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -198,7 +198,7 @@ config COMPACTION
- config MIGRATION
- 	bool "Page migration"
- 	def_bool y
--	depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE || COMPACTION
-+	depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE || COMPACTION || CMA
- 	help
- 	  Allows the migration of the physical location of pages of processes
- 	  while the virtual addresses are not changed. This is useful in
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 3e21d28..a075b43 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -35,6 +35,11 @@ static unsigned long release_freepages(struct list_head *freelist)
- 	return count;
- }
- 
-+static inline bool migrate_async_suitable(int migratetype)
-+{
-+	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
-+}
-+
- /*
-  * Isolate free pages onto a private freelist. Caller must hold zone->lock.
-  * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
-@@ -274,7 +279,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		 */
- 		pageblock_nr = low_pfn >> pageblock_order;
- 		if (!cc->sync && last_pageblock_nr != pageblock_nr &&
--				get_pageblock_migratetype(page) != MIGRATE_MOVABLE) {
-+		    migrate_async_suitable(get_pageblock_migratetype(page))) {
- 			low_pfn += pageblock_nr_pages;
- 			low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
- 			last_pageblock_nr = pageblock_nr;
-@@ -342,8 +347,8 @@ static bool suitable_migration_target(struct page *page)
- 	if (PageBuddy(page) && page_order(page) >= pageblock_order)
- 		return true;
- 
--	/* If the block is MIGRATE_MOVABLE, allow migration */
--	if (migratetype == MIGRATE_MOVABLE)
-+	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
-+	if (migrate_async_suitable(migratetype))
- 		return true;
- 
- 	/* Otherwise skip the block */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 0a9cc8e..0fcde78 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -750,6 +750,26 @@ void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
- 	__free_pages(page, order);
- }
- 
-+#ifdef CONFIG_CMA
-+/*
-+ * Free whole pageblock and set it's migration type to MIGRATE_CMA.
-+ */
-+void __init init_cma_reserved_pageblock(struct page *page)
-+{
-+	unsigned i = pageblock_nr_pages;
-+	struct page *p = page;
-+
-+	do {
-+		__ClearPageReserved(p);
-+		set_page_count(p, 0);
-+	} while (++p, --i);
-+
-+	set_page_refcounted(page);
-+	set_pageblock_migratetype(page, MIGRATE_CMA);
-+	__free_pages(page, pageblock_order);
-+	totalram_pages += pageblock_nr_pages;
-+}
-+#endif
- 
- /*
-  * The order of subdivision here is critical for the IO subsystem.
-@@ -875,10 +895,15 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
-  * This array describes the order lists are fallen back to when
-  * the free lists for the desirable migrate type are depleted
-  */
--static int fallbacks[MIGRATE_TYPES][3] = {
-+static int fallbacks[MIGRATE_TYPES][4] = {
- 	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
- 	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
-+#ifdef CONFIG_CMA
-+	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_CMA    , MIGRATE_RESERVE },
-+	[MIGRATE_CMA]         = { MIGRATE_RESERVE }, /* Never used */
-+#else
- 	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
-+#endif
- 	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
- 	[MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
- };
-@@ -995,11 +1020,18 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- 			 * pages to the preferred allocation list. If falling
- 			 * back for a reclaimable kernel allocation, be more
- 			 * aggressive about taking ownership of free pages
-+			 *
-+			 * On the other hand, never change migration
-+			 * type of MIGRATE_CMA pageblocks nor move CMA
-+			 * pages on different free lists. We don't
-+			 * want unmovable pages to be allocated from
-+			 * MIGRATE_CMA areas.
- 			 */
--			if (unlikely(current_order >= (pageblock_order >> 1)) ||
--					start_migratetype == MIGRATE_RECLAIMABLE ||
--					page_group_by_mobility_disabled) {
--				unsigned long pages;
-+			if (!is_pageblock_cma(page) &&
-+			    (unlikely(current_order >= pageblock_order / 2) ||
-+			     start_migratetype == MIGRATE_RECLAIMABLE ||
-+			     page_group_by_mobility_disabled)) {
-+				int pages;
- 				pages = move_freepages_block(zone, page,
- 								start_migratetype);
- 
-@@ -1017,11 +1049,14 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- 			rmv_page_order(page);
- 
- 			/* Take ownership for orders >= pageblock_order */
--			if (current_order >= pageblock_order)
-+			if (current_order >= pageblock_order &&
-+			    !is_pageblock_cma(page))
- 				change_pageblock_range(page, current_order,
- 							start_migratetype);
- 
--			expand(zone, page, order, current_order, area, migratetype);
-+			expand(zone, page, order, current_order, area,
-+			       is_migrate_cma(start_migratetype)
-+			     ? start_migratetype : migratetype);
- 
- 			trace_mm_page_alloc_extfrag(page, order, current_order,
- 				start_migratetype, migratetype);
-@@ -1093,7 +1128,12 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
- 			list_add(&page->lru, list);
- 		else
- 			list_add_tail(&page->lru, list);
--		set_page_private(page, migratetype);
-+#ifdef CONFIG_CMA
-+		if (is_pageblock_cma(page))
-+			set_page_private(page, MIGRATE_CMA);
-+		else
-+#endif
-+			set_page_private(page, migratetype);
- 		list = &page->lru;
- 	}
- 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
-@@ -1337,8 +1377,12 @@ int split_free_page(struct page *page)
- 
- 	if (order >= pageblock_order - 1) {
- 		struct page *endpage = page + (1 << order) - 1;
--		for (; page < endpage; page += pageblock_nr_pages)
--			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
-+		for (; page < endpage; page += pageblock_nr_pages) {
-+			int mt = get_pageblock_migratetype(page);
-+			if (mt != MIGRATE_ISOLATE && !is_migrate_cma(mt))
-+				set_pageblock_migratetype(page,
-+							  MIGRATE_MOVABLE);
-+		}
- 	}
- 
- 	return 1 << order;
-@@ -5375,8 +5419,8 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
- 	 */
- 	if (zone_idx(zone) == ZONE_MOVABLE)
- 		return true;
--
--	if (get_pageblock_migratetype(page) == MIGRATE_MOVABLE)
-+	if (get_pageblock_migratetype(page) == MIGRATE_MOVABLE ||
-+	    is_pageblock_cma(page))
- 		return true;
- 
- 	pfn = page_to_pfn(page);
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index f600557..ace5383 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -613,6 +613,9 @@ static char * const migratetype_names[MIGRATE_TYPES] = {
- 	"Reclaimable",
- 	"Movable",
- 	"Reserve",
-+#ifdef CONFIG_CMA
-+	"CMA",
-+#endif
- 	"Isolate",
- };
- 
--- 
-1.7.1.569.g6f426
+> Brief on each DMA related API used in /drivers/usb/musb*
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=20
+> 1)
+> MUSB DMA API currently used: dma_controller_create()         =20
+> MUSB DMA API parameters currently used:=20
+> 		struct musb  *musb,=20
+> 		void __iomem *mregs
+>=20
+> Proposal: This API will be implemented in the dma-engine.c and will
+> allocate and populate dma_controller object.
 
+k
+
+> 2)
+> MUSB DMA API currently used: dma_controller_delete()=20
+> MUSB DMA API parameters currently used:=20
+> 		struct dma_controller *controller
+>=20
+> Proposal: This API will be implemented in the dma-engine.c and frees
+>          the dma_controller object
+
+k
+
+> 3)
+> MUSB DMA API currently used: dma_controller.start()
+> MUSB DMA API parameters currently used:=20
+> 		struct dma_controller *controller
+>=20
+> Proposal: This will be an empty function. The current actions intended
+>           for start of HW DMA (as whole engine - not the specific channel)
+>	    will be implemented in cppi41 slave driver.
+
+why don' you make this one actually enable the hw ? Maybe call
+pm_runtime_get_sync(), enable the DMA, increase a usecount on the
+controller and stuff like that ?
+
+> 4)
+> MUSB DMA API currently used: dma_controller.stop()
+> MUSB DMA API parameters currently used:=20
+> 		struct dma_controller *controller
+>=20
+> Proposal: This will be an empty function. The current actions intended
+>           for stop of HW DMA (as whole engine - not the specific channel)
+>	    will be implemented in cppi41 slave driver.
+
+likewise, but reversing start ?
+
+> 5)
+> MUSB DMA API currently used: dma_controller.chan_alloc()      =20
+> MUSB DMA API parameters currently used:=20
+> 				struct dma_controller *,=09
+> 				struct musb_hw_ep *,		 =20
+> 				u8 is_tx               =20
+> Proposal
+> * This function translates to the dma_request_channel API of dma-engine.
+> * The filter function that helps to acquire the channel is also part of
+>   this implementation.
+> * The dma_chan structure returned by dma-engine API is going to be=20
+>   different from "dma_channel" structure. As the channel structure=20
+>   does not carry any important information except status and
+>   associating DMA-HW channel structure, dma engine.c could still
+>   translate/emulate the similar (almost same) structure to musb* files.
+> * The endpoint and direction information is used in filter function.
+> * A challenge here is to implement a filter function that scales up=20
+>   for more number of channels (64 channels at this point)
+
+to start, make it as simple as necessary. Implement other trickery
+later.
+
+> * Another challenge is the maintain the platform data on endpoints vs=20
+>   channels (which change between SoCs)
+
+We need to move out of platform_data. While doing that, make it match on
+DT attributes.
+
+> 6)	=09
+> MUSB DMA API currently used: dma_controller.chan_program()=20
+> MUSB DMA API parameters currently used:=20
+> 				struct dma_channel *=20
+> 				u16 maxpacket
+> 				u8 mode,=20
+> 				dma_addr_t dma_addr,
+> 				u32 length =20
+>=20
+> Proposal:
+> * All the parameters except the maxpacket directly applies in dma-engine =
+API
+> * Max packet is used for Transparent (mode0) mode of DMA where, each
+>   burst of DMA programming will be of maxpacket size.
+> * For all generic DMA requests - SG structure of DMA engine API will=20
+>   have only one entry
+> * DMA driver would require the "maxpacket" size, for deciding type of=20
+>   DMA transfer. As the current API does not provide option, it can be=20
+>   part of a private data to slave DMA driver through dma_chan structure.
+>   Alternatively, dmaengine's "DMA_SLAVE_CONFIG" control command also
+>   can be used for this purpose
+> * For ISO requests, each frame buffer is treated as an entry of SG struct=
+ure.
+>   ISO programming will require some changes in musb_host.c as it currentl=
+y=20
+>   programs each frame buffer as a separate DMA request.
+
+k
+
+> 7)
+> MUSB DMA API currently used: dma_controller.chan_release()
+> MUSB DMA API parameters currently used:=20
+> 		struct dma_channel	*channel
+>=20
+> Proposal: Releases the channel - typically happens only during the rmmod=
+=20
+>         of the driver
+
+k
+
+> 8)
+> MUSB DMA API currently used: dma_controller.chan_abort()
+> MUSB DMA API parameters currently used:=20
+> 		struct dma_channel	*channel
+>=20
+> Proposal: This translates into the control commands of DMA engine. We can=
+ use=20
+>           "DMA_TERMINATE_ALL" control command for this purpose.
+
+k
+
+--=20
+balbi
+
+--/QKKmeG/X/bPShih
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPIRa1AAoJEIaOsuA1yqREv/sP/3NYLanZW878rwcMdYR7dAxP
+qKzp8CyoRCkNG6s8SI0WQbsTo3qJTs0NxdZeIy5S+S/ugExxgrkUijCrq1t0zeH0
+qz9wnzrXVoY9lH5kMK4dunmiiyar8XnRr1GKtpvCIsKGE5CstW+SO80NZOTelvhP
+UtNWRfm9pIR6zK6GSz9OllaicVc84ln00KzW39o0p3FmuGp/EwjtXCocLZB6AlTn
+UWj0ou05tX6B82zj69hflDnP1S5aAi+UEqOuSJKa8z8+lm7M+GM4aT0UDxcpsKSI
+LvDQ83AuIjKmthr020ijnmR1E6nhe/a1lnMX67pA7fljvTkADg6Ppz18emo8EmhN
+j6m/IDvO/gTRhsFNTw24TRnrNUI2I4lcj6ZJ4mKGHxXSBdVF3emdrZfRBrzJJwLb
+NVY7mr98/q+cd4xmTIV9rP/I5sQwR67RQ1+O28Xq7hgXesd3jNFuCvjtnffynt5h
+OibnZFkt4bXQy6eETbsuABulCh93/G0ZSL6tD3aozHrrPEEAlAfbRmJ8rCE6l62M
+5jBV/ADJjqYP6Lya+PjnCAGtuch9rSHEeXGnf1WfGWzv9N7y7rzAnsxgq3LgQllq
+FisFVt+QDY6j15lOnxQ86N4wq0ah5tKrr65axKKqDp7AK8HwcbPO+y5EnS2kQ5XA
+NpIM8N9lTNZqQqqLg3MJ
+=jp7J
+-----END PGP SIGNATURE-----
+
+--/QKKmeG/X/bPShih--
