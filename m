@@ -1,81 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab2AZSMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 13:12:23 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44173 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301Ab2AZSMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 13:12:22 -0500
-Date: Thu, 26 Jan 2012 19:11:56 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20120126181156.GA6369@elte.hu>
+	id S1752334Ab2AZSQA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 13:16:00 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45586 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab2AZSP7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 13:15:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <4F216819.7030106@gmail.com>
+References: <1327450719-25590-1-git-send-email-grant.likely@secretlab.ca>
+ <4F1F5FE0.9090901@gmail.com> <CACxGe6s3R0fcBSf_YHTpXp15gtEBHRQg5-YM=cDO5UfY9cRGrQ@mail.gmail.com>
+ <CACxGe6tgGqQSThzVVEzwOdtYkjKHT1uQhZBOkCTwkutyKXDCAg@mail.gmail.com> <4F216819.7030106@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 26 Jan 2012 11:15:39 -0700
+X-Google-Sender-Auth: X1Xa7FS5a8bHXAP7wPnTnrQHFwk
+Message-ID: <CACxGe6tseS77b9SGC2OkWUx-GcrVG3P6ziAnCQ2DvY-AdApJ6w@mail.gmail.com>
+Subject: Re: [RFC 1/2] irq_domain: Create common xlate functions that device
+ drivers can use
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Jan 26, 2012 at 7:50 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On 01/25/2012 11:59 AM, Grant Likely wrote:
+>> On Tue, Jan 24, 2012 at 10:35 PM, Grant Likely
+>> <grant.likely@secretlab.ca> wrote:
+>>> On Tue, Jan 24, 2012 at 6:50 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>>>
+>>>>
+>>>> On 01/24/2012 06:18 PM, Grant Likely wrote:
+>>>>> Rather than having each interrupt controller driver creating its own barely
+>>>>> unique .xlate function for irq_domain, create a library of translators which
+>>>>> any driver can use directly.
+>>>>>
+>>>>> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+>>>>> index e7379a3..5e497a0 100644
+>>>>> --- a/include/linux/irqdomain.h
+>>>>> +++ b/include/linux/irqdomain.h
+>>>>> @@ -110,6 +110,9 @@ struct irq_domain {
+>>>>>       void *host_data;
+>>>>>       irq_hw_number_t inval_irq;
+>>>>>
+>>>>> +     /* Data for common irq xlate functions */
+>>>>> +     unsigned int xlate_type;
+>>>>> +
+>>>>
+>>>> How does this get set? Do we want interrupt controllers messing with the
+>>>> domain struct directly long term?
+>>>
+>>> It defaults to IRQ_TYPE_NONE in the alloc function and drivers can
+>>> override it.  Alternately it could be made part of the
+>>> irq_domain_add() arguments, but I'm not thrilled with adding a whole
+>>> bunch of arguments to the function prototype.
+>>
+>> Do you like this better (built on top of this patch)?
+>
+> Yes, I think it's better.
 
-Please pull the latest perf-urgent-for-linus git tree from:
+I've changed my mind on this after looking at the generated code.
+These functions are so simple that it actually is larger (both in
+source and object size) to call out to a common function.  I've gone
+back to each _xlate_*() function open coding the two assignments.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+g.
 
-   HEAD: 46cd6a7f680d14f6f80ede9f04aeb70fa83bd266 perf: Call perf_cgroup_event_time() directly
+>
+>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+>> index ef2b1fe..7856c04 100644
+>> --- a/kernel/irq/irqdomain.c
+>> +++ b/kernel/irq/irqdomain.c
+>> @@ -701,12 +701,10 @@ int irq_domain_xlate_onecell(struct irq_domain
+>> *d, struct device_node *ctrlr,
+>>                            const u32 *intspec, unsigned int intsize,
+>>                            unsigned long *out_hwirq, unsigned int *out_type)
+>>  {
+>> -     if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
+>> -              ctrlr->full_name, intsize))
+>> +     if (WARN_ON(intsize < 1))
+>>               return -EINVAL;
+>> -     *out_hwirq = intspec[0];
+>> -     *out_type = d->xlate_type;
+>> -     return 0;
+>> +     return irq_domain_xlate_onetwocell(d, ctrlr, intspec, 1,
+>> +                                        out_hwirq, out_type);
+>>  }
+>>  EXPORT_SYMBOL_GPL(irq_domain_xlate_onecell);
+>>
+>> @@ -721,12 +719,10 @@ int irq_domain_xlate_twocell(struct irq_domain
+>> *d, struct device_node *ctrlr,
+>>                       const u32 *intspec, unsigned int intsize,
+>>                       irq_hw_number_t *out_hwirq, unsigned int *out_type)
+>>  {
+>> -     if (WARN(intsize < 2, "Bad intspec for %s: intsize=%i < 2\n",
+>> -              ctrlr->full_name, intsize))
+>> +     if (WARN_ON(intsize < 2))
+>>               return -EINVAL;
+>> -     *out_hwirq = intspec[0];
+>> -     *out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
+>> -     return 0;
+>> +     return irq_domain_xlate_onetwocell(d, ctrlr, intspec, intsize,
+>> +                                        out_hwirq, out_type);
+>>  }
+>>  EXPORT_SYMBOL_GPL(irq_domain_xlate_twocell);
+>>
+>> @@ -746,8 +742,7 @@ int irq_domain_xlate_onetwocell(struct irq_domain *d,
+>>                               const u32 *intspec, unsigned int intsize,
+>>                               unsigned long *out_hwirq, unsigned int *out_type)
+>>  {
+>> -     if (WARN(intsize < 1, "Bad intspec for %s: intsize=%i < 1\n",
+>> -              ctrlr->full_name, intsize))
+>> +     if (WARN_ON(intsize < 1))
+>>               return -EINVAL;
+>>       *out_hwirq = intspec[0];
+>>       *out_type = d->xlate_type;
+>
 
- Thanks,
-
-	Ingo
-
------------------->
-Namhyung Kim (2):
-      perf: Don't call release_callchain_buffers() if allocation fails
-      perf: Call perf_cgroup_event_time() directly
 
 
- kernel/events/callchain.c |    2 --
- kernel/events/core.c      |    2 +-
- 2 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-index 057e24b..6581a04 100644
---- a/kernel/events/callchain.c
-+++ b/kernel/events/callchain.c
-@@ -115,8 +115,6 @@ int get_callchain_buffers(void)
- 	}
- 
- 	err = alloc_callchain_buffers();
--	if (err)
--		release_callchain_buffers();
- exit:
- 	mutex_unlock(&callchain_mutex);
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index a8f4ac0..32b48c8 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -815,7 +815,7 @@ static void update_event_times(struct perf_event *event)
- 	 * here.
- 	 */
- 	if (is_cgroup_event(event))
--		run_end = perf_event_time(event);
-+		run_end = perf_cgroup_event_time(event);
- 	else if (ctx->is_active)
- 		run_end = ctx->time;
- 	else
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
