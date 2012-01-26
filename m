@@ -1,109 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2AZVtM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 16:49:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab2AZVtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 16:49:08 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Niels de Vos <ndevos@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "Bryn M. Reeves" <bmr@redhat.com>
-Subject: Re: [PATCH v3] fs: Invalidate the cache for a parent block-device if fsync() is called for a partition
-References: <4F213E1A.4060808@redhat.com>
-	<1327584802-14298-1-git-send-email-ndevos@redhat.com>
-	<20120126134051.6add3cd2.akpm@linux-foundation.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 26 Jan 2012 16:49:06 -0500
-In-Reply-To: <20120126134051.6add3cd2.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Thu, 26 Jan 2012 13:40:51 -0800")
-Message-ID: <x491uqmyw19.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754049Ab2AZVtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 16:49:31 -0500
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:47319
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754007Ab2AZVtK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 16:49:10 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q0QLmwCM018918
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Suresh Jayaraman <sjayaraman@suse.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: Slab corruption in floppy driver module
+In-Reply-To: <20120126193735.GA11297@redhat.com> (Vivek Goyal's message of
+	"Thu, 26 Jan 2012 14:37:35 -0500")
+References: <4F1EAFE9.5000306@suse.com> <20120124223153.GG17291@redhat.com>
+	<20120126150420.GD1891@redhat.com>
+	<20120126180532.GA4077@dhcp-172-17-108-109.mtv.corp.google.com>
+	<20120126193735.GA11297@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Thu, 26 Jan 2012 22:48:57 +0100
+Message-ID: <giobtq5e46.fsf@mx10.gouders.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 26 Jan 2012 22:48:59 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-> On Thu, 26 Jan 2012 13:33:22 +0000
-> Niels de Vos <ndevos@redhat.com> wrote:
+> On Thu, Jan 26, 2012 at 10:05:32AM -0800, Tejun Heo wrote:
+>> Hello,
+>> 
+>> On Thu, Jan 26, 2012 at 10:04:20AM -0500, Vivek Goyal wrote:
+>> >  out_put_disk:
+>> >  	while (dr--) {
+>> >  		del_timer_sync(&motor_off_timer[dr]);
+>> > -		if (disks[dr]->queue)
+>> > +		if (disks[dr]->queue) {
+>> >  			blk_cleanup_queue(disks[dr]->queue);
+>> > +			/*
+>> > +			 * The request queue reference we took at device
+>> > +			 * creation time has been put by above
+>> > +			 * blk_cleanup_queue(). We have not called add_disk()
+>> > +			 * yet and due to failure calling put_disk(). Put disk
+>> > +			 * will try to put a reference to disk->queue which is
+>> > +			 * taken in add_disk(). As we have not taken that
+>> > +			 * extra reference, putting extra reference down
+>> > +			 * will try to access already freed queue. Clear
+>> > +			 * disk->queue before calling put_disk().
+>> > +			 */
+>> > +			disks[dr]->queue = NULL;
+>> 
+>> Yeah, this looks correct to me.  It might be better to tone down the
+>> comment a bit tho.  Wouldn't it be sufficient to say put_disk() isn't
+>> paired with add_disk() and will put one extra time?
 >
->> Executing an fsync() on a file-descriptor of a partition flushes the
->> caches for that partition by calling blkdev_fsync(). However, it seems
->> that reading data through the parent device will still return the old
->> cached data.
->> 
->> The problem can be worked around by forcing the caches to be flushed
->> with either
->> 	# blockdev --flushbufs ${dev_disk}
->> or
->> 	# echo 3 > /proc/sys/vm/drop_caches
->> 
->> One of the use-cases that shows this problem:
->> 1) create two or more partitions on a device
->>    - use fdisk to create /dev/sdb1 and /dev/sdb2
->> 2) format and mount one of the partition
->>    - mkfs -t ext3 /dev/sdb1
->> 3) read through the main device to have something in the cache
->>    - read /dev/sdb with dd or use something like "parted /dev/sdb print"
->> 4) now write something to /dev/sdb2, format the partition for example
->>    - mkfs -t ext3 /dev/sdb2
->> 5) read the blocks where sdb2 starts, through /dev/sdb
->>    - use dd or do again a "parted /dev/sdb print"
->> 
->> The cache for the block-device is not synced if the block-device is kept
->> open (due to a mounted partition, for example). Only when all users for
->> the disk have exited, the cache for the disk is made consistent again.
->> 
->> Without this patch, calling "blockdev --flushbufs" or dropping the
->> caches, the result in 5) is the same as in 3). Reading the same area
->> through /dev/sdb2 shows the inconsistancy between the two caches.
->> 
->> ...
->>
->> --- a/fs/block_dev.c
->> +++ b/fs/block_dev.c
->> @@ -424,6 +424,10 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
->>  	if (error == -EOPNOTSUPP)
->>  		error = 0;
->>  
->> +	/* invalidate parent block_device */
->> +	if (!error && bdev != bdev->bd_contains)
->> +		invalidate_bdev(bdev->bd_contains);
->> +
->>  	return error;
->>  }
->>  EXPORT_SYMBOL(blkdev_fsync);
+> Sure. Toned down the comment as suggested. Here is the new patch.
 >
-> I can't say I'm a huge fan of this.  It just isn't logical to drop
-> /dev/sda's pagecache in here.
+> floppy: Cleanup disk->queue before caling put_disk() if add_disk() was never called
 >
-> We're adapting the kernel to the behavior of existing userspace by
-> inserting a useful side-effect into a suprising place.  The result is
-> pretty darned hacky.
+> add_disk() takes gendisk reference on request queue. If driver failed during
+> initialization and never called add_disk() then that extra reference is not
+> taken. That reference is put in put_disk(). floppy driver allocates the
+> disk, allocates queue, sets disk->queue and then relizes that floppy
+> controller is not present. It tries to tear down everything and tries to
+> put a reference down in put_disk() which was never taken.
 >
-> The Right Thing To Do here is to make the kernel behave logically and
-> predictably, then modify the userspace tools.
+> In such error cases cleanup disk->queue before calling put_disk() so that
+> we never try to put down a reference which was never taken in first place.
+>
+> Reported-by: Suresh Jayaraman <sjayaraman@suse.com>
+> Tested-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  drivers/block/floppy.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+>
+> Index: linux-2.6/drivers/block/floppy.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/block/floppy.c	2012-01-15 09:49:14.000000000 -0500
+> +++ linux-2.6/drivers/block/floppy.c	2012-01-26 14:35:14.662374464 -0500
+> @@ -4368,8 +4368,14 @@ out_unreg_blkdev:
+>  out_put_disk:
+>  	while (dr--) {
+>  		del_timer_sync(&motor_off_timer[dr]);
+> -		if (disks[dr]->queue)
+> +		if (disks[dr]->queue) {
+>  			blk_cleanup_queue(disks[dr]->queue);
+> +			/*
+> +			 * put_disk() is not paired with add_disk() and
+> +			 * will put queue reference one extra time. fix it.
+> +			 */
+> +			disks[dr]->queue = NULL;
+> +		}
+>  		put_disk(disks[dr]);
+>  	}
+>  	return err;
 
-To me, logically the caches should not be separate.  /dev/sda and
-/dev/sda1 are the same underlying device, after all, and there shouldn't
-be any cache aliases.  Unfortunately, that sounds like a rather large
-change to me, with a completely new set of side effects to deal with.
 
-> But if we're modifying the userspace tools then we would just change
-> userspace to issue a BLKFLSBUF to /dev/sda and leave the kernel alone.
->
-> So hm.  I think I might prefer to leave the issue unfixed rather than
-> doing this to the poor old kernel :(
+Probably a rare and uncommon one but it seems that the reloading case on
+a machine that has a floppy controller is a different problem.  To be
+sure I tested the patch on a machine that has a floppy controller and
+when unloading and reloading the floppy module the log messages that I
+attached to a mail earlier in this thread are still generated.
 
-I could certainly understand taking this stance.
-
-Cheers,
-Jeff
+Dirk
