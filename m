@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab2AZRau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 12:30:50 -0500
-Received: from paperboy.avencall.com ([91.194.178.22]:58285 "EHLO
-	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752176Ab2AZRat (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 12:30:49 -0500
-Date: Thu, 26 Jan 2012 18:30:41 +0100
-From: Guillaume Knispel <gknispel@proformatique.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Guillaume Knispel <gknispel@proformatique.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Xavier Carcelle <xcarcelle@avencall.com>,
-        =?ISO-8859-1?Q?No=E9?= Rubinstein <nrubinstein@avencall.com>
-Subject: Re: How to "register" a GSI for a non PCI non ISA device
-Message-ID: <20120126183041.15474705@xilun>
-In-Reply-To: <CAErSpo5vCr4Y3Q6U1=yYLcSBH-85koMKDte4rzw4tyuKocYXYA@mail.gmail.com>
-References: <20120124184203.1b0878c2@xilun>
-	<4F1F99A5.1000206@kernel.org>
-	<20120125182314.7834c75b@xilun>
-	<20120125190214.GC18606@phenom.dumpdata.com>
-	<20120126160719.3b9be3b3@xilun>
-	<20120126153239.GA14367@phenom.dumpdata.com>
-	<20120126172248.72b0efa5@xilun>
-	<CAErSpo5vCr4Y3Q6U1=yYLcSBH-85koMKDte4rzw4tyuKocYXYA@mail.gmail.com>
-Organization: Avencall
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753295Ab2AZRb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 12:31:26 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46125 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557Ab2AZRbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 12:31:25 -0500
+Message-ID: <4F218D36.2060308@linux.vnet.ibm.com>
+Date: Thu, 26 Jan 2012 09:28:22 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
+References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
+In-Reply-To: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12012617-7182-0000-0000-000000950811
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jan 2012 10:24:31 -0700
-Bjorn Helgaas <bhelgaas@google.com> wrote:
+On 01/25/2012 01:58 PM, Dan Magenheimer wrote:
+> (Feedback welcome if there is a different/better way to do this
+> without using a page flag!)
+> 
+> Since about 2.6.27, the page replacement algorithm maintains
+> an "active" bit to help decide which pages are most eligible
+> to reclaim, see http://linux-mm.org/PageReplacementDesign 
+> 
+> This "active' information is also useful to cleancache but is lost
+> by the time that cleancache has the opportunity to preserve the
+> pageful of data.  This patch adds a new page flag "WasActive" to
+> retain the state.  The flag may possibly be useful elsewhere.
 
-> A driver should never need to use acpi_register_gsi() directly.  It
-> sounds like you have a non-PCI device that would be described as an
-> ACPI device in the DSDT.  In the Device definition, you include a _CRS
-> method that tells the kernel what GSI it is using.  The PNPACPI
-> subsystem will parse _CRS and should do the acpi_register_gsi() for
-> you.  Then your driver would use pnp_register_driver() and pnp_irq()
-> to learn the IRQ.  drivers/tty/serial/8250_pnp.c is an example.
+I guess cleancache itself is clearing the bit, right?  I didn't see any
+clearing going on in the patch.
 
-Thanks a lot, I'll look into it.
+I do think it also needs to get cleared on the way in to the page
+allocator.  Otherwise:
 
--- 
-Guillaume Knispel
-Avencall - 10 bis, rue Lucien Voilin - 92800 Puteaux
+	PageSetWasActive(page);
+	free_page(page);
+	...
+	another_user_page = get_free_page()
+	// now cleancache sees the active bit for the prev user
+
+Or am I missing somewhere it gets cleared non-explicitly somewhere?
+
