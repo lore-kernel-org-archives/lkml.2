@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab2AZOHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 09:07:09 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:7891 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751163Ab2AZOHI (ORCPT
+	id S1752518Ab2AZOH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 09:07:29 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40594 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab2AZOH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 09:07:08 -0500
-X-IronPort-AV: E=Sophos;i="4.71,574,1320620400"; 
-   d="scan'208";a="141542968"
-Date: Thu, 26 Jan 2012 15:07:06 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Wolfram Sang <w.sang@pengutronix.de>
-cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Takashi Iwai <tiwai@suse.de>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [alsa-devel] [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing
- iounmap
-In-Reply-To: <20120126135135.GD2611@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1201261504200.1851@localhost6.localdomain6>
-References: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr> <7FE21149F4667147B645348EC605788508FBDB@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1201241828480.1779@localhost6.localdomain6> <20120124202203.GD1135@opensource.wolfsonmicro.com>
- <alpine.DEB.2.02.1201242144580.1998@hadrien> <20120126110506.GB2611@pengutronix.de> <alpine.DEB.2.02.1201261220460.1851@localhost6.localdomain6> <20120126112242.GA9401@opensource.wolfsonmicro.com> <alpine.DEB.2.02.1201261439460.1851@localhost6.localdomain6>
- <20120126135135.GD2611@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Thu, 26 Jan 2012 09:07:28 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0LOP1KteNnsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=wEcsVv2XF_e0zPuac84A:9 a=PUjeQqilurYA:10 a=Ti_uA8_mJTmcI9el:21 a=QuPJplAy6ombxOx-:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1327586847.22710.90.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Date: Thu, 26 Jan 2012 09:07:27 -0500
+In-Reply-To: <1327586669.22710.89.camel@gandalf.stny.rr.com>
+References: <1326754637.7642.177.camel@gandalf.stny.rr.com>
+	 <20120117095418.GG10397@elte.hu>
+	 <1326807145.17534.26.camel@gandalf.stny.rr.com>
+	 <20120118120711.GB14863@elte.hu>
+	 <1326909412.17534.91.camel@gandalf.stny.rr.com>
+	 <877h0jgx80.fsf@rustcorp.com.au>
+	 <1327545664.22710.78.camel@gandalf.stny.rr.com>
+	 <20120126102836.GD3853@elte.hu>
+	 <1327585945.22710.87.camel@gandalf.stny.rr.com>
+	 <20120126135504.GA13107@elte.hu>
+	 <1327586669.22710.89.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jan 2012, Wolfram Sang wrote:
+On Thu, 2012-01-26 at 09:04 -0500, Steven Rostedt wrote:
 
-> Julia,
->
->>  	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> @@ -663,18 +663,11 @@ static int mxs_saif_probe(struct platform_device *pdev)
->>  		goto failed_get_resource;
->>  	}
->>
->> -	if (!request_mem_region(iores->start, resource_size(iores),
->> -				"mxs-saif")) {
->> -		dev_err(&pdev->dev, "request_mem_region failed\n");
->> -		ret = -EBUSY;
->> -		goto failed_get_resource;
->> -	}
->> -
->> -	saif->base = ioremap(iores->start, resource_size(iores));
->> +	saif->base = devm_request_and_ioremap(&pdev->dev, iores);
->
-> You can skip checking 'iores', too. I also did that in the example, but
-> a lot of people seem to miss it.
+> Perhaps I could use "__builtin_return_address(0)" instead.
 
-I can try to do that, but it seems a little bit unintuitive.  Perhaps it 
-would be easier for people to remember to put in error handling code when 
-they need it if they always have to do it?  If I remove it, there will be 
-one call that has no test and then another call a few lines later that 
-does.
+s/__builtin_return_address(0)/_RET_IP_/
 
-> Where did you get the information how
-> to use devm_request_and_ioremap? I probably need to spread the word even
-> more...
+-- Steve
 
-I saw it in Documentation/driver-model/devres.txt and then looked around 
-for some examples.
 
-julia
