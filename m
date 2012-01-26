@@ -1,92 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab2AZPsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 10:48:36 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:38091 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab2AZPsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 10:48:35 -0500
-Date: Thu, 26 Jan 2012 16:48:29 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCHv19 00/15] Contiguous Memory Allocator
-In-reply-to: <201201261531.40551.arnd@arndb.de>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>
-Message-id: <009f01ccdc41$f30a5f70$d91f1e50$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: AczcP9RQ2kMsLTQhQVSJXu324doBbgAASk8w
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <201201261531.40551.arnd@arndb.de>
+	id S1752859Ab2AZPtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 10:49:46 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:28697 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab2AZPtp convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Thu, 26 Jan 2012 10:49:45 -0500
+Message-Id: <4F21846F020000780006F3FA@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 26 Jan 2012 15:50:55 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: fix memcpy() to support sizes of 4Gb and above
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+While currently there doesn't appear to be any reachable in-tree case
+where such large memory blocks may be passed to memcpy(), we already
+had hit the problem in our Xen kernels. Just like done recently for
+mmeset(), rather than working around it, prevent others from falling
+into the same trap by fixing this long standing limitation.
 
-On Thursday, January 26, 2012 4:32 PM Arnd Bergmann wrote:
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-> On Thursday 26 January 2012, Marek Szyprowski wrote:
-> > Welcome everyone!
-> >
-> > Yes, that's true. This is yet another release of the Contiguous Memory
-> > Allocator patches. This version mainly includes code cleanups requested
-> > by Mel Gorman and a few minor bug fixes.
-> 
-> Hi Marek,
-> 
-> Thanks for keeping up this work! I really hope it works out for the
-> next merge window.
-> 
-> > TODO (optional):
-> > - implement support for contiguous memory areas placed in HIGHMEM zone
-> > - resolve issue with movable pages with pending io operations
-> 
-> Can you clarify these? I believe the contiguous memory areas in highmem
-> is something that should really be after the existing code is merged
-> into the upstream kernel and should better not be listed as TODO here.
+---
+ arch/x86/lib/memcpy_64.S |   25 ++++++++++---------------
+ 1 file changed, 10 insertions(+), 15 deletions(-)
 
-Ok, I will remove it from the TODO list. Core memory management is very 
-little dependence on HIGHMEM, it is more about DMA-mapping framework to 
-be aware that there might be no lowmem mappings for the allocated pages.
-This can be easily added once the initial version got merged.
+--- 3.3-rc1/arch/x86/lib/memcpy_64.S
++++ 3.3-rc1-x86_64-memcpy/arch/x86/lib/memcpy_64.S
+@@ -27,9 +27,8 @@
+ 	.section .altinstr_replacement, "ax", @progbits
+ .Lmemcpy_c:
+ 	movq %rdi, %rax
+-
+-	movl %edx, %ecx
+-	shrl $3, %ecx
++	movq %rdx, %rcx
++	shrq $3, %rcx
+ 	andl $7, %edx
+ 	rep movsq
+ 	movl %edx, %ecx
+@@ -48,8 +47,7 @@
+ 	.section .altinstr_replacement, "ax", @progbits
+ .Lmemcpy_c_e:
+ 	movq %rdi, %rax
+-
+-	movl %edx, %ecx
++	movq %rdx, %rcx
+ 	rep movsb
+ 	ret
+ .Lmemcpy_e_e:
+@@ -60,10 +58,7 @@ ENTRY(memcpy)
+ 	CFI_STARTPROC
+ 	movq %rdi, %rax
  
-> I haven't followed the last two releases so closely. It seems that
-> in v17 the movable pages with pending i/o was still a major problem
-> but in v18 you added a solution. Is that right? What is still left
-> to be done here then?
+-	/*
+-	 * Use 32bit CMP here to avoid long NOP padding.
+-	 */
+-	cmp  $0x20, %edx
++	cmpq $0x20, %rdx
+ 	jb .Lhandle_tail
+ 
+ 	/*
+@@ -72,7 +67,7 @@ ENTRY(memcpy)
+ 	 */
+ 	cmp  %dil, %sil
+ 	jl .Lcopy_backward
+-	subl $0x20, %edx
++	subq $0x20, %rdx
+ .Lcopy_forward_loop:
+ 	subq $0x20,	%rdx
+ 
+@@ -91,7 +86,7 @@ ENTRY(memcpy)
+ 	movq %r11,	3*8(%rdi)
+ 	leaq 4*8(%rdi),	%rdi
+ 	jae  .Lcopy_forward_loop
+-	addq $0x20,	%rdx
++	addl $0x20,	%edx
+ 	jmp  .Lhandle_tail
+ 
+ .Lcopy_backward:
+@@ -123,11 +118,11 @@ ENTRY(memcpy)
+ 	/*
+ 	 * Calculate copy position to head.
+ 	 */
+-	addq $0x20,	%rdx
++	addl $0x20,	%edx
+ 	subq %rdx,	%rsi
+ 	subq %rdx,	%rdi
+ .Lhandle_tail:
+-	cmpq $16,	%rdx
++	cmpl $16,	%edx
+ 	jb   .Lless_16bytes
+ 
+ 	/*
+@@ -144,7 +139,7 @@ ENTRY(memcpy)
+ 	retq
+ 	.p2align 4
+ .Lless_16bytes:
+-	cmpq $8,	%rdx
++	cmpl $8,	%edx
+ 	jb   .Lless_8bytes
+ 	/*
+ 	 * Move data from 8 bytes to 15 bytes.
+@@ -156,7 +151,7 @@ ENTRY(memcpy)
+ 	retq
+ 	.p2align 4
+ .Lless_8bytes:
+-	cmpq $4,	%rdx
++	cmpl $4,	%edx
+ 	jb   .Lless_3bytes
+ 
+ 	/*
 
-Since v18 the failed allocation is retried in a bit different place in 
-the contiguous memory area what heavily increased overall reliability.
-
-This can be improved by making cma a bit more aware about pending io 
-operations, but I want to leave this after the initial merge.
-
-I think that there are no major issues left to be resolved now.
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
 
 
