@@ -1,275 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab2AZJKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 04:10:12 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:16727 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2AZJBD (ORCPT
+	id S1751728Ab2AZJMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 04:12:16 -0500
+Received: from mga10.intel.com ([192.55.52.92]:7215 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751154Ab2AZJMN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 04:01:03 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Thu, 26 Jan 2012 10:00:48 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 06/15] mm: page_alloc: introduce alloc_contig_range()
-In-reply-to: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Message-id: <1327568457-27734-7-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.7.3
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+	Thu, 26 Jan 2012 04:12:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <DBB740589CE8814680DECFE34BE197AB166593@039-SN1MPN1-006.039d.mgd.msft.net>
+References: <1324967446-28939-1-git-send-email-b29237@freescale.com>
+	<DBB740589CE8814680DECFE34BE197AB166593@039-SN1MPN1-006.039d.mgd.msft.net>
+Date: Thu, 26 Jan 2012 01:12:11 -0800
+Message-ID: <CABE8wwv+iA_apPUCrLHgG-QiyHTuOfvZwPbJ7=zbTEQ3TgKQCw@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: async_xor, fix zero address issue when xor
+ highmem page
+From: Dan Williams <dan.j.williams@intel.com>
+To: Shi Xuelin-B29237 <B29237@freescale.com>
+Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+2012/1/10 Shi Xuelin-B29237 <B29237@freescale.com>:
+> Hello Dan Williams,
+>
+> Do you have any comment about this patch?
 
-This commit adds the alloc_contig_range() function which tries
-to allocate given range of pages.  It tries to migrate all
-already allocated pages that fall in the range thus freeing them.
-Once all pages in the range are freed they are removed from the
-buddy system thus allocated for the caller to use.
+Hi, sorrry for the delay.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- include/linux/page-isolation.h |    7 ++
- mm/page_alloc.c                |  183 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 190 insertions(+), 0 deletions(-)
+>
+> Thanks,
+> Forrest
+>
+> -----Original Message-----
+> From: Shi Xuelin-B29237
+> Sent: 2011年12月27日 14:31
+> To: vinod.koul@intel.com; dan.j.williams@intel.com; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Li Yang-R58472
+> Cc: Shi Xuelin-B29237
+> Subject: [PATCH] dmaengine: async_xor, fix zero address issue when xor highmem page
+>
+> From: Forrest shi <b29237@freescale.com>
+>
+>        we may do_sync_xor high mem pages, in this case, page_address will
+>        return zero address which cause a failure.
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 8c02c2b..430cf61 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -39,5 +39,12 @@ extern void update_pcp_isolate_block(unsigned long pfn);
- extern int set_migratetype_isolate(struct page *page);
- extern void unset_migratetype_isolate(struct page *page);
- 
-+#ifdef CONFIG_CMA
-+
-+/* The below functions must be run on a range from a single zone. */
-+extern int alloc_contig_range(unsigned long start, unsigned long end);
-+extern void free_contig_range(unsigned long pfn, unsigned nr_pages);
-+
-+#endif
- 
- #endif
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 70709e7..b4f50532 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -57,6 +57,7 @@
- #include <linux/ftrace_event.h>
- #include <linux/memcontrol.h>
- #include <linux/prefetch.h>
-+#include <linux/migrate.h>
- #include <linux/page-debug-flags.h>
- 
- #include <asm/tlbflush.h>
-@@ -5488,6 +5489,188 @@ out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
- 
-+#ifdef CONFIG_CMA
-+
-+static unsigned long pfn_align_to_maxpage_down(unsigned long pfn)
-+{
-+	return pfn & ~(MAX_ORDER_NR_PAGES - 1);
-+}
-+
-+static unsigned long pfn_align_to_maxpage_up(unsigned long pfn)
-+{
-+	return ALIGN(pfn, MAX_ORDER_NR_PAGES);
-+}
-+
-+static struct page *
-+__alloc_contig_migrate_alloc(struct page *page, unsigned long private,
-+			     int **resultp)
-+{
-+	return alloc_page(GFP_HIGHUSER_MOVABLE);
-+}
-+
-+/* [start, end) must belong to a single zone. */
-+static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-+{
-+	/* This function is based on compact_zone() from compaction.c. */
-+
-+	unsigned long pfn = start;
-+	unsigned int tries = 0;
-+	int ret = 0;
-+
-+	struct compact_control cc = {
-+		.nr_migratepages = 0,
-+		.order = -1,
-+		.zone = page_zone(pfn_to_page(start)),
-+		.sync = true,
-+	};
-+	INIT_LIST_HEAD(&cc.migratepages);
-+
-+	migrate_prep_local();
-+
-+	while (pfn < end || !list_empty(&cc.migratepages)) {
-+		if (fatal_signal_pending(current)) {
-+			ret = -EINTR;
-+			break;
-+		}
-+
-+		if (list_empty(&cc.migratepages)) {
-+			cc.nr_migratepages = 0;
-+			pfn = isolate_migratepages_range(cc.zone, &cc,
-+							 pfn, end);
-+			if (!pfn) {
-+				ret = -EINTR;
-+				break;
-+			}
-+			tries = 0;
-+		} else if (++tries == 5) {
-+			ret = ret < 0 ? ret : -EBUSY;
-+			break;
-+		}
-+
-+		ret = migrate_pages(&cc.migratepages,
-+				    __alloc_contig_migrate_alloc,
-+				    0, false, true);
-+	}
-+
-+	putback_lru_pages(&cc.migratepages);
-+	return ret;
-+}
-+
-+/**
-+ * alloc_contig_range() -- tries to allocate given range of pages
-+ * @start:	start PFN to allocate
-+ * @end:	one-past-the-last PFN to allocate
-+ *
-+ * The PFN range does not have to be pageblock or MAX_ORDER_NR_PAGES
-+ * aligned, however it's the caller's responsibility to guarantee that
-+ * we are the only thread that changes migrate type of pageblocks the
-+ * pages fall in.
-+ *
-+ * The PFN range must belong to a single zone.
-+ *
-+ * Returns zero on success or negative error code.  On success all
-+ * pages which PFN is in [start, end) are allocated for the caller and
-+ * need to be freed with free_contig_range().
-+ */
-+int alloc_contig_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long outer_start, outer_end;
-+	int ret = 0, order;
-+
-+	/*
-+	 * What we do here is we mark all pageblocks in range as
-+	 * MIGRATE_ISOLATE.  Because of the way page allocator work, we
-+	 * align the range to MAX_ORDER pages so that page allocator
-+	 * won't try to merge buddies from different pageblocks and
-+	 * change MIGRATE_ISOLATE to some other migration type.
-+	 *
-+	 * Once the pageblocks are marked as MIGRATE_ISOLATE, we
-+	 * migrate the pages from an unaligned range (ie. pages that
-+	 * we are interested in).  This will put all the pages in
-+	 * range back to page allocator as MIGRATE_ISOLATE.
-+	 *
-+	 * When this is done, we take the pages in range from page
-+	 * allocator removing them from the buddy system.  This way
-+	 * page allocator will never consider using them.
-+	 *
-+	 * This lets us mark the pageblocks back as
-+	 * MIGRATE_CMA/MIGRATE_MOVABLE so that free pages in the
-+	 * MAX_ORDER aligned range but not in the unaligned, original
-+	 * range are put back to page allocator so that buddy can use
-+	 * them.
-+	 */
-+
-+	ret = start_isolate_page_range(pfn_align_to_maxpage_down(start),
-+				       pfn_align_to_maxpage_up(end));
-+	if (ret)
-+		goto done;
-+
-+	ret = __alloc_contig_migrate_range(start, end);
-+	if (ret)
-+		goto done;
-+
-+	/*
-+	 * Pages from [start, end) are within a MAX_ORDER_NR_PAGES
-+	 * aligned blocks that are marked as MIGRATE_ISOLATE.  What's
-+	 * more, all pages in [start, end) are free in page allocator.
-+	 * What we are going to do is to allocate all pages from
-+	 * [start, end) (that is remove them from page allocater).
-+	 *
-+	 * The only problem is that pages at the beginning and at the
-+	 * end of interesting range may be not aligned with pages that
-+	 * page allocator holds, ie. they can be part of higher order
-+	 * pages.  Because of this, we reserve the bigger range and
-+	 * once this is done free the pages we are not interested in.
-+	 */
-+
-+	lru_add_drain_all();
-+	drain_all_pages();
-+
-+	order = 0;
-+	outer_start = start;
-+	while (!PageBuddy(pfn_to_page(outer_start))) {
-+		if (WARN_ON(++order >= MAX_ORDER)) {
-+			ret = -EINVAL;
-+			goto done;
-+		}
-+		outer_start &= ~0UL << order;
-+	}
-+
-+	/* Make sure the range is really isolated. */
-+	if (test_pages_isolated(outer_start, end)) {
-+		pr_warn("__alloc_contig_migrate_range: test_pages_isolated(%lx, %lx) failed\n",
-+		       outer_start, end);
-+		ret = -EBUSY;
-+		goto done;
-+	}
-+
-+	outer_end = isolate_freepages_range(outer_start, end);
-+	if (!outer_end) {
-+		ret = -EBUSY;
-+		goto done;
-+	}
-+
-+	/* Free head and tail (if any) */
-+	if (start != outer_start)
-+		free_contig_range(outer_start, start - outer_start);
-+	if (end != outer_end)
-+		free_contig_range(end, outer_end - end);
-+
-+done:
-+	undo_isolate_page_range(pfn_align_to_maxpage_down(start),
-+				pfn_align_to_maxpage_up(end));
-+	return ret;
-+}
-+
-+void free_contig_range(unsigned long pfn, unsigned nr_pages)
-+{
-+	for (; nr_pages--; ++pfn)
-+		__free_page(pfn_to_page(pfn));
-+}
-+
-+#endif
-+
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- /*
-  * All pages in the range must be isolated before calling this.
--- 
-1.7.1.569.g6f426
+In what scenarios do we xor highmem?
 
+In the case of raid we currently always xor on kmalloc'd memory.
+
+>
+>        this patch uses kmap_atomic before xor the pages and kunmap_atomic
+>        after it.
+>
+>        Signed-off-by: b29237@freescale.com <xuelin.shi@freescale.com>
+> ---
+>  crypto/async_tx/async_xor.c |   16 ++++++++++++----
+>  1 files changed, 12 insertions(+), 4 deletions(-)
+>
+> diff --git a/crypto/async_tx/async_xor.c b/crypto/async_tx/async_xor.c index bc28337..5b416d1 100644
+> --- a/crypto/async_tx/async_xor.c
+> +++ b/crypto/async_tx/async_xor.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/mm.h>
+> +#include <linux/highmem.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/raid/xor.h>
+>  #include <linux/async_tx.h>
+> @@ -126,7 +127,7 @@ do_sync_xor(struct page *dest, struct page **src_list, unsigned int offset,
+>            int src_cnt, size_t len, struct async_submit_ctl *submit)  {
+>        int i;
+> -       int xor_src_cnt = 0;
+> +       int xor_src_cnt = 0, kmap_cnt=0;
+>        int src_off = 0;
+>        void *dest_buf;
+>        void **srcs;
+> @@ -138,11 +139,13 @@ do_sync_xor(struct page *dest, struct page **src_list, unsigned int offset,
+>
+>        /* convert to buffer pointers */
+>        for (i = 0; i < src_cnt; i++)
+> -               if (src_list[i])
+> -                       srcs[xor_src_cnt++] = page_address(src_list[i]) + offset;
+> +               if (src_list[i]) {
+> +                       srcs[xor_src_cnt++] = kmap_atomic(src_list[i], KM_USER1) + offset;
+> +               }
+> +       kmap_cnt = xor_src_cnt;
+
+I guess this works now that we have stack based kmap_atomic, but on
+older kernels you could not simultaneously map that many buffers with
+a single kmap slot.  So if you resend, drop the second parameter to
+kmap_atomic.
+
+...but unless you have a non md/raid456 use case in mind, or have
+patches to convert md/raid to xor straight out of the incoming biovecs
+I don't think this patch is needed right?
