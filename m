@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab2A0AzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:55:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60977 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab2A0AzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:55:02 -0500
-Date: Thu, 26 Jan 2012 16:53:45 -0800
-From: Greg KH <gregkh@suse.de>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, bp@amd64.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, lenb@kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: WARN... Device 'cpu1' does not have a release() function, it is
- broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
-Message-ID: <20120127005345.GA13278@suse.de>
-References: <20120123180601.GA24553@phenom.dumpdata.com>
- <20120127000612.GA14678@suse.de>
- <CAPXgP134gz6baAiVPPfhdaQsYZ5hDncZfb4C_Wj=iC51=Uqixw@mail.gmail.com>
+	id S1754615Ab2A0A4l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:56:41 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34161 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278Ab2A0A4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 19:56:40 -0500
+Message-ID: <4F21F638.2080306@linux.vnet.ibm.com>
+Date: Fri, 27 Jan 2012 08:56:24 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPXgP134gz6baAiVPPfhdaQsYZ5hDncZfb4C_Wj=iC51=Uqixw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Xiaotian Feng <xtfeng@gmail.com>, ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] sched: Accelerate "pick_next_entity" under special
+ condition
+References: <4F13EFBE.1030002@linux.vnet.ibm.com> <1326707503.2442.219.camel@twins>	<4F14DEAE.60702@linux.vnet.ibm.com> <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com> <4F14E54E.80904@linux.vnet.ibm.com> <1327506934.2614.87.camel@laptop>
+In-Reply-To: <1327506934.2614.87.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12012614-5140-0000-0000-000000A7FCDA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 01:22:46AM +0100, Kay Sievers wrote:
-> On Fri, Jan 27, 2012 at 01:06, Greg KH <gregkh@suse.de> wrote:
-> > On Mon, Jan 23, 2012 at 01:06:01PM -0500, Konrad Rzeszutek Wilk wrote:
-> 
-> >> Is anybody else hitting this with ACPI CPU hot-unplug? Or do I have
-> >> the privilige of being the first? Oh, I hadn't done a full bisection
-> >> but v3.2 does not have this.
-> >
-> > Kay, this is a mess.
-> >
-> > This cpu system device is is interconnected with the different arches
-> > and their cpu-specific structures.  Some arches have a static array,
-> > some allocate a huge structure (struct arch_cpu * NUM_CPUS), and others
-> > try to do the right thing with DECLARE_PER_CPU() but don't quite get it
-> > right, making that a static array per cpu.
-> >
-> > To unwind all of this, is much beyond 3.3 material, as I'm sure I'll get
-> > it wrong, and have a bunch of non-x86-64 build problems along the way.
-> >
-> > Any objection to me just doing the "hack" of the empty release function
-> > at the moment to get rid of this warning, and then clean it all up
-> > properly for 3.4?
-> 
-> No problem at all.
-> 
-> It would be nice if we get all that to the usual model some day, but I
-> can totally see that CPU devices try to deal with statically allocated
-> per-cpu memory. It seems fine, as long as they know what they are
-> doing.
-> 
-> Just silencing the driver-core warning here sounds fine to me.
+On 01/25/2012 11:55 PM, Peter Zijlstra wrote:
 
-Ok, I'll do that tomorrow and send a patch out and then start working on
-making all of this dynamic, as it really should be.
+> On Tue, 2012-01-17 at 11:04 +0800, Michael Wang wrote:
+>>
+>>> Then what if condition 1 is true now?
+>>
+>> We can see in original code, even condition 1 is true, we
+>> still will use value3 if condition3 is true, like this:
+>>
+>> original:
+>>
+>> condition1      condition3      result
+>> true            true            value3
+>> true            false           value1
+>>
+>> That means if condition3 is true, we don't care whether
+>> condition1 is true or not because we will finally use value3.
+> 
 
-thanks,
+> Right, so from the original 8 possible states we used to evaluate 3*8 =
+> 24 conditionals. The new code will reduce this to 1*4 + 2*2 + 2*3 = 14.
+> 
+> Now I guess the question is if it matters for the modal or average
+> state.
+> 
 
-greg k-h
+
+Hi, Peter
+
+I think how much help this patch can do on the performance depends on
+how often the condition2 and 3 occur.
+
+> I've applied the patch since it can't be worse, but I've no idea if it
+> matters or not in practice.
+
+
+It's hardly to say how useful this patch is, but it will do some help
+under special condition.
+Thanks for your review.
+
+Regards,
+Michael Wang
+
+> 
+
+
