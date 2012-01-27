@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab2A0UxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 15:53:16 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:40466 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab2A0UxP (ORCPT
+	id S1754868Ab2A0UyZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 15:54:25 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59059 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab2A0UyX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 15:53:15 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-References: <20120127175342.273260614@openvz.org>
-	<20120127175939.795551339@openvz.org>
-	<20120127181525.GD11715@one.firstfloor.org>
-	<20120127182403.GG11086@moon>
-	<20120127183155.GE11715@one.firstfloor.org>
-	<20120127184005.GH11086@moon>
-	<20120127194058.GF11715@one.firstfloor.org>
-Date: Fri, 27 Jan 2012 12:55:50 -0800
-In-Reply-To: <20120127194058.GF11715@one.firstfloor.org> (Andi Kleen's message
-	of "Fri, 27 Jan 2012 20:40:58 +0100")
-Message-ID: <m1mx98zwyx.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 27 Jan 2012 15:54:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/wG+c0sRWz7dGgUr77mh4aK1Inqhj+xD8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <20120127182016.GA15705@infradead.org>
+References: <1327688098-10159-1-git-send-email-geert@linux-m68k.org>
+	<20120127182016.GA15705@infradead.org>
+Date: Fri, 27 Jan 2012 21:54:22 +0100
+X-Google-Sender-Auth: QiBlXd7JMbKZ_sFrfQciSsHOqbo
+Message-ID: <CAMuHMdUbesGLdWSh3+JnM2GH_T4TeD3SD-Tb6pwEzYWL4k0g-g@mail.gmail.com>
+Subject: Re: [PATCH] uml/hostfs: Propagate dirent.d_type to filldir()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+Hi Christoph,
 
->> > The basic problem is if this interface is at the right level of abstraction.
->> > I have some doubts on that. It seems like a long term maintenance nightmare to 
->> > me. It may be better to put the loop that would call this into the kernel.
->> > 
->> 
->> Hmm, ie selftest right in kenel?
+On Fri, Jan 27, 2012 at 19:20, Christoph Hellwig <hch@infradead.org> wrote:
+> On Fri, Jan 27, 2012 at 07:14:58PM +0100, Geert Uytterhoeven wrote:
+>> Currently the (optional) d_type member in struct dirent is always
+>> DT_UNKNOWN on hostfs, which may confuse buggy software using readdir().
+>> Make sure to propagate its value from the underlying filesystem if it's
+>> available there.
 >
-> Not testing, but more the general stability of the interface. IMHO it exposes
-> too many kernel internals. I know they are already exposed by clone/unshare, 
-> but in those nothing breaks if the user program doesn't know about some new
-> flags. But this looks like the user always has to be updated for every change.
-> I think I would prefer if more of the user was in kernel to not expose
-> that much.
+> What software would that be?  We have lots of filesystems not filling
 
-Do you vote for putting the entire process serializer in one system call
-then?
+Something proprietary, which got fixed in the mean time.
 
-With the serializer in userspace you only need to update your userspace
-code if something uses a new facility.  Which is the standard userspace
-requirement.  Userspace does not need to be strictly in sync with the
-kernel.
+> in d_type, and several operating systems don't have it at all.
 
-Personally I think all of this exporting extra state a little at a time
-is horrible, but it seems to have a better chance of getting merged
-because the pain comes a little at time.
+Almost all filesystems on a typical Ubuntu desktop or Android device fill it in.
+Iso9660 is the notable exception.
 
-Eric
+Several of the more exotic ones probably don't support it. E.g. affs
+fills it in for
+directories only.
+
+>From getdents(2):
+       The d_type field is implemented since Linux 2.6.4.  It occupies a space
+       that was previously a zero-filled  padding  byte  in  the  linux_dirent
+       structure.   Thus,  on  kernels before 2.6.3, attempting to access this
+       field always provides the value 0 (DT_UNKNOWN).
+
+       Currently, only some file systems (among them: Btrfs, ext2,  ext3,  and
+       ext4)  have  full  support  for returning the file type in d_type.  All
+       applications must properly handle a return of DT_UNKNOWN.
+
+If it's there, it saves lots of stat calls.
+So I take it it's a good thing if it gets fixed?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
