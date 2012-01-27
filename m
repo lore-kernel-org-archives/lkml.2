@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab2A0R0a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 12:26:30 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:55675 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751485Ab2A0R03 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 12:26:29 -0500
-Date: Fri, 27 Jan 2012 09:26:22 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai.lu@oracle.com>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pciehp: Disable/enable link during slot power off/on
-Message-ID: <20120127092622.6d8c2ae8@jbarnes-desktop>
-In-Reply-To: <4ED95AD0.7090003@oracle.com>
-References: <4ED95AD0.7090003@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/TZfY3mT0jBz1aohPCMGpoiR"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1752385Ab2A0R21 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 12:28:27 -0500
+Received: from na3sys010aog114.obsmtp.com ([74.125.245.96]:52744 "HELO
+	na3sys010aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751327Ab2A0R20 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 12:28:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAG4TOxNEV2VY9wOE86p9RnKGqpruB32ci9Wq3yBt8O2zc7f05w@mail.gmail.com>
+References: <1327557574-6125-1-git-send-email-roland@kernel.org>
+ <alpine.LSU.2.00.1201261133230.1369@eggly.anvils> <CAG4TOxNEV2VY9wOE86p9RnKGqpruB32ci9Wq3yBt8O2zc7f05w@mail.gmail.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Fri, 27 Jan 2012 09:28:03 -0800
+X-Google-Sender-Auth: T5co8iEOYTe6hEABxDk9VTvMSww
+Message-ID: <CAL1RGDVBR49QrAbkZ0Wa9Gh98HTwjtsQbFQ4Ws3Ra7rEjT1Mng@mail.gmail.com>
+Subject: Re: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages() parameters
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-rdma@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TZfY3mT0jBz1aohPCMGpoiR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+> Sigh, what a mess ... it seems what we really want to do is know
+> if userspace might trigger a COW because or not, and only do a
+> preemptive COW in that case.  (We're not really concerned with
+> userspace fork()ing and setting up a COW in the future, since that's
+> what we have MADV_DONTFORK for)
+>
+> The status quo works for userspace anonymous mappings but
+> it doesn't work for my case of mapping a kernel buffer read-only
+> into userspace.  And fixing my case breaks the anonymous case.
+> Do you see a way out of this dilemma?  Do we need to add yet
+> another flag to get_user_pages()?
 
-On Fri, 02 Dec 2011 15:10:08 -0800
-Yinghai Lu <yinghai.lu@oracle.com> wrote:
+So thinking about this a bit more... it seems what we want is at least
+to first order that we do the equivalent of write==1 exactly when the vma
+for a mapping has VM_WRITE set (or is it VMA_MAYWRITE / force==1?
+I don't quite understand the distinction between WRITE and MAYWRITE).
 
->=20
-> One system have repeater in system board to support gen2 hotplug.
->=20
-> Found when EM is removed from some slots, /var/log/message will be full of
-> "card present/not present" warning.
->=20
-> It turns out root complex still try to train the link to repeater because
-> repeater is not reset.
->=20
-> This patch will disable link to make repeater could reset properly.
-> Also could kill AER during EM removal.
->=20
-> Recently when testing hotplug on one system under development, found if b=
-oot
-> the system without EM, and later hotplug does not work with Linux.
-> But other OS is ok.
-> The root cause is that bios left link disabled when slot is empty,
-> and other OS is playing link disable bit in link ctrl during power on/off.
->=20
-> So We could do the same thing to disable/enable link during power off/on.
->=20
-> Signed-off-by: Yinghai Lu <yinghai.lu@oracle.com>
+Right now, one call to get_user_pages() might involve more than one vma,
+but we could simulate the above by doing find_vma() and making sure our
+call to get_user_pages() goes one vma at a time.  Of course that would be
+inefficient since get_user_pages() will redo the find_vma() internally, so it
+would I guess make sense to add another FOLL_ flag to tell
+get_user_pages() to do this?
 
-Ok I had to massage that commit message quite a bit, please let me know
-if it's still accurate.
+Am I all wet, or am I becoming an MM hacker?
 
-The 100ms delay still needs to be clarified; if it's really necessary
-maybe we could move the delays into a delayed work handler?
-
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/TZfY3mT0jBz1aohPCMGpoiR
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPIt4+AAoJEIEoDkX4Qk9hRY0QALBlxf/UWdxUQ+/70o8mXZpA
-IkfV4HjlW+g1tb4tBy3gvHuDg7lsMaIOczxhlFtKFxmDK5lZ6mTXykU8/hQIoi3J
-hkcoImz7behwxw/bSbh8BKYB90rceGJt3ULCN06V6pt2sZK11nIJRAqXIBt1TjTa
-eDpWIbs+Fv3nVaXrGk8odOwj/qs2eq+FhnQi8w51rGlVtesgveJJTq5cNn0HP4o7
-SODnJrSHCqeX4uDWZrFHOQAI9hQiaD7c86XHssCToDj4zE7NilxJtS9AV0mSmH+O
-BQjoQwnWC6hS3l1DwnmNMWKMqCqEeDVfvcjv7EMLdCGEZzs40IvEovI41xkO0CZe
-abHAPAsUmEtZ1rwnX4kM2oA0hHE04XZ3fibsG2SPaulfR7KbPn7oGc2J/YG/8v77
-vsw5T+0lEWs7q3ZpmBkDKjtPngrWx6FPJJQe24V5fTUzLB64DNjsicgczW8OWWKs
-WQCkYkK0YWvanaEuXkiMjArc0YsTRkjQFnTEQhr4nW0xwYp0OTXcSSZTjGz9Y5xn
-hC0vX7scjyqTMv68Reo2vt1HNwYGgUBhv833tgkHS3V+aTFkhw/E+VMvBo9earZz
-MW76gb/2v65rcEpG4tiH6gwEdI2bH7el85/Pz5k24lo0wUCdi8j4JTVJgwTiYFr5
-ucWjuwVFL9t3fq9fzNfr
-=1WZ0
------END PGP SIGNATURE-----
-
---Sig_/TZfY3mT0jBz1aohPCMGpoiR--
+Thanks,
+  Roland
