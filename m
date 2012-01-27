@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab2A0OfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 09:35:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21892 "EHLO mx1.redhat.com"
+	id S1755861Ab2A0Of2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 09:35:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61071 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755754Ab2A0OfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 09:35:11 -0500
+	id S1755780Ab2A0OfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 09:35:19 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 6/9] perf, tool: Add parser generator for events parsing
-Date: Fri, 27 Jan 2012 15:34:25 +0100
-Message-Id: <1327674868-10486-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 8/9] perf, tool: Add perf pmu object to access pmu format definition
+Date: Fri, 27 Jan 2012 15:34:27 +0100
+Message-Id: <1327674868-10486-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1327674868-10486-1-git-send-email-jolsa@redhat.com>
 References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
  <1327674868-10486-1-git-send-email-jolsa@redhat.com>
@@ -20,211 +20,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing event parsing to use flex/bison parse generator.
-The event syntax stays as it was.
+Adding pmu object which provides interface to pmu's sysfs
+event format definition located at:
+  ${sysfs_mount}/bus/event_source/devices/${pmu}/format
 
-grammar description:
+Following interface is exported:
+  struct perf_pmu* perf_pmu__find(char *name);
+  - this function returns pmu object, which is then
+    passed as a handle to other interface functions
 
-events: events ',' event | event
+  int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+                       struct list_head *head_terms);
+  - this function configures perf_event_attr struct based
+    on pmu's format definitions and config terms data,
+    containined in head_terms list.
 
-event:  event_def PE_MODIFIER_EVENT | event_def
+Parser generator is used to retrive the pmu's format definition.
+The generated parser is part of the patch. Added makefile rule
+'pmu-parser' to generate the parser code out of the bison/flex
+sources.
 
-event_def: event_legacy_symbol sep_dc     |
-           event_legacy_cache sep_dc      |
-           event_legacy_breakpoint sep_dc |
-           event_legacy_tracepoint sep_dc |
-           event_legacy_numeric sep_dc    |
-           event_legacy_raw sep_dc
-
-event_legacy_symbol:      PE_NAME_SYM
-
-event_legacy_cache:       PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT |
-                          PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT  |
-                          PE_NAME_CACHE_TYPE
-
-event_legacy_raw:         PE_SEP_RAW PE_VALUE
-
-event_legacy_numeric:     PE_VALUE ':' PE_VALUE
-
-event_legacy_breakpoint:  PE_SEP_BP ':' PE_VALUE ':' PE_MODIFIER_BP
-
-event_breakpoint_type:    PE_MODIFIER_BPTYPE | empty
-
-PE_NAME_SYM:              cpu-cycles|cycles                              |
-                          stalled-cycles-frontend|idle-cycles-frontend   |
-                          stalled-cycles-backend|idle-cycles-backend     |
-                          instructions                                   |
-                          cache-references                               |
-                          cache-misses                                   |
-                          branch-instructions|branches                   |
-                          branch-misses                                  |
-                          bus-cycles                                     |
-                          cpu-clock                                      |
-                          task-clock                                     |
-                          page-faults|faults                             |
-                          minor-faults                                   |
-                          major-faults                                   |
-                          context-switches|cs                            |
-                          cpu-migrations|migrations                      |
-                          alignment-faults                               |
-                          emulation-faults
-
-PE_NAME_CACHE_TYPE:       L1-dcache|l1-d|l1d|L1-data             |
-                          L1-icache|l1-i|l1i|L1-instruction      |
-                          LLC|L2                                 |
-                          dTLB|d-tlb|Data-TLB                    |
-                          iTLB|i-tlb|Instruction-TLB             |
-                          branch|branches|bpu|btb|bpc            |
-                          node
-
-PE_NAME_CACHE_OP_RESULT:  load|loads|read                        |
-                          store|stores|write                     |
-                          prefetch|prefetches                    |
-                          speculative-read|speculative-load      |
-                          refs|Reference|ops|access              |
-                          misses|miss
-
-PE_MODIFIER_EVENT:        [ukhp]{0,5}
-
-PE_MODIFIER_BP:           [rwx]
-
-PE_SEP_BP:                'mem'
-
-PE_SEP_RAW:               'r'
-
-sep_dc:                   ':' |
-
-Added flex/bison files for event grammar parsing. The generated
-parser is part of the patch. Added makefile rule 'event-parser'
-to generate the parser code out of the bison/flex sources.
+Added builtin test 'Test perf pmu format parsing', which could
+be run like:
+	perf test pmu
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile                  |   17 +
- tools/perf/builtin-test.c            |    6 +-
- tools/perf/util/parse-events-bison.c | 1715 ++++++++++++++++++++++++++
- tools/perf/util/parse-events-bison.h |   79 ++
- tools/perf/util/parse-events-flex.c  | 2225 ++++++++++++++++++++++++++++++++++
- tools/perf/util/parse-events-flex.h  |  316 +++++
- tools/perf/util/parse-events.c       |  486 +++------
- tools/perf/util/parse-events.h       |   15 +
- tools/perf/util/parse-events.l       |  107 ++
- tools/perf/util/parse-events.y       |  127 ++
- 10 files changed, 4752 insertions(+), 341 deletions(-)
- create mode 100644 tools/perf/util/parse-events-bison.c
- create mode 100644 tools/perf/util/parse-events-bison.h
- create mode 100644 tools/perf/util/parse-events-flex.c
- create mode 100644 tools/perf/util/parse-events-flex.h
- create mode 100644 tools/perf/util/parse-events.l
- create mode 100644 tools/perf/util/parse-events.y
+ tools/perf/Makefile         |   12 +
+ tools/perf/builtin-test.c   |   10 +
+ tools/perf/util/pmu-bison.c | 1663 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu-bison.h |   73 ++
+ tools/perf/util/pmu-flex.c  | 1821 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu-flex.h  |  316 ++++++++
+ tools/perf/util/pmu.c       |  462 +++++++++++
+ tools/perf/util/pmu.h       |   41 +
+ tools/perf/util/pmu.l       |   43 +
+ tools/perf/util/pmu.y       |   93 +++
+ 10 files changed, 4534 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/util/pmu-bison.c
+ create mode 100644 tools/perf/util/pmu-bison.h
+ create mode 100644 tools/perf/util/pmu-flex.c
+ create mode 100644 tools/perf/util/pmu-flex.h
+ create mode 100644 tools/perf/util/pmu.c
+ create mode 100644 tools/perf/util/pmu.h
+ create mode 100644 tools/perf/util/pmu.l
+ create mode 100644 tools/perf/util/pmu.y
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f170235..ee48082 100644
+index ee48082..0b9a40e 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -47,6 +47,8 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
- 
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
-+FLEX = $(CROSS_COMPILE)flex
-+BISON= $(CROSS_COMPILE)bison
- 
- # Additional ARCH settings for x86
- ifeq ($(ARCH),i386)
-@@ -340,6 +342,8 @@ LIB_OBJS += $(OUTPUT)util/session.o
- LIB_OBJS += $(OUTPUT)util/thread.o
- LIB_OBJS += $(OUTPUT)util/thread_map.o
+@@ -259,6 +259,7 @@ LIB_H += util/build-id.h
+ LIB_H += util/debug.h
+ LIB_H += util/debugfs.h
+ LIB_H += util/sysfs.h
++LIB_H += util/pmu.h
+ LIB_H += util/event.h
+ LIB_H += util/evsel.h
+ LIB_H += util/evlist.h
+@@ -306,6 +307,7 @@ LIB_OBJS += $(OUTPUT)util/config.o
+ LIB_OBJS += $(OUTPUT)util/ctype.o
+ LIB_OBJS += $(OUTPUT)util/debugfs.o
+ LIB_OBJS += $(OUTPUT)util/sysfs.o
++LIB_OBJS += $(OUTPUT)util/pmu.o
+ LIB_OBJS += $(OUTPUT)util/environment.o
+ LIB_OBJS += $(OUTPUT)util/event.o
+ LIB_OBJS += $(OUTPUT)util/evlist.o
+@@ -344,6 +346,8 @@ LIB_OBJS += $(OUTPUT)util/thread_map.o
  LIB_OBJS += $(OUTPUT)util/trace-event-parse.o
-+LIB_OBJS += $(OUTPUT)util/parse-events-flex.o
-+LIB_OBJS += $(OUTPUT)util/parse-events-bison.o
+ LIB_OBJS += $(OUTPUT)util/parse-events-flex.o
+ LIB_OBJS += $(OUTPUT)util/parse-events-bison.o
++LIB_OBJS += $(OUTPUT)util/pmu-flex.o
++LIB_OBJS += $(OUTPUT)util/pmu-bison.o
  LIB_OBJS += $(OUTPUT)util/trace-event-read.o
  LIB_OBJS += $(OUTPUT)util/trace-event-info.o
  LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
-@@ -628,6 +632,8 @@ ifndef V
- 	QUIET_LINK     = @echo '   ' LINK $@;
- 	QUIET_MKDIR    = @echo '   ' MKDIR $@;
- 	QUIET_GEN      = @echo '   ' GEN $@;
-+	QUIET_FLEX     = @echo '   ' FLEX $@;
-+	QUIET_BISON    = @echo '   ' BISON $@;
- endif
- endif
+@@ -752,6 +756,9 @@ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/parse-events-flex.o: util/parse-events-flex.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
  
-@@ -708,6 +714,9 @@ $(OUTPUT)perf.o perf.spec \
- 	$(SCRIPTS) \
- 	: $(OUTPUT)PERF-VERSION-FILE
- 
-+.SUFFIXES:
-+.SUFFIXES: .o .c .S .s
-+
- $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
- $(OUTPUT)%.s: %.c $(OUTPUT)PERF-CFLAGS
-@@ -740,6 +749,9 @@ $(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
- $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
- 
-+$(OUTPUT)util/parse-events-flex.o: util/parse-events-flex.c $(OUTPUT)PERF-CFLAGS
++$(OUTPUT)util/pmu-flex.o: util/pmu-flex.c $(OUTPUT)PERF-CFLAGS
 +	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
 +
  $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
  
-@@ -776,6 +788,7 @@ help:
- 	@echo '  html		- make html documentation'
+@@ -789,6 +796,7 @@ help:
  	@echo '  info		- make GNU info documentation (access with info <foo>)'
  	@echo '  pdf		- make pdf documentation'
-+	@echo '  event-parser	- make event parser code'
+ 	@echo '  event-parser	- make event parser code'
++	@echo '  pmu-parser	- make pmu format parser code'
  	@echo '  TAGS		- use etags to make tag information for source browsing'
  	@echo '  tags		- use ctags to make tag information for source browsing'
  	@echo '  cscope	- use cscope to make interactive browsing database'
-@@ -826,6 +839,10 @@ cscope:
- 	$(RM) cscope*
- 	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
+@@ -843,6 +851,10 @@ event-parser:
+ 	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o util/parse-events-bison.c
+ 	$(QUIET_FLEX)$(FLEX) --header-file=util/parse-events-flex.h -t util/parse-events.l > util/parse-events-flex.c
  
-+event-parser:
-+	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o util/parse-events-bison.c
-+	$(QUIET_FLEX)$(FLEX) --header-file=util/parse-events-flex.h -t util/parse-events.l > util/parse-events-flex.c
++pmu-parser:
++	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o util/pmu-bison.c
++	$(QUIET_FLEX)$(FLEX) --header-file=util/pmu-flex.h -t util/pmu.l > util/pmu-flex.c
 +
  ### Detect prefix changes
  TRACK_CFLAGS = $(subst ','\'',$(ALL_CFLAGS)):\
               $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
 diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 70c4eb2..adf959f 100644
+index e46bf21..1969d3f 100644
 --- a/tools/perf/builtin-test.c
 +++ b/tools/perf/builtin-test.c
-@@ -650,7 +650,7 @@ static int test__checkevent_raw(struct perf_evlist *evlist)
+@@ -13,6 +13,7 @@
+ #include "util/parse-events.h"
+ #include "util/symbol.h"
+ #include "util/thread_map.h"
++#include "util/pmu.h"
+ #include "../../include/linux/hw_breakpoint.h"
  
- 	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 1 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong config", 0x1a == evsel->attr.config);
- 	return 0;
- }
+ #include <sys/mman.h>
+@@ -1483,6 +1484,11 @@ static int test__rdpmc(void)
  
-@@ -872,7 +872,7 @@ static struct test__event_st {
- 		.check = test__checkevent_tracepoint_multi,
+ #endif
+ 
++static int test__perf_pmu(void)
++{
++	return perf_pmu__test();
++}
++
+ static struct test {
+ 	const char *desc;
+ 	int (*func)(void);
+@@ -1518,6 +1524,10 @@ static struct test {
+ 		.func = test__PERF_RECORD,
  	},
  	{
--		.name  = "r1",
-+		.name  = "r1a",
- 		.check = test__checkevent_raw,
++		.desc = "Test perf pmu format parsing",
++		.func = test__perf_pmu,
++	},
++	{
+ 		.func = NULL,
  	},
- 	{
-@@ -916,7 +916,7 @@ static struct test__event_st {
- 		.check = test__checkevent_tracepoint_multi_modifier,
- 	},
- 	{
--		.name  = "r1:kp",
-+		.name  = "r1a:kp",
- 		.check = test__checkevent_raw_modifier,
- 	},
- 	{
-diff --git a/tools/perf/util/parse-events-bison.c b/tools/perf/util/parse-events-bison.c
+ };
+diff --git a/tools/perf/util/pmu-bison.c b/tools/perf/util/pmu-bison.c
 new file mode 100644
-index 0000000..20fca26
+index 0000000..343521e
 --- /dev/null
-+++ b/tools/perf/util/parse-events-bison.c
-@@ -0,0 +1,1715 @@
++++ b/tools/perf/util/pmu-bison.c
+@@ -0,0 +1,1663 @@
 +/* A Bison parser, made by GNU Bison 2.4.3.  */
 +
 +/* Skeleton implementation for Bison's Yacc-like parsers in C
@@ -290,41 +230,39 @@ index 0000000..20fca26
 +#define YYLSP_NEEDED 0
 +
 +/* Substitute the variable and function names.  */
-+#define yyparse         parse_events_parse
-+#define yylex           parse_events_lex
-+#define yyerror         parse_events_error
-+#define yylval          parse_events_lval
-+#define yychar          parse_events_char
-+#define yydebug         parse_events_debug
-+#define yynerrs         parse_events_nerrs
++#define yyparse         perf_pmu_parse
++#define yylex           perf_pmu_lex
++#define yyerror         perf_pmu_error
++#define yylval          perf_pmu_lval
++#define yychar          perf_pmu_char
++#define yydebug         perf_pmu_debug
++#define yynerrs         perf_pmu_nerrs
 +
 +
 +/* Copy the first part of user declarations.  */
 +
 +/* Line 189 of yacc.c  */
-+#line 6 "util/parse-events.y"
++#line 6 "util/pmu.y"
 +
-+
-+#define YYDEBUG 1
 +
 +#include <linux/compiler.h>
 +#include <linux/list.h>
-+#include "types.h"
-+#include "util.h"
-+#include "parse-events.h"
++#include <linux/bitmap.h>
++#include <string.h>
++#include "pmu.h"
 +
-+extern int parse_events_lex (void);
++extern int perf_pmu_lex (void);
 +
 +#define ABORT_ON(val) \
 +do { \
-+	if (val) \
-+		YYABORT; \
++        if (val) \
++                YYABORT; \
 +} while (0)
 +
 +
 +
 +/* Line 189 of yacc.c  */
-+#line 101 "util/parse-events-bison.c"
++#line 99 "util/pmu-bison.c"
 +
 +/* Enabling traces.  */
 +#ifndef YYDEBUG
@@ -351,17 +289,11 @@ index 0000000..20fca26
 +   /* Put the tokens into the symbol table, so that GDB and other debuggers
 +      know about them.  */
 +   enum yytokentype {
-+     PE_VALUE = 258,
-+     PE_VALUE_SYM = 259,
-+     PE_RAW = 260,
-+     PE_NAME = 261,
-+     PE_MODIFIER_EVENT = 262,
-+     PE_MODIFIER_BP = 263,
-+     PE_NAME_CACHE_TYPE = 264,
-+     PE_NAME_CACHE_OP_RESULT = 265,
-+     PE_PREFIX_MEM = 266,
-+     PE_PREFIX_RAW = 267,
-+     PE_ERROR = 268
++     PP_CONFIG = 258,
++     PP_CONFIG1 = 259,
++     PP_CONFIG2 = 260,
++     PP_VALUE = 261,
++     PP_ERROR = 262
 +   };
 +#endif
 +
@@ -372,15 +304,15 @@ index 0000000..20fca26
 +{
 +
 +/* Line 214 of yacc.c  */
-+#line 42 "util/parse-events.y"
++#line 31 "util/pmu.y"
 +
-+	char *str;
 +	unsigned long num;
++	DECLARE_BITMAP(bits, PERF_PMU_FORMAT_BITS);
 +
 +
 +
 +/* Line 214 of yacc.c  */
-+#line 157 "util/parse-events-bison.c"
++#line 149 "util/pmu-bison.c"
 +} YYSTYPE;
 +# define YYSTYPE_IS_TRIVIAL 1
 +# define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -392,7 +324,7 @@ index 0000000..20fca26
 +
 +
 +/* Line 264 of yacc.c  */
-+#line 169 "util/parse-events-bison.c"
++#line 161 "util/pmu-bison.c"
 +
 +#ifdef short
 +# undef short
@@ -605,22 +537,22 @@ index 0000000..20fca26
 +#endif
 +
 +/* YYFINAL -- State number of the termination state.  */
-+#define YYFINAL  20
++#define YYFINAL  9
 +/* YYLAST -- Last index in YYTABLE.  */
-+#define YYLAST   27
++#define YYLAST   17
 +
 +/* YYNTOKENS -- Number of terminals.  */
-+#define YYNTOKENS  17
++#define YYNTOKENS  11
 +/* YYNNTS -- Number of nonterminals.  */
-+#define YYNNTS  11
++#define YYNNTS  5
 +/* YYNRULES -- Number of rules.  */
-+#define YYNRULES  22
++#define YYNRULES  10
 +/* YYNRULES -- Number of states.  */
-+#define YYNSTATES  39
++#define YYNSTATES  20
 +
 +/* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 +#define YYUNDEFTOK  2
-+#define YYMAXUTOK   268
++#define YYMAXUTOK   262
 +
 +#define YYTRANSLATE(YYX)						\
 +  ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -632,8 +564,8 @@ index 0000000..20fca26
 +       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
 +       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
 +       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-+       2,     2,     2,     2,    14,    15,     2,     2,     2,     2,
-+       2,     2,     2,     2,     2,     2,     2,     2,    16,     2,
++       2,     2,     2,     2,     9,    10,     2,     2,     2,     2,
++       2,     2,     2,     2,     2,     2,     2,     2,     8,     2,
 +       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
 +       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
 +       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -654,7 +586,7 @@ index 0000000..20fca26
 +       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
 +       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
 +       2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-+       5,     6,     7,     8,     9,    10,    11,    12,    13
++       5,     6,     7
 +};
 +
 +#if YYDEBUG
@@ -662,29 +594,24 @@ index 0000000..20fca26
 +   YYRHS.  */
 +static const yytype_uint8 yyprhs[] =
 +{
-+       0,     0,     3,     7,     9,    12,    14,    17,    20,    22,
-+      25,    28,    31,    33,    39,    43,    45,    51,    55,    59,
-+      63,    65,    67
++       0,     0,     3,     6,     8,    12,    16,    20,    24,    26,
++      30
 +};
 +
 +/* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 +static const yytype_int8 yyrhs[] =
 +{
-+      18,     0,    -1,    18,    14,    19,    -1,    19,    -1,    20,
-+       7,    -1,    20,    -1,    21,    27,    -1,    22,    27,    -1,
-+      23,    -1,    24,    27,    -1,    25,    27,    -1,    26,    27,
-+      -1,     4,    -1,     9,    15,    10,    15,    10,    -1,     9,
-+      15,    10,    -1,     9,    -1,    11,     3,    16,     8,    27,
-+      -1,    11,     3,    27,    -1,     6,    16,     6,    -1,     3,
-+      16,     3,    -1,     5,    -1,    16,    -1,    -1
++      12,     0,    -1,    12,    13,    -1,    13,    -1,     3,     8,
++      14,    -1,     4,     8,    14,    -1,     5,     8,    14,    -1,
++      14,     9,    15,    -1,    15,    -1,     6,    10,     6,    -1,
++       6,    -1
 +};
 +
 +/* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 +static const yytype_uint8 yyrline[] =
 +{
-+       0,    49,    49,    49,    52,    57,    59,    60,    61,    62,
-+      63,    64,    67,    76,    81,    86,    92,    97,   103,   109,
-+     115,   120,   120
++       0,    39,    39,    41,    44,    51,    58,    66,    71,    77,
++      82
 +};
 +#endif
 +
@@ -693,13 +620,9 @@ index 0000000..20fca26
 +   First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 +static const char *const yytname[] =
 +{
-+  "$end", "error", "$undefined", "PE_VALUE", "PE_VALUE_SYM", "PE_RAW",
-+  "PE_NAME", "PE_MODIFIER_EVENT", "PE_MODIFIER_BP", "PE_NAME_CACHE_TYPE",
-+  "PE_NAME_CACHE_OP_RESULT", "PE_PREFIX_MEM", "PE_PREFIX_RAW", "PE_ERROR",
-+  "','", "'-'", "':'", "$accept", "events", "event", "event_def",
-+  "event_legacy_symbol", "event_legacy_cache", "event_legacy_mem",
-+  "event_legacy_tracepoint", "event_legacy_numeric", "event_legacy_raw",
-+  "sep_dc", 0
++  "$end", "error", "$undefined", "PP_CONFIG", "PP_CONFIG1", "PP_CONFIG2",
++  "PP_VALUE", "PP_ERROR", "':'", "','", "'-'", "$accept", "format",
++  "format_term", "bits", "bit_term", 0
 +};
 +#endif
 +
@@ -708,25 +631,23 @@ index 0000000..20fca26
 +   token YYLEX-NUM.  */
 +static const yytype_uint16 yytoknum[] =
 +{
-+       0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-+     265,   266,   267,   268,    44,    45,    58
++       0,   256,   257,   258,   259,   260,   261,   262,    58,    44,
++      45
 +};
 +# endif
 +
 +/* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 +static const yytype_uint8 yyr1[] =
 +{
-+       0,    17,    18,    18,    19,    19,    20,    20,    20,    20,
-+      20,    20,    21,    22,    22,    22,    23,    23,    24,    25,
-+      26,    27,    27
++       0,    11,    12,    12,    13,    13,    13,    14,    14,    15,
++      15
 +};
 +
 +/* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
 +static const yytype_uint8 yyr2[] =
 +{
-+       0,     2,     3,     1,     2,     1,     2,     2,     1,     2,
-+       2,     2,     1,     5,     3,     1,     5,     3,     3,     3,
-+       1,     1,     0
++       0,     2,     2,     1,     3,     3,     3,     3,     1,     3,
++       1
 +};
 +
 +/* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -734,35 +655,29 @@ index 0000000..20fca26
 +   means the default is an error.  */
 +static const yytype_uint8 yydefact[] =
 +{
-+       0,     0,    12,    20,     0,    15,     0,     0,     3,     5,
-+      22,    22,     8,    22,    22,    22,     0,     0,     0,    22,
-+       1,     0,     4,    21,     6,     7,     9,    10,    11,    19,
-+      18,    14,    21,    17,     2,     0,    22,    13,    16
++       0,     0,     0,     0,     0,     3,     0,     0,     0,     1,
++       2,    10,     4,     8,     5,     6,     0,     0,     9,     7
 +};
 +
 +/* YYDEFGOTO[NTERM-NUM].  */
 +static const yytype_int8 yydefgoto[] =
 +{
-+      -1,     7,     8,     9,    10,    11,    12,    13,    14,    15,
-+      24
++      -1,     4,     5,    12,    13
 +};
 +
 +/* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
 +   STATE-NUM.  */
-+#define YYPACT_NINF -12
++#define YYPACT_NINF -7
 +static const yytype_int8 yypact[] =
 +{
-+       7,   -10,   -12,   -12,    -9,    -6,     2,     1,   -12,    10,
-+      -2,    -2,   -12,    -2,    -2,    -2,    16,    14,    11,     6,
-+     -12,     7,   -12,   -12,   -12,   -12,   -12,   -12,   -12,   -12,
-+     -12,     8,    18,   -12,   -12,    17,    -2,   -12,   -12
++       3,     1,     2,     4,     0,    -7,     5,     5,     5,    -7,
++      -7,     6,     8,    -7,     8,     8,     7,     5,    -7,    -7
 +};
 +
 +/* YYPGOTO[NTERM-NUM].  */
 +static const yytype_int8 yypgoto[] =
 +{
-+     -12,   -12,     3,   -12,   -12,   -12,   -12,   -12,   -12,   -12,
-+     -11
++      -7,    -7,    10,    -6,    -2
 +};
 +
 +/* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -772,26 +687,22 @@ index 0000000..20fca26
 +#define YYTABLE_NINF -1
 +static const yytype_uint8 yytable[] =
 +{
-+      25,    20,    26,    27,    28,    19,    16,    17,    33,    18,
-+       1,     2,     3,     4,    23,    21,     5,    22,     6,    29,
-+      30,    31,    32,    35,    34,    38,    36,    37
++       9,    14,    15,     1,     2,     3,     1,     2,     3,     6,
++       7,    11,     8,    18,    10,    19,    16,    17
 +};
 +
 +static const yytype_uint8 yycheck[] =
 +{
-+      11,     0,    13,    14,    15,     3,    16,    16,    19,    15,
-+       3,     4,     5,     6,    16,    14,     9,     7,    11,     3,
-+       6,    10,    16,    15,    21,    36,     8,    10
++       0,     7,     8,     3,     4,     5,     3,     4,     5,     8,
++       8,     6,     8,     6,     4,    17,    10,     9
 +};
 +
 +/* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
 +   symbol of state STATE-NUM.  */
 +static const yytype_uint8 yystos[] =
 +{
-+       0,     3,     4,     5,     6,     9,    11,    18,    19,    20,
-+      21,    22,    23,    24,    25,    26,    16,    16,    15,     3,
-+       0,    14,     7,    16,    27,    27,    27,    27,    27,     3,
-+       6,    10,    16,    27,    19,    15,     8,    10,    27
++       0,     3,     4,     5,    12,    13,     8,     8,     8,     0,
++      13,     6,    14,    15,    14,    14,    10,     9,     6,    15
 +};
 +
 +#define yyerrok		(yyerrstatus = 0)
@@ -833,7 +744,7 @@ index 0000000..20fca26
 +    }								\
 +  else								\
 +    {								\
-+      yyerror (list, idx, YY_("syntax error: cannot back up")); \
++      yyerror (format, name, YY_("syntax error: cannot back up")); \
 +      YYERROR;							\
 +    }								\
 +while (YYID (0))
@@ -913,7 +824,7 @@ index 0000000..20fca26
 +    {									  \
 +      YYFPRINTF (stderr, "%s ", Title);					  \
 +      yy_symbol_print (stderr,						  \
-+		  Type, Value, list, idx); \
++		  Type, Value, format, name); \
 +      YYFPRINTF (stderr, "\n");						  \
 +    }									  \
 +} while (YYID (0))
@@ -927,21 +838,21 @@ index 0000000..20fca26
 +#if (defined __STDC__ || defined __C99__FUNC__ \
 +     || defined __cplusplus || defined _MSC_VER)
 +static void
-+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, struct list_head *list, int *idx)
++yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, struct list_head *format, char *name)
 +#else
 +static void
-+yy_symbol_value_print (yyoutput, yytype, yyvaluep, list, idx)
++yy_symbol_value_print (yyoutput, yytype, yyvaluep, format, name)
 +    FILE *yyoutput;
 +    int yytype;
 +    YYSTYPE const * const yyvaluep;
-+    struct list_head *list;
-+    int *idx;
++    struct list_head *format;
++    char *name;
 +#endif
 +{
 +  if (!yyvaluep)
 +    return;
-+  YYUSE (list);
-+  YYUSE (idx);
++  YYUSE (format);
++  YYUSE (name);
 +# ifdef YYPRINT
 +  if (yytype < YYNTOKENS)
 +    YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
@@ -963,15 +874,15 @@ index 0000000..20fca26
 +#if (defined __STDC__ || defined __C99__FUNC__ \
 +     || defined __cplusplus || defined _MSC_VER)
 +static void
-+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, struct list_head *list, int *idx)
++yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, struct list_head *format, char *name)
 +#else
 +static void
-+yy_symbol_print (yyoutput, yytype, yyvaluep, list, idx)
++yy_symbol_print (yyoutput, yytype, yyvaluep, format, name)
 +    FILE *yyoutput;
 +    int yytype;
 +    YYSTYPE const * const yyvaluep;
-+    struct list_head *list;
-+    int *idx;
++    struct list_head *format;
++    char *name;
 +#endif
 +{
 +  if (yytype < YYNTOKENS)
@@ -979,7 +890,7 @@ index 0000000..20fca26
 +  else
 +    YYFPRINTF (yyoutput, "nterm %s (", yytname[yytype]);
 +
-+  yy_symbol_value_print (yyoutput, yytype, yyvaluep, list, idx);
++  yy_symbol_value_print (yyoutput, yytype, yyvaluep, format, name);
 +  YYFPRINTF (yyoutput, ")");
 +}
 +
@@ -1022,14 +933,14 @@ index 0000000..20fca26
 +#if (defined __STDC__ || defined __C99__FUNC__ \
 +     || defined __cplusplus || defined _MSC_VER)
 +static void
-+yy_reduce_print (YYSTYPE *yyvsp, int yyrule, struct list_head *list, int *idx)
++yy_reduce_print (YYSTYPE *yyvsp, int yyrule, struct list_head *format, char *name)
 +#else
 +static void
-+yy_reduce_print (yyvsp, yyrule, list, idx)
++yy_reduce_print (yyvsp, yyrule, format, name)
 +    YYSTYPE *yyvsp;
 +    int yyrule;
-+    struct list_head *list;
-+    int *idx;
++    struct list_head *format;
++    char *name;
 +#endif
 +{
 +  int yynrhs = yyr2[yyrule];
@@ -1043,7 +954,7 @@ index 0000000..20fca26
 +      YYFPRINTF (stderr, "   $%d = ", yyi + 1);
 +      yy_symbol_print (stderr, yyrhs[yyprhs[yyrule] + yyi],
 +		       &(yyvsp[(yyi + 1) - (yynrhs)])
-+		       		       , list, idx);
++		       		       , format, name);
 +      YYFPRINTF (stderr, "\n");
 +    }
 +}
@@ -1051,7 +962,7 @@ index 0000000..20fca26
 +# define YY_REDUCE_PRINT(Rule)		\
 +do {					\
 +  if (yydebug)				\
-+    yy_reduce_print (yyvsp, Rule, list, idx); \
++    yy_reduce_print (yyvsp, Rule, format, name); \
 +} while (YYID (0))
 +
 +/* Nonzero means print parse trace.  It is left uninitialized so that
@@ -1302,20 +1213,20 @@ index 0000000..20fca26
 +#if (defined __STDC__ || defined __C99__FUNC__ \
 +     || defined __cplusplus || defined _MSC_VER)
 +static void
-+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, struct list_head *list, int *idx)
++yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, struct list_head *format, char *name)
 +#else
 +static void
-+yydestruct (yymsg, yytype, yyvaluep, list, idx)
++yydestruct (yymsg, yytype, yyvaluep, format, name)
 +    const char *yymsg;
 +    int yytype;
 +    YYSTYPE *yyvaluep;
-+    struct list_head *list;
-+    int *idx;
++    struct list_head *format;
++    char *name;
 +#endif
 +{
 +  YYUSE (yyvaluep);
-+  YYUSE (list);
-+  YYUSE (idx);
++  YYUSE (format);
++  YYUSE (name);
 +
 +  if (!yymsg)
 +    yymsg = "Deleting";
@@ -1338,7 +1249,7 @@ index 0000000..20fca26
 +#endif
 +#else /* ! YYPARSE_PARAM */
 +#if defined __STDC__ || defined __cplusplus
-+int yyparse (struct list_head *list, int *idx);
++int yyparse (struct list_head *format, char *name);
 +#else
 +int yyparse ();
 +#endif
@@ -1374,12 +1285,12 @@ index 0000000..20fca26
 +#if (defined __STDC__ || defined __C99__FUNC__ \
 +     || defined __cplusplus || defined _MSC_VER)
 +int
-+yyparse (struct list_head *list, int *idx)
++yyparse (struct list_head *format, char *name)
 +#else
 +int
-+yyparse (list, idx)
-+    struct list_head *list;
-+    int *idx;
++yyparse (format, name)
++    struct list_head *format;
++    char *name;
 +#endif
 +#endif
 +{
@@ -1627,100 +1538,76 @@ index 0000000..20fca26
 +        case 4:
 +
 +/* Line 1464 of yacc.c  */
-+#line 53 "util/parse-events.y"
++#line 45 "util/pmu.y"
 +    {
-+	ABORT_ON(parse_events_modifier(list, (yyvsp[(2) - (2)].str)));
++	ABORT_ON(perf_pmu__new_format(format, name,
++				      PERF_PMU_FORMAT_VALUE_CONFIG,
++				      (yyvsp[(3) - (3)].bits)));
 +;}
 +    break;
 +
-+  case 12:
++  case 5:
 +
 +/* Line 1464 of yacc.c  */
-+#line 68 "util/parse-events.y"
++#line 52 "util/pmu.y"
 +    {
-+	int type = (yyvsp[(1) - (1)].num) >> 16;
-+	int config = (yyvsp[(1) - (1)].num) & 255;
-+
-+	ABORT_ON(parse_events_add_numeric(list, idx, type, config));
++	ABORT_ON(perf_pmu__new_format(format, name,
++				      PERF_PMU_FORMAT_VALUE_CONFIG1,
++				      (yyvsp[(3) - (3)].bits)));
 +;}
 +    break;
 +
-+  case 13:
++  case 6:
 +
 +/* Line 1464 of yacc.c  */
-+#line 77 "util/parse-events.y"
++#line 59 "util/pmu.y"
 +    {
-+	ABORT_ON(parse_events_add_cache(list, idx, (yyvsp[(1) - (5)].str), (yyvsp[(3) - (5)].str), (yyvsp[(5) - (5)].str)));
++	ABORT_ON(perf_pmu__new_format(format, name,
++				      PERF_PMU_FORMAT_VALUE_CONFIG2,
++				      (yyvsp[(3) - (3)].bits)));
 +;}
 +    break;
 +
-+  case 14:
++  case 7:
 +
 +/* Line 1464 of yacc.c  */
-+#line 82 "util/parse-events.y"
++#line 67 "util/pmu.y"
 +    {
-+	ABORT_ON(parse_events_add_cache(list, idx, (yyvsp[(1) - (3)].str), (yyvsp[(3) - (3)].str), NULL));
++	bitmap_or((yyval.bits), (yyvsp[(1) - (3)].bits), (yyvsp[(3) - (3)].bits), 64);
 +;}
 +    break;
 +
-+  case 15:
++  case 8:
 +
 +/* Line 1464 of yacc.c  */
-+#line 87 "util/parse-events.y"
++#line 72 "util/pmu.y"
 +    {
-+	ABORT_ON(parse_events_add_cache(list, idx, (yyvsp[(1) - (1)].str), NULL, NULL));
++	memcpy((yyval.bits), (yyvsp[(1) - (1)].bits), sizeof((yyvsp[(1) - (1)].bits)));
 +;}
 +    break;
 +
-+  case 16:
++  case 9:
 +
 +/* Line 1464 of yacc.c  */
-+#line 93 "util/parse-events.y"
++#line 78 "util/pmu.y"
 +    {
-+	ABORT_ON(parse_events_add_breakpoint(list, idx, (void *) (yyvsp[(2) - (5)].num), (yyvsp[(4) - (5)].str)));
++	perf_pmu__set_format((yyval.bits), (yyvsp[(1) - (3)].num), (yyvsp[(3) - (3)].num));
 +;}
 +    break;
 +
-+  case 17:
++  case 10:
 +
 +/* Line 1464 of yacc.c  */
-+#line 98 "util/parse-events.y"
++#line 83 "util/pmu.y"
 +    {
-+	ABORT_ON(parse_events_add_breakpoint(list, idx, (void *) (yyvsp[(2) - (3)].num), NULL));
-+;}
-+    break;
-+
-+  case 18:
-+
-+/* Line 1464 of yacc.c  */
-+#line 104 "util/parse-events.y"
-+    {
-+	ABORT_ON(parse_events_add_tracepoint(list, idx, (yyvsp[(1) - (3)].str), (yyvsp[(3) - (3)].str)));
-+;}
-+    break;
-+
-+  case 19:
-+
-+/* Line 1464 of yacc.c  */
-+#line 110 "util/parse-events.y"
-+    {
-+	ABORT_ON(parse_events_add_numeric(list, idx, (yyvsp[(1) - (3)].num), (yyvsp[(3) - (3)].num)));
-+;}
-+    break;
-+
-+  case 20:
-+
-+/* Line 1464 of yacc.c  */
-+#line 116 "util/parse-events.y"
-+    {
-+	ABORT_ON(parse_events_add_numeric(list, idx, PERF_TYPE_RAW, (yyvsp[(1) - (1)].num)));
++	perf_pmu__set_format((yyval.bits), (yyvsp[(1) - (1)].num), 0);
 +;}
 +    break;
 +
 +
 +
 +/* Line 1464 of yacc.c  */
-+#line 1497 "util/parse-events-bison.c"
++#line 1444 "util/pmu-bison.c"
 +      default: break;
 +    }
 +  YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1755,7 +1642,7 @@ index 0000000..20fca26
 +    {
 +      ++yynerrs;
 +#if ! YYERROR_VERBOSE
-+      yyerror (list, idx, YY_("syntax error"));
++      yyerror (format, name, YY_("syntax error"));
 +#else
 +      {
 +	YYSIZE_T yysize = yysyntax_error (0, yystate, yychar);
@@ -1779,11 +1666,11 @@ index 0000000..20fca26
 +	if (0 < yysize && yysize <= yymsg_alloc)
 +	  {
 +	    (void) yysyntax_error (yymsg, yystate, yychar);
-+	    yyerror (list, idx, yymsg);
++	    yyerror (format, name, yymsg);
 +	  }
 +	else
 +	  {
-+	    yyerror (list, idx, YY_("syntax error"));
++	    yyerror (format, name, YY_("syntax error"));
 +	    if (yysize != 0)
 +	      goto yyexhaustedlab;
 +	  }
@@ -1807,7 +1694,7 @@ index 0000000..20fca26
 +      else
 +	{
 +	  yydestruct ("Error: discarding",
-+		      yytoken, &yylval, list, idx);
++		      yytoken, &yylval, format, name);
 +	  yychar = YYEMPTY;
 +	}
 +    }
@@ -1863,7 +1750,7 @@ index 0000000..20fca26
 +
 +
 +      yydestruct ("Error: popping",
-+		  yystos[yystate], yyvsp, list, idx);
++		  yystos[yystate], yyvsp, format, name);
 +      YYPOPSTACK (1);
 +      yystate = *yyssp;
 +      YY_STACK_PRINT (yyss, yyssp);
@@ -1898,7 +1785,7 @@ index 0000000..20fca26
 +| yyexhaustedlab -- memory exhaustion comes here.  |
 +`-------------------------------------------------*/
 +yyexhaustedlab:
-+  yyerror (list, idx, YY_("memory exhausted"));
++  yyerror (format, name, YY_("memory exhausted"));
 +  yyresult = 2;
 +  /* Fall through.  */
 +#endif
@@ -1906,7 +1793,7 @@ index 0000000..20fca26
 +yyreturn:
 +  if (yychar != YYEMPTY)
 +     yydestruct ("Cleanup: discarding lookahead",
-+		 yytoken, &yylval, list, idx);
++		 yytoken, &yylval, format, name);
 +  /* Do not reclaim the symbols of the rule which action triggered
 +     this YYABORT or YYACCEPT.  */
 +  YYPOPSTACK (yylen);
@@ -1914,7 +1801,7 @@ index 0000000..20fca26
 +  while (yyssp != yyss)
 +    {
 +      yydestruct ("Cleanup: popping",
-+		  yystos[*yyssp], yyvsp, list, idx);
++		  yystos[*yyssp], yyvsp, format, name);
 +      YYPOPSTACK (1);
 +    }
 +#ifndef yyoverflow
@@ -1932,20 +1819,21 @@ index 0000000..20fca26
 +
 +
 +/* Line 1684 of yacc.c  */
-+#line 122 "util/parse-events.y"
++#line 87 "util/pmu.y"
 +
 +
-+void parse_events_error(struct list_head *list __used, int *idx __used,
-+			char const *msg __used)
++void perf_pmu_error(struct list_head *list __used,
++		    char *name __used,
++		    char const *msg __used)
 +{
 +}
 +
-diff --git a/tools/perf/util/parse-events-bison.h b/tools/perf/util/parse-events-bison.h
+diff --git a/tools/perf/util/pmu-bison.h b/tools/perf/util/pmu-bison.h
 new file mode 100644
-index 0000000..097a632
+index 0000000..54f4a0d
 --- /dev/null
-+++ b/tools/perf/util/parse-events-bison.h
-@@ -0,0 +1,79 @@
++++ b/tools/perf/util/pmu-bison.h
+@@ -0,0 +1,73 @@
 +/* A Bison parser, made by GNU Bison 2.4.3.  */
 +
 +/* Skeleton interface for Bison's Yacc-like parsers in C
@@ -1986,17 +1874,11 @@ index 0000000..097a632
 +   /* Put the tokens into the symbol table, so that GDB and other debuggers
 +      know about them.  */
 +   enum yytokentype {
-+     PE_VALUE = 258,
-+     PE_VALUE_SYM = 259,
-+     PE_RAW = 260,
-+     PE_NAME = 261,
-+     PE_MODIFIER_EVENT = 262,
-+     PE_MODIFIER_BP = 263,
-+     PE_NAME_CACHE_TYPE = 264,
-+     PE_NAME_CACHE_OP_RESULT = 265,
-+     PE_PREFIX_MEM = 266,
-+     PE_PREFIX_RAW = 267,
-+     PE_ERROR = 268
++     PP_CONFIG = 258,
++     PP_CONFIG1 = 259,
++     PP_CONFIG2 = 260,
++     PP_VALUE = 261,
++     PP_ERROR = 262
 +   };
 +#endif
 +
@@ -2007,30 +1889,30 @@ index 0000000..097a632
 +{
 +
 +/* Line 1685 of yacc.c  */
-+#line 42 "util/parse-events.y"
++#line 31 "util/pmu.y"
 +
-+	char *str;
 +	unsigned long num;
++	DECLARE_BITMAP(bits, PERF_PMU_FORMAT_BITS);
 +
 +
 +
 +/* Line 1685 of yacc.c  */
-+#line 71 "util/parse-events-bison.h"
++#line 65 "util/pmu-bison.h"
 +} YYSTYPE;
 +# define YYSTYPE_IS_TRIVIAL 1
 +# define yystype YYSTYPE /* obsolescent; will be withdrawn */
 +# define YYSTYPE_IS_DECLARED 1
 +#endif
 +
-+extern YYSTYPE parse_events_lval;
++extern YYSTYPE perf_pmu_lval;
 +
 +
-diff --git a/tools/perf/util/parse-events-flex.c b/tools/perf/util/parse-events-flex.c
+diff --git a/tools/perf/util/pmu-flex.c b/tools/perf/util/pmu-flex.c
 new file mode 100644
-index 0000000..9e77ed6
+index 0000000..5a8c159
 --- /dev/null
-+++ b/tools/perf/util/parse-events-flex.c
-@@ -0,0 +1,2225 @@
++++ b/tools/perf/util/pmu-flex.c
+@@ -0,0 +1,1821 @@
 +
 +#line 3 "<stdout>"
 +
@@ -2038,24 +1920,24 @@ index 0000000..9e77ed6
 +
 +/* A lexical scanner generated by flex */
 +
-+#define yy_create_buffer parse_events__create_buffer
-+#define yy_delete_buffer parse_events__delete_buffer
-+#define yy_flex_debug parse_events__flex_debug
-+#define yy_init_buffer parse_events__init_buffer
-+#define yy_flush_buffer parse_events__flush_buffer
-+#define yy_load_buffer_state parse_events__load_buffer_state
-+#define yy_switch_to_buffer parse_events__switch_to_buffer
-+#define yyin parse_events_in
-+#define yyleng parse_events_leng
-+#define yylex parse_events_lex
-+#define yylineno parse_events_lineno
-+#define yyout parse_events_out
-+#define yyrestart parse_events_restart
-+#define yytext parse_events_text
-+#define yywrap parse_events_wrap
-+#define yyalloc parse_events_alloc
-+#define yyrealloc parse_events_realloc
-+#define yyfree parse_events_free
++#define yy_create_buffer perf_pmu__create_buffer
++#define yy_delete_buffer perf_pmu__delete_buffer
++#define yy_flex_debug perf_pmu__flex_debug
++#define yy_init_buffer perf_pmu__init_buffer
++#define yy_flush_buffer perf_pmu__flush_buffer
++#define yy_load_buffer_state perf_pmu__load_buffer_state
++#define yy_switch_to_buffer perf_pmu__switch_to_buffer
++#define yyin perf_pmu_in
++#define yyleng perf_pmu_leng
++#define yylex perf_pmu_lex
++#define yylineno perf_pmu_lineno
++#define yyout perf_pmu_out
++#define yyrestart perf_pmu_restart
++#define yytext perf_pmu_text
++#define yywrap perf_pmu_wrap
++#define yyalloc perf_pmu_alloc
++#define yyrealloc perf_pmu_realloc
++#define yyfree perf_pmu_free
 +
 +#define FLEX_SCANNER
 +#define YY_FLEX_MAJOR_VERSION 2
@@ -2186,7 +2068,7 @@ index 0000000..9e77ed6
 +#define YY_STATE_EOF(state) (YY_END_OF_BUFFER + state + 1)
 +
 +/* Special action meaning "start processing a new file". */
-+#define YY_NEW_FILE parse_events_restart(parse_events_in  )
++#define YY_NEW_FILE perf_pmu_restart(perf_pmu_in  )
 +
 +#define YY_END_OF_BUFFER_CHAR 0
 +
@@ -2204,9 +2086,9 @@ index 0000000..9e77ed6
 +typedef struct yy_buffer_state *YY_BUFFER_STATE;
 +#endif
 +
-+extern int parse_events_leng;
++extern int perf_pmu_leng;
 +
-+extern FILE *parse_events_in, *parse_events_out;
++extern FILE *perf_pmu_in, *perf_pmu_out;
 +
 +#define EOB_ACT_CONTINUE_SCAN 0
 +#define EOB_ACT_END_OF_FILE 1
@@ -2218,13 +2100,13 @@ index 0000000..9e77ed6
 +#define yyless(n) \
 +	do \
 +		{ \
-+		/* Undo effects of setting up parse_events_text. */ \
++		/* Undo effects of setting up perf_pmu_text. */ \
 +        int yyless_macro_arg = (n); \
 +        YY_LESS_LINENO(yyless_macro_arg);\
 +		*yy_cp = (yy_hold_char); \
 +		YY_RESTORE_YY_MORE_OFFSET \
 +		(yy_c_buf_p) = yy_cp = yy_bp + yyless_macro_arg - YY_MORE_ADJ; \
-+		YY_DO_BEFORE_ACTION; /* set up parse_events_text again */ \
++		YY_DO_BEFORE_ACTION; /* set up perf_pmu_text again */ \
 +		} \
 +	while ( 0 )
 +
@@ -2292,8 +2174,8 @@ index 0000000..9e77ed6
 +	 * possible backing-up.
 +	 *
 +	 * When we actually see the EOF, we change the status to "new"
-+	 * (via parse_events_restart()), so that the user can continue scanning by
-+	 * just pointing parse_events_in at a new input file.
++	 * (via perf_pmu_restart()), so that the user can continue scanning by
++	 * just pointing perf_pmu_in at a new input file.
 +	 */
 +#define YY_BUFFER_EOF_PENDING 2
 +
@@ -2320,51 +2202,51 @@ index 0000000..9e77ed6
 + */
 +#define YY_CURRENT_BUFFER_LVALUE (yy_buffer_stack)[(yy_buffer_stack_top)]
 +
-+/* yy_hold_char holds the character lost when parse_events_text is formed. */
++/* yy_hold_char holds the character lost when perf_pmu_text is formed. */
 +static char yy_hold_char;
 +static int yy_n_chars;		/* number of characters read into yy_ch_buf */
-+int parse_events_leng;
++int perf_pmu_leng;
 +
 +/* Points to current character in buffer. */
 +static char *yy_c_buf_p = (char *) 0;
 +static int yy_init = 0;		/* whether we need to initialize */
 +static int yy_start = 0;	/* start state number */
 +
-+/* Flag which is used to allow parse_events_wrap()'s to do buffer switches
-+ * instead of setting up a fresh parse_events_in.  A bit of a hack ...
++/* Flag which is used to allow perf_pmu_wrap()'s to do buffer switches
++ * instead of setting up a fresh perf_pmu_in.  A bit of a hack ...
 + */
 +static int yy_did_buffer_switch_on_eof;
 +
-+void parse_events_restart (FILE *input_file  );
-+void parse_events__switch_to_buffer (YY_BUFFER_STATE new_buffer  );
-+YY_BUFFER_STATE parse_events__create_buffer (FILE *file,int size  );
-+void parse_events__delete_buffer (YY_BUFFER_STATE b  );
-+void parse_events__flush_buffer (YY_BUFFER_STATE b  );
-+void parse_events_push_buffer_state (YY_BUFFER_STATE new_buffer  );
-+void parse_events_pop_buffer_state (void );
++void perf_pmu_restart (FILE *input_file  );
++void perf_pmu__switch_to_buffer (YY_BUFFER_STATE new_buffer  );
++YY_BUFFER_STATE perf_pmu__create_buffer (FILE *file,int size  );
++void perf_pmu__delete_buffer (YY_BUFFER_STATE b  );
++void perf_pmu__flush_buffer (YY_BUFFER_STATE b  );
++void perf_pmu_push_buffer_state (YY_BUFFER_STATE new_buffer  );
++void perf_pmu_pop_buffer_state (void );
 +
-+static void parse_events_ensure_buffer_stack (void );
-+static void parse_events__load_buffer_state (void );
-+static void parse_events__init_buffer (YY_BUFFER_STATE b,FILE *file  );
++static void perf_pmu_ensure_buffer_stack (void );
++static void perf_pmu__load_buffer_state (void );
++static void perf_pmu__init_buffer (YY_BUFFER_STATE b,FILE *file  );
 +
-+#define YY_FLUSH_BUFFER parse_events__flush_buffer(YY_CURRENT_BUFFER )
++#define YY_FLUSH_BUFFER perf_pmu__flush_buffer(YY_CURRENT_BUFFER )
 +
-+YY_BUFFER_STATE parse_events__scan_buffer (char *base,yy_size_t size  );
-+YY_BUFFER_STATE parse_events__scan_string (yyconst char *yy_str  );
-+YY_BUFFER_STATE parse_events__scan_bytes (yyconst char *bytes,int len  );
++YY_BUFFER_STATE perf_pmu__scan_buffer (char *base,yy_size_t size  );
++YY_BUFFER_STATE perf_pmu__scan_string (yyconst char *yy_str  );
++YY_BUFFER_STATE perf_pmu__scan_bytes (yyconst char *bytes,int len  );
 +
-+void *parse_events_alloc (yy_size_t  );
-+void *parse_events_realloc (void *,yy_size_t  );
-+void parse_events_free (void *  );
++void *perf_pmu_alloc (yy_size_t  );
++void *perf_pmu_realloc (void *,yy_size_t  );
++void perf_pmu_free (void *  );
 +
-+#define yy_new_buffer parse_events__create_buffer
++#define yy_new_buffer perf_pmu__create_buffer
 +
 +#define yy_set_interactive(is_interactive) \
 +	{ \
 +	if ( ! YY_CURRENT_BUFFER ){ \
-+        parse_events_ensure_buffer_stack (); \
++        perf_pmu_ensure_buffer_stack (); \
 +		YY_CURRENT_BUFFER_LVALUE =    \
-+            parse_events__create_buffer(parse_events_in,YY_BUF_SIZE ); \
++            perf_pmu__create_buffer(perf_pmu_in,YY_BUF_SIZE ); \
 +	} \
 +	YY_CURRENT_BUFFER_LVALUE->yy_is_interactive = is_interactive; \
 +	}
@@ -2372,9 +2254,9 @@ index 0000000..9e77ed6
 +#define yy_set_bol(at_bol) \
 +	{ \
 +	if ( ! YY_CURRENT_BUFFER ){\
-+        parse_events_ensure_buffer_stack (); \
++        perf_pmu_ensure_buffer_stack (); \
 +		YY_CURRENT_BUFFER_LVALUE =    \
-+            parse_events__create_buffer(parse_events_in,YY_BUF_SIZE ); \
++            perf_pmu__create_buffer(perf_pmu_in,YY_BUF_SIZE ); \
 +	} \
 +	YY_CURRENT_BUFFER_LVALUE->yy_at_bol = at_bol; \
 +	}
@@ -2385,16 +2267,16 @@ index 0000000..9e77ed6
 +
 +typedef unsigned char YY_CHAR;
 +
-+FILE *parse_events_in = (FILE *) 0, *parse_events_out = (FILE *) 0;
++FILE *perf_pmu_in = (FILE *) 0, *perf_pmu_out = (FILE *) 0;
 +
 +typedef int yy_state_type;
 +
-+extern int parse_events_lineno;
++extern int perf_pmu_lineno;
 +
-+int parse_events_lineno = 1;
++int perf_pmu_lineno = 1;
 +
-+extern char *parse_events_text;
-+#define yytext_ptr parse_events_text
++extern char *perf_pmu_text;
++#define yytext_ptr perf_pmu_text
 +
 +static yy_state_type yy_get_previous_state (void );
 +static yy_state_type yy_try_NUL_trans (yy_state_type current_state  );
@@ -2402,17 +2284,17 @@ index 0000000..9e77ed6
 +static void yy_fatal_error (yyconst char msg[]  );
 +
 +/* Done after the current pattern has been matched and before the
-+ * corresponding action - sets up parse_events_text.
++ * corresponding action - sets up perf_pmu_text.
 + */
 +#define YY_DO_BEFORE_ACTION \
 +	(yytext_ptr) = yy_bp; \
-+	parse_events_leng = (size_t) (yy_cp - yy_bp); \
++	perf_pmu_leng = (size_t) (yy_cp - yy_bp); \
 +	(yy_hold_char) = *yy_cp; \
 +	*yy_cp = '\0'; \
 +	(yy_c_buf_p) = yy_cp;
 +
-+#define YY_NUM_RULES 44
-+#define YY_END_OF_BUFFER 45
++#define YY_NUM_RULES 10
++#define YY_END_OF_BUFFER 11
 +/* This struct is not used in this scanner,
 +   but its presence is necessary. */
 +struct yy_trans_info
@@ -2420,73 +2302,28 @@ index 0000000..9e77ed6
 +	flex_int32_t yy_verify;
 +	flex_int32_t yy_nxt;
 +	};
-+static yyconst flex_int16_t yy_accept[425] =
++static yyconst flex_int16_t yy_accept[20] =
 +    {   0,
-+        0,    0,   45,   44,   38,   41,   40,   39,   34,   34,
-+       42,   43,   38,   38,   38,   38,   38,   38,   38,   38,
-+       38,   38,   36,   38,   38,   38,   38,   38,   36,   37,
-+       38,   38,   37,   37,   38,   34,    0,   38,   38,   38,
-+       21,   38,   38,   38,   38,   38,   38,   38,   38,   38,
-+       38,   38,   15,   38,    0,   38,   38,   38,   36,    0,
-+       38,   38,   38,   38,   38,   38,   38,   38,   38,   38,
-+       38,   38,   33,   33,   38,   38,   38,   38,   35,   38,
-+       38,    0,   38,   38,   38,   24,   38,   38,   38,   38,
-+       38,   38,    0,   38,   38,   38,   36,    0,   38,   38,
-+
-+       38,    0,   19,   20,   38,   38,   38,   38,   38,   38,
-+       38,   30,   38,   38,   33,   33,   38,   38,   38,   38,
-+       38,   38,   38,    0,    0,   38,   38,   38,   38,    0,
-+       38,   38,    0,   38,    0,   22,   38,   38,   36,    0,
-+       23,   38,   38,   19,   20,   26,   38,   32,   38,   38,
-+       31,   25,   38,   38,   26,   38,   38,   38,   38,   38,
-+        0,   38,    0,    0,    0,    0,   38,   38,   38,   38,
-+        0,   38,   38,    0,    0,   38,   22,   38,   38,   36,
-+       23,    0,   38,   26,   38,   38,   38,   38,    0,   38,
-+       38,   38,   27,    0,   27,    0,   38,    0,    0,    0,
-+
-+        0,   38,   38,   24,    0,    0,   38,    0,    0,    0,
-+        1,   38,   12,    0,   38,    0,   38,    0,   31,    0,
-+       38,   38,   38,    0,    0,   38,    0,    0,    0,   38,
-+       38,    0,   38,    0,    0,    0,   38,    0,    0,    0,
-+       38,    0,   38,    0,   38,    0,    0,   38,   38,   38,
-+        0,   38,    0,    0,    0,   38,   38,    0,    0,    7,
-+        0,    0,    0,    0,    0,    0,    0,   38,    0,   38,
-+        0,   38,    0,    0,   28,   38,    0,    0,   38,    0,
-+       38,    0,    0,    0,    0,    0,    0,   10,    0,    0,
-+       38,    0,   38,    0,   38,    0,    0,   38,   38,    0,
-+
-+        0,   38,    0,    0,    0,    0,    9,    0,    0,    0,
-+        1,    0,    0,    0,   38,    0,   16,    0,    0,   28,
-+       38,    0,   11,   38,    0,    0,    0,    0,    0,    0,
-+        0,    0,    0,    0,   38,    0,    0,   12,   38,    0,
-+        0,    0,    0,    0,    0,    6,    0,    0,    0,    0,
-+        0,    4,   14,   13,    0,    0,    0,    0,    0,    0,
-+        8,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-+        0,    0,    0,    0,    0,   16,    0,    0,    0,    0,
-+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-+        0,    0,   17,    0,    5,   15,   18,    0,    0,   29,
-+
-+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-+        0,    0,    7,    3,    0,    0,    0,    2,    0,    0,
-+        0,    0,    0,    0
++        0,    0,   11,    8,    9,    7,    5,    1,    6,    8,
++        1,    0,    0,    0,    0,    2,    3,    4,    0
 +    } ;
 +
 +static yyconst flex_int32_t yy_ec[256] =
 +    {   0,
++        1,    1,    1,    1,    1,    1,    1,    1,    1,    2,
 +        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
 +        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
 +        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
++        1,    1,    1,    3,    4,    1,    1,    5,    6,    7,
++        5,    5,    5,    5,    5,    5,    5,    8,    1,    1,
 +        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-+        1,    2,    1,    3,    4,    1,    5,    6,    7,    8,
-+        9,    9,    9,    9,    9,    9,    9,   10,    1,    1,
-+       11,    1,    2,    1,   12,   13,   14,   15,   12,   12,
-+        2,    2,   16,    2,    2,   17,    2,    2,    2,    2,
-+        2,   18,    2,   19,    2,    2,    2,    2,    2,    2,
-+        1,    1,    1,    1,    2,    1,   20,   21,   22,   23,
++        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
++        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
++        1,    1,    1,    1,    1,    1,    1,    1,    9,    1,
 +
-+       24,   25,   26,   27,   28,   29,   30,   31,   32,   33,
-+       34,   35,    2,   36,   37,   38,   39,   40,   41,   42,
-+       43,    2,    1,    1,    1,    1,    1,    1,    1,    1,
++        1,   10,   11,    1,   12,    1,    1,    1,    1,   13,
++       14,    1,    1,    1,    1,    1,    1,    1,    1,    1,
++        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
 +        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
 +        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
 +        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
@@ -2503,248 +2340,45 @@ index 0000000..9e77ed6
 +        1,    1,    1,    1,    1
 +    } ;
 +
-+static yyconst flex_int32_t yy_meta[44] =
++static yyconst flex_int32_t yy_meta[15] =
 +    {   0,
-+        1,    2,    1,    1,    1,    3,    3,    3,    3,    1,
-+        1,    3,    3,    3,    3,    2,    2,    2,    2,    3,
-+        3,    3,    3,    3,    3,    2,    2,    2,    2,    2,
-+        2,    2,    2,    2,    2,    2,    2,    2,    2,    2,
-+        2,    2,    2
++        1,    1,    1,    1,    2,    2,    2,    1,    1,    1,
++        1,    1,    1,    1
 +    } ;
 +
-+static yyconst flex_int16_t yy_base[427] =
++static yyconst flex_int16_t yy_base[21] =
 +    {   0,
-+        0,    0,  494,  495,    0,  495,  495,  495,   38,   42,
-+      495,  495,  473,  459,   45,  467,   32,   20,   40,   53,
-+      458,  469,   34,   62,   58,   58,  454,  452,   64,   98,
-+       32,  466,  449,    0,    0,   81,    0,  446,  446,  478,
-+        0,  467,  455,  457,  450,   54,  457,  455,  438,  452,
-+      440,  433,    0,  449,  432,  452,  429,  428,   97,  428,
-+      448,  433,  426,  105,  442,  432,  428,  104,  436,  421,
-+      431,  432,  431,   77,  430,   95,  416,  424,    0,  431,
-+      412,  103,  425,  424,  421,    0,  413,  441,  417,  405,
-+      438,  410,  409,  426,  407,  406,  108,  405,  422,  410,
-+
-+      395,  111,    0,    0,  409,  397,  420,  393,  394,  390,
-+      402,    0,  401,  399,   93,  116,  401,  391,  385,  390,
-+      381,  414,  381,   76,   46,  380,  378,  381,  391,  390,
-+      387,  386,  120,  385,  387,    0,  387,  368,  119,  384,
-+        0,  400,  367,  495,  495,  365,  365,  495,  380,  363,
-+      374,    0,  393,  372,  371,  355,  362,  368,  387,  366,
-+      370,  349,  349,  366,  365,  347,  359,  345,  349,  353,
-+      336,  374,  335,  113,  348,  338,  495,  336,  336,    0,
-+      495,  350,  332,    0,  366,  331,  364,  330,  341,  327,
-+      333,  339,  325,  339,    0,  343,  337,  338,  335,  334,
-+
-+      317,  321,  329,  121,  330,  119,  313,  316,  327,  322,
-+        0,  319,    0,  303,  323,  319,  315,  317,    0,  321,
-+      318,  319,  315,  306,  323,  297,  307,  306,  296,  309,
-+      297,  129,  292,  297,  299,  302,  321,  302,  292,  286,
-+      287,  298,  281,  298,  283,  296,  276,  287,  275,  308,
-+      277,  282,  285,  284,  268,  282,  267,  271,  275,    0,
-+      278,  264,  275,  262,  268,  273,  276,  262,  263,  265,
-+      253,  258,  251,  258,  264,  259,  264,  263,  250,  261,
-+      278,  244,  243,  242,  241,  253,  235,  495,  238,  236,
-+      269,  248,  237,  239,  232,  237,  229,  229,  225,  221,
-+
-+      233,  229,  223,  235,  221,  221,  495,  233,  220,  227,
-+      495,  226,  228,  215,  218,  212,    0,  211,  211,    0,
-+      223,  224,  495,  241,  216,  223,  206,  217,  203,  215,
-+      200,  203,  216,  231,  197,  196,  195,  495,  227,  199,
-+      210,  194,  188,  187,  188,  495,  191,  201,  189,  182,
-+      138,    0,  495,  495,  129,  196,  202,  185,  186,  194,
-+      495,  193,  187,  176,  181,  191,  174,  175,  184,  170,
-+      193,  167,  166,  179,  178,  495,  163,  178,  165,  178,
-+      177,  192,  158,  166,  156,  155,  154,  160,  156,  165,
-+      164,  141,  495,  152,  495,  495,  495,  161,  146,  495,
-+
-+      163,  146,  148,  147,  155,  156,  143,  139,  152,  141,
-+      143,  139,  495,  495,  148,  146,  131,  495,  131,  126,
-+      125,   81,   85,  495,  165,   68
++        0,    0,   23,   24,   24,   24,   24,    0,   24,    8,
++        0,    8,   10,    7,    7,    9,   24,   24,   24,   15
 +    } ;
 +
-+static yyconst flex_int16_t yy_def[427] =
++static yyconst flex_int16_t yy_def[21] =
 +    {   0,
-+      424,    1,  424,  424,  425,  424,  424,  424,  424,  424,
-+      424,  424,  425,  425,  425,  425,  425,  425,  425,  425,
-+      425,  425,  425,  425,  425,  425,  425,  425,  425,  425,
-+      425,  425,  425,  425,  425,  424,  426,  425,  425,  425,
-+      425,  425,  425,  425,  425,  425,  425,  425,  425,  425,
-+      425,  425,  425,  425,  424,  425,  425,  425,  425,  424,
-+      425,  425,  425,  425,  425,  425,  425,  425,  425,  425,
-+      425,  425,   30,   30,  425,  425,  425,  425,  426,  425,
-+      425,  424,  425,  425,  425,  425,  425,  425,  425,  425,
-+      425,  425,  424,  425,  425,  425,  425,  424,  425,  425,
-+
-+      425,  424,  425,  425,  425,  425,  425,  425,  425,  425,
-+      425,  425,  425,  425,   30,   30,  425,  425,  425,  425,
-+      425,  425,  425,  424,  424,  425,  425,  425,  425,  424,
-+      425,  425,  424,  425,  424,  425,  425,  425,  425,  424,
-+      425,  425,  425,  424,  424,  425,  425,  424,  425,  425,
-+      425,  425,  425,  425,   30,  425,  425,  425,  425,  425,
-+      424,  425,  424,  424,  424,  424,  425,  425,  425,  425,
-+      424,  425,  425,  424,  424,  425,  424,  425,  425,  425,
-+      424,  424,  425,  425,  425,  425,  425,  425,  424,  425,
-+      425,  425,  425,  424,  425,  424,  425,  424,  424,  424,
-+
-+      424,  425,  425,  425,  424,  424,  425,  424,  424,  424,
-+      425,  425,  425,  424,  425,  424,  425,  424,  425,  424,
-+      425,  425,  425,  424,  424,  425,  424,  424,  424,  425,
-+      425,  424,  425,  424,  424,  424,  425,  424,  424,  424,
-+      425,  424,  425,  424,  425,  424,  424,  425,  425,  425,
-+      424,  425,  424,  424,  424,  425,  425,  424,  424,  425,
-+      424,  424,  424,  424,  424,  424,  424,  425,  424,  425,
-+      424,  425,  424,  424,  425,  425,  424,  424,  425,  424,
-+      425,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      425,  424,  425,  424,  425,  424,  424,  425,  425,  424,
-+
-+      424,  425,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  425,  424,  425,  424,  424,  425,
-+      425,  424,  424,  425,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  425,  424,  424,  424,  425,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  425,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,    0,  424,  424
++       19,    1,   19,   19,   19,   19,   19,   20,   19,   19,
++       20,   19,   19,   19,   19,   19,   19,   19,    0,   19
 +    } ;
 +
-+static yyconst flex_int16_t yy_nxt[539] =
++static yyconst flex_int16_t yy_nxt[39] =
 +    {   0,
-+        4,    5,    6,    7,    8,    9,   10,   10,   10,   11,
-+       12,    5,    5,    5,   13,   14,   15,   16,    5,   17,
-+       18,   19,   20,   21,   22,    5,   23,   24,    5,   23,
-+       25,   26,   27,   28,   29,   30,   31,   32,   23,    5,
-+       33,   34,    5,   36,   36,   36,   36,   36,   36,   36,
-+       36,   40,   41,   44,   46,   47,   55,   48,   49,   50,
-+       59,   42,   45,   59,   64,   60,   75,  165,   59,   76,
-+       79,   56,   59,   51,   52,   86,   53,   66,  166,   37,
-+       61,   67,   54,   71,   62,   68,   36,   36,   36,   36,
-+       59,   65,   86,   59,   63,  163,  115,  164,   59,   72,
-+
-+       73,  116,   59,   73,   73,   73,   73,  418,  102,   73,
-+       73,   73,   73,  423,  118,  155,   73,   73,   73,   73,
-+       73,   74,   73,   97,  232,  124,   97,  103,  119,  108,
-+      125,   97,  104,  144,  139,   97,  109,  139,  145,   73,
-+      110,  174,  139,  208,  233,  180,  139,  414,  180,  422,
-+      235,  175,  112,  180,  236,  209,  258,  180,  366,  368,
-+      259,  401,  367,  421,  369,  402,   35,   35,  420,  419,
-+      418,  417,  416,  415,  414,  413,  412,  411,  410,  409,
-+      408,  407,  406,  405,  404,  403,  400,  400,  399,  398,
-+      397,  396,  395,  394,  393,  392,  391,  390,  389,  388,
-+
-+      387,  386,  385,  384,  383,  181,  382,  381,  380,  379,
-+      378,  377,  376,  375,  374,  373,  372,  145,  371,  370,
-+      365,  364,  363,  362,  361,  360,  359,  358,  357,  356,
-+      355,  354,  353,  352,  351,  350,  349,  348,  347,  346,
-+      345,  344,  343,  342,  341,  340,  339,  338,  337,  336,
-+      335,  334,  333,  332,  331,  330,  329,  328,  327,  326,
-+      325,  324,  323,  322,  321,  320,  319,  318,  317,  316,
-+      315,  314,  313,  312,  311,  310,  309,  308,  307,  306,
-+      305,  304,  303,  302,  301,  300,  299,  298,  297,  296,
-+      295,  294,  293,  292,  291,  290,  289,  288,  287,  286,
-+
-+      285,  284,  283,  282,  281,  112,  280,  145,  144,  279,
-+      278,  277,  276,  275,  274,  273,  272,  271,  270,  269,
-+      268,  267,  266,  265,  264,  263,  262,  261,  260,  257,
-+      256,  255,  254,  253,  252,  177,  251,  250,  249,  248,
-+      247,  246,  245,  244,  243,  242,  241,  240,  239,  238,
-+      237,  234,  231,  230,  229,  228,  227,  144,  226,  225,
-+      224,  195,  223,  222,  221,  220,  219,  218,  217,  216,
-+      215,  214,  213,  212,  211,  210,  207,  206,  205,  204,
-+      203,  112,  202,  201,  200,  199,  198,  197,  196,  195,
-+      194,  193,  192,  191,   73,  190,  189,  188,  187,  186,
-+
-+      185,  184,  183,  182,  181,  179,  178,  177,  176,  173,
-+      172,  171,  170,  169,  168,  167,  162,  161,  160,  159,
-+      158,  157,  156,  154,  153,  152,  151,  150,  149,  148,
-+      147,  146,  143,  142,  141,  140,  138,  137,  136,  135,
-+      134,  133,  132,  131,  130,  129,  128,  127,  126,  123,
-+      122,  121,  120,  117,   73,  114,  113,  112,  111,  107,
-+      106,  105,  101,  100,   99,   98,   96,   95,   94,   93,
-+       92,   91,   90,   89,   88,   86,   87,   85,   84,   83,
-+       41,   82,   81,   80,   78,   77,   70,   69,   58,   57,
-+       43,   39,   38,  424,    3,  424,  424,  424,  424,  424,
-+
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424
++        4,    5,    6,    7,    8,    8,    8,    9,   10,    4,
++        4,    4,    4,    4,   17,   18,   11,   16,   15,   14,
++       13,   12,   19,    3,   19,   19,   19,   19,   19,   19,
++       19,   19,   19,   19,   19,   19,   19,   19
 +    } ;
 +
-+static yyconst flex_int16_t yy_chk[539] =
++static yyconst flex_int16_t yy_chk[39] =
 +    {   0,
 +        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-+        1,    1,    1,    9,    9,    9,    9,   10,   10,   10,
-+       10,   15,   15,   17,   18,   18,   20,   18,   18,   19,
-+       23,   15,   17,   23,   25,   24,   31,  125,   23,   31,
-+      426,   20,   23,   19,   19,   46,   19,   26,  125,    9,
-+       24,   26,   19,   29,   24,   26,   36,   36,   36,   36,
-+       29,   25,   46,   29,   24,  124,   74,  124,   29,   29,
-+
-+       74,   74,   29,   30,   30,   30,   30,  423,   64,   30,
-+       30,   30,   30,  422,   76,  115,  115,   30,   30,   30,
-+       30,   30,   30,   59,  204,   82,   59,   64,   76,   68,
-+       82,   59,   64,  102,   97,   59,   68,   97,  102,  116,
-+       68,  133,   97,  174,  204,  139,   97,  421,  139,  420,
-+      206,  133,  116,  139,  206,  174,  232,  139,  351,  355,
-+      232,  392,  351,  419,  355,  392,  425,  425,  417,  416,
-+      415,  412,  411,  410,  409,  408,  407,  406,  405,  404,
-+      403,  402,  401,  399,  398,  394,  391,  390,  389,  388,
-+      387,  386,  385,  384,  383,  382,  381,  380,  379,  378,
-+
-+      377,  375,  374,  373,  372,  371,  370,  369,  368,  367,
-+      366,  365,  364,  363,  362,  360,  359,  358,  357,  356,
-+      350,  349,  348,  347,  345,  344,  343,  342,  341,  340,
-+      339,  337,  336,  335,  334,  333,  332,  331,  330,  329,
-+      328,  327,  326,  325,  324,  322,  321,  319,  318,  316,
-+      315,  314,  313,  312,  310,  309,  308,  306,  305,  304,
-+      303,  302,  301,  300,  299,  298,  297,  296,  295,  294,
-+      293,  292,  291,  290,  289,  287,  286,  285,  284,  283,
-+      282,  281,  280,  279,  278,  277,  276,  275,  274,  273,
-+      272,  271,  270,  269,  268,  267,  266,  265,  264,  263,
-+
-+      262,  261,  259,  258,  257,  256,  255,  254,  253,  252,
-+      251,  250,  249,  248,  247,  246,  245,  244,  243,  242,
-+      241,  240,  239,  238,  237,  236,  235,  234,  233,  231,
-+      230,  229,  228,  227,  226,  225,  224,  223,  222,  221,
-+      220,  218,  217,  216,  215,  214,  212,  210,  209,  208,
-+      207,  205,  203,  202,  201,  200,  199,  198,  197,  196,
-+      194,  193,  192,  191,  190,  189,  188,  187,  186,  185,
-+      183,  182,  179,  178,  176,  175,  173,  172,  171,  170,
-+      169,  168,  167,  166,  165,  164,  163,  162,  161,  160,
-+      159,  158,  157,  156,  155,  154,  153,  151,  150,  149,
-+
-+      147,  146,  143,  142,  140,  138,  137,  135,  134,  132,
-+      131,  130,  129,  128,  127,  126,  123,  122,  121,  120,
-+      119,  118,  117,  114,  113,  111,  110,  109,  108,  107,
-+      106,  105,  101,  100,   99,   98,   96,   95,   94,   93,
-+       92,   91,   90,   89,   88,   87,   85,   84,   83,   81,
-+       80,   78,   77,   75,   73,   72,   71,   70,   69,   67,
-+       66,   65,   63,   62,   61,   60,   58,   57,   56,   55,
-+       54,   52,   51,   50,   49,   48,   47,   45,   44,   43,
-+       42,   40,   39,   38,   33,   32,   28,   27,   22,   21,
-+       16,   14,   13,    3,  424,  424,  424,  424,  424,  424,
-+
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424,  424,  424,
-+      424,  424,  424,  424,  424,  424,  424,  424
++        1,    1,    1,    1,   16,   16,   20,   15,   14,   13,
++       12,   10,    3,   19,   19,   19,   19,   19,   19,   19,
++       19,   19,   19,   19,   19,   19,   19,   19
 +    } ;
 +
 +static yy_state_type yy_last_accepting_state;
 +static char *yy_last_accepting_cpos;
 +
-+extern int parse_events__flex_debug;
-+int parse_events__flex_debug = 0;
++extern int perf_pmu__flex_debug;
++int perf_pmu__flex_debug = 0;
 +
 +/* The intent behind this definition is that it'll catch
 + * any uses of REJECT which flex missed.
@@ -2753,49 +2387,28 @@ index 0000000..9e77ed6
 +#define yymore() yymore_used_but_not_detected
 +#define YY_MORE_ADJ 0
 +#define YY_RESTORE_YY_MORE_OFFSET
-+char *parse_events_text;
-+#line 1 "util/parse-events.l"
-+#line 5 "util/parse-events.l"
-+#include <errno.h>
-+#include "../perf.h"
-+#include "parse-events-bison.h"
++char *perf_pmu_text;
++#line 1 "util/pmu.l"
++#line 4 "util/pmu.l"
++#include <stdlib.h>
++#include <linux/bitops.h>
++#include "pmu.h"
++#include "pmu-bison.h"
 +
-+static int __value(char *str, int base, int token)
++static int value(int base)
 +{
 +	long num;
 +
 +	errno = 0;
-+	num = strtoul(str, NULL, base);
++	num = strtoul(perf_pmu_text, NULL, base);
 +	if (errno)
-+		return PE_ERROR;
++		return PP_ERROR;
 +
-+	parse_events_lval.num = num;
-+	return token;
++	perf_pmu_lval.num = num;
++	return PP_VALUE;
 +}
 +
-+static int value(int base)
-+{
-+	return __value(parse_events_text, base, PE_VALUE);
-+}
-+
-+static int raw(void)
-+{
-+	return __value(parse_events_text + 1, 16, PE_RAW);
-+}
-+
-+static int str(int token)
-+{
-+	parse_events_lval.str = strdup(parse_events_text);
-+	return token;
-+}
-+
-+static int sym(int type, int config)
-+{
-+	parse_events_lval.num = (type << 16) + config;
-+	return PE_VALUE_SYM;
-+}
-+
-+#line 766 "<stdout>"
++#line 497 "<stdout>"
 +
 +#define INITIAL 0
 +
@@ -2816,31 +2429,31 @@ index 0000000..9e77ed6
 +/* Accessor methods to globals.
 +   These are made visible to non-reentrant scanners for convenience. */
 +
-+int parse_events_lex_destroy (void );
++int perf_pmu_lex_destroy (void );
 +
-+int parse_events_get_debug (void );
++int perf_pmu_get_debug (void );
 +
-+void parse_events_set_debug (int debug_flag  );
++void perf_pmu_set_debug (int debug_flag  );
 +
-+YY_EXTRA_TYPE parse_events_get_extra (void );
++YY_EXTRA_TYPE perf_pmu_get_extra (void );
 +
-+void parse_events_set_extra (YY_EXTRA_TYPE user_defined  );
++void perf_pmu_set_extra (YY_EXTRA_TYPE user_defined  );
 +
-+FILE *parse_events_get_in (void );
++FILE *perf_pmu_get_in (void );
 +
-+void parse_events_set_in  (FILE * in_str  );
++void perf_pmu_set_in  (FILE * in_str  );
 +
-+FILE *parse_events_get_out (void );
++FILE *perf_pmu_get_out (void );
 +
-+void parse_events_set_out  (FILE * out_str  );
++void perf_pmu_set_out  (FILE * out_str  );
 +
-+int parse_events_get_leng (void );
++int perf_pmu_get_leng (void );
 +
-+char *parse_events_get_text (void );
++char *perf_pmu_get_text (void );
 +
-+int parse_events_get_lineno (void );
++int perf_pmu_get_lineno (void );
 +
-+void parse_events_set_lineno (int line_number  );
++void perf_pmu_set_lineno (int line_number  );
 +
 +/* Macros after this point can all be overridden by user definitions in
 + * section 1.
@@ -2848,9 +2461,9 @@ index 0000000..9e77ed6
 +
 +#ifndef YY_SKIP_YYWRAP
 +#ifdef __cplusplus
-+extern "C" int parse_events_wrap (void );
++extern "C" int perf_pmu_wrap (void );
 +#else
-+extern int parse_events_wrap (void );
++extern int perf_pmu_wrap (void );
 +#endif
 +#endif
 +
@@ -2884,7 +2497,7 @@ index 0000000..9e77ed6
 +/* This used to be an fputs(), but since the string might contain NUL's,
 + * we now use fwrite().
 + */
-+#define ECHO do { if (fwrite( parse_events_text, parse_events_leng, 1, parse_events_out )) {} } while (0)
++#define ECHO do { if (fwrite( perf_pmu_text, perf_pmu_leng, 1, perf_pmu_out )) {} } while (0)
 +#endif
 +
 +/* Gets input and stuffs it into "buf".  number of characters read, or YY_NULL,
@@ -2897,18 +2510,18 @@ index 0000000..9e77ed6
 +		int c = '*'; \
 +		unsigned n; \
 +		for ( n = 0; n < max_size && \
-+			     (c = getc( parse_events_in )) != EOF && c != '\n'; ++n ) \
++			     (c = getc( perf_pmu_in )) != EOF && c != '\n'; ++n ) \
 +			buf[n] = (char) c; \
 +		if ( c == '\n' ) \
 +			buf[n++] = (char) c; \
-+		if ( c == EOF && ferror( parse_events_in ) ) \
++		if ( c == EOF && ferror( perf_pmu_in ) ) \
 +			YY_FATAL_ERROR( "input in flex scanner failed" ); \
 +		result = n; \
 +		} \
 +	else \
 +		{ \
 +		errno=0; \
-+		while ( (result = fread(buf, 1, max_size, parse_events_in))==0 && ferror(parse_events_in)) \
++		while ( (result = fread(buf, 1, max_size, perf_pmu_in))==0 && ferror(perf_pmu_in)) \
 +			{ \
 +			if( errno != EINTR) \
 +				{ \
@@ -2916,7 +2529,7 @@ index 0000000..9e77ed6
 +				break; \
 +				} \
 +			errno=0; \
-+			clearerr(parse_events_in); \
++			clearerr(perf_pmu_in); \
 +			} \
 +		}\
 +\
@@ -2949,12 +2562,12 @@ index 0000000..9e77ed6
 +#ifndef YY_DECL
 +#define YY_DECL_IS_OURS 1
 +
-+extern int parse_events_lex (void);
++extern int perf_pmu_lex (void);
 +
-+#define YY_DECL int parse_events_lex (void)
++#define YY_DECL int perf_pmu_lex (void)
 +#endif /* !YY_DECL */
 +
-+/* Code executed at the beginning of each rule, after parse_events_text and parse_events_leng
++/* Code executed at the beginning of each rule, after perf_pmu_text and perf_pmu_leng
 + * have been set up.
 + */
 +#ifndef YY_USER_ACTION
@@ -2977,9 +2590,10 @@ index 0000000..9e77ed6
 +	register char *yy_cp, *yy_bp;
 +	register int yy_act;
 +    
-+#line 53 "util/parse-events.l"
++#line 26 "util/pmu.l"
 +
-+#line 950 "<stdout>"
++
++#line 682 "<stdout>"
 +
 +	if ( !(yy_init) )
 +		{
@@ -2992,26 +2606,26 @@ index 0000000..9e77ed6
 +		if ( ! (yy_start) )
 +			(yy_start) = 1;	/* first start state */
 +
-+		if ( ! parse_events_in )
-+			parse_events_in = stdin;
++		if ( ! perf_pmu_in )
++			perf_pmu_in = stdin;
 +
-+		if ( ! parse_events_out )
-+			parse_events_out = stdout;
++		if ( ! perf_pmu_out )
++			perf_pmu_out = stdout;
 +
 +		if ( ! YY_CURRENT_BUFFER ) {
-+			parse_events_ensure_buffer_stack ();
++			perf_pmu_ensure_buffer_stack ();
 +			YY_CURRENT_BUFFER_LVALUE =
-+				parse_events__create_buffer(parse_events_in,YY_BUF_SIZE );
++				perf_pmu__create_buffer(perf_pmu_in,YY_BUF_SIZE );
 +		}
 +
-+		parse_events__load_buffer_state( );
++		perf_pmu__load_buffer_state( );
 +		}
 +
 +	while ( 1 )		/* loops until end-of-file is reached */
 +		{
 +		yy_cp = (yy_c_buf_p);
 +
-+		/* Support of parse_events_text. */
++		/* Support of perf_pmu_text. */
 +		*yy_cp = (yy_hold_char);
 +
 +		/* yy_bp points to the position in yy_ch_buf of the start of
@@ -3032,13 +2646,13 @@ index 0000000..9e77ed6
 +			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 +				{
 +				yy_current_state = (int) yy_def[yy_current_state];
-+				if ( yy_current_state >= 425 )
++				if ( yy_current_state >= 20 )
 +					yy_c = yy_meta[(unsigned int) yy_c];
 +				}
 +			yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 +			++yy_cp;
 +			}
-+		while ( yy_base[yy_current_state] != 495 );
++		while ( yy_base[yy_current_state] != 24 );
 +
 +yy_find_action:
 +		yy_act = yy_accept[yy_current_state];
@@ -3064,192 +2678,56 @@ index 0000000..9e77ed6
 +
 +case 1:
 +YY_RULE_SETUP
-+#line 54 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
++#line 28 "util/pmu.l"
++{ return value(10); }
 +	YY_BREAK
 +case 2:
 +YY_RULE_SETUP
-+#line 55 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
++#line 29 "util/pmu.l"
++{ return PP_CONFIG; }
 +	YY_BREAK
 +case 3:
 +YY_RULE_SETUP
-+#line 56 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
++#line 30 "util/pmu.l"
++{ return PP_CONFIG1; }
 +	YY_BREAK
 +case 4:
 +YY_RULE_SETUP
-+#line 57 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
++#line 31 "util/pmu.l"
++{ return PP_CONFIG2; }
 +	YY_BREAK
 +case 5:
 +YY_RULE_SETUP
-+#line 58 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
++#line 32 "util/pmu.l"
++{ return '-'; }
 +	YY_BREAK
 +case 6:
 +YY_RULE_SETUP
-+#line 59 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
++#line 33 "util/pmu.l"
++{ return ':'; }
 +	YY_BREAK
 +case 7:
 +YY_RULE_SETUP
-+#line 60 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
++#line 34 "util/pmu.l"
++{ return ','; }
 +	YY_BREAK
 +case 8:
 +YY_RULE_SETUP
-+#line 61 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
++#line 35 "util/pmu.l"
++{ ; }
 +	YY_BREAK
 +case 9:
++/* rule 9 can match eol */
 +YY_RULE_SETUP
-+#line 62 "util/parse-events.l"
-+{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
++#line 36 "util/pmu.l"
++{ ; }
 +	YY_BREAK
 +case 10:
 +YY_RULE_SETUP
-+#line 63 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
-+	YY_BREAK
-+case 11:
-+YY_RULE_SETUP
-+#line 64 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
-+	YY_BREAK
-+case 12:
-+YY_RULE_SETUP
-+#line 65 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
-+	YY_BREAK
-+case 13:
-+YY_RULE_SETUP
-+#line 66 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
-+	YY_BREAK
-+case 14:
-+YY_RULE_SETUP
-+#line 67 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
-+	YY_BREAK
-+case 15:
-+YY_RULE_SETUP
-+#line 68 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
-+	YY_BREAK
-+case 16:
-+YY_RULE_SETUP
-+#line 69 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
-+	YY_BREAK
-+case 17:
-+YY_RULE_SETUP
-+#line 70 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
-+	YY_BREAK
-+case 18:
-+YY_RULE_SETUP
-+#line 71 "util/parse-events.l"
-+{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
-+	YY_BREAK
-+case 19:
-+#line 74 "util/parse-events.l"
-+case 20:
-+#line 75 "util/parse-events.l"
-+case 21:
-+#line 76 "util/parse-events.l"
-+case 22:
-+#line 77 "util/parse-events.l"
-+case 23:
-+#line 78 "util/parse-events.l"
-+case 24:
-+#line 79 "util/parse-events.l"
-+case 25:
-+YY_RULE_SETUP
-+#line 79 "util/parse-events.l"
-+{ return str(PE_NAME_CACHE_TYPE); }
-+	YY_BREAK
-+case 26:
-+#line 82 "util/parse-events.l"
-+case 27:
-+#line 83 "util/parse-events.l"
-+case 28:
-+#line 84 "util/parse-events.l"
-+case 29:
-+#line 85 "util/parse-events.l"
-+case 30:
-+#line 86 "util/parse-events.l"
-+case 31:
-+YY_RULE_SETUP
-+#line 86 "util/parse-events.l"
-+{ return str(PE_NAME_CACHE_OP_RESULT); }
-+	YY_BREAK
-+case 32:
-+YY_RULE_SETUP
-+#line 88 "util/parse-events.l"
-+{ return PE_PREFIX_MEM; }
-+	YY_BREAK
-+case 33:
-+YY_RULE_SETUP
-+#line 89 "util/parse-events.l"
-+{ return raw(); }
-+	YY_BREAK
-+case 34:
-+YY_RULE_SETUP
-+#line 90 "util/parse-events.l"
-+{ return value(10); }
-+	YY_BREAK
-+case 35:
-+YY_RULE_SETUP
-+#line 91 "util/parse-events.l"
-+{ return value(16); }
-+	YY_BREAK
-+case 36:
-+YY_RULE_SETUP
-+#line 93 "util/parse-events.l"
-+{ return str(PE_MODIFIER_EVENT); }
-+	YY_BREAK
-+case 37:
-+YY_RULE_SETUP
-+#line 94 "util/parse-events.l"
-+{ return str(PE_MODIFIER_BP); }
-+	YY_BREAK
-+case 38:
-+YY_RULE_SETUP
-+#line 95 "util/parse-events.l"
-+{ return str(PE_NAME); }
-+	YY_BREAK
-+case 39:
-+YY_RULE_SETUP
-+#line 96 "util/parse-events.l"
-+{ return '/'; }
-+	YY_BREAK
-+case 40:
-+YY_RULE_SETUP
-+#line 97 "util/parse-events.l"
-+{ return '-'; }
-+	YY_BREAK
-+case 41:
-+YY_RULE_SETUP
-+#line 98 "util/parse-events.l"
-+{ return ','; }
-+	YY_BREAK
-+case 42:
-+YY_RULE_SETUP
-+#line 99 "util/parse-events.l"
-+{ return ':'; }
-+	YY_BREAK
-+case 43:
-+YY_RULE_SETUP
-+#line 100 "util/parse-events.l"
-+{ return '='; }
-+	YY_BREAK
-+case 44:
-+YY_RULE_SETUP
-+#line 102 "util/parse-events.l"
++#line 38 "util/pmu.l"
 +ECHO;
 +	YY_BREAK
-+#line 1220 "<stdout>"
++#line 816 "<stdout>"
 +case YY_STATE_EOF(INITIAL):
 +	yyterminate();
 +
@@ -3266,15 +2744,15 @@ index 0000000..9e77ed6
 +			{
 +			/* We're scanning a new file or input source.  It's
 +			 * possible that this happened because the user
-+			 * just pointed parse_events_in at a new source and called
-+			 * parse_events_lex().  If so, then we have to assure
++			 * just pointed perf_pmu_in at a new source and called
++			 * perf_pmu_lex().  If so, then we have to assure
 +			 * consistency between YY_CURRENT_BUFFER and our
 +			 * globals.  Here is the right place to do so, because
 +			 * this is the first action (other than possibly a
 +			 * back-up) that will match for the new input source.
 +			 */
 +			(yy_n_chars) = YY_CURRENT_BUFFER_LVALUE->yy_n_chars;
-+			YY_CURRENT_BUFFER_LVALUE->yy_input_file = parse_events_in;
++			YY_CURRENT_BUFFER_LVALUE->yy_input_file = perf_pmu_in;
 +			YY_CURRENT_BUFFER_LVALUE->yy_buffer_status = YY_BUFFER_NORMAL;
 +			}
 +
@@ -3327,11 +2805,11 @@ index 0000000..9e77ed6
 +				{
 +				(yy_did_buffer_switch_on_eof) = 0;
 +
-+				if ( parse_events_wrap( ) )
++				if ( perf_pmu_wrap( ) )
 +					{
 +					/* Note: because we've taken care in
 +					 * yy_get_next_buffer() to have set up
-+					 * parse_events_text, we can now set up
++					 * perf_pmu_text, we can now set up
 +					 * yy_c_buf_p so that if some total
 +					 * hoser (like flex itself) wants to
 +					 * call the scanner after we return the
@@ -3380,7 +2858,7 @@ index 0000000..9e77ed6
 +			"fatal flex scanner internal error--no action found" );
 +	} /* end of action switch */
 +		} /* end of scanning one token */
-+} /* end of parse_events_lex */
++} /* end of perf_pmu_lex */
 +
 +/* yy_get_next_buffer - try to read in a new buffer
 + *
@@ -3458,7 +2936,7 @@ index 0000000..9e77ed6
 +
 +				b->yy_ch_buf = (char *)
 +					/* Include room in for 2 EOB chars. */
-+					parse_events_realloc((void *) b->yy_ch_buf,b->yy_buf_size + 2  );
++					perf_pmu_realloc((void *) b->yy_ch_buf,b->yy_buf_size + 2  );
 +				}
 +			else
 +				/* Can't grow it, we don't own it. */
@@ -3490,7 +2968,7 @@ index 0000000..9e77ed6
 +		if ( number_to_move == YY_MORE_ADJ )
 +			{
 +			ret_val = EOB_ACT_END_OF_FILE;
-+			parse_events_restart(parse_events_in  );
++			perf_pmu_restart(perf_pmu_in  );
 +			}
 +
 +		else
@@ -3507,7 +2985,7 @@ index 0000000..9e77ed6
 +	if ((yy_size_t) ((yy_n_chars) + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size) {
 +		/* Extend the array by 50%, plus the number we really need. */
 +		yy_size_t new_size = (yy_n_chars) + number_to_move + ((yy_n_chars) >> 1);
-+		YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) parse_events_realloc((void *) YY_CURRENT_BUFFER_LVALUE->yy_ch_buf,new_size  );
++		YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) perf_pmu_realloc((void *) YY_CURRENT_BUFFER_LVALUE->yy_ch_buf,new_size  );
 +		if ( ! YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
 +			YY_FATAL_ERROR( "out of dynamic memory in yy_get_next_buffer()" );
 +	}
@@ -3541,7 +3019,7 @@ index 0000000..9e77ed6
 +		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 +			{
 +			yy_current_state = (int) yy_def[yy_current_state];
-+			if ( yy_current_state >= 425 )
++			if ( yy_current_state >= 20 )
 +				yy_c = yy_meta[(unsigned int) yy_c];
 +			}
 +		yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
@@ -3569,11 +3047,11 @@ index 0000000..9e77ed6
 +	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 +		{
 +		yy_current_state = (int) yy_def[yy_current_state];
-+		if ( yy_current_state >= 425 )
++		if ( yy_current_state >= 20 )
 +			yy_c = yy_meta[(unsigned int) yy_c];
 +		}
 +	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
-+	yy_is_jam = (yy_current_state == 424);
++	yy_is_jam = (yy_current_state == 19);
 +
 +	return yy_is_jam ? 0 : yy_current_state;
 +}
@@ -3584,7 +3062,7 @@ index 0000000..9e77ed6
 +    
 +    yy_cp = (yy_c_buf_p);
 +
-+	/* undo effects of setting up parse_events_text */
++	/* undo effects of setting up perf_pmu_text */
 +	*yy_cp = (yy_hold_char);
 +
 +	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
@@ -3656,13 +3134,13 @@ index 0000000..9e77ed6
 +					 */
 +
 +					/* Reset buffer status. */
-+					parse_events_restart(parse_events_in );
++					perf_pmu_restart(perf_pmu_in );
 +
 +					/*FALLTHROUGH*/
 +
 +				case EOB_ACT_END_OF_FILE:
 +					{
-+					if ( parse_events_wrap( ) )
++					if ( perf_pmu_wrap( ) )
 +						return EOF;
 +
 +					if ( ! (yy_did_buffer_switch_on_eof) )
@@ -3682,7 +3160,7 @@ index 0000000..9e77ed6
 +		}
 +
 +	c = *(unsigned char *) (yy_c_buf_p);	/* cast for 8-bit char's */
-+	*(yy_c_buf_p) = '\0';	/* preserve parse_events_text */
++	*(yy_c_buf_p) = '\0';	/* preserve perf_pmu_text */
 +	(yy_hold_char) = *++(yy_c_buf_p);
 +
 +	return c;
@@ -3694,32 +3172,32 @@ index 0000000..9e77ed6
 + * 
 + * @note This function does not reset the start condition to @c INITIAL .
 + */
-+    void parse_events_restart  (FILE * input_file )
++    void perf_pmu_restart  (FILE * input_file )
 +{
 +    
 +	if ( ! YY_CURRENT_BUFFER ){
-+        parse_events_ensure_buffer_stack ();
++        perf_pmu_ensure_buffer_stack ();
 +		YY_CURRENT_BUFFER_LVALUE =
-+            parse_events__create_buffer(parse_events_in,YY_BUF_SIZE );
++            perf_pmu__create_buffer(perf_pmu_in,YY_BUF_SIZE );
 +	}
 +
-+	parse_events__init_buffer(YY_CURRENT_BUFFER,input_file );
-+	parse_events__load_buffer_state( );
++	perf_pmu__init_buffer(YY_CURRENT_BUFFER,input_file );
++	perf_pmu__load_buffer_state( );
 +}
 +
 +/** Switch to a different input buffer.
 + * @param new_buffer The new input buffer.
 + * 
 + */
-+    void parse_events__switch_to_buffer  (YY_BUFFER_STATE  new_buffer )
++    void perf_pmu__switch_to_buffer  (YY_BUFFER_STATE  new_buffer )
 +{
 +    
 +	/* TODO. We should be able to replace this entire function body
 +	 * with
-+	 *		parse_events_pop_buffer_state();
-+	 *		parse_events_push_buffer_state(new_buffer);
++	 *		perf_pmu_pop_buffer_state();
++	 *		perf_pmu_push_buffer_state(new_buffer);
 +     */
-+	parse_events_ensure_buffer_stack ();
++	perf_pmu_ensure_buffer_stack ();
 +	if ( YY_CURRENT_BUFFER == new_buffer )
 +		return;
 +
@@ -3732,21 +3210,21 @@ index 0000000..9e77ed6
 +		}
 +
 +	YY_CURRENT_BUFFER_LVALUE = new_buffer;
-+	parse_events__load_buffer_state( );
++	perf_pmu__load_buffer_state( );
 +
 +	/* We don't actually know whether we did this switch during
-+	 * EOF (parse_events_wrap()) processing, but the only time this flag
-+	 * is looked at is after parse_events_wrap() is called, so it's safe
++	 * EOF (perf_pmu_wrap()) processing, but the only time this flag
++	 * is looked at is after perf_pmu_wrap() is called, so it's safe
 +	 * to go ahead and always set it.
 +	 */
 +	(yy_did_buffer_switch_on_eof) = 1;
 +}
 +
-+static void parse_events__load_buffer_state  (void)
++static void perf_pmu__load_buffer_state  (void)
 +{
 +    	(yy_n_chars) = YY_CURRENT_BUFFER_LVALUE->yy_n_chars;
 +	(yytext_ptr) = (yy_c_buf_p) = YY_CURRENT_BUFFER_LVALUE->yy_buf_pos;
-+	parse_events_in = YY_CURRENT_BUFFER_LVALUE->yy_input_file;
++	perf_pmu_in = YY_CURRENT_BUFFER_LVALUE->yy_input_file;
 +	(yy_hold_char) = *(yy_c_buf_p);
 +}
 +
@@ -3756,35 +3234,35 @@ index 0000000..9e77ed6
 + * 
 + * @return the allocated buffer state.
 + */
-+    YY_BUFFER_STATE parse_events__create_buffer  (FILE * file, int  size )
++    YY_BUFFER_STATE perf_pmu__create_buffer  (FILE * file, int  size )
 +{
 +	YY_BUFFER_STATE b;
 +    
-+	b = (YY_BUFFER_STATE) parse_events_alloc(sizeof( struct yy_buffer_state )  );
++	b = (YY_BUFFER_STATE) perf_pmu_alloc(sizeof( struct yy_buffer_state )  );
 +	if ( ! b )
-+		YY_FATAL_ERROR( "out of dynamic memory in parse_events__create_buffer()" );
++		YY_FATAL_ERROR( "out of dynamic memory in perf_pmu__create_buffer()" );
 +
 +	b->yy_buf_size = size;
 +
 +	/* yy_ch_buf has to be 2 characters longer than the size given because
 +	 * we need to put in 2 end-of-buffer characters.
 +	 */
-+	b->yy_ch_buf = (char *) parse_events_alloc(b->yy_buf_size + 2  );
++	b->yy_ch_buf = (char *) perf_pmu_alloc(b->yy_buf_size + 2  );
 +	if ( ! b->yy_ch_buf )
-+		YY_FATAL_ERROR( "out of dynamic memory in parse_events__create_buffer()" );
++		YY_FATAL_ERROR( "out of dynamic memory in perf_pmu__create_buffer()" );
 +
 +	b->yy_is_our_buffer = 1;
 +
-+	parse_events__init_buffer(b,file );
++	perf_pmu__init_buffer(b,file );
 +
 +	return b;
 +}
 +
 +/** Destroy the buffer.
-+ * @param b a buffer created with parse_events__create_buffer()
++ * @param b a buffer created with perf_pmu__create_buffer()
 + * 
 + */
-+    void parse_events__delete_buffer (YY_BUFFER_STATE  b )
++    void perf_pmu__delete_buffer (YY_BUFFER_STATE  b )
 +{
 +    
 +	if ( ! b )
@@ -3794,9 +3272,9 @@ index 0000000..9e77ed6
 +		YY_CURRENT_BUFFER_LVALUE = (YY_BUFFER_STATE) 0;
 +
 +	if ( b->yy_is_our_buffer )
-+		parse_events_free((void *) b->yy_ch_buf  );
++		perf_pmu_free((void *) b->yy_ch_buf  );
 +
-+	parse_events_free((void *) b  );
++	perf_pmu_free((void *) b  );
 +}
 +
 +#ifndef __cplusplus
@@ -3805,20 +3283,20 @@ index 0000000..9e77ed6
 +    
 +/* Initializes or reinitializes a buffer.
 + * This function is sometimes called more than once on the same buffer,
-+ * such as during a parse_events_restart() or at EOF.
++ * such as during a perf_pmu_restart() or at EOF.
 + */
-+    static void parse_events__init_buffer  (YY_BUFFER_STATE  b, FILE * file )
++    static void perf_pmu__init_buffer  (YY_BUFFER_STATE  b, FILE * file )
 +
 +{
 +	int oerrno = errno;
 +    
-+	parse_events__flush_buffer(b );
++	perf_pmu__flush_buffer(b );
 +
 +	b->yy_input_file = file;
 +	b->yy_fill_buffer = 1;
 +
-+    /* If b is the current buffer, then parse_events__init_buffer was _probably_
-+     * called from parse_events_restart() or through yy_get_next_buffer.
++    /* If b is the current buffer, then perf_pmu__init_buffer was _probably_
++     * called from perf_pmu_restart() or through yy_get_next_buffer.
 +     * In that case, we don't want to reset the lineno or column.
 +     */
 +    if (b != YY_CURRENT_BUFFER){
@@ -3835,7 +3313,7 @@ index 0000000..9e77ed6
 + * @param b the buffer state to be flushed, usually @c YY_CURRENT_BUFFER.
 + * 
 + */
-+    void parse_events__flush_buffer (YY_BUFFER_STATE  b )
++    void perf_pmu__flush_buffer (YY_BUFFER_STATE  b )
 +{
 +    	if ( ! b )
 +		return;
@@ -3855,7 +3333,7 @@ index 0000000..9e77ed6
 +	b->yy_buffer_status = YY_BUFFER_NEW;
 +
 +	if ( b == YY_CURRENT_BUFFER )
-+		parse_events__load_buffer_state( );
++		perf_pmu__load_buffer_state( );
 +}
 +
 +/** Pushes the new state onto the stack. The new state becomes
@@ -3864,14 +3342,14 @@ index 0000000..9e77ed6
 + *  @param new_buffer The new state.
 + *  
 + */
-+void parse_events_push_buffer_state (YY_BUFFER_STATE new_buffer )
++void perf_pmu_push_buffer_state (YY_BUFFER_STATE new_buffer )
 +{
 +    	if (new_buffer == NULL)
 +		return;
 +
-+	parse_events_ensure_buffer_stack();
++	perf_pmu_ensure_buffer_stack();
 +
-+	/* This block is copied from parse_events__switch_to_buffer. */
++	/* This block is copied from perf_pmu__switch_to_buffer. */
 +	if ( YY_CURRENT_BUFFER )
 +		{
 +		/* Flush out information for old buffer. */
@@ -3885,8 +3363,8 @@ index 0000000..9e77ed6
 +		(yy_buffer_stack_top)++;
 +	YY_CURRENT_BUFFER_LVALUE = new_buffer;
 +
-+	/* copied from parse_events__switch_to_buffer. */
-+	parse_events__load_buffer_state( );
++	/* copied from perf_pmu__switch_to_buffer. */
++	perf_pmu__load_buffer_state( );
 +	(yy_did_buffer_switch_on_eof) = 1;
 +}
 +
@@ -3894,18 +3372,18 @@ index 0000000..9e77ed6
 + *  The next element becomes the new top.
 + *  
 + */
-+void parse_events_pop_buffer_state (void)
++void perf_pmu_pop_buffer_state (void)
 +{
 +    	if (!YY_CURRENT_BUFFER)
 +		return;
 +
-+	parse_events__delete_buffer(YY_CURRENT_BUFFER );
++	perf_pmu__delete_buffer(YY_CURRENT_BUFFER );
 +	YY_CURRENT_BUFFER_LVALUE = NULL;
 +	if ((yy_buffer_stack_top) > 0)
 +		--(yy_buffer_stack_top);
 +
 +	if (YY_CURRENT_BUFFER) {
-+		parse_events__load_buffer_state( );
++		perf_pmu__load_buffer_state( );
 +		(yy_did_buffer_switch_on_eof) = 1;
 +	}
 +}
@@ -3913,7 +3391,7 @@ index 0000000..9e77ed6
 +/* Allocates the stack if it does not exist.
 + *  Guarantees space for at least one push.
 + */
-+static void parse_events_ensure_buffer_stack (void)
++static void perf_pmu_ensure_buffer_stack (void)
 +{
 +	int num_to_alloc;
 +    
@@ -3924,11 +3402,11 @@ index 0000000..9e77ed6
 +		 * immediate realloc on the next call.
 +         */
 +		num_to_alloc = 1;
-+		(yy_buffer_stack) = (struct yy_buffer_state**)parse_events_alloc
++		(yy_buffer_stack) = (struct yy_buffer_state**)perf_pmu_alloc
 +								(num_to_alloc * sizeof(struct yy_buffer_state*)
 +								);
 +		if ( ! (yy_buffer_stack) )
-+			YY_FATAL_ERROR( "out of dynamic memory in parse_events_ensure_buffer_stack()" );
++			YY_FATAL_ERROR( "out of dynamic memory in perf_pmu_ensure_buffer_stack()" );
 +								  
 +		memset((yy_buffer_stack), 0, num_to_alloc * sizeof(struct yy_buffer_state*));
 +				
@@ -3943,12 +3421,12 @@ index 0000000..9e77ed6
 +		int grow_size = 8 /* arbitrary grow size */;
 +
 +		num_to_alloc = (yy_buffer_stack_max) + grow_size;
-+		(yy_buffer_stack) = (struct yy_buffer_state**)parse_events_realloc
++		(yy_buffer_stack) = (struct yy_buffer_state**)perf_pmu_realloc
 +								((yy_buffer_stack),
 +								num_to_alloc * sizeof(struct yy_buffer_state*)
 +								);
 +		if ( ! (yy_buffer_stack) )
-+			YY_FATAL_ERROR( "out of dynamic memory in parse_events_ensure_buffer_stack()" );
++			YY_FATAL_ERROR( "out of dynamic memory in perf_pmu_ensure_buffer_stack()" );
 +
 +		/* zero only the new slots.*/
 +		memset((yy_buffer_stack) + (yy_buffer_stack_max), 0, grow_size * sizeof(struct yy_buffer_state*));
@@ -3962,7 +3440,7 @@ index 0000000..9e77ed6
 + * 
 + * @return the newly allocated buffer state object. 
 + */
-+YY_BUFFER_STATE parse_events__scan_buffer  (char * base, yy_size_t  size )
++YY_BUFFER_STATE perf_pmu__scan_buffer  (char * base, yy_size_t  size )
 +{
 +	YY_BUFFER_STATE b;
 +    
@@ -3972,9 +3450,9 @@ index 0000000..9e77ed6
 +		/* They forgot to leave room for the EOB's. */
 +		return 0;
 +
-+	b = (YY_BUFFER_STATE) parse_events_alloc(sizeof( struct yy_buffer_state )  );
++	b = (YY_BUFFER_STATE) perf_pmu_alloc(sizeof( struct yy_buffer_state )  );
 +	if ( ! b )
-+		YY_FATAL_ERROR( "out of dynamic memory in parse_events__scan_buffer()" );
++		YY_FATAL_ERROR( "out of dynamic memory in perf_pmu__scan_buffer()" );
 +
 +	b->yy_buf_size = size - 2;	/* "- 2" to take care of EOB's */
 +	b->yy_buf_pos = b->yy_ch_buf = base;
@@ -3986,33 +3464,33 @@ index 0000000..9e77ed6
 +	b->yy_fill_buffer = 0;
 +	b->yy_buffer_status = YY_BUFFER_NEW;
 +
-+	parse_events__switch_to_buffer(b  );
++	perf_pmu__switch_to_buffer(b  );
 +
 +	return b;
 +}
 +
-+/** Setup the input buffer state to scan a string. The next call to parse_events_lex() will
++/** Setup the input buffer state to scan a string. The next call to perf_pmu_lex() will
 + * scan from a @e copy of @a str.
 + * @param yystr a NUL-terminated string to scan
 + * 
 + * @return the newly allocated buffer state object.
 + * @note If you want to scan bytes that may contain NUL values, then use
-+ *       parse_events__scan_bytes() instead.
++ *       perf_pmu__scan_bytes() instead.
 + */
-+YY_BUFFER_STATE parse_events__scan_string (yyconst char * yystr )
++YY_BUFFER_STATE perf_pmu__scan_string (yyconst char * yystr )
 +{
 +    
-+	return parse_events__scan_bytes(yystr,strlen(yystr) );
++	return perf_pmu__scan_bytes(yystr,strlen(yystr) );
 +}
 +
-+/** Setup the input buffer state to scan the given bytes. The next call to parse_events_lex() will
++/** Setup the input buffer state to scan the given bytes. The next call to perf_pmu_lex() will
 + * scan from a @e copy of @a bytes.
 + * @param bytes the byte buffer to scan
 + * @param len the number of bytes in the buffer pointed to by @a bytes.
 + * 
 + * @return the newly allocated buffer state object.
 + */
-+YY_BUFFER_STATE parse_events__scan_bytes  (yyconst char * yybytes, int  _yybytes_len )
++YY_BUFFER_STATE perf_pmu__scan_bytes  (yyconst char * yybytes, int  _yybytes_len )
 +{
 +	YY_BUFFER_STATE b;
 +	char *buf;
@@ -4021,18 +3499,18 @@ index 0000000..9e77ed6
 +    
 +	/* Get memory for full buffer, including space for trailing EOB's. */
 +	n = _yybytes_len + 2;
-+	buf = (char *) parse_events_alloc(n  );
++	buf = (char *) perf_pmu_alloc(n  );
 +	if ( ! buf )
-+		YY_FATAL_ERROR( "out of dynamic memory in parse_events__scan_bytes()" );
++		YY_FATAL_ERROR( "out of dynamic memory in perf_pmu__scan_bytes()" );
 +
 +	for ( i = 0; i < _yybytes_len; ++i )
 +		buf[i] = yybytes[i];
 +
 +	buf[_yybytes_len] = buf[_yybytes_len+1] = YY_END_OF_BUFFER_CHAR;
 +
-+	b = parse_events__scan_buffer(buf,n );
++	b = perf_pmu__scan_buffer(buf,n );
 +	if ( ! b )
-+		YY_FATAL_ERROR( "bad buffer in parse_events__scan_bytes()" );
++		YY_FATAL_ERROR( "bad buffer in perf_pmu__scan_bytes()" );
 +
 +	/* It's okay to grow etc. this buffer, and we should throw it
 +	 * away when we're done.
@@ -4058,14 +3536,14 @@ index 0000000..9e77ed6
 +#define yyless(n) \
 +	do \
 +		{ \
-+		/* Undo effects of setting up parse_events_text. */ \
++		/* Undo effects of setting up perf_pmu_text. */ \
 +        int yyless_macro_arg = (n); \
 +        YY_LESS_LINENO(yyless_macro_arg);\
-+		parse_events_text[parse_events_leng] = (yy_hold_char); \
-+		(yy_c_buf_p) = parse_events_text + yyless_macro_arg; \
++		perf_pmu_text[perf_pmu_leng] = (yy_hold_char); \
++		(yy_c_buf_p) = perf_pmu_text + yyless_macro_arg; \
 +		(yy_hold_char) = *(yy_c_buf_p); \
 +		*(yy_c_buf_p) = '\0'; \
-+		parse_events_leng = yyless_macro_arg; \
++		perf_pmu_leng = yyless_macro_arg; \
 +		} \
 +	while ( 0 )
 +
@@ -4074,85 +3552,85 @@ index 0000000..9e77ed6
 +/** Get the current line number.
 + * 
 + */
-+int parse_events_get_lineno  (void)
++int perf_pmu_get_lineno  (void)
 +{
 +        
-+    return parse_events_lineno;
++    return perf_pmu_lineno;
 +}
 +
 +/** Get the input stream.
 + * 
 + */
-+FILE *parse_events_get_in  (void)
++FILE *perf_pmu_get_in  (void)
 +{
-+        return parse_events_in;
++        return perf_pmu_in;
 +}
 +
 +/** Get the output stream.
 + * 
 + */
-+FILE *parse_events_get_out  (void)
++FILE *perf_pmu_get_out  (void)
 +{
-+        return parse_events_out;
++        return perf_pmu_out;
 +}
 +
 +/** Get the length of the current token.
 + * 
 + */
-+int parse_events_get_leng  (void)
++int perf_pmu_get_leng  (void)
 +{
-+        return parse_events_leng;
++        return perf_pmu_leng;
 +}
 +
 +/** Get the current token.
 + * 
 + */
 +
-+char *parse_events_get_text  (void)
++char *perf_pmu_get_text  (void)
 +{
-+        return parse_events_text;
++        return perf_pmu_text;
 +}
 +
 +/** Set the current line number.
 + * @param line_number
 + * 
 + */
-+void parse_events_set_lineno (int  line_number )
++void perf_pmu_set_lineno (int  line_number )
 +{
 +    
-+    parse_events_lineno = line_number;
++    perf_pmu_lineno = line_number;
 +}
 +
 +/** Set the input stream. This does not discard the current
 + * input buffer.
 + * @param in_str A readable stream.
 + * 
-+ * @see parse_events__switch_to_buffer
++ * @see perf_pmu__switch_to_buffer
 + */
-+void parse_events_set_in (FILE *  in_str )
++void perf_pmu_set_in (FILE *  in_str )
 +{
-+        parse_events_in = in_str ;
++        perf_pmu_in = in_str ;
 +}
 +
-+void parse_events_set_out (FILE *  out_str )
++void perf_pmu_set_out (FILE *  out_str )
 +{
-+        parse_events_out = out_str ;
++        perf_pmu_out = out_str ;
 +}
 +
-+int parse_events_get_debug  (void)
++int perf_pmu_get_debug  (void)
 +{
-+        return parse_events__flex_debug;
++        return perf_pmu__flex_debug;
 +}
 +
-+void parse_events_set_debug (int  bdebug )
++void perf_pmu_set_debug (int  bdebug )
 +{
-+        parse_events__flex_debug = bdebug ;
++        perf_pmu__flex_debug = bdebug ;
 +}
 +
 +static int yy_init_globals (void)
 +{
 +        /* Initialization is the same as for the non-reentrant scanner.
-+     * This function is called from parse_events_lex_destroy(), so don't allocate here.
++     * This function is called from perf_pmu_lex_destroy(), so don't allocate here.
 +     */
 +
 +    (yy_buffer_stack) = 0;
@@ -4164,36 +3642,36 @@ index 0000000..9e77ed6
 +
 +/* Defined in main.c */
 +#ifdef YY_STDINIT
-+    parse_events_in = stdin;
-+    parse_events_out = stdout;
++    perf_pmu_in = stdin;
++    perf_pmu_out = stdout;
 +#else
-+    parse_events_in = (FILE *) 0;
-+    parse_events_out = (FILE *) 0;
++    perf_pmu_in = (FILE *) 0;
++    perf_pmu_out = (FILE *) 0;
 +#endif
 +
 +    /* For future reference: Set errno on error, since we are called by
-+     * parse_events_lex_init()
++     * perf_pmu_lex_init()
 +     */
 +    return 0;
 +}
 +
-+/* parse_events_lex_destroy is for both reentrant and non-reentrant scanners. */
-+int parse_events_lex_destroy  (void)
++/* perf_pmu_lex_destroy is for both reentrant and non-reentrant scanners. */
++int perf_pmu_lex_destroy  (void)
 +{
 +    
 +    /* Pop the buffer stack, destroying each element. */
 +	while(YY_CURRENT_BUFFER){
-+		parse_events__delete_buffer(YY_CURRENT_BUFFER  );
++		perf_pmu__delete_buffer(YY_CURRENT_BUFFER  );
 +		YY_CURRENT_BUFFER_LVALUE = NULL;
-+		parse_events_pop_buffer_state();
++		perf_pmu_pop_buffer_state();
 +	}
 +
 +	/* Destroy the stack itself. */
-+	parse_events_free((yy_buffer_stack) );
++	perf_pmu_free((yy_buffer_stack) );
 +	(yy_buffer_stack) = NULL;
 +
 +    /* Reset the globals. This is important in a non-reentrant scanner so the next time
-+     * parse_events_lex() is called, initialization will occur. */
++     * perf_pmu_lex() is called, initialization will occur. */
 +    yy_init_globals( );
 +
 +    return 0;
@@ -4223,12 +3701,12 @@ index 0000000..9e77ed6
 +}
 +#endif
 +
-+void *parse_events_alloc (yy_size_t  size )
++void *perf_pmu_alloc (yy_size_t  size )
 +{
 +	return (void *) malloc( size );
 +}
 +
-+void *parse_events_realloc  (void * ptr, yy_size_t  size )
++void *perf_pmu_realloc  (void * ptr, yy_size_t  size )
 +{
 +	/* The cast to (char *) in the following accommodates both
 +	 * implementations that use char* generic pointers, and those
@@ -4240,33 +3718,33 @@ index 0000000..9e77ed6
 +	return (void *) realloc( (char *) ptr, size );
 +}
 +
-+void parse_events_free (void * ptr )
++void perf_pmu_free (void * ptr )
 +{
-+	free( (char *) ptr );	/* see parse_events_realloc() for (char *) cast */
++	free( (char *) ptr );	/* see perf_pmu_realloc() for (char *) cast */
 +}
 +
 +#define YYTABLES_NAME "yytables"
 +
-+#line 102 "util/parse-events.l"
++#line 38 "util/pmu.l"
 +
 +
 +
-+int parse_events_wrap(void)
++int perf_pmu_wrap(void)
 +{
 +	return 1;
 +}
 +
-diff --git a/tools/perf/util/parse-events-flex.h b/tools/perf/util/parse-events-flex.h
+diff --git a/tools/perf/util/pmu-flex.h b/tools/perf/util/pmu-flex.h
 new file mode 100644
-index 0000000..b927f9a
+index 0000000..0a29c8a
 --- /dev/null
-+++ b/tools/perf/util/parse-events-flex.h
++++ b/tools/perf/util/pmu-flex.h
 @@ -0,0 +1,316 @@
-+#ifndef parse_events_HEADER_H
-+#define parse_events_HEADER_H 1
-+#define parse_events_IN_HEADER 1
++#ifndef perf_pmu_HEADER_H
++#define perf_pmu_HEADER_H 1
++#define perf_pmu_IN_HEADER 1
 +
-+#line 6 "util/parse-events-flex.h"
++#line 6 "util/pmu-flex.h"
 +
 +#define  YY_INT_ALIGNED short int
 +
@@ -4384,9 +3862,9 @@ index 0000000..b927f9a
 +typedef struct yy_buffer_state *YY_BUFFER_STATE;
 +#endif
 +
-+extern int parse_events_leng;
++extern int perf_pmu_leng;
 +
-+extern FILE *parse_events_in, *parse_events_out;
++extern FILE *perf_pmu_in, *perf_pmu_out;
 +
 +#ifndef YY_TYPEDEF_YY_SIZE_T
 +#define YY_TYPEDEF_YY_SIZE_T
@@ -4444,28 +3922,28 @@ index 0000000..b927f9a
 +	};
 +#endif /* !YY_STRUCT_YY_BUFFER_STATE */
 +
-+void parse_events_restart (FILE *input_file  );
-+void parse_events__switch_to_buffer (YY_BUFFER_STATE new_buffer  );
-+YY_BUFFER_STATE parse_events__create_buffer (FILE *file,int size  );
-+void parse_events__delete_buffer (YY_BUFFER_STATE b  );
-+void parse_events__flush_buffer (YY_BUFFER_STATE b  );
-+void parse_events_push_buffer_state (YY_BUFFER_STATE new_buffer  );
-+void parse_events_pop_buffer_state (void );
++void perf_pmu_restart (FILE *input_file  );
++void perf_pmu__switch_to_buffer (YY_BUFFER_STATE new_buffer  );
++YY_BUFFER_STATE perf_pmu__create_buffer (FILE *file,int size  );
++void perf_pmu__delete_buffer (YY_BUFFER_STATE b  );
++void perf_pmu__flush_buffer (YY_BUFFER_STATE b  );
++void perf_pmu_push_buffer_state (YY_BUFFER_STATE new_buffer  );
++void perf_pmu_pop_buffer_state (void );
 +
-+YY_BUFFER_STATE parse_events__scan_buffer (char *base,yy_size_t size  );
-+YY_BUFFER_STATE parse_events__scan_string (yyconst char *yy_str  );
-+YY_BUFFER_STATE parse_events__scan_bytes (yyconst char *bytes,int len  );
++YY_BUFFER_STATE perf_pmu__scan_buffer (char *base,yy_size_t size  );
++YY_BUFFER_STATE perf_pmu__scan_string (yyconst char *yy_str  );
++YY_BUFFER_STATE perf_pmu__scan_bytes (yyconst char *bytes,int len  );
 +
-+void *parse_events_alloc (yy_size_t  );
-+void *parse_events_realloc (void *,yy_size_t  );
-+void parse_events_free (void *  );
++void *perf_pmu_alloc (yy_size_t  );
++void *perf_pmu_realloc (void *,yy_size_t  );
++void perf_pmu_free (void *  );
 +
 +/* Begin user sect3 */
 +
-+extern int parse_events_lineno;
++extern int perf_pmu_lineno;
 +
-+extern char *parse_events_text;
-+#define yytext_ptr parse_events_text
++extern char *perf_pmu_text;
++#define yytext_ptr perf_pmu_text
 +
 +#ifdef YY_HEADER_EXPORT_START_CONDITIONS
 +#define INITIAL 0
@@ -4487,31 +3965,31 @@ index 0000000..b927f9a
 +/* Accessor methods to globals.
 +   These are made visible to non-reentrant scanners for convenience. */
 +
-+int parse_events_lex_destroy (void );
++int perf_pmu_lex_destroy (void );
 +
-+int parse_events_get_debug (void );
++int perf_pmu_get_debug (void );
 +
-+void parse_events_set_debug (int debug_flag  );
++void perf_pmu_set_debug (int debug_flag  );
 +
-+YY_EXTRA_TYPE parse_events_get_extra (void );
++YY_EXTRA_TYPE perf_pmu_get_extra (void );
 +
-+void parse_events_set_extra (YY_EXTRA_TYPE user_defined  );
++void perf_pmu_set_extra (YY_EXTRA_TYPE user_defined  );
 +
-+FILE *parse_events_get_in (void );
++FILE *perf_pmu_get_in (void );
 +
-+void parse_events_set_in  (FILE * in_str  );
++void perf_pmu_set_in  (FILE * in_str  );
 +
-+FILE *parse_events_get_out (void );
++FILE *perf_pmu_get_out (void );
 +
-+void parse_events_set_out  (FILE * out_str  );
++void perf_pmu_set_out  (FILE * out_str  );
 +
-+int parse_events_get_leng (void );
++int perf_pmu_get_leng (void );
 +
-+char *parse_events_get_text (void );
++char *perf_pmu_get_text (void );
 +
-+int parse_events_get_lineno (void );
++int perf_pmu_get_lineno (void );
 +
-+void parse_events_set_lineno (int line_number  );
++void perf_pmu_set_lineno (int line_number  );
 +
 +/* Macros after this point can all be overridden by user definitions in
 + * section 1.
@@ -4519,9 +3997,9 @@ index 0000000..b927f9a
 +
 +#ifndef YY_SKIP_YYWRAP
 +#ifdef __cplusplus
-+extern "C" int parse_events_wrap (void );
++extern "C" int perf_pmu_wrap (void );
 +#else
-+extern int parse_events_wrap (void );
++extern int perf_pmu_wrap (void );
 +#endif
 +#endif
 +
@@ -4553,9 +4031,9 @@ index 0000000..b927f9a
 +#ifndef YY_DECL
 +#define YY_DECL_IS_OURS 1
 +
-+extern int parse_events_lex (void);
++extern int perf_pmu_lex (void);
 +
-+#define YY_DECL int parse_events_lex (void)
++#define YY_DECL int perf_pmu_lex (void)
 +#endif /* !YY_DECL */
 +
 +/* yy_get_previous_state - get the state just before the EOB char was reached */
@@ -4572,958 +4050,673 @@ index 0000000..b927f9a
 +#undef YY_DECL
 +#endif
 +
-+#line 102 "util/parse-events.l"
++#line 38 "util/pmu.l"
 +
 +
-+#line 315 "util/parse-events-flex.h"
-+#undef parse_events_IN_HEADER
-+#endif /* parse_events_HEADER_H */
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index b029296..6e50b91 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -11,6 +11,9 @@
- #include "cache.h"
- #include "header.h"
- #include "debugfs.h"
-+#include "parse-events-flex.h"
++#line 315 "util/pmu-flex.h"
++#undef perf_pmu_IN_HEADER
++#endif /* perf_pmu_HEADER_H */
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+new file mode 100644
+index 0000000..514c82d
+--- /dev/null
++++ b/tools/perf/util/pmu.c
+@@ -0,0 +1,462 @@
 +
-+#define MAX_NAME_LEN 100
- 
- struct event_symbol {
- 	u8		type;
-@@ -19,11 +22,7 @@ struct event_symbol {
- 	const char	*alias;
- };
- 
--enum event_result {
--	EVT_FAILED,
--	EVT_HANDLED,
--	EVT_HANDLED_ALL
--};
-+int parse_events_parse(struct list_head *list, int *idx);
- 
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -354,7 +353,24 @@ const char *__event_name(int type, u64 config)
- 	return "unknown";
- }
- 
--static int parse_aliases(const char **str, const char *names[][MAX_ALIASES], int size)
-+static int add_event(struct list_head *list, int *idx,
-+		     struct perf_event_attr *attr, char *name)
++#include <linux/list.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <stdio.h>
++#include <dirent.h>
++#include "sysfs.h"
++#include "util.h"
++#include "pmu.h"
++#include "parse-events.h"
++
++int perf_pmu_parse(struct list_head *list, char *name);
++extern FILE *perf_pmu_in;
++
++static LIST_HEAD(pmus);
++
++/*
++ * Parse & process all the sysfs attributes located under
++ * the directory specified in 'dir' parameter.
++ */
++static int pmu_format_parse(char *dir, struct list_head *head)
 +{
-+	struct perf_evsel *evsel;
++	struct dirent *evt_ent;
++	DIR *format_dir;
++	int ret = 0;
 +
-+	event_attr_init(attr);
++	format_dir = opendir(dir);
++	if (!format_dir)
++		return -EINVAL;
 +
-+	evsel = perf_evsel__new(attr, (*idx)++);
-+	if (!evsel)
-+		return -ENOMEM;
++	while (!ret && (evt_ent = readdir(format_dir))) {
++		char path[PATH_MAX];
++		char *name = evt_ent->d_name;
++		FILE *file;
 +
-+	list_add_tail(&evsel->node, list);
++		if (!strcmp(name, ".") || !strcmp(name, ".."))
++			continue;
 +
-+	evsel->name = strdup(name);
++		snprintf(path, PATH_MAX, "%s/%s", dir, name);
++
++		ret = -EINVAL;
++		file = fopen(path, "r");
++		if (!file)
++			break;
++
++		perf_pmu_in = file;
++		ret = perf_pmu_parse(head, name);
++		fclose(file);
++	}
++
++	closedir(format_dir);
++	return ret;
++}
++
++/*
++ * Reading/parsing the default pmu format definition, which should be
++ * located at:
++ * /sys/bus/event_source/devices/<dev>/format as sysfs group attributes.
++ */
++static int pmu_format(char *name, struct list_head *format)
++{
++	struct stat st;
++	char path[PATH_MAX];
++	const char *sysfs;
++
++	sysfs = sysfs_find_mountpoint();
++	if (!sysfs)
++		return -1;
++
++	snprintf(path, PATH_MAX,
++		 "%s/bus/event_source/devices/%s/format", sysfs, name);
++
++	if (stat(path, &st) < 0)
++		return -1;
++
++	if (pmu_format_parse(path, format))
++		return -1;
++
 +	return 0;
 +}
 +
-+static int parse_aliases(char *str, const char *names[][MAX_ALIASES], int size)
- {
- 	int i, j;
- 	int n, longest = -1;
-@@ -362,58 +378,57 @@ static int parse_aliases(const char **str, const char *names[][MAX_ALIASES], int
- 	for (i = 0; i < size; i++) {
- 		for (j = 0; j < MAX_ALIASES && names[i][j]; j++) {
- 			n = strlen(names[i][j]);
--			if (n > longest && !strncasecmp(*str, names[i][j], n))
-+			if (n > longest && !strncasecmp(str, names[i][j], n))
- 				longest = n;
- 		}
--		if (longest > 0) {
--			*str += longest;
-+		if (longest > 0)
- 			return i;
--		}
- 	}
- 
- 	return -1;
- }
- 
--static enum event_result
--parse_generic_hw_event(const char **str, struct perf_event_attr *attr)
-+int parse_events_add_cache(struct list_head *list, int *idx,
-+			   char *type, char *op_result1, char *op_result2)
- {
--	const char *s = *str;
-+	struct perf_event_attr attr;
-+	char name[MAX_NAME_LEN];
- 	int cache_type = -1, cache_op = -1, cache_result = -1;
-+	char *op_result[2] = { op_result1, op_result2 };
-+	int i, n;
- 
--	cache_type = parse_aliases(&s, hw_cache, PERF_COUNT_HW_CACHE_MAX);
- 	/*
- 	 * No fallback - if we cannot get a clear cache type
- 	 * then bail out:
- 	 */
-+	cache_type = parse_aliases(type, hw_cache,
-+				   PERF_COUNT_HW_CACHE_MAX);
- 	if (cache_type == -1)
--		return EVT_FAILED;
-+		return -EINVAL;
-+
-+	n = snprintf(name, MAX_NAME_LEN, "%s", type);
- 
--	while ((cache_op == -1 || cache_result == -1) && *s == '-') {
--		++s;
-+	for (i = 0; (i < 2) && (op_result[i]); i++) {
-+		char *str = op_result[i];
-+
-+		snprintf(name + n, MAX_NAME_LEN - n, "-%s\n", str);
- 
- 		if (cache_op == -1) {
--			cache_op = parse_aliases(&s, hw_cache_op,
--						PERF_COUNT_HW_CACHE_OP_MAX);
-+			cache_op = parse_aliases(str, hw_cache_op,
-+						 PERF_COUNT_HW_CACHE_OP_MAX);
- 			if (cache_op >= 0) {
- 				if (!is_cache_op_valid(cache_type, cache_op))
--					return EVT_FAILED;
-+					return -EINVAL;
- 				continue;
- 			}
- 		}
- 
- 		if (cache_result == -1) {
--			cache_result = parse_aliases(&s, hw_cache_result,
-+			cache_result = parse_aliases(str, hw_cache_result,
- 						PERF_COUNT_HW_CACHE_RESULT_MAX);
- 			if (cache_result >= 0)
- 				continue;
- 		}
--
--		/*
--		 * Can't parse this as a cache op or result, so back up
--		 * to the '-'.
--		 */
--		--s;
--		break;
- 	}
- 
- 	/*
-@@ -428,20 +443,17 @@ parse_generic_hw_event(const char **str, struct perf_event_attr *attr)
- 	if (cache_result == -1)
- 		cache_result = PERF_COUNT_HW_CACHE_RESULT_ACCESS;
- 
--	attr->config = cache_type | (cache_op << 8) | (cache_result << 16);
--	attr->type = PERF_TYPE_HW_CACHE;
--
--	*str = s;
--	return EVT_HANDLED;
-+	memset(&attr, 0, sizeof(attr));
-+	attr.config = cache_type | (cache_op << 8) | (cache_result << 16);
-+	attr.type = PERF_TYPE_HW_CACHE;
-+	return add_event(list, idx, &attr, name);
- }
- 
--static enum event_result
--parse_single_tracepoint_event(char *sys_name,
--			      const char *evt_name,
--			      unsigned int evt_length,
--			      struct perf_event_attr *attr,
--			      const char **strp)
-+static int add_tracepoint(struct list_head *list, int *idx,
-+			  char *sys_name, char *evt_name)
- {
-+	struct perf_event_attr attr;
-+	char name[MAX_NAME_LEN];
- 	char evt_path[MAXPATHLEN];
- 	char id_buf[4];
- 	u64 id;
-@@ -452,130 +464,80 @@ parse_single_tracepoint_event(char *sys_name,
- 
- 	fd = open(evt_path, O_RDONLY);
- 	if (fd < 0)
--		return EVT_FAILED;
-+		return -1;
- 
- 	if (read(fd, id_buf, sizeof(id_buf)) < 0) {
- 		close(fd);
--		return EVT_FAILED;
-+		return -1;
- 	}
- 
- 	close(fd);
- 	id = atoll(id_buf);
--	attr->config = id;
--	attr->type = PERF_TYPE_TRACEPOINT;
--	*strp += strlen(sys_name) + evt_length + 1; /* + 1 for the ':' */
- 
--	attr->sample_type |= PERF_SAMPLE_RAW;
--	attr->sample_type |= PERF_SAMPLE_TIME;
--	attr->sample_type |= PERF_SAMPLE_CPU;
-+	memset(&attr, 0, sizeof(attr));
-+	attr.config = id;
-+	attr.type = PERF_TYPE_TRACEPOINT;
-+	attr.sample_type |= PERF_SAMPLE_RAW;
-+	attr.sample_type |= PERF_SAMPLE_TIME;
-+	attr.sample_type |= PERF_SAMPLE_CPU;
-+	attr.sample_period = 1;
- 
--	attr->sample_period = 1;
--
--
--	return EVT_HANDLED;
-+	snprintf(name, MAX_NAME_LEN, "%s:%s", sys_name, evt_name);
-+	return add_event(list, idx, &attr, name);
- }
- 
--/* sys + ':' + event + ':' + flags*/
--#define MAX_EVOPT_LEN	(MAX_EVENT_LENGTH * 2 + 2 + 128)
--static enum event_result
--parse_multiple_tracepoint_event(struct perf_evlist *evlist, char *sys_name,
--				const char *evt_exp, char *flags)
-+static int add_tracepoint_multi(struct list_head *list, int *idx,
-+				char *sys_name, char *evt_name)
- {
- 	char evt_path[MAXPATHLEN];
- 	struct dirent *evt_ent;
- 	DIR *evt_dir;
++/*
++ * Reading/parsing the default pmu type value, which should be
++ * located at:
++ * /sys/bus/event_source/devices/<dev>/type as sysfs attribute.
++ */
++static int pmu_type(char *name, __u32 *type)
++{
++	struct stat st;
++	char path[PATH_MAX];
++	const char *sysfs;
++	FILE *file;
 +	int ret = 0;
- 
- 	snprintf(evt_path, MAXPATHLEN, "%s/%s", tracing_events_path, sys_name);
- 	evt_dir = opendir(evt_path);
--
- 	if (!evt_dir) {
- 		perror("Can't open event dir");
--		return EVT_FAILED;
++
++	sysfs = sysfs_find_mountpoint();
++	if (!sysfs)
 +		return -1;
- 	}
- 
--	while ((evt_ent = readdir(evt_dir))) {
--		char event_opt[MAX_EVOPT_LEN + 1];
--		int len;
--
-+	while (!ret && (evt_ent = readdir(evt_dir))) {
- 		if (!strcmp(evt_ent->d_name, ".")
- 		    || !strcmp(evt_ent->d_name, "..")
- 		    || !strcmp(evt_ent->d_name, "enable")
- 		    || !strcmp(evt_ent->d_name, "filter"))
- 			continue;
- 
--		if (!strglobmatch(evt_ent->d_name, evt_exp))
-+		if (!strglobmatch(evt_ent->d_name, evt_name))
- 			continue;
- 
--		len = snprintf(event_opt, MAX_EVOPT_LEN, "%s:%s%s%s", sys_name,
--			       evt_ent->d_name, flags ? ":" : "",
--			       flags ?: "");
--		if (len < 0)
--			return EVT_FAILED;
--
--		if (parse_events(evlist, event_opt, 0))
--			return EVT_FAILED;
-+		ret = add_tracepoint(list, idx, sys_name, evt_ent->d_name);
- 	}
- 
--	return EVT_HANDLED_ALL;
++
++	snprintf(path, PATH_MAX,
++		 "%s/bus/event_source/devices/%s/type", sysfs, name);
++
++	if (stat(path, &st) < 0)
++		return -1;
++
++	file = fopen(path, "r");
++	if (!file)
++		return -EINVAL;
++
++	if (1 != fscanf(file, "%u", type))
++		ret = -1;
++
++	fclose(file);
 +	return ret;
- }
- 
--static enum event_result
--parse_tracepoint_event(struct perf_evlist *evlist, const char **strp,
--		       struct perf_event_attr *attr)
-+int parse_events_add_tracepoint(struct list_head *list, int *idx,
-+				char *sys, char *event)
- {
--	const char *evt_name;
--	char *flags = NULL, *comma_loc;
--	char sys_name[MAX_EVENT_LENGTH];
--	unsigned int sys_length, evt_length;
--
--	if (debugfs_valid_mountpoint(tracing_events_path))
--		return 0;
-+	int ret;
- 
--	evt_name = strchr(*strp, ':');
--	if (!evt_name)
--		return EVT_FAILED;
-+	ret = debugfs_valid_mountpoint(tracing_events_path);
-+	if (ret)
-+		return ret;
- 
--	sys_length = evt_name - *strp;
--	if (sys_length >= MAX_EVENT_LENGTH)
--		return 0;
--
--	strncpy(sys_name, *strp, sys_length);
--	sys_name[sys_length] = '\0';
--	evt_name = evt_name + 1;
--
--	comma_loc = strchr(evt_name, ',');
--	if (comma_loc) {
--		/* take the event name up to the comma */
--		evt_name = strndup(evt_name, comma_loc - evt_name);
--	}
--	flags = strchr(evt_name, ':');
--	if (flags) {
--		/* split it out: */
--		evt_name = strndup(evt_name, flags - evt_name);
--		flags++;
--	}
--
--	evt_length = strlen(evt_name);
--	if (evt_length >= MAX_EVENT_LENGTH)
--		return EVT_FAILED;
--	if (strpbrk(evt_name, "*?")) {
--		*strp += strlen(sys_name) + evt_length + 1; /* 1 == the ':' */
--		return parse_multiple_tracepoint_event(evlist, sys_name,
--						       evt_name, flags);
--	} else {
--		return parse_single_tracepoint_event(sys_name, evt_name,
--						     evt_length, attr, strp);
--	}
-+	return strpbrk(event, "*?") ?
-+	       add_tracepoint_multi(list, idx, sys, event) :
-+	       add_tracepoint(list, idx, sys, event);
- }
- 
--static enum event_result
--parse_breakpoint_type(const char *type, const char **strp,
--		      struct perf_event_attr *attr)
-+static int
-+parse_breakpoint_type(const char *type, struct perf_event_attr *attr)
- {
- 	int i;
- 
- 	for (i = 0; i < 3; i++) {
--		if (!type[i])
-+		if (!type || !type[i])
- 			break;
- 
- 		switch (type[i]) {
-@@ -589,164 +551,65 @@ parse_breakpoint_type(const char *type, const char **strp,
- 			attr->bp_type |= HW_BREAKPOINT_X;
- 			break;
- 		default:
--			return EVT_FAILED;
-+			return -EINVAL;
- 		}
- 	}
++}
 +
- 	if (!attr->bp_type) /* Default */
- 		attr->bp_type = HW_BREAKPOINT_R | HW_BREAKPOINT_W;
- 
--	*strp = type + i;
--
--	return EVT_HANDLED;
-+	return 0;
- }
- 
--static enum event_result
--parse_breakpoint_event(const char **strp, struct perf_event_attr *attr)
-+int parse_events_add_breakpoint(struct list_head *list, int *idx,
-+				void *ptr, char *type)
- {
--	const char *target;
--	const char *type;
--	char *endaddr;
--	u64 addr;
--	enum event_result err;
--
--	target = strchr(*strp, ':');
--	if (!target)
--		return EVT_FAILED;
--
--	if (strncmp(*strp, "mem", target - *strp) != 0)
--		return EVT_FAILED;
--
--	target++;
--
--	addr = strtoull(target, &endaddr, 0);
--	if (target == endaddr)
--		return EVT_FAILED;
--
--	attr->bp_addr = addr;
--	*strp = endaddr;
-+	struct perf_event_attr attr;
-+	char name[MAX_NAME_LEN];
- 
--	type = strchr(target, ':');
-+	memset(&attr, 0, sizeof(attr));
-+	attr.bp_addr = (u64) ptr;
- 
--	/* If no type is defined, just rw as default */
--	if (!type) {
--		attr->bp_type = HW_BREAKPOINT_R | HW_BREAKPOINT_W;
--	} else {
--		err = parse_breakpoint_type(++type, strp, attr);
--		if (err == EVT_FAILED)
--			return EVT_FAILED;
--	}
-+	if (parse_breakpoint_type(type, &attr))
-+		return -EINVAL;
- 
- 	/*
- 	 * We should find a nice way to override the access length
- 	 * Provide some defaults for now
- 	 */
--	if (attr->bp_type == HW_BREAKPOINT_X)
--		attr->bp_len = sizeof(long);
-+	if (attr.bp_type == HW_BREAKPOINT_X)
-+		attr.bp_len = sizeof(long);
- 	else
--		attr->bp_len = HW_BREAKPOINT_LEN_4;
--
--	attr->type = PERF_TYPE_BREAKPOINT;
--
--	return EVT_HANDLED;
--}
--
--static int check_events(const char *str, unsigned int i)
--{
--	int n;
--
--	n = strlen(event_symbols[i].symbol);
--	if (!strncasecmp(str, event_symbols[i].symbol, n))
--		return n;
-+		attr.bp_len = HW_BREAKPOINT_LEN_4;
- 
--	n = strlen(event_symbols[i].alias);
--	if (n) {
--		if (!strncasecmp(str, event_symbols[i].alias, n))
--			return n;
--	}
-+	attr.type = PERF_TYPE_BREAKPOINT;
- 
--	return 0;
-+	snprintf(name, MAX_NAME_LEN, "mem:%p:%s", ptr, type ? type : "rw");
-+	return add_event(list, idx, &attr, name);
- }
- 
--static enum event_result
--parse_symbolic_event(const char **strp, struct perf_event_attr *attr)
-+int
-+parse_events_add_numeric(struct list_head *list, int *idx,
-+			 unsigned long type, unsigned long config)
- {
--	const char *str = *strp;
--	unsigned int i;
--	int n;
--
--	for (i = 0; i < ARRAY_SIZE(event_symbols); i++) {
--		n = check_events(str, i);
--		if (n > 0) {
--			attr->type = event_symbols[i].type;
--			attr->config = event_symbols[i].config;
--			*strp = str + n;
--			return EVT_HANDLED;
--		}
--	}
--	return EVT_FAILED;
--}
-+	struct perf_event_attr attr;
- 
--static enum event_result
--parse_raw_event(const char **strp, struct perf_event_attr *attr)
--{
--	const char *str = *strp;
--	u64 config;
--	int n;
--
--	if (*str != 'r')
--		return EVT_FAILED;
--	n = hex2u64(str + 1, &config);
--	if (n > 0) {
--		const char *end = str + n + 1;
--		if (*end != '\0' && *end != ',' && *end != ':')
--			return EVT_FAILED;
--
--		*strp = end;
--		attr->type = PERF_TYPE_RAW;
--		attr->config = config;
--		return EVT_HANDLED;
--	}
--	return EVT_FAILED;
-+	memset(&attr, 0, sizeof(attr));
-+	attr.type = type;
-+	attr.config = config;
-+	return add_event(list, idx, &attr,
-+			 (char *) __event_name(type, config));
- }
- 
--static enum event_result
--parse_numeric_event(const char **strp, struct perf_event_attr *attr)
-+int parse_events_modifier(struct list_head *list, char *str)
- {
--	const char *str = *strp;
--	char *endp;
--	unsigned long type;
--	u64 config;
--
--	type = strtoul(str, &endp, 0);
--	if (endp > str && type < PERF_TYPE_MAX && *endp == ':') {
--		str = endp + 1;
--		config = strtoul(str, &endp, 0);
--		if (endp > str) {
--			attr->type = type;
--			attr->config = config;
--			*strp = endp;
--			return EVT_HANDLED;
--		}
--	}
--	return EVT_FAILED;
--}
--
--static int
--parse_event_modifier(const char **strp, struct perf_event_attr *attr)
--{
--	const char *str = *strp;
-+	struct perf_evsel *evsel;
- 	int exclude = 0, exclude_GH = 0;
- 	int eu = 0, ek = 0, eh = 0, eH = 0, eG = 0, precise = 0;
- 
--	if (!*str)
-+	if (str == NULL)
- 		return 0;
- 
--	if (*str == ',')
--		return 0;
--
--	if (*str++ != ':')
--		return -1;
--
- 	while (*str) {
- 		if (*str == 'u') {
- 			if (!exclude)
-@@ -775,111 +638,60 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
- 
- 		++str;
- 	}
--	if (str < *strp + 2)
--		return -1;
- 
--	*strp = str;
++static struct perf_pmu *pmu_lookup(char *name)
++{
++	struct perf_pmu *pmu;
++	LIST_HEAD(format);
++	__u32 type;
++
 +	/*
-+	 * precise ip:
-+	 *
-+	 *  0 - SAMPLE_IP can have arbitrary skid
-+	 *  1 - SAMPLE_IP must have constant skid
-+	 *  2 - SAMPLE_IP requested to have 0 skid
-+	 *  3 - SAMPLE_IP must have 0 skid
-+	 *
-+	 *  See also PERF_RECORD_MISC_EXACT_IP
++	 * The pmu data we store & need consists of the pmu
++	 * type value and format definitions. Load both right
++	 * now.
 +	 */
-+	if (precise > 3)
++	if (pmu_format(name, &format))
++		return NULL;
++
++	if (pmu_type(name, &type))
++		return NULL;
++
++	pmu = zalloc(sizeof(*pmu));
++	if (!pmu)
++		return NULL;
++
++	INIT_LIST_HEAD(&pmu->format);
++	list_splice(&format, &pmu->format);
++	pmu->name = strdup(name);
++	pmu->type = type;
++	return pmu;
++}
++
++static struct perf_pmu *pmu_find(char *name)
++{
++	struct perf_pmu *pmu;
++
++	list_for_each_entry(pmu, &pmus, list)
++		if (!strcmp(pmu->name, name))
++			return pmu;
++
++	return NULL;
++}
++
++struct perf_pmu *perf_pmu__find(char *name)
++{
++	struct perf_pmu *pmu;
++
++	/*
++	 * Once PMU is loaded it stays in the list,
++	 * so we keep us from multiple reading/parsing
++	 * the pmu format definitions.
++	 */
++	pmu = pmu_find(name);
++	if (pmu)
++		return pmu;
++
++	return pmu_lookup(name);
++}
++
++static struct perf_pmu__format*
++pmu_find_format(struct list_head *formats, char *name)
++{
++	struct perf_pmu__format *format;
++
++	list_for_each_entry(format, formats, list)
++		if (!strcmp(format->name, name))
++			return format;
++
++	return NULL;
++}
++
++/*
++ * Returns value based on the format definition (format parameter)
++ * and unformated value (value parameter).
++ *
++ * TODO maybe optimize a little ;)
++ */
++static __u64 pmu_format_value(unsigned long *format, __u64 value)
++{
++	unsigned long fbit, vbit;
++	__u64 v = 0;
++
++	for (fbit = 0, vbit = 0; fbit < PERF_PMU_FORMAT_BITS; fbit++) {
++
++		if (!test_bit(fbit, format))
++			continue;
++
++		if (!(value & (1llu << vbit++)))
++			continue;
++
++		v |= (1llu << fbit);
++	}
++
++	return v;
++}
++
++/*
++ * Setup one of config[12] attr members based on the
++ * user input data - temr parameter.
++ */
++static int pmu_config_term(struct list_head *formats,
++			   struct perf_event_attr *attr,
++			   struct parse_events__term *term)
++{
++	struct perf_pmu__format *format;
++	__u64 *vp;
++
++	/* Support only for numnerial terms. */
++	if (term->type != PARSE_EVENTS__TERM_TYPE_NUM)
 +		return -EINVAL;
- 
--	attr->exclude_user   = eu;
--	attr->exclude_kernel = ek;
--	attr->exclude_hv     = eh;
--	attr->precise_ip     = precise;
--	attr->exclude_host   = eH;
--	attr->exclude_guest  = eG;
-+	list_for_each_entry(evsel, list, node) {
-+		evsel->attr.exclude_user   = eu;
-+		evsel->attr.exclude_kernel = ek;
-+		evsel->attr.exclude_hv     = eh;
-+		evsel->attr.precise_ip     = precise;
-+		evsel->attr.exclude_host   = eH;
-+		evsel->attr.exclude_guest  = eG;
-+	}
- 
- 	return 0;
- }
- 
--/*
-- * Each event can have multiple symbolic names.
-- * Symbolic names are (almost) exactly matched.
-- */
--static enum event_result
--parse_event_symbols(struct perf_evlist *evlist, const char **str,
--		    struct perf_event_attr *attr)
-+int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
- {
--	enum event_result ret;
--
--	ret = parse_tracepoint_event(evlist, str, attr);
--	if (ret != EVT_FAILED)
--		goto modifier;
-+	struct perf_evsel *evsel, *h;
-+	LIST_HEAD(list);
-+	YY_BUFFER_STATE buffer;
-+	int ret, idx = evlist->nr_entries;
- 
--	ret = parse_raw_event(str, attr);
--	if (ret != EVT_FAILED)
--		goto modifier;
-+	buffer = parse_events__scan_string(str);
- 
--	ret = parse_numeric_event(str, attr);
--	if (ret != EVT_FAILED)
--		goto modifier;
-+	ret = parse_events_parse(&list, &idx);
- 
--	ret = parse_symbolic_event(str, attr);
--	if (ret != EVT_FAILED)
--		goto modifier;
-+	parse_events__flush_buffer(buffer);
-+	parse_events__delete_buffer(buffer);
- 
--	ret = parse_generic_hw_event(str, attr);
--	if (ret != EVT_FAILED)
--		goto modifier;
-+	if (!ret) {
-+		int entries = idx - evlist->nr_entries;
-+		perf_evlist__splice_list_tail(evlist, &list, entries);
-+		return 0;
-+	}
- 
--	ret = parse_breakpoint_event(str, attr);
--	if (ret != EVT_FAILED)
--		goto modifier;
-+	list_for_each_entry_safe(evsel, h, &list, node)
-+		perf_evsel__delete(evsel);
- 
--	fprintf(stderr, "invalid or unsupported event: '%s'\n", *str);
-+	fprintf(stderr, "invalid or unsupported event: '%s'\n", str);
- 	fprintf(stderr, "Run 'perf list' for a list of valid events\n");
--	return EVT_FAILED;
--
--modifier:
--	if (parse_event_modifier(str, attr) < 0) {
--		fprintf(stderr, "invalid event modifier: '%s'\n", *str);
--		fprintf(stderr, "Run 'perf list' for a list of valid events and modifiers\n");
--
--		return EVT_FAILED;
--	}
--
- 	return ret;
- }
- 
--int parse_events(struct perf_evlist *evlist , const char *str, int unset __used)
--{
--	struct perf_event_attr attr;
--	enum event_result ret;
--	const char *ostr;
--
--	for (;;) {
--		ostr = str;
--		memset(&attr, 0, sizeof(attr));
--		event_attr_init(&attr);
--		ret = parse_event_symbols(evlist, &str, &attr);
--		if (ret == EVT_FAILED)
--			return -1;
--
--		if (!(*str == 0 || *str == ',' || isspace(*str)))
--			return -1;
--
--		if (ret != EVT_HANDLED_ALL) {
--			struct perf_evsel *evsel;
--			evsel = perf_evsel__new(&attr, evlist->nr_entries);
--			if (evsel == NULL)
--				return -1;
--			perf_evlist__add(evlist, evsel);
--
--			evsel->name = calloc(str - ostr + 1, 1);
--			if (!evsel->name)
--				return -1;
--			strncpy(evsel->name, ostr, str - ostr);
--		}
--
--		if (*str == 0)
--			break;
--		if (*str == ',')
--			++str;
--		while (isspace(*str))
--			++str;
--	}
--
--	return 0;
--}
--
- int parse_events_option(const struct option *opt, const char *str,
- 			int unset __used)
- {
-@@ -1052,8 +864,6 @@ int print_hwcache_events(const char *event_glob)
- 	return printed;
- }
- 
--#define MAX_NAME_LEN 100
--
- /*
-  * Print the help text for the event symbols:
-  */
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 7e0cbe7..84d3771 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -33,6 +33,21 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
- 
- #define EVENTS_HELP_MAX (128*1024)
- 
-+int parse_events_modifier(struct list_head *list __used, char *str __used);
-+int parse_events_add_tracepoint(struct list_head *list, int *idx,
-+				char *sys, char *event);
-+int parse_events_add_raw(struct perf_evlist *evlist, unsigned long config,
-+			 unsigned long config1, unsigned long config2,
-+			 char *mod);
-+int parse_events_add_numeric(struct list_head *list, int *idx,
-+			     unsigned long type, unsigned long config);
-+int parse_events_add_cache(struct list_head *list, int *idx,
-+			   char *type, char *op_result1, char *op_result2);
-+int parse_events_add_breakpoint(struct list_head *list, int *idx,
-+				void *ptr, char *type);
-+void parse_events_error(struct list_head *list, int *idx,
-+			char const *msg);
 +
- void print_events(const char *event_glob);
- void print_events_type(u8 type);
- void print_tracepoint_events(const char *subsys_glob, const char *event_glob);
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
++	format = pmu_find_format(formats, term->config);
++	if (!format)
++		return -EINVAL;
++
++	switch (format->value) {
++	case PERF_PMU_FORMAT_VALUE_CONFIG:
++		vp = &attr->config;
++		break;
++	case PERF_PMU_FORMAT_VALUE_CONFIG1:
++		vp = &attr->config1;
++		break;
++	case PERF_PMU_FORMAT_VALUE_CONFIG2:
++		vp = &attr->config2;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	*vp |= pmu_format_value(format->bits, term->val.num);
++	return 0;
++}
++
++static int pmu_config(struct list_head *formats, struct perf_event_attr *attr,
++		      struct list_head *head_terms)
++{
++	struct parse_events__term *term, *h;
++
++	list_for_each_entry_safe(term, h, head_terms, list)
++		if (pmu_config_term(formats, attr, term))
++			return -EINVAL;
++
++	return 0;
++}
++
++/*
++ * Configures event's 'attr' parameter based on the:
++ * 1) users input - specified in terms parameter
++ * 2) pmu format definitions - specified by pmu parameter
++ */
++int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
++		     struct list_head *head_terms)
++{
++	attr->type = pmu->type;
++	return pmu_config(&pmu->format, attr, head_terms);
++}
++
++int perf_pmu__new_format(struct list_head *list, char *name,
++			 int config, unsigned long *bits)
++{
++	struct perf_pmu__format *format;
++
++	format = zalloc(sizeof(*format));
++	if (!format)
++		return -ENOMEM;
++
++	format->name = strdup(name);
++	format->value = config;
++	memcpy(format->bits, bits, sizeof(format->bits));
++
++	list_add_tail(&format->list, list);
++	return 0;
++}
++
++void perf_pmu__set_format(unsigned long *bits, long from, long to)
++{
++	long b;
++
++	if (!to)
++		to = from;
++
++	memset(bits, 0, BITS_TO_LONGS(PERF_PMU_FORMAT_BITS));
++	for (b = from; b <= to; b++)
++		set_bit(b, bits);
++}
++
++/* Simulated format definitions. */
++static struct test_format {
++	const char *name;
++	const char *value;
++} test_formats[] = {
++	{ "krava01", "config:0-1,62-63\n", },
++	{ "krava02", "config:10-17\n", },
++	{ "krava03", "config:5\n", },
++	{ "krava11", "config1:0,2,4,6,8,20-28\n", },
++	{ "krava12", "config1:63\n", },
++	{ "krava13", "config1:45-47\n", },
++	{ "krava21", "config2:0-3,10-13,20-23,30-33,40-43,50-53,60-63\n", },
++	{ "krava22", "config2:8,18,48,58\n", },
++	{ "krava23", "config2:28-29,38\n", },
++};
++
++#define TEST_FORMATS_CNT (sizeof(test_formats) / sizeof(struct test_format))
++
++/* Simulated users input. */
++static struct parse_events__term test_terms[] = {
++	{
++		.config  = (char *) "krava01",
++		.val.num = 15,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++	{
++		.config  = (char *) "krava02",
++		.val.num = 170,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++	{
++		.config  = (char *) "krava03",
++		.val.num = 1,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++	{
++		.config  = (char *) "krava11",
++		.val.num = 27,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++	{
++		.config  = (char *) "krava12",
++		.val.num = 1,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++	{
++		.config  = (char *) "krava13",
++		.val.num = 2,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++	{
++		.config  = (char *) "krava21",
++		.val.num = 119,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++	{
++		.config  = (char *) "krava22",
++		.val.num = 11,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++	{
++		.config  = (char *) "krava23",
++		.val.num = 2,
++		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++	},
++};
++#define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
++
++/*
++ * Prepare format directory data, exported by kernel
++ * at /sys/bus/event_source/devices/<dev>/format.
++ */
++static char *test_format_dir_get(void)
++{
++	static char dir[PATH_MAX];
++	unsigned int i;
++
++	snprintf(dir, PATH_MAX, "/tmp/perf-pmu-test-format-XXXXXX");
++	if (!mkdtemp(dir))
++		return NULL;
++
++	for (i = 0; i < TEST_FORMATS_CNT; i++) {
++		static char name[PATH_MAX];
++		struct test_format *format = &test_formats[i];
++		FILE *file;
++
++		snprintf(name, PATH_MAX, "%s/%s", dir, format->name);
++
++		file = fopen(name, "w");
++		if (!file)
++			return NULL;
++
++		if (1 != fwrite(format->value, strlen(format->value), 1, file))
++			break;
++
++		fclose(file);
++	}
++
++	return dir;
++}
++
++/* Cleanup format directory. */
++static int test_format_dir_put(char *dir)
++{
++	char buf[PATH_MAX];
++	snprintf(buf, PATH_MAX, "rm -f %s/*\n", dir);
++	if (system(buf))
++		return -1;
++
++	snprintf(buf, PATH_MAX, "rmdir %s\n", dir);
++	return system(buf);
++}
++
++static struct list_head *test_terms_list(void)
++{
++	static LIST_HEAD(terms);
++	unsigned int i;
++
++	for (i = 0; i < TERMS_CNT; i++)
++		list_add_tail(&test_terms[i].list, &terms);
++
++	return &terms;
++}
++
++#undef TERMS_CNT
++
++int perf_pmu__test(void)
++{
++	char *format = test_format_dir_get();
++	LIST_HEAD(formats);
++	struct list_head *terms = test_terms_list();
++	int ret;
++
++	if (!format)
++		return -EINVAL;
++
++	do {
++		struct perf_event_attr attr;
++
++		memset(&attr, 0, sizeof(attr));
++
++		ret = pmu_format_parse(format, &formats);
++		if (ret)
++			break;
++
++		ret = pmu_config(&formats, &attr, terms);
++		if (ret)
++			break;
++
++		ret = -EINVAL;
++
++		if (attr.config  != 0xc00000000002a823)
++			break;
++		if (attr.config1 != 0x8000400000000145)
++			break;
++		if (attr.config2 != 0x0400000020041d07)
++			break;
++
++		ret = 0;
++	} while (0);
++
++	test_format_dir_put(format);
++	return ret;
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
 new file mode 100644
-index 0000000..44dbc35
+index 0000000..1ffdfb9
 --- /dev/null
-+++ b/tools/perf/util/parse-events.l
-@@ -0,0 +1,107 @@
++++ b/tools/perf/util/pmu.h
+@@ -0,0 +1,41 @@
++#ifndef __PMU_H
++#define __PMU_H
 +
-+%option prefix="parse_events_"
++#include <linux/bitops.h>
++#include <linux/perf_event.h>
++
++enum {
++	PERF_PMU_FORMAT_VALUE_CONFIG,
++	PERF_PMU_FORMAT_VALUE_CONFIG1,
++	PERF_PMU_FORMAT_VALUE_CONFIG2,
++};
++
++#define PERF_PMU_FORMAT_BITS 64
++
++struct perf_pmu__format {
++	char *name;
++	int value;
++	DECLARE_BITMAP(bits, PERF_PMU_FORMAT_BITS);
++	struct list_head list;
++};
++
++struct perf_pmu {
++	char *name;
++	__u32 type;
++	struct list_head format;
++	struct list_head list;
++};
++
++struct perf_pmu *perf_pmu__find(char *name);
++int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
++		     struct list_head *head_terms);
++
++int perf_pmu_wrap(void);
++void perf_pmu_error(struct list_head *list, char *name, char const *msg);
++
++int perf_pmu__new_format(struct list_head *list, char *name,
++			 int config, unsigned long *bits);
++void perf_pmu__set_format(unsigned long *bits, long from, long to);
++
++int perf_pmu__test(void);
++#endif /* __PMU_H */
+diff --git a/tools/perf/util/pmu.l b/tools/perf/util/pmu.l
+new file mode 100644
+index 0000000..a15d9fb
+--- /dev/null
++++ b/tools/perf/util/pmu.l
+@@ -0,0 +1,43 @@
++%option prefix="perf_pmu_"
 +
 +%{
-+#include <errno.h>
-+#include "../perf.h"
-+#include "parse-events-bison.h"
++#include <stdlib.h>
++#include <linux/bitops.h>
++#include "pmu.h"
++#include "pmu-bison.h"
 +
-+static int __value(char *str, int base, int token)
++static int value(int base)
 +{
 +	long num;
 +
 +	errno = 0;
-+	num = strtoul(str, NULL, base);
++	num = strtoul(perf_pmu_text, NULL, base);
 +	if (errno)
-+		return PE_ERROR;
++		return PP_ERROR;
 +
-+	parse_events_lval.num = num;
-+	return token;
-+}
-+
-+static int value(int base)
-+{
-+	return __value(parse_events_text, base, PE_VALUE);
-+}
-+
-+static int raw(void)
-+{
-+	return __value(parse_events_text + 1, 16, PE_RAW);
-+}
-+
-+static int str(int token)
-+{
-+	parse_events_lval.str = strdup(parse_events_text);
-+	return token;
-+}
-+
-+static int sym(int type, int config)
-+{
-+	parse_events_lval.num = (type << 16) + config;
-+	return PE_VALUE_SYM;
++	perf_pmu_lval.num = num;
++	return PP_VALUE;
 +}
 +
 +%}
 +
-+num_dec		[0-9]+
-+num_hex		0x[a-fA-F0-9]+
-+num_raw_hex	[a-fA-F0-9]+
-+name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
-+modifier_event	[ukhp]{1,5}
-+modifier_bp	[rwx]
-+
-+%%
-+cpu-cycles|cycles				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
-+stalled-cycles-frontend|idle-cycles-frontend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
-+stalled-cycles-backend|idle-cycles-backend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-+instructions					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
-+cache-references				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
-+cache-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
-+branch-instructions|branches			{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
-+branch-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
-+bus-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
-+cpu-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
-+task-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
-+page-faults|faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
-+minor-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
-+major-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
-+context-switches|cs				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
-+cpu-migrations|migrations			{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
-+alignment-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
-+emulation-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
-+
-+L1-dcache|l1-d|l1d|L1-data		|
-+L1-icache|l1-i|l1i|L1-instruction	|
-+LLC|L2					|
-+dTLB|d-tlb|Data-TLB			|
-+iTLB|i-tlb|Instruction-TLB		|
-+branch|branches|bpu|btb|bpc		|
-+node					{ return str(PE_NAME_CACHE_TYPE); }
-+
-+load|loads|read				|
-+store|stores|write			|
-+prefetch|prefetches			|
-+speculative-read|speculative-load	|
-+refs|Reference|ops|access		|
-+misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
-+
-+mem:			{ return PE_PREFIX_MEM; }
-+r{num_raw_hex}		{ return raw(); }
-+{num_dec}		{ return value(10); }
-+{num_hex}		{ return value(16); }
-+
-+{modifier_event}	{ return str(PE_MODIFIER_EVENT); }
-+{modifier_bp}		{ return str(PE_MODIFIER_BP); }
-+{name}			{ return str(PE_NAME); }
-+"/"			{ return '/'; }
-+-			{ return '-'; }
-+,			{ return ','; }
-+:			{ return ':'; }
-+=			{ return '='; }
++num_dec         [0-9]+
 +
 +%%
 +
-+int parse_events_wrap(void)
++{num_dec}	{ return value(10); }
++config		{ return PP_CONFIG; }
++config1		{ return PP_CONFIG1; }
++config2		{ return PP_CONFIG2; }
++-		{ return '-'; }
++:		{ return ':'; }
++,		{ return ','; }
++.		{ ; }
++\n		{ ; }
++
++%%
++
++int perf_pmu_wrap(void)
 +{
 +	return 1;
 +}
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+diff --git a/tools/perf/util/pmu.y b/tools/perf/util/pmu.y
 new file mode 100644
-index 0000000..4b4459e
+index 0000000..20ea77e
 --- /dev/null
-+++ b/tools/perf/util/parse-events.y
-@@ -0,0 +1,127 @@
++++ b/tools/perf/util/pmu.y
+@@ -0,0 +1,93 @@
 +
-+%name-prefix "parse_events_"
-+%parse-param {struct list_head *list}
-+%parse-param {int *idx}
++%name-prefix "perf_pmu_"
++%parse-param {struct list_head *format}
++%parse-param {char *name}
 +
 +%{
 +
-+#define YYDEBUG 1
-+
 +#include <linux/compiler.h>
 +#include <linux/list.h>
-+#include "types.h"
-+#include "util.h"
-+#include "parse-events.h"
++#include <linux/bitmap.h>
++#include <string.h>
++#include "pmu.h"
 +
-+extern int parse_events_lex (void);
++extern int perf_pmu_lex (void);
 +
 +#define ABORT_ON(val) \
 +do { \
-+	if (val) \
-+		YYABORT; \
++        if (val) \
++                YYABORT; \
 +} while (0)
 +
 +%}
 +
-+%token PE_VALUE PE_VALUE_SYM PE_RAW
-+%token PE_NAME
-+%token PE_MODIFIER_EVENT PE_MODIFIER_BP
-+%token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
-+%token PE_PREFIX_MEM PE_PREFIX_RAW
-+%token PE_ERROR
-+%type <num> PE_VALUE
-+%type <num> PE_VALUE_SYM
-+%type <num> PE_RAW
-+%type <str> PE_NAME
-+%type <str> PE_NAME_CACHE_TYPE
-+%type <str> PE_NAME_CACHE_OP_RESULT
-+%type <str> PE_MODIFIER_EVENT
-+%type <str> PE_MODIFIER_BP
++%token PP_CONFIG PP_CONFIG1 PP_CONFIG2
++%token PP_VALUE PP_ERROR
++%type <num> PP_VALUE
++%type <bits> bit_term
++%type <bits> bits
 +
 +%union
 +{
-+	char *str;
 +	unsigned long num;
++	DECLARE_BITMAP(bits, PERF_PMU_FORMAT_BITS);
 +}
-+%%
-+
-+events:
-+events ',' event | event
-+
-+event:
-+event_def PE_MODIFIER_EVENT
-+{
-+	ABORT_ON(parse_events_modifier(list, $2));
-+}
-+|
-+event_def
-+
-+event_def: event_legacy_symbol sep_dc |
-+	   event_legacy_cache sep_dc |
-+	   event_legacy_mem |
-+	   event_legacy_tracepoint sep_dc |
-+	   event_legacy_numeric sep_dc |
-+	   event_legacy_raw sep_dc
-+
-+event_legacy_symbol:
-+PE_VALUE_SYM
-+{
-+	int type = $1 >> 16;
-+	int config = $1 & 255;
-+
-+	ABORT_ON(parse_events_add_numeric(list, idx, type, config));
-+}
-+
-+event_legacy_cache:
-+PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT
-+{
-+	ABORT_ON(parse_events_add_cache(list, idx, $1, $3, $5));
-+}
-+|
-+PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT
-+{
-+	ABORT_ON(parse_events_add_cache(list, idx, $1, $3, NULL));
-+}
-+|
-+PE_NAME_CACHE_TYPE
-+{
-+	ABORT_ON(parse_events_add_cache(list, idx, $1, NULL, NULL));
-+}
-+
-+event_legacy_mem:
-+PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
-+{
-+	ABORT_ON(parse_events_add_breakpoint(list, idx, (void *) $2, $4));
-+}
-+|
-+PE_PREFIX_MEM PE_VALUE sep_dc
-+{
-+	ABORT_ON(parse_events_add_breakpoint(list, idx, (void *) $2, NULL));
-+}
-+
-+event_legacy_tracepoint:
-+PE_NAME ':' PE_NAME
-+{
-+	ABORT_ON(parse_events_add_tracepoint(list, idx, $1, $3));
-+}
-+
-+event_legacy_numeric:
-+PE_VALUE ':' PE_VALUE
-+{
-+	ABORT_ON(parse_events_add_numeric(list, idx, $1, $3));
-+}
-+
-+event_legacy_raw:
-+PE_RAW
-+{
-+	ABORT_ON(parse_events_add_numeric(list, idx, PERF_TYPE_RAW, $1));
-+}
-+
-+sep_dc: ':' |
 +
 +%%
 +
-+void parse_events_error(struct list_head *list __used, int *idx __used,
-+			char const *msg __used)
++format:
++format format_term
++|
++format_term
++
++format_term:
++PP_CONFIG ':' bits
++{
++	ABORT_ON(perf_pmu__new_format(format, name,
++				      PERF_PMU_FORMAT_VALUE_CONFIG,
++				      $3));
++}
++|
++PP_CONFIG1 ':' bits
++{
++	ABORT_ON(perf_pmu__new_format(format, name,
++				      PERF_PMU_FORMAT_VALUE_CONFIG1,
++				      $3));
++}
++|
++PP_CONFIG2 ':' bits
++{
++	ABORT_ON(perf_pmu__new_format(format, name,
++				      PERF_PMU_FORMAT_VALUE_CONFIG2,
++				      $3));
++}
++
++bits:
++bits ',' bit_term
++{
++	bitmap_or($$, $1, $3, 64);
++}
++|
++bit_term
++{
++	memcpy($$, $1, sizeof($1));
++}
++
++bit_term:
++PP_VALUE '-' PP_VALUE
++{
++	perf_pmu__set_format($$, $1, $3);
++}
++|
++PP_VALUE
++{
++	perf_pmu__set_format($$, $1, 0);
++}
++
++%%
++
++void perf_pmu_error(struct list_head *list __used,
++		    char *name __used,
++		    char const *msg __used)
 +{
 +}
 -- 
