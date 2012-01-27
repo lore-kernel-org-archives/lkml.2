@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab2A0OIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 09:08:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46424 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258Ab2A0OIp (ORCPT
+	id S1755080Ab2A0OLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 09:11:17 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35406 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab2A0OLQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 09:08:45 -0500
+	Fri, 27 Jan 2012 09:11:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <B567DBAB974C0544994013492B949F8E3812CD3809@EXMAIL03.scwf.nsc.com>
-References: <AczYZ9hWemTkved3RqKuOuMCSoz1+Q==>
-	<B567DBAB974C0544994013492B949F8E3812CD3809@EXMAIL03.scwf.nsc.com>
-Date: Fri, 27 Jan 2012 15:08:44 +0100
-Message-ID: <CACRpkdbTm1VoaOZMYysEKzOtoF3ZJvWWHNGBMqeaEF1=krPVyA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] leds-lp5521: redefinition of register bits
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
+In-Reply-To: <1327652393.2446.126.camel@twins>
+References: <1327486224.2614.45.camel@laptop>
+	<tip-4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b@git.kernel.org>
+	<CADZ9YHi1=aP8j8vCFJvyMANyMWwB_mjT67KwSZZh902oyWy7pA@mail.gmail.com>
+	<1327652393.2446.126.camel@twins>
+Date: Fri, 27 Jan 2012 20:11:15 +0600
+Message-ID: <CADZ9YHiG56TCORVySHYjnhLBSsVi=OaMRmBq-_3yDTQCGnEbYw@mail.gmail.com>
+Subject: Re: [tip:sched/urgent] sched: Fix rq->nr_uninterruptible update race
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com, mingo@elte.hu
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 21, 2012 at 7:09 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
+On Fri, Jan 27, 2012 at 2:19 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2012-01-27 at 11:20 +0600, Rakib Mullick wrote:
+>> On Fri, Jan 27, 2012 at 2:25 AM, tip-bot for Peter Zijlstra
+>> <a.p.zijlstra@chello.nl> wrote:
 
-> For better readability, values of LP5521_REG_ENABLE register were redefined.
-> Additional definitions: LP5521_ENABLE_DEFAULT and LP5521_ENABLE_RUN_PROGRAM.
+>> Why would we want to avoid nr_uninterruptible accounting?
+>> nr_uninterruptible has impact on load calculation, we might not get
+>> the proper load weight if we don't account it. isn't it?
 >
-> Use definition rather than hard code value.
-> : 0x3F -> 'LP5521_CMD_DIRECT'
+> Read again ;-)
 >
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+Wasn't enough! I had to use paper and pen ;-)
 
-Looks like a good idea.
+> sched_setscheduler() did:
+>
+>  deactivate_task(); // remove it from the queue
+>
+>  // change tasks's scheduler paramater
+>
+>  activate_task(); // queue it in the new place
+>
+> it is invariant wrt nr_uninterruptible but does include the
+> nr_uinterruptile accounting logic.
+>
+> Now Kosaki-San noticed that if the task manages to change its ->state at
+> an inopportune moment (right between the dequeue and enqueue) we'll get
+> screwy nr_uninterruptible accounting.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+I got your point and yes, we'll get screwy nr_uninterruptible
+accounting if we call {activate,deactivate}_task(). We need to avoid
+nr_uninterruptible accounting.
 
-Yours,
-Linus Walleij
+Thanks,
+Rakib
