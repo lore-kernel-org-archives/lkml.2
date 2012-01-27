@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab2A0P26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 10:28:58 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:53580
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755872Ab2A0P25 (ORCPT
+	id S1756097Ab2A0PcZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 10:32:25 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:37043 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754239Ab2A0PcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 10:28:57 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: dwmw2@infradead.org, linux-mtd@lists.infradead.org
-Cc: standby24x7@gmail.com, trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [trivial] jffs2: Fix typo in scan.c
-Date: Sat, 28 Jan 2012 00:17:28 +0900
-Message-Id: <1327677448-2732-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Fri, 27 Jan 2012 10:32:24 -0500
+Message-ID: <4F22C385.5020104@vmware.com>
+Date: Fri, 27 Jan 2012 16:32:21 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Ryan Mallon <rmallon@gmail.com>
+CC: airlied@linux.ie, airlied@redhat.com, jakob@vmware.com,
+        dri-devel@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        joe Perches <joe@perches.com>
+Subject: Re: [RFC PATCH] vmwgfx: Fix assignment in vmw_framebuffer_create_handle
+References: <4F224348.8050607@gmail.com>
+In-Reply-To: <4F224348.8050607@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "scaning" to scanning" in
-fs/jffs2/scan.c
+On 01/27/2012 07:25 AM, Ryan Mallon wrote:
+> The assignment of handle in vmw_framebuffer_create_handle doesn't
+> actually do anything useful and is incorrectly assigning an integer
+> value to a pointer argument. It appears that this is a typo and should
+> be dereferencing handle rather than assigning to it directly.
+>
+> Signed-off-by: Ryan Mallon<rmallon@gmail.com>
+> ---
+>
+> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+> index 0af6ebd..b66ef0e 100644
+> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+> @@ -378,7 +378,7 @@ int vmw_framebuffer_create_handle(struct drm_framebuffer *fb,
+>   				  unsigned int *handle)
+>   {
+>   	if (handle)
+> -		handle = 0;
+> +		*handle = 0;
+>
+>   	return 0;
+>   }
+>
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- fs/jffs2/scan.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Ryan,
+Please repost this patch with Jakobs Reviewed-by: and below that a
+Cc: stable@vger.kernel.org
 
-diff --git a/fs/jffs2/scan.c b/fs/jffs2/scan.c
-index f994648..c59a026 100644
---- a/fs/jffs2/scan.c
-+++ b/fs/jffs2/scan.c
-@@ -368,7 +368,7 @@ static int jffs2_scan_xattr_node(struct jffs2_sb_info *c, struct jffs2_erasebloc
- 
- 	if (jffs2_sum_active())
- 		jffs2_sum_add_xattr_mem(s, rx, ofs - jeb->offset);
--	dbg_xattr("scaning xdatum at %#08x (xid=%u, version=%u)\n",
-+	dbg_xattr("scanning xdatum at %#08x (xid=%u, version=%u)\n",
- 		  ofs, xd->xid, xd->version);
- 	return 0;
- }
--- 
-1.7.6.5
+Thanks,
+Thomas
 
