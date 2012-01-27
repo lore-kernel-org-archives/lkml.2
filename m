@@ -1,200 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab2A0F6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 00:58:50 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48926 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab2A0F6s convert rfc822-to-8bit (ORCPT
+	id S1755436Ab2A0F7v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 00:59:51 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:58166 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab2A0F7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 00:58:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327597641-7519-9-git-send-email-pdeschrijver@nvidia.com>
-References: <1327597641-7519-1-git-send-email-pdeschrijver@nvidia.com>
-	<1327597641-7519-9-git-send-email-pdeschrijver@nvidia.com>
-Date: Fri, 27 Jan 2012 11:28:47 +0530
-Message-ID: <CAF0Txbpy-oeTkdotDVcoFUu50F7OLvxv_1PKwwxVb_UBmfnOmA@mail.gmail.com>
-Subject: Re: [PATCH v1 8/8] ARM: tegra: support for secondary cores on Tegra30
-From: Murali N <nalajala.murali@gmail.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 27 Jan 2012 00:59:49 -0500
+Message-ID: <1327643984.2919.6.camel@edumazet-laptop>
+Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joseph Glanville <joseph.glanville@orionvm.com.au>
+Cc: David Miller <davem@davemloft.net>, steweg@ynet.sk, jesse@nicira.com,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 27 Jan 2012 06:59:44 +0100
+In-Reply-To: <CAOzFzEj-UCXwhw0NA=Y=qExG=RdVJB3RAdqU0HrsMo7V+4eGcQ@mail.gmail.com>
+References: <CAGsizzJnRy74ni-HH=5q1VR4g6sfDPg9SFw4UKgSjJjkSR8OJA@mail.gmail.com>
+	 <20120125.203746.1977019610549185259.davem@davemloft.net>
+	 <CAGsizzLYxsc2MGxF7yK_QzS+3bexHa1F_6+NE87u3F18m7=R1g@mail.gmail.com>
+	 <20120126.133033.964571202129052712.davem@davemloft.net>
+	 <CAOzFzEj-UCXwhw0NA=Y=qExG=RdVJB3RAdqU0HrsMo7V+4eGcQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 10:37 PM, Peter De Schrijver
-<pdeschrijver@nvidia.com> wrote:
->
-> Add support for bringing up secondary cores on Tegra30. On Tegra30 secondary
-> CPU cores are powergated, so we need to turn on the domains before we can bring
-> the CPU cores online. Bringing secondary cores online happens early during the
-> ssytem boot, so we call powergating initialization from platform early_init
+Le vendredi 27 janvier 2012 à 09:24 +1100, Joseph Glanville a écrit :
+> David is correct, the forwarding speed of Open vSwitch is at parity
+> with the Linux Bridging module and its tunneling speed is actually
+> slightly faster than the in kernel GRE implementation. I have tested
+> this across a variety of configurations.
 
-small spelling correction "system"
+Thanks for this input ! When was this tested exactly, and do you have
+some "perf tool" reports to provide ?
 
-> function.
->
-> Based on work by:
->
-> Scott Williams <scwilliams@nvidia.com>
-> Colin Cross <ccross@android.com>
-> Alex Frid <afrid@nvidia.com>
->
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  arch/arm/mach-tegra/headsmp.S |   32 +++++++++++++++++++++++++
->  arch/arm/mach-tegra/platsmp.c |   52 ++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 83 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/mach-tegra/headsmp.S b/arch/arm/mach-tegra/headsmp.S
-> index bb13e22..925c4a0 100644
-> --- a/arch/arm/mach-tegra/headsmp.S
-> +++ b/arch/arm/mach-tegra/headsmp.S
-> @@ -188,6 +188,38 @@ __die:
->        str     r1, [r7, #0x340]                @ CLK_RST_CPU_CMPLX_SET
->  #endif
->  1:
-> +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
-> +       mov32   r6, TEGRA_FLOW_CTRL_BASE
-> +
-> +       cmp     r10, #0
-> +       moveq   r1, #FLOW_CTRL_HALT_CPU0_EVENTS
-> +       moveq   r2, #FLOW_CTRL_CPU0_CSR
-> +       movne   r1, r10, lsl #3
-> +       addne   r2, r1, #(FLOW_CTRL_CPU1_CSR-8)
-> +       addne   r1, r1, #(FLOW_CTRL_HALT_CPU1_EVENTS-8)
-> +
-> +       /* Clear CPU "event" and "interrupt" flags and power gate
-> +          it when halting but not before it is in the "WFI" state. */
-> +       ldr     r0, [r6, +r2]
-> +       orr     r0, r0, #FLOW_CTRL_CSR_INTR_FLAG | FLOW_CTRL_CSR_EVENT_FLAG
-> +       orr     r0, r0, #FLOW_CTRL_CSR_ENABLE
-> +       str     r0, [r6, +r2]
-> +
-> +       /* Unconditionally halt this CPU */
-> +       mov     r0, #FLOW_CTRL_WAITEVENT
-> +       str     r0, [r6, +r1]
-> +       ldr     r0, [r6, +r1]                   @ memory barrier
-> +
-> +       dsb
-> +       isb
-> +       wfi                                     @ CPU should be power gated here
-> +
-> +       /* If the CPU didn't power gate above just kill it's clock. */
-> +
-> +       mov     r0, r11, lsl #8
-> +       str     r0, [r7, #348]                  @ CLK_CPU_CMPLX_SET
-> +#endif
-> +
->        /* If the CPU still isn't dead, just spin here. */
->        b       .
->  ENDPROC(__tegra_cpu_reset_handler)
-> diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-> index fa1178d..672a751 100644
-> --- a/arch/arm/mach-tegra/platsmp.c
-> +++ b/arch/arm/mach-tegra/platsmp.c
-> @@ -24,7 +24,9 @@
->  #include <asm/mach-types.h>
->  #include <asm/smp_scu.h>
->
-> +#include <mach/clk.h>
->  #include <mach/iomap.h>
-> +#include <mach/powergate.h>
->
->  #include "chipid.h"
->  #include "flowctrl.h"
-> @@ -42,6 +44,8 @@ static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
->        (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x340)
->  #define CLK_RST_CONTROLLER_RST_CPU_CMPLX_CLR \
->        (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x344)
-> +#define CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR \
-> +       (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x34c)
->
->  #define CPU_CLOCK(cpu) (0x1<<(8+cpu))
->  #define CPU_RESET(cpu) (0x1111ul<<(cpu))
-> @@ -73,11 +77,54 @@ static int tegra20_power_up_cpu(unsigned int cpu)
->        return 0;
->  }
->
-> +static int tegra30_power_up_cpu(unsigned int cpu)
-> +{
-> +       u32 reg;
-> +       int ret, pwrgateid;
-> +       unsigned long timeout;
-> +
-> +       pwrgateid = tegra_cpu_powergate_id(cpu);
-> +       if (pwrgateid < 0)
-> +               return pwrgateid;
-> +
-> +       /* If this is the first boot, toggle powergates directly. */
-> +       if (!tegra_powergate_is_powered(pwrgateid)) {
-> +               ret = tegra_powergate_power_on(pwrgateid);
-> +               if (ret)
-> +                       return ret;
-> +
-> +               /* Wait for the power to come up. */
-> +               timeout = jiffies + 10*HZ;
-> +               do {
-> +                       if (tegra_powergate_is_powered(pwrgateid))
-> +                               goto remove_clamps;
-> +                       udelay(10);
-> +               } while (time_before(jiffies, timeout));
-> +               return -ETIMEDOUT;
-> +       }
-> +
-> +remove_clamps:
-> +       /* CPU partition is powered. Enable the CPU clock. */
-> +       writel(CPU_CLOCK(cpu), CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
-> +       reg = readl(CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
-> +       udelay(10);
-> +
-> +       /* Remove I/O clamps. */
-> +       ret = tegra_powergate_remove_clamping(pwrgateid);
-> +       udelay(10);
-> +
-> +       /* Clear flow controller CSR. */
-> +       flowctrl_write_cpu_csr(cpu, 0);
-> +
-> +       return 0;
-> +}
-> +
->  int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
->  {
->        int status;
->
-> -       /* Force the CPU into reset. The CPU must remain in reset when the
-> +       /*
-> +        * Force the CPU into reset. The CPU must remain in reset when the
->         * flow controller state is cleared (which will cause the flow
->         * controller to stop driving reset if the CPU has been power-gated
->         * via the flow controller). This will have no effect on first boot
-> @@ -98,6 +145,9 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
->        case TEGRA20:
->                status = tegra20_power_up_cpu(cpu);
->                break;
-> +       case TEGRA30:
-> +               status = tegra30_power_up_cpu(cpu);
-> +               break;
->        default:
->                status = -EINVAL;
->                break;
-> --
-> 1.7.7.rc0.72.g4b5ea.dirty
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+GRE is lockless since one year or so (modulo how is setup the tunnel as
+discovered recently)
+
+Also please note that openvSwitch is said to be fast path only on
+established flows.
 
 
 
-
---
-Regards,
-Murali N
