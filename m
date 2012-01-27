@@ -1,173 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab2A0Q2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:28:05 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:59809 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab2A0Q2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:28:00 -0500
-Message-ID: <4F22D05A.8030604@parallels.com>
-Date: Fri, 27 Jan 2012 20:27:06 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1756196Ab2A0Q2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:28:40 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52062 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751534Ab2A0Q2j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 11:28:39 -0500
+Date: Fri, 27 Jan 2012 16:28:37 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 1/3] regmap: Properly round reg_bytes and val_bytes
+Message-ID: <20120127162837.GB18572@opensource.wolfsonmicro.com>
+References: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.3-rc1 regression] TCP: too many of orphaned sockets
-References: <20120127124641.GA30819@elte.hu> <4F229D5C.4040300@parallels.com> <20120127125645.GA28131@elte.hu> <20120127141754.GA30202@elte.hu> <20120127142246.GA22318@elte.hu> <4F22B634.2020007@parallels.com>
-In-Reply-To: <4F22B634.2020007@parallels.com>
-Content-Type: multipart/mixed;
-	boundary="------------090700050908010709090008"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CdrF4e02JqNVZeln"
+Content-Disposition: inline
+In-Reply-To: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------090700050908010709090008
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 
-On 01/27/2012 06:35 PM, Glauber Costa wrote:
-> On 01/27/2012 06:22 PM, Ingo Molnar wrote:
->>
->> * Ingo Molnar<mingo@elte.hu> wrote:
->>
->>> ok, i've bisected it, and the bad commit is:
->>>
->>> 3dc43e3e4d0b52197d3205214fe8f162f9e0c334 is the first bad commit
->>> commit 3dc43e3e4d0b52197d3205214fe8f162f9e0c334
->>> Author: Glauber Costa<glommer@parallels.com>
->>> Date: Sun Dec 11 21:47:05 2011 +0000
->>>
->>> per-netns ipv4 sysctl_tcp_mem
->>
->> Might be related to this detail in the .config:
->>
->> # CONFIG_PROC_SYSCTL is not set
->>
->> So former tcp_init() code does not get run?
->>
->> Thanks,
->>
->> Ingo
->
-> Can you tell me if the following patch fixes your problem?
->
-Update on this:
+--CdrF4e02JqNVZeln
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-What really makes it break is CONFIG_SYSCTL.
-CONFIG_PROC_SYSCTL selects that, so if you get the one, you
-end up getting the other. (The config mingo provided lacks both)
+On Fri, Jan 27, 2012 at 04:10:21PM +0100, Wolfram Sang wrote:
+> For the upcoming 2/6-format, we don't see debugfs output otherwise,
+> since the current division results in 0. I'd think 10/14 is broken
+> currently, too.
 
-Also, I believe there is no harm in initializing this unconditionally,
-so instead of cluttering tcp_init() with #ifdef, I am proposing we just 
-init it here, and then init it again in sysctl initialization. I don't
-expect it to harm workload, since it is a one-shot.
+This looks good but could you please rebase on top of topic/core, it
+conflicts with the support for padding bytes.  It's not really entirely
+incorrect, the bytes values aren't terribly well defined for register
+sizes that aren't integer numbers of bytes as they were never intended
+to be used then.  The assumption did leak out into debugfs though.
 
-Now, I am attaching my proposed final patch for this, but I can't really
-generate a config without sysctl that boots okay for me.
+--CdrF4e02JqNVZeln
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Ingo, would you please confirm that this fixes the problem for you? If 
-I'm mistaken, let me know and I'll get back to it ASAP.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Dave, once Ingo acks that it fixes the problem he says, I'll submit the 
-patch formally.
+iQIcBAEBAgAGBQJPItCuAAoJEBus8iNuMP3dbi4P/2a55sT+Mq8DKhCkBvsH9CFN
+nJW2T5sVpCgJv+3efhT+86MmQPQHg4PX9g3wZWi5fdIpSJZq4NaMr0w7vdR9gaIF
+oZruriWt2cFewm4KyZlzlYKLVBee+XmdQdqQIQs2Wanrlw9kwCpKq92trA6BM9Bu
+vx7QryRFUN3w4CqilOkQ+WazfXLewGhSyAhacToIsktYoeEJi3FPPOF7zrnXl0n3
+m2IxFTxs3uaLqs7YQgmEME40YwbsJIviy2f9eWapl/zF1KNW5injtcn/UMXvTj3b
+7EszPBpx024hP8auXiZ8hj6wmGoe4704TZApeSvul3YMvwqjLlepoRhgGakky9sj
+Sgki3SeQNA2gf4zl+vMGoyH17DWueDvQ+YMRHhYFN1NaJQbxDFceHZMazajnXhCv
+Uy66lrAOzxmCqTsRZL9RuLd+nCjPVFePaXRbrMMfpEcSPc5RJE1OYoahfDpTvdqj
+eCTiMy+pw98eb8dcMN/k/X0bW94EbkbXS8rmvEUvgyoc75r6dSqGeXX2LY7WIDiP
+WYRp0oaZlyLIEKHtE/Bz+wdYN6F0/Mi0lou0zKbEJmw91dI9NUApVErW9koJ3w6n
+LHLmNgsByB+yc2YlomBafZ+ytyme2nqLZ6AAI7Fcx2G/x4GIRBol+9upM36zg4ux
+9dGB09C8VLi+8iwfclIO
+=kYeL
+-----END PGP SIGNATURE-----
 
-Thanks.
-
---------------090700050908010709090008
-Content-Type: text/x-patch;
-	name="0001-fix-tcp-sysctl-initialization-with-CONFIG_SYSCTL-dis.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename*0="0001-fix-tcp-sysctl-initialization-with-CONFIG_SYSCTL-dis.pa";
-	filename*1="tch"
-
->From 49318a2c917f970373e66e21d747a38a595eb462 Mon Sep 17 00:00:00 2001
-From: Glauber Costa <glommer@parallels.com>
-Date: Fri, 27 Jan 2012 19:34:17 +0400
-Subject: [PATCH] fix tcp sysctl initialization with CONFIG_SYSCTL disabled.
-
-sysctl_tcp_mem initialization was moved to sysctl_tcp_ipv4.c
-in commit 3dc43e3e4d0b52197d3205214fe8f162f9e0c334, since it
-became a per-ns value.
-
-That code, however, will never run when CONFIG_SYSCTL is disabled,
-leading to bogus values on those fields.
-
-This patch fixes it by keeping an initialization code in tcp_init().
-It will be overwritten by the first net namespace init if CONFIG_SYSCTL
-is compiled in, and do the right thing if it is compiled out.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Reported-by: Ingo Molnar <mingo@elte.hu>
----
- include/net/tcp.h          |    2 ++
- net/ipv4/sysctl_net_ipv4.c |    1 +
- net/ipv4/tcp.c             |   16 +++++++++++++---
- 3 files changed, 16 insertions(+), 3 deletions(-)
-
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 0118ea9..b04a3e9 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -311,6 +311,8 @@ extern struct proto tcp_prot;
- #define TCP_ADD_STATS_USER(net, field, val) SNMP_ADD_STATS_USER((net)->mib.tcp_statistics, field, val)
- #define TCP_ADD_STATS(net, field, val)	SNMP_ADD_STATS((net)->mib.tcp_statistics, field, val)
- 
-+extern void init_tcp_mem(struct net *net);
-+
- extern void tcp_v4_err(struct sk_buff *skb, u32);
- 
- extern void tcp_shutdown (struct sock *sk, int how);
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 4aa7e9d..1d67cde 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -814,6 +814,7 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
- 
- 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
- 
-+	init_tcp_mem(net);
- 	limit = nr_free_buffer_pages() / 8;
- 	limit = max(limit, 128UL);
- 	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 9bcdec3..34e4051 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3216,6 +3216,16 @@ static int __init set_thash_entries(char *str)
- }
- __setup("thash_entries=", set_thash_entries);
- 
-+void init_tcp_mem(struct net *net)
-+{
-+	/* Set per-socket limits to no more than 1/128 the pressure threshold */
-+	unsigned long limit = nr_free_buffer_pages() / 8;
-+	limit = max(limit, 128UL);
-+	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-+	net->ipv4.sysctl_tcp_mem[1] = limit;
-+	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
-+}
-+
- void __init tcp_init(void)
- {
- 	struct sk_buff *skb = NULL;
-@@ -3276,9 +3286,9 @@ void __init tcp_init(void)
- 	sysctl_tcp_max_orphans = cnt / 2;
- 	sysctl_max_syn_backlog = max(128, cnt / 256);
- 
--	/* Set per-socket limits to no more than 1/128 the pressure threshold */
--	limit = ((unsigned long)init_net.ipv4.sysctl_tcp_mem[1])
--		<< (PAGE_SHIFT - 7);
-+	init_tcp_mem(&init_net);
-+	limit = nr_free_buffer_pages() / 8;
-+	limit = max(limit, 128UL);
- 	max_share = min(4UL*1024*1024, limit);
- 
- 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
--- 
-1.7.7.4
-
-
---------------090700050908010709090008--
+--CdrF4e02JqNVZeln--
