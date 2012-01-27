@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab2A0MdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 07:33:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46629 "EHLO mx1.redhat.com"
+	id S1754796Ab2A0Mpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 07:45:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57846 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab2A0Mc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 07:32:59 -0500
-Date: Fri, 27 Jan 2012 13:32:44 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] perf: Add sysfs format attribute for pmu device
-Message-ID: <20120127123244.GC6294@m.brq.redhat.com>
-References: <20120109152855.GA1597@m.brq.redhat.com>
- <1326717103-10287-1-git-send-email-jolsa@redhat.com>
- <1326717103-10287-6-git-send-email-jolsa@redhat.com>
- <1327595209.2446.117.camel@twins>
+	id S1754298Ab2A0Mph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 07:45:37 -0500
+Date: Fri, 27 Jan 2012 10:44:06 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [resubmit] Re: [PATCH] tracing: adjust shrink_slab beginning
+ trace event name
+Message-ID: <20120127124405.GA2092@x61.redhat.com>
+References: <20111223141619.GA19720@x61.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327595209.2446.117.camel@twins>
+In-Reply-To: <20111223141619.GA19720@x61.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 05:26:49PM +0100, Peter Zijlstra wrote:
-> On Mon, 2012-01-16 at 13:31 +0100, Jiri Olsa wrote:
-> > Adding 'format' attribute for pmu device that contains
-> > a syntax description on how to construct raw events.
-> > 
-> > The event configuration is described in following
-> > struct pefr_event_attr attributes:
-> > 
-> >   config
-> >   config1
-> >   config2
-> > 
-> > Each line of the format file describes mapping of name
-> > and bitfield definition within one of abve attributes.
-> > 
-> > eg:
-> >   event   config:0-7
-> >   umask   config:8-15
-> >   usr     config:16
-> >   os      config:17
-> >   edge    config:18
-> >   any     config:21
-> >   inv     config:23
-> >   cmask   config:24-31
-> > 
-> > Line syntax:
-> >   line:      NAME config ':' bits
-> >   config:    'config' | 'config1' | 'config2"
-> >   bits:      bits ',' bit_term | bit_term
-> >   bit_term:  VALUE '-' VALUE | VALUE
-> > 
-> > Adding event_format callback to the struct pmu, which provides
-> > the format information. The pmu shall override this function
-> > and provide its own specific format information.
-> > 
-> > If not overloaded the default format information is used:
-> > 
-> >   config  config:0-63
-> >   config1 config1:0-63
-> >   config2 config2:0-63 
-> 
-> Shouldn't config[012] be hard-coded like period? They are struct
-> perf_event_attr members after all and it doesn't really make sense to
-> have them dynamic if we're going to have to add them to all pmu/format
-> things.
+While reviewing vmscan tracing events, I realized all functions which establish paired tracepoints (one at the beginning and another at the end of the function block) were following this naming pattern:
+  <tracepoint-name>_begin
+  <tarcepoint-name>_end
 
-Well, let me clarify that config[12] and 'period' are different stuff.
-Also I remember you asked me about the config terms namespace in some
-other email and I forgot to answer :)
+However, the 'beginning' tracing event for shrink_slab() did not follow the aforementioned naming pattern. This patch renames that trace event to adjust this naming inconsistency.
 
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ include/trace/events/vmscan.h |    2 +-
+ mm/vmscan.c                   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-So, while period is event term that user can specify in the event config
-section like:
-      cycles/period=100000/
-
-the config[12] are values that are specified in the format definitions
-as values that are changed by event terms.. like:
-	config1:1,6-10,44
-
-Now for event terms.. whatever term name is specified in the pmu
-format definition, it is considered as valid term, when the 'pmu' event
-is configured.. eg events like:
-	cpu/krava=1/u
-
-Apart from that we recognize the term 'period', which could be specified
-only for symbolic events so far:
-      cycles/period=100000/
-
-So there can't be name clash between 'period' term and the rest so far.
-Once we would like to have say 'period' term inside 'pmu' events like:
-	cpu/krava=1,period=1000/u
-
-we would need to consider some namespace rules or smth.
-
-
-Now for config[12] formats.. they are parsed as simple strings and
-'hardcoded' in function format_value. I think what you suggest is
-to 'hardcode' them into the grammar... right?
-
-So instead of using rule:
-format_term: PP_NAME ':' bits
-
-there'll be 3 rules like:
-
-format_term: 'config':' bits
-format_term: 'config1' ':' bits
-format_term: 'config2' ':' bits
-
-I dont have strong feelings one way or the other... but since we already
-have the parser in place we could use it.. ehm :)
-
-
-thanks,
-jirka
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index f64560e..595a6f0 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -179,7 +179,7 @@ DEFINE_EVENT(mm_vmscan_direct_reclaim_end_template, mm_vmscan_memcg_softlimit_re
+        TP_ARGS(nr_reclaimed)
+ );
+ 
+-TRACE_EVENT(mm_shrink_slab_start,
++TRACE_EVENT(mm_shrink_slab_begin,
+        TP_PROTO(struct shrinker *shr, struct shrink_control *sc,
+                long nr_objects_to_shrink, unsigned long pgs_scanned,
+                unsigned long lru_pgs, unsigned long cache_items,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c52b235..84f4fd2 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -325,7 +325,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+                if (total_scan > max_pass * 2)
+                        total_scan = max_pass * 2;
+ 
+-               trace_mm_shrink_slab_start(shrinker, shrink, nr,
++               trace_mm_shrink_slab_begin(shrinker, shrink, nr,
+                                        nr_pages_scanned, lru_pages,
+                                        max_pass, delta, total_scan);
+ 
+-- 
+1.7.7.6
