@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab2A0SgG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:36:06 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:57989 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753731Ab2A0SgE (ORCPT
+	id S1753847Ab2A0SgS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:36:18 -0500
+Received: from andromeda.dapyr.net ([206.212.254.10]:49720 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab2A0SgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:36:04 -0500
-Date: Fri, 27 Jan 2012 10:36:01 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] PCI: pcie hotplug related patch
-Message-ID: <20120127103601.09e3f771@jbarnes-desktop>
-In-Reply-To: <CAE9FiQUFYcaVWorPPP7PQqiBPnKv-iBkPm_qbGz4T_xLR2THiQ@mail.gmail.com>
-References: <1327139539-14301-1-git-send-email-yinghai@kernel.org>
-	<CAE9FiQUFYcaVWorPPP7PQqiBPnKv-iBkPm_qbGz4T_xLR2THiQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Fri, 27 Jan 2012 13:36:15 -0500
+Date: Fri, 27 Jan 2012 14:36:02 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 2/2] hvc_xen: implement multiconsole support
+Message-ID: <20120127183602.GA9780@andromeda.dapyr.net>
+References: <alpine.DEB.2.00.1201261233050.3196@kaball-desktop> <1327581807-17276-2-git-send-email-stefano.stabellini@eu.citrix.com> <20120127160355.GA566@andromeda.dapyr.net> <alpine.DEB.2.00.1201271713200.3196@kaball-desktop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/ew2DPY4uNs5K0M=GNBx.pB2"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1201271713200.3196@kaball-desktop>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ew2DPY4uNs5K0M=GNBx.pB2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jan 27, 2012 at 05:16:45PM +0000, Stefano Stabellini wrote:
+> On Fri, 27 Jan 2012, Konrad Rzeszutek Wilk wrote:
+> > On Thu, Jan 26, 2012 at 12:43:27PM +0000, Stefano Stabellini wrote:
+> > > This patch implements support for multiple consoles:
+> > > consoles other than the first one are setup using the traditional xenbus
+> > > and grant-table based mechanism.
+> > > We use a list to keep track of the allocated consoles, we don't
+> > > expect too many of them anyway.
+> > >
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > ---
+> > >  drivers/tty/hvc/hvc_xen.c |  439 +++++++++++++++++++++++++++++++++++++++------
+> > >  1 files changed, 383 insertions(+), 56 deletions(-)
+> > >
+> > > diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+> > > index dd6641f..97732fb 100644
+> > > --- a/drivers/tty/hvc/hvc_xen.c
+> > > +++ b/drivers/tty/hvc/hvc_xen.c
+> > > @@ -23,6 +23,7 @@
+> > >  #include <linux/err.h>
+> > >  #include <linux/init.h>
+> > >  #include <linux/types.h>
+> > > +#include <linux/list.h>
+> > >
+> > >  #include <asm/io.h>
+> > >  #include <asm/xen/hypervisor.h>
+> > > @@ -30,47 +31,69 @@
+> > >  #include <xen/xen.h>
+> > >  #include <xen/interface/xen.h>
+> > >  #include <xen/hvm.h>
+> > > +#include <xen/grant_table.h>
+> > >  #include <xen/page.h>
+> > >  #include <xen/events.h>
+> > >  #include <xen/interface/io/console.h>
+> > >  #include <xen/hvc-console.h>
+> > > +#include <xen/xenbus.h>
+> > >
+> > >  #include "hvc_console.h"
+> > >
+> > >  #define HVC_COOKIE   0x58656e /* "Xen" in hex */
+> > >
+> > > -static struct hvc_struct *hvc;
+> > > -static int xencons_irq;
+> > > +struct xencons_info {
+> > > +     struct list_head list;
+> > > +     struct xenbus_device *xbdev;
+> > > +     struct xencons_interface *intf;
+> > > +     unsigned int evtchn;
+> > > +     struct hvc_struct *hvc;
+> > > +     int irq;
+> > > +     int vtermno;
+> > > +     grant_ref_t gntref;
+> > > +};
+> > > +
+> > > +static LIST_HEAD(xenconsoles);
+> > > +static DEFINE_SPINLOCK(xencons_lock);
+> > > +static struct xenbus_driver xencons_driver;
+> > >
+> > >  /* ------------------------------------------------------------------ */
+> > >
+> > > -static unsigned long console_pfn = ~0ul;
+> > > -static unsigned int console_evtchn = ~0ul;
+> > > -static struct xencons_interface *xencons_if = NULL;
+> > > +static struct xencons_info *vtermno_to_xencons(int vtermno)
+> > > +{
+> > > +     struct xencons_info *entry, *ret = NULL;
+> > > +
+> > > +     if (list_empty(&xenconsoles))
+> > > +                     return NULL;
+> > >
+> > > -static inline struct xencons_interface *xencons_interface(void)
+> > > +     spin_lock(&xencons_lock);
+> > 
+> > This spinlock gets hit everytime something is typed or written on the
+> > console right? Isn't there an spinlock already in the hvc driver...
+> > 
+> > Or are we protected by the vtermnos being checked for -1?
+> 
+> I think you are right: the spinlock is there to protect access to the
+> list, so we can change list_for_each_entry to list_for_each_entry_safe
+> in vtermno_to_xencons and we solve the problem. All the other spinlock
+> acquisitions are done at console creation/destruction.
 
-On Sat, 21 Jan 2012 02:26:46 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+Right. So I think this will work as long as you mkae the call
+to hvc_remove _before_ your remove entries from the xenconsoles.
 
-> On Sat, Jan 21, 2012 at 1:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > b40c9ef: pciehp: Disable/enable link during slot power off/on
-> > fe877ae: pciehp: Add Disable/enable link functions
-> > 292e286: pciehp: Add pcie_wait_link_not_active()
-> > 186b3fd: pciehp: print out link status when dlla get active.
-> > 2781df4: pciehp: Checking pci conf reading to new added device instead =
-of sleep 1s
-> > bf1c4ac: PCI: Separate pci_bus_read_dev_vendor_id from pci_scan_device
-> > 601c6f1: PCI: Make sriov work with hotplug remove
-> >
-> > =A0drivers/pci/hotplug/pciehp_hpc.c | =A0133 ++++++++++++++++++++++++++=
-+++++-------
-> > =A0drivers/pci/pci.h =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0| =A0 =A02 +
-> > =A0drivers/pci/probe.c =A0 =A0 =A0 =A0 =A0 =A0 =A0| =A0 48 +++++++++---=
---
-> > =A0drivers/pci/remove.c =A0 =A0 =A0 =A0 =A0 =A0 | =A0 28 ++++++++-
-> > =A04 files changed, 169 insertions(+), 42 deletions(-)
-> >
-> > First one is for hotplug with sriov under bridge.
-> > following two are for hotplug probing with pci conf reading.
-> > Last four are for pcie link disable when power off slots.
->=20
-> could be found at:
->=20
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-pci-hp
+That way hvc_remove will set vtermnos[x] to -1 and inhibit
+any callers from calling into us.
 
-Ok I dropped the earlier link state check; can you re-post the series
-with Linus's comments addressed?
-
-Kenji-san, do you have time to at least review these?  Testing would be
-nice too...
-
-Thanks,
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/ew2DPY4uNs5K0M=GNBx.pB2
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPIu6RAAoJEIEoDkX4Qk9hNZ8QAKyXfZO4zjYP+W6cZ4Eqp4W5
-SwfmdWW2vBjAZLO9sAd255PBzeXvlrehEpb+Zy4DN/XGHe5viBZN4FDDGiTwSfZx
-6El0z18w92fc48KdK+DGvFUWSrGqIhYJUY48d6e7UHAulx1VkNTttNYM+MeJATKX
-dbJAoPduREkRLV7U0aSEi+vBqCwwshaMBnuDfMc9XaYTfXgpO1z169LuHjgZUhqe
-Xcg9F70u8lqQgoqQW8OtH1qu8tSbLvmQxLPD7ii2n7wL9pdnRY/Ij1a0wj+Qci9X
-jHt7cTjdWHQPD0LNfeGRROZl9kTiFmSbDtXWVfEa10ApDpdNDWMUVh9/da5v5Qh8
-sGXxNP9qWKfsns/707/KL1AF368p+JFOnv4+bIKbKGJSzI0seQCfn95wKnU0Wchz
-DvkMl6ETuWiq0rlWxZREAVyOncTLbN5OK78AtMD6oCssen4V02EPS5c/dGqW/Z9J
-rvU1VCCTKuMTGh1avpi0MuQqGeFYRkFqkQRfAxDwJrsMf1+1D4PHJgDWch1QRtPv
-Rixq+g0k5cmMFIWkol7UMhPBjGISIHrXnt2hJ8Q4ZedlxPMcnyZEeAtwsXJlJKsZ
-ABIMjxXvYKb5saC0E3zvnSyjRrjZdm+YwsYeHG2iy6/3IzR7WpWvAJIxS7g+voPD
-4VVuKiKPaJ3WbMtLXCig
-=Er01
------END PGP SIGNATURE-----
-
---Sig_/ew2DPY4uNs5K0M=GNBx.pB2--
+This means you will need to redo the xencons_remove and xencons_free
+a bit.. Hmm, there looks to be dead-lock there - let me send the
+details.
