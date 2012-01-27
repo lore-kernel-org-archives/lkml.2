@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab2A0FFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 00:05:13 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:51906 "EHLO
+	id S1755680Ab2A0FFL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 00:05:11 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:51904 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754925Ab2A0Erv (ORCPT
+	with ESMTP id S1754919Ab2A0Erv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jan 2012 23:47:51 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
@@ -12,14 +12,14 @@ To: <linux-kernel@vger.kernel.org>
 Cc: <linux-fsdevel@vger.kernel.org>, <netdev@vger.kernel.org>,
         Damien Millescamps <damien.millescamps@6wind.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 15/29] sysctl: Initial support for auto-unregistering sysctl tables.
-Date: Thu, 26 Jan 2012 20:49:56 -0800
-Message-Id: <1327639810-12760-15-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 08/29] sysctl: Create local copies of directory names used in paths
+Date: Thu, 26 Jan 2012 20:49:49 -0800
+Message-Id: <1327639810-12760-8-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <m1pqe5ah3z.fsf@fess.ebiederm.org>
 References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/xAyuschvwcDz7xmSbUPMu6h5MuEaR4ro=
+X-XM-AID: U2FsdGVkX1/QDKYsK0QwaNgy8EdHHKkIlhfhgF+Yr9M=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
@@ -27,90 +27,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add nreg to ctl_table_header.  When nreg drops to 0 the ctl_table_header
-will be unregistered.
+Creating local copies of directory names is a good idea for
+two reasons.
+- The dynamic names used by callers must be copied into new
+  strings by the callers today to ensure the strings do not
+  change between register and unregister of the sysctl table.
 
-Factor out drop_sysctl_table from unregister_sysctl_table, and add
-the logic for decrementing nreg.
+- Sysctl directories have a potentially different lifetime
+  than the time between register and unregister of any
+  particular sysctl table.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/proc/proc_sysctl.c  |   28 +++++++++++++++++++---------
- include/linux/sysctl.h |    1 +
- 2 files changed, 20 insertions(+), 9 deletions(-)
+ fs/proc/proc_sysctl.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
 diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index 1544485..13faa48 100644
+index 86d32a3..bcf60fb 100644
 --- a/fs/proc/proc_sysctl.c
 +++ b/fs/proc/proc_sysctl.c
-@@ -29,8 +29,9 @@ static struct ctl_table root_table[1];
- static struct ctl_table_root sysctl_table_root;
- static struct ctl_table_header root_table_header = {
- 	{{.count = 1,
--	.ctl_table = root_table,
--	.ctl_entry = LIST_HEAD_INIT(sysctl_table_root.default_set.list),}},
-+	  .nreg = 1,
-+	  .ctl_table = root_table,
-+	  .ctl_entry = LIST_HEAD_INIT(sysctl_table_root.default_set.list),}},
- 	.root = &sysctl_table_root,
- 	.set = &sysctl_table_root.default_set,
- };
-@@ -938,6 +939,7 @@ struct ctl_table_header *__register_sysctl_table(
- 	header->unregistering = NULL;
- 	header->root = root;
- 	header->count = 1;
-+	header->nreg = 1;
- 	if (sysctl_check_table(path, table))
- 		goto fail;
+@@ -943,10 +943,12 @@ struct ctl_table_header *__register_sysctl_paths(
+ 	struct ctl_table *new, **prevp;
+ 	unsigned int n, npath;
+ 	struct ctl_table_set *set;
++	size_t path_bytes = 0;
++	char *new_name;
  
-@@ -1192,6 +1194,20 @@ struct ctl_table_header *register_sysctl_table(struct ctl_table *table)
- }
- EXPORT_SYMBOL(register_sysctl_table);
+ 	/* Count the path components */
+ 	for (npath = 0; path[npath].procname; ++npath)
+-		;
++		path_bytes += strlen(path[npath].procname) + 1;
  
-+static void drop_sysctl_table(struct ctl_table_header *header)
-+{
-+	if (--header->nreg)
-+		return;
-+
-+	start_unregistering(header);
-+	if (!--header->parent->count) {
-+		WARN_ON(1);
-+		kfree_rcu(header->parent, rcu);
-+	}
-+	if (!--header->count)
-+		kfree_rcu(header, rcu);
-+}
-+
- /**
-  * unregister_sysctl_table - unregister a sysctl table hierarchy
-  * @header: the header returned from register_sysctl_table
-@@ -1224,13 +1240,7 @@ void unregister_sysctl_table(struct ctl_table_header * header)
+ 	/*
+ 	 * For each path component, allocate a 2-element ctl_table array.
+@@ -956,24 +958,27 @@ struct ctl_table_header *__register_sysctl_paths(
+ 	 * We allocate everything in one go so that we don't have to
+ 	 * worry about freeing additional memory in unregister_sysctl_table.
+ 	 */
+-	header = kzalloc(sizeof(struct ctl_table_header) +
++	header = kzalloc(sizeof(struct ctl_table_header) + path_bytes +
+ 			 (2 * npath * sizeof(struct ctl_table)), GFP_KERNEL);
+ 	if (!header)
+ 		return NULL;
+ 
+ 	new = (struct ctl_table *) (header + 1);
++	new_name = (char *)(new + (2 * npath));
+ 
+ 	/* Now connect the dots */
+ 	prevp = &header->ctl_table;
+ 	for (n = 0; n < npath; ++n, ++path) {
+ 		/* Copy the procname */
+-		new->procname = path->procname;
++		strcpy(new_name, path->procname);
++		new->procname = new_name;
+ 		new->mode     = 0555;
+ 
+ 		*prevp = new;
+ 		prevp = &new->child;
+ 
+ 		new += 2;
++		new_name += strlen(new_name) + 1;
  	}
- 
- 	spin_lock(&sysctl_lock);
--	start_unregistering(header);
--	if (!--header->parent->count) {
--		WARN_ON(1);
--		kfree_rcu(header->parent, rcu);
--	}
--	if (!--header->count)
--		kfree_rcu(header, rcu);
-+	drop_sysctl_table(header);
- 	spin_unlock(&sysctl_lock);
- }
- EXPORT_SYMBOL(unregister_sysctl_table);
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index 094bc5c..e40b8f6 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -1032,6 +1032,7 @@ struct ctl_table_header
- 			struct list_head ctl_entry;
- 			int used;
- 			int count;
-+			int nreg;
- 		};
- 		struct rcu_head rcu;
- 	};
+ 	*prevp = table;
+ 	header->ctl_table_arg = table;
 -- 
 1.7.2.5
 
