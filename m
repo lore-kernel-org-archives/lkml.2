@@ -1,55 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab2A0Er4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 23:47:56 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:51899 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab2A0Ert (ORCPT
+	id S1755325Ab2A0EtU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 23:49:20 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:56466 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755011Ab2A0Erz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 23:47:49 -0500
+	Thu, 26 Jan 2012 23:47:55 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-fsdevel@vger.kernel.org>, <netdev@vger.kernel.org>,
         Damien Millescamps <damien.millescamps@6wind.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 05/29] sysctl: Make the directories have nlink == 1
-Date: Thu, 26 Jan 2012 20:49:46 -0800
-Message-Id: <1327639810-12760-5-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 20/29] sysctl: Rewrite proc_sys_readdir in terms of first_entry and next_entry
+Date: Thu, 26 Jan 2012 20:50:01 -0800
+Message-Id: <1327639810-12760-20-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <m1pqe5ah3z.fsf@fess.ebiederm.org>
 References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19745l3eF6soLRmd+RlXZO1qbgaLm7b0HQ=
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19lq0Xpqep1JWkFQVvaDjb/eiQjuoC3/mE=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I goofed when I made sysctl directories have nlink == 0.
-nlink == 0 means the directory has been deleted.
-nlink == 1 meands a directory does not count subdirectories.
+Replace sysctl_head_next with first_entry and next_entry.  These new
+iterators operate at the level of sysctl table entries and filter
+out any sysctl tables that should not be shown.
 
-Use the default nlink == 1 for sysctl directories.
+Utilizing two specialized functions instead of a single function removes
+conditionals for handling awkward special cases that only come up
+at the beginning of iteration, making the iterators easier to read
+and understand.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/proc/proc_sysctl.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ fs/proc/proc_sysctl.c |   98 +++++++++++++++++++++++++++++++------------------
+ 1 files changed, 62 insertions(+), 36 deletions(-)
 
 diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index 06e6f10..f6aa751 100644
+index 3b63f29..d9c3ae6 100644
 --- a/fs/proc/proc_sysctl.c
 +++ b/fs/proc/proc_sysctl.c
-@@ -253,7 +253,6 @@ static struct inode *proc_sys_make_inode(struct super_block *sb,
- 		inode->i_fop = &proc_sys_file_operations;
- 	} else {
- 		inode->i_mode |= S_IFDIR;
--		clear_nlink(inode);
- 		inode->i_op = &proc_sys_dir_operations;
- 		inode->i_fop = &proc_sys_dir_file_operations;
+@@ -243,31 +243,25 @@ static struct ctl_table *lookup_entry(struct ctl_table_header **phead,
+ 	return entry;
+ }
+ 
+-static struct ctl_table_header *__sysctl_head_next(struct nsproxy *namespaces,
+-						struct ctl_table_header *prev)
++static struct ctl_table_header *next_usable_entry(struct ctl_table *dir,
++	struct ctl_table_root *root, struct list_head *tmp)
+ {
+-	struct ctl_table_root *root;
++	struct nsproxy *namespaces = current->nsproxy;
+ 	struct list_head *header_list;
+ 	struct ctl_table_header *head;
+-	struct list_head *tmp;
+ 
+-	spin_lock(&sysctl_lock);
+-	if (prev) {
+-		head = prev;
+-		tmp = &prev->ctl_entry;
+-		unuse_table(prev);
+-		goto next;
+-	}
+-	tmp = &root_table_header.ctl_entry;
++	goto next;
+ 	for (;;) {
+ 		head = list_entry(tmp, struct ctl_table_header, ctl_entry);
++		root = head->root;
+ 
+-		if (!use_table(head))
++		if (head->attached_to != dir ||
++		    !head->attached_by->procname ||
++		    !use_table(head))
+ 			goto next;
+-		spin_unlock(&sysctl_lock);
++
+ 		return head;
+ 	next:
+-		root = head->root;
+ 		tmp = tmp->next;
+ 		header_list = lookup_header_list(root, namespaces);
+ 		if (tmp != header_list)
+@@ -283,13 +277,53 @@ static struct ctl_table_header *__sysctl_head_next(struct nsproxy *namespaces,
+ 		tmp = header_list->next;
  	}
+ out:
+-	spin_unlock(&sysctl_lock);
+ 	return NULL;
+ }
+ 
+-static struct ctl_table_header *sysctl_head_next(struct ctl_table_header *prev)
++static void first_entry(
++	struct ctl_table_header *dir_head, struct ctl_table *dir,
++	struct ctl_table_header **phead, struct ctl_table **pentry)
+ {
+-	return __sysctl_head_next(current->nsproxy, prev);
++	struct ctl_table_header *head = dir_head;
++	struct ctl_table *entry = dir;
++
++	spin_lock(&sysctl_lock);
++	if (entry->procname) {
++		use_table(head);
++	} else {
++		head = next_usable_entry(dir, &sysctl_table_root,
++					 &sysctl_table_root.default_set.list);
++		if (head)
++			entry = head->attached_by;
++	}
++	spin_unlock(&sysctl_lock);
++	*phead = head;
++	*pentry = entry;
++}
++
++static void next_entry(struct ctl_table *dir,
++	struct ctl_table_header **phead, struct ctl_table **pentry)
++{
++	struct ctl_table_header *head = *phead;
++	struct ctl_table *entry = *pentry;
++
++	entry++;
++	if (!entry->procname) {
++		struct ctl_table_root *root = head->root;
++		struct list_head *tmp = &head->ctl_entry;
++		if (head->attached_to != dir) {
++			root = &sysctl_table_root;
++			tmp = &sysctl_table_root.default_set.list;
++		}
++		spin_lock(&sysctl_lock);
++		unuse_table(head);
++		head = next_usable_entry(dir, root, tmp);
++		spin_unlock(&sysctl_lock);
++		if (head)
++			entry = head->attached_by;
++	}
++	*phead = head;
++	*pentry = entry;
+ }
+ 
+ void register_sysctl_root(struct ctl_table_root *root)
+@@ -533,20 +567,17 @@ static int scan(struct ctl_table_header *head, ctl_table *table,
+ 		unsigned long *pos, struct file *file,
+ 		void *dirent, filldir_t filldir)
+ {
++	int res;
+ 
+-	for (; table->procname; table++, (*pos)++) {
+-		int res;
++	if ((*pos)++ < file->f_pos)
++		return 0;
+ 
+-		if (*pos < file->f_pos)
+-			continue;
++	res = proc_sys_fill_cache(file, dirent, filldir, head, table);
+ 
+-		res = proc_sys_fill_cache(file, dirent, filldir, head, table);
+-		if (res)
+-			return res;
++	if (res == 0)
++		file->f_pos = *pos;
+ 
+-		file->f_pos = *pos + 1;
+-	}
+-	return 0;
++	return res;
+ }
+ 
+ static int proc_sys_readdir(struct file *filp, void *dirent, filldir_t filldir)
+@@ -556,6 +587,7 @@ static int proc_sys_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 	struct ctl_table_header *head = grab_header(inode);
+ 	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
+ 	struct ctl_table_header *h = NULL;
++	struct ctl_table *entry;
+ 	unsigned long pos;
+ 	int ret = -EINVAL;
+ 
+@@ -585,14 +617,8 @@ static int proc_sys_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 	}
+ 	pos = 2;
+ 
+-	ret = scan(head, table, &pos, filp, dirent, filldir);
+-	if (ret)
+-		goto out;
+-
+-	for (h = sysctl_head_next(NULL); h; h = sysctl_head_next(h)) {
+-		if (h->attached_to != table)
+-			continue;
+-		ret = scan(h, h->attached_by, &pos, filp, dirent, filldir);
++	for (first_entry(head, table, &h, &entry); h; next_entry(table, &h, &entry)) {
++		ret = scan(h, entry, &pos, filp, dirent, filldir);
+ 		if (ret) {
+ 			sysctl_head_finish(h);
+ 			break;
 -- 
 1.7.2.5
 
