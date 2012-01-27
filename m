@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab2DRAVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:21:18 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56159 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab2DRAVP (ORCPT
+	id S1753841Ab2DYOxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Apr 2012 10:53:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54257 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab2DYOxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:21:15 -0400
-Message-Id: <8675ae$5bugro@wolverine02.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6684"; a="180306808"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-Date: Tue, 24 Jan 2012 14:31:36 +0100
-Subject: [PATCH 04/10] arch/hexagon/kernel/dma.c: make function static
-To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+	Wed, 25 Apr 2012 10:53:01 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH] slub: fix incorrect return type of get_any_partial()
+Date: Fri, 27 Jan 2012 00:12:23 -0800
+Message-Id: <1327651943-28225-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is only used in the same file, and the other similar
-functions in this file are also static.
+Commit 497b66f2ecc97844493e6a147fd5a7e73f73f408 ('slub: return object pointer
+from get_partial() / new_slab().') changed return type of some functions.
+This updates missing part.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-[rkuo@codeaurora.org: adjusted patch to apply to latest]
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
----
- arch/hexagon/kernel/dma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
-diff --git a/arch/hexagon/kernel/dma.c b/arch/hexagon/kernel/dma.c
-index 3730221..e8d52cc 100644
---- a/arch/hexagon/kernel/dma.c
-+++ b/arch/hexagon/kernel/dma.c
-@@ -53,7 +53,7 @@ static struct gen_pool *coherent_pool;
- 
- /* Allocates from a pool of uncached memory that was reserved at boot time */
- 
--void *hexagon_dma_alloc_coherent(struct device *dev, size_t size,
-+static void *hexagon_dma_alloc_coherent(struct device *dev, size_t size,
- 				 dma_addr_t *dma_addr, gfp_t flag,
- 				 struct dma_attrs *attrs)
+diff --git a/mm/slub.c b/mm/slub.c
+index ffe13fd..18bf13e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1579,7 +1579,7 @@ static void *get_partial_node(struct kmem_cache *s,
+ /*
+  * Get a page from somewhere. Search in increasing NUMA distances.
+  */
+-static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags,
++static void *get_any_partial(struct kmem_cache *s, gfp_t flags,
+ 		struct kmem_cache_cpu *c)
  {
+ #ifdef CONFIG_NUMA
 -- 
-1.7.1
+1.7.0.4
 
-
---
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
