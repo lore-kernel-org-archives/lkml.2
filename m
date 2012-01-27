@@ -1,52 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab2A0UiC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 15:38:02 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51037 "EHLO mail.zytor.com"
+	id S1754600Ab2A0Ulh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 15:41:37 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:37711 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977Ab2A0UiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 15:38:00 -0500
-Message-ID: <4F230AF9.1010104@zytor.com>
-Date: Fri, 27 Jan 2012 12:37:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gorcunov@openvz.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        ebiederm@xmission.com, xemul@openvz.org, xemul@parallels.com,
-        avagin@openvz.org, kosaki.motohiro@gmail.com, mingo@elte.hu,
-        tglx@linutronix.de, andi@firstfloor.org, tj@kernel.org,
-        matthltc@us.ibm.com, penberg@kernel.org, eric.dumazet@gmail.com,
-        segoon@openwall.com, adobriyan@gmail.com, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-References: <20120127175342.273260614@openvz.org> <20120127175939.795551339@openvz.org> <4F2306BB.5090907@jp.fujitsu.com> <4F230A40.8000203@parallels.com>
-In-Reply-To: <4F230A40.8000203@parallels.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752550Ab2A0Ulf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 15:41:35 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, mmarek@suse.cz
+Subject: [PATCH] scripts/coccinelle: semantic patch for missing clk_put
+Date: Fri, 27 Jan 2012 21:41:26 +0100
+Message-Id: <1327696888-8186-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2012 12:34 PM, Glauber Costa wrote:
->>> +	case KCMP_SYSVSEM:
->>> +#ifdef CONFIG_SYSVIPC
->>> +		ret = kcmp_ptr((long)task1->sysvsem.undo_list,
->>> +			       (long)task2->sysvsem.undo_list,
->>> +			       KCMP_SYSVSEM);
->>> +#else
->>> +		ret = -EINVAL;
->>
->> ENOTSUP is better, I think. because of, EINVAL implicitly mean _caller_ is wrong.
->> but in this case, it is not bad. only the kernel doesn't have enough feature.
->>
-> 
-> Isn't it usually the case for ENOSYS, then ?
-> 
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-ENOSYS means "no such system call".  That would apply if the kcmp system
-call itself did not exist.
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-	-hpa
+---
 
+diff --git a/scripts/coccinelle/free/clk_put.cocci b/scripts/coccinelle/free/clk_put.cocci
+new file mode 100644
+index 0000000..46747ad
+--- /dev/null
++++ b/scripts/coccinelle/free/clk_put.cocci
+@@ -0,0 +1,67 @@
++/// Find missing clk_puts.
++///
++//# This only signals a missing clk_put when there is a clk_put later
++//# in the same function.
++//# False positives can be due to loops.
++//
++// Confidence: Moderate
++// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Comments:
++// Options:
++
++virtual context
++virtual org
++virtual report
++
++@clk@
++expression e;
++statement S,S1;
++int ret;
++position p1,p2,p3;
++@@
++
++e = clk_get@p1(...)
++... when != clk_put(e)
++if (<+...e...+>) S
++... when any
++    when != clk_put(e)
++    when != if (...) { ... clk_put(e); ... }
++(
++ if (ret == 0) S1
++|
++if (...)
++   { ...
++     return 0; }
++|
++if (...)
++   { ...
++     return <+...e...+>; }
++|
++*if@p2 (...)
++   { ... when != clk_put(e)
++         when forall
++     return@p3 ...; }
++)
++... when any
++clk_put(e);
++
++@script:python depends on org@
++p1 << clk.p1;
++p2 << clk.p2;
++p3 << clk.p3;
++@@
++
++cocci.print_main("clk_get",p1)
++cocci.print_secs("if",p2)
++cocci.print_secs("needed clk_put",p3)
++
++@script:python depends on report@
++p1 << clk.p1;
++p2 << clk.p2;
++p3 << clk.p3;
++@@
++
++msg = "ERROR: missing clk_put; clk_get on line %s and execution via conditional on line %s" % (p1[0].line,p2[0].line)
++coccilib.report.print_report(p3[0],msg)
