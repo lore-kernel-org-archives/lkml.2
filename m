@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2A0Vef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 16:34:35 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56049 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab2A0Ved convert rfc822-to-8bit (ORCPT
+	id S1754698Ab2A0VfG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 16:35:06 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:13052
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752836Ab2A0VfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 16:34:33 -0500
-Message-ID: <1327700063.2446.178.camel@twins>
-Subject: Re: perf: prctl(PR_TASK_PERF_EVENTS_DISABLE) has no effect
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrew Steets <asteets@rgmadvisors.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Fri, 27 Jan 2012 22:34:23 +0100
-In-Reply-To: <4F2303D8.80300@rgmadvisors.com>
-References: <4F22D8D9.3010108@rgmadvisors.com>
-	 <1327684363.2446.176.camel@twins> <4F2303D8.80300@rgmadvisors.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 27 Jan 2012 16:35:04 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh6d523hz2dhc1bhc31hc1ah2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F231877.9050504@freescale.com>
+Date: Fri, 27 Jan 2012 15:34:47 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0.1) Gecko/20111221 Firefox/9.0.1 SeaMonkey/2.6.1
+MIME-Version: 1.0
+To: Dmitry Artamonow <mad_soft@inbox.ru>
+CC: <linux-watchdog@vger.kernel.org>, Kumar Gala <galak@kernel.crashing.org>,
+        Wim Van Sebroeck <wim@iguana.be>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] watchdog: fix GETTIMEOUT ioctl in booke_wdt
+References: <1327605870-9226-1-git-send-email-mad_soft@inbox.ru>
+In-Reply-To: <1327605870-9226-1-git-send-email-mad_soft@inbox.ru>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-27 at 14:06 -0600, Andrew Steets wrote:
-> On 1/27/12 11:12 AM, Peter Zijlstra wrote:
-> > On Fri, 2012-01-27 at 11:03 -0600, Andrew Steets wrote:
-> >> Can anyone tell
-> >> me if I'm using this wrong or if this is a bug?
-> >
-> > You're using it wrong, it will disable events you own (created) not
-> > events that monitor you.
+Dmitry Artamonow wrote:
+> Commit dcfb748422 ([WATCHDOG] fix book E watchdog to take
+> WDIOC_SETTIMEOUT arg in seconds) fixed SETTIMEOUT ioctl
+> to use seconds as a parameter instead of some hardware-specific
+> "period", but missed to apply similar changes to GETTIMEOUT,
+> so it still returns "period" value. Let's fix it!
+> Also, while at it, make SETTIMEOUT ioctl return real timeout
+> value as it should do according to the documentation.
 > 
-> Is there an alternate way of disabling events that monitor the current
-> process? 
+> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+> ---
 
-Nope, nor will there ever be.
+Acked-by: Timur Tabi <timur@freescale.com>
 
->  I ask because I came across the following description in
-> tools/perf/design.txt:
-> 
->      A process can enable or disable all the counter groups that are
->      attached to it, using prctl:
-> 
->          prctl(PR_TASK_PERF_EVENTS_ENABLE);
-> 
->          prctl(PR_TASK_PERF_EVENTS_DISABLE);
-> 
->      This applies to all counters on the current process, whether created
->      by this process or by another, and doesn't affect any counters that
->      this process has created on other processes.  It only enables or
->      disables the group leaders, not any other members in the groups.
+I don't have an easy way to test the watchdog ioctls.
 
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
-That's wrong.. also I wouldn't ever allow such a 'feature', that's just
-asking for trouble.
