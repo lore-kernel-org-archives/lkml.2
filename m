@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab2A0Jgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 04:36:49 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37175 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab2A0Jgq (ORCPT
+	id S1752847Ab2A0Jk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 04:40:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59585 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab2A0Jk4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 04:36:46 -0500
-X-AuditID: b753bd60-98c60ba00000359c-c5-4f22702b5fea
-X-AuditID: b753bd60-98c60ba00000359c-c5-4f22702b5fea
-Message-ID: <4F227026.3000508@hitachi.com>
-Date: Fri, 27 Jan 2012 18:36:38 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Andi Kleen <ak@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Luis Goncalves <lgoncalv@redhat.com>
-Subject: Re: [PATCH RT 1/2 v2] x86: Do not disable preemption in int3 on 32bit
-References: <20120125143231.196670014@goodmis.org>   <20120125143520.086175333@goodmis.org> <4F211126.1090204@hitachi.com>  <1327584811.22710.80.camel@gandalf.stny.rr.com>  <4F215C5E.4090006@hitachi.com> <1327587719.22710.95.camel@gandalf.stny.rr.com>
-In-Reply-To: <1327587719.22710.95.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 27 Jan 2012 04:40:56 -0500
+Message-ID: <1327657245.2446.153.camel@twins>
+Subject: Re: [RFC PATCH v1 1/2] sched: unified sched_powersavings sysfs
+ tunable
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: svaidy@linux.vnet.ibm.com
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Indan Zupancic <indan@nul.nu>, Youquan Song <youquan.song@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Jan 2012 10:40:45 +0100
+In-Reply-To: <20120127092205.GC8897@dirshya.in.ibm.com>
+References: <20120116161740.29759.4679.stgit@localhost>
+	 <20120116162241.29759.13220.stgit@localhost>
+	 <1327504213.2614.78.camel@laptop>
+	 <20120127092205.GC8897@dirshya.in.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/01/26 23:21), Steven Rostedt wrote:
-> On Thu, 2012-01-26 at 22:59 +0900, Masami Hiramatsu wrote:
+On Fri, 2012-01-27 at 14:52 +0530, Vaidyanathan Srinivasan wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-01-25 16:10:13]:
 > 
->> Better. If the functions are only for signaling, how
->> about using the "signal" in name? :)
->>
->> conditional_sti/cli_for_signal()
-> 
-> I don't think they are only for signals. The conditional_sti/cli is for
-> all callers of do_trap(). But those callers that run on an IST stack use
-> the preempt_conditional_sti/cli() code. Perhaps we should call it:
-> 
-> conditional_sti/cli_ist() ?
-> 
-> Actually, I think this is the best name. The "preempt_" one, didn't give
-> any annotation about why it was disabling preemption. It was done
-> because the stack is on the IST and we can not schedule out. Thus, if we
-> add the "_ist()" to it, not only does it annotate why this call is
-> special, but also allows x86_32, which does not have an IST, not to have
-> to disable preemption.
+> > On Mon, 2012-01-16 at 21:52 +0530, Vaidyanathan Srinivasan wrote:
+> > > @@ -6150,10 +6150,8 @@ SD_INIT_FUNC(CPU)
+> > >   SD_INIT_FUNC(ALLNODES)
+> > >   SD_INIT_FUNC(NODE)
+> > >  #endif
+> > > -#ifdef CONFIG_SCHED_SMT
+> > > +#ifdef CONFIG_SCHED_POWERSAVE
+> > >   SD_INIT_FUNC(SIBLING)
+> > > -#endif
+> > > -#ifdef CONFIG_SCHED_MC
+> > >   SD_INIT_FUNC(MC)
+> > >  #endif
+> > >  #ifdef CONFIG_SCHED_BOOK
+> > > @@ -6250,7 +6248,7 @@ static void claim_allocations(int cpu, struct sched_domain *sd)
+> > >                 *per_cpu_ptr(sdd->sgp, cpu) = NULL;
+> > >  }
+> > >  
+> > > -#ifdef CONFIG_SCHED_SMT
+> > > +#ifdef CONFIG_SCHED_POWERSAVE
+> > >  static const struct cpumask *cpu_smt_mask(int cpu)
+> > >  {
+> > >         return topology_thread_cpumask(cpu);
+> > > @@ -6261,10 +6259,8 @@ static const struct cpumask *cpu_smt_mask(int cpu)
+> > >   * Topology list, bottom-up.
+> > >   */
+> > >  static struct sched_domain_topology_level default_topology[] = {
+> > > -#ifdef CONFIG_SCHED_SMT
+> > > +#ifdef CONFIG_SCHED_POWERSAVE
+> > >         { sd_init_SIBLING, cpu_smt_mask, },
+> > > -#endif
+> > > -#ifdef CONFIG_SCHED_MC
+> > >         { sd_init_MC, cpu_coregroup_mask, },
+> > >  #endif
+> > >  #ifdef CONFIG_SCHED_BOOK 
+> > 
+> > I don't like this either, SCHED_{MC,SMT} here have nothing to do with
+> > powersavings, its topology support.
+>  
+> Yes, but we don't need these domains for any other purpose other than
+> powersave balance.  The code overheads are not high,  I will remove
+> the config option and check.
 
-I agree with your opinion :)
-
-Thanks,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Yes we do, SMT perf skips siblings and only loads them when there's only
+siblings left idle. Similarly for MC, we prefer to run tasks on separate
+sockets when possible.
