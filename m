@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab2A0UmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 15:42:04 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20877 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab2A0UmB (ORCPT
+	id S1754693Ab2A0UmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 15:42:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56298 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641Ab2A0UmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 15:42:01 -0500
-Date: Fri, 27 Jan 2012 15:39:28 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>, gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] zcache: fix deadlock condition
-Message-ID: <20120127203928.GA17285@phenom.dumpdata.com>
-References: <356ccc29-31af-4274-b372-c8fd1a9b10cb@default>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <356ccc29-31af-4274-b372-c8fd1a9b10cb@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4F230C12.00A5,ss=1,re=0.000,fgs=0
+	Fri, 27 Jan 2012 15:42:02 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=EFLXiCCoQusA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=yNpAF3D4zaanTAVe4XIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1327696921.22710.132.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/5] x86/jump-label: Do not bother updating nops if they
+ are correct
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Fri, 27 Jan 2012 15:42:01 -0500
+In-Reply-To: <20120127123437.481791ba.akpm@linux-foundation.org>
+References: <20120127201442.080360013@goodmis.org>
+	 <20120127202031.234193929@goodmis.org>
+	 <20120127123437.481791ba.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 02:32:51PM -0800, Dan Magenheimer wrote:
-> I discovered this deadlock condition awhile ago working on RAMster
-> but it affects zcache as well.  The list spinlock must be
-> locked prior to the page spinlock and released after.  As
-> a result, the page copy must also be done while the locks are held.
-> 
-> Applies to 3.2.  Konrad, please push (via GregKH?)...
-> this is definitely a bug fix so need not be pushed during
-> a -rc0 window.
+On Fri, 2012-01-27 at 12:34 -0800, Andrew Morton wrote:
 
-Looks good to me. Greg, could you apply the patch to your tree
-please? [Or would you rather I sent an GIT pull?]
+> > +	if (!once) {
+> > +		unsigned char default_nop[] = { JUMP_LABEL_INIT_NOP };
+> 
+> const.  It generates less code.  With my compiler version, at least. 
+> That was a bit dumb of it, given that memcmp() is declared to take
+> const args.
+
+OK will update,
 
 Thanks!
-> 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index 56c1f9c..5b9f74e 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -358,8 +358,8 @@ static struct zbud_hdr *zbud_create(uint16_t client_id, uint16_t pool_id,
->  	if (unlikely(zbpg == NULL))
->  		goto out;
->  	/* ok, have a page, now compress the data before taking locks */
-> -	spin_lock(&zbpg->lock);
->  	spin_lock(&zbud_budlists_spinlock);
-> +	spin_lock(&zbpg->lock);
->  	list_add_tail(&zbpg->bud_list, &zbud_unbuddied[nchunks].list);
->  	zbud_unbuddied[nchunks].count++;
->  	zh = &zbpg->buddy[0];
-> @@ -389,12 +389,11 @@ init_zh:
->  	zh->oid = *oid;
->  	zh->pool_id = pool_id;
->  	zh->client_id = client_id;
-> -	/* can wait to copy the data until the list locks are dropped */
-> -	spin_unlock(&zbud_budlists_spinlock);
-> -
->  	to = zbud_data(zh, size);
->  	memcpy(to, cdata, size);
->  	spin_unlock(&zbpg->lock);
-> +	spin_unlock(&zbud_budlists_spinlock);
-> +
->  	zbud_cumul_chunk_counts[nchunks]++;
->  	atomic_inc(&zcache_zbud_curr_zpages);
->  	zcache_zbud_cumul_zpages++;
+
+-- Steve
+
+
+
