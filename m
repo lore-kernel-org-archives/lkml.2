@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab2A0VFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 16:05:44 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51544 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab2A0VFm convert rfc822-to-8bit (ORCPT
+	id S1754594Ab2A0VIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 16:08:18 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:32969
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752378Ab2A0VIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 16:05:42 -0500
+	Fri, 27 Jan 2012 16:08:16 -0500
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzzz2dhc1bhc31hc1ah2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F231234.5030007@freescale.com>
+Date: Fri, 27 Jan 2012 15:08:04 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0.1) Gecko/20111221 Firefox/9.0.1 SeaMonkey/2.6.1
 MIME-Version: 1.0
-In-Reply-To: <20120127191032.GA22999@dirshya.in.ibm.com>
-References: <20120127191032.GA22999@dirshya.in.ibm.com>
-Date: Fri, 27 Jan 2012 13:05:41 -0800
-X-Google-Sender-Auth: W6b_XP_CTG1lgz6ktRo_NFL_-78
-Message-ID: <CAE9FiQVKLmrryoOhyjr_rGucGGZLW=PSD=s_AjW0Za6vHCvOtg@mail.gmail.com>
-Subject: Re: [BUGFIX][PATCH] pci: check for 4k resource_size alignment in sriov_init
-From: Yinghai Lu <yinghai@kernel.org>
-To: svaidy@linux.vnet.ibm.com
-Cc: Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dmitry Artamonow <mad_soft@inbox.ru>
+CC: <linux-watchdog@vger.kernel.org>, Kumar Gala <galak@kernel.crashing.org>,
+        Wim Van Sebroeck <wim@iguana.be>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] watchdog: fix GETTIMEOUT ioctl in booke_wdt
+References: <1327605870-9226-1-git-send-email-mad_soft@inbox.ru>
+In-Reply-To: <1327605870-9226-1-git-send-email-mad_soft@inbox.ru>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 11:10 AM, Vaidyanathan Srinivasan
-<svaidy@linux.vnet.ibm.com> wrote:
-> Hi Ram and Jesse,
->
-> I found a trivial issue with page size alignment check on IBM POWER
-> box with 64k base page size.  In sriov_init(), changing the check from
-> PAGE_SIZE (arch and config dependent) to HW_PAGE_SIZE (always 4k) was
-> required to use one of the sriov adapter as PF since the
-> resource_size() comes up as 0x8000 and PAGE_SIZE would be 0x10000 for
-> pseries boxes.
->
-> I think resource_size() could be less than SystemPageSize, but I would
-> like your comments/ack/nack on any consequences of checking for only
-> 4k alignment here in a system with larger base page size.
->
-> Thanks,
-> Vaidy
->
-> ---
->
->    pci: check for 4k resource_size alignment in sriov_init
->
->    pci sriov_init should check for 4k page size alignment of resource_size
->    even if base page size is larger -- like 64k in powerpc.
->
->    Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
->
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index 0321fa3..5816fa0 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -474,7 +474,7 @@ found:
->                                     pos + PCI_SRIOV_BAR + i * 4);
->                if (!res->flags)
->                        continue;
-> -               if (resource_size(res) & (PAGE_SIZE - 1)) {
-> +               if (resource_size(res) & (HW_PAGE_SIZE - 1)) {
->                        rc = -EIO;
->                        goto failed;
->                }
->
+Dmitry Artamonow wrote:
+> +#ifdef	CONFIG_FSL_BOOKE
+> +		return put_user(period_to_sec(booke_wdt_period), p);
+> +#else
 
-but HW_PAGE_SIZE is only defined for powerpc.
+period_to_sec() returns an unsigned long long, which means that the driver
+will write 8 bytes instead of 4 to user space.  You need to use a
+temporary u32, just like WDIOC_SETTIMEOUT:
 
-also there is PAGE_SHIFT around in that function.
+		if (get_user(tmp, p))
+			return -EFAULT;
 
-maybe you can just define another MARCO according to IOV spec?
 
-Thanks
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
-Yinghai
