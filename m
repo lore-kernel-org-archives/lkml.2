@@ -1,98 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791Ab2A0XJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 18:09:52 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52392 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751482Ab2A0XJv (ORCPT
+	id S1752031Ab2A0XUJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 18:20:09 -0500
+Received: from static-96-229-114-10.lsanca.fios.verizon.net ([96.229.114.10]:34922
+	"EHLO mail.lorez.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab2A0XUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 18:09:51 -0500
-X-Sasl-enc: PCujJW1og+FR4t4jNkvDbaHpBkok0Y/Zr7aO8f9gN+4E 1327705790
-Date: Fri, 27 Jan 2012 15:09:46 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Junio C Hamano <gitster@pobox.com>
-Subject: [GIT PATCH] driver core patches for 3.3-rc1
-Message-ID: <20120127230946.GA23528@kroah.com>
+	Fri, 27 Jan 2012 18:20:07 -0500
+X-Greylist: delayed 1666 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jan 2012 18:20:07 EST
+Message-ID: <4F232AA4.5070208@lorez.org>
+Date: Fri, 27 Jan 2012 14:52:20 -0800
+From: Bob Richmond <bob@lorez.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Real time clock update notification
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to create a signed tag for this pull request.  It's call
-"driver-core-3.3-rc1-bugfixes" in the repo below, but when I did:
-    git request-pull master git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ driver-core-3.3-rc1-bugfixes > msg.txt
+Is there any kind of facility for a process that is blocking in any one 
+of the event notification system calls (select/poll/epoll_wait) to be 
+unblocked in the event that the realtime clock has been updated? For 
+instance, say I want to fire off an event at the exact moment that the 
+realtime clock flips to 2pm. I first query the realtime clock via 
+clock_gettime(CLOCK_REALTIME), and know that in 3 hours, it will be 2pm 
+and I want to unblock at that moment. So I block in epoll_wait for 3 hours.
 
-I got the text below, no signed tag with the wording that I added to it
-that I could see.  Now I am still using git 1.7.8.3, is that why?  If
-so, I'll go build 1.7.9 as I see that is now out today.
+Then ntpd decides that the rtc is way off, and updates the current time 
+to 1:30, and I should now be unblocking 30 minutes from now. However, my 
+process can't know that this occurred and I should requery the rtc to 
+find out how long I need to sleep *now*. It looks like crond (which 
+performs a similar task) just wakes itself up every 60 seconds, which 
+isn't particularly ideal.
 
-Did I mess something up?  I created the tag with:
-    git tag -u kroah.com -s driver-core-3.3-rc1-bugfixes driver-core-linus
-
-Could it be that the tag and the branch are at the same point in the
-tree right now?  Or something else?
-
-The wording I put in the tag is:
-	Here are some patches for the 3.3-rc1 tree.
-
-	It contains the removal of the sysdev code, now that all users
-	of it are gone, as well as some sysfs bugfixes that have been
-	reported by users.  There are also some documentation updates
-	here as well.
-
-
-All of these have been in the linux-next tree for the past week.
-
-thanks,
-
-greg k-h
-
--------------------
-
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
-
-  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ driver-core-linus
-
-Alan Stern (1):
-      Documentation update for the driver model core
-
-Eric W. Biederman (1):
-      sysfs: Complain bitterly about attempts to remove files from nonexistent directories.
-
-Greg Kroah-Hartman (2):
-      driver core: remove drivers/base/sys.c and include/linux/sysdev.h
-      stable: update documentation to ask for kernel version
-
-Randy Dunlap (3):
-      kernel-doc: fix new warnings in device.h
-      kernel-doc: fix new warnings in debugfs
-      kernel-doc: fix new warnings in driver-core
-
-Wolfram Sang (1):
-      Documentation: devres: add allocation functions to list of supported calls
-
-majianpeng (1):
-      base/core.c:fix typo in comment in function device_add
-
- Documentation/driver-model/devres.txt |    4 +
- Documentation/stable_kernel_rules.txt |    3 +-
- drivers/base/Makefile                 |    2 +-
- drivers/base/bus.c                    |    9 +-
- drivers/base/core.c                   |   17 ++-
- drivers/base/sys.c                    |  383 ---------------------------------
- fs/debugfs/file.c                     |    2 +-
- fs/sysfs/file.c                       |    6 +
- fs/sysfs/inode.c                      |    5 +-
- include/linux/device.h                |   15 +-
- include/linux/sysdev.h                |  164 --------------
- 11 files changed, 49 insertions(+), 561 deletions(-)
- delete mode 100644 drivers/base/sys.c
- delete mode 100644 include/linux/sysdev.h
+If this facility doesn't exist, I'm curious whether something like it 
+would be feasible to introduce with minimal overhead. I'm unsure how 
+often ntpd resets the rtc when clock skew is detected, and my process 
+might be excessively notified whenever the time changes by a few 
+milliseconds.
