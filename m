@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab2A0Mpi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 07:45:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57846 "EHLO mx1.redhat.com"
+	id S1754823Ab2A0MrJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 07:47:09 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41111 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754298Ab2A0Mph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 07:45:37 -0500
-Date: Fri, 27 Jan 2012 10:44:06 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [resubmit] Re: [PATCH] tracing: adjust shrink_slab beginning
- trace event name
-Message-ID: <20120127124405.GA2092@x61.redhat.com>
-References: <20111223141619.GA19720@x61.redhat.com>
+	id S1754298Ab2A0MrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 07:47:07 -0500
+Date: Fri, 27 Jan 2012 13:46:41 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [v3.3-rc1 regression] TCP: too many of orphaned sockets
+Message-ID: <20120127124641.GA30819@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=unknown-8bit
 Content-Disposition: inline
-In-Reply-To: <20111223141619.GA19720@x61.redhat.com>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While reviewing vmscan tracing events, I realized all functions which establish paired tracepoints (one at the beginning and another at the end of the function block) were following this naming pattern:
-  <tracepoint-name>_begin
-  <tarcepoint-name>_end
 
-However, the 'beginning' tracing event for shrink_slab() did not follow the aforementioned naming pattern. This patch renames that trace event to adjust this naming inconsistency.
+There's a new TCP regression in latest -git that triggers in 
+randconfig testing.
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- include/trace/events/vmscan.h |    2 +-
- mm/vmscan.c                   |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+With the attached config i'm getting tons of these messages:
 
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index f64560e..595a6f0 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -179,7 +179,7 @@ DEFINE_EVENT(mm_vmscan_direct_reclaim_end_template, mm_vmscan_memcg_softlimit_re
-        TP_ARGS(nr_reclaimed)
- );
- 
--TRACE_EVENT(mm_shrink_slab_start,
-+TRACE_EVENT(mm_shrink_slab_begin,
-        TP_PROTO(struct shrinker *shr, struct shrink_control *sc,
-                long nr_objects_to_shrink, unsigned long pgs_scanned,
-                unsigned long lru_pgs, unsigned long cache_items,
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c52b235..84f4fd2 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -325,7 +325,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
-                if (total_scan > max_pass * 2)
-                        total_scan = max_pass * 2;
- 
--               trace_mm_shrink_slab_start(shrinker, shrink, nr,
-+               trace_mm_shrink_slab_begin(shrinker, shrink, nr,
-                                        nr_pages_scanned, lru_pages,
-                                        max_pass, delta, total_scan);
- 
--- 
-1.7.7.6
+[   32.751209] TCP: too many of orphaned sockets                                                   
+[   37.198307] TCP: too many of orphaned sockets                                                   
+[   42.464404] TCP: too many of orphaned sockets                                                   
+[   48.920392] TCP: too many of orphaned sockets                                                   
+[   56.370026] TCP: too many of orphaned sockets                                                   
+[   64.605937] TCP: too many of orphaned sockets                     
+
+and it's not possible to ssh into the testbox, the TCP 
+connection hangs.
+
+Before i put more effort into debugging this, is this bug 
+already known/fixed?
+
+NOTE: the .config is randconfig generated so it might have a few 
+weird combinations of config options. One such thing i noticed 
+is !CONFIG_BUG, this produces at least one of the following 
+build warnings in the networking code:
+
+net/core/ethtool.c:211:1: warning: control reaches end of non-void function [-Wreturn-type]
+net/core/dev.c:1892:33: warning: unused variable ‘null_features’ [-Wunused-variable]
+net/packet/af_packet.c:1878:30: warning: ‘hdrlen’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+net/xfrm/xfrm_policy.c:2456:17: warning: ‘xfrm_dst_ops’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+net/xfrm/xfrm_policy.c:1351:7: warning: ‘dst_ops’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+net/xfrm/xfrm_policy.c:1333:18: note: ‘dst_ops’ was declared here
+net/xfrm/xfrm_policy.c:1351:7: warning: ‘dst_ops’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+net/xfrm/xfrm_policy.c:1333:18: note: ‘dst_ops’ was declared here
+
+Note#2, the message should probably be fixed as well:
+
+ -   TCP: too many of orphaned sockets                     
+ +   TCP: too many orphaned sockets                     
+
+Thanks,
+
+	Ingo
