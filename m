@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab2A0Pla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 10:41:30 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:50215 "EHLO gir.skynet.ie"
+	id S1756067Ab2A0PmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 10:42:20 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:50232 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176Ab2A0Pl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 10:41:29 -0500
-Date: Fri, 27 Jan 2012 15:41:27 +0000 (GMT)
+	id S1752688Ab2A0PmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 10:42:19 -0500
+Date: Fri, 27 Jan 2012 15:42:18 +0000 (GMT)
 From: Dave Airlie <airlied@linux.ie>
 X-X-Sender: airlied@skynet.skynet.ie
 To: torvalds@linux-foundation.org
 cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
         linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes (intel + exynos + misc)
-Message-ID: <alpine.DEB.2.00.1201271538340.30895@skynet.skynet.ie>
+Subject: Re: [git pull] drm fixes (intel + exynos + misc)
+In-Reply-To: <alpine.DEB.2.00.1201271538340.30895@skynet.skynet.ie>
+Message-ID: <alpine.DEB.2.00.1201271541520.30895@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1201271538340.30895@skynet.skynet.ie>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,20 +24,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi Linus,
+(resend: spot the difference - git url not bullshit!!)
 
-This contains mainly a bunch of intel fixes, mainly fixing up the missing 
-irq problems on Ivybridge, a set of exynos fixes, one gma500 and one agp.
-
-Thanks,
-Dave.
-
+> 
+> Hi Linus,
+> 
+> This contains mainly a bunch of intel fixes, mainly fixing up the missing 
+> irq problems on Ivybridge, a set of exynos fixes, one gma500 and one agp.
+> 
+> Thanks,
+> Dave.
+> 
 The following changes since commit 9f1feed2e16652a6e599ed4a73b4c501bb3d4568:
 
   drm/ttm: fix two regressions since move_notify changes (2012-01-25 18:54:28 +0000)
 
 are available in the git repository at:
-  ssh://people.freedesktop.org/~/linux drm-fixes
+  git://people.freedesktop.org/~airlied/linux drm-fixes
 
 Daniel Vetter (7):
       drm/i915: convert force_wake_get to func pointer in the gpu reset code
