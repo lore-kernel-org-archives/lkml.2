@@ -1,78 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab2A0S5o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:57:44 -0500
-Received: from home.keithp.com ([63.227.221.253]:54701 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab2A0S5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:57:41 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Lubos Kolouch <lubos.kolouch@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: i915 wakes from suspend to RAM with blank screen after commit cd9dde44f47501394b9f0715b6a36a92aa74c0d0
-In-Reply-To: <20120127101403.GA2213@nbgentoo.nlcz.cz>
-References: <jfe47e$5dn$1@dough.gmane.org> <86mx9gkjlv.fsf@sumi.keithp.com> <20120121184453.GA2698@nbgentoo> <86hazokcb7.fsf@sumi.keithp.com> <20120122102912.GA2123@nbgentoo> <867h0j83vx.fsf@sumi.keithp.com> <20120123063313.GA2113@nbgentoo> <86vcnyc3t3.fsf@sumi.keithp.com> <20120127101403.GA2213@nbgentoo.nlcz.cz>
-User-Agent: Notmuch/0.11 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 27 Jan 2012 10:57:06 -0800
-Message-ID: <86liot9dod.fsf@sumi.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S1753757Ab2A0S6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:58:09 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45082 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab2A0S6H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 13:58:07 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=8QWFeHmMi6UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=qbGhCgHSAAAA:8 a=meVymXHHAAAA:8 a=Ydygjes7k2629TQovsAA:9 a=gsPgGzzFpHgNvibZ6cAA:7 a=PUjeQqilurYA:10 a=hixJfIHkBgQA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1327690684.22710.127.camel@gandalf.stny.rr.com>
+Subject: [PATCH] epoll: Comment the funky #ifdef
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 27 Jan 2012 13:58:04 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Looking for a bug in -rt, I stumbled across this code here from:
 
-On Fri, 27 Jan 2012 11:14:03 +0100, Lubos Kolouch <lubos.kolouch@gmail.com>=
- wrote:
-> On Wed, Jan 25, 2012, 23:37:28, Keith Packard wrote:
-> > On Mon, 23 Jan 2012 07:33:14 +0100, Lubos Kolouch <lubos.kolouch@gmail.=
-com> wrote:
-> >=20
-> > > dmesg after boot - http://paste.pocoo.org/show/539115/
-> > > dmesg after OK resume - http://paste.pocoo.org/show/539117/
-> >=20
-> > I've posted a couple of more comprehensive patches that you should have
-> > received; I'd like to know if you can test them to see if they resolve
-> > the issue as well.
->=20
-> 1) applied the first patch, resume works OK
-> dmesg after boot : http://paste.pocoo.org/show/541205/
-> dmesg after resume : http://paste.pocoo.org/show/541206/
->=20
-> 2) applied second patch on top, resume works OK
-> dmesg after boot: http://paste.pocoo.org/show/541477/
-> dmesg after resume : http://paste.pocoo.org/show/541479/
+commit 2dfa4eeab0fc7e8633974f2770945311b31eedf6
+Author: Davide Libenzi <davidel@xmailserver.org>
+Date:   Tue Mar 31 15:24:22 2009 -0700
 
-Thanks!
+epoll keyed wakeups: teach epoll about hints coming with the wakeup key
 
-I'll append a 'Tested-by: Lubos Kolouch <lubos.kolouch@gmail.com>'
 
-to these patches when they go into the kernel.
+Specifically:
 
-=2D-=20
-keith.packard@intel.com
++++ b/fs/eventpoll.c
+@@ -371,9 +371,28 @@ static int ep_call_nested(struct nested_calls *ncalls, int 
+        return error;
+ }
+ 
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++static inline void ep_wake_up_nested(wait_queue_head_t *wqueue,
++                                    unsigned long events, int subclass)
++{
++       unsigned long flags;
++
++       spin_lock_irqsave_nested(&wqueue->lock, flags, subclass);
++       wake_up_locked_poll(wqueue, events);
++       spin_unlock_irqrestore(&wqueue->lock, flags);
++}
++#else
++static inline void ep_wake_up_nested(wait_queue_head_t *wqueue,
++                                    unsigned long events, int subclass)
++{
++       wake_up_poll(wqueue, events);
++}
++#endif
++
 
---=-=-=
-Content-Type: application/pgp-signature
+You change the function of ep_wake_up_nested() depending on whether
+CONFIG_DEBUG_LOCK_ALLOC is set or not. This looks awfully suspicious,
+and there's no comment to explain why. I initially thought that this was
+trying to fool lockdep, and hiding a real bug.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Investigating it, I found the creation of wake_up_nested() (which no
+longer exists) but was created for the sole purpose of epoll and its
+strange wake ups, as explained in:
 
-iQIVAwUBTyLzgjYtFsjWk68qAQjx8hAAjkcuSfj+DaHrxvlSGuAiB8KkITCwB2iS
-Lt0Q3neRoF6H1OPBaB0JnX75uMaUhFlQD7lYe+GUQUORQpZP5OS8fvue5IAH+CRN
-xIejXG81JiWUxbgP307fn/vjb32T44L2+eb/0U0t/XFfYvNTPcUVPcxog/xn5h1q
-Kyfs/DLLLEQYDmVNdRVUhyBFfeJ7pubnOckgurfjhi9Mr2k6MLAo6dPVE6Hn68lz
-7U89EdAgVVg7fLrp6R3MUMFWsvCsYuNmoQ7sCCFPhQYeJoRHMi2xwhulptoEg4Ve
-CRKcA+mAOtmGxPl/T0Xye6CUw4oknJOzQuPJW7zUSk2aIBzf8QfrEj/UKspbhHQK
-YPpx2WkBV+GFo60kqnK8DcQgn7ovOJx32FbLRPXvV2iRNed485f20ChiNkoTAKEL
-GOWkeq0Zh08hnm8GNICB8RiTd/SBnrUZdZRUMNeUgh4HsRXYge9VeR7KtiZJo8fj
-pXajvcE1l8FB6FwCRtcHfdVr2Hod8y5W5Il1ODvQh0pfEAwJblkiIhEQCd3BBXBP
-CQdduM9KVRDdjR6WIVTTlFeK/BTCGegrIYIJAfBspTXNF/kRq99kMeTFmkM139dX
-3DTBgqIb372rFCj+Xd7H7w54ZtmB5KiO0h2HmRvlYqtiMkis2OegAuYF2zB9Og9V
-iCFH2DoTTZw=
-=v0Va
------END PGP SIGNATURE-----
---=-=-=--
+commit 0ccf831cbee94df9c5006dd46248c0f07847dd7c
+Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date:   Mon Feb 4 22:27:20 2008 -0800
+
+lockdep: annotate epoll
+
+
+Although the commit message says "annotate epoll" the change log is much
+better at explaining what is happening than what is in the actual code.
+Thus a comment is really necessary here. And to save the time of other
+developers from having to go trudging through the git logs trying to
+figure out why this code exists.
+
+I took parts of the change log and placed it into a comment above the
+affected code. This will make the description of what is happening more
+visible to new developers that have to look at this code for the first
+time.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index aabdfc3..c636fc8 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -422,6 +422,31 @@ out_unlock:
+ 	return error;
+ }
+ 
++/*
++ * As described in commit 0ccf831cb lockdep: annotate epoll
++ * the use of wait queues used by epoll is done in a very controlled
++ * manner. Wake ups can nest inside each other, but are never done
++ * with the same locking. For example:
++ *
++ *   dfd = socket(...);
++ *   efd1 = epoll_create();
++ *   efd2 = epoll_create();
++ *   epoll_ctl(efd1, EPOLL_CTL_ADD, dfd, ...);
++ *   epoll_ctl(efd2, EPOLL_CTL_ADD, efd1, ...);
++ *
++ * When a packet arrives to the device underneath "dfd", the net code will
++ * issue a wake_up() on its poll wake list. Epoll (efd1) has installed a
++ * callback wakeup entry on that queue, and the wake_up() performed by the
++ * "dfd" net code will end up in ep_poll_callback(). At this point epoll
++ * (efd1) notices that it may have some event ready, so it needs to wake up
++ * the waiters on its poll wait list (efd2). So it calls ep_poll_safewake()
++ * that ends up in another wake_up(), after having checked about the
++ * recursion constraints. That are, no more than EP_MAX_POLLWAKE_NESTS, to
++ * avoid stack blasting.
++ *
++ * When CONFIG_DEBUG_LOCK_ALLOC is enabled, make sure lockdep can handle
++ * this special case of epoll.
++ */
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ static inline void ep_wake_up_nested(wait_queue_head_t *wqueue,
+ 				     unsigned long events, int subclass)
+
+
