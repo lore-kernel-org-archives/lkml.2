@@ -1,196 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2A0QZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:25:01 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55978 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab2A0QY7 (ORCPT
+	id S1756159Ab2A0QZH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:25:07 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34138 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751534Ab2A0QZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:24:59 -0500
-Date: Fri, 27 Jan 2012 16:24:55 +0000
+	Fri, 27 Jan 2012 11:25:05 -0500
+Date: Fri, 27 Jan 2012 16:25:01 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pali Roh?r <pali.rohar@gmail.com>
-Cc: linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
-        Vladimir Zapolskiy <vz@mleia.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Joerg Reisenweber <joerg@openmoko.org>,
-        Sebastian Reichel <sre@debian.org>,
-        ???????????? ???????????????? <freemangordon@abv.bg>
-Subject: Re: RFC 2: bq2415x_charger driver
-Message-ID: <20120127162455.GA18353@sirena.org.uk>
-References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
- <1677656.4d3iQHNZjX@pali-elitebook>
- <3531484.T8K8kTguQQ@pali>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 3/3] ASoC: codecs: add driver for max9768 amplifier
+Message-ID: <20120127162501.GA18572@opensource.wolfsonmicro.com>
+References: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
+ <1327677023-29310-3-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
 Content-Disposition: inline
-In-Reply-To: <3531484.T8K8kTguQQ@pali>
-X-Cookie: When in doubt, lead trump.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1327677023-29310-3-git-send-email-w.sang@pengutronix.de>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 03:40:43AM +0100, Pali Roh?r wrote:
 
-> +static char *bq2415x_rev_name[] = {
-> +	"1.0",
-> +	"1.1",
-> +	"1.2",
-> +	"1.3",
-> +	"1.4",
-> +	"1.5",
-> +	"1.6",
-> +	"1.7",
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks like you can just store this as a number?
+On Fri, Jan 27, 2012 at 04:10:23PM +0100, Wolfram Sang wrote:
 
-> +struct bq2415x_device {
-> +	struct device *dev;
-> +	struct bq2415x_platform_data *platform_data;
+> Mark: Still no DAPM support. We don't have PM on this board, and since I
+> couldn't easily figure what is expected from me here, I'd like to leave t=
+his
+> for people who have real interest in that.
 
-You should take a copy of the platform data so it can be marked
-initdata.
+I don't understand what was unclear here...
 
-> +static DEFINE_MUTEX(bq2415x_id_mutex);
-> +static DEFINE_MUTEX(bq2415x_timer_mutex);
-> +static DEFINE_MUTEX(bq2415x_type_mutex);
-> +static DEFINE_MUTEX(bq2415x_i2c_mutex);
+You should at least use set_bias_level() to manage the shutdown GPIO I
+guess.
 
-Why are these global?
+> +static const struct snd_kcontrol_new max9768_volume[] =3D {
+> +	SOC_SINGLE_TLV("Playback Volume", MAX9768_VOL, 0, 63, 0, volume_tlv),
+> +};
 
-> +/* i2c read functions */
-> +
-> +static int bq2415x_i2c_read(struct bq2415x_device *bq, u8 reg)
+> +static const struct snd_kcontrol_new max9768_mute[] =3D {
+> +	SOC_SINGLE_BOOL_EXT("Mute Switch", 0, max9768_get_gpio, max9768_set_gpi=
+o),
+> +};
+
+Should be "Playback Switch" to match the volume control - that way
+userspace can present a single control to applications.
+
+> +static bool max9768_always_false(struct device *dev, unsigned int reg)
 > +{
-> +	struct i2c_client *client = to_i2c_client(bq->dev);
-
-You could save a bunch of code by moving all this I2C register I/O over
-to regmap.
-
-> +		case BQ2415X_BOOST_MODE_ENABLE:
-> +			return bq2415x_i2c_write_bit(bq, BQ2415X_REG_CONTROL, 1, BQ2415X_BIT_OPA_MODE);
-
-Keep things under 80 columns - see CodingStyle.
-
-> +	if (client->addr == 0x6b) {
-
-> +	} else if (client->addr == 0x6a) {
-
-This looks like a switch statement.
-
-> +	switch (chip) {
-> +		case BQUNKNOWN:
-> +			return bq2415x_rev_name[8];
-
-Magic numbers ahoy...
-
-> +static int bq2415x_vender_code(struct bq2415x_device *bq)
-> +{
-> +	int ret = bq2415x_exec_command(bq, BQ2415X_VENDER_CODE);
-> +	if (ret < 0)
-> +		return 0;
-> +	else /* convert to binary */
-> +		return (ret & 0x1) + ((ret >> 1) & 0x1) * 10 + ((ret >> 2) & 0x1) * 100;
-
-Just print it as hex?
-
-> +static int bq2415x_set_weak_battery_voltage(struct bq2415x_device *bq, int mV)
-> +{
-> +	int val = mV/100 + (mV%100 > 0 ? 1 : 0) - 34;
-
-This could probably be written more clearly?
-
-> +static int bq2415x_get_charge_current_sense_voltage(struct bq2415x_device *bq)
-> +{
-> +	/* TODO */
-> +	return -ENOSYS;
+> +	return false;
 > +}
 
-Just don't provide things that aren't there, the frameworks should do
-appropriate handling.
+This should be the default in regmap for formats that use format_write
+(and hence can't read back), please fix in regmap rather than add this. =20
 
-> +static enum power_supply_property bq2415x_power_supply_props[] = {
-> +	/* TODO */
-> +	POWER_SUPPLY_PROP_STATUS,
-> +	POWER_SUPPLY_PROP_MODEL_NAME,
+> +	if (pdata) {
+> +		/* Mute on powerup to avoid clicks */
+> +		err =3D gpio_request_one(pdata->mute_gpio, GPIOF_INIT_HIGH, "MAX9768 M=
+ute");
 
-TODO?
+This need to avoid clicks is the reason I was asking for the DAPM stuff.
 
-> +static int bq2415x_power_supply_set_mode(struct bq2415x_device *bq, enum bq2415x_mode mode)
-> +{
-> +	int ret = 0;
-> +
-> +	switch (mode) {
-> +
-> +		case BQ2415X_MODE_NONE: /* N/A */
+> +		/* Activate chip by releasing shutdown, enables I2C */
+> +		err =3D gpio_request_one(pdata->shdn_gpio, GPIOF_INIT_HIGH, "MAX9768 S=
+hutdown");
+> +		max9768->shdn_gpio =3D err ?: pdata->shdn_gpio;
 
-CodingStyle for the indentation.
+Eeew.
 
-> +			if (mode == BQ2415X_MODE_NONE) {
-> +				dev_info(bq->dev, "mode: N/A\n");
-> +				ret = bq2415x_set_current_limit(bq, 100);
-> +			} else if (mode == BQ2415X_MODE_HOST_CHARGER) {
-> +				dev_info(bq->dev, "mode: Host/HUB charger\n");
-> +				ret = bq2415x_set_current_limit(bq, 500);
-> +			} else {
-> +				dev_info(bq->dev, "mode: Dedicated charger\n");
-> +				ret = bq2415x_set_current_limit(bq, 1800);
-> +			}
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This should be a switch statement.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> +		case BQ2415X_MODE_BOOST: /* Boost mode */
-> +			dev_info(bq->dev, "mode: Boost\n");
+iQIcBAEBAgAGBQJPIs8kAAoJEBus8iNuMP3dJzEP/RagBCm6xHGd08eckZXaOmSy
+EWM+ZlmSfqS7TgUp1AHj0lfsB87Jfd13nIE1tJ14L55KIe6ZhN1tzhfQlFxwSWlg
+UiRRDavZMdtt3uWhyzOE0cL734ha4999g/qkIkc5p4ConOyR9XZ1tzpjMU87d3qH
+s/7vk/QUYIOB++tHev4zhpU5/QMKPNhqd9lRSVny/gca2sKTW3QmfIjYyg/+R+1l
+vuJ/vLrTedhePvPkep1XK9kjP/SlASkdcyO7kUCBNFPxlK8yddX/sIZYX6mxcvIs
+Ggmk6cvtSDmbyo4s48BaMOiX7SVZWkRCq139qjKB77pz5nu9XXtu6LoKFjIkJNKT
+NMWs76gBzF1P6abc5Qe4SLRwtKyojcTacI53S0c7Qs30KRYpmbxSkOD0XOLSbuUA
+2vzkk7oHSM9WqAw2k5v3AjowWw4ujilDlRdBaLsuIsLIzWuqLRrf8pdwLO6V6Jrx
+G3ij6s6t1w/4QGqfHIn7fUkYzIsnWw/+cp02nv4YAX3FRmgT9ewff8SqMh7MmSYq
+Jy6/R2cUB92TisD2fk3U2LDrGDkItZATDmzAinRIj4NB5/5aD4d618feNeZ/9tlL
+HV11nu0RWvQ1j0Km2xBz22Xw4Jj1F2GN4Bz9svavq6Mr84Vg9NmeYhPmO2ZOMeNY
+9MFyp/ijgCgMEa2smfow
+=bANZ
+-----END PGP SIGNATURE-----
 
-Is dev_info() really appropriate for this stuff?
-
-> +			break;
-> +
-> +	}
-
-No default case?
-
-> +static void bq2415x_power_supply_set_charger_type(int type, void *data)
-
-> +	if (type == 0)
-> +		bq->charger_mode = BQ2415X_MODE_NONE;
-> +	else if (type == 1)
-> +		bq->charger_mode = BQ2415X_MODE_HOST_CHARGER;
-> +	else if (type == 2)
-> +		bq->charger_mode = BQ2415X_MODE_DEDICATED_CHARGER;
-> +	else
-> +		return;
-
-Switch statement.  I never understood why this is such a common idiom...
-
-> +		switch (error) {
-> +			case 0: /* No error */
-> +				break;
-> +			case 6: /* Timer expired */
-> +				dev_info(bq->dev, "Timer expired\n");
-> +				break;
-
-Should we really be logging this at anything more than dev_dbg()?
-
-> +			case 7: /* N/A */
-> +				bq2415x_power_supply_error(bq, "Unknow error");
-> +				return;
-
-Typo: unknown.
-
-> +			case 5: /* Termal shutdown (too hot) */
-> +				bq2415x_power_supply_error(bq, "Termal shutdown (too hot)");
-
-Typo: thermal.
-
-> +static int bq2415x_power_supply_get_property(struct power_supply *psy, enum power_supply_property psp, union power_supply_propval *val)
-
-CodingStyle - wrapping (lots of this in the driver.
+--M9NhX3UHpAaciwkO--
