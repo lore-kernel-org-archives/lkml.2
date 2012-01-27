@@ -1,106 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab2A0TWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 14:22:52 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53742 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752624Ab2A0TWu (ORCPT
+	id S1753750Ab2A0TYW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 14:24:22 -0500
+Received: from mail.windriver.com ([147.11.1.11]:43035 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab2A0TYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 14:22:50 -0500
-Date: Fri, 27 Jan 2012 19:22:47 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
-        Vladimir Zapolskiy <vz@mleia.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Joerg Reisenweber <joerg@openmoko.org>,
-        Sebastian Reichel <sre@debian.org>,
-        ???????????? ???????????????? <freemangordon@abv.bg>
-Subject: Re: RFC 2: bq2415x_charger driver
-Message-ID: <20120127192247.GA19414@opensource.wolfsonmicro.com>
-References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
- <3531484.T8K8kTguQQ@pali>
- <20120127162455.GA18353@sirena.org.uk>
- <9034282.U2YBGPDczd@pali>
+	Fri, 27 Jan 2012 14:24:20 -0500
+Date: Fri, 27 Jan 2012 14:23:55 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <gregkh@suse.de>, <rmk+kernel@arm.linux.org.uk>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC - PATCH 0/7] consolidation of BUG support code.
+Message-ID: <20120127192354.GA7150@windriver.com>
+References: <1327632272-12928-1-git-send-email-paul.gortmaker@windriver.com>
+ <20120127165245.263bd8f7259ea629d8f7df31@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <9034282.U2YBGPDczd@pali>
-X-Cookie: Beware of low-flying butterflies.
+In-Reply-To: <20120127165245.263bd8f7259ea629d8f7df31@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Re: [RFC - PATCH 0/7] consolidation of BUG support code.] On 27/01/2012 (Fri 16:52) Stephen Rothwell wrote:
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hi Paul,
+> 
+> On Thu, 26 Jan 2012 21:44:25 -0500 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+> >
+> > The changes shown here are to unify linux's BUG support under
+> > the one <linux/bug.h> file.  Due to historical reasons, we have
+> > some BUG code in bug.h and some in kernel.h -- i.e. the support for
+> > BUILD_BUG in linux/kernel.h predates the addition of linux/bug.h,
+> > but old code in kernel.h wasn't moved to bug.h at that time.  As
+> > a band-aid, kernel.h was including <asm/bug.h> to pseudo link them.
+> > With the above in mind, the goals of this changeset are:
+> > 
+> > 1) find and fix any include/*.h files that were relying on the
+> >    implicit presence of BUG code.
+> > 2) find and fix any C files that were consuming kernel.h and
+> >    hence relying on implicitly getting some/all BUG code.
+> > 3) Move the BUG related code living in kernel.h to <linux/bug.h>
+> > 4) remove the asm/bug.h from kernel.h to finally break the chain.
+> > 
+> > During development, the order was more like 3-4, build-test, 1-2.
+> > But to ensure that git history for bisect doesn't get needless
+> > build failures introduced, the commits have been reorderd to fix
+> > the problem areas in advance.
+> 
+> I have expressed reservations with these tree wide include file cleanups
+> in the past (there was going pain for me and others during the module.h
 
-On Fri, Jan 27, 2012 at 07:33:59PM +0100, Pali Roh=E1r wrote:
-> On Friday 27 January 2012 16:24:55 Mark Brown wrote:
-> > On Fri, Jan 27, 2012 at 03:40:43AM +0100, Pali Roh?r wrote:
+Well, I thought module.h went reasonably OK for something that touched
+close to 2500 files.  I don't recall getting a lot of scorn and flame.
+In any case, this is nowhere near that size or scope of the module.h
+work, so I'll go out on a limb and say it should be nearly "pain free".
 
-> > > +	struct i2c_client *client =3D to_i2c_client(bq->dev);
+> split up for example).  So, have you considered the following alternate
 
-> > You could save a bunch of code by moving all this I2C register I/O over
-> > to regmap.
+> method of achieving most (if not all) of the gains:
+> 
+> First a patch that moves the BUG related stuff from kernel.h to
+> linux/bug.h and replacing the include of asm/bug.h with linux/bug.h in
+> kernel.h.  This should essentially be a noop (bar some strange
+> interesting bugs).
 
-> regmap is not available in 2.6.28, so I cannot use it.
+You don't even really need the above as a prerequisite in order to start
+adding bug.h to all the places that are using it.  As I noted in one of
+the commit logs, things are compiling today, so files using BUG are
+already getting it one way or another -- just implicitly.
 
-You're submitting to mainline here...
+> 
+> The trick is to convince Linus that this patch is OK for the current RC series ...
+> 
+> Then you can (at your leisure) fix all the files that need linux/bug.h
+> included - farming them out as required.  And we could add a check in
+> checkpatch.pl.
 
-In any case, it's trivial to backport - just copy the directory and
-header back.
+I originally had the module.h stuff broken across maintainer lines, as
+I was assuming they would need to be farmed out as chunks, when Ingo
+suggested to just lump it all into one pull request and have it go at
+once (and I was fine with that).  So this time I didn't bother making
+things like the one include/* commit into 60-odd separate commits.
 
-> > > +static int bq2415x_set_weak_battery_voltage(struct bq2415x_device *b=
-q,
-> > > int mV) +{
-> > > +	int val =3D mV/100 + (mV%100 > 0 ? 1 : 0) - 34;
+I'm not really inclined to greatly favour one way over the other.
+Tracking all the one line commits to make sure they make it through
+the various sub-maintainers will take a bit more effort, but if that
+is what folks *really* want me to do, I'm OK with that.  It is just
+that your feedback here is the 1st I've heard favouring that method
+so far.
 
-> > This could probably be written more clearly?
+Thanks,
+Paul.
 
-> How?
+> 
+> Then (either after 3.4-rc1 or in the 3.5 merge window) we can remove the
+> include of linux/bug.h from linux/kernel.h and fix any left over build
+> problems.
+> 
+> I have not thought about this too hard, so there may be large holes in
+> this plan.
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-Without the ternery operator and with more spaces, probably.
 
-> > > +		case BQ2415X_MODE_BOOST: /* Boost mode */
-> > > +			dev_info(bq->dev, "mode: Boost\n");
-
-> > Is dev_info() really appropriate for this stuff?
-
-> How can driver write info that user (or other driver) changed chip mode?
-> This should be reported in dmesg!
-
-Why does the user care?  There's an interface for querying if they want
-to know and you can generate power supply events when the mode changes.
-
---17pEHd4RhPHOinZp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPIvmBAAoJEBus8iNuMP3d4jAP/RN7biOHnPMz+RgjcPGk/UEK
-JWfg3uxllNQTtzh34xVZ4Pk3YckQpGcHxkj5LW1nonQmBgwg9W9bs0MbsNQIsDUK
-Phrh4JstaMv78TLgfGAq5Sm76gnViqmFADYzaMjkqr5l1yE9lgUDqGGDNpqsG8BP
-3JkOeFy89fYvRjnvC5MkQC5F8HyRAYODO0lLahDwEXzh95haTkZyVrxl3V/eO8t4
-IzbOva2axS1BbmYTk4H+WfFFBgIFmujLw/tbDrhIa7sSYF92z7JkGdHvAXdJ3kGG
-x+aNpjBtrQ0AUu0D4W9HIQjuYIHmFkXOA+ovPrkTydhQdQaFUbXeRKMi66kHRfcY
-d24ETs4YBo/AfAemfKt9rHR7pVWIrnqFN5rBqf4puuddZ0UAvygoSUogceNBEz/H
-ZNnkiZo015lll0Wmpxw8iVAWcXMDqjX3JwtvUduHqgmsRSk1T0P+VWFid4Rt+wbB
-W8fNuOz3nicJyGhU1QhLDIku3g8QDg2aJTMiYxcCZMS5vP9jlJDLDu2qFr1kCNgj
-A4wLLdhBSc2kQRK/gIIyjxMO6A7nPNI708M+BnQsjviu2qGVXcfgrIsJvDN+eBmq
-A8kx3LnjTG8gC4xyVcPdsBfau9v0K8diHC4B1OnTspdtYcMlvc17XHHhWckadmFv
-Zb0zDs2r+CnOD4laVedw
-=zMnV
------END PGP SIGNATURE-----
-
---17pEHd4RhPHOinZp--
