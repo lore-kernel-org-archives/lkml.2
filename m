@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab2A0U6X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 15:58:23 -0500
+	id S1754978Ab2A0U61 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 15:58:27 -0500
 Received: from mail-we0-f174.google.com ([74.125.82.174]:62378 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901Ab2A0U6U (ORCPT
+	with ESMTP id S1754949Ab2A0U6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 15:58:20 -0500
+	Fri, 27 Jan 2012 15:58:25 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
         robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
         asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
         khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: [PATCH v4 01/18] perf: add generic taken branch sampling support
-Date: Fri, 27 Jan 2012 21:56:01 +0100
-Message-Id: <1327697778-18515-2-git-send-email-eranian@google.com>
+Subject: [PATCH v4 03/18] perf: add Intel X86 LBR sharing logic
+Date: Fri, 27 Jan 2012 21:56:03 +0100
+Message-Id: <1327697778-18515-4-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1327697778-18515-1-git-send-email-eranian@google.com>
 References: <1327697778-18515-1-git-send-email-eranian@google.com>
@@ -23,351 +23,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the ability to sample taken branches to the
-perf_event interface.
+The Intel LBR on some recent processor is capable
+of filtering branches by type. The filter is configurable
+via the LBR_SELECT MSR register.
 
-The ability to capture taken branches is very useful for all
-sorts of analysis. For instance, basic block profiling, call
-counts, statistical call graph.
+There are limitation on how this register can be used.
 
-This new capability requires hardware assist and as such may
-not be available on all HW platforms. On Intel X86, it is
-implemented on top of the Last Branch Record (LBR) facility.
+On Nehalem/Westmere, the LBR_SELECT is shared by the two HT threads
+when HT is on. It is private to each core when HT is off.
 
-To enable taken branches sampling, the PERF_SAMPLE_BRANCH_STACK
-bit must be set in attr->sample_type.
+On SandyBridge, the LBR_SELECT register is private to each thread
+when HT is on. It is private to each core when HT is off.
 
-Sampled taken branches may be filtered by type and/or priv
-levels.
+The kernel must manage the sharing of LBR_SELECT. It allows
+multiple users on the same logical CPU to use LBR_SELECT as
+long as they program it with the same value. Across sibling
+CPUs (HT threads), the same restriction applies on NHM/WSM.
 
-The patch adds a new field, called branch_sample_type, to the
-perf_event_attr structure. It contains a bitmask of filters
-to apply to the sampled taken branches.
+This patch implements this sharing logic by leveraging the
+mechanism put in place for managing the offcore_response
+shared MSR.
 
-Filters may be implemented in HW. If the HW filter does not exist
-or is not good enough, some arch may also implement a SW filter.
-
-The following generic filters are currently defined:
-- PERF_SAMPLE_USER
-  only branches whose targets are at the user level
-
-- PERF_SAMPLE_KERNEL
-  only branches whose targets are at the kernel level
-
-- PERF_SAMPLE_HV
-  only branches whose targets are at the hypervisor level
-
-- PERF_SAMPLE_ANY
-  any type of branches (subject to priv levels filters)
-
-- PERF_SAMPLE_ANY_CALL
-  any call branches (may incl. syscall on some arch)
-
-- PERF_SAMPLE_ANY_RET
-  any return branches (may incl. syscall returns on some arch)
-
-- PERF_SAMPLE_IND_CALL
-  indirect call branches
-
-Obviously filter may be combined. The priv level bits are optional.
-If not provided, the priv level of the associated event are used. It
-is possible to collect branches at a priv level different from the
-associated event. Use of kernel, hv priv levels is subject to permissions
-and availability (hv).
-
-The number of taken branch records present in each sample may vary based
-on HW, the type of sampled branches, the executed code. Therefore
-each sample contains the number of taken branches it contains.
+We modify __intel_shared_reg_get_constraints() to cause
+x86_get_event_constraint() to be called because LBR may
+be associated with events that may be counter constrained.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   21 +++++---
- include/linux/perf_event.h                 |   68 ++++++++++++++++++++++++++--
- kernel/events/core.c                       |   68 ++++++++++++++++++++++++++++
- 3 files changed, 145 insertions(+), 12 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |    4 ++
+ arch/x86/kernel/cpu/perf_event.h       |    4 ++
+ arch/x86/kernel/cpu/perf_event_intel.c |   70 ++++++++++++++++++++------------
+ 3 files changed, 52 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 3fab3de..c3f8100 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -144,9 +144,11 @@ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index f8bddb5..3779313 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -426,6 +426,10 @@ static int __x86_pmu_event_init(struct perf_event *event)
+ 	/* mark unused */
+ 	event->hw.extra_reg.idx = EXTRA_REG_NONE;
  
- 		rdmsrl(x86_pmu.lbr_from + lbr_idx, msr_lastbranch.lbr);
- 
--		cpuc->lbr_entries[i].from  = msr_lastbranch.from;
--		cpuc->lbr_entries[i].to    = msr_lastbranch.to;
--		cpuc->lbr_entries[i].flags = 0;
-+		cpuc->lbr_entries[i].from	= msr_lastbranch.from;
-+		cpuc->lbr_entries[i].to		= msr_lastbranch.to;
-+		cpuc->lbr_entries[i].mispred	= 0;
-+		cpuc->lbr_entries[i].predicted	= 0;
-+		cpuc->lbr_entries[i].reserved	= 0;
- 	}
- 	cpuc->lbr_stack.nr = i;
++	/* mark not used */
++	event->hw.extra_reg.idx = EXTRA_REG_NONE;
++	event->hw.branch_reg.idx = EXTRA_REG_NONE;
++
+ 	return x86_pmu.hw_config(event);
  }
-@@ -167,19 +169,22 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
  
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
- 		unsigned long lbr_idx = (tos - i) & mask;
--		u64 from, to, flags = 0;
-+		u64 from, to, mis = 0, pred = 0;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 513d617..4535ada 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -33,6 +33,7 @@ enum extra_reg_type {
  
- 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
- 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
+ 	EXTRA_REG_RSP_0 = 0,	/* offcore_response_0 */
+ 	EXTRA_REG_RSP_1 = 1,	/* offcore_response_1 */
++	EXTRA_REG_LBR   = 2,	/* lbr_select */
  
- 		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
--			flags = !!(from & LBR_FROM_FLAG_MISPRED);
-+			mis = !!(from & LBR_FROM_FLAG_MISPRED);
-+			pred = !mis;
- 			from = (u64)((((s64)from) << 1) >> 1);
- 		}
- 
--		cpuc->lbr_entries[i].from  = from;
--		cpuc->lbr_entries[i].to    = to;
--		cpuc->lbr_entries[i].flags = flags;
-+		cpuc->lbr_entries[i].from	= from;
-+		cpuc->lbr_entries[i].to		= to;
-+		cpuc->lbr_entries[i].mispred	= mis;
-+		cpuc->lbr_entries[i].predicted	= pred;
-+		cpuc->lbr_entries[i].reserved	= 0;
- 	}
- 	cpuc->lbr_stack.nr = i;
- }
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 0b91db2..9ef3002 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -129,11 +129,40 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_PERIOD			= 1U << 8,
- 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
- 	PERF_SAMPLE_RAW				= 1U << 10,
-+	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 
--	PERF_SAMPLE_MAX = 1U << 11,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
+ 	EXTRA_REG_MAX		/* number of entries needed */
  };
+@@ -130,6 +131,7 @@ struct cpu_hw_events {
+ 	void				*lbr_context;
+ 	struct perf_branch_stack	lbr_stack;
+ 	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
++	struct er_account		*lbr_sel;
  
- /*
-+ * values to program into branch_sample_type when PERF_SAMPLE_BRANCH is set
-+ *
-+ * If the user does not pass priv level information via branch_sample_type,
-+ * the kernel uses the event's priv level. Branch and event priv levels do
-+ * not have to match. Branch priv level is checked for permissions.
-+ *
-+ * The branch types can be combined, however BRANCH_ANY covers all types
-+ * of branches and therefore it supersedes all the other types.
-+ */
-+enum perf_branch_sample_type {
-+	PERF_SAMPLE_BRANCH_USER		= 1U << 0, /* user branches */
-+	PERF_SAMPLE_BRANCH_KERNEL	= 1U << 1, /* kernel branches */
-+	PERF_SAMPLE_BRANCH_HV		= 1U << 2, /* hypervisor branches */
-+
-+	PERF_SAMPLE_BRANCH_ANY		= 1U << 3, /* any branch types */
-+	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
-+	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
-+	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
-+
-+	PERF_SAMPLE_BRANCH_MAX		= 1U << 7, /* non-ABI */
-+};
-+
-+#define PERF_SAMPLE_BRANCH_PLM_ALL \
-+	(PERF_SAMPLE_BRANCH_USER|\
-+	 PERF_SAMPLE_BRANCH_KERNEL|\
-+	 PERF_SAMPLE_BRANCH_HV)
-+
-+/*
-  * The format of the data returned by read() on a perf event fd,
-  * as specified by attr.read_format:
-  *
-@@ -240,6 +269,7 @@ struct perf_event_attr {
- 		__u64		bp_len;
- 		__u64		config2; /* extension of config1 */
- 	};
-+	__u64	branch_sample_type; /* enum branch_sample_type */
- };
- 
- /*
-@@ -458,6 +488,8 @@ enum perf_event_type {
- 	 *
- 	 *	{ u32			size;
- 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
-+	 *
-+	 *	{ u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
- 	 * };
+ 	/*
+ 	 * Intel host/guest exclude bits
+@@ -340,6 +342,8 @@ struct x86_pmu {
  	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -530,12 +562,31 @@ struct perf_raw_record {
- 	void				*data;
- };
+ 	unsigned long	lbr_tos, lbr_from, lbr_to; /* MSR base regs       */
+ 	int		lbr_nr;			   /* hardware stack size */
++	u64		lbr_sel_mask;		   /* LBR_SELECT valid bits */
++	const int	*lbr_sel_map;		   /* lbr_select mappings */
  
-+/*
-+ * single taken branch record layout:
-+ *
-+ *      from: source instruction (may not always be a branch insn)
-+ *        to: branch target
-+ *   mispred: branch target was mispredicted
-+ * predicted: branch target was predicted
-+ *
-+ * support for mispred, predicted is optional. In case it
-+ * is not supported mispred = predicted = 0.
-+ */
- struct perf_branch_entry {
--	__u64				from;
--	__u64				to;
--	__u64				flags;
-+	__u64	from;
-+	__u64	to;
-+	__u64	mispred:1,  /* target mispredicted */
-+		predicted:1,/* target predicted */
-+		reserved:62;
- };
- 
-+/*
-+ * branch stack layout:
-+ *  nr: number of taken branches stored in entries[]
-+ *
-+ * Note that nr can vary from sample to sample
-+ */
- struct perf_branch_stack {
- 	__u64				nr;
- 	struct perf_branch_entry	entries[0];
-@@ -566,7 +617,9 @@ struct hw_perf_event {
- 			unsigned long	event_base;
- 			int		idx;
- 			int		last_cpu;
-+
- 			struct hw_perf_event_extra extra_reg;
-+			struct hw_perf_event_extra branch_reg;
- 		};
- 		struct { /* software */
- 			struct hrtimer	hrtimer;
-@@ -1003,12 +1056,14 @@ struct perf_sample_data {
- 	u64				period;
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
-+	struct perf_branch_stack	*br_stack;
- };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
+ 	/*
+ 	 * Extra registers for events
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 3bd37bd..97f7bb5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1123,17 +1123,17 @@ static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
+  */
+ static struct event_constraint *
+ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+-				   struct perf_event *event)
++				   struct perf_event *event,
++				   struct hw_perf_event_extra *reg)
  {
- 	data->addr = addr;
- 	data->raw  = NULL;
-+	data->br_stack = NULL;
+ 	struct event_constraint *c = &emptyconstraint;
+-	struct hw_perf_event_extra *reg = &event->hw.extra_reg;
+ 	struct er_account *era;
+ 	unsigned long flags;
+ 	int orig_idx = reg->idx;
+ 
+ 	/* already allocated shared msr */
+ 	if (reg->alloc)
+-		return &unconstrained;
++		return NULL; /* call x86_get_event_constraint() */
+ 
+ again:
+ 	era = &cpuc->shared_regs->regs[reg->idx];
+@@ -1156,14 +1156,10 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+ 		reg->alloc = 1;
+ 
+ 		/*
+-		 * All events using extra_reg are unconstrained.
+-		 * Avoids calling x86_get_event_constraints()
+-		 *
+-		 * Must revisit if extra_reg controlling events
+-		 * ever have constraints. Worst case we go through
+-		 * the regular event constraint table.
++		 * need to call x86_get_event_constraint()
++		 * to check if associated event has constraints
+ 		 */
+-		c = &unconstrained;
++		c = NULL;
+ 	} else if (intel_try_alt_er(event, orig_idx)) {
+ 		raw_spin_unlock_irqrestore(&era->lock, flags);
+ 		goto again;
+@@ -1200,11 +1196,23 @@ static struct event_constraint *
+ intel_shared_regs_constraints(struct cpu_hw_events *cpuc,
+ 			      struct perf_event *event)
+ {
+-	struct event_constraint *c = NULL;
+-
+-	if (event->hw.extra_reg.idx != EXTRA_REG_NONE)
+-		c = __intel_shared_reg_get_constraints(cpuc, event);
+-
++	struct event_constraint *c = NULL, *d;
++	struct hw_perf_event_extra *xreg, *breg;
++
++	xreg = &event->hw.extra_reg;
++	if (xreg->idx != EXTRA_REG_NONE) {
++		c = __intel_shared_reg_get_constraints(cpuc, event, xreg);
++		if (c == &emptyconstraint)
++			return c;
++	}
++	breg = &event->hw.branch_reg;
++	if (breg->idx != EXTRA_REG_NONE) {
++		d = __intel_shared_reg_get_constraints(cpuc, event, breg);
++		if (d == &emptyconstraint) {
++			__intel_shared_reg_put_constraints(cpuc, xreg);
++			c = d;
++		}
++	}
+ 	return c;
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-@@ -1147,6 +1202,11 @@ extern void perf_bp_event(struct perf_event *event, void *data);
- # define perf_instruction_pointer(regs)	instruction_pointer(regs)
- #endif
- 
-+static inline bool has_branch_stack(struct perf_event *event)
-+{
-+	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
-+}
+@@ -1252,6 +1260,10 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
+ 	reg = &event->hw.extra_reg;
+ 	if (reg->idx != EXTRA_REG_NONE)
+ 		__intel_shared_reg_put_constraints(cpuc, reg);
 +
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
- extern void perf_output_end(struct perf_output_handle *handle);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index de859fb..c4520a2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -118,6 +118,13 @@ static int cpu_function_call(int cpu, int (*func) (void *info), void *info)
- 		       PERF_FLAG_FD_OUTPUT  |\
- 		       PERF_FLAG_PID_CGROUP)
++	reg = &event->hw.branch_reg;
++	if (reg->idx != EXTRA_REG_NONE)
++		__intel_shared_reg_put_constraints(cpuc, reg);
+ }
  
-+/*
-+ * branch priv levels that need permission checks
-+ */
-+#define PERF_SAMPLE_BRANCH_PERM_PLM \
-+	(PERF_SAMPLE_BRANCH_KERNEL |\
-+	 PERF_SAMPLE_BRANCH_HV)
+ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+@@ -1431,7 +1443,7 @@ static int intel_pmu_cpu_prepare(int cpu)
+ {
+ 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+ 
+-	if (!x86_pmu.extra_regs)
++	if (!(x86_pmu.extra_regs || x86_pmu.lbr_sel_map))
+ 		return NOTIFY_OK;
+ 
+ 	cpuc->shared_regs = allocate_shared_regs(cpu);
+@@ -1453,22 +1465,28 @@ static void intel_pmu_cpu_starting(int cpu)
+ 	 */
+ 	intel_pmu_lbr_reset();
+ 
+-	if (!cpuc->shared_regs || (x86_pmu.er_flags & ERF_NO_HT_SHARING))
++	cpuc->lbr_sel = NULL;
 +
- enum event_type_t {
- 	EVENT_FLEXIBLE = 0x1,
- 	EVENT_PINNED = 0x2,
-@@ -3877,6 +3884,24 @@ void perf_output_sample(struct perf_output_handle *handle,
- 			}
++	if (!cpuc->shared_regs)
+ 		return;
+ 
+-	for_each_cpu(i, topology_thread_cpumask(cpu)) {
+-		struct intel_shared_regs *pc;
++	if (!(x86_pmu.er_flags & ERF_NO_HT_SHARING)) {
++		for_each_cpu(i, topology_thread_cpumask(cpu)) {
++			struct intel_shared_regs *pc;
+ 
+-		pc = per_cpu(cpu_hw_events, i).shared_regs;
+-		if (pc && pc->core_id == core_id) {
+-			cpuc->kfree_on_online = cpuc->shared_regs;
+-			cpuc->shared_regs = pc;
+-			break;
++			pc = per_cpu(cpu_hw_events, i).shared_regs;
++			if (pc && pc->core_id == core_id) {
++				cpuc->kfree_on_online = cpuc->shared_regs;
++				cpuc->shared_regs = pc;
++				break;
++			}
  		}
++		cpuc->shared_regs->core_id = core_id;
++		cpuc->shared_regs->refcnt++;
  	}
-+
-+	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
-+		if (data->br_stack) {
-+			size_t size;
-+
-+			size = data->br_stack->nr
-+			     * sizeof(struct perf_branch_entry);
-+
-+			perf_output_put(handle, data->br_stack->nr);
-+			perf_output_copy(handle, data->br_stack->entries, size);
-+		} else {
-+			/*
-+			 * we always store at least the value of nr
-+			 */
-+			u64 nr = 0;
-+			perf_output_put(handle, nr);
-+		}
-+	}
+ 
+-	cpuc->shared_regs->core_id = core_id;
+-	cpuc->shared_regs->refcnt++;
++	if (x86_pmu.lbr_sel_map)
++		cpuc->lbr_sel = &cpuc->shared_regs->regs[EXTRA_REG_LBR];
  }
  
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -3919,6 +3944,15 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		WARN_ON_ONCE(size & (sizeof(u64)-1));
- 		header->size += size;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
-+		int size = sizeof(u64); /* nr */
-+		if (data->br_stack) {
-+			size += data->br_stack->nr
-+			      * sizeof(struct perf_branch_entry);
-+		}
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event,
-@@ -5898,6 +5932,40 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (attr->read_format & ~(PERF_FORMAT_MAX-1))
- 		return -EINVAL;
- 
-+	if (attr->sample_type & PERF_SAMPLE_BRANCH_STACK) {
-+		u64 mask = attr->branch_sample_type;
-+
-+		/* only using defined bits */
-+		if (mask & ~(PERF_SAMPLE_BRANCH_MAX-1))
-+			return -EINVAL;
-+
-+		/* at least one branch bit must be set */
-+		if (!(mask & ~PERF_SAMPLE_BRANCH_PLM_ALL))
-+			return -EINVAL;
-+
-+		/* kernel level capture: check permissions */
-+		if ((mask & PERF_SAMPLE_BRANCH_PERM_PLM)
-+		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+			return -EACCES;
-+
-+		/* propagate priv level, when not set for branch */
-+		if (!(mask & PERF_SAMPLE_BRANCH_PLM_ALL)) {
-+
-+			/* exclude_kernel checked on syscall entry */
-+			if (!attr->exclude_kernel)
-+				mask |= PERF_SAMPLE_BRANCH_KERNEL;
-+
-+			if (!attr->exclude_user)
-+				mask |= PERF_SAMPLE_BRANCH_USER;
-+
-+			if (!attr->exclude_hv)
-+				mask |= PERF_SAMPLE_BRANCH_HV;
-+			/*
-+			 * adjust user setting (for HW filter setup)
-+			 */
-+			attr->branch_sample_type = mask;
-+		}
-+	}
- out:
- 	return ret;
- 
+ static void intel_pmu_cpu_dying(int cpu)
 -- 
 1.7.1
 
