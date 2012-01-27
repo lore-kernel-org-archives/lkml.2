@@ -1,75 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab2A0ToW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 14:44:22 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:48396 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751688Ab2A0ToU (ORCPT
+	id S1753364Ab2A0TpD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 14:45:03 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47023 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab2A0TpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 14:44:20 -0500
-Date: Fri, 27 Jan 2012 11:44:16 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Kay, Allen M" <allen.m.kay@intel.com>
-Cc: "linux-pci-owner@vger.kernel.org" <linux-pci-owner@vger.kernel.org>,
-        "Barnes, Jesse" <jesse.barnes@intel.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jean.guyader@eu.citrix.com" <jean.guyader@eu.citrix.com>,
-        "eric.chanudet@citrix.com" <eric.chanudet@citrix.com>
-Subject: Re: [PATCH 1/1][resend]  check for pci bar restore completion and
- retry
-Message-ID: <20120127114416.2621963a@jbarnes-desktop>
-In-Reply-To: <1327602353-30966-1-git-send-email-allen.m.kay@intel.com>
-References: <1327602353-30966-1-git-send-email-allen.m.kay@intel.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Fri, 27 Jan 2012 14:45:00 -0500
+Message-ID: <1327693495.3159.10.camel@edumazet-laptop>
+Subject: Re: [BUG] Regression on behavior of EPOLLET | EPOLLIN for AF_UNIX
+ sockets in 3.2
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Nick Mathewson <nickm@freehaven.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexey Moiseytsev <himeraster@gmail.com>
+Date: Fri, 27 Jan 2012 20:44:55 +0100
+In-Reply-To: <1327690506.3159.7.camel@edumazet-laptop>
+References: <CAKDKvuzH14AZjDG3WSdrf5VtmiUgG0Y+EaC83qqSd0VFKzyitg@mail.gmail.com>
+	 <1327686822.3159.3.camel@edumazet-laptop> <4F22EA24.3030901@parallels.com>
+	 <1327690506.3159.7.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/EIytwQx79c31M4BUInluhbq"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/EIytwQx79c31M4BUInluhbq
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Le vendredi 27 janvier 2012 à 19:55 +0100, Eric Dumazet a écrit :
+> Le vendredi 27 janvier 2012 à 22:17 +0400, Glauber Costa a écrit :
+> > On 01/27/2012 09:53 PM, Eric Dumazet wrote:
+> > > Le vendredi 27 janvier 2012 à 12:05 -0500, Nick Mathewson a écrit :
+> > >> [1.] One line summary of the problem:
+> > >>
+> > >
+> > > Hi
+> > >
+> > > Probably coming from commit 0884d7aa24e15e72b3c07f7da910a13bb7df3592
+> > > (AF_UNIX: Fix poll blocking problem when reading from a stream socket)
+> > >
+> > > When we requeue skb because not completely eaten, we call again
+> > >
+> > > sk->sk_data_ready(sk, skb->len);
+> > >
+> > For the record, I just confirmed this to be the case.
+> 
+> A fix would be to change unix_poll() and not call sk_data_ready() when
+> skb is requeued.
+> 
+> if (!skb_queue_empty(&sk->sk_receive_queue))
+> 	mask |= POLLIN | POLLRDNORM;
+> 
+> Might be tricky if we want to keep unix_poll() lockless, but quite
+> possible.
+> 
+> Or... not dequeue skb from sk_received_queue unless fully consumed.
+> 
 
-On Thu, 26 Jan 2012 10:25:53 -0800
-"Kay, Allen M" <allen.m.kay@intel.com> wrote:
+I am testing following patch :
 
-> On some OEM systems, pci_restore_state() is called while FLR has not yet
-> completed.  As a result, PCI BAR register restore is not successful.  Thi=
-s fix
-> reads back the restored value and compares it with saved value and re-tri=
-es 10
-> times before giving up.
+ net/unix/af_unix.c |   18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
-Applied, but I don't think I got an answer as to why we don't do this
-delay/check when we perform the FLR in the first place?
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index aad8fb6..6eca195 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1918,7 +1918,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		struct sk_buff *skb;
+ 
+ 		unix_state_lock(sk);
+-		skb = skb_dequeue(&sk->sk_receive_queue);
++		skb = skb_peek(&sk->sk_receive_queue);
+ 		if (skb == NULL) {
+ 			unix_sk(sk)->recursion_level = 0;
+ 			if (copied >= target)
+@@ -1959,8 +1959,6 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			/* Never glue messages from different writers */
+ 			if ((UNIXCB(skb).pid  != siocb->scm->pid) ||
+ 			    (UNIXCB(skb).cred != siocb->scm->cred)) {
+-				skb_queue_head(&sk->sk_receive_queue, skb);
+-				sk->sk_data_ready(sk, skb->len);
+ 				break;
+ 			}
+ 		} else {
+@@ -1977,8 +1975,6 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 
+ 		chunk = min_t(unsigned int, skb->len, size);
+ 		if (memcpy_toiovec(msg->msg_iov, skb->data, chunk)) {
+-			skb_queue_head(&sk->sk_receive_queue, skb);
+-			sk->sk_data_ready(sk, skb->len);
+ 			if (copied == 0)
+ 				copied = -EFAULT;
+ 			break;
+@@ -1993,13 +1989,10 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			if (UNIXCB(skb).fp)
+ 				unix_detach_fds(siocb->scm, skb);
+ 
+-			/* put the skb back if we didn't use it up.. */
+-			if (skb->len) {
+-				skb_queue_head(&sk->sk_receive_queue, skb);
+-				sk->sk_data_ready(sk, skb->len);
++			if (skb->len)
+ 				break;
+-			}
+-
++			
++			skb_unlink(skb, &sk->sk_receive_queue);
+ 			consume_skb(skb);
+ 
+ 			if (siocb->scm->fp)
+@@ -2010,9 +2003,6 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			if (UNIXCB(skb).fp)
+ 				siocb->scm->fp = scm_fp_dup(UNIXCB(skb).fp);
+ 
+-			/* put message back and return */
+-			skb_queue_head(&sk->sk_receive_queue, skb);
+-			sk->sk_data_ready(sk, skb->len);
+ 			break;
+ 		}
+ 	} while (size);
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
 
---Sig_/EIytwQx79c31M4BUInluhbq
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPIv6QAAoJEIEoDkX4Qk9hGPYP/0Cf2eLBPc7DRMkuOTVFqudF
-VFTpViIwTxBVoe3h1VqOwwgtASoJNnEG6UsVs9esFYUIR/fWZEj2tOYSAfjT4RAM
-3BRrZSBiuxCAEHj/Z9QkXcP2Kw9sgUr51WnevB/dRSDsharJOOlGV5lBgM+NySos
-XjcpKpkhEJmnvSCON1Y9mNeJIUin+lMttZatKcJDPhuCBpjtnJ+qhlPoDYXPd93W
-5ud29PNvWV/zfmZa4a/5GkUrdZ9h6bFMo9ZSRZEm8K03UlIGvMazvkIc5PXr1Ice
-nZ0Eye3KZzf2GKQ5L6/EaJz39zvkzNQJKkJTWp2h2bdSUVF5sFm3WGKU3Hv192WX
-MXh96sQ5kDPRHqX8Kd42CHUE3b5fjBTIizOhgnQYuEDVAwJK77Ozrzg43Hef2aX7
-vlN7AI/YMIj51JIrdh12PUU8VAFskQBeHfTFvsnm2D4LhiiceTv75QjpgKYK/Se0
-/ZezgSWn/iQemQQxYyJL+X0o7vqD3gglbBfrH11YUFDtLciwKj5PelU1SHZyTPEM
-4hP2hdxjza1y+5jNX5OdGSzzGK5BUfvHANqyqoeCAJgGysGaxzOEE4Phd9aSWcBe
-aIVrzKwCap6tDlfVIKYB9j0CHIDRl8lnZe6q7yBtuP3OtbuaXZkuHpnXUFvTVgMT
-CAj/jjIIz9mSSOHZa1St
-=MRNu
------END PGP SIGNATURE-----
-
---Sig_/EIytwQx79c31M4BUInluhbq--
