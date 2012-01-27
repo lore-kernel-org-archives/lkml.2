@@ -1,74 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab2A0A4l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:56:41 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34161 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab2A0A4k (ORCPT
+	id S1754631Ab2A0A4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:56:48 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:24624 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278Ab2A0A4p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:56:40 -0500
-Message-ID: <4F21F638.2080306@linux.vnet.ibm.com>
-Date: Fri, 27 Jan 2012 08:56:24 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Thu, 26 Jan 2012 19:56:45 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Xiaotian Feng <xtfeng@gmail.com>, ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] sched: Accelerate "pick_next_entity" under special
- condition
-References: <4F13EFBE.1030002@linux.vnet.ibm.com> <1326707503.2442.219.camel@twins>	<4F14DEAE.60702@linux.vnet.ibm.com> <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com> <4F14E54E.80904@linux.vnet.ibm.com> <1327506934.2614.87.camel@laptop>
-In-Reply-To: <1327506934.2614.87.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12012614-5140-0000-0000-000000A7FCDA
+Message-ID: <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
+Date: Thu, 26 Jan 2012 16:56:34 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
+        Chris Mason <chris.mason@oracle.com>
+Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
+ cleancache)
+References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
+ <4F218D36.2060308@linux.vnet.ibm.com>
+ <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
+ <20120126163150.31a8688f.akpm@linux-foundation.org>
+In-Reply-To: <20120126163150.31a8688f.akpm@linux-foundation.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4F21F63E.00C9,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 11:55 PM, Peter Zijlstra wrote:
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
 
-> On Tue, 2012-01-17 at 11:04 +0800, Michael Wang wrote:
->>
->>> Then what if condition 1 is true now?
->>
->> We can see in original code, even condition 1 is true, we
->> still will use value3 if condition3 is true, like this:
->>
->> original:
->>
->> condition1      condition3      result
->> true            true            value3
->> true            false           value1
->>
->> That means if condition3 is true, we don't care whether
->> condition1 is true or not because we will finally use value3.
+Thanks for the reply!
+ 
+> On Thu, 26 Jan 2012 13:28:02 -0800 (PST)
+> Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
 > 
-
-> Right, so from the original 8 possible states we used to evaluate 3*8 =
-> 24 conditionals. The new code will reduce this to 1*4 + 2*2 + 2*3 = 14.
+> > > I do think it also needs to get cleared on the way in to the page
+> > > allocator.  Otherwise:
+> > >
+> > > 	PageSetWasActive(page);
+> > > 	free_page(page);
+> > > 	...
+> > > 	another_user_page = get_free_page()
+> > > 	// now cleancache sees the active bit for the prev user
+> > >
+> > > Or am I missing somewhere it gets cleared non-explicitly somewhere?
+> >
+> > True, it is not getting cleared and it should be, good catch!
 > 
-> Now I guess the question is if it matters for the modal or average
-> state.
+> It should be added to PAGE_FLAGS_CHECK_AT_FREE.
+
+I was thinking of clearing it in free_pages_prepare() before the
+call to free_pages_check().  Does that make sense?  If so, then
+it could also be added to PAGE_FLAGS_CHECK_AT_FREE, though it might
+be a bit redundant.
+
+> > I'll find the place to add the call to ClearPageWasActive() for v2.
 > 
+> AFAICT this patch consumes our second-last page flag, or close to it.
+> We'll all be breaking out in hysterics when the final one is gone.
 
+I'd be OK with only using this on 64-bit systems, though there
+are ARM folks playing with zcache that might disagree.  Am I
+correct in assuming that your "second-last page flag" concern
+applies only to 32-bit systems?
 
-Hi, Peter
+> This does appear to be a make or break thing for cleancache - if we
+> can't fix https://lkml.org/lkml/2012/1/22/61 then cleancache is pretty
+> much a dead duck.
 
-I think how much help this patch can do on the performance depends on
-how often the condition2 and 3 occur.
+Hmmm... is that URL correct?  If so, there is some subtlety in
+that thread that I am missing as I don't understand the relationship
+to cleancache at all?
 
-> I've applied the patch since it can't be worse, but I've no idea if it
-> matters or not in practice.
+> But I'm going to ask for great effort to avoid
+> consuming another page flag.  Either fix cleancache via other means or,
+> much less desirably, find an existing page flag and overload it.
 
+Cleancache isn't broken.  The fix is not a requirement for other
+cleancache users (Xen and RAMster), though it is definitely useful.
+It's not a _requirement_ for zcache either but definitely helps on
+certain workloads and systems, see below.
 
-It's hardly to say how useful this patch is, but it will do some help
-under special condition.
-Thanks for your review.
+> And I'm afraid that neither I nor other MM developers are likely to
+> help you with "fix cleancache via other means" because we weren't
+> provided with any description of what the problem is within cleancache,
+> nor how it will be fixed.  All we are given is the assertion "cleancache
+> needs this".
 
-Regards,
-Michael Wang
+The patch comment says:
 
-> 
+The patch resolves issues reported with cleancache which occur
+especially during streaming workloads on older processors,
+see https://lkml.org/lkml/2011/8/17/351
 
+I can see that may not be sufficient, so let me expand on it.
 
+First, just as page replacement worked prior to the active/inactive
+redesign at 2.6.27, cleancache works without the WasActive page flag.
+However, just as pre-2.6.27 page replacement had problems on
+streaming workloads, so does cleancache.  The WasActive page flag
+is an attempt to pass the same active/inactive info gathered by
+the post-2.6.27 kernel into cleancache, with the same objectives and
+presumably the same result: improving the "quality" of pages preserved
+in memory thus reducing refaults.
+
+Is that clearer?  If so, I'll do better on the description at v2.
+
+Thanks,
+Dan
