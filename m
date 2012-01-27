@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab2A0Og3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 09:36:29 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:50921 "EHLO mx2.parallels.com"
+	id S1755686Ab2A0OhX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 09:37:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64830 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755808Ab2A0Og0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 09:36:26 -0500
-Message-ID: <4F22B634.2020007@parallels.com>
-Date: Fri, 27 Jan 2012 18:35:32 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.3-rc1 regression] TCP: too many of orphaned sockets
-References: <20120127124641.GA30819@elte.hu> <4F229D5C.4040300@parallels.com> <20120127125645.GA28131@elte.hu> <20120127141754.GA30202@elte.hu> <20120127142246.GA22318@elte.hu>
-In-Reply-To: <20120127142246.GA22318@elte.hu>
-Content-Type: multipart/mixed;
-	boundary="------------040904050405020808000608"
+	id S1755509Ab2A0Oew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 09:34:52 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCHv4 0/9] perf tool: parser generator for events parsing
+Date: Fri, 27 Jan 2012 15:34:19 +0100
+Message-Id: <1327674868-10486-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
+References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------040904050405020808000608
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+hi,
+Here's new version of event parsing patchset. To summarize:
+ - adding event parser bison/flex generator
+ - the event syntax stays as it was
+ - adding event format sysfs group attribute
+   for pmu device
+ - adding new syntax to specify raw events based
+   on the sysfs pmu's format attribute
+   eg. "cpu/config=1,config1=2,config2=3/u"
 
-On 01/27/2012 06:22 PM, Ingo Molnar wrote:
->
-> * Ingo Molnar<mingo@elte.hu>  wrote:
->
->> ok, i've bisected it, and the bad commit is:
->>
->> 3dc43e3e4d0b52197d3205214fe8f162f9e0c334 is the first bad commit
->> commit 3dc43e3e4d0b52197d3205214fe8f162f9e0c334
->> Author: Glauber Costa<glommer@parallels.com>
->> Date:   Sun Dec 11 21:47:05 2011 +0000
->>
->>      per-netns ipv4 sysctl_tcp_mem
->
-> Might be related to this detail in the .config:
->
->   # CONFIG_PROC_SYSCTL is not set
->
-> So former tcp_init() code does not get run?
->
-> Thanks,
->
-> 	Ingo
+There are helping patches 1-4, which I did not want to
+mangle with the actual change. Patches 5-9 implement
+the feature itself.
 
-Can you tell me if the following patch fixes your problem?
+v4 changes:
+ - 5/9 changed sysfs pmu format definitions to the group attribute,
+       each line (in previous patch) is now represented by single
+       sysfs attribute under format group
+ - 6/9 fix raw events so the number is always considered to be hex number
+ - 8/9 move config[12] definitions to be processed by the parser
+
+Attached patches:
+ 1/9 perf, tool: Make perf_evlist__splice_list_tail global
+ 2/9 perf, tool: Remove unused functions from debugfs object
+ 3/9 perf, tool: Add sysfs mountpoint interface
+ 4/9 perf, tool: Add bitmap_or function into bitmap object
+ 5/9 perf: Adding sysfs group format attribute for pmu device
+ 6/9 perf, tool: Add parser generator for events parsing
+ 7/9 perf, tool: Add config options support for event parsing
+ 8/9 perf, tool: Add perf pmu object to access pmu format definition
+ 9/9 perf, tool: Add support to specify pmu style event
 
 
---------------040904050405020808000608
-Content-Type: text/x-patch; name="test.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="test.patch"
-
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 9bcdec3..366834b 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3276,9 +3276,23 @@ void __init tcp_init(void)
- 	sysctl_tcp_max_orphans = cnt / 2;
- 	sysctl_max_syn_backlog = max(128, cnt / 256);
- 
-+	/*
-+	 * Despite the sysctl name, those values are always used in the code.
-+	 * CONFIG_PROC_SYSCTL only exposes it as a sysctl, allowing the admin
-+	 * to tweak them. If this is not configured, we need to provide
-+	 * a default value here
-+	 */
-+#ifdef CONFIG_PROC_SYSCTL
- 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
- 	limit = ((unsigned long)init_net.ipv4.sysctl_tcp_mem[1])
- 		<< (PAGE_SHIFT - 7);
-+#else
-+	limit = nr_free_buffer_pages() / 8;
-+	limit = max(limit, 128UL);
-+	init_net.ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-+	init_net.ipv4.sysctl_tcp_mem[1] = limit;
-+	init_net.ipv4.sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
-+#endif
- 	max_share = min(4UL*1024*1024, limit);
- 
- 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
-
---------------040904050405020808000608--
+thanks,
+jirka
+---
+ .../testing/sysfs-bus-event_source-devices-format  |   14 +
+ include/linux/perf_event.h                         |   22 +
+ kernel/events/core.c                               |   22 +
+ tools/perf/Makefile                                |   31 +
+ tools/perf/builtin-test.c                          |   52 +-
+ tools/perf/util/bitmap.c                           |   10 +
+ tools/perf/util/debugfs.c                          |  141 --
+ tools/perf/util/debugfs.h                          |    6 -
+ tools/perf/util/evlist.c                           |    6 +-
+ tools/perf/util/evlist.h                           |    5 +
+ tools/perf/util/include/linux/bitmap.h             |   11 +
+ tools/perf/util/parse-events-bison.c               | 1813 ++++++++++++++++
+ tools/perf/util/parse-events-bison.h               |   81 +
+ tools/perf/util/parse-events-flex.c                | 2225 ++++++++++++++++++++
+ tools/perf/util/parse-events-flex.h                |  316 +++
+ tools/perf/util/parse-events.c                     |  552 ++---
+ tools/perf/util/parse-events.h                     |   37 +
+ tools/perf/util/parse-events.l                     |  107 +
+ tools/perf/util/parse-events.y                     |  191 ++
+ tools/perf/util/pmu-bison.c                        | 1663 +++++++++++++++
+ tools/perf/util/pmu-bison.h                        |   73 +
+ tools/perf/util/pmu-flex.c                         | 1821 ++++++++++++++++
+ tools/perf/util/pmu-flex.h                         |  316 +++
+ tools/perf/util/pmu.c                              |  462 ++++
+ tools/perf/util/pmu.h                              |   41 +
+ tools/perf/util/pmu.l                              |   43 +
+ tools/perf/util/pmu.y                              |   93 +
+ tools/perf/util/sysfs.c                            |   60 +
+ tools/perf/util/sysfs.h                            |    6 +
+ 29 files changed, 9740 insertions(+), 480 deletions(-)
