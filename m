@@ -1,95 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab2A0Q1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:27:53 -0500
-Received: from mga03.intel.com ([143.182.124.21]:15481 "EHLO mga03.intel.com"
+	id S1756185Ab2A0Q2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:28:05 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:59809 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab2A0Q1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:27:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100405225"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, "mjg@redhat.com" <mjg@redhat.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 5/5] platform-x86: intel_mid_thermal: turn off
- thermistor voltage by default
-Thread-Topic: [PATCH 5/5] platform-x86: intel_mid_thermal: turn off
- thermistor voltage by default
-Thread-Index: AQHM3FDAKy9iAQdgfUm65HLCeevLwZYgaE2g
-Date: Fri, 27 Jan 2012 16:27:47 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5902FDBA@BGSMSX101.gar.corp.intel.com>
-References: <20120126173729.16719.15431.stgit@bob.linux.org.uk>
- <20120126173943.16719.16596.stgit@bob.linux.org.uk>
-In-Reply-To: <20120126173943.16719.16596.stgit@bob.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1751534Ab2A0Q2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 11:28:00 -0500
+Message-ID: <4F22D05A.8030604@parallels.com>
+Date: Fri, 27 Jan 2012 20:27:06 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [v3.3-rc1 regression] TCP: too many of orphaned sockets
+References: <20120127124641.GA30819@elte.hu> <4F229D5C.4040300@parallels.com> <20120127125645.GA28131@elte.hu> <20120127141754.GA30202@elte.hu> <20120127142246.GA22318@elte.hu> <4F22B634.2020007@parallels.com>
+In-Reply-To: <4F22B634.2020007@parallels.com>
+Content-Type: multipart/mixed;
+	boundary="------------090700050908010709090008"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0RGS0OJ020468
 
-> -----Original Message-----
-> From: platform-driver-x86-owner@vger.kernel.org [mailto:platform-driver-x86-
-> owner@vger.kernel.org] On Behalf Of Alan Cox
-> Sent: Thursday, January 26, 2012 11:10 PM
-> To: mjg@redhat.com; platform-driver-x86@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH 5/5] platform-x86: intel_mid_thermal: turn off thermistor
-> voltage by default
-> 
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> Instead of complaining that the voltage is on, we can just ask the MSIC to
-> turn the voltage off. This should save some power.
-> 
-> Voltage for thermistors is turned on when ADC conversion is initiated.
+--------------090700050908010709090008
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Acked-by: Durgadoss R <durgadoss.r@intel.com>
+On 01/27/2012 06:35 PM, Glauber Costa wrote:
+> On 01/27/2012 06:22 PM, Ingo Molnar wrote:
+>>
+>> * Ingo Molnar<mingo@elte.hu> wrote:
+>>
+>>> ok, i've bisected it, and the bad commit is:
+>>>
+>>> 3dc43e3e4d0b52197d3205214fe8f162f9e0c334 is the first bad commit
+>>> commit 3dc43e3e4d0b52197d3205214fe8f162f9e0c334
+>>> Author: Glauber Costa<glommer@parallels.com>
+>>> Date: Sun Dec 11 21:47:05 2011 +0000
+>>>
+>>> per-netns ipv4 sysctl_tcp_mem
+>>
+>> Might be related to this detail in the .config:
+>>
+>> # CONFIG_PROC_SYSCTL is not set
+>>
+>> So former tcp_init() code does not get run?
+>>
+>> Thanks,
+>>
+>> Ingo
+>
+> Can you tell me if the following patch fixes your problem?
+>
+Update on this:
 
-Thanks,
-Durga
+What really makes it break is CONFIG_SYSCTL.
+CONFIG_PROC_SYSCTL selects that, so if you get the one, you
+end up getting the other. (The config mingo provided lacks both)
 
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
-> 
->  drivers/platform/x86/intel_mid_thermal.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> 
-> diff --git a/drivers/platform/x86/intel_mid_thermal.c
-> b/drivers/platform/x86/intel_mid_thermal.c
-> index aef4979..a4e56be 100644
-> --- a/drivers/platform/x86/intel_mid_thermal.c
-> +++ b/drivers/platform/x86/intel_mid_thermal.c
-> @@ -360,8 +360,10 @@ static int mid_initialize_adc(struct device *dev)
->  	if (ret)
->  		return ret;
-> 
-> -	if (data & MSIC_ADCTHERM_MASK)
-> -		dev_warn(dev, "ADCTHERM already set");
-> +	data &= ~MSIC_ADCTHERM_MASK;
-> +	ret = intel_msic_reg_write(INTEL_MSIC_ADC1CNTL3, data);
-> +	if (ret)
-> +		return ret;
-> 
->  	/* Index of the first channel in which the stop bit is set */
->  	channel_index = find_free_channel();
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Also, I believe there is no harm in initializing this unconditionally,
+so instead of cluttering tcp_init() with #ifdef, I am proposing we just 
+init it here, and then init it again in sysctl initialization. I don't
+expect it to harm workload, since it is a one-shot.
+
+Now, I am attaching my proposed final patch for this, but I can't really
+generate a config without sysctl that boots okay for me.
+
+Ingo, would you please confirm that this fixes the problem for you? If 
+I'm mistaken, let me know and I'll get back to it ASAP.
+
+Dave, once Ingo acks that it fixes the problem he says, I'll submit the 
+patch formally.
+
+Thanks.
+
+--------------090700050908010709090008
+Content-Type: text/x-patch;
+	name="0001-fix-tcp-sysctl-initialization-with-CONFIG_SYSCTL-dis.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename*0="0001-fix-tcp-sysctl-initialization-with-CONFIG_SYSCTL-dis.pa";
+	filename*1="tch"
+
+>From 49318a2c917f970373e66e21d747a38a595eb462 Mon Sep 17 00:00:00 2001
+From: Glauber Costa <glommer@parallels.com>
+Date: Fri, 27 Jan 2012 19:34:17 +0400
+Subject: [PATCH] fix tcp sysctl initialization with CONFIG_SYSCTL disabled.
+
+sysctl_tcp_mem initialization was moved to sysctl_tcp_ipv4.c
+in commit 3dc43e3e4d0b52197d3205214fe8f162f9e0c334, since it
+became a per-ns value.
+
+That code, however, will never run when CONFIG_SYSCTL is disabled,
+leading to bogus values on those fields.
+
+This patch fixes it by keeping an initialization code in tcp_init().
+It will be overwritten by the first net namespace init if CONFIG_SYSCTL
+is compiled in, and do the right thing if it is compiled out.
+
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+Reported-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/net/tcp.h          |    2 ++
+ net/ipv4/sysctl_net_ipv4.c |    1 +
+ net/ipv4/tcp.c             |   16 +++++++++++++---
+ 3 files changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 0118ea9..b04a3e9 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -311,6 +311,8 @@ extern struct proto tcp_prot;
+ #define TCP_ADD_STATS_USER(net, field, val) SNMP_ADD_STATS_USER((net)->mib.tcp_statistics, field, val)
+ #define TCP_ADD_STATS(net, field, val)	SNMP_ADD_STATS((net)->mib.tcp_statistics, field, val)
+ 
++extern void init_tcp_mem(struct net *net);
++
+ extern void tcp_v4_err(struct sk_buff *skb, u32);
+ 
+ extern void tcp_shutdown (struct sock *sk, int how);
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index 4aa7e9d..1d67cde 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -814,6 +814,7 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
+ 
+ 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
+ 
++	init_tcp_mem(net);
+ 	limit = nr_free_buffer_pages() / 8;
+ 	limit = max(limit, 128UL);
+ 	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 9bcdec3..34e4051 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3216,6 +3216,16 @@ static int __init set_thash_entries(char *str)
+ }
+ __setup("thash_entries=", set_thash_entries);
+ 
++void init_tcp_mem(struct net *net)
++{
++	/* Set per-socket limits to no more than 1/128 the pressure threshold */
++	unsigned long limit = nr_free_buffer_pages() / 8;
++	limit = max(limit, 128UL);
++	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
++	net->ipv4.sysctl_tcp_mem[1] = limit;
++	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
++}
++
+ void __init tcp_init(void)
+ {
+ 	struct sk_buff *skb = NULL;
+@@ -3276,9 +3286,9 @@ void __init tcp_init(void)
+ 	sysctl_tcp_max_orphans = cnt / 2;
+ 	sysctl_max_syn_backlog = max(128, cnt / 256);
+ 
+-	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+-	limit = ((unsigned long)init_net.ipv4.sysctl_tcp_mem[1])
+-		<< (PAGE_SHIFT - 7);
++	init_tcp_mem(&init_net);
++	limit = nr_free_buffer_pages() / 8;
++	limit = max(limit, 128UL);
+ 	max_share = min(4UL*1024*1024, limit);
+ 
+ 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
+-- 
+1.7.7.4
+
+
+--------------090700050908010709090008--
