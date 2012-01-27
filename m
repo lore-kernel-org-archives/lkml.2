@@ -1,167 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab2A0Rxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 12:53:51 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53682 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab2A0Rxr (ORCPT
+	id S1752917Ab2A0Ryl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 12:54:41 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45526 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751800Ab2A0Ryj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 12:53:47 -0500
-Message-ID: <1327686822.3159.3.camel@edumazet-laptop>
-Subject: Re: [BUG] Regression on behavior of EPOLLET | EPOLLIN for AF_UNIX
- sockets in 3.2
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Mathewson <nickm@freehaven.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Moiseytsev <himeraster@gmail.com>
-Date: Fri, 27 Jan 2012 18:53:42 +0100
-In-Reply-To: <CAKDKvuzH14AZjDG3WSdrf5VtmiUgG0Y+EaC83qqSd0VFKzyitg@mail.gmail.com>
-References: <CAKDKvuzH14AZjDG3WSdrf5VtmiUgG0Y+EaC83qqSd0VFKzyitg@mail.gmail.com>
+	Fri, 27 Jan 2012 12:54:39 -0500
+Message-ID: <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>
+Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
+ cleancache)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
+        Chris Mason <chris.mason@oracle.com>,
+        lsf-pc@lists.linux-foundation.org
+Date: Fri, 27 Jan 2012 11:54:36 -0600
+In-Reply-To: <3ac611ee-8830-41bd-8464-6867da701948@default>
+References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
+	 <4F218D36.2060308@linux.vnet.ibm.com>
+	 <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
+	 <20120126163150.31a8688f.akpm@linux-foundation.org>
+	 <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
+	 <20120126171548.2c85dd44.akpm@linux-foundation.org>
+	 <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>
+	 <1327671787.2977.17.camel@dabdike.int.hansenpartnership.com>
+	 <3ac611ee-8830-41bd-8464-6867da701948@default>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 27 janvier 2012 à 12:05 -0500, Nick Mathewson a écrit :
-> [1.] One line summary of the problem:
+On Fri, 2012-01-27 at 09:32 -0800, Dan Magenheimer wrote:
+> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> > What I was wondering was instead of using a flag, could we make the LRU
+> > lists do this for us ... something like have a special LRU list for
+> > pages added to the page cache but never referenced since added?  It
+> > sounds like you can get your WasActive information from the same type of
+> > LRU list tricks (assuming we can do them).
 > 
-> EPOLLET doesn't give edge-triggered behavior for AF_UNIX sockets in 3.2
+> Hmmm... I think this would mean more LRU queues but that may be
+> the right long term answer.  Something like?
 > 
-> [2.] Full description of the problem/report:
-> 
-> When epoll is told to listen to a readable socket with the flags
-> EPOLLIN|EPOLLET, it is supposed to report the event once, and then
-> not report the event again until the socket has first become
-> non-readable and then become readable again.  (This behavior is part
-> of the definition of edge-triggered events, IIUC.)
-> 
-> But with AF_UNIX sockets on Linux 3.2, a call to read() on a socket
-> that does not drain the socket's buffer completely can apparently
-> cause epoll to think that the socket has generated another event,
-> even if no further data has actually arrived at the socket.
-> 
-> This behavior did not occur in 3.1, and does not occur in 3.2 with
-> AF_INET sockets or with pipes.
-> 
-> [3.] Keywords:
-> 
-> networking, AF_UNIX, epoll, socket
-> 
-> [4.] Kernel version (from /proc/version):
-> 
-> First found in:
-> 
-> Linux version 3.2.1-3.fc16.x86_64
-> (mockbuild@x86-13.phx2.fedoraproject.org) (gcc version 4.6.2 20111027
-> (Red Hat 4.6.2-1) (GCC) ) #1 SMP Mon Jan 23 15:36:17 UTC 2012
-> 
-> Another user has reproduced this with:
-> 
-> Linux version 3.2.0-1-686-pae (Debian 3.2.1-1) (ben@decadent.org.uk)
-> (gcc version 4.6.2 (Debian 4.6.2-11) ) #1 SMP Thu Jan 19 10:56:51 UTC
-> 2012
-> 
-> [6.] A small shell script or example program which triggers the
->      problem (if possible)
-> 
-> #include <sys/epoll.h>
-> #include <sys/types.h>
-> #include <sys/socket.h>
-> #include <unistd.h>
-> #include <fcntl.h>
-> 
-> #include <stdio.h>
-> #include <errno.h>
-> #include <string.h>
-> 
-> int
-> main(int argc, const char **argv)
-> {
->         int epfd;
->         int pair[2];
->         struct epoll_event epev;
->         int n, r, n_reads;
-> 
->         if ((epfd = epoll_create(32)) < 0) {
->                 perror("epoll_create()");
->                 return 2;
->         }
->         if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) < 0) {
->                 perror("socketpair()");
->                 return 2;
->         }
-> 
->         if (fcntl(pair[0], F_SETFL, O_NONBLOCK) < 0) {
->                 perror("fcntl()");
->                 return 2;
->         }
-> 
->         memset(&epev, 0, sizeof(epev));
->         epev.events = EPOLLIN | EPOLLET;
->         epev.data.fd = pair[0];
->         if (epoll_ctl(epfd, EPOLL_CTL_ADD, pair[0], &epev) < 0) {
->                 perror("epoll_ctl()");
->                 return 2;
->         }
-> 
->         if ((n = write(pair[1], "A 21-character string", 21)) < 0) {
->                 perror("write()");
->                 return 2;
->         }
-> 
->         /* pair[0] should now be readable. EPOLLET above has said that we
->          * want edge-triggered behavior, so we should only get a single
->          * EPOLLIN event on the socket.  But on Linux 3.2, for some reason,
->          * reading a single byte from the socket causes us to get another
->          * EPOLLIN event.
->          */
->         n_reads = 0;
->         while ((r = epoll_wait(epfd, &epev, 1, 500)) == 1) {
->                 char byte[1];
->                 printf("epoll_wait() said: events=%d, fd=%d\n",
->                        epev.events, epev.data.fd);
->                 n = read(pair[0], byte, 1);
->                 if (n < 0 && errno == EAGAIN) {
->                         puts("read() reported EAGAIN.");
->                 } else if (n < 0) {
->                         perror("read()");
->                 } else if (n == 0) {
->                         puts("read() reported EOF.");
->                 } else {
->                         printf("Read %d byte(s)\n", n);
->                         ++n_reads;
->                 }
->         }
->         if (r == 0) {
->                 puts("Timeout without event.");
->         } else {
->                 perror("epoll_wait()");
->         }
-> 
->         close(pair[0]);
->         close(pair[1]);
->         close(epfd);
-> 
->         if (n_reads == 1) {
->                 puts("Exactly one read event. Good.");
->         } else {
->                 printf("Got %d read events. That's not right!\n", n_reads);
->         }
->         return (n_reads == 1) ? 0 : 1;
-> }
-> --
+> 	read but not used yet LRU
+> 	readahead but not used yet LRU
 
-Hi
+What's the difference between these two?  I think read but not used is
+some form of readahead regardless of where it came from.
 
-Probably coming from commit 0884d7aa24e15e72b3c07f7da910a13bb7df3592
-(AF_UNIX: Fix poll blocking problem when reading from a stream socket)
+> 	active LRU
+> 	previously active LRU
 
-When we requeue skb because not completely eaten, we call again
+I don't quite understand why you need two queues here, either.  Surely
+active is logically at the bottom of the LRU and previously active at
+the top (assuming we've separated the unused pages to a different LRU
+list).
 
-sk->sk_data_ready(sk, skb->len);
+> Naturally, this then complicates the eviction selection process.
+> 
+> > I think the memory pressure eviction heuristic is: referenced but not
+> > recently used pages first followed by unreferenced and not recently used
+> > readahead pages.  The key being to keep recently read in readahead pages
+> > until last because there's a time between doing readahead and getting
+> > the page accessed and we don't want to trash a recently red in readahead
+> > page only to have the process touch it and find it has to be read in
+> > again.
+> 
+> I suspect that any further progress on the page replacement heuristics
+> is going to require more per-page data to be stored.  Which means
+> that it probably won't work under the constraints of 32-bit systems.
+> So it might also make sense to revisit when/whether to allow the
+> heuristics to be better on a 64-bit system than on a 32-bit.
+> (Even ARM now has 64-bit processors!)  I put this on my topic list
+> for LSF/MM, though I have no history of previous discussion so
+> this may already have previously been decided.
 
+I've got to say why? on this.  The object is to find a simple solution
+that's good enough.  I think separating the LRU list into two based on
+once referenced/never referenced might be enough to derive all the
+information we need.  Until that theory is disproved, there's not much
+benefit to developing ever more complex heuristics.
+
+James
 
 
