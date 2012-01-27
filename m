@@ -1,94 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab2A0GqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 01:46:05 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52735 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab2A0GqD (ORCPT
+	id S1755778Ab2A0Gu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 01:50:29 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:53191 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752720Ab2A0Gu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 01:46:03 -0500
-Date: Fri, 27 Jan 2012 14:57:54 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Pinmux bindings proposal V2
-Message-ID: <20120127065752.GB32740@S2101-09.ap.freescale.net>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
- <20120123210052.GS22818@atomide.com>
- <74CDBE0F657A3D45AFBB94109FB122FF178CB81C0D@HQMAIL01.nvidia.com>
- <20120124012038.GT22818@atomide.com>
- <74CDBE0F657A3D45AFBB94109FB122FF178CB81EDB@HQMAIL01.nvidia.com>
- <20120125000407.GU22818@atomide.com>
- <74CDBE0F657A3D45AFBB94109FB122FF178CB82433@HQMAIL01.nvidia.com>
- <20120127020832.GJ29812@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120127020832.GJ29812@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Jan 2012 01:50:28 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/u1M8MhOPuBKGQ0Yi9CRI/Z4xu/uS11tAVQXj7pk
+	8cpogjxUsNiLpj
+Subject: Re: Shift by one instruction in the perf annotate output
+From: Mike Galbraith <efault@gmx.de>
+To: =?ISO-8859-1?Q?L=E9na=EFc?= Huard <lenaic@lhuard.fr.eu.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <201201270001.27765.lenaic@lhuard.fr.eu.org>
+References: <201201270001.27765.lenaic@lhuard.fr.eu.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Jan 2012 07:50:11 +0100
+Message-ID: <1327647011.6335.22.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 06:08:33PM -0800, Tony Lindgren wrote:
-> * Stephen Warren <swarren@nvidia.com> [120126 11:03]:
-...
-> > Second, as I mentioned before, while some of the states are certainly
-> > PM-related, I don't think all will be, e.g. the case of running an SD
-> > controller at different clock rates to the SD card, and needing to
-> > set different pin parameters based on the clock rate. Is runtime PM
-> > intended cover that kind of thing? The idea here is that the common
-> > pinctrl binding can allow the driver to require different named states
-> > for those different clock rate cases.
+On Fri, 2012-01-27 at 00:01 +0100, Lénaïc Huard wrote:
+> Hello,
 > 
-> For the PM related states, those should be Linux generic. For rate
-> setting sounds like that's really something you should set up as clocks
-> in the Tegra wrapper driver for SDHCI?
+> Using perf and zooming up to the annotated assembler, I noticed a “shift by 
+> one” issue between the assembler instructions and the reported consumed cycles 
+> in the left margin.
+> Each time a given instruction is expensive, the high event count appears on 
+> the line right after.
+> In order to validate that feeling, I tried to put an expensive instruction 
+> (division) inside a block of cheaper instructions (no operation). And here is 
+> the output of perf annotate:
 > 
-That's right.
-
-> Ideally the SDHCI driver would be completely arch independent, and
-> then the SoC specific wrapper driver would know how to communicate to
-> the pinmux/pinconf framwork or clock framework what it needs using
-> Linux generic APIs.
-
-But that wrapper driver should not be bothered to call pinmux/pinconf
-APIs on pin basis to change the pinctrl configuration.  The elegant
-way would be something like the following in case that it switches
-the bus frequency from 50 MHz to 100 MHz.
-
-	pmx = pinmux_get(dev, "esdhc_50mhz");
-	...
-	pinmux_put(pmx);
-	pmx = pinmux_get(dev, "esdhc_100mhz");
-	...
-
-The specific mux and config settings of states esdhc_50mhz and
-esdhc_100mhz would be retrieved from device tree.
-
-> So I'd rather stay out of random named states for
-> the pins coming from device tree; If we still need them, they should
-> be common bindings rather than things like "xyz_clock_hack".
+>     0,00 :          40041d:       nop
+>     0,00 :          40041e:       nop
+>     5,31 :          40041f:       nop                                                                                                                                               
+>     0,00 :          400420:       divl   (%rsp)
+>    84,18 :          400423:       nop                                                                                                                                               
+>     0,00 :          400424:       nop
+>     0,07 :          400425:       nop
 > 
-The binding defines the syntax, and I do not see the necessity to
-force the particular state name, which is really pinctrl client
-device specific.
+> I would have expected the 84,18 count to be in front of the “divl” instruction 
+> and not in front of the “nop” one.
+> 
+> I am running Linux and perf 3.2 but I remember that previous versions suffered 
+> from the same issue.
 
--- 
-Regards,
-Shawn
+Yeah, it's been that way since day 1 here, you have to squint a little.
+It's not always off, it gets lock btr right, but lock xadd wrong.  Same
+CPU as yours.  I see the same with cache-misses too, but since the right
+instruction is right next door, it's always been easy to spot the real
+culprit, so I just squint and ignore it, figuring it's a hw detail.
+
+Showing cycles for __schedule
+  Events  Pcnt (>=5%)
+ Percent |      Source code & Disassembly of vmlinux
+------------------------------------------------
+         :              next = pick_next_task(rq);
+         :              clear_tsk_need_resched(prev);
+         :
+         :              if (likely(prev != next)) {
+    7.68 :      ffffffff8139efca:       mov    -0xf0(%rbp),%rcx
+         :
+         :      static inline void load_cr3(pgd_t *pgdir)
+         :      {
+         :              write_cr3(__pa(pgdir));
+    6.87 :      ffffffff8139f061:       mov    0x48(%r15),%rdi
+         :                              : CONST_MASK_ADDR(nr, addr)
+         :                              : "iq" ((u8)~CONST_MASK(nr)));
+         :              } else {
+         :                      asm volatile(LOCK_PREFIX "btr %1,%0"
+   38.27 :      ffffffff8139f06d:       lock btr %r14d,0x300(%r12)
+         :                      /*
+         :                       * load the LDT, if the LDT is different:
+         :                       */
+         :                      if (unlikely(prev->context.ldt != next->context.ldt))
+   12.53 :      ffffffff8139f077:       mov    0x308(%r15),%r13
+    0.40 :      ffffffff8139f0df:       jne    ffffffff813a7c60 <ret_from_fork>
+    0.00 :      ffffffff8139f0e5:       mov    %rbp,%rsi
+    0.00 :      ffffffff8139f0e8:       pop    %rbp
+    0.00 :      ffffffff8139f0e9:       popfq  
+    5.12 :      ffffffff8139f0ea:       mov    %rax,-0xe8(%rbp)
+
+Showing cycles for _raw_spin_lock_irqsave
+  Events  Pcnt (>=5%)
+ Percent |      Source code & Disassembly of vmlinux
+------------------------------------------------
+         :               * documented behavior of the "pop" instruction.
+         :               */
+         :              asm volatile("# __raw_save_flags\n\t"
+    0.00 :      ffffffff813a0b1f:       pushfq 
+   15.38 :      ffffffff813a0b20:       pop    %r12
+         :              unsigned long flags;
+         :
+         :              local_irq_save(flags);
+         :              preempt_disable();
+   16.24 :      ffffffff813a0b23:       mov    $0x1,%edi
+         :              register struct __raw_tickets inc = { .tail = 1 };
+         :
+         :              inc = xadd(&lock->tickets, inc);
+    0.00 :      ffffffff813a0b32:       lock xadd %ax,(%rbx)
+   46.15 :      ffffffff813a0b37:       movzbl %ah,%edx
+         :              return __raw_spin_lock_irqsave(lock);
+         :      }
+    0.85 :      ffffffff813a0b49:       mov    %r12,%rax
+    0.00 :      ffffffff813a0b4c:       pop    %rbx
+   17.09 :      ffffffff813a0b4d:       pop    %r12
+
+
