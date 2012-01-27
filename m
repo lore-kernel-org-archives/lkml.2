@@ -1,149 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651Ab2A0RFl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 12:05:41 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50793 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab2A0RFj (ORCPT
+	id S1752370Ab2A0RF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 12:05:59 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48068 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab2A0RF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 12:05:39 -0500
+	Fri, 27 Jan 2012 12:05:56 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Za9fBKBZHt1KS3UFJxqUc
+Date: Fri, 27 Jan 2012 09:05:45 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Pinmux bindings proposal V2
+Message-ID: <20120127170545.GH13504@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
+ <20120123210052.GS22818@atomide.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178CB81C0D@HQMAIL01.nvidia.com>
+ <20120124012038.GT22818@atomide.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178CB81EDB@HQMAIL01.nvidia.com>
+ <20120125000407.GU22818@atomide.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178CB82433@HQMAIL01.nvidia.com>
+ <20120127020832.GJ29812@atomide.com>
+ <20120127065752.GB32740@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Date: Fri, 27 Jan 2012 12:05:38 -0500
-X-Google-Sender-Auth: LVdxLrN9E9o1oGHUG2n6Ygo7NBw
-Message-ID: <CAKDKvuzH14AZjDG3WSdrf5VtmiUgG0Y+EaC83qqSd0VFKzyitg@mail.gmail.com>
-Subject: [BUG] Regression on behavior of EPOLLET | EPOLLIN for AF_UNIX sockets
- in 3.2
-From: Nick Mathewson <nickm@freehaven.net>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120127065752.GB32740@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[1.] One line summary of the problem:
+Hi,
 
-EPOLLET doesn't give edge-triggered behavior for AF_UNIX sockets in 3.2
+* Shawn Guo <shawn.guo@linaro.org> [120126 22:15]:
+> On Thu, Jan 26, 2012 at 06:08:33PM -0800, Tony Lindgren wrote:
+> > * Stephen Warren <swarren@nvidia.com> [120126 11:03]:
+> ...
+> > > Second, as I mentioned before, while some of the states are certainly
+> > > PM-related, I don't think all will be, e.g. the case of running an SD
+> > > controller at different clock rates to the SD card, and needing to
+> > > set different pin parameters based on the clock rate. Is runtime PM
+> > > intended cover that kind of thing? The idea here is that the common
+> > > pinctrl binding can allow the driver to require different named states
+> > > for those different clock rate cases.
+> > 
+> > For the PM related states, those should be Linux generic. For rate
+> > setting sounds like that's really something you should set up as clocks
+> > in the Tegra wrapper driver for SDHCI?
+> > 
+> That's right.
+> 
+> > Ideally the SDHCI driver would be completely arch independent, and
+> > then the SoC specific wrapper driver would know how to communicate to
+> > the pinmux/pinconf framwork or clock framework what it needs using
+> > Linux generic APIs.
+> 
+> But that wrapper driver should not be bothered to call pinmux/pinconf
+> APIs on pin basis to change the pinctrl configuration.  The elegant
+> way would be something like the following in case that it switches
+> the bus frequency from 50 MHz to 100 MHz.
+> 
+> 	pmx = pinmux_get(dev, "esdhc_50mhz");
+> 	...
+> 	pinmux_put(pmx);
+> 	pmx = pinmux_get(dev, "esdhc_100mhz");
+> 	...
+> 
+> The specific mux and config settings of states esdhc_50mhz and
+> esdhc_100mhz would be retrieved from device tree.
 
-[2.] Full description of the problem/report:
+Yes whatever mux names can be used, same as with clock framework
+for clock names. But that means you'll have to constantly get/put
+the mux which is not efficient.
 
-When epoll is told to listen to a readable socket with the flags
-EPOLLIN|EPOLLET, it is supposed to report the event once, and then
-not report the event again until the socket has first become
-non-readable and then become readable again.  (This behavior is part
-of the definition of edge-triggered events, IIUC.)
+Wouldn't it be cleaner to just clk_get esdhc_clk during init, then
+do clk_set_rate on it to toggle the rates?
+ 
+> > So I'd rather stay out of random named states for
+> > the pins coming from device tree; If we still need them, they should
+> > be common bindings rather than things like "xyz_clock_hack".
+> > 
+> The binding defines the syntax, and I do not see the necessity to
+> force the particular state name, which is really pinctrl client
+> device specific.
 
-But with AF_UNIX sockets on Linux 3.2, a call to read() on a socket
-that does not drain the socket's buffer completely can apparently
-cause epoll to think that the socket has generated another event,
-even if no further data has actually arrived at the socket.
+Do you have some other custom pin state example other than the
+clock rate change example above?
 
-This behavior did not occur in 3.1, and does not occur in 3.2 with
-AF_INET sockets or with pipes.
+Regards,
 
-[3.] Keywords:
-
-networking, AF_UNIX, epoll, socket
-
-[4.] Kernel version (from /proc/version):
-
-First found in:
-
-Linux version 3.2.1-3.fc16.x86_64
-(mockbuild@x86-13.phx2.fedoraproject.org) (gcc version 4.6.2 20111027
-(Red Hat 4.6.2-1) (GCC) ) #1 SMP Mon Jan 23 15:36:17 UTC 2012
-
-Another user has reproduced this with:
-
-Linux version 3.2.0-1-686-pae (Debian 3.2.1-1) (ben@decadent.org.uk)
-(gcc version 4.6.2 (Debian 4.6.2-11) ) #1 SMP Thu Jan 19 10:56:51 UTC
-2012
-
-[6.] A small shell script or example program which triggers the
-     problem (if possible)
-
-#include <sys/epoll.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-
-int
-main(int argc, const char **argv)
-{
-        int epfd;
-        int pair[2];
-        struct epoll_event epev;
-        int n, r, n_reads;
-
-        if ((epfd = epoll_create(32)) < 0) {
-                perror("epoll_create()");
-                return 2;
-        }
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) < 0) {
-                perror("socketpair()");
-                return 2;
-        }
-
-        if (fcntl(pair[0], F_SETFL, O_NONBLOCK) < 0) {
-                perror("fcntl()");
-                return 2;
-        }
-
-        memset(&epev, 0, sizeof(epev));
-        epev.events = EPOLLIN | EPOLLET;
-        epev.data.fd = pair[0];
-        if (epoll_ctl(epfd, EPOLL_CTL_ADD, pair[0], &epev) < 0) {
-                perror("epoll_ctl()");
-                return 2;
-        }
-
-        if ((n = write(pair[1], "A 21-character string", 21)) < 0) {
-                perror("write()");
-                return 2;
-        }
-
-        /* pair[0] should now be readable. EPOLLET above has said that we
-         * want edge-triggered behavior, so we should only get a single
-         * EPOLLIN event on the socket.  But on Linux 3.2, for some reason,
-         * reading a single byte from the socket causes us to get another
-         * EPOLLIN event.
-         */
-        n_reads = 0;
-        while ((r = epoll_wait(epfd, &epev, 1, 500)) == 1) {
-                char byte[1];
-                printf("epoll_wait() said: events=%d, fd=%d\n",
-                       epev.events, epev.data.fd);
-                n = read(pair[0], byte, 1);
-                if (n < 0 && errno == EAGAIN) {
-                        puts("read() reported EAGAIN.");
-                } else if (n < 0) {
-                        perror("read()");
-                } else if (n == 0) {
-                        puts("read() reported EOF.");
-                } else {
-                        printf("Read %d byte(s)\n", n);
-                        ++n_reads;
-                }
-        }
-        if (r == 0) {
-                puts("Timeout without event.");
-        } else {
-                perror("epoll_wait()");
-        }
-
-        close(pair[0]);
-        close(pair[1]);
-        close(epfd);
-
-        if (n_reads == 1) {
-                puts("Exactly one read event. Good.");
-        } else {
-                printf("Got %d read events. That's not right!\n", n_reads);
-        }
-        return (n_reads == 1) ? 0 : 1;
-}
+Tony
