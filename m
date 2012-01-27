@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab2A0G7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 01:59:32 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:33843 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751572Ab2A0G72 convert rfc822-to-8bit (ORCPT
+	id S1755953Ab2A0G7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 01:59:47 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47187 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917Ab2A0G7T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 01:59:28 -0500
-X-WSS-ID: 0LYG3F0-0A-25W-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Anton Vorontsov" <cbouatmailru@gmail.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 26 Jan 2012 22:59:08 -0800
-Subject: [PATCH 6/6] lp8727_charger: correct typos on the comment
-Thread-Topic: [PATCH 6/6] lp8727_charger: correct typos on the comment
-Thread-Index: AczcwSqMTwjz7UYcReimbevWAB0FTA==
-Message-ID: <B567DBAB974C0544994013492B949F8E3812D6EB0B@EXMAIL03.scwf.nsc.com>
-Accept-Language: ko-KR, en-US
+	Fri, 27 Jan 2012 01:59:19 -0500
+From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v1 3/3] ARM: tegra: cpuidle driver for tegra
+Thread-Topic: [PATCH v1 3/3] ARM: tegra: cpuidle driver for tegra
+Thread-Index: AQHM3Efdz4WGVcb5lUWhYfrRza69QJYfx+nQ
+Date: Fri, 27 Jan 2012 06:59:03 +0000
+Message-ID: <B5906170F1614E41A8A28DE3B8D1214331791EA6@DBDE01.ent.ti.com>
+References: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
+ <1327594923-21822-4-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1327594923-21822-4-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
-MIME-Version: 1.0
-X-WSS-ID: 633C94B41LS9965386-01-01
-Content-Type: text/plain;
- charset=us-ascii
+x-originating-ip: [172.24.133.41]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-intergrated charger -> integrated charger
-    ^
+On Thu, Jan 26, 2012 at 21:52:03, Peter De Schrijver wrote:
+[...]
+> +static int tegra_idle_enter_lp3(struct cpuidle_device *dev,
+> +	struct cpuidle_driver *drv, int index)
+> +{
+> +	ktime_t enter, exit;
+> +	s64 us;
+> +
+> +	local_irq_disable();
+> +	local_fiq_disable();
+> +
+> +	enter = ktime_get();
+> +
+> +	tegra_cpu_wfi();
+> +
+> +	exit = ktime_sub(ktime_get(), enter);
+> +	us = ktime_to_us(exit);
+> +
+> +	local_fiq_enable();
+> +	local_irq_enable();
+> +
+> +	dev->last_residency = us;
+> +
+> +	return index;
+> +}
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/power/lp8727_charger.c |    2 +-
- include/linux/lp8727.h         |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
-index b531725..ccee42c 100755
---- a/drivers/power/lp8727_charger.c
-+++ b/drivers/power/lp8727_charger.c
-@@ -1,5 +1,5 @@
- /*
-- * Driver for LP8727 Micro/Mini USB IC with intergrated charger
-+ * Driver for LP8727 Micro/Mini USB IC with integrated charger
-  *
-  *			Copyright (C) 2011 Texas Instruments
-  *
-diff --git a/include/linux/lp8727.h b/include/linux/lp8727.h
-index 9a4611f..4397e07 100644
---- a/include/linux/lp8727.h
-+++ b/include/linux/lp8727.h
-@@ -1,5 +1,5 @@
- /*
-- * LP8727 Micro/Mini USB IC with intergrated charger
-+ * LP8727 Micro/Mini USB IC with integrated charger
-  *
-  *			Copyright (C) 2011 Texas Instruments
-  *
--- 
-1.7.4.1
-
-
-Best Regards,
-Milo (Woogyom) Kim
-Texas Instruments Incorporated
-
-
-
-
+You can probably drop local_irq_disable() and local_irq_enable().
