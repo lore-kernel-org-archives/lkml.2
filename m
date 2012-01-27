@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab2A0K0W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 05:26:22 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:38544
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751525Ab2A0K0U convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 05:26:20 -0500
-X-SpamScore: -20
-X-BigFish: VPS-20(zz9371I1432N98dKzz1202hzz15d4R8275bhz2dhc1bhc31hc1ah668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LYGCZJ-02-65H-02
-X-M-MSG: 
-Date: Fri, 27 Jan 2012 11:26:08 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stuart Yoder <b08248@gmail.com>, Scott Wood <scottwood@freescale.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH 2/6] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Message-ID: <20120127102608.GK19255@amd.com>
-References: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
- <1327603257-17028-3-git-send-email-joerg.roedel@amd.com>
- <CAK=WgbbZB0hGRr84JV4a7c0KvW7VbVzsnCx1PGg=wjoB0OSrYw@mail.gmail.com>
+	id S1753898Ab2A0K2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 05:28:00 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36325 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751525Ab2A0K16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 05:27:58 -0500
+Date: Fri, 27 Jan 2012 11:27:41 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: =?iso-8859-1?B?TOluYe9j?= Huard <lenaic@lhuard.fr.eu.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Shift by one instruction in the perf annotate output
+Message-ID: <20120127102741.GA31782@elte.hu>
+References: <201201270001.27765.lenaic@lhuard.fr.eu.org>
+ <1327652120.2446.123.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAK=WgbbZB0hGRr84JV4a7c0KvW7VbVzsnCx1PGg=wjoB0OSrYw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1327652120.2446.123.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
 
-On Fri, Jan 27, 2012 at 09:08:44AM +0200, Ohad Ben-Cohen wrote:
-> On Thu, Jan 26, 2012 at 8:40 PM, Joerg Roedel <joerg.roedel@amd.com> wrote:
-> > Implement the attribute itself and add the code for the
-> > AMD IOMMU driver.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+
+> > I am running Linux and perf 3.2 but I remember that previous 
+> > versions suffered from the same issue.
+> > 
+> > I donâ€™t know if it could be specific to my cpu:
+> > processor       : 0
+> > vendor_id       : GenuineIntel
+> > cpu family      : 6
+> > model           : 15
+> > model name      : Intel(R) Core(TM)2 CPU          6600  @ 2.40GHz 
 > 
-> It's somewhat non-intuitive to have the generic attribute code bundled
-> with the AMD implementation in the same patch (took me some time to
-> find it here :).
-> 
-> Maybe split this to two patches ?
+> And sadly its the best you'll get on your machine, most Intel 
+> chips after that (including the core2 shrink, but excluding 
+> the latest core i7 SNB) can do better using a feature called 
+> PEBS.
 
-Yes, that is not ideal. I'll probably split it or move the generic part
-to the first patch.
+Which can be activated on those CPUs using the '-e cycles:pp' 
+option (the first 'p' stands for 'precise', the second 'p' for 
+'very precise' ;-).
 
-> > diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> > index ef54718..3d0b0bf 100644
-> > --- a/drivers/iommu/iommu.c
-> > +++ b/drivers/iommu/iommu.c
-> > @@ -345,10 +345,23 @@ EXPORT_SYMBOL_GPL(iommu_device_group);
-> >  int iommu_domain_get_attr(struct iommu_domain *domain,
-> >                          enum iommu_attr attr, void *data)
-> >  {
-> > -       if (!domain->ops->domain_get_attr)
-> > -               return -EINVAL;
-> > +       struct iommu_domain_geometry *geometry;
-> > +       int ret = 0;
-> > +
-> > +       switch (attr) {
-> > +       case DOMAIN_ATTR_GEOMETRY:
-> > +               geometry  = data;
-> > +               *geometry = domain->geometry;
-> 
-> This is not type-safe and will surely bite someone some day.
-> 
-> Sure, we can't have type safety in a multi-purpose generic interface,
-> but I wonder whether this is the right interface for getting the
-> geometry ? I.e. why not have a dedicated API for this ?
+In that case some rather non-obvious perf magic is activated (we 
+use PEBS for precise samples and use the LBR hardware to rewind 
+the IP), due to which annotation output looks like this:
 
-I fell also uncomfortable with the missing type-safety of this
-interface. But the alternative is to have dedicated functions for
-set/get each attribute. Well, it depends on how many attributes we have
-in the end, but given that the PAMU guys already have need for a number
-of hardware specific attributes it is likely that having individual
-functions makes the api too complex in the end.
+         :        ffffffff810a6f51 <do_raw_spin_lock>:                                            â–’
+    1.77 :        ffffffff810a6f51:       mov    $0x10000,%eax                                    â–’
+   44.95 :        ffffffff810a6f56:       lock xadd %eax,(%rdi)                                   â–’
+    1.25 :        ffffffff810a6f5a:       mov    %eax,%edx                                        â–’
+    0.29 :        ffffffff810a6f5c:       shr    $0x10,%edx                                       â–’
+    1.21 :        ffffffff810a6f5f:       cmp    %dx,%ax                                          â–’
+    0.01 :        ffffffff810a6f62:       je     ffffffff810a6f6b <do_raw_spin_lock+0x1a>         â–’
+   29.81 :        ffffffff810a6f64:       pause                                                   â–’
+   16.45 :        ffffffff810a6f66:       mov    (%rdi),%ax                                       â–’
+    4.27 :        ffffffff810a6f69:       jmp    ffffffff810a6f5f <do_raw_spin_lock+0xe>          â–’
+    0.00 :        ffffffff810a6f6b:       retq                                                    â–’
 
-But probably we can replace the 'void *data' with a 'union
-domain_attr'? This will give us some type-safety.
+the entries are both precise and show up in the right place.
 
+On Core2 CPUs there's PEBS so 'p' will work, but there's no LBR 
+so the IP-rewinding does not work.
 
-	Joerg
+Thanks,
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+	Ingo
