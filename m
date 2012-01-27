@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab2A0Bu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 20:50:29 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:53735 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab2A0Bu1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 20:50:27 -0500
-Date: Fri, 27 Jan 2012 10:50:15 +0900
-From: Norbert Preining <preining@logic.at>
-To: Emmanuel Grumbach <egrumbach@gmail.com>
-Cc: linux-kernel@vger.kernel.org, ipw3945-devel@lists.sourceforge.net,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: iwlagn is getting even worse with 3.3-rc1
-Message-ID: <20120127015015.GA23291@gamma.logic.tuwien.ac.at>
-References: <20120124013625.GB18436@gamma.logic.tuwien.ac.at> <CANUX_P3er0orBy8OhDuY1DfgD810UD-_HB_ukJnCA+W8e-VazQ@mail.gmail.com> <20120125002250.GA20431@gamma.logic.tuwien.ac.at> <CANUX_P0UREz_jZABu+Y_QYOh9tx_sKZSSkZpYHBEVtcU4QQdSA@mail.gmail.com> <20120126003735.GA2346@gamma.logic.tuwien.ac.at> <CANUX_P0H_WaWwnpjoBcMpZQY4xH=cbVhAKxWKXmz-HwFMcWS6w@mail.gmail.com> <CANUX_P3XSCsWUJ9M55qeaK-DuPEMXODFPJiNk+BgnHN-=WECqw@mail.gmail.com> <20120126232555.GB16330@gamma.logic.tuwien.ac.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120126232555.GB16330@gamma.logic.tuwien.ac.at>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754697Ab2A0Bxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 20:53:40 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:48300 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645Ab2A0Bxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 20:53:39 -0500
+Date: Fri, 27 Jan 2012 12:53:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Frid <afrid@nvidia.com>, Antti Miettinen <amiettinen@nvidia.com>,
+        Diwakar Tundlam <dtundlam@nvidia.com>,
+        Scott Williams <scwilliams@nvidia.com>, Yu-Huan Hsu <yhsu@nvidia.com>,
+        markgross <markgross@thegnar.org>
+Subject: linux-next: build failure after merge of the pm tree
+Message-Id: <20120127125315.e6e70511badf68c4e760afc3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__27_Jan_2012_12_53_15_+1100_nSPKJPZvT+xC.6g_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Emmanuel,
+--Signature=_Fri__27_Jan_2012_12_53_15_+1100_nSPKJPZvT+xC.6g_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fr, 27 Jan 2012, Norbert Preining wrote:
-> First tests are promising, after reboot it was working immediately
-> without need to rfkill block/unblock. lso after suspend and resume.
-> 
-> Will test more the next days and report back.
+Hi Rafael,
 
-Unfortunately, at the university it is still a complete no-go.
-Usually the connection works for a short time, then breaks down.
-After that even unloading and loading the module did not reactivate
-it, I cannot get a connection at all. But other units, or with
-older kernel (it was 2.6.3X AFAIR) it was working without a glitch.
+After merging the pm tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-I uploaded a syslog output including kernel and network manager logs
-to
-	http://www.logic.at/people/preining/syslog.log
-(new one). This shows a session from loading the module up to giving up.
+kernel/power/process.c: In function 'thaw_kernel_threads':
+kernel/power/process.c:199:2: error: 'g' undeclared (first use in this func=
+tion)
+kernel/power/process.c:199:2: note: each undeclared identifier is reported =
+only once for each function it appears in
+kernel/power/process.c:199:2: error: 'p' undeclared (first use in this func=
+tion)
 
-Best wishes
+Caused by commit 625278ca8016 ("PM / QoS: Simplify PM QoS expansion/merge").
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-AITH (n.)
-The single bristle that sticks out sideways on a cheap paintbrush.
-			--- Douglas Adams, The Meaning of Liff
+Clearly never built :-(  At least, not in this form.
+
+I have used the pm tree from next-20120125 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__27_Jan_2012_12_53_15_+1100_nSPKJPZvT+xC.6g_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPIgOLAAoJEECxmPOUX5FEr04P+wQMzYzLL1enHc2uIAVudGq6
+dgGDoce62CvKgFia2502Rp/e4s6QQuLL0FWx97Zd69Sk/t7tdA7eL9BQRZKJ2t6W
+7TaQex5hsW1vlyeOnBKCVUbdX33pPNsessSryJFCEC9NH529BThRrmUT+xzc8SIo
+eWK3zY908UbagypGHqRkS+08gkWveAd0s+Gz0Bte+EhHEW4e3kghcSR+tolJFufO
+/KQYI+8w8ClEBsgXaU+RS8SAiEc/YbtpSSbR8cl5lGa0se95yFaozNjaeHLFyLrr
+1QUaf/BKg/xf1jJvxtMUh8A7dkGdDxRgADfd1+F88bEsNBZRZ2YTpjdouj3wdeVR
+jqQagSbK2ePmo5HvnrJL0SvWRtsiaaAwapn5SOSVXYo4OnGxVrBP/C/9gdkDOI/a
+uVTAXPUAjzEdg2YBw4bKXAzIS2AOV5o7bmib7t3swxxixoYM5OUDKkwZUyS5HfvR
+ioJspqdrkN3n/Gs+zrTRiiiiNvchZO2VPidM2lzM21R+lEf2EPruYPuKjgSt5NBh
+60VmvA0y/dL1J+G/GUmWvw81ATayO9sGjjbN7XStcyj6YiDuElR4IgTltjPAdZEi
+8Vz1gK7PVQ+QfAIYKfbo6eQHhkDAA+DRMXimTpnsUZLCJFaUCL5GIH4wZL+Df0zs
+IqKbvSpNAoA8f4j8Qjjs
+=wTGo
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_Jan_2012_12_53_15_+1100_nSPKJPZvT+xC.6g_--
