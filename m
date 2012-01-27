@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2A0TzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 14:55:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37136 "EHLO mx1.redhat.com"
+	id S1753290Ab2A0UAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 15:00:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50632 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623Ab2A0TzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 14:55:17 -0500
-Date: Fri, 27 Jan 2012 14:54:55 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-Cc: Suresh Jayaraman <sjayaraman@suse.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: Slab corruption in floppy driver module
-Message-ID: <20120127195455.GA18068@redhat.com>
-References: <4F1EAFE9.5000306@suse.com>
- <20120124223153.GG17291@redhat.com>
- <20120126150420.GD1891@redhat.com>
- <20120126180532.GA4077@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120126193735.GA11297@redhat.com>
- <giobtq5e46.fsf@mx10.gouders.net>
- <4F223F11.4050307@suse.com>
- <giaa59tmbr.fsf@mx10.gouders.net>
+	id S1752960Ab2A0UAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 15:00:04 -0500
+References: <20120127175342.273260614@openvz.org> <20120127175939.795551339@openvz.org> <20120127193726.GA13190@albatros>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120127193726.GA13190@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <giaa59tmbr.fsf@mx10.gouders.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
+From: "hpanvin@gmail.com" <hpa@zytor.com>
+Date: Fri, 27 Jan 2012 11:59:18 -0800
+To: Vasiliy Kulikov <segoon@openwall.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <a58d4866-7ec3-48b2-8961-f1cdafe9bc4d@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 12:30:00PM +0100, Dirk Gouders wrote:
-> Suresh Jayaraman <sjayaraman@suse.com> writes:
-> 
-> > On 01/27/2012 03:18 AM, Dirk Gouders wrote:
-> 
-> [snipped many lines]
-> 
-> >> Probably a rare and uncommon one but it seems that the reloading case on
-> >> a machine that has a floppy controller is a different problem.  To be
-> >> sure I tested the patch on a machine that has a floppy controller and
-> >> when unloading and reloading the floppy module the log messages that I
-> >> attached to a mail earlier in this thread are still generated.
-> >> 
-> >
-> > Yeah, this seems like a different problem. Could you please try enabling
-> > CONFIG_DEBUG_PAGEALLOC and see whether is it pointing to the problem
-> > code while loading/unloading the module?
-> 
-> I enabled the option and it produces just one message during boot but
-> nothing else while unloading/loading the floppy module.
+No, cookies[1] is always odd.
+
+Vasiliy Kulikov <segoon@openwall.com> wrote:
+
+>Hi Cyrill,
 >
+>On Fri, Jan 27, 2012 at 21:53 +0400, Cyrill Gorcunov wrote:
+>> +/*
+>> + * We don't expose real in-memory order of objects for security
+>> + * reasons, still the comparision results should be suitable for
+>> + * sorting. Thus, we obfuscate kernel pointers values (using random
+>> + * cookies obtaned at early boot stage) and compare the production
+>> + * instead.
+>> + */
+>> +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
+>> +
+>> +static long kptr_obfuscate(long v, int type)
+>> +{
+>> +	return (v ^ cookies[type][0]) * cookies[type][1];
+>
+>AFACS, cookies is fully random value, is it possible that
+>
+>((v1 ^ cookies[type][0]) * cookies[type][1] == (v2 ^ cookies[type][0])
+>* cookies[type][1]) &&
+>(v1 != v2)
+>
+>for too round cookies[type][1]?
+>
+>Thanks,
+>
+>-- 
+>Vasiliy Kulikov
+>http://www.openwall.com - bringing security into open computing
+>environments
 
-Can you please try following patch and see if it fixes the issue. I could
-reproduce the issue with my virtual machine. The issue seems to be that
-we do not call add_disk() for all the drives/disks but we try to do
-put_disk() on all the disks. Hence running into the issue of putting
-extra reference during module removal.
- 
-
-floppy: Fix a crash during rmmmod
-
-floppy driver does not call add_disk() on all the drives hence we don't take
-gendisk reference on request queue for these drives. Don't call put_disk()
-with disk->queue set, otherwise we try to put the reference we never took.
-
-Reported-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> 
-Signed-off-by: Vivek Goyal<vgoyal@redhat.com>
----
- drivers/block/floppy.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-Index: linux-2.6/drivers/block/floppy.c
-===================================================================
---- linux-2.6.orig/drivers/block/floppy.c	2012-01-27 14:34:45.000000000 -0500
-+++ linux-2.6/drivers/block/floppy.c	2012-01-27 14:39:13.729861052 -0500
-@@ -4584,6 +4584,15 @@ static void __exit floppy_module_exit(vo
- 			platform_device_unregister(&floppy_device[drive]);
- 		}
- 		blk_cleanup_queue(disks[drive]->queue);
-+
-+		/*
-+		 * These disks have not called add_disk().  Don't put down
-+		 * queue reference in put_disk().
-+		 */
-+		if (!(allowed_drive_mask & (1 << drive)) ||
-+		    fdc_state[FDC(drive)].version == FDC_NONE)
-+			disks[drive]->queue = NULL;
-+
- 		put_disk(disks[drive]);
- 	}
- 
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
