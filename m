@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab2A0AHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:07:07 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:32328 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab2A0AHF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:07:05 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6601"; a="158253572"
-Date: Thu, 26 Jan 2012 16:07:02 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stuart Yoder <b08248@gmail.com>, Scott Wood <scottwood@freescale.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH 5/6] iommu/msm: Implement DOMAIN_ATTR_GEOMETRY attribute
-Message-ID: <20120127000702.GC16263@codeaurora.org>
-References: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
- <1327603257-17028-6-git-send-email-joerg.roedel@amd.com>
+	id S1754478Ab2A0AIF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:08:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59421 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752185Ab2A0AIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 19:08:02 -0500
+Date: Thu, 26 Jan 2012 16:06:12 -0800
+From: Greg KH <gregkh@suse.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, kay.sievers@vrfy.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, bp@amd64.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, lenb@kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: WARN... Device 'cpu1' does not have a release() function, it is
+ broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
+Message-ID: <20120127000612.GA14678@suse.de>
+References: <20120123180601.GA24553@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327603257-17028-6-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <20120123180601.GA24553@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 07:40:56PM +0100, Joerg Roedel wrote:
-> Implement the attribute for the MSM IOMMU driver.
+On Mon, Jan 23, 2012 at 01:06:01PM -0500, Konrad Rzeszutek Wilk wrote:
+> When I bring a CPU down in a guest (which should be the same as bringing a
+> CPU down using the ACPI framework), I get this:
 > 
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  drivers/iommu/msm_iommu.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
+> [   14.484206] SMP alternatives: switching to UP code
+> [   14.514287] ------------[ cut here ]------------
+> [   14.514318] WARNING: at /home/konrad/linux-linus/drivers/base/core.c:194 device_release+0x82/0x90()
+> [   14.514354] Device 'cpu1' does not have a release() function, it is broken and must be fixed.
+> [   14.514386] Modules linked in: radeon fbcon tileblit font ttm bitblit softcursor drm_kms_helper xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea xen_kbdfront xenfs xen_privcmd
+> [   14.514557] Pid: 22, comm: xenwatch Not tainted 3.3.0-rc1 #1
+> [   14.514586] Call Trace:
+> [   14.515094]  [<ffffffff810897fa>] warn_slowpath_common+0x7a/0xb0
+> [   14.515094]  [<ffffffff810898d1>] warn_slowpath_fmt+0x41/0x50
+> [   14.515094]  [<ffffffff813dea02>] device_release+0x82/0x90
+> [   14.515094]  [<ffffffff812dfb85>] kobject_release+0x45/0x90
+> [   14.515094]  [<ffffffff812dfa4c>] kobject_put+0x2c/0x60
+> [   14.515094]  [<ffffffff813de6a2>] put_device+0x12/0x20
+> [   14.515094]  [<ffffffff813df409>] device_unregister+0x19/0x20
+> [   14.515094]  [<ffffffff813e4edf>] unregister_cpu+0x4f/0x80
+> [   14.515094]  [<ffffffff81052c7c>] arch_unregister_cpu+0x1c/0x20
+> [   14.515094]  [<ffffffff8137f787>] handle_vcpu_hotplug_event+0xc7/0xd0
+> [   14.515094]  [<ffffffff8137b900>] xenwatch_thread+0xb0/0x180
+> [   14.515094]  [<ffffffff810ad3f0>] ? wake_up_bit+0x40/0x40
+> [   14.515094]  [<ffffffff8137b850>] ? split+0xf0/0xf0
+> [   14.515094]  [<ffffffff810acd16>] kthread+0x96/0xa0
+> [   14.515094]  [<ffffffff816151e4>] kernel_thread_helper+0x4/0x10
+> [   14.515094]  [<ffffffff8160cc80>] ? retint_restore_args+0x5/0x6
+> [   14.515094]  [<ffffffff816151e0>] ? gs_change+0x13/0x13
+> [   14.515094] ---[ end trace 8f70af51a2e2611f ]---
+> 
+> Looking at "commit e032d80774315869aa2285b217fdbbfed86c0b49
+> Author: Greg Kroah-Hartman <gregkh@suse.de>
+> Date:   Mon Jan 16 14:40:28 2012 -0800
+> 
+>     mce: fix warning messages about static struct mce_device
+> "
+> 
+> it looks like the corret fix is to make the 'cpu_devices' in
+> arch/x86/kernel/topology.c to be changed to be more dynamic
+> (or perhaps have an empty release function)?
+> 
+> Is anybody else hitting this with ACPI CPU hot-unplug? Or do I have
+> the privilige of being the first? Oh, I hadn't done a full bisection
+> but v3.2 does not have this.
 
-Acked-by: David Brown <davidb@codeaurora.org>
+Kay, this is a mess.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+This cpu system device is is interconnected with the different arches
+and their cpu-specific structures.  Some arches have a static array,
+some allocate a huge structure (struct arch_cpu * NUM_CPUS), and others
+try to do the right thing with DECLARE_PER_CPU() but don't quite get it
+right, making that a static array per cpu.
+
+To unwind all of this, is much beyond 3.3 material, as I'm sure I'll get
+it wrong, and have a bunch of non-x86-64 build problems along the way.
+
+Any objection to me just doing the "hack" of the empty release function
+at the moment to get rid of this warning, and then clean it all up
+properly for 3.4?
+
+thanks,
+
+greg k-h
