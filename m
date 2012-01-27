@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab2A0FPZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 00:15:25 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:31966 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab2A0FPY convert rfc822-to-8bit (ORCPT
+	id S1755164Ab2A0FU6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 00:20:58 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54984 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab2A0FU4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 00:15:24 -0500
+	Fri, 27 Jan 2012 00:20:56 -0500
 MIME-Version: 1.0
-Message-ID: <22f6781b-9cc4-4857-b3e1-e2d9f595f64d@default>
-Date: Thu, 26 Jan 2012 21:15:16 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
- cleancache)
-References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
- <4F218D36.2060308@linux.vnet.ibm.com>
- <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
- <20120126163150.31a8688f.akpm@linux-foundation.org>
- <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
- <20120126171548.2c85dd44.akpm@linux-foundation.org>
- <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default> <4F221AFE.6070108@redhat.com>
-In-Reply-To: <4F221AFE.6070108@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <tip-4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b@git.kernel.org>
+References: <1327486224.2614.45.camel@laptop>
+	<tip-4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b@git.kernel.org>
+Date: Fri, 27 Jan 2012 11:20:56 +0600
+Message-ID: <CADZ9YHi1=aP8j8vCFJvyMANyMWwB_mjT67KwSZZh902oyWy7pA@mail.gmail.com>
+Subject: Re: [tip:sched/urgent] sched: Fix rq->nr_uninterruptible update race
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        kosaki.motohiro@gmail.com, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4F2232DF.0094,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Rik van Riel [mailto:riel@redhat.com]
-> Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
-> 
-> On 01/26/2012 09:43 PM, Dan Magenheimer wrote:
-> 
-> > Maybe the Active page bit could be overloaded with some minor
-> > rewriting?  IOW, perhaps the Active bit could be ignored when
-> > the page is moved to the inactive LRU?  (Confusing I know, but I am
-> > just brainstorming...)
-> 
-> The PG_referenced bit is already overloaded.  We keep
-> the bit set when we move a page from the active to the
-> inactive list, so a page that was previously active
-> only needs to be referenced once to become active again.
-> 
-> The LRU bits (PG_lru, PG_active, etc) are needed to
-> figure out which LRU list the page is on.  I don't
-> think we can overload those...
+On Fri, Jan 27, 2012 at 2:25 AM, tip-bot for Peter Zijlstra
+<a.p.zijlstra@chello.nl> wrote:
+> Commit-ID:  4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b
+> Gitweb:     http://git.kernel.org/tip/4ca9b72b71f10147bd21969c1805f5b2c4ca7b7b
+> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> AuthorDate: Wed, 25 Jan 2012 11:50:51 +0100
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Thu, 26 Jan 2012 19:38:09 +0100
+>
+> sched: Fix rq->nr_uninterruptible update race
+>
+> KOSAKI Motohiro noticed the following race:
+>
+>  > CPU0                    CPU1
+>  > --------------------------------------------------------
+>  > deactivate_task()
+>  >                         task->state = TASK_UNINTERRUPTIBLE;
+>  > activate_task()
+>  >    rq->nr_uninterruptible--;
+>  >
+>  >                         schedule()
+>  >                           deactivate_task()
+>  >                             rq->nr_uninterruptible++;
+>  >
+>
+> Kosaki-San's scenario is possible when CPU0 runs
+> __sched_setscheduler() against CPU1's current @task.
+>
+> __sched_setscheduler() does a dequeue/enqueue in order to move
+> the task to its new queue (position) to reflect the newly provided
+> scheduling parameters. However it should be completely invariant to
+> nr_uninterruptible accounting, sched_setscheduler() doesn't affect
+> readyness to run, merely policy on when to run.
+>
+> So convert the inappropriate activate/deactivate_task usage to
+> enqueue/dequeue_task, which avoids the nr_uninterruptible accounting.
+>
+Why would we want to avoid nr_uninterruptible accounting?
+nr_uninterruptible has impact on load calculation, we might not get
+the proper load weight if we don't account it. isn't it?
 
-I suspected that was true, but was just brainstorming.
-Thanks for confirming.
-
-Are there any other page bits that are dont-care when
-a page is on an LRU list?
-
-I'd also be interested in your/RedHat's opinion on the
-64-bit vs 32-bit market.  Will RHEL7 even support 32-bit?
-
-Dan
-
+Thanks,
+Rakib
