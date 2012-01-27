@@ -1,151 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab2A0TfP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 14:35:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60766 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab2A0TfM (ORCPT
+	id S1754000Ab2A0TiI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 14:38:08 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35195 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753653Ab2A0TiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 14:35:12 -0500
-Message-ID: <4F22FC6D.6090609@canonical.com>
-Date: Fri, 27 Jan 2012 11:35:09 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
+	Fri, 27 Jan 2012 14:38:06 -0500
+X-Sasl-enc: xmm7sFeRhvwo5+H4kQ6INimrSooYq6JjoEPOTL5X55Vc 1327693082
+Date: Fri, 27 Jan 2012 17:37:56 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>, mmarek@suse.cz
+Subject: Re: Ioctl warning for a partition
+Message-ID: <20120127193756.GC25348@khazad-dum.debian.net>
+References: <20120126223037.GE28368@quack.suse.cz>
+ <CA+55aFwkRhsdAYwP-S5_qPkRX=dMSnxv5Ow1ULaSJjKe3aTy2w@mail.gmail.com>
+ <4F21E828.8090502@msgid.tls.msk.ru>
+ <20120127192817.GB25348@khazad-dum.debian.net>
 MIME-Version: 1.0
-To: Kees Cook <kees@ubuntu.com>
-CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] AppArmor: export known rlimit names/value mappings
- in securityfs
-References: <1327624163-21576-1-git-send-email-kees@ubuntu.com> <1327624163-21576-5-git-send-email-kees@ubuntu.com>
-In-Reply-To: <1327624163-21576-5-git-send-email-kees@ubuntu.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120127192817.GB25348@khazad-dum.debian.net>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 04:29 PM, Kees Cook wrote:
-> Since the parser needs to know which rlimits are known to the kernel,
-> export the list via a mask file in the "rlimit" subdirectory in the
-> securityfs "features" directory.
+On Fri, 27 Jan 2012, Henrique de Moraes Holschuh wrote:
+> On Fri, 27 Jan 2012, Michael Tokarev wrote:
+> > mdadm ioctls reported in various places apparently got fixed by
+> > ENOTTY/ENOIOCTLCMD change.
 > 
-> Signed-off-by: Kees Cook <kees@ubuntu.com>
-Acked-by: John Johansen <john.johansen@canonical.com>
-
-
-> ---
->  security/apparmor/Makefile           |   24 ++++++++++++++++++------
->  security/apparmor/apparmorfs.c       |    2 ++
->  security/apparmor/include/resource.h |    4 ++++
->  security/apparmor/resource.c         |    5 +++++
->  4 files changed, 29 insertions(+), 6 deletions(-)
+> Does that fix still need to be backported to -stable?
 > 
-> diff --git a/security/apparmor/Makefile b/security/apparmor/Makefile
-> index 2dafe50..86103ce 100644
-> --- a/security/apparmor/Makefile
-> +++ b/security/apparmor/Makefile
-> @@ -28,25 +28,37 @@ cmd_make-caps = echo "static const char *capability_names[] = {" > $@ ;\
->  #    [RLIMIT_STACK] = "stack",
->  #
->  # and build a second integer table (with the second sed cmd), that maps
-> -# RLIMIT defines to the order defined in asm-generic/resource.h  Thi is
-> +# RLIMIT defines to the order defined in asm-generic/resource.h  This is
->  # required by policy load to map policy ordering of RLIMITs to internal
->  # ordering for architectures that redefine an RLIMIT.
->  # Transforms lines from
->  #    #define RLIMIT_STACK		3	/* max stack size */
->  # to
->  # RLIMIT_STACK, 
-> +#
-> +# and build the securityfs entries for the mapping.
-> +# Transforms lines from
-> +#    #define RLIMIT_FSIZE        1   /* Maximum filesize */
-> +#    #define RLIMIT_STACK		3	/* max stack size */
-> +# to
-> +# #define AA_FS_RLIMIT_MASK "fsize stack"
->  quiet_cmd_make-rlim = GEN     $@
-> -cmd_make-rlim = echo "static const char *rlim_names[] = {" > $@ ;\
-> +cmd_make-rlim = echo "static const char *rlim_names[RLIM_NLIMITS] = {" > $@ ;\
->  	sed $< >> $@ -r -n \
->  	    -e 's/^\# ?define[ \t]+(RLIMIT_([A-Z0-9_]+)).*/[\1] = "\L\2",/p';\
->  	echo "};" >> $@ ;\
-> -	echo "static const int rlim_map[] = {" >> $@ ;\
-> +	echo "static const int rlim_map[RLIM_NLIMITS] = {" >> $@ ;\
->  	sed -r -n "s/^\# ?define[ \t]+(RLIMIT_[A-Z0-9_]+).*/\1,/p" $< >> $@ ;\
-> -	echo "};" >> $@
-> +	echo "};" >> $@ ; \
-> +	echo -n '\#define AA_FS_RLIMIT_MASK "' >> $@ ;\
-> +	sed -r -n 's/^\# ?define[ \t]+RLIMIT_([A-Z0-9_]+).*/\L\1/p' $< | \
-> +	    tr '\n' ' ' | sed -e 's/ $$/"\n/' >> $@
->  
->  $(obj)/capability.o : $(obj)/capability_names.h
->  $(obj)/resource.o : $(obj)/rlim_names.h
-> -$(obj)/capability_names.h : $(srctree)/include/linux/capability.h
-> +$(obj)/capability_names.h : $(srctree)/include/linux/capability.h \
-> +			    $(src)/Makefile
->  	$(call cmd,make-caps)
-> -$(obj)/rlim_names.h : $(srctree)/include/asm-generic/resource.h
-> +$(obj)/rlim_names.h : $(srctree)/include/asm-generic/resource.h \
-> +		      $(src)/Makefile
->  	$(call cmd,make-rlim)
-> diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
-> index 68ce771..38d6262 100644
-> --- a/security/apparmor/apparmorfs.c
-> +++ b/security/apparmor/apparmorfs.c
-> @@ -25,6 +25,7 @@
->  #include "include/audit.h"
->  #include "include/context.h"
->  #include "include/policy.h"
-> +#include "include/resource.h"
->  
->  /**
->   * aa_simple_write_to_buffer - common routine for getting policy from user
-> @@ -202,6 +203,7 @@ static struct aa_fs_entry aa_fs_entry_features[] = {
->  	AA_FS_DIR("file",			aa_fs_entry_file),
->  	AA_FS_FILE_BOOLEAN("namespaces",	1),
->  	AA_FS_FILE_U64("capability",		VFS_CAP_FLAGS_MASK),
-> +	AA_FS_DIR("rlimit",			aa_fs_entry_rlimit),
->  	{ }
->  };
->  
-> diff --git a/security/apparmor/include/resource.h b/security/apparmor/include/resource.h
-> index 02baec7..d3f4cf0 100644
-> --- a/security/apparmor/include/resource.h
-> +++ b/security/apparmor/include/resource.h
-> @@ -18,6 +18,8 @@
->  #include <linux/resource.h>
->  #include <linux/sched.h>
->  
-> +#include "apparmorfs.h"
-> +
->  struct aa_profile;
->  
->  /* struct aa_rlimit - rlimit settings for the profile
-> @@ -32,6 +34,8 @@ struct aa_rlimit {
->  	struct rlimit limits[RLIM_NLIMITS];
->  };
->  
-> +extern struct aa_fs_entry aa_fs_entry_rlimit[];
-> +
->  int aa_map_resource(int resource);
->  int aa_task_setrlimit(struct aa_profile *profile, struct task_struct *,
->  		      unsigned int resource, struct rlimit *new_rlim);
-> diff --git a/security/apparmor/resource.c b/security/apparmor/resource.c
-> index a4136c1..72c25a4 100644
-> --- a/security/apparmor/resource.c
-> +++ b/security/apparmor/resource.c
-> @@ -23,6 +23,11 @@
->   */
->  #include "rlim_names.h"
->  
-> +struct aa_fs_entry aa_fs_entry_rlimit[] = {
-> +	AA_FS_FILE_STRING("mask", AA_FS_RLIMIT_MASK),
-> +	{ }
-> +};
-> +
->  /* audit callback for resource specific fields */
->  static void audit_cb(struct audit_buffer *ab, void *va)
->  {
+> Linux v3.0.18 + Debian stable userspace (mdadm v3.1.4) causes this on
+> boot (when mdadm runs in the initramfs):
+> 
+> mdadm: sending ioctl 1261 to a partition!
+> mdadm: sending ioctl 1261 to a partition!
+> mdadm: sending ioctl 1261 to a partition!
+> mdadm: sending ioctl 1261 to a partition!
+> mdadm: sending ioctl 1261 to a partition!
+> mdadm: sending ioctl 1261 to a partition!
+> mdadm: sending ioctl 1261 to a partition!
+> mdadm: sending ioctl 1261 to a partition!
+> mdadm: sending ioctl 800c0910 to a partition!
+> mdadm: sending ioctl 800c0910 to a partition!
 
+This is on x86-64/amd64.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
